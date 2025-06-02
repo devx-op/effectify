@@ -4,6 +4,32 @@
   "sourceRoot": "packages/solid/query/src",
   "projectType": "library",
   "tags": [],
-  "// targets": "to see all targets run: nx show project @devx-effect/solid-query --web",
-  "targets": {}
+  "targets": {
+    "build": {
+      "executor": "@nx/esbuild:esbuild",
+      "outputs": [
+        "{options.outputPath}"
+      ],
+      "defaultConfiguration": "production",
+      "options": {
+        "main": "packages/solid/query/src/index.ts",
+        "outputPath": "packages/solid/query/dist",
+        "outputFileName": "index.js",
+        "tsConfig": "packages/solid/query/tsconfig.lib.json",
+        "platform": "neutral",
+        "format": [
+          "esm"
+        ],
+        "declarationRootDir": "packages/solid/query/src"
+      },
+      "configurations": {
+        "development": {
+          "minify": false
+        },
+        "production": {
+          "minify": true
+        }
+      }
+    }
+  }
 }

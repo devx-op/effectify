@@ -1,3 +1,3 @@
 export function solidQuery(): string {
-  return 'solid-query';
+  return 'solid-query-hola';
 }

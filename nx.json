@@ -54,5 +54,17 @@
     "version": {
       "preVersionCommand": "bunx nx run-many -t build"
     }
+  },
+  "targetDefaults": {
+    "@nx/esbuild:esbuild": {
+      "cache": true,
+      "dependsOn": [
+        "^build"
+      ],
+      "inputs": [
+        "production",
+        "^production"
+      ]
+    }
   }
 }
