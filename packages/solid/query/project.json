@@ -1,0 +1,9 @@
+{
+  "name": "@devx-effect/solid-query",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/solid/query/src",
+  "projectType": "library",
+  "tags": [],
+  "// targets": "to see all targets run: nx show project @devx-effect/solid-query --web",
+  "targets": {}
+}

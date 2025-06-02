@@ -28,5 +28,10 @@
         }
       }
     }
-  ]
+  ],
+  "release": {
+    "version": {
+      "preVersionCommand": "bunx nx run-many -t build"
+    }
+  }
 }
