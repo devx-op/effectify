@@ -2,7 +2,9 @@
   "name": "@devx-effect/source",
   "version": "0.0.0",
   "license": "MIT",
-  "scripts": {},
+  "scripts": {
+    "clean": "rm -rf node_modules dist bun.lock && bun pm cache rm & find . -type d \\( -name 'node_modules' -o -name 'dist' -o -name '.output' -o -name '.vinxi' \\) -prune -exec rm -rf {} + & wait"
+  },
   "private": true,
   "dependencies": {},
   "devDependencies": {

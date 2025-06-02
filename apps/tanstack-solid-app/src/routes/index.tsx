@@ -1,4 +1,4 @@
-import * as Solid from 'solid-js'
+import { solidQuery } from '@devx-effect/solid-query'
 import { createFileRoute } from '@tanstack/solid-router'
 
 import logo from '../logo.svg'
@@ -18,6 +18,8 @@ function IndexComponent() {
         />
         <p>
           Edit <code>src/routes/index.tsx</code> and save to reload.
+
+          Resutl : { solidQuery()}
         </p>
         <a
           class="text-[#61dafb] hover:underline"
