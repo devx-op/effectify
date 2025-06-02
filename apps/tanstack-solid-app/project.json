@@ -1,6 +1,6 @@
 {
   "$schema": "./../../node_modules/nx/schemas/project-schema.json",
-  "name": "@devx-effect/tanstack-solid-app",
+  "name": "@effectify/tanstack-solid-app",
   "projectType": "application",
   "sourceRoot": "apps/tanstack-solid-app/src",
   "targets": {
@@ -9,7 +9,7 @@
       "options": {
         "commands": [
           "vite",
-          "nx run @devx-effect/tanstack-solid-app:watch-deps "
+          "nx run @effectify/tanstack-solid-app:watch-deps "
         ],
         "cwd": "apps/tanstack-solid-app",
         "parallel": true

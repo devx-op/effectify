@@ -2,7 +2,7 @@
   "lockfileVersion": 1,
   "workspaces": {
     "": {
-      "name": "@devx-effect/source",
+      "name": "@effectify/source",
       "devDependencies": {
         "@nx/esbuild": "21.1.2",
         "@nx/js": "21.1.2",
@@ -26,7 +26,7 @@
     "apps/tanstack-solid-app": {
       "name": "tanstack-solid-app",
       "dependencies": {
-        "@devx-effect/solid-query": "*",
+        "@effectify/solid-query": "*",
         "@tailwindcss/vite": "^4.0.6",
         "@tanstack/router-plugin": "^1.109.2",
         "@tanstack/solid-router": "^1.110.0",
@@ -41,7 +41,7 @@
       },
     },
     "packages/solid/query": {
-      "name": "@devx-effect/solid-query",
+      "name": "@effectify/solid-query",
       "version": "0.0.1",
       "dependencies": {
         "tslib": "^2.3.0",
@@ -244,7 +244,7 @@
 
     "@cypress/request": ["@cypress/request@3.0.8", "", { "dependencies": { "aws-sign2": "~0.7.0", "aws4": "^1.8.0", "caseless": "~0.12.0", "combined-stream": "~1.0.6", "extend": "~3.0.2", "forever-agent": "~0.6.1", "form-data": "~4.0.0", "http-signature": "~1.4.0", "is-typedarray": "~1.0.0", "isstream": "~0.1.2", "json-stringify-safe": "~5.0.1", "mime-types": "~2.1.19", "performance-now": "^2.1.0", "qs": "6.14.0", "safe-buffer": "^5.1.2", "tough-cookie": "^5.0.0", "tunnel-agent": "^0.6.0", "uuid": "^8.3.2" } }, "sha512-h0NFgh1mJmm1nr4jCwkGHwKneVYKghUyWe6TMNrk0B9zsjAJxpg8C4/+BAcmLgCPa1vj1V8rNUaILl+zYRUWBQ=="],
 
-    "@devx-effect/solid-query": ["@devx-effect/solid-query@workspace:packages/solid/query"],
+    "@effectify/solid-query": ["@effectify/solid-query@workspace:packages/solid/query"],
 
     "@emnapi/core": ["@emnapi/core@1.4.3", "", { "dependencies": { "@emnapi/wasi-threads": "1.0.2", "tslib": "^2.4.0" } }, "sha512-4m62DuCE07lw01soJwPiBGC0nAww0Q+RY70VZ+n49yDIO13yyinhbWCeNnaob0lakDtWQzSdtNWzJeOJt2ma+g=="],
 

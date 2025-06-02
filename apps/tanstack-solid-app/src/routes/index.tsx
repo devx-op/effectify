@@ -1,4 +1,4 @@
-import { solidQuery } from '@devx-effect/solid-query'
+import { solidQuery } from '@effectify/solid-query'
 import { createFileRoute } from '@tanstack/solid-router'
 
 import logo from '../logo.svg'

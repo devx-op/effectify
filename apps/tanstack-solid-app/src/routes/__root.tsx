@@ -1,5 +1,5 @@
 import { Outlet, createRootRouteWithContext } from '@tanstack/solid-router'
-import { TanStackRouterDevtools } from '@tanstack/solid-router-devtools'
+// import { TanStackRouterDevtools } from '@tanstack/solid-router-devtools'
 
 export const Route = createRootRouteWithContext()({
   component: RootComponent,

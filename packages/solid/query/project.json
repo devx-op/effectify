@@ -1,5 +1,5 @@
 {
-  "name": "@devx-effect/solid-query",
+  "name": "@effectify/solid-query",
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "packages/solid/query/src",
   "projectType": "library",

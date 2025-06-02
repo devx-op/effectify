@@ -51,6 +51,10 @@
     }
   ],
   "release": {
+    "releaseTagPattern": "release/{version}",
+    "git": {
+      "commitMessage": "chore(release): {version}"
+    },
     "version": {
       "preVersionCommand": "bunx nx run-many -t build"
     }
