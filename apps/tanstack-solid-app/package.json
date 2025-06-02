@@ -10,17 +10,23 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@tailwindcss/vite": "^4.0.6",
-    "@tanstack/router-plugin": "^1.109.2",
-    "@tanstack/solid-router": "^1.110.0",
-    "@tanstack/solid-router-devtools": "^1.109.2",
+    "@tailwindcss/vite": "catalog:",
+    "@tanstack/router-plugin": "catalog:",
+    "@tanstack/solid-router": "catalog:",
+    "@tanstack/solid-router-devtools": "catalog:",
     "@effectify/solid-query": "*",
-    "solid-js": "^1.9.4",
-    "tailwindcss": "^4.0.6"
+    "solid-js": "catalog:",
+    "tailwindcss": "catalog:",
+
+
+    "class-variance-authority": "catalog:",
+    "clsx": "catalog:",
+    "tailwind-merge": "catalog:",
+    "tailwindcss-animate": "catalog:"
   },
   "devDependencies": {
-    "typescript": "^5.7.2",
-    "vite": "^6.0.11",
-    "vite-plugin-solid": "^2.11.2"
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vite-plugin-solid": "catalog:"
   }
 }

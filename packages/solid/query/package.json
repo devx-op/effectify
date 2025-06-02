@@ -22,13 +22,13 @@
     "!**/*.tsbuildinfo"
   ],
   "dependencies": {
-    "tslib": "^2.3.0",
+    "tslib": "catalog:",
     "@tanstack/solid-query": "catalog:",
     "effect": "catalog:", 
     "solid-js": "catalog:",
     "mutative": "catalog:"
   },
   "devDependencies": {
-    "typescript": "~5.7.2"
+    "typescript": "catalog:"
   }
 }
