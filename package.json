@@ -7,14 +7,20 @@
   "dependencies": {},
   "devDependencies": {
     "@nx/js": "21.1.2",
+    "@nx/vite": "21.1.2",
+    "@nx/web": "21.1.2",
     "@swc-node/register": "~1.9.1",
     "@swc/core": "~1.5.7",
     "@swc/helpers": "~0.5.11",
     "@types/node": "18.16.9",
+    "@vitest/ui": "^3.0.0",
+    "jiti": "2.4.2",
     "nx": "21.1.2",
     "tslib": "^2.3.0",
     "typescript": "~5.7.2",
-    "verdaccio": "^6.0.5"
+    "verdaccio": "^6.0.5",
+    "vite": "^6.0.0",
+    "vitest": "^3.0.0"
   },
   "workspaces": [
     "packages/*",
