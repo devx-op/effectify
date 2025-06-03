@@ -2,6 +2,12 @@
   "extends": "./../../tsconfig.json",
   "include": ["**/*.ts", "**/*.tsx"],
   "compilerOptions": {
+    "declaration": true,
+    "declarationMap": true,
+    "inlineSources": false,
+    "preserveWatchOutput": true,
+
+
     "target": "ES2022",
     "jsx": "preserve",
     "jsxImportSource": "solid-js",
@@ -22,6 +28,8 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
+
+    "emitDeclarationOnly": true,
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]

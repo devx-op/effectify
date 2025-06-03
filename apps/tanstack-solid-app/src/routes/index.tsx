@@ -1,3 +1,5 @@
+import { Button } from '@/components/ui/button'
+import { ChatContainer } from '@/components/chat'
 import { createFileRoute } from '@tanstack/solid-router'
 import logo from '../logo.svg'
 
@@ -19,6 +21,7 @@ function IndexComponent() {
 
           Result
         </p>
+        <Button>Test</Button>
         <a
           class="text-[#61dafb] hover:underline"
           href="https://solidjs.com"
@@ -36,6 +39,7 @@ function IndexComponent() {
           Learn TanStack
         </a>
       </header>
+      <ChatContainer />
     </div>
   )
 }

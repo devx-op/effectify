@@ -10,19 +10,19 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@effectify/solid-query": "workspace:*",
     "@tailwindcss/vite": "catalog:",
     "@tanstack/router-plugin": "catalog:",
     "@tanstack/solid-router": "catalog:",
     "@tanstack/solid-router-devtools": "catalog:",
-    "@effectify/solid-query": "*",
-    "solid-js": "catalog:",
-    "tailwindcss": "catalog:",
-
-
+    "@kobalte/core": "catalog:",
     "class-variance-authority": "catalog:",
     "clsx": "catalog:",
     "tailwind-merge": "catalog:",
-    "tailwindcss-animate": "catalog:"
+    "tailwindcss-animate": "catalog:",
+    "tailwindcss": "catalog:",
+    "solid-js": "catalog:",
+    "lucide-solid": "catalog:"
   },
   "devDependencies": {
     "typescript": "catalog:",
