@@ -17,7 +17,7 @@
         "jiti": "2.4.2",
         "nx": "21.1.2",
         "tslib": "^2.3.0",
-        "typescript": "~5.7.2",
+        "typescript": "5.8.3",
         "verdaccio": "^6.0.5",
         "vite": "^6.0.0",
         "vitest": "^3.0.0",
@@ -59,6 +59,10 @@
       "devDependencies": {
         "typescript": "catalog:",
       },
+      "peerDependencies": {
+        "@tanstack/solid-query": "catalog:",
+        "solid-js": "catalog:",
+      },
     },
   },
   "catalog": {
@@ -78,7 +82,7 @@
     "tailwindcss": "^4.0.6",
     "tailwindcss-animate": "^1.0.7",
     "tslib": "^2.3.0",
-    "typescript": "^5.7.2",
+    "typescript": "5.8.3",
     "vite": "^6.0.11",
     "vite-plugin-solid": "^2.11.2",
   },
@@ -1519,7 +1523,7 @@
 
     "type-is": ["type-is@1.6.18", "", { "dependencies": { "media-typer": "0.3.0", "mime-types": "~2.1.24" } }, "sha512-TkRKr9sUTxEH8MdfuCSP7VizJyzRNMjj2J2do2Jr3Kym598JVdEksuzPQCnlFPW4ky9Q+iA+ma9BGm06XQBy8g=="],
 
-    "typescript": ["typescript@5.7.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-84MVSjMEHP+FQRPy3pX9sTVV/INIex71s9TL2Gm5FG/WG1SqXeKyZ0k7/blY/4FdOzI12CBy1vGc4og/eus0fw=="],
+    "typescript": ["typescript@5.8.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-p1diW6TqL9L07nNxvRMM7hMMw4c5XOo/1ibL4aAIGmSAt9slTE1Xgw5KWuof2uTOvCg9BY7ZRi+GaF+7sfgPeQ=="],
 
     "uglify-js": ["uglify-js@3.19.3", "", { "bin": { "uglifyjs": "bin/uglifyjs" } }, "sha512-v3Xu+yuwBXisp6QYTcH4UbH+xYJXqnq2m/LtQVWKWzYc1iehYnLixoQDN9FH6/j9/oybfd6W9Ghwkl8+UMKTKQ=="],
 
