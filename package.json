@@ -3,11 +3,15 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "clean": "rm -rf node_modules dist bun.lock && bun pm cache rm & find . -type d \\( -name 'node_modules' -o -name 'dist' -o -name '.output' -o -name '.vinxi' \\) -prune -exec rm -rf {} + & wait"
+    "format": "biome format --write ./",
+    "lint": "biome lint ./",
+    "lint:fix": "biome check --write ./",
+    "clean": "rm -rf node_modules dist bun.lock && bun pm cache rm & find . -type d \\( -name 'node_modules' -o -name 'dist' -o -name '.output' -o -name '.vinxi' \\) -prune -exec rm -rf {} + & wait",
+    "prepare": "husky"
   },
-  "dependencies": {
-  },
+  "dependencies": {},
   "devDependencies": {
+    "@biomejs/biome": "1.9.4",
     "@nx/esbuild": "21.1.2",
     "@nx/js": "21.1.2",
     "@nx/vite": "21.1.2",
@@ -18,7 +22,9 @@
     "@types/node": "18.16.9",
     "@vitest/ui": "^3.0.0",
     "esbuild": "^0.19.2",
+    "husky": "^9.1.7",
     "jiti": "2.4.2",
+    "lint-staged": "^16.1.0",
     "nx": "21.1.2",
     "tslib": "^2.3.0",
     "typescript": "5.8.3",
@@ -39,7 +45,6 @@
       "@tanstack/solid-router-devtools": "^1.109.2",
       "tailwindcss": "^4.0.6",
       "@kobalte/core": "^0.13.10",
-
       "@tanstack/solid-query": "5.79.0",
       "effect": "3.15.2",
       "solid-js": "1.9.7",
@@ -48,11 +53,9 @@
       "clsx": "^2.1.1",
       "tailwind-merge": "^3.3.0",
       "tailwindcss-animate": "^1.0.7",
-
-
       "typescript": "5.8.3",
       "vite": "^6.0.11",
-      "vite-plugin-solid": "^2.11.2", 
+      "vite-plugin-solid": "^2.11.2",
       "tslib": "^2.3.0",
       "lucide-solid": "0.488.0"
     }
