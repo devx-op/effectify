@@ -6,8 +6,16 @@
     "format": "biome format --write ./",
     "lint": "biome lint ./",
     "lint:fix": "biome check --write ./",
+    "lint-staged": "lint-staged --allow-empty",
     "clean": "rm -rf node_modules dist bun.lock && bun pm cache rm & find . -type d \\( -name 'node_modules' -o -name 'dist' -o -name '.output' -o -name '.vinxi' \\) -prune -exec rm -rf {} + & wait",
     "prepare": "husky"
+  },
+  "lint-staged": {
+    "{apps,packages,tools}/**/*.{ts,tsx,test.ts},!{apps,libs,tools}/**/*.gen.ts": [
+      "bun run --cwd {dir} lint",
+      "bun run --cwd {dir} lint:fix",
+      "bun run --cwd {dir} format"
+    ]
   },
   "dependencies": {},
   "devDependencies": {
