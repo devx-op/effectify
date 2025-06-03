@@ -29,6 +29,9 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
 
+    "preserveSymlinks": true,
+    "isolatedModules": false,
+
     "emitDeclarationOnly": true,
     "baseUrl": ".",
     "paths": {
