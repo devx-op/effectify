@@ -17,8 +17,6 @@ function IndexComponent() {
         />
         <p>
           Edit <code>src/routes/index.tsx</code> and save to reload.
-
-          Result
         </p>
         <a
           class="text-[#61dafb] hover:underline"
