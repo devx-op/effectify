@@ -5,8 +5,8 @@ import { tanstackQueryEffect } from '@effectify/solid-query'
 export const {
   RuntimeProvider,
   useRuntime,
-  createEffectQuery,
-  createEffectMutation,
-  createRxSubscribe,
-  createRxSubscriptionRef,
+  useEffectQuery,
+  useEffectMutation,
+  useRxSubscribe,
+  useRxSubscriptionRef,
 } = tanstackQueryEffect(Layer.LiveLayer)

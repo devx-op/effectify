@@ -6,7 +6,7 @@ import * as Fiber from 'effect/Fiber'
 import type * as ManagedRuntime from 'effect/ManagedRuntime'
 import * as Stream from 'effect/Stream'
 
-export const makeCreateRxSubscribe = <R, E>(RuntimeContext: Context<ManagedRuntime.ManagedRuntime<R, E> | null>) => {
+export const makeUseRxSubscribe = <R, E>(RuntimeContext: Context<ManagedRuntime.ManagedRuntime<R, E> | null>) => {
   return <E, A>(
     stream: Stream.Stream<A, E, R> | T.Effect<Stream.Stream<A, E, R>, E, R>,
     initialValue: A,

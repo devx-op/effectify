@@ -5,22 +5,23 @@ import * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
 import * as Fiber from 'effect/Fiber'
 import type * as Message from '@/domain/Message'
-import * as MessageService from '@/domain/MessageService'
 import * as Option from 'effect/Option'
 import * as Queue from 'effect/Queue'
 import * as Stream from 'effect/Stream'
 
 import { createEffect, createMemo, onCleanup } from 'solid-js'
-import { createEffectQuery, useRuntime } from './tanstack-query.ts'
 import { createQueryDataHelpers, createQueryKey } from '@effectify/solid-query'
+import { useEffectQuery, useRuntime } from './tanstack-query.ts'
+
+import { MessagesService } from '@/domain/MessageService'
 
 export namespace MessagesOperations {
   const messagesQueryKey = createQueryKey('MessagesOperations.useMessagesQuery')
   const messagesQueryData = createQueryDataHelpers<Message.Message[]>(messagesQueryKey)
   export const useMessagesQuery = () => {
-    return createEffectQuery({
+    return useEffectQuery({
       queryKey: messagesQueryKey(),
-      queryFn: () => MessageService.MessagesService.use((service) => service.getMessages()),
+      queryFn: () => MessagesService.use((service) => service.getMessages()),
       staleTime: '6.5 millis',
     })
   }
@@ -35,7 +36,7 @@ export namespace MessagesOperations {
         Stream.groupedWithin(25, '5 seconds'),
         Stream.tap((batch) => Effect.log(`Batching: ${Chunk.join(batch as Chunk.Chunk<string>, ', ')}`)),
         Stream.mapEffect(
-          (batch) => MessageService.MessagesService.sendMarkAsReadBatch(batch as Chunk.Chunk<string & Brand.Brand<'MessageId'>>),
+          (batch) => MessagesService.sendMarkAsReadBatch(batch as Chunk.Chunk<string & Brand.Brand<'MessageId'>>),
           {
             concurrency: 'unbounded',
           },

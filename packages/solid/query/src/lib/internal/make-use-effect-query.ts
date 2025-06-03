@@ -9,7 +9,7 @@ import * as Duration from 'effect/Duration'
 import { createMemo } from 'solid-js'
 import type { EffectfulError, EffectfulQueryFunction, EffectfulQueryOptions, QueryKey, Runner } from '../types.js'
 
-export const makeCreateEffectQuery =
+export const makeUseEffectQuery =
   <R>(createRunner: Runner<R>) =>
   <TData, TError extends EffectfulError, TQueryKey extends QueryKey = QueryKey>({
     gcTime,

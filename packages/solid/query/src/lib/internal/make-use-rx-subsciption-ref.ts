@@ -5,9 +5,9 @@ import * as Fiber from 'effect/Fiber'
 import type * as ManagedRuntime from 'effect/ManagedRuntime'
 import * as Stream from 'effect/Stream'
 import * as SubscriptionRef from 'effect/SubscriptionRef'
-import type { Subscribable, SubscriptionOptions } from './../types.js'
+import type { Subscribable, SubscriptionOptions } from '../types.js'
 
-export const makeCreateRxSubscriptionRef =
+export const makeUseRxSubscriptionRef =
   <R, E>(RuntimeContext: Context<ManagedRuntime.ManagedRuntime<R, E> | null>) =>
   <A, E>(
     subscribable:

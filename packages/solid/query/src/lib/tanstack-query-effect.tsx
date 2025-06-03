@@ -4,10 +4,10 @@ import type * as Layer from 'effect/Layer'
 import * as ManagedRuntime from 'effect/ManagedRuntime'
 import { type Component, type JSX, createMemo, onCleanup } from 'solid-js'
 import { createContext, useContext } from 'solid-js'
-import { makeCreateEffectMutation } from './internal/make-create-effect-mutation.js'
-import { makeCreateEffectQuery } from './internal/make-create-effect-query.js'
-import { makeCreateRxSubscriptionRef } from './internal/make-create-rx-subsciption-ref.js'
-import { makeCreateRxSubscribe } from './internal/make-create-rx-subscribe.js'
+import { makeUseEffectMutation } from './internal/make-use-effect-mutation.js'
+import { makeUseEffectQuery } from './internal/make-use-effect-query.js'
+import { makeUseRxSubscriptionRef } from './internal/make-use-rx-subsciption-ref.js'
+import { makeUseRxSubscribe } from './internal/make-use-rx-subscribe.js'
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -59,9 +59,9 @@ export const tanstackQueryEffect = <R, E>(layer: Layer.Layer<R, E, never>) => {
     createRunner,
     RuntimeProvider,
     useRuntime,
-    createEffectQuery: makeCreateEffectQuery(createRunner),
-    createEffectMutation: makeCreateEffectMutation(createRunner),
-    createRxSubscribe: makeCreateRxSubscribe(RuntimeContext),
-    createRxSubscriptionRef: makeCreateRxSubscriptionRef(RuntimeContext),
+    useEffectQuery: makeUseEffectQuery(createRunner),
+    useEffectMutation: makeUseEffectMutation(createRunner),
+    useRxSubscribe: makeUseRxSubscribe(RuntimeContext),
+    useRxSubscriptionRef: makeUseRxSubscriptionRef(RuntimeContext),
   }
 }
