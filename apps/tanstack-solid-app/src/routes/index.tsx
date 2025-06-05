@@ -18,22 +18,6 @@ function IndexComponent() {
         <p>
           Edit <code>src/routes/index.tsx</code> and save to reload.
         </p>
-        <a
-          class="text-[#61dafb] hover:underline"
-          href="https://solidjs.com"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn Solid
-        </a>
-        <a
-          class="text-[#61dafb] hover:underline"
-          href="https://tanstack.com"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn TanStack
-        </a>
       </header>
       <div class='p-16'>
         <ChatContainer />

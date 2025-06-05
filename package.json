@@ -11,10 +11,10 @@
     "prepare": "husky"
   },
   "lint-staged": {
-    "{apps,packages,tools}/**/*.{ts,tsx,test.ts},!{apps,libs,tools}/**/*.gen.ts": [
-      "bun run --cwd {dir} lint",
-      "bun run --cwd {dir} lint:fix",
-      "bun run --cwd {dir} format"
+   "*.{ts,tsx},!(*.gen).ts": [
+      "bun run lint",
+      "bun run lint:fix",
+      "bun run format"
     ]
   },
   "dependencies": {},
@@ -32,7 +32,7 @@
     "esbuild": "^0.19.2",
     "husky": "^9.1.7",
     "jiti": "2.4.2",
-    "lint-staged": "15.5.1",
+    "lint-staged": "16.1.0",
     "nx": "21.1.2",
     "tslib": "^2.3.0",
     "typescript": "5.8.3",
