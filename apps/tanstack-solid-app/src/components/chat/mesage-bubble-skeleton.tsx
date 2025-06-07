@@ -1,6 +1,6 @@
-import type { Component } from 'solid-js'
 import { Flex } from '@/components/ui/flex'
 import { VStack } from '@/components/ui/stack'
+import type { Component } from 'solid-js'
 
 interface MessageBubbleSkeletonProps {
   width?: number

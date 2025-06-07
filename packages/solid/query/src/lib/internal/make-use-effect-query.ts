@@ -1,9 +1,9 @@
 import {
-  type UseQueryResult,
   type QueryFunction,
   type QueryFunctionContext,
-  useQuery,
+  type UseQueryResult,
   skipToken,
+  useQuery,
 } from '@tanstack/solid-query'
 import * as Duration from 'effect/Duration'
 import { createMemo } from 'solid-js'

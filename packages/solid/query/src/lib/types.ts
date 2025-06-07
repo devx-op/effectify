@@ -1,10 +1,10 @@
-import type * as Stream from 'effect/Stream'
 import type * as T from 'effect/Effect'
+import type * as Stream from 'effect/Stream'
 
 import type { QueryFunctionContext, UseMutationOptions, UseQueryOptions, skipToken } from '@tanstack/solid-query'
 
-import type { Accessor } from 'solid-js'
 import type { DurationInput } from 'effect/Duration'
+import type { Accessor } from 'solid-js'
 
 export type QueryKey = readonly [string, Record<string, unknown>?]
 export type EffectfulError = { _tag: string }

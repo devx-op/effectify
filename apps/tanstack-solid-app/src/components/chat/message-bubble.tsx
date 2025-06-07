@@ -2,9 +2,9 @@ import type * as Message from '@/domain/Message'
 
 import type { Component, JSX } from 'solid-js'
 
-import { CheckCheckIcon } from 'lucide-solid'
-import { DateTime } from 'effect'
 import { cn } from '@/libs/cn'
+import { DateTime } from 'effect'
+import { CheckCheckIcon } from 'lucide-solid'
 
 type Props = {
   message: Message.Message

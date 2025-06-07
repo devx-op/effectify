@@ -1,16 +1,16 @@
+import type * as Message from '@/domain/Message'
 import * as Array from 'effect/Array'
 import type * as Brand from 'effect/Brand'
 import * as Chunk from 'effect/Chunk'
 import * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
 import * as Fiber from 'effect/Fiber'
-import type * as Message from '@/domain/Message'
 import * as Option from 'effect/Option'
 import * as Queue from 'effect/Queue'
 import * as Stream from 'effect/Stream'
 
-import { createEffect, createMemo, onCleanup } from 'solid-js'
 import { createQueryDataHelpers, createQueryKey } from '@effectify/solid-query'
+import { createEffect, createMemo, onCleanup } from 'solid-js'
 import { useEffectQuery, useRuntime } from './tanstack-query.ts'
 
 import { MessagesService } from '@/domain/MessageService'
@@ -58,7 +58,7 @@ export namespace MessagesOperations {
       messagesQueryData.setData(undefined, (messages) => {
         const msgIndex = messages.findIndex((msg) => msg.id === id)
         if (msgIndex !== -1) {
-          const existingMessage = messages[msgIndex] 
+          const existingMessage = messages[msgIndex]
           if (existingMessage === undefined) return messages
           if (existingMessage.readAt !== null) return messages
           existingMessage.readAt = DateTime.unsafeNow()

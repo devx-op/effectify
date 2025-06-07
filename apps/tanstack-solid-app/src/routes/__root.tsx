@@ -10,9 +10,9 @@ export const Route = createRootRouteWithContext()({
 function RootComponent() {
   return (
     <>
-    <RuntimeProvider>
-      <Outlet />
-    </RuntimeProvider>
+      <RuntimeProvider>
+        <Outlet />
+      </RuntimeProvider>
       {/* <TanStackRouterDevtools /> */}
     </>
   )

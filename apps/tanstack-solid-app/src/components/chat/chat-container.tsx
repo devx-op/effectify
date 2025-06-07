@@ -1,15 +1,15 @@
 import type * as Message from '@/domain/Message'
 
-import { AlertCircle } from 'lucide-solid'
 import { Button } from '@/components/ui/button'
 import { Center } from '@/components/ui/center'
-import type { Component } from 'solid-js'
 import { Flex } from '@/components/ui/flex'
-import { MessageList } from './message-list.js'
-import { MessageListSkeleton } from './message-list-skeleton.js'
+import { VStack } from '@/components/ui/stack'
 import { MessagesOperations } from '@/services/message-namespace'
 import type { UseQueryResult } from '@tanstack/solid-query'
-import { VStack } from '@/components/ui/stack'
+import { AlertCircle } from 'lucide-solid'
+import type { Component } from 'solid-js'
+import { MessageListSkeleton } from './message-list-skeleton.js'
+import { MessageList } from './message-list.js'
 
 const ErrorState: Component<{ messagesQuery: UseQueryResult<Message.Message[]> }> = ({ messagesQuery }) => {
   return (
