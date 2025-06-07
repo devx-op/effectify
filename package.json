@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
+    "postinstall": "node patch-workspaces.js",
     "format": "biome format --write ./",
     "lint": "biome lint ./",
     "lint:fix": "biome check --write ./",
@@ -43,7 +44,8 @@
     "packages": [
       "apps/*",
       "packages/*",
-      "packages/solid/*"
+      "packages/solid/*",
+      "packages/node/*"
     ],
     "catalog": {
       "@tailwindcss/vite": "^4.0.6",
@@ -54,6 +56,8 @@
       "@kobalte/core": "^0.13.10",
       "@tanstack/solid-query": "5.79.0",
       "effect": "3.15.2",
+      "@effect/platform": "0.82.3",
+      "@effect/platform-node": "0.81.0",
       "solid-js": "1.9.7",
       "mutative": "1.1.0",
       "class-variance-authority": "^0.7.1",
@@ -64,7 +68,8 @@
       "vite": "^6.0.11",
       "vite-plugin-solid": "^2.11.2",
       "tslib": "^2.3.0",
-      "lucide-solid": "0.488.0"
+      "lucide-solid": "0.488.0",
+      "better-auth": "1.2.8"
     }
   },
   "nx": {
@@ -79,5 +84,13 @@
         }
       }
     }
-  }
+  },
+  "trustedDependencies": [
+    "@biomejs/biome",
+    "@swc/core",
+    "@tailwindcss/oxide",
+    "core-js",
+    "esbuild",
+    "nx"
+  ]
 }

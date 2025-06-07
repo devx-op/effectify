@@ -7,6 +7,7 @@ Monorepo of utilities for integrating [Effect](https://effect.website/) with dif
 | Package | Version | Documentation | Description |
 |---------|---------|---------------|-------------|
 | [@effectify/solid-query](https://www.npmjs.com/package/@effectify/solid-query) | [![npm version](https://img.shields.io/npm/v/@effectify/solid-query.svg)](https://www.npmjs.com/package/@effectify/solid-query) | [Docs](./packages/solid/query/README.md) | Effect integration with TanStack Query for Solid.js |
+| [@effectify/node-better-auth](https://www.npmjs.com/package/@effectify/node-better-auth) | [![npm version](https://img.shields.io/npm/v/@effectify/node-better-auth.svg)](https://www.npmjs.com/package/@effectify/node-better-auth) | [Docs](./packages/node/better-auth/README.md) | Effect integration with better-auth for Node.js |
 
 ## Development
 

@@ -4,10 +4,13 @@
   "files": [],
   "references": [
     {
-      "path": "./packages/solid/query",
+      "path": "./packages/solid/query"
     },
     {
       "path": "./apps/tanstack-solid-app"
+    },
+    {
+      "path": "./packages/node/better-auth"
     }
   ]
 }

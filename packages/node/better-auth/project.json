@@ -1,0 +1,26 @@
+{
+  "name": "@effectify/node-better-auth",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/node/better-auth/src",
+  "projectType": "library",
+  "targets": {
+    "build": {
+      "executor": "@nx/esbuild:esbuild",
+      "outputs": [
+        "{options.outputPath}"
+      ],
+      "options": {
+        "outputPath": "packages/node/better-auth/dist",
+        "main": "packages/node/better-auth/src/index.ts",
+        "tsConfig": "packages/node/better-auth/tsconfig.lib.json",
+        "format": [
+          "esm"
+        ],
+        "declarationRootDir": "packages/node/better-auth/src"
+      }
+    }
+  },
+  "tags": [
+    "node"
+  ]
+}
