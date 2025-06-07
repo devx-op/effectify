@@ -56,16 +56,13 @@
       "projectChangelogs": {
         "renderOptions": {
           "authors": true,
-          "commitReferences": true,
+          "commitReferences": false,
           "versionTitleDate": true,
           "applyUsernameToAuthors": true
         }
       }
     },
     "releaseTagPattern": "release/{version}",
-    "git": {
-      "commitMessage": "chore(release): {version}"
-    },
     "version": {
       "preVersionCommand": "bun nx run-many -t build"
     }

@@ -1,6 +1,6 @@
 {
   "name": "@effectify/solid-query",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -24,7 +24,7 @@
   "dependencies": {
     "tslib": "catalog:",
     "@tanstack/solid-query": "catalog:",
-    "effect": "catalog:", 
+    "effect": "catalog:",
     "solid-js": "catalog:",
     "mutative": "catalog:"
   },
