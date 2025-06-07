@@ -11,13 +11,12 @@
     "prepare": "husky"
   },
   "lint-staged": {
-   "*.{ts,tsx},!(*.gen).ts": [
+   "*.{ts,tsx}": [
       "bun run lint",
       "bun run lint:fix",
       "bun run format"
     ]
   },
-  "dependencies": {},
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
     "@nx/esbuild": "21.1.2",
