@@ -63,6 +63,7 @@ export namespace MessagesOperations {
           if (existingMessage.readAt !== null) return messages
           existingMessage.readAt = DateTime.unsafeNow()
         }
+        return messages
       })
     }
 
@@ -89,6 +90,7 @@ export namespace MessagesOperations {
       onCleanup(() => {
         window.removeEventListener('focus', handleFocus)
       })
+      return
     }, [offer, unreadMessages])
 
     let observer: IntersectionObserver | null = null

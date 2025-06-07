@@ -51,12 +51,23 @@
     }
   ],
   "release": {
+    "projects": ["packages/**/*"],
+    "changelog": {
+      "projectChangelogs": {
+        "renderOptions": {
+          "authors": true,
+          "commitReferences": true,
+          "versionTitleDate": true,
+          "applyUsernameToAuthors": true
+        }
+      }
+    },
     "releaseTagPattern": "release/{version}",
     "git": {
       "commitMessage": "chore(release): {version}"
     },
     "version": {
-      "preVersionCommand": "bunx nx run-many -t build"
+      "preVersionCommand": "bun nx run-many -t build"
     }
   },
   "targetDefaults": {
