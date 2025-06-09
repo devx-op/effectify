@@ -68,6 +68,11 @@
     }
   },
   "targetDefaults": {
+    "serve": {
+      "dependsOn": [
+        "^build"
+      ]
+    },
     "@nx/esbuild:esbuild": {
       "cache": true,
       "dependsOn": [

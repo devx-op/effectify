@@ -22,6 +22,7 @@
     "@biomejs/biome": "1.9.4",
     "@nx/esbuild": "21.1.2",
     "@nx/js": "21.1.2",
+    "@nx/node": "21.1.2",
     "@nx/vite": "21.1.2",
     "@nx/web": "21.1.2",
     "@swc-node/register": "~1.9.1",
@@ -69,7 +70,9 @@
       "vite-plugin-solid": "^2.11.2",
       "tslib": "^2.3.0",
       "lucide-solid": "0.488.0",
-      "better-auth": "1.2.8"
+      "better-auth": "1.2.8",
+      "better-sqlite3": "11.10.0",
+      "@types/better-sqlite3": "7.6.13"
     }
   },
   "nx": {
@@ -87,10 +90,13 @@
   },
   "trustedDependencies": [
     "@biomejs/biome",
+    "@parcel/watcher",
     "@swc/core",
     "@tailwindcss/oxide",
+    "better-sqlite3",
     "core-js",
     "esbuild",
+    "msgpackr-extract",
     "nx"
   ]
 }

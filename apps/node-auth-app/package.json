@@ -1,0 +1,16 @@
+{
+  "name": "@effectify/node-auth-app",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "effect": "catalog:",
+    "@effect/platform": "catalog:",
+    "@effect/platform-node": "catalog:",
+    "@effectify/node-better-auth": "*",
+    "better-sqlite3": "catalog:"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "catalog:"
+  }
+}

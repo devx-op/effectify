@@ -11,6 +11,9 @@
     },
     {
       "path": "./packages/node/better-auth"
+    },
+    {
+      "path": "./apps/node-auth-app"
     }
   ]
 }

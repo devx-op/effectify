@@ -1,0 +1,73 @@
+{
+  "name": "node-auth-app",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/node-auth-app/src",
+  "projectType": "application",
+  "targets": {
+    "build": {
+      "executor": "@nx/esbuild:esbuild",
+      "outputs": [
+        "{options.outputPath}"
+      ],
+      "defaultConfiguration": "production",
+      "options": {
+        "outputPath": "apps/node-auth-app/dist",
+        "format": [
+          "esm"
+        ],
+        "main": "apps/node-auth-app/src/main.ts",
+        "tsConfig": "apps/node-auth-app/tsconfig.app.json",
+        "assets": [
+          "apps/node-auth-app/src/assets",
+          {
+            "input": "node_modules/better-sqlite3/build/Release",
+            "glob": "better_sqlite3.node",
+            "output": "./"
+          }
+        ],
+        "esbuildOptions": {
+          "sourcemap": true,
+          "external": ["better-sqlite3","ws", "events"],
+          "target": "es2022",
+          "outExtension": {
+            ".js": ".js"
+          }
+        }
+      },
+      "configurations": {
+        "development": {},
+        "production": {
+          "esbuildOptions": {
+            "sourcemap": false,
+            "outExtension": {
+              ".js": ".js"
+            }
+          }
+        }
+      }
+    },
+    "serve": {
+      "executor": "@nx/js:node",
+      "defaultConfiguration": "development",
+      "dependsOn": [
+        "build"
+      ],
+      "options": {
+        "buildTarget": "node-auth-app:build",
+        "runBuildTargetDependencies": true,
+        "runtimeArgs": ["--experimental-specifier-resolution=node"]
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "node-auth-app:build:development"
+        },
+        "production": {
+          "buildTarget": "node-auth-app:build:production"
+        }
+      }
+    }
+  },
+  "tags": [
+    "node"
+  ]
+}
