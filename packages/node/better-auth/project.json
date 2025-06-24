@@ -16,6 +16,10 @@
         "format": [
           "esm"
         ],
+        "esbuildOptions": {
+          "external": ["better-sqlite3", "ws", "events", "stream", "crypto", "buffer", "util", "path", "fs", "net", "tls", "http", "https", "zlib", "os", "url"],
+          "target": "es2022"
+        },
         "declarationRootDir": "packages/node/better-auth/src"
       }
     }

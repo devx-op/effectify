@@ -1,3 +1,11 @@
 {
-  "nxConsole.generateAiAgentRules": true
+  "nxConsole.generateAiAgentRules": true,
+  "augment.advanced": {
+    "mcpServers": [
+      {
+        "command": "docker run -i --rm timsmart/effect-mcp",
+        "env": {}
+      }
+    ]
+  }
 }
