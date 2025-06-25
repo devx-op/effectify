@@ -51,6 +51,7 @@
     "catalog": {
       "@tailwindcss/vite": "4.1.10",
       "tailwindcss": "4.1.10",
+      "@tanstack/solid-start": "^1.121.35",
       "@tanstack/router-plugin": "1.121.34",
       "@tanstack/solid-router": "1.121.34",
       "@tanstack/solid-router-devtools": "1.121.34",
@@ -67,7 +68,7 @@
       "tailwindcss-animate": "1.0.7",
       "typescript": "5.8.3",
       "vite": "6.0.11",
-      "vite-plugin-solid": "2.11.7",
+      "vite-tsconfig-paths": "^5.1.4",
       "tslib": "^2.3.0",
       "lucide-solid": "0.523.0",
       "better-auth": "1.2.10",
@@ -98,5 +99,6 @@
     "esbuild",
     "msgpackr-extract",
     "nx"
-  ]
+  ],
+  "dependencies": {}
 }
