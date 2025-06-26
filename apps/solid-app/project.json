@@ -1,0 +1,22 @@
+{
+  "$schema": "./../../node_modules/nx/schemas/project-schema.json",
+  "name": "@effectify/solid-app",
+  "projectType": "application",
+  "sourceRoot": "apps/solid-app/src",
+  "targets": {
+    "dev:watch": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          "vite",
+          "nx run @effectify/solid-app:watch-deps "
+        ],
+        "cwd": "apps/solid-app",
+        "parallel": true
+      }
+    }
+  },
+  "tags": [
+    "solid-start"
+  ]
+}

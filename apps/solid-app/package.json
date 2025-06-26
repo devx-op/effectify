@@ -1,0 +1,39 @@
+{
+  "name": "@effectify/solid-app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev --port 3000",
+    "start": "node .output/server/index.mjs",
+    "build": "vite build",
+    "serve": "vite preview",
+    "test": "vitest run",
+    "format": "biome format",
+    "lint": "biome lint",
+    "check": "biome check"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "catalog:",
+    "@tanstack/router-plugin": "catalog:",
+    "@tanstack/solid-router": "catalog:",
+    "@tanstack/solid-router-devtools": "catalog:",
+    "@tanstack/solid-start": "catalog:",
+    "solid-js": "catalog:",
+    "tailwindcss": "catalog:",
+    "vite": "catalog:",
+    "vite-tsconfig-paths": "catalog:",
+    "@effectify/solid-query": "workspace:*",
+    "@kobalte/core": "catalog:",
+    "class-variance-authority": "catalog:",
+    "clsx": "catalog:",
+    "tailwind-merge": "catalog:",
+    "tailwindcss-animate": "catalog:",
+    "lucide-solid": "catalog:"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vite-plugin-solid": "catalog:"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "projectName": "solid-app",
+  "mode": "file-router",
+  "typescript": true,
+  "tailwind": true,
+  "packageManager": "bun",
+  "git": false,
+  "version": 1,
+  "framework": "solid",
+  "chosenAddOns": [
+    "start",
+    "biome"
+  ]
+}

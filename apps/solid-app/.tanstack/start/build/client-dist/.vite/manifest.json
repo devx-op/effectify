@@ -1,0 +1,33 @@
+{
+  "../../../../../../~start/default-client-entry.tsx": {
+    "file": "assets/main-BrAdh2L_.js",
+    "name": "main",
+    "src": "../../../../../../~start/default-client-entry.tsx",
+    "isEntry": true,
+    "dynamicImports": [
+      "src/routes/index.tsx?tsr-split=component",
+      "src/routes/demo.start.server-funcs.tsx?tsr-split=component"
+    ],
+    "css": [
+      "assets/main-BZSam_6z.css"
+    ]
+  },
+  "src/routes/demo.start.server-funcs.tsx?tsr-split=component": {
+    "file": "assets/demo.start.server-funcs-CL6Trx8f.js",
+    "name": "demo.start.server-funcs",
+    "src": "src/routes/demo.start.server-funcs.tsx?tsr-split=component",
+    "isDynamicEntry": true,
+    "imports": [
+      "../../../../../../~start/default-client-entry.tsx"
+    ]
+  },
+  "src/routes/index.tsx?tsr-split=component": {
+    "file": "assets/index-BW7kLQjJ.js",
+    "name": "index",
+    "src": "src/routes/index.tsx?tsr-split=component",
+    "isDynamicEntry": true,
+    "imports": [
+      "../../../../../../~start/default-client-entry.tsx"
+    ]
+  }
+}

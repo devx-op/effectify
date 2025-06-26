@@ -1,0 +1,15 @@
+{
+  "date": "2025-06-26T03:04:55.337Z",
+  "preset": "node-server",
+  "framework": {
+    "name": "nitro",
+    "version": ""
+  },
+  "versions": {
+    "nitro": "2.11.13"
+  },
+  "commands": {
+    "preview": "node ./server/index.mjs"
+  },
+  "config": {}
+}

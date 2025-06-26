@@ -1,12 +1,27 @@
-import * as mutative from 'mutative'
-
-import { queryClient } from './tanstack-query-effect.js'
+import { queryClient } from './tanstack-query-effect.jsx'
 
 type DeepMutable<T> = {
   -readonly [P in keyof T]: T[P] extends object ? DeepMutable<T[P]> : T[P]
 }
 
-export type QueryDataUpdater<TData> = (draft: mutative.Draft<DeepMutable<TData>>) => void
+export type QueryDataUpdater<TData> = (draft: DeepMutable<TData>) => void
+
+// Simple deep clone function to replace mutative
+function deepClone<T>(obj: T): T {
+  if (obj === null || typeof obj !== 'object') return obj
+  if (obj instanceof Date) return new Date(obj.getTime()) as T
+  if (Array.isArray(obj)) return obj.map((item) => deepClone(item)) as T
+  if (typeof obj === 'object') {
+    const cloned = {} as T
+    for (const key in obj) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        cloned[key] = deepClone(obj[key])
+      }
+    }
+    return cloned
+  }
+  return obj
+}
 
 type QueryKey<TKey extends string, TVariables = void> = TVariables extends void
   ? readonly [TKey]
@@ -101,9 +116,9 @@ export function createQueryDataHelpers<TData, TVariables = void>(
     setData: (variables: TVariables, updater: QueryDataUpdater<TData>) => {
       return queryClient.setQueryData<TData>(queryKey(variables), (oldData) => {
         if (oldData === undefined) return oldData
-        return mutative.create(oldData, (data) => {
-          updater(data)
-        })
+        const clonedData = deepClone(oldData)
+        updater(clonedData as DeepMutable<TData>)
+        return clonedData
       })
     },
     invalidateQuery: (variables: TVariables) => queryClient.invalidateQueries({ queryKey: queryKey(variables) }),

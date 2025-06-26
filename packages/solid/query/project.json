@@ -6,7 +6,7 @@
   "tags": [],
   "targets": {
     "build": {
-      "executor": "@nx/esbuild:esbuild",
+      "executor": "@nx/js:tsc",
       "outputs": [
         "{options.outputPath}"
       ],
@@ -14,13 +14,7 @@
       "options": {
         "main": "packages/solid/query/src/index.ts",
         "outputPath": "packages/solid/query/dist",
-        "outputFileName": "index.js",
-        "tsConfig": "packages/solid/query/tsconfig.lib.json",
-        "platform": "neutral",
-        "format": [
-          "esm"
-        ],
-        "declarationRootDir": "packages/solid/query/src"
+        "tsConfig": "packages/solid/query/tsconfig.lib.json"
       },
       "configurations": {
         "development": {
