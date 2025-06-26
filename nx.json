@@ -68,6 +68,22 @@
     }
   },
   "targetDefaults": {
+    "dev": {
+      "cache": false,
+      "dependsOn": [
+        "^build"
+      ]
+    },
+    "build": {
+      "cache": true,
+      "inputs": [
+        "production",
+        "^production"
+      ],
+      "dependsOn": [
+        "^build"
+      ]
+    },
     "serve": {
       "dependsOn": [
         "^build"

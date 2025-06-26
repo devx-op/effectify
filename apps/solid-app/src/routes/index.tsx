@@ -1,4 +1,5 @@
-import { ChatContainer } from '@/components/chat'
+import { buttonVariants } from '@/components/ui/button'
+import { useSession } from '@/libs/auth-client'
 import { createFileRoute } from '@tanstack/solid-router'
 
 export const Route = createFileRoute('/')({
@@ -6,9 +7,19 @@ export const Route = createFileRoute('/')({
 })
 
 function IndexComponent() {
-  return (
-    <div class="p-16">
-      <ChatContainer />
-    </div>
-  )
+  const session = useSession()
+  const navigate = Route.useNavigate()
+  if (!session) {
+    return (
+      <div>
+        Not logged in
+        <a href="/login" class={buttonVariants()}>
+          Login
+        </a>
+      </div>
+    )
+  } else {
+    navigate({ to: '/dashboard' })
+  }
+  return <></>
 }

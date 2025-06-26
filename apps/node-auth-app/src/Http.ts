@@ -13,5 +13,5 @@ export const Live = HttpRouter.empty.pipe(
   HttpRouter.all('/api/auth/*', toEffectHandler(Auth.handler)),
   HttpServer.serve(HttpMiddleware.logger),
   HttpServer.withLogAddress,
-  Layer.provide(NodeHttpServer.layer(createServer, { port: 3000 })),
+  Layer.provide(NodeHttpServer.layer(createServer, { port: 3001 })),
 )

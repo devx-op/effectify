@@ -26,10 +26,5 @@
     "paths": {
       "@/*": ["./src/*"]
     }
-  },
-  "references": [
-    {
-      "path": "./../../packages/solid/query"
-    }
-  ]
+  }
 }

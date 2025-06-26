@@ -1,6 +1,7 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    "composite": true,
     "types": ["better-sqlite3", "node"],
     "typeRoots": ["./../../node_modules/@types"],
     "rootDir": "src",

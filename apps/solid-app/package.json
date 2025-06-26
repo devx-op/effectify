@@ -28,7 +28,9 @@
     "clsx": "catalog:",
     "tailwind-merge": "catalog:",
     "tailwindcss-animate": "catalog:",
-    "lucide-solid": "catalog:"
+    "lucide-solid": "catalog:",
+    "@corvu/drawer": "catalog:",
+    "better-auth": "catalog:"
   },
   "devDependencies": {
     "@biomejs/biome": "catalog:",
