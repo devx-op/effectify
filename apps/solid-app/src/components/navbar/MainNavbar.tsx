@@ -1,8 +1,9 @@
+import { HStack, Stack } from '../ui/stack.jsx'
+
 import { MobileNavbar } from '@/components/navbar/MobileNavbar'
 import { NavbarContainer } from '@/components/navbar/NavbarContainer'
-import { LogoutButton } from '../logout-button'
-import { Separator } from '../ui/separator'
-import { HStack, Stack } from '../ui/stack'
+import { LogoutButton } from '../logout-button.jsx'
+import { Separator } from '../ui/separator.jsx'
 
 // import { ThemeDrawer } from '../theming/ThemeDrawer'
 

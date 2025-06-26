@@ -1,5 +1,5 @@
 import { LogOutIcon } from 'lucide-solid'
-import { Button } from './ui/button'
+import { Button } from './ui/button.jsx'
 
 export const LogoutButton = () => {
   // const navigate = useNavigate()

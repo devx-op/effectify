@@ -1,5 +1,5 @@
 import type { ParentProps } from 'solid-js'
-import { Flex } from '../ui/flex'
+import { Flex } from '../ui/flex.jsx'
 
 export const NavbarContainer = (props: ParentProps) => (
   <Flex

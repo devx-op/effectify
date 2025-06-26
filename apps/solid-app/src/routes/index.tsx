@@ -9,7 +9,7 @@ export const Route = createFileRoute('/')({
 function IndexComponent() {
   const session = useSession()
   const navigate = Route.useNavigate()
-  if (!session) {
+  if (!session()) {
     return (
       <div>
         Not logged in
@@ -18,8 +18,7 @@ function IndexComponent() {
         </a>
       </div>
     )
-  } else {
-    navigate({ to: '/dashboard' })
   }
+  navigate({ to: '/dashboard' })
   return <></>
 }

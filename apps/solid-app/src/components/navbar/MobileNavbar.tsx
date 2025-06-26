@@ -1,7 +1,7 @@
 import * as Popover from '@/components/ui/popover'
 import { AlignRightIcon, XIcon } from 'lucide-solid'
 import { type JSX, createSignal } from 'solid-js'
-import { Button } from '../ui/button'
+import { Button } from '../ui/button.jsx'
 
 export const MobileNavbar = (props: { children: JSX.Element }) => {
   // const { pathname } = useLocation()

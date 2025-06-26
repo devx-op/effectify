@@ -1,5 +1,5 @@
 import { ChevronRight } from 'lucide-solid'
-import { HStack } from './ui/stack'
+import { HStack } from './ui/stack.jsx'
 
 export const Breadcrumbs = () => {
   // const { pathname } = useLocation()

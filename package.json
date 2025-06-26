@@ -13,6 +13,9 @@
   },
   "lint-staged": {
     "{apps,packages}/**/*.{ts,tsx,test.ts}": [
+      "bun run format",
+      "bun run lint",
+      "bun run lint:fix"
     ]
   },
   "devDependencies": {
