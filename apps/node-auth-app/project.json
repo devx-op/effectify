@@ -1,5 +1,5 @@
 {
-  "name": "node-auth-app",
+  "name": "@effectify/node-auth-app",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "apps/node-auth-app/src",
   "projectType": "application",
@@ -53,16 +53,16 @@
         "build"
       ],
       "options": {
-        "buildTarget": "node-auth-app:build",
+        "buildTarget": "@effectify/node-auth-app:build",
         "runBuildTargetDependencies": true,
         "runtimeArgs": ["--experimental-specifier-resolution=node"]
       },
       "configurations": {
         "development": {
-          "buildTarget": "node-auth-app:build:development"
+          "buildTarget": "@effectify/node-auth-app:build:development"
         },
         "production": {
-          "buildTarget": "node-auth-app:build:production"
+          "buildTarget": "@effectify/node-auth-app:build:production"
         }
       }
     }

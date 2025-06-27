@@ -85,6 +85,7 @@
       ]
     },
     "serve": {
+      "cache": false,
       "dependsOn": [
         "^build"
       ]

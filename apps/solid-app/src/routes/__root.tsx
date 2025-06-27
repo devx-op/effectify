@@ -2,7 +2,6 @@ import { Outlet, createRootRouteWithContext } from '@tanstack/solid-router'
 
 import { RuntimeProvider } from '@/services/tanstack-query.js'
 import { TanStackRouterDevtools } from '@tanstack/solid-router-devtools'
-import Header from '../components/Header.js'
 
 export const Route = createRootRouteWithContext()({
   component: RootComponent,
@@ -11,7 +10,6 @@ export const Route = createRootRouteWithContext()({
 function RootComponent() {
   return (
     <RuntimeProvider>
-      <Header />
       <Outlet />
       <TanStackRouterDevtools />
     </RuntimeProvider>

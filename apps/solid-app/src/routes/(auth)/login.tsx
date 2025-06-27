@@ -1,16 +1,47 @@
-import { Button } from '@/components/ui/button'
 import * as Card from '@/components/ui/card'
-import { Center } from '@/components/ui/center'
-import { Separator } from '@/components/ui/separator'
-import { Stack, VStack } from '@/components/ui/stack'
 
-import { createFileRoute } from '@tanstack/solid-router'
+import { Button, buttonVariants } from '@/components/ui/button'
+import { Stack, VStack } from '@/components/ui/stack'
+import { TextField, TextFieldLabel, TextFieldRoot } from '@/components/ui/textfield'
+import { Link, createFileRoute } from '@tanstack/solid-router'
+
+import { Center } from '@/components/ui/center'
+import { createForm } from '@tanstack/solid-form'
+import { Schema } from 'effect'
+
+const LoginSchema = Schema.standardSchemaV1(
+  Schema.Struct({
+    email: Schema.String.pipe(
+      Schema.minLength(3),
+      Schema.annotations({
+        message: () => '[Effect/Schema] You must have a length of at least 3',
+      }),
+    ),
+    password: Schema.String.pipe(
+      Schema.minLength(3),
+      Schema.annotations({
+        message: () => '[Effect/Schema] You must have a length of at least 3',
+      }),
+    ),
+  }),
+)
 
 export const Route = createFileRoute('/(auth)/login')({
   component: RouteComponent,
 })
 
 function RouteComponent() {
+  const form = createForm(() => ({
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+    onChange: LoginSchema,
+    onSubmit: async ({ value }) => {
+      // Do something with form data
+      console.log(value)
+    },
+  }))
   return (
     <VStack gap="6" class="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
       <VStack class="mt-auto">
@@ -30,32 +61,53 @@ function RouteComponent() {
           </Card.Header>
           <Card.Body>
             <Stack gap="3">
-              <Button>Log in</Button>
-              <VStack class="w-full" justify="center" align="center">
-                <Separator />
-                <p class="text-sm">OR</p>
-                <Separator />
-
-                <p class="px-8 text-center text-sm text-muted-foreground">
-                  By clicking continue, you agree to our{' '}
-                  <a
-                    // biome-ignore lint/a11y/useValidAnchor: <explanation>
-                    href="#"
-                    class="underline underline-offset-4 hover:text-primary"
-                  >
-                    Terms of Service
-                  </a>{' '}
-                  and{' '}
-                  <a
-                    // biome-ignore lint/a11y/useValidAnchor: <explanation>
-                    href="#"
-                    class="underline underline-offset-4 hover:text-primary"
-                  >
-                    Privacy Policy
-                  </a>
-                  .
-                </p>
-              </VStack>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  form.handleSubmit()
+                }}
+              >
+                <Stack gap="1">
+                  <form.Field
+                    name="email"
+                    children={(field) => (
+                      <TextFieldRoot>
+                        <TextFieldLabel>Email</TextFieldLabel>
+                        <TextField
+                          placeholder={'email'}
+                          name={field().name}
+                          value={field().state.value}
+                          onBlur={field().handleBlur}
+                          onInput={(e) => field().handleChange(e.currentTarget.value)}
+                        />
+                      </TextFieldRoot>
+                    )}
+                  />
+                  <form.Field
+                    name="password"
+                    children={(field) => (
+                      <TextFieldRoot>
+                        <TextFieldLabel>Password</TextFieldLabel>
+                        <TextField
+                          placeholder={'password'}
+                          name={field().name}
+                          value={field().state.value}
+                          onBlur={field().handleBlur}
+                          onInput={(e) => field().handleChange(e.currentTarget.value)}
+                        />
+                      </TextFieldRoot>
+                    )}
+                  />
+                  <Button type="submit">Log in</Button>
+                </Stack>
+              </form>
+              <Stack gap="2" class="text-center text-sm mt-2.5">
+                <span>Don't have an account?</span>
+                <Link to="/register" class={buttonVariants({ variant: 'link' })}>
+                  Create account here
+                </Link>
+              </Stack>
             </Stack>
           </Card.Body>
         </Card.Root>

@@ -77,7 +77,8 @@
       "correctness": {
         "noFlatMapIdentity": "off",
         "useJsxKeyInIterable": "off",
-        "useImportExtensions": "error"
+        "useImportExtensions": "error",
+        "noChildrenProp":"off"
       },
       "complexity": {
         "noStaticOnlyClass": "off",

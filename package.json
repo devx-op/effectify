@@ -69,6 +69,7 @@
       "@tanstack/router-plugin": "1.121.37",
       "@tanstack/solid-router": "1.121.34",
       "@tanstack/solid-start": "1.121.37",
+      "@tanstack/solid-form": "^1.12.3",
       "@tanstack/solid-router-devtools": "1.121.34",
       "tailwindcss": "4.1.10",
       "vite-tsconfig-paths": "^5.1.4",
@@ -102,5 +103,6 @@
     "msgpackr-extract",
     "nx"
   ],
-  "dependencies": {}
+  "dependencies": {
+  }
 }
