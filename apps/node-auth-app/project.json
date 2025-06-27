@@ -23,6 +23,11 @@
             "input": "node_modules/better-sqlite3/build/Release",
             "glob": "better_sqlite3.node",
             "output": "./"
+          },
+          {
+            "input": ".",
+            "glob": "sqlite.db",
+            "output": "./"
           }
         ],
         "esbuildOptions": {

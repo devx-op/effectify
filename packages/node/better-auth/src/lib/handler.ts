@@ -29,12 +29,25 @@ export const toEffectHandler: (
 
     const allowedOrigins = [appUrl]
     const origin = nodeRequest.headers.origin ?? ''
+
+    console.log('CORS Debug:', { appUrl, origin, allowedOrigins, method: nodeRequest.method })
+
     if (allowedOrigins.includes(origin)) {
       nodeResponse.setHeader('Access-Control-Allow-Origin', origin)
       nodeResponse.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
       nodeResponse.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
       nodeResponse.setHeader('Access-Control-Max-Age', '600')
       nodeResponse.setHeader('Access-Control-Allow-Credentials', 'true')
+      console.log('CORS headers set for origin:', origin)
+    } else {
+      console.log('CORS rejected for origin:', origin, 'allowed:', allowedOrigins)
+    }
+
+    // Handle preflight requests
+    if (nodeRequest.method === 'OPTIONS') {
+      nodeResponse.statusCode = 200
+      nodeResponse.end()
+      return HttpServerResponse.empty({ status: 200 })
     }
 
     yield* T.tryPromise({
