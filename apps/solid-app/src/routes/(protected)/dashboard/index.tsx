@@ -1,8 +1,15 @@
 import { ChatContainer } from '@/components/chat/chat-container.jsx'
-import { createFileRoute } from '@tanstack/solid-router'
+import { useSession } from '@/libs/auth-client'
+import { createFileRoute, redirect } from '@tanstack/solid-router'
 
 export const Route = createFileRoute('/(protected)/dashboard/')({
   component: RouteComponent,
+  beforeLoad: () => {
+    const session = useSession()
+    if (!session().data?.session) {
+      throw redirect({ to: '/login' })
+    }
+  },
 })
 
 function RouteComponent() {

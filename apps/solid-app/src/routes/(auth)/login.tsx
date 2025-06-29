@@ -32,6 +32,7 @@ export const Route = createFileRoute('/(auth)/login')({
 })
 
 function RouteComponent() {
+  const navigate = Route.useNavigate()
   const form = createForm(() => ({
     defaultValues: {
       email: '',
@@ -41,10 +42,13 @@ function RouteComponent() {
     onSubmit: async ({ value }) => {
       // Do something with form data
       console.log(value)
-      authClient.signIn.email({
-        email: value.email,
-        password: value.password,
-      })
+      try {
+        await authClient.signIn.email({
+          email: value.email,
+          password: value.password,
+        })
+        navigate({ to: '/dashboard' })
+      } catch (error) {}
     },
   }))
   return (
