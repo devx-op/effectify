@@ -3,13 +3,20 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
+  "exports": {
+    ".": {
+      "import": "./src/main.js",
+      "types": "./src/main.d.ts"
+    }
+  },
   "dependencies": {
     "@effect/platform": "catalog:",
     "@effect/platform-node": "catalog:",
     "@effectify/node-better-auth": "*",
     "better-auth": "^1.2.10",
     "better-sqlite3": "catalog:",
-    "effect": "catalog:"
+    "effect": "catalog:",
+    "tslib": "catalog:"
   },
   "devDependencies": {
     "@types/better-sqlite3": "catalog:"

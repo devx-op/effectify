@@ -14,6 +14,10 @@
         "outputPath": "apps/node-auth-app/dist",
         "main": "apps/node-auth-app/src/main.ts",
         "tsConfig": "apps/node-auth-app/tsconfig.app.json",
+        "format": ["esm"],
+        "generatePackageJson": false,
+        "updateBuildableProjectDepsInPackageJson": false,
+        "additionalEntryPoints": [],
         "assets": [
           "apps/node-auth-app/src/assets",
           {
