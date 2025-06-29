@@ -6,7 +6,22 @@
     "useIgnoreFile": false
   },
   "files": {
-    "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.js", "src/**/*.jsx", "lib/**/*.ts", "test/**/*.test.ts"],
+    "include": [
+      "src/**/*.ts",
+      "src/**/*.tsx",
+      "src/**/*.js",
+      "src/**/*.jsx",
+      "lib/**/*.ts",
+      "test/**/*.test.ts",
+      "apps/**/*.ts",
+      "apps/**/*.tsx",
+      "apps/**/*.js",
+      "apps/**/*.jsx",
+      "packages/**/*.ts",
+      "packages/**/*.tsx",
+      "packages/**/*.js",
+      "packages/**/*.jsx"
+    ],
     "ignore": [
       "node_modules",
       ".nx",

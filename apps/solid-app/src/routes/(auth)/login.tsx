@@ -6,6 +6,7 @@ import { TextField, TextFieldLabel, TextFieldRoot } from '@/components/ui/textfi
 import { Link, createFileRoute } from '@tanstack/solid-router'
 
 import { Center } from '@/components/ui/center'
+import { authClient } from '@/libs/auth-client'
 import { createForm } from '@tanstack/solid-form'
 import { Schema } from 'effect'
 
@@ -40,6 +41,10 @@ function RouteComponent() {
     onSubmit: async ({ value }) => {
       // Do something with form data
       console.log(value)
+      authClient.signIn.email({
+        email: value.email,
+        password: value.password,
+      })
     },
   }))
   return (
@@ -91,6 +96,7 @@ function RouteComponent() {
                         <TextFieldLabel>Password</TextFieldLabel>
                         <TextField
                           placeholder={'password'}
+                          type="password"
                           name={field().name}
                           value={field().state.value}
                           onBlur={field().handleBlur}
