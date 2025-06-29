@@ -5,16 +5,13 @@
   "projectType": "application",
   "targets": {
     "build": {
-      "executor": "@nx/esbuild:esbuild",
+      "executor": "@nx/js:tsc",
       "outputs": [
         "{options.outputPath}"
       ],
       "defaultConfiguration": "production",
       "options": {
         "outputPath": "apps/node-auth-app/dist",
-        "format": [
-          "esm"
-        ],
         "main": "apps/node-auth-app/src/main.ts",
         "tsConfig": "apps/node-auth-app/tsconfig.app.json",
         "assets": [
@@ -23,32 +20,12 @@
             "input": "node_modules/better-sqlite3/build/Release",
             "glob": "better_sqlite3.node",
             "output": "./"
-          },
-          {
-            "input": ".",
-            "glob": "sqlite.db",
-            "output": "./"
           }
-        ],
-        "esbuildOptions": {
-          "sourcemap": true,
-          "external": ["better-sqlite3","ws", "events"],
-          "target": "es2022",
-          "outExtension": {
-            ".js": ".js"
-          }
-        }
+        ]
       },
       "configurations": {
         "development": {},
-        "production": {
-          "esbuildOptions": {
-            "sourcemap": false,
-            "outExtension": {
-              ".js": ".js"
-            }
-          }
-        }
+        "production": {}
       }
     },
     "serve": {

@@ -4,11 +4,12 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "effect": "catalog:",
     "@effect/platform": "catalog:",
     "@effect/platform-node": "catalog:",
     "@effectify/node-better-auth": "*",
-    "better-sqlite3": "catalog:"
+    "better-auth": "^1.2.10",
+    "better-sqlite3": "catalog:",
+    "effect": "catalog:"
   },
   "devDependencies": {
     "@types/better-sqlite3": "catalog:"
