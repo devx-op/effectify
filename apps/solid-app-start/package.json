@@ -15,6 +15,7 @@
   "dependencies": {
     "@effectify/solid-query": "workspace:*",
     "@effectify/solid-ui": "workspace:*",
+    "@effectify/chat-solid": "workspace:*",
     "@corvu/drawer": "catalog:",
     "@kobalte/core": "^0.13.10",
     "@tailwindcss/vite": "catalog:",

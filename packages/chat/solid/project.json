@@ -1,0 +1,9 @@
+{
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "name": "@effectify/chat-solid",
+  "sourceRoot": "packages/chat/solid/src",
+  "projectType": "library",
+  "tags": [
+    "chat"
+  ]
+}

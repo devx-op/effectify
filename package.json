@@ -46,7 +46,8 @@
       "apps/*",
       "packages/*",
       "packages/solid/*",
-      "packages/node/*"
+      "packages/node/*",
+      "packages/chat/*"
     ],
     "catalog": {
       "@tanstack/solid-query": "5.81.2",
@@ -65,7 +66,7 @@
       "better-sqlite3": "11.10.0",
       "@types/better-sqlite3": "7.6.13",
       "@tailwindcss/vite": "4.1.10",
-  "@tailwindcss/postcss": "^4.1.11",
+      "@tailwindcss/postcss": "^4.1.11",
       "@tanstack/router-plugin": "1.121.37",
       "@tanstack/solid-router": "1.121.34",
       "@tanstack/solid-start": "1.121.37",
