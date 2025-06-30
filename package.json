@@ -70,6 +70,7 @@
       "@tanstack/solid-start": "1.121.37",
       "@tanstack/solid-form": "^1.12.3",
       "@tanstack/solid-router-devtools": "1.121.34",
+      "@tanstack/solid-query-devtools": "^5.81.5",
       "tailwindcss": "4.1.10",
       "vite-tsconfig-paths": "^5.1.4",
       "@biomejs/biome": "1.9.4",
@@ -103,5 +104,6 @@
     "msgpackr-extract",
     "nx"
   ],
-  "dependencies": {}
+  "dependencies": {
+  }
 }
