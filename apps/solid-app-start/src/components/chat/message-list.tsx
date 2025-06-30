@@ -3,7 +3,7 @@ import type * as Message from '@/domain/Message'
 import { VStack } from '@/components/ui/stack'
 import { MessagesOperations } from '@/services/message-namespace'
 import type { Component } from 'solid-js'
-import { MessageBubble } from './message-bubble.js'
+import { MessageBubble } from './message-bubble.jsx'
 
 type Props = {
   messages: Message.Message[]

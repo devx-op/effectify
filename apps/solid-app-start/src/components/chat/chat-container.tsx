@@ -8,8 +8,8 @@ import { MessagesOperations } from '@/services/message-namespace'
 import type { UseQueryResult } from '@tanstack/solid-query'
 import { AlertCircle } from 'lucide-solid'
 import type { Component } from 'solid-js'
-import { MessageListSkeleton } from './message-list-skeleton.js'
-import { MessageList } from './message-list.js'
+import { MessageListSkeleton } from './message-list-skeleton.jsx'
+import { MessageList } from './message-list.jsx'
 
 const ErrorState: Component<{ messagesQuery: UseQueryResult<Message.Message[]> }> = ({ messagesQuery }) => {
   return (

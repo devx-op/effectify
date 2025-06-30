@@ -1,8 +1,8 @@
 import { type Pages, Sidebar } from '@/components/sidebar/Sidebar'
 
 import { MobileSidebar } from '@/components/sidebar/MobileSidebar'
-import { Breadcrumbs } from '../bread-crumbs.js'
-import { HStack } from '../ui/stack.js'
+import { Breadcrumbs } from '../bread-crumbs.jsx'
+import { HStack } from '../ui/stack.jsx'
 
 export const Navbar = () => {
   const groups = [[]] as Pages[][]

@@ -1,5 +1,5 @@
 {
-  "name": "@effectify/solid-app",
+  "name": "@effectify/solid-app-start",
   "private": true,
   "type": "module",
   "scripts": {
