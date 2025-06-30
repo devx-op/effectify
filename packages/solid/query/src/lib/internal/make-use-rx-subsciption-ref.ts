@@ -1,6 +1,6 @@
 import { type Context, createEffect, createSignal, onCleanup, useContext } from 'solid-js'
 
-import * as T from 'effect/Effect'
+import * as Effect from 'effect/Effect'
 import * as Fiber from 'effect/Fiber'
 import type * as ManagedRuntime from 'effect/ManagedRuntime'
 import * as Stream from 'effect/Stream'
@@ -12,8 +12,8 @@ export const makeUseRxSubscriptionRef =
   <A, E>(
     subscribable:
       | Subscribable<A, E>
-      | T.Effect<Subscribable<A, E>, never, R>
-      | T.Effect<SubscriptionRef.SubscriptionRef<A>, never, R>,
+      | Effect.Effect<Subscribable<A, E>, never, R>
+      | Effect.Effect<SubscriptionRef.SubscriptionRef<A>, never, R>,
     onNext: (value: A) => void,
     opts?: SubscriptionOptions,
   ): A => {
@@ -26,8 +26,8 @@ export const makeUseRxSubscriptionRef =
     }
 
     const setInitialValue = () => {
-      const initialValue = T.gen(function* () {
-        const resolved = T.isEffect(subscribable) ? yield* subscribable : subscribable
+      const initialValue = Effect.gen(function* () {
+        const resolved = Effect.isEffect(subscribable) ? yield* subscribable : subscribable
 
         const initialValue =
           SubscriptionRef.SubscriptionRefTypeId in resolved ? yield* SubscriptionRef.get(resolved) : resolved.get()
@@ -44,8 +44,8 @@ export const makeUseRxSubscriptionRef =
     const [value, setValue] = createSignal(setInitialValue())
 
     createEffect(() => {
-      const fiber = T.gen(function* () {
-        const resolved = T.isEffect(subscribable) ? yield* subscribable : subscribable
+      const fiber = Effect.gen(function* () {
+        const resolved = Effect.isEffect(subscribable) ? yield* subscribable : subscribable
 
         const adaptedSubscribable: Subscribable<A, E> =
           SubscriptionRef.SubscriptionRefTypeId in resolved
@@ -61,7 +61,7 @@ export const makeUseRxSubscriptionRef =
         let hasEmittedInitial = false
         return yield* adaptedSubscribable.changes.pipe(
           Stream.tap((val) =>
-            T.sync(() => {
+            Effect.sync(() => {
               setValue(() => val)
               if (options?.skipInitial && !hasEmittedInitial) {
                 hasEmittedInitial = true
@@ -71,8 +71,8 @@ export const makeUseRxSubscriptionRef =
             }),
           ),
           Stream.runDrain,
-          T.forever,
-          T.forkDaemon,
+          Effect.forever,
+          Effect.forkDaemon,
         )
       }).pipe(runtime.runSync)
 

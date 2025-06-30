@@ -2,7 +2,7 @@ import * as NodeHttpServerRequest from '@effect/platform-node/NodeHttpServerRequ
 import * as HttpServerRequest from '@effect/platform/HttpServerRequest'
 import * as HttpServerResponse from '@effect/platform/HttpServerResponse'
 import * as Config from 'effect/Config'
-import * as T from 'effect/Effect'
+import * as Effect from 'effect/Effect'
 
 import type { Auth } from 'better-auth'
 import { toNodeHandler } from 'better-auth/node'
@@ -15,12 +15,12 @@ export const toEffectHandler: (
         handler: Auth['handler']
       }
     | Auth['handler'],
-) => T.Effect<
+) => Effect.Effect<
   HttpServerResponse.HttpServerResponse,
   BetterAuthApiError | ConfigError,
   HttpServerRequest.HttpServerRequest
 > = (auth) =>
-  T.gen(function* () {
+  Effect.gen(function* () {
     const request = yield* HttpServerRequest.HttpServerRequest
     const nodeRequest = NodeHttpServerRequest.toIncomingMessage(request)
     const nodeResponse = NodeHttpServerRequest.toServerResponse(request)
@@ -50,7 +50,7 @@ export const toEffectHandler: (
       return HttpServerResponse.empty({ status: 200 })
     }
 
-    yield* T.tryPromise({
+    yield* Effect.tryPromise({
       try: () =>
         'handler' in auth
           ? toNodeHandler(auth.handler)(nodeRequest, nodeResponse)

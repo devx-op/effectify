@@ -1,6 +1,6 @@
 import { type Context, createSignal, onCleanup, useContext } from 'solid-js'
 
-import * as T from 'effect/Effect'
+import * as Effect from 'effect/Effect'
 import * as Exit from 'effect/Exit'
 import * as Fiber from 'effect/Fiber'
 import type * as ManagedRuntime from 'effect/ManagedRuntime'
@@ -8,7 +8,7 @@ import * as Stream from 'effect/Stream'
 
 export const makeUseRxSubscribe = <R, E>(RuntimeContext: Context<ManagedRuntime.ManagedRuntime<R, E> | null>) => {
   return <E, A>(
-    stream: Stream.Stream<A, E, R> | T.Effect<Stream.Stream<A, E, R>, E, R>,
+    stream: Stream.Stream<A, E, R> | Effect.Effect<Stream.Stream<A, E, R>, E, R>,
     initialValue: A,
     onNext: (value: A) => void,
     onError?: (error: E) => void,
@@ -20,26 +20,26 @@ export const makeUseRxSubscribe = <R, E>(RuntimeContext: Context<ManagedRuntime.
     const [value, setValue] = createSignal<A | undefined>(initialValue)
     const [fiberRef, setFiberRef] = createSignal<Fiber.RuntimeFiber<never, never> | null>(null)
 
-    const finalStream = T.isEffect(stream) ? Stream.unwrap(stream) : stream
+    const finalStream = Effect.isEffect(stream) ? Stream.unwrap(stream) : stream
 
     const subscription = finalStream.pipe(
       Stream.tap((a) =>
-        T.sync(() => {
+        Effect.sync(() => {
           setValue(() => a)
           onNext(a)
         }),
       ),
       Stream.catchAll((e) =>
         Stream.fromEffect(
-          T.sync(() => {
+          Effect.sync(() => {
             onError?.(e)
             return undefined
           }),
         ),
       ),
       Stream.runDrain,
-      T.forever,
-      T.forkDaemon,
+      Effect.forever,
+      Effect.forkDaemon,
     )
 
     runtime.runCallback(subscription, {

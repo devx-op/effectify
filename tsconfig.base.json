@@ -13,6 +13,14 @@
     "skipLibCheck": true,
     "strict": true,
     "target": "es2022",
-    "customConditions": ["development"]
+    "customConditions": ["development"],
+    "plugins": [{ 
+      "name": "@effect/language-service",
+      "transform": "@effect/language-service/transform",
+      "namespaceImportPackages": ["effect", "@effect/platform"],
+      "diagnosticSeverity": {
+        "importFromBarrel": "error"
+      }
+    }]
   }
 }

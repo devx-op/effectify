@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/solid-query'
-import { Duration, Effect } from 'effect'
+import * as Duration from 'effect/Duration'
+import * as Effect from 'effect/Effect'
 import type * as Layer from 'effect/Layer'
 import * as ManagedRuntime from 'effect/ManagedRuntime'
 import { type Component, type JSX, createMemo, onCleanup } from 'solid-js'

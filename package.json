@@ -9,7 +9,7 @@
     "lint:fix": "biome check --write ./",
     "lint-staged": "lint-staged --allow-empty",
     "clean": "rm -rf node_modules dist bun.lock && bun pm cache rm & find . -type d \\( -name 'node_modules' -o -name 'dist' -o -name '.output' -o -name '.vinxi' \\) -prune -exec rm -rf {} + & wait",
-    "prepare": "husky"
+    "prepare": "husky && ts-patch install -s"
   },
   "lint-staged": {
     "{apps,packages}/**/*.{ts,tsx,test.ts}": [
@@ -19,6 +19,7 @@
     ]
   },
   "devDependencies": {
+    "@effect/language-service": "catalog:",
     "@biomejs/biome": "1.9.4",
     "@nx/esbuild": "21.1.2",
     "@nx/js": "21.1.2",
@@ -35,6 +36,7 @@
     "jiti": "2.4.2",
     "lint-staged": "15.5.1",
     "nx": "21.1.2",
+    "ts-patch": "^3.3.0",
     "tslib": "catalog:",
     "typescript": "catalog:",
     "verdaccio": "^6.0.5",
@@ -55,6 +57,7 @@
       "effect": "3.16.9",
       "@effect/platform": "0.87.0 ",
       "@effect/platform-node": "0.88.1",
+      "@effect/language-service": "^0.23.3",
       "solid-js": "1.9.7",
       "class-variance-authority": "0.7.1",
       "clsx": "2.1.1",
@@ -110,6 +113,5 @@
     "msgpackr-extract",
     "nx"
   ],
-  "dependencies": {
-  }
+  "dependencies": {}
 }
