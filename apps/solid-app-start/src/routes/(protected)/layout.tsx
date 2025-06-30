@@ -1,10 +1,11 @@
-import { MainNavbar } from '@/components/navbar/MainNavbar'
-import { Navbar } from '@/components/navbar/Navbar'
-import { Sidebar } from '@/components/sidebar/Sidebar'
-import { SidebarContainer } from '@/components/sidebar/SidebarContainer'
-import { Flex } from '@/components/ui/flex'
-import { HStack } from '@/components/ui/stack'
 import { Outlet, createFileRoute } from '@tanstack/solid-router'
+
+import { MainNavbar } from '@effectify/solid-ui/components/navbar/MainNavbar'
+import { Navbar } from '@effectify/solid-ui/components/navbar/Navbar'
+import { Flex } from '@effectify/solid-ui/components/primitives/flex'
+import { HStack } from '@effectify/solid-ui/components/primitives/stack'
+import { Sidebar } from '@effectify/solid-ui/components/sidebar/Sidebar'
+import { SidebarContainer } from '@effectify/solid-ui/components/sidebar/SidebarContainer'
 
 export const Route = createFileRoute('/(protected)')({
   component: RouteComponent,

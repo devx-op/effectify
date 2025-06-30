@@ -1,12 +1,17 @@
-import * as Card from '@/components/ui/card'
+import * as Card from '@effectify/solid-ui/components/primitives/card'
 
-import { Button, buttonVariants } from '@/components/ui/button'
-import { Stack, VStack } from '@/components/ui/stack'
-import { TextField, TextFieldDescription, TextFieldLabel, TextFieldRoot } from '@/components/ui/textfield'
+import { Button, buttonVariants } from '@effectify/solid-ui/components/primitives/button'
+import { Stack, VStack } from '@effectify/solid-ui/components/primitives/stack'
+import {
+  TextField,
+  TextFieldDescription,
+  TextFieldLabel,
+  TextFieldRoot,
+} from '@effectify/solid-ui/components/primitives/textfield'
 import { Link, createFileRoute } from '@tanstack/solid-router'
 
-import { Center } from '@/components/ui/center'
 import { authClient } from '@/libs/auth-client'
+import { Center } from '@effectify/solid-ui/components/primitives/center'
 import { createForm } from '@tanstack/solid-form'
 import { Schema } from 'effect'
 

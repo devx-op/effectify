@@ -13,8 +13,9 @@
     "check": "biome check"
   },
   "dependencies": {
-    "@corvu/drawer": "catalog:",
     "@effectify/solid-query": "workspace:*",
+    "@effectify/solid-ui": "workspace:*",
+    "@corvu/drawer": "catalog:",
     "@kobalte/core": "^0.13.10",
     "@tailwindcss/vite": "catalog:",
     "@tanstack/router-plugin": "catalog:",

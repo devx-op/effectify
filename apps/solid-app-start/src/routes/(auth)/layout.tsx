@@ -1,7 +1,8 @@
-import { Flex } from '@/components/ui/flex'
-import { Spinner } from '@/components/ui/spinner'
-import { VStack } from '@/components/ui/stack'
 import { Navigate, Outlet, createFileRoute } from '@tanstack/solid-router'
+
+import { Flex } from '@effectify/solid-ui/components/primitives/flex'
+import { Spinner } from '@effectify/solid-ui/components/primitives/spinner'
+import { VStack } from '@effectify/solid-ui/components/primitives/stack'
 
 export const Route = createFileRoute('/(auth)')({
   component: Layout,

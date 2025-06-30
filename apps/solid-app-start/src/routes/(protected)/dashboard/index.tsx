@@ -1,6 +1,7 @@
+import { createFileRoute, redirect } from '@tanstack/solid-router'
+
 import { ChatContainer } from '@/components/chat/chat-container.jsx'
 import { useSession } from '@/libs/auth-client'
-import { createFileRoute, redirect } from '@tanstack/solid-router'
 
 export const Route = createFileRoute('/(protected)/dashboard/')({
   component: RouteComponent,

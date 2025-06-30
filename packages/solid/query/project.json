@@ -3,7 +3,7 @@
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "packages/solid/query/src",
   "projectType": "library",
-  "tags": [],
+  "tags": ["solid"],
   "targets": {
     "build": {
       "executor": "@nx/js:tsc",
