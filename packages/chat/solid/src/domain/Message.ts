@@ -1,12 +1,12 @@
-import * as S from 'effect/Schema'
+import * as Schema from 'effect/Schema'
 
-export const MessageId = S.String.pipe(S.brand('MessageId'))
+export const MessageId = Schema.String.pipe(Schema.brand('MessageId'))
 
-export const Message = S.Struct({
+export const Message = Schema.Struct({
   id: MessageId,
-  body: S.String,
-  createdAt: S.DateTimeUtc,
-  readAt: S.NullOr(S.DateTimeUtc),
+  body: Schema.String,
+  createdAt: Schema.DateTimeUtc,
+  readAt: Schema.NullOr(Schema.DateTimeUtc),
 })
 
 export type Message = typeof Message.Type

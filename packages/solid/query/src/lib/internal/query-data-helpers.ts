@@ -1,4 +1,4 @@
-import { queryClient } from './tanstack-query-effect.jsx'
+import type { QueryClient } from '@tanstack/solid-query'
 
 type DeepMutable<T> = {
   -readonly [P in keyof T]: T[P] extends object ? DeepMutable<T[P]> : T[P]
@@ -101,29 +101,31 @@ type QueryDataHelpers<TData, TVariables> = {
  * helpers.removeQuery({ id: "123" });
  * ```
  */
-export function createQueryDataHelpers<TData, TVariables = void>(
-  queryKey: (variables: TVariables) => readonly [string, ...unknown[]],
-): QueryDataHelpers<TData, TVariables> {
-  const [namespaceKey] = queryKey(undefined as TVariables)
+export const makeCreateQueryDataHelpers =
+  (queryClient: QueryClient) =>
+  <TData, TVariables = void>(
+    queryKey: (variables: TVariables) => readonly [string, ...unknown[]],
+  ): QueryDataHelpers<TData, TVariables> => {
+    const [namespaceKey] = queryKey(undefined as TVariables)
 
-  return {
-    removeQuery: (variables: TVariables) => {
-      queryClient.removeQueries({ queryKey: queryKey(variables) })
-    },
-    removeAllQueries: () => {
-      queryClient.removeQueries({ queryKey: [namespaceKey], exact: false })
-    },
-    setData: (variables: TVariables, updater: QueryDataUpdater<TData>) => {
-      return queryClient.setQueryData<TData>(queryKey(variables), (oldData) => {
-        if (oldData === undefined) return oldData
-        const clonedData = deepClone(oldData)
-        updater(clonedData as DeepMutable<TData>)
-        return clonedData
-      })
-    },
-    invalidateQuery: (variables: TVariables) => queryClient.invalidateQueries({ queryKey: queryKey(variables) }),
-    invalidateAllQueries: () => queryClient.invalidateQueries({ queryKey: [namespaceKey], exact: false }),
-    refetchQuery: (variables: TVariables) => queryClient.refetchQueries({ queryKey: queryKey(variables) }),
-    refetchAllQueries: () => queryClient.refetchQueries({ queryKey: [namespaceKey], exact: false }),
+    return {
+      removeQuery: (variables: TVariables) => {
+        queryClient.removeQueries({ queryKey: queryKey(variables) })
+      },
+      removeAllQueries: () => {
+        queryClient.removeQueries({ queryKey: [namespaceKey], exact: false })
+      },
+      setData: (variables: TVariables, updater: QueryDataUpdater<TData>) => {
+        return queryClient.setQueryData<TData>(queryKey(variables), (oldData) => {
+          if (oldData === undefined) return oldData
+          const clonedData = deepClone(oldData)
+          updater(clonedData as DeepMutable<TData>)
+          return clonedData
+        })
+      },
+      invalidateQuery: (variables: TVariables) => queryClient.invalidateQueries({ queryKey: queryKey(variables) }),
+      invalidateAllQueries: () => queryClient.invalidateQueries({ queryKey: [namespaceKey], exact: false }),
+      refetchQuery: (variables: TVariables) => queryClient.refetchQueries({ queryKey: queryKey(variables) }),
+      refetchAllQueries: () => queryClient.refetchQueries({ queryKey: [namespaceKey], exact: false }),
+    }
   }
-}

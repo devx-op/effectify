@@ -1,5 +1,4 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/solid-query'
-import * as Duration from 'effect/Duration'
+import { type QueryClient, QueryClientProvider } from '@tanstack/solid-query'
 import * as Effect from 'effect/Effect'
 import type * as Layer from 'effect/Layer'
 import * as ManagedRuntime from 'effect/ManagedRuntime'
@@ -9,19 +8,14 @@ import { makeUseEffectMutation } from './internal/make-use-effect-mutation.js'
 import { makeUseEffectQuery } from './internal/make-use-effect-query.js'
 import { makeUseRxSubscriptionRef } from './internal/make-use-rx-subsciption-ref.js'
 import { makeUseRxSubscribe } from './internal/make-use-rx-subscribe.js'
+import { makeCreateQueryDataHelpers } from './internal/query-data-helpers.js'
 
-export const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: Duration.toMillis('1 minute'),
-      retry: false,
-      refetchOnWindowFocus: false,
-    },
-  },
-})
-
-export const tanstackQueryEffect = <R, E>(layer: Layer.Layer<R, E, never>) => {
-  const createRunner = () => {
+export const tanstackQueryEffect = <R, E>({
+  layer,
+  queryClient,
+}: { layer: Layer.Layer<R, E, never>; queryClient: QueryClient }) => {
+  const RuntimeContext = createContext<ManagedRuntime.ManagedRuntime<R, E> | null>(null)
+  const useRunner = () => {
     const runtime = useContext(RuntimeContext)
     if (!runtime) {
       throw new Error('Runtime context not found. Make sure to wrap your app with RuntimeProvider')
@@ -34,7 +28,6 @@ export const tanstackQueryEffect = <R, E>(layer: Layer.Layer<R, E, never>) => {
           effect.pipe(Effect.withSpan(span), Effect.tapErrorCause(Effect.logError), runtime.runPromise),
     )
   }
-  const RuntimeContext = createContext<ManagedRuntime.ManagedRuntime<R, E> | null>(null)
   const RuntimeProvider: Component<{ children: JSX.Element }> = (props) => {
     const runtime = ManagedRuntime.make(layer)
     onCleanup(() => {
@@ -57,12 +50,13 @@ export const tanstackQueryEffect = <R, E>(layer: Layer.Layer<R, E, never>) => {
   }
 
   return {
-    createRunner,
+    useRunner,
     RuntimeProvider,
     useRuntime,
-    useEffectQuery: makeUseEffectQuery(createRunner),
-    useEffectMutation: makeUseEffectMutation(createRunner),
+    useEffectQuery: makeUseEffectQuery(useRunner),
+    useEffectMutation: makeUseEffectMutation(useRunner),
     useRxSubscribe: makeUseRxSubscribe(RuntimeContext),
     useRxSubscriptionRef: makeUseRxSubscriptionRef(RuntimeContext),
+    createQueryDataHelpers: makeCreateQueryDataHelpers(queryClient),
   }
 }

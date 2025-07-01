@@ -33,6 +33,7 @@
     "@effectify/solid-query": "workspace:*",
     "@kobalte/core": "catalog:",
     "solid-js": "catalog:",
+    "@tanstack/solid-query": "catalog:",
     "lucide-solid": "catalog:"
   },
   "devDependencies": {

@@ -9,11 +9,11 @@ import * as Option from 'effect/Option'
 import * as Queue from 'effect/Queue'
 import * as Stream from 'effect/Stream'
 
-import { createQueryDataHelpers, createQueryKey } from '@effectify/solid-query'
 import { createEffect, createMemo, onCleanup } from 'solid-js'
-import { useEffectQuery, useRuntime } from './tanstack-query.js'
+import { createQueryDataHelpers, useEffectQuery, useRuntime } from './tanstack-query.js'
 
 import { MessagesService } from '@/domain/MessageService.js'
+import { createQueryKey } from '@effectify/solid-query'
 
 export namespace MessagesOperations {
   const messagesQueryKey = createQueryKey('MessagesOperations.useMessagesQuery')
