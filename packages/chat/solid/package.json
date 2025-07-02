@@ -34,6 +34,7 @@
     "@kobalte/core": "catalog:",
     "solid-js": "catalog:",
     "@tanstack/solid-query": "catalog:",
+    "@tanstack/solid-form": "catalog:",
     "lucide-solid": "catalog:"
   },
   "devDependencies": {

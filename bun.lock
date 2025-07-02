@@ -103,6 +103,8 @@
         "@effectify/solid-query": "workspace:*",
         "@effectify/solid-ui": "workspace:*",
         "@kobalte/core": "catalog:",
+        "@tanstack/solid-form": "catalog:",
+        "@tanstack/solid-query": "catalog:",
         "effect": "catalog:",
         "lucide-solid": "catalog:",
         "solid-js": "catalog:",
