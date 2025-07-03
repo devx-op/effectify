@@ -12,8 +12,6 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as protectedLayoutRouteImport } from './routes/(protected)/layout'
 import { Route as authLayoutRouteImport } from './routes/(auth)/layout'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as DemoTanstackQueryRouteImport } from './routes/demo.tanstack-query'
-import { Route as DemoFormRouteImport } from './routes/demo.form'
 import { Route as authRegisterRouteImport } from './routes/(auth)/register'
 import { Route as authLoginRouteImport } from './routes/(auth)/login'
 import { Route as protectedDashboardIndexRouteImport } from './routes/(protected)/dashboard/index'
@@ -29,16 +27,6 @@ const authLayoutRoute = authLayoutRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DemoTanstackQueryRoute = DemoTanstackQueryRouteImport.update({
-  id: '/demo/tanstack-query',
-  path: '/demo/tanstack-query',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DemoFormRoute = DemoFormRouteImport.update({
-  id: '/demo/form',
-  path: '/demo/form',
   getParentRoute: () => rootRouteImport,
 } as any)
 const authRegisterRoute = authRegisterRouteImport.update({
@@ -61,16 +49,12 @@ export interface FileRoutesByFullPath {
   '/': typeof protectedLayoutRouteWithChildren
   '/login': typeof authLoginRoute
   '/register': typeof authRegisterRoute
-  '/demo/form': typeof DemoFormRoute
-  '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/dashboard': typeof protectedDashboardIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof protectedLayoutRouteWithChildren
   '/login': typeof authLoginRoute
   '/register': typeof authRegisterRoute
-  '/demo/form': typeof DemoFormRoute
-  '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/dashboard': typeof protectedDashboardIndexRoute
 }
 export interface FileRoutesById {
@@ -80,27 +64,13 @@ export interface FileRoutesById {
   '/(protected)': typeof protectedLayoutRouteWithChildren
   '/(auth)/login': typeof authLoginRoute
   '/(auth)/register': typeof authRegisterRoute
-  '/demo/form': typeof DemoFormRoute
-  '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/(protected)/dashboard/': typeof protectedDashboardIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/login'
-    | '/register'
-    | '/demo/form'
-    | '/demo/tanstack-query'
-    | '/dashboard'
+  fullPaths: '/' | '/login' | '/register' | '/dashboard'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/login'
-    | '/register'
-    | '/demo/form'
-    | '/demo/tanstack-query'
-    | '/dashboard'
+  to: '/' | '/login' | '/register' | '/dashboard'
   id:
     | '__root__'
     | '/'
@@ -108,8 +78,6 @@ export interface FileRouteTypes {
     | '/(protected)'
     | '/(auth)/login'
     | '/(auth)/register'
-    | '/demo/form'
-    | '/demo/tanstack-query'
     | '/(protected)/dashboard/'
   fileRoutesById: FileRoutesById
 }
@@ -117,8 +85,6 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   authLayoutRoute: typeof authLayoutRouteWithChildren
   protectedLayoutRoute: typeof protectedLayoutRouteWithChildren
-  DemoFormRoute: typeof DemoFormRoute
-  DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
 }
 
 declare module '@tanstack/solid-router' {
@@ -142,20 +108,6 @@ declare module '@tanstack/solid-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/demo/tanstack-query': {
-      id: '/demo/tanstack-query'
-      path: '/demo/tanstack-query'
-      fullPath: '/demo/tanstack-query'
-      preLoaderRoute: typeof DemoTanstackQueryRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/demo/form': {
-      id: '/demo/form'
-      path: '/demo/form'
-      fullPath: '/demo/form'
-      preLoaderRoute: typeof DemoFormRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/(auth)/register': {
@@ -212,8 +164,6 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   authLayoutRoute: authLayoutRouteWithChildren,
   protectedLayoutRoute: protectedLayoutRouteWithChildren,
-  DemoFormRoute: DemoFormRoute,
-  DemoTanstackQueryRoute: DemoTanstackQueryRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
