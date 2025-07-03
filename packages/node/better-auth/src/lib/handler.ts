@@ -24,13 +24,9 @@ export const toEffectHandler: (
     const request = yield* HttpServerRequest.HttpServerRequest
     const nodeRequest = NodeHttpServerRequest.toIncomingMessage(request)
     const nodeResponse = NodeHttpServerRequest.toServerResponse(request)
-
-    const appUrl = yield* Config.string('APP_URL')
-
-    const allowedOrigins = [appUrl]
+    const appUrl = yield* Config.url('APP_URL')
+    const allowedOrigins = [appUrl.toString()]
     const origin = nodeRequest.headers.origin ?? ''
-
-    console.log('CORS Debug:', { appUrl, origin, allowedOrigins, method: nodeRequest.method })
 
     if (allowedOrigins.includes(origin)) {
       nodeResponse.setHeader('Access-Control-Allow-Origin', origin)
