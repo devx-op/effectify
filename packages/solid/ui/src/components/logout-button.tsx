@@ -1,13 +1,10 @@
 import { Button } from '@/components/primitives/button'
 import { LogOutIcon } from 'lucide-solid'
+import type { Component } from 'solid-js'
 
-export const LogoutButton = () => {
-  // const navigate = useNavigate()
-  // const handleClick = async () => {
-  //   navigate('/logout')
-  // }
+export const LogoutButton: Component<{ onClick: () => void }> = (props) => {
   return (
-    <Button variant="ghost" size={'sm'}>
+    <Button {...props} variant="ghost" size={'sm'}>
       <LogOutIcon class="h-4" />
     </Button>
   )

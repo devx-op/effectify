@@ -48,6 +48,9 @@
     "apps/solid-app-spa": {
       "name": "solid-app-spa",
       "dependencies": {
+        "@effectify/chat-solid": "workspace:*",
+        "@effectify/solid-query": "workspace:*",
+        "@effectify/solid-ui": "workspace:*",
         "@tailwindcss/vite": "catalog:",
         "@tanstack/router-plugin": "catalog:",
         "@tanstack/solid-form": "catalog:",
@@ -57,6 +60,7 @@
         "@tanstack/solid-router-devtools": "catalog:",
         "solid-js": "catalog:",
         "tailwindcss": "catalog:",
+        "vite-tsconfig-paths": "catalog:",
       },
       "devDependencies": {
         "typescript": "catalog:",

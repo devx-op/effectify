@@ -1,8 +1,7 @@
 import { Outlet, createRootRouteWithContext } from '@tanstack/solid-router'
 
+import { RuntimeProvider } from '@effectify/chat-solid/services/tanstack-query'
 import { TanStackRouterDevtools } from '@tanstack/solid-router-devtools'
-import Header from '../components/Header.js'
-import TanStackQueryProvider from '../integrations/tanstack-query/provider.tsx'
 
 export const Route = createRootRouteWithContext()({
   component: RootComponent,
@@ -10,13 +9,9 @@ export const Route = createRootRouteWithContext()({
 
 function RootComponent() {
   return (
-    <>
-      <TanStackQueryProvider>
-        <Header />
-
-        <Outlet />
-        <TanStackRouterDevtools />
-      </TanStackQueryProvider>
-    </>
+    <RuntimeProvider>
+      <Outlet />
+      <TanStackRouterDevtools />
+    </RuntimeProvider>
   )
 }

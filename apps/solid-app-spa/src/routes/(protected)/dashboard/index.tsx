@@ -1,6 +1,6 @@
 import { createFileRoute, redirect } from '@tanstack/solid-router'
 
-import { useSession } from '@/libs/auth-client'
+import { useSession } from '@/libs/auth-client.js'
 import { ChatContainer } from '@effectify/chat-solid/components/chat/chat-container'
 
 export const Route = createFileRoute('/(protected)/dashboard/')({

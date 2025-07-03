@@ -10,6 +10,9 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@effectify/solid-query": "workspace:*",
+    "@effectify/solid-ui": "workspace:*",
+    "@effectify/chat-solid": "workspace:*",
     "@tailwindcss/vite": "catalog:",
     "@tanstack/router-plugin": "catalog:",
     "@tanstack/solid-form": "catalog:",
@@ -18,7 +21,8 @@
     "@tanstack/solid-router": "catalog:",
     "@tanstack/solid-router-devtools": "catalog:",
     "solid-js": "catalog:",
-    "tailwindcss": "catalog:"
+    "tailwindcss": "catalog:",
+    "vite-tsconfig-paths": "catalog:"
   },
   "devDependencies": {
     "typescript": "catalog:",

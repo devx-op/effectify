@@ -1,5 +1,6 @@
 import { Outlet, createFileRoute } from '@tanstack/solid-router'
 
+import { authClient } from '@/libs/auth-client'
 import { MainNavbar } from '@effectify/solid-ui/components/navbar/MainNavbar'
 import { Navbar } from '@effectify/solid-ui/components/navbar/Navbar'
 import { Flex } from '@effectify/solid-ui/components/primitives/flex'
@@ -12,6 +13,17 @@ export const Route = createFileRoute('/(protected)')({
 })
 
 function RouteComponent() {
+  const handleLogout = async () => {
+    console.log('logout')
+    try {
+      await authClient.signOut()
+      // Forzar navegación inmediata
+      window.location.href = '/login'
+    } catch (error) {
+      console.error('Error during logout:', error)
+    }
+  }
+
   return (
     <HStack class="min-h-screen">
       <Flex class=" w-full">
@@ -21,7 +33,7 @@ function RouteComponent() {
           </SidebarContainer>
         </aside>
         <main class="flex-1">
-          <MainNavbar />
+          <MainNavbar onLogout={handleLogout} />
           <Navbar />
           <div class="max-w-7xl mx-auto p-6">
             <Outlet />

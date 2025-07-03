@@ -5,10 +5,11 @@ import { MobileNavbar } from '@/components/navbar/MobileNavbar'
 import { NavbarContainer } from '@/components/navbar/NavbarContainer'
 // import { ThemeSelector } from '@/components/theme-selector'
 import { Separator } from '@/components/primitives/separator'
+import type { Component } from 'solid-js'
 
 // import { ThemeDrawer } from '../theming/ThemeDrawer'
 
-export const MainNavbar = () => (
+export const MainNavbar: Component<{ onLogout: () => void }> = (props) => (
   <NavbarContainer>
     <HStack justify="between" class="w-full p-2">
       <a href="/" aria-label="Back to home">
@@ -20,7 +21,7 @@ export const MainNavbar = () => (
           {/* <ThemeDrawer /> */}
           {/* <ThemeSelector /> */}
           <Separator orientation="vertical" />
-          <LogoutButton />
+          <LogoutButton onClick={props.onLogout} />
         </HStack>
       </HStack>
       <HStack class="py-1 flex md:hidden">
@@ -32,7 +33,7 @@ export const MainNavbar = () => (
             </HStack>
             <Separator orientation="vertical" />
             <HStack gap="3" justify="center" class="">
-              <LogoutButton />
+              <LogoutButton onClick={props.onLogout} />
             </HStack>
           </Stack>
         </MobileNavbar>
