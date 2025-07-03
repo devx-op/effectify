@@ -38,9 +38,6 @@ export const toEffectHandler: (
       nodeResponse.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
       nodeResponse.setHeader('Access-Control-Max-Age', '600')
       nodeResponse.setHeader('Access-Control-Allow-Credentials', 'true')
-      console.log('CORS headers set for origin:', origin)
-    } else {
-      console.log('CORS rejected for origin:', origin, 'allowed:', allowedOrigins)
     }
 
     // Handle preflight requests

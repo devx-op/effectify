@@ -49,3 +49,4 @@ vitest.config.*.timestamp*
 .output
 .nitro
 .tanstack
+.env
