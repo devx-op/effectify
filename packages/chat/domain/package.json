@@ -1,0 +1,25 @@
+{
+  "name": "@effectify/chat-domain",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.js",
+  "types": "./src/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "types": "./src/index.d.ts",
+      "import": "./src/index.js",
+      "default": "./src/index.js"
+    },
+    "./*": {
+      "types": "./dist/src/*.d.ts",
+      "import": "./dist/src/*.js",
+      "default": "./dist/src/*.js",
+      "source": "./src/*.ts"
+    }
+  },
+  "dependencies": {
+    "tslib": "^2.3.0"
+  }
+}

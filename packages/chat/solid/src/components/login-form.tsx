@@ -1,4 +1,4 @@
-import { LoginSchema } from '@/domain/auth'
+import { LoginSchema } from '@effectify/chat-domain/auth'
 import { Button } from '@effectify/solid-ui/components/primitives/button'
 import * as Card from '@effectify/solid-ui/components/primitives/card'
 import { Center } from '@effectify/solid-ui/components/primitives/center'

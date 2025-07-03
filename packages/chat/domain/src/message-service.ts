@@ -4,9 +4,9 @@ import * as DateTime from 'effect/DateTime'
 import * as Effect from 'effect/Effect'
 import * as Random from 'effect/Random'
 import * as Schedule from 'effect/Schedule'
-import { type Message, MessageId } from './Message.js'
+import { type Message, MessageId } from './message.js'
 
-import { NetworkMonitor } from './NetworkMonitorService.js'
+import { NetworkMonitor } from './network-monitor-service.js'
 
 const sampleMessageBodies = [
   'Hey there! How are you doing today?',

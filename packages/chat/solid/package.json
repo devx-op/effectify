@@ -28,6 +28,7 @@
     }
   },
   "dependencies": {
+    "@effectify/chat-domain": "workspace:*",
     "effect": "catalog:",
     "@effectify/solid-ui": "workspace:*",
     "@effectify/solid-query": "workspace:*",
