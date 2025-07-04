@@ -1,22 +1,22 @@
 import * as path from 'node:path'
+import { defineConfig } from 'vite'
 
 import { copyFileSync } from 'node:fs'
+import react from '@vitejs/plugin-react'
 import { globbySync } from 'globby'
 /// <reference types='vitest' />
-import { defineConfig } from 'vite'
 import dts from 'vite-plugin-dts'
-import solidPlugin from 'vite-plugin-solid'
-
+// https://vite.dev/config/
 export default defineConfig({
   server: {
     port: 4200,
   },
   root: __dirname,
-  cacheDir: '../../../node_modules/.vite/web/solid/ui',
+  cacheDir: '../../../node_modules/.vite/react/ui',
   plugins: [
     /* 
-      Uncomment the following line to enable solid-devtools.
-      For more info see https://github.com/thetarnav/solid-devtools/tree/main/packages/extension#readme
+      Uncomment the following line to enable react-devtools.
+      For more info see https://github.com/thetarnav/react-devtools/tree/main/packages/extension#readme
     */
     // devtools(),
     dts({
@@ -30,7 +30,7 @@ export default defineConfig({
         })
       },
     }) as any,
-    solidPlugin({ ssr: true }),
+    react(),
   ],
   // Uncomment this if you are using workers.
   // worker: {
@@ -52,7 +52,7 @@ export default defineConfig({
     },
     rollupOptions: {
       // External packages that should not be bundled into your library.
-      external: ['solid-js'],
+      external: ['react', 'react-dom'],
       output: {
         preserveModules: true,
         preserveModulesRoot: 'src',

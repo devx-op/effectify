@@ -1,0 +1,40 @@
+{
+  "name": "@effectify/react-ui",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "license": "MIT",
+  "files": ["dist"],
+  "exports": {
+    "./utils/*": {
+      "source": "./src/lib/utils/*.ts",
+      "types": "./dist/lib/utils/*.d.ts",
+      "import": "./dist/utils/*.js"
+    },
+    "./components/*": {
+      "source": "./src/lib/components/*.ts",
+      "types": "./dist/lib/components/*.d.ts",
+      "import": "./dist/components/*.js"
+    },
+    "./preset": "./tailwind.config.cjs",
+    "./css": "./src/lib/app.css"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "catalog:",
+    "react-dom": "catalog:"
+  },
+  "devDependencies": {
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
+    "globals": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:"
+  }
+}
