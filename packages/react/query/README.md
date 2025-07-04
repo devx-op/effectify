@@ -78,13 +78,14 @@ function YourComponent() {
 
 ## API
 
-### `tanstackQueryEffect(layer)`
+### `tanstackQueryEffect({ layer, queryClient })`
 
 Creates an instance of the TanStack Query integration.
 
 #### Parameters
 
 - `layer`: An Effect layer that provides the necessary dependencies.
+- `queryClient`: A TanStack Query QueryClient instance.
 
 #### Returns
 
@@ -104,7 +105,7 @@ An object with the following properties:
 
 ## Complete Example
 
-Check out the example application in [apps/tanstack-solid-app](../../apps/tanstack-solid-app) to see a complete use case.
+Check out the example application in [apps/tanstack-react-app](../../apps/tanstack-react-app) to see a complete use case.
 
 ## Credits & Inspiration
 
