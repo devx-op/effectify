@@ -82,6 +82,22 @@
       "@types/react": "^19.1.8",
       "react": "^19.1.0",
       "react-dom": "^19.1.0",
+
+
+    "@tanstack/react-form": "^1.0.0",
+    "@tanstack/react-query-devtools": "^5.66.5",
+    "@tanstack/react-router": "^1.121.2",
+    "@tanstack/react-router-devtools": "^1.121.2",
+
+
+
+    "@testing-library/dom": "^10.4.0",
+    "@testing-library/react": "^16.2.0",
+    "jsdom": "^26.0.0",
+    "vitest": "^3.0.5",
+    "web-vitals": "^4.2.4",
+
+
       "@types/react-dom": "^19.1.6",
       "@vitejs/plugin-react": "^4.6.0",
       "globals": "^16.2.0",
