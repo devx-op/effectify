@@ -2,10 +2,12 @@ import * as path from 'node:path'
 import { defineConfig } from 'vite'
 
 import { copyFileSync } from 'node:fs'
+import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { globbySync } from 'globby'
 /// <reference types='vitest' />
 import dts from 'vite-plugin-dts'
+
 // https://vite.dev/config/
 export default defineConfig({
   server: {
@@ -31,6 +33,7 @@ export default defineConfig({
       },
     }) as any,
     react(),
+    tailwindcss(),
   ],
   // Uncomment this if you are using workers.
   // worker: {

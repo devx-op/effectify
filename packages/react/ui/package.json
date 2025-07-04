@@ -26,14 +26,22 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@radix-ui/react-slot": "^1.2.3",
+    "@tailwindcss/vite": "4.1.11",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.525.0",
     "react": "catalog:",
-    "react-dom": "catalog:"
+    "react-dom": "catalog:",
+    "tailwind-merge": "^3.3.1",
+    "tailwindcss": "4.1.11"
   },
   "devDependencies": {
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "globals": "catalog:",
+    "tw-animate-css": "^1.3.5",
     "typescript": "catalog:",
     "vite": "catalog:"
   }
