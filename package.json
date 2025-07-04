@@ -77,6 +77,10 @@
       "@tanstack/solid-form": "^1.12.3",
       "@tanstack/solid-router-devtools": "1.121.34",
       "@tanstack/solid-query-devtools": "^5.81.5",
+      "@tanstack/react-query": "^5.81.5",
+      "@types/react": "^19.1.8",
+      "react": "^19.1.0",
+      "react-dom": "^19.1.0",
       "tailwindcss": "4.1.10",
       "autoprefixer": "^10.4.21",
       "globby": "^14.1.0",
@@ -114,5 +118,6 @@
     "msgpackr-extract",
     "nx"
   ],
-  "dependencies": {}
+  "dependencies": {
+  }
 }

@@ -1,0 +1,29 @@
+{
+  "name": "@effectify/react-query",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/react/query/src",
+  "projectType": "library",
+  "tags": ["react"],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": [
+        "{options.outputPath}"
+      ],
+      "defaultConfiguration": "production",
+      "options": {
+        "main": "packages/react/query/src/index.ts",
+        "outputPath": "packages/react/query/dist",
+        "tsConfig": "packages/react/query/tsconfig.lib.json"
+      },
+      "configurations": {
+        "development": {
+          "minify": false
+        },
+        "production": {
+          "minify": true
+        }
+      }
+    }
+  }
+}
