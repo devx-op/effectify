@@ -49,6 +49,7 @@
     "apps/react-app-spa": {
       "name": "@effectify/react-app-spa",
       "dependencies": {
+        "@effectify/chat-react": "workspace:*",
         "@effectify/react-query": "workspace:*",
         "@effectify/react-ui": "workspace:*",
         "@tailwindcss/vite": "catalog:",
@@ -215,6 +216,7 @@
         "@radix-ui/react-label": "^2.1.7",
         "@radix-ui/react-slot": "catalog:",
         "@tailwindcss/vite": "catalog:",
+        "@tanstack/react-form": "catalog:",
         "class-variance-authority": "catalog:",
         "clsx": "catalog:",
         "lucide-react": "catalog:",
