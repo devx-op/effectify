@@ -1,5 +1,5 @@
 {
-  "name": "@effectify/react-ui",
+  "name": "@effectify/chat-react",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -24,16 +24,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@radix-ui/react-label": "^2.1.7",
-    "@radix-ui/react-slot": "catalog:",
+    "effect": "catalog:",
+    "@effectify/chat-domain": "workspace:*",
+    "@effectify/react-query": "workspace:*",
+    "@tanstack/react-form": "catalog:",
+    "@tanstack/react-query": "catalog:",
     "@tailwindcss/vite": "catalog:",
-    "class-variance-authority": "catalog:",
-    "clsx": "catalog:",
-    "lucide-react": "catalog:",
     "react": "catalog:",
-    "react-dom": "catalog:",
-    "tailwind-merge": "catalog:",
-    "tailwindcss": "catalog:"
+    "react-dom": "catalog:"
   },
   "devDependencies": {
     "@types/react": "catalog:",

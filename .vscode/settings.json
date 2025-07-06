@@ -40,7 +40,7 @@
     ".output": true,
     ".nx": true,
     "tmp": true,
-    "**/dist": true,
+    "**/dist": false,
     "node_modules": true,
     ".husky": true,
     "bun.lock": true,

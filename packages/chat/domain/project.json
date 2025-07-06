@@ -8,6 +8,7 @@
       "executor": "@nx/js:tsc",
       "outputs": ["{options.outputPath}"],
       "options": {
+        "generatePackageJson": false,
         "outputPath": "/packages/chat/domain/dist",
         "main": "packages/chat/domain/src/index.ts",
         "tsConfig": "packages/chat/domain/tsconfig.lib.json",

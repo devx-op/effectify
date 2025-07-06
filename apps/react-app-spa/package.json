@@ -15,6 +15,7 @@
   "dependencies": {
     "@effectify/react-ui": "workspace:*",
     "@effectify/react-query": "workspace:*",
+    "@effectify/chat-react": "workspace:*",
     "@tailwindcss/vite": "catalog:",
     "@tanstack/react-form": "catalog:",
     "@tanstack/react-query": "catalog:",
