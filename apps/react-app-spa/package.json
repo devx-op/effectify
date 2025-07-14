@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "shadcn": "TS_NODE_PROJECT=tsconfig.ui.json pnpx shadcn@latest",
     "dev": "vite --port 3000",
     "start": "vite --port 3000",
     "build": "vite build && tsc",

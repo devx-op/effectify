@@ -4,24 +4,16 @@
   "version": "0.0.0",
   "type": "module",
   "license": "MIT",
-  "files": ["dist"],
   "exports": {
-    "./utils/*": {
-      "source": "./src/lib/utils/*.ts",
-      "types": "./dist/lib/utils/*.d.ts",
-      "import": "./dist/utils/*.js"
-    },
-    "./components/*": {
-      "source": "./src/components/*.ts",
-      "types": "./dist/components/*.d.ts",
-      "import": "./dist/components/*.js"
-    }
+    "./globals.css": "./src/styles/globals.css",
+    "./lib/*": "./src/lib/*.ts",
+    "./components/*": "./src/components/*.tsx",
+    "./hooks/*": "./src/hooks/*.ts",
+    "./blocks/*": "./src/blocks/*.ts",
+    "./components/primitives/*": "./src/components/primitives/*.tsx"
   },
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "lint": "eslint .",
-    "preview": "vite preview"
+    "shadcn": "TS_NODE_PROJECT=tsconfig.lib.json bunx shadcn@latest"
   },
   "dependencies": {
     "@radix-ui/react-label": "catalog:",

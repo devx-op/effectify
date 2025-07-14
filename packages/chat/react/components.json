@@ -6,16 +6,17 @@
   "tailwind": {
     "config": "",
     "css": "src/index.css",
-    "baseColor": "neutral",
+    "baseColor": "zinc",
     "cssVariables": true,
     "prefix": ""
   },
   "aliases": {
-    "components": "@/components/primitives",
-    "utils": "@/lib/utils",
-    "ui": "@/components/primitives",
-    "lib": "@/utils",
-    "hooks": "@/hooks"
+    "components": "@effectify/react-ui/components",
+    "utils": "@effectify/react-ui/lib/utils",
+    "ui": "@effectify/react-ui/components/primitives",
+    "lib": "@effectify/react-ui/lib",
+    "hooks": "@effectify/react-ui/hooks",
+    "blocks": "@effectify/react-ui/blocks"
   },
   "iconLibrary": "lucide"
 }

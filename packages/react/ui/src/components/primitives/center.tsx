@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils'
+import { cn } from '@effectify/react-ui/lib/utils'
 import type React from 'react'
 
 interface CenterProps {

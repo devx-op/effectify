@@ -26,7 +26,7 @@
     "noUncheckedSideEffectImports": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@effectify/react-ui/*": ["./src/*"],
     }
   },
   "include": ["src"]

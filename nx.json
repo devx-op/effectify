@@ -62,7 +62,10 @@
       "preVersionCommand": "bun nx run-many -t build"
     }
   },
-  "targetDefaults": {
+  "sync": {
+    "disabledTaskSyncGenerators": ["@nx/js:typescript-sync"]
+  },
+  "targetDefaults": {  
     "dev": {
       "cache": false,
       "dependsOn": ["^build"]

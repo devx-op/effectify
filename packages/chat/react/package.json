@@ -21,7 +21,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "shadcn": "TS_NODE_PROJECT=tsconfig.ui.json bunx shadcn@latest"
   },
   "dependencies": {
     "effect": "catalog:",

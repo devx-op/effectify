@@ -1,0 +1,21 @@
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "new-york",
+  "rsc": false,
+  "tsx": true,
+  "tailwind": {
+    "config": "",
+    "css": "../../packages/react/ui/src/index.css",
+    "baseColor": "zync",
+    "cssVariables": true,
+    "prefix": ""
+  },
+  "aliases": {
+    "components": "@effectify/components/primitives",
+    "utils": "@effectify/lib/utils",
+    "ui": "@effectify/components/primitives",
+    "lib": "@effectify/utils",
+    "hooks": "@effectify/hooks"
+  },
+  "iconLibrary": "lucide"
+}

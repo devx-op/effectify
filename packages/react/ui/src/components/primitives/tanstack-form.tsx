@@ -1,8 +1,8 @@
 import { Slot } from '@radix-ui/react-slot'
 import * as React from 'react'
 
-import { Label } from '@/components/primitives/label'
-import { cn } from '@/lib/utils'
+import { Label } from '@effectify/react-ui/components/primitives/label'
+import { cn } from '@effectify/react-ui/lib/utils'
 import { createFormHook, createFormHookContexts, useStore } from '@tanstack/react-form'
 
 const { fieldContext, formContext, useFieldContext: _useFieldContext, useFormContext } = createFormHookContexts()
