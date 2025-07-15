@@ -13,7 +13,7 @@
     "@effect/platform": "catalog:",
     "@effect/platform-node": "catalog:",
     "@effectify/node-better-auth": "*",
-    "better-auth": "^1.2.10",
+    "better-auth": "catalog:",
     "better-sqlite3": "catalog:",
     "effect": "catalog:",
     "tslib": "catalog:"

@@ -21,21 +21,16 @@
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
     "@effect/language-service": "catalog:",
-    "@nx/esbuild": "21.1.2",
-    "@nx/js": "21.1.2",
-    "@nx/node": "21.1.2",
-    "@nx/vite": "21.1.2",
-    "@nx/web": "21.1.2",
-    "@swc-node/register": "~1.9.1",
-    "@swc/core": "~1.5.7",
-    "@swc/helpers": "~0.5.11",
+    "@nx/js": "21.2.3",
+    "@nx/node": "21.2.3",
+    "@nx/vite": "21.2.3",
+    "@nx/web": "21.2.3",
     "@types/node": "18.16.9",
     "@vitest/ui": "^3.0.0",
-    "esbuild": "0.25.0",
     "husky": "^9.1.7",
     "jiti": "2.4.2",
     "lint-staged": "15.5.1",
-    "nx": "21.1.2",
+    "nx": "21.2.3",
     "prettier": "^2.6.2",
     "ts-patch": "^3.3.0",
     "tslib": "^2.3.0",
@@ -135,6 +130,5 @@
     "msgpackr-extract",
     "nx"
   ],
-  "dependencies": {
-  }
+  "dependencies": {}
 }
