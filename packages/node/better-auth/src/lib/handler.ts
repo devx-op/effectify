@@ -25,11 +25,19 @@ export const toEffectHandler: (
     const nodeRequest = NodeHttpServerRequest.toIncomingMessage(request)
     const nodeResponse = NodeHttpServerRequest.toServerResponse(request)
     const appUrl = yield* Config.url('APP_URL')
-    const allowedOrigins = [appUrl.toString()]
-    const origin = nodeRequest.headers.origin ?? ''
+
+    const normalizeUrl = (url: URL) => {
+      return url
+        .toString()
+        .replace(/\/+$/, '')
+        .replace(/(https?:\/\/)+/, 'http://')
+    }
+
+    const allowedOrigins = [normalizeUrl(appUrl)]
+    const origin = nodeRequest.headers.origin ? normalizeUrl(appUrl) : ''
 
     if (allowedOrigins.includes(origin)) {
-      nodeResponse.setHeader('Access-Control-Allow-Origin', origin)
+      nodeResponse.setHeader('Access-Control-Allow-Origin', nodeRequest.headers.origin || '')
       nodeResponse.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
       nodeResponse.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
       nodeResponse.setHeader('Access-Control-Max-Age', '600')

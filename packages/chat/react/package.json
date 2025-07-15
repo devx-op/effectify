@@ -6,22 +6,10 @@
   "license": "MIT",
   "files": ["dist"],
   "exports": {
-    "./utils/*": {
-      "source": "./src/lib/utils/*.ts",
-      "types": "./dist/lib/utils/*.d.ts",
-      "import": "./dist/utils/*.js"
-    },
-    "./components/*": {
-      "source": "./src/components/*.ts",
-      "types": "./dist/components/*.d.ts",
-      "import": "./dist/components/*.js"
-    }
+    "./components/*": "./src/components/*.tsx",
+    "./services/*": "./src/hooks/*.ts"
   },
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "lint": "eslint .",
-    "preview": "vite preview",
     "shadcn": "TS_NODE_PROJECT=tsconfig.ui.json bunx shadcn@latest"
   },
   "dependencies": {

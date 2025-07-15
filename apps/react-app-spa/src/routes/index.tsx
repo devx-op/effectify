@@ -1,3 +1,4 @@
+import { useCheckSession } from '@/hooks/check-session-hook'
 import { createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/')({
@@ -5,5 +6,6 @@ export const Route = createFileRoute('/')({
 })
 
 function App() {
+  useCheckSession()
   return <div className="text-center">loading..</div>
 }

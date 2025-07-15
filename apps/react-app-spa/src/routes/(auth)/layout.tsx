@@ -1,16 +1,15 @@
 import { Outlet, createFileRoute } from '@tanstack/react-router'
 
+import { useCheckSession } from '@/hooks/check-session-hook'
 import { Flex } from '@effectify/react-ui/components/primitives/flex'
 import { VStack } from '@effectify/react-ui/components/primitives/stack'
-
-// import { useCheckSession } from '@/hooks/check-session-hook'
 
 export const Route = createFileRoute('/(auth)')({
   component: Layout,
 })
 
 function Layout() {
-  // useCheckSession()
+  useCheckSession()
   return (
     <VStack align="center" justify="center" className="relative h-screen md:grid lg:max-w-none lg:grid-cols-2 lg:px-0">
       <VStack className="relative hidden h-full bg-muted p-10 text-white dark:border-r lg:flex">

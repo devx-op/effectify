@@ -3,18 +3,5 @@
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "packages/chat/domain/src",
   "projectType": "library",
-  "targets": {
-    "build": {
-      "executor": "@nx/js:tsc",
-      "outputs": ["{options.outputPath}"],
-      "options": {
-        "generatePackageJson": false,
-        "outputPath": "/packages/chat/domain/dist",
-        "main": "packages/chat/domain/src/index.ts",
-        "tsConfig": "packages/chat/domain/tsconfig.lib.json",
-        "assets": []
-      }
-    }
-  },
   "tags": ["chat"]
 }
