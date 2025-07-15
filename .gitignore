@@ -50,3 +50,10 @@ vitest.config.*.timestamp*
 .nitro
 .tanstack
 .env
+
+dist-ssr
+*.local
+count.txt
+.env
+.nitro
+.tanstack
