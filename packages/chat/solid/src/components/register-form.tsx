@@ -1,4 +1,4 @@
-import { RegisterSchema } from '@effectify/chat-domain/auth'
+import { RegisterSchema } from '@effectify/chat-domain/auth.ts'
 import { Button } from '@effectify/solid-ui/components/primitives/button'
 import * as Card from '@effectify/solid-ui/components/primitives/card'
 import { Center } from '@effectify/solid-ui/components/primitives/center'

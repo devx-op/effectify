@@ -1,4 +1,4 @@
-import { cn } from '@/utils/cn'
+import { cn } from '@effectify/solid-ui/lib/utils'
 import type { JSX } from 'solid-js'
 
 interface GridProps {

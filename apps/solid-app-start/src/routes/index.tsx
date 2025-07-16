@@ -6,7 +6,7 @@ export const Route = createFileRoute('/')({
 })
 
 function IndexComponent() {
-  useCheckSession()
+  // useCheckSession()
 
   return <div>Loading...</div>
 }

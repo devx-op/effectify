@@ -23,7 +23,7 @@
     "noUncheckedSideEffectImports": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@effectify/solid-ui/*": ["./src/*"],
     }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],

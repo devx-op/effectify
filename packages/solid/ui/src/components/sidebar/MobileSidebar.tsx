@@ -1,5 +1,5 @@
-import { Button } from '@/components/primitives/button'
-import * as Drawer from '@/components/primitives/drawer'
+import { Button } from '@effectify/solid-ui/components/primitives/button'
+import * as Drawer from '@effectify/solid-ui/components/primitives/drawer'
 import { AlignLeftIcon } from 'lucide-solid'
 import { type JSX, createSignal } from 'solid-js'
 

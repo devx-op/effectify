@@ -1,6 +1,12 @@
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/primitives/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@effectify/solid-ui/components/primitives/select'
 
-import { cn } from '@/utils/cn'
+import { cn } from '@effectify/solid-ui/lib/utils'
 import { createSignal } from 'solid-js'
 
 export const accounts = [

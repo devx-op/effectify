@@ -1,4 +1,4 @@
-import { HStack } from '@/components/primitives/stack'
+import { HStack } from '@effectify/solid-ui/components/primitives/stack'
 import { ChevronRight } from 'lucide-solid'
 
 export const Breadcrumbs = () => {

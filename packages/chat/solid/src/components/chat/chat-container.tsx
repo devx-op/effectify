@@ -1,6 +1,5 @@
-import type * as Message from '@/domain/Message.js'
+import type * as Message from '@effectify/chat-domain/message.js'
 
-import { MessagesOperations } from '@/services/message-namespace.js'
 import { Button } from '@effectify/solid-ui/components/primitives/button'
 import { Center } from '@effectify/solid-ui/components/primitives/center'
 import { Flex } from '@effectify/solid-ui/components/primitives/flex'
@@ -8,6 +7,7 @@ import { VStack } from '@effectify/solid-ui/components/primitives/stack'
 import type { UseQueryResult } from '@tanstack/solid-query'
 import { AlertCircle } from 'lucide-solid'
 import type { Component } from 'solid-js'
+import { MessagesOperations } from './../../services/message-namespace.js'
 import { MessageListSkeleton } from './message-list-skeleton.js'
 import { MessageList } from './message-list.js'
 
@@ -44,7 +44,7 @@ export const ChatContainer: Component = () => {
         ) : !messagesQuery.isSuccess ? (
           <ErrorState messagesQuery={messagesQuery as UseQueryResult<Message.Message[]>} />
         ) : (
-          <MessageList messages={messagesQuery.data} />
+          <MessageList messages={messagesQuery.data as Message.Message[]} />
         )}
       </Flex>
     </VStack>

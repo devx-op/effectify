@@ -1,7 +1,7 @@
 import { AlignRightIcon, XIcon } from 'lucide-solid'
 
-import { Button } from '@/components/primitives/button'
-import * as Popover from '@/components/primitives/popover'
+import { Button } from '@effectify/solid-ui/components/primitives/button'
+import * as Popover from '@effectify/solid-ui/components/primitives/popover'
 import { type JSX, createSignal } from 'solid-js'
 
 export const MobileNavbar = (props: { children: JSX.Element }) => {

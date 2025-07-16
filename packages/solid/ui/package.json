@@ -4,39 +4,24 @@
   "description": "",
   "type": "module",
   "license": "MIT",
-  "files": ["dist"],
   "exports": {
-    "./utils/*": {
-      "source": "./src/lib/utils/*.ts",
-      "types": "./dist/lib/utils/*.d.ts",
-      "import": "./dist/utils/*.js"
-    },
-    "./components/*": {
-      "source": "./src/lib/components/*.ts",
-      "types": "./dist/lib/components/*.d.ts",
-      "import": "./dist/components/*.js"
-    },
-    "./preset": "./tailwind.config.cjs",
-    "./css": "./src/lib/app.css"
+    "./tailwind-config": "./tailwind.config.cjs",
+    "./globals.css": "./src/styles/globals.css",
+    "./lib/*": "./src/lib/*.ts",
+    "./components/*": "./src/components/*.tsx",
+    "./hooks/*": "./src/hooks/*.ts",
+    "./blocks/*": "./src/blocks/*.ts",
+    "./components/primitives/*": "./src/components/primitives/*.tsx"
   },
   "dependencies": {
     "@kobalte/core": "catalog:",
     "@corvu/drawer": "catalog:",
+    "@tanstack/solid-form": "catalog:",
     "solid-js": "catalog:",
     "lucide-solid": "catalog:",
     "class-variance-authority": "catalog:",
     "clsx": "catalog:",
     "tailwind-merge": "catalog:",
     "tailwindcss-animate": "catalog:"
-  },
-  "devDependencies": {
-    "vite": "catalog:",
-    "vite-plugin-solid": "catalog:",
-    "@tailwindcss/postcss": "catalog:",
-    "autoprefixer": "catalog:",
-    "postcss": "catalog:",
-    "tailwindcss": "catalog:",
-    "globby": "catalog:",
-    "vite-plugin-dts": "catalog:"
   }
 }

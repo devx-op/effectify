@@ -1,4 +1,4 @@
-import { cn } from '@/utils/cn'
+import { cn } from '@effectify/solid-ui/lib/utils'
 import type { PolymorphicProps } from '@kobalte/core/polymorphic'
 import type { TooltipContentProps, TooltipRootProps } from '@kobalte/core/tooltip'
 import { Tooltip as TooltipPrimitive } from '@kobalte/core/tooltip'

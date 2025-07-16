@@ -1,4 +1,4 @@
-import { cn } from '@/utils/cn'
+import { cn } from '@effectify/solid-ui/lib/utils'
 import type { PolymorphicProps } from '@kobalte/core/polymorphic'
 import type { SeparatorRootProps } from '@kobalte/core/separator'
 import { Separator as SeparatorPrimitive } from '@kobalte/core/separator'

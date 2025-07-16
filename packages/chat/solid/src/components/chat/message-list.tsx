@@ -1,8 +1,8 @@
-import type * as Message from '@/domain/Message.js'
+import type * as Message from '@effectify/chat-domain/message.ts'
 
-import { MessagesOperations } from '@/services/message-namespace.js'
 import { VStack } from '@effectify/solid-ui/components/primitives/stack'
 import type { Component } from 'solid-js'
+import { MessagesOperations } from './../../services/message-namespace.js'
 import { MessageBubble } from './message-bubble.jsx'
 
 type Props = {

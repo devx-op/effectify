@@ -1,4 +1,4 @@
-import { cn } from '@/utils/cn'
+import { cn } from '@effectify/solid-ui/lib/utils'
 import { Button as ButtonPrimitive } from '@kobalte/core/button'
 import type { ButtonRootProps } from '@kobalte/core/button'
 import type { PolymorphicProps } from '@kobalte/core/polymorphic'

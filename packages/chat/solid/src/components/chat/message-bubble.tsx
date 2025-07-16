@@ -1,8 +1,8 @@
-import type * as Message from '@/domain/Message.js'
+import type * as Message from '@effectify/chat-domain/message.js'
 
 import type { Component, JSX } from 'solid-js'
 
-import { cn } from '@effectify/solid-ui/utils/cn'
+import { cn } from '@effectify/solid-ui/lib/utils'
 import { DateTime } from 'effect'
 import { CheckCheckIcon } from 'lucide-solid'
 

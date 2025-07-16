@@ -1,4 +1,4 @@
-import { Button } from '@/components/primitives/button'
+import { Button } from '@effectify/solid-ui/components/primitives/button'
 import { createSignal } from 'solid-js'
 
 export default function Counter() {

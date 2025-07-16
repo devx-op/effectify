@@ -1,10 +1,10 @@
-import { HStack, Stack } from '@/components/primitives/stack'
+import { HStack, Stack } from '@effectify/solid-ui/components/primitives/stack'
 
-import { LogoutButton } from '@/components/logout-button'
-import { MobileNavbar } from '@/components/navbar/MobileNavbar'
-import { NavbarContainer } from '@/components/navbar/NavbarContainer'
-// import { ThemeSelector } from '@/components/theme-selector'
-import { Separator } from '@/components/primitives/separator'
+import { LogoutButton } from '@effectify/solid-ui/components/logout-button'
+import { MobileNavbar } from '@effectify/solid-ui/components/navbar/MobileNavbar'
+import { NavbarContainer } from '@effectify/solid-ui/components/navbar/NavbarContainer'
+// import { ThemeSelector } from '@effectify/solid-ui/components/theme-selector'
+import { Separator } from '@effectify/solid-ui/components/primitives/separator'
 import type { Component } from 'solid-js'
 
 // import { ThemeDrawer } from '../theming/ThemeDrawer'

@@ -1,4 +1,4 @@
-import { Button } from '@/components/primitives/button'
+import { Button } from '@effectify/solid-ui/components/primitives/button'
 import { LogOutIcon } from 'lucide-solid'
 import type { Component } from 'solid-js'
 

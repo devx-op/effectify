@@ -4,28 +4,9 @@
   "description": "",
   "type": "module",
   "license": "MIT",
-  "files": ["dist"],
   "exports": {
-    "./utils/*": {
-      "source": "./src/utils/*.ts",
-      "types": "./dist/utils/*.d.ts",
-      "import": "./dist/utils/*.js"
-    },
-    "./components/*": {
-      "source": "./src/components/*.ts",
-      "types": "./dist/components/*.d.ts",
-      "import": "./dist/components/*.js"
-    },
-    "./services/*": {
-      "source": "./src/services/*.ts",
-      "types": "./dist/services/*.d.ts",
-      "import": "./dist/services/*.js"
-    },
-    "./domain/*": {
-      "source": "./src/domain/*.ts",
-      "types": "./dist/domain/*.d.ts",
-      "import": "./dist/domain/*.js"
-    }
+    "./components/*": "./src/components/*.tsx",
+    "./services/*": "./src/services/*.ts"
   },
   "dependencies": {
     "@effectify/chat-domain": "workspace:*",
@@ -37,10 +18,5 @@
     "@tanstack/solid-query": "catalog:",
     "@tanstack/solid-form": "catalog:",
     "lucide-solid": "catalog:"
-  },
-  "devDependencies": {
-    "vite": "catalog:",
-    "vite-plugin-solid": "catalog:",
-    "vite-plugin-dts": "catalog:"
   }
 }

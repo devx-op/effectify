@@ -2,7 +2,7 @@ import type { PopoverContentProps, PopoverRootProps } from '@kobalte/core/popove
 import type { ParentProps, ValidComponent } from 'solid-js'
 import { mergeProps, splitProps } from 'solid-js'
 
-import { cn } from '@/utils/cn'
+import { cn } from '@effectify/solid-ui/lib/utils'
 import type { PolymorphicProps } from '@kobalte/core/polymorphic'
 import { Popover as PopoverPrimitive } from '@kobalte/core/popover'
 

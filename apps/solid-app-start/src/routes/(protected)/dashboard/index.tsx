@@ -6,10 +6,10 @@ import { ChatContainer } from '@effectify/chat-solid/components/chat/chat-contai
 export const Route = createFileRoute('/(protected)/dashboard/')({
   component: RouteComponent,
   beforeLoad: () => {
-    const session = useSession()
-    if (!session().data?.session) {
-      throw redirect({ to: '/login' })
-    }
+    // const session = useSession()
+    // if (!session().data?.session) {
+    //   throw redirect({ to: '/login' })
+    // }
   },
 })
 

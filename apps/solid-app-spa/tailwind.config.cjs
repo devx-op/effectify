@@ -4,6 +4,7 @@ module.exports = {
   content: [
     "src/routes/**/*.{ts,tsx}", 
     "src/components/**/*.{ts,tsx}",
+    "../../packages/chat/solid/src/components/**/*.{ts,tsx}",
     "../../packages/solid/ui/src/components/**/*.{ts,tsx}"
   ],
   prefix: "",

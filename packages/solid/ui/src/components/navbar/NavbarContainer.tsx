@@ -1,4 +1,4 @@
-import { Flex } from '@/components/primitives/flex'
+import { Flex } from '@effectify/solid-ui/components/primitives/flex'
 import type { ParentProps } from 'solid-js'
 
 export const NavbarContainer = (props: ParentProps) => (

@@ -11,9 +11,9 @@
   },
   "alias": {
     "@": ".",
-    "lib": "@/",
-    "component": "@/components/primitives",
+    "lib": "@/lib",
+    "component": "@/components",
     "ui": "@/components/primitives",
-    "cn": "@/utils/cn"
+    "cn": "@/lib/utils"
   }
 }

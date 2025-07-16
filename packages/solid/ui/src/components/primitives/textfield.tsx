@@ -7,7 +7,7 @@ import type {
 } from '@kobalte/core/text-field'
 import type { ValidComponent, VoidProps } from 'solid-js'
 
-import { cn } from '@/utils/cn'
+import { cn } from '@effectify/solid-ui/lib/utils'
 import type { PolymorphicProps } from '@kobalte/core/polymorphic'
 import { TextField as TextFieldPrimitive } from '@kobalte/core/text-field'
 import { cva } from 'class-variance-authority'

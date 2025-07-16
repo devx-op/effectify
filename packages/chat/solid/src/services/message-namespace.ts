@@ -1,4 +1,4 @@
-import type * as Message from '@effectify/chat-domain/message'
+import type * as Message from '@effectify/chat-domain/message.ts'
 import * as Array from 'effect/Array'
 import type * as Brand from 'effect/Brand'
 import * as Chunk from 'effect/Chunk'
@@ -12,7 +12,7 @@ import * as Stream from 'effect/Stream'
 import { createEffect, createMemo, onCleanup } from 'solid-js'
 import { createQueryDataHelpers, useEffectQuery, useRuntime } from './tanstack-query.js'
 
-import { MessagesService } from '@effectify/chat-domain/message-service'
+import { MessagesService } from '@effectify/chat-domain/message-service.ts'
 import { createQueryKey } from '@effectify/solid-query'
 
 export namespace MessagesOperations {

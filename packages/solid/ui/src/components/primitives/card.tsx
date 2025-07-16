@@ -1,6 +1,6 @@
 import type { ComponentProps, ParentComponent } from 'solid-js'
 
-import { cn } from '@/utils/cn'
+import { cn } from '@effectify/solid-ui/lib/utils'
 import { splitProps } from 'solid-js'
 
 export const Root = (props: ComponentProps<'div'>) => {

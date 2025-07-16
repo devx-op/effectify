@@ -15,13 +15,13 @@ export const Route = createFileRoute('/(protected)')({
 function RouteComponent() {
   const handleLogout = async () => {
     console.log('logout')
-    try {
-      await authClient.signOut()
-      // Forzar navegación inmediata
-      window.location.href = '/login'
-    } catch (error) {
-      console.error('Error during logout:', error)
-    }
+    // try {
+    //   await authClient.signOut()
+    //   // Forzar navegación inmediata
+    //   window.location.href = '/login'
+    // } catch (error) {
+    //   console.error('Error during logout:', error)
+    // }
   }
   return (
     <HStack class="min-h-screen">

@@ -1,6 +1,6 @@
-import { buttonVariants } from '@/components/primitives/button'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/primitives/tooltip'
-import { cn } from '@/utils/cn'
+import { buttonVariants } from '@effectify/solid-ui/components/primitives/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@effectify/solid-ui/components/primitives/tooltip'
+import { cn } from '@effectify/solid-ui/lib/utils'
 import { For, type JSX, Show } from 'solid-js'
 
 type Props = {

@@ -1,8 +1,8 @@
 import type { ContentProps, DescriptionProps, DynamicProps, LabelProps } from '@corvu/drawer'
 import type { ComponentProps, ParentProps, ValidComponent } from 'solid-js'
 
-import { cn } from '@/utils/cn'
 import DrawerPrimitive from '@corvu/drawer'
+import { cn } from '@effectify/solid-ui/lib/utils'
 import { splitProps } from 'solid-js'
 
 export const Root = DrawerPrimitive

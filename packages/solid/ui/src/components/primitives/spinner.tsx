@@ -1,4 +1,4 @@
-import { cn } from '@/utils/cn'
+import { cn } from '@effectify/solid-ui/lib/utils'
 import { SettingsIcon } from 'lucide-solid'
 
 export function Spinner({ className }: Readonly<{ className?: string }>) {

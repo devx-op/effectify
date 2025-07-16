@@ -1,4 +1,4 @@
-import { cn } from '@/utils/cn'
+import { cn } from '@effectify/solid-ui/lib/utils'
 import type { PolymorphicProps } from '@kobalte/core/polymorphic'
 import type { SelectContentProps, SelectItemProps, SelectTriggerProps } from '@kobalte/core/select'
 import { Select as SelectPrimitive } from '@kobalte/core/select'

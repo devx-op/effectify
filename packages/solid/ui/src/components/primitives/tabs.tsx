@@ -7,7 +7,7 @@ import type {
 } from '@kobalte/core/tabs'
 import type { ValidComponent, VoidProps } from 'solid-js'
 
-import { cn } from '@/utils/cn'
+import { cn } from '@effectify/solid-ui/lib/utils'
 import type { PolymorphicProps } from '@kobalte/core/polymorphic'
 import { Tabs as TabsPrimitive } from '@kobalte/core/tabs'
 import type { VariantProps } from 'class-variance-authority'

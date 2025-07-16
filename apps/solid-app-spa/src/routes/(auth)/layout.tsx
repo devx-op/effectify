@@ -9,7 +9,7 @@ export const Route = createFileRoute('/(auth)')({
 })
 
 function Layout() {
-  useCheckSession()
+  // useCheckSession()
   return (
     <VStack align="center" justify="center" class="relative h-screen md:grid lg:max-w-none lg:grid-cols-2 lg:px-0">
       <VStack class="relative hidden h-full bg-muted p-10 text-white dark:border-r lg:flex">

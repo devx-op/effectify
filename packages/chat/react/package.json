@@ -4,7 +4,6 @@
   "version": "0.0.0",
   "type": "module",
   "license": "MIT",
-  "files": ["dist"],
   "exports": {
     "./components/*": "./src/components/*.tsx",
     "./services/*": "./src/hooks/*.ts"
@@ -16,6 +15,7 @@
     "effect": "catalog:",
     "@effectify/chat-domain": "workspace:*",
     "@effectify/react-query": "workspace:*",
+    "@effectify/react-ui": "workspace:*",
     "@tanstack/react-form": "catalog:",
     "@tanstack/react-query": "catalog:",
     "@tailwindcss/vite": "catalog:",

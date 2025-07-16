@@ -1,8 +1,8 @@
 import { type ConfigColorMode, type MaybeConfigColorMode, useColorMode } from '@kobalte/core/color-mode'
 import { type JSX, Match, Switch, createSignal, onMount } from 'solid-js'
 
-import { DesktopIcon } from '@/components/icons'
-import { Button } from '@/components/primitives/button'
+import { DesktopIcon } from '@effectify/solid-ui/components/icons'
+import { Button } from '@effectify/solid-ui/components/primitives/button'
 import { MoonIcon, SunIcon } from 'lucide-solid'
 
 interface ThemeOption {
