@@ -1,0 +1,7 @@
+{
+  "name": "@effectify/shared-domain",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/shared/domain/src",
+  "projectType": "library",
+  "tags": ["domain"]
+}

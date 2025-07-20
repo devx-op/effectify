@@ -1,5 +1,5 @@
 {
-  "name": "@effectify/chat-domain",
+  "name": "@effectify/shared-domain",
   "version": "0.0.1",
   "private": true,
   "type": "module",
@@ -9,8 +9,9 @@
     "./*": "./src/*"
   },
   "dependencies": {
-    "@effectify/shared-domain": "workspace:*",
     "tslib": "catalog:",
-    "effect": "catalog:"
+    "effect": "catalog:",
+    "@types/validator": "catalog:",
+    "validator": "catalog:"
   }
 }

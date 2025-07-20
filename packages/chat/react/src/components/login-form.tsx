@@ -62,17 +62,6 @@ export const LoginForm: React.FC<LoginFormProps> = (props) => {
                 <Stack gap="1">
                   <form.AppField
                     name="email"
-                    validators={{
-                      onBlur: ({ value }: { value: string }) => {
-                        if (!value || value.trim().length === 0) {
-                          return 'Email is required'
-                        }
-                        if (value.length < 3) {
-                          return 'Email must have a length of at least 3'
-                        }
-                        return undefined
-                      },
-                    }}
                     children={(field) => (
                       <field.Item>
                         <field.Label>Email</field.Label>
@@ -85,22 +74,12 @@ export const LoginForm: React.FC<LoginFormProps> = (props) => {
                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => field.handleChange(e.target.value)}
                           />
                         </field.Control>
+                        <field.Message />
                       </field.Item>
                     )}
                   />
                   <form.AppField
                     name="password"
-                    validators={{
-                      onBlur: ({ value }: { value: string }) => {
-                        if (!value || value.trim().length === 0) {
-                          return 'Password is required'
-                        }
-                        if (value.length < 6) {
-                          return 'Password must have a length of at least 6'
-                        }
-                        return undefined
-                      },
-                    }}
                     children={(field) => (
                       <field.Item>
                         <field.Label>Password</field.Label>
@@ -114,6 +93,7 @@ export const LoginForm: React.FC<LoginFormProps> = (props) => {
                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => field.handleChange(e.target.value)}
                           />
                         </field.Control>
+                        <field.Message />
                       </field.Item>
                     )}
                   />

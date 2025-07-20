@@ -12,7 +12,6 @@ import { Slot } from '@radix-ui/react-slot'
 
 const { fieldContext, formContext, useFieldContext: _useFieldContext, useFormContext } = createFormHookContexts()
 
-// Custom AppForm component that wraps Form.Root
 function AppFormWrapper({ children, ...props }: React.ComponentProps<typeof Form.Root>) {
   return <Form.Root {...props}>{children}</Form.Root>
 }
@@ -127,7 +126,13 @@ function Message({ className, ...props }: React.ComponentProps<'p'>) {
 function TextField({ className, ...props }: React.ComponentProps<typeof TextFieldPrimitive>) {
   const { errors } = useFieldContext()
 
-  return <TextFieldPrimitive aria-invalid={!!errors.length} className={className} {...props} />
+  return (
+    <TextFieldPrimitive
+      aria-invalid={!!errors.length}
+      className={cn(className, errors.length > 0 && 'border-destructive focus-visible:ring-destructive')}
+      {...props}
+    />
+  )
 }
 
 function FormRoot({ children, ...props }: React.ComponentProps<typeof Form.Root>) {

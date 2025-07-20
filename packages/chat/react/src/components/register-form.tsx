@@ -89,6 +89,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = (props) => {
                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => field.handleChange(e.target.value)}
                           />
                         </field.Control>
+                        <field.Message />
                       </field.Item>
                     )}
                   />
@@ -118,6 +119,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = (props) => {
                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => field.handleChange(e.target.value)}
                           />
                         </field.Control>
+                        <field.Message />
                       </field.Item>
                     )}
                   />
@@ -147,6 +149,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = (props) => {
                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => field.handleChange(e.target.value)}
                           />
                         </field.Control>
+                        <field.Message />
                       </field.Item>
                     )}
                   />
@@ -176,6 +179,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = (props) => {
                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => field.handleChange(e.target.value)}
                           />
                         </field.Control>
+                        <field.Message />
                       </field.Item>
                     )}
                   />
