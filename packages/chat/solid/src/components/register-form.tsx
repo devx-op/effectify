@@ -1,11 +1,12 @@
+import * as Card from '@effectify/solid-ui/components/primitives/card'
+
+import { Stack, VStack } from '@effectify/solid-ui/components/primitives/stack'
+import { Input, useAppForm } from '@effectify/solid-ui/components/primitives/tanstack-form'
+import type { Component, JSX } from 'solid-js'
+
 import { RegisterSchema } from '@effectify/chat-domain/auth.ts'
 import { Button } from '@effectify/solid-ui/components/primitives/button'
-import * as Card from '@effectify/solid-ui/components/primitives/card'
 import { Center } from '@effectify/solid-ui/components/primitives/center'
-import { Stack, VStack } from '@effectify/solid-ui/components/primitives/stack'
-import { TextField, TextFieldLabel, TextFieldRoot } from '@effectify/solid-ui/components/primitives/textfield'
-import { createForm } from '@tanstack/solid-form'
-import type { Component, JSX } from 'solid-js'
 
 type RegisterFormProps = {
   handleSubmit: (values: { name: string; email: string; password: string; confirmPassword: string }) => Promise<void>
@@ -13,7 +14,7 @@ type RegisterFormProps = {
 }
 
 export const RegisterForm: Component<RegisterFormProps> = (props) => {
-  const form = createForm(() => ({
+  const form = useAppForm(() => ({
     defaultValues: {
       name: '',
       email: '',
@@ -21,7 +22,9 @@ export const RegisterForm: Component<RegisterFormProps> = (props) => {
       confirmPassword: '',
     },
     schema: RegisterSchema,
-    onSubmit: async ({ value }) => {
+    onSubmit: async ({
+      value,
+    }: { value: { name: string; email: string; password: string; confirmPassword: string } }) => {
       // Do something with form data
       console.log(value)
       props.handleSubmit(value)
@@ -55,10 +58,10 @@ export const RegisterForm: Component<RegisterFormProps> = (props) => {
                 }}
               >
                 <Stack gap="1">
-                  <form.Field
+                  <form.AppField
                     name="name"
                     validators={{
-                      onBlur: ({ value }) => {
+                      onBlur: ({ value }: { value: string }) => {
                         if (!value || value.trim().length === 0) {
                           return 'Name is required'
                         }
@@ -69,22 +72,24 @@ export const RegisterForm: Component<RegisterFormProps> = (props) => {
                       },
                     }}
                     children={(field) => (
-                      <TextFieldRoot>
-                        <TextFieldLabel>Name</TextFieldLabel>
-                        <TextField
-                          placeholder={'Your full name'}
-                          name={field().name}
-                          value={field().state.value}
-                          onBlur={field().handleBlur}
-                          onInput={(e) => field().handleChange(e.currentTarget.value)}
-                        />
-                      </TextFieldRoot>
+                      <field.FormItem>
+                        <field.FormLabel>Name</field.FormLabel>
+                        <field.FormControl>
+                          <Input
+                            placeholder={'Your full name'}
+                            name={field().name}
+                            value={field().state.value as string}
+                            onBlur={field().handleBlur}
+                            onInput={(e: Event) => field().handleChange((e.currentTarget as HTMLInputElement).value)}
+                          />
+                        </field.FormControl>
+                      </field.FormItem>
                     )}
                   />
-                  <form.Field
+                  <form.AppField
                     name="email"
                     validators={{
-                      onBlur: ({ value }) => {
+                      onBlur: ({ value }: { value: string }) => {
                         if (!value || value.trim().length === 0) {
                           return 'Email is required'
                         }
@@ -95,23 +100,25 @@ export const RegisterForm: Component<RegisterFormProps> = (props) => {
                       },
                     }}
                     children={(field) => (
-                      <TextFieldRoot>
-                        <TextFieldLabel>Email</TextFieldLabel>
-                        <TextField
-                          placeholder={'email@example.com'}
-                          type="email"
-                          name={field().name}
-                          value={field().state.value}
-                          onBlur={field().handleBlur}
-                          onInput={(e) => field().handleChange(e.currentTarget.value)}
-                        />
-                      </TextFieldRoot>
+                      <field.FormItem>
+                        <field.FormLabel>Email</field.FormLabel>
+                        <field.FormControl>
+                          <Input
+                            placeholder={'email@example.com'}
+                            type="email"
+                            name={field().name}
+                            value={field().state.value as string}
+                            onBlur={field().handleBlur}
+                            onInput={(e: Event) => field().handleChange((e.currentTarget as HTMLInputElement).value)}
+                          />
+                        </field.FormControl>
+                      </field.FormItem>
                     )}
                   />
-                  <form.Field
+                  <form.AppField
                     name="password"
                     validators={{
-                      onBlur: ({ value }) => {
+                      onBlur: ({ value }: { value: string }) => {
                         if (!value || value.trim().length === 0) {
                           return 'Password is required'
                         }
@@ -122,23 +129,25 @@ export const RegisterForm: Component<RegisterFormProps> = (props) => {
                       },
                     }}
                     children={(field) => (
-                      <TextFieldRoot>
-                        <TextFieldLabel>Password</TextFieldLabel>
-                        <TextField
-                          placeholder={'password'}
-                          type="password"
-                          name={field().name}
-                          value={field().state.value}
-                          onBlur={field().handleBlur}
-                          onInput={(e) => field().handleChange(e.currentTarget.value)}
-                        />
-                      </TextFieldRoot>
+                      <field.FormItem>
+                        <field.FormLabel>Password</field.FormLabel>
+                        <field.FormControl>
+                          <Input
+                            placeholder={'password'}
+                            type="password"
+                            name={field().name}
+                            value={field().state.value as string}
+                            onBlur={field().handleBlur}
+                            onInput={(e: Event) => field().handleChange((e.currentTarget as HTMLInputElement).value)}
+                          />
+                        </field.FormControl>
+                      </field.FormItem>
                     )}
                   />
-                  <form.Field
+                  <form.AppField
                     name="confirmPassword"
                     validators={{
-                      onBlur: ({ value }) => {
+                      onBlur: ({ value }: { value: string }) => {
                         if (!value || value.trim().length === 0) {
                           return 'Confirm password is required'
                         }
@@ -149,17 +158,19 @@ export const RegisterForm: Component<RegisterFormProps> = (props) => {
                       },
                     }}
                     children={(field) => (
-                      <TextFieldRoot>
-                        <TextFieldLabel>Confirm Password</TextFieldLabel>
-                        <TextField
-                          placeholder={'Confirm your password'}
-                          type="password"
-                          name={field().name}
-                          value={field().state.value}
-                          onBlur={field().handleBlur}
-                          onInput={(e) => field().handleChange(e.currentTarget.value)}
-                        />
-                      </TextFieldRoot>
+                      <field.FormItem>
+                        <field.FormLabel>Confirm Password</field.FormLabel>
+                        <field.FormControl>
+                          <Input
+                            placeholder={'Confirm your password'}
+                            type="password"
+                            name={field().name}
+                            value={field().state.value as string}
+                            onBlur={field().handleBlur}
+                            onInput={(e: Event) => field().handleChange((e.currentTarget as HTMLInputElement).value)}
+                          />
+                        </field.FormControl>
+                      </field.FormItem>
                     )}
                   />
                   <Button type="submit">Create Account</Button>

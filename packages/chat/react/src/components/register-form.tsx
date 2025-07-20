@@ -9,10 +9,9 @@ import {
 } from '@effectify/react-ui/components/primitives/card'
 import { Stack, VStack } from '@effectify/react-ui/components/primitives/stack'
 
-import { RegisterSchema } from '@effectify/chat-domain/auth'
+import { RegisterSchema } from '@effectify/chat-domain/auth.ts'
 import { Button } from '@effectify/react-ui/components/primitives/button'
 import { Center } from '@effectify/react-ui/components/primitives/center'
-import { Input } from '@effectify/react-ui/components/primitives/input'
 import { useAppForm } from '@effectify/react-ui/components/primitives/tanstack-form'
 
 type RegisterFormProps = {
@@ -57,142 +56,132 @@ export const RegisterForm: React.FC<RegisterFormProps> = (props) => {
           </CardHeader>
           <CardContent>
             <Stack gap="3">
-              <form.AppForm>
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault()
-                    e.stopPropagation()
-                    form.handleSubmit()
-                  }}
-                >
-                  <Stack gap="1">
-                    <form.AppField
-                      name="name"
-                      validators={{
-                        onBlur: ({ value }: { value: string }) => {
-                          if (!value || value.trim().length === 0) {
-                            return 'Name is required'
-                          }
-                          if (value.length < 2) {
-                            return 'Name must have a length of at least 2'
-                          }
-                          return undefined
-                        },
-                      }}
-                      children={(field) => (
-                        <field.FormItem>
-                          <field.FormLabel>Name</field.FormLabel>
-                          <field.FormControl>
-                            <Input
-                              name={field.name}
-                              placeholder="Your full name"
-                              value={field.state.value as string}
-                              onBlur={field.handleBlur}
-                              onInput={(e: React.FormEvent<HTMLInputElement>) =>
-                                field.handleChange(e.currentTarget.value)
-                              }
-                            />
-                          </field.FormControl>
-                        </field.FormItem>
-                      )}
-                    />
-                    <form.AppField
-                      name="email"
-                      validators={{
-                        onBlur: ({ value }: { value: string }) => {
-                          if (!value || value.trim().length === 0) {
-                            return 'Email is required'
-                          }
-                          if (value.length < 3) {
-                            return 'Email must have a length of at least 3'
-                          }
-                          return undefined
-                        },
-                      }}
-                      children={(field) => (
-                        <field.FormItem>
-                          <field.FormLabel>Email</field.FormLabel>
-                          <field.FormControl>
-                            <Input
-                              name={field.name}
-                              type="email"
-                              placeholder="email@example.com"
-                              value={field.state.value as string}
-                              onBlur={field.handleBlur}
-                              onInput={(e: React.FormEvent<HTMLInputElement>) =>
-                                field.handleChange(e.currentTarget.value)
-                              }
-                            />
-                          </field.FormControl>
-                        </field.FormItem>
-                      )}
-                    />
-                    <form.AppField
-                      name="password"
-                      validators={{
-                        onBlur: ({ value }: { value: string }) => {
-                          if (!value || value.trim().length === 0) {
-                            return 'Password is required'
-                          }
-                          if (value.length < 6) {
-                            return 'Password must have a length of at least 6'
-                          }
-                          return undefined
-                        },
-                      }}
-                      children={(field) => (
-                        <field.FormItem>
-                          <field.FormLabel>Password</field.FormLabel>
-                          <field.FormControl>
-                            <Input
-                              name={field.name}
-                              type="password"
-                              placeholder="password"
-                              value={field.state.value as string}
-                              onBlur={field.handleBlur}
-                              onInput={(e: React.FormEvent<HTMLInputElement>) =>
-                                field.handleChange(e.currentTarget.value)
-                              }
-                            />
-                          </field.FormControl>
-                        </field.FormItem>
-                      )}
-                    />
-                    <form.AppField
-                      name="confirmPassword"
-                      validators={{
-                        onBlur: ({ value }: { value: string }) => {
-                          if (!value || value.trim().length === 0) {
-                            return 'Confirm password is required'
-                          }
-                          if (value.length < 6) {
-                            return 'Confirm password must have a length of at least 6'
-                          }
-                          return undefined
-                        },
-                      }}
-                      children={(field) => (
-                        <field.FormItem>
-                          <field.FormLabel>Confirm Password</field.FormLabel>
-                          <field.FormControl>
-                            <Input
-                              name={field.name}
-                              type="password"
-                              placeholder="Confirm your password"
-                              value={field.state.value as string}
-                              onBlur={field.handleBlur}
-                              onInput={(e: React.FormEvent<HTMLInputElement>) =>
-                                field.handleChange(e.currentTarget.value)
-                              }
-                            />
-                          </field.FormControl>
-                        </field.FormItem>
-                      )}
-                    />
-                    <Button type="submit">Create Account</Button>
-                  </Stack>
-                </form>
-              </form.AppForm>
+              <form.Root
+                onSubmit={(e: React.FormEvent) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  form.handleSubmit()
+                }}
+              >
+                <Stack gap="1">
+                  <form.AppField
+                    name="name"
+                    validators={{
+                      onBlur: ({ value }: { value: string }) => {
+                        if (!value || value.trim().length === 0) {
+                          return 'Name is required'
+                        }
+                        if (value.length < 2) {
+                          return 'Name must have a length of at least 2'
+                        }
+                        return undefined
+                      },
+                    }}
+                    children={(field) => (
+                      <field.Item>
+                        <field.Label>Name</field.Label>
+                        <field.Control>
+                          <field.TextField
+                            name={field.name}
+                            placeholder="Your full name"
+                            value={field.state.value as string}
+                            onBlur={field.handleBlur}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => field.handleChange(e.target.value)}
+                          />
+                        </field.Control>
+                      </field.Item>
+                    )}
+                  />
+                  <form.AppField
+                    name="email"
+                    validators={{
+                      onBlur: ({ value }: { value: string }) => {
+                        if (!value || value.trim().length === 0) {
+                          return 'Email is required'
+                        }
+                        if (value.length < 3) {
+                          return 'Email must have a length of at least 3'
+                        }
+                        return undefined
+                      },
+                    }}
+                    children={(field) => (
+                      <field.Item>
+                        <field.Label>Email</field.Label>
+                        <field.Control>
+                          <field.TextField
+                            name={field.name}
+                            type="email"
+                            placeholder="email@example.com"
+                            value={field.state.value as string}
+                            onBlur={field.handleBlur}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => field.handleChange(e.target.value)}
+                          />
+                        </field.Control>
+                      </field.Item>
+                    )}
+                  />
+                  <form.AppField
+                    name="password"
+                    validators={{
+                      onBlur: ({ value }: { value: string }) => {
+                        if (!value || value.trim().length === 0) {
+                          return 'Password is required'
+                        }
+                        if (value.length < 6) {
+                          return 'Password must have a length of at least 6'
+                        }
+                        return undefined
+                      },
+                    }}
+                    children={(field) => (
+                      <field.Item>
+                        <field.Label>Password</field.Label>
+                        <field.Control>
+                          <field.TextField
+                            name={field.name}
+                            type="password"
+                            placeholder="password"
+                            value={field.state.value as string}
+                            onBlur={field.handleBlur}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => field.handleChange(e.target.value)}
+                          />
+                        </field.Control>
+                      </field.Item>
+                    )}
+                  />
+                  <form.AppField
+                    name="confirmPassword"
+                    validators={{
+                      onBlur: ({ value }: { value: string }) => {
+                        if (!value || value.trim().length === 0) {
+                          return 'Confirm password is required'
+                        }
+                        if (value.length < 6) {
+                          return 'Confirm password must have a length of at least 6'
+                        }
+                        return undefined
+                      },
+                    }}
+                    children={(field) => (
+                      <field.Item>
+                        <field.Label>Confirm Password</field.Label>
+                        <field.Control>
+                          <field.TextField
+                            name={field.name}
+                            type="password"
+                            placeholder="Confirm your password"
+                            value={field.state.value as string}
+                            onBlur={field.handleBlur}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => field.handleChange(e.target.value)}
+                          />
+                        </field.Control>
+                      </field.Item>
+                    )}
+                  />
+                  <Button type="submit">Create Account</Button>
+                </Stack>
+              </form.Root>
               <Stack gap="2" className="text-center text-sm mt-2.5">
                 <span>Already have an account?</span>
                 {props.children}

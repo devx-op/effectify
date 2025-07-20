@@ -18,6 +18,7 @@
   "dependencies": {
     "@radix-ui/react-label": "catalog:",
     "@radix-ui/react-slot": "catalog:",
+    "@radix-ui/react-form": "catalog:",
     "@tailwindcss/vite": "catalog:",
     "@tanstack/react-form": "catalog:",
     "class-variance-authority": "catalog:",

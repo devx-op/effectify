@@ -1,43 +1,58 @@
-import { Slot } from '@radix-ui/react-slot'
+import * as Form from '@radix-ui/react-form'
 import * as React from 'react'
 
-import { Label } from '@effectify/react-ui/components/primitives/label'
-import { cn } from '@effectify/react-ui/lib/utils'
+import {
+  TextFieldLabel as TextFieldLabelPrimitive,
+  TextField as TextFieldPrimitive,
+} from '@effectify/react-ui/components/primitives/textfield'
 import { createFormHook, createFormHookContexts, useStore } from '@tanstack/react-form'
 
+import { cn } from '@effectify/react-ui/lib/utils'
+import { Slot } from '@radix-ui/react-slot'
+
 const { fieldContext, formContext, useFieldContext: _useFieldContext, useFormContext } = createFormHookContexts()
+
+// Custom AppForm component that wraps Form.Root
+function AppFormWrapper({ children, ...props }: React.ComponentProps<typeof Form.Root>) {
+  return <Form.Root {...props}>{children}</Form.Root>
+}
 
 const { useAppForm, withForm } = createFormHook({
   fieldContext,
   formContext,
   fieldComponents: {
-    FormLabel,
-    FormControl,
-    FormDescription,
-    FormMessage,
-    FormItem,
+    Label,
+    Control,
+    Description,
+    Message,
+    Item,
+    TextField,
   },
-  formComponents: {},
+  formComponents: {
+    Root: AppFormWrapper,
+  },
 })
 
 type FormItemContextValue = {
   id: string
 }
 
-const FormItemContext = React.createContext<FormItemContextValue>({} as FormItemContextValue)
+const ItemContext = React.createContext<FormItemContextValue>({} as FormItemContextValue)
 
-function FormItem({ className, ...props }: React.ComponentProps<'div'>) {
+function Item({ className, ...props }: React.ComponentProps<'div'>) {
   const id = React.useId()
+  const fieldApi = _useFieldContext()
+  const fieldName = fieldApi?.name || 'field'
 
   return (
-    <FormItemContext.Provider value={{ id }}>
-      <div data-slot="form-item" className={cn('grid gap-2', className)} {...props} />
-    </FormItemContext.Provider>
+    <ItemContext.Provider value={{ id }}>
+      <Form.Field name={fieldName} className={cn('grid gap-2', className)} {...props} />
+    </ItemContext.Provider>
   )
 }
 
 const useFieldContext = () => {
-  const { id } = React.useContext(FormItemContext)
+  const { id } = React.useContext(ItemContext)
   const { name, store, ...fieldContext } = _useFieldContext()
 
   const errors = useStore(store, (state) => state.meta.errors)
@@ -57,21 +72,20 @@ const useFieldContext = () => {
   }
 }
 
-function FormLabel({ className, ...props }: React.ComponentProps<typeof Label>) {
-  const { formItemId, errors } = useFieldContext()
+function Label({ className, ...props }: React.ComponentProps<typeof TextFieldLabelPrimitive>) {
+  const { errors } = useFieldContext()
 
   return (
-    <Label
+    <TextFieldLabelPrimitive
       data-slot="form-label"
       data-error={!!errors.length}
-      className={cn('data-[error=true]:text-destructive', className)}
-      htmlFor={formItemId}
+      className={cn(errors.length > 0 && 'text-destructive', className)}
       {...props}
     />
   )
 }
 
-function FormControl({ ...props }: React.ComponentProps<typeof Slot>) {
+function Control({ ...props }: React.ComponentProps<typeof Slot>) {
   const { errors, formItemId, formDescriptionId, formMessageId } = useFieldContext()
 
   return (
@@ -85,7 +99,7 @@ function FormControl({ ...props }: React.ComponentProps<typeof Slot>) {
   )
 }
 
-function FormDescription({ className, ...props }: React.ComponentProps<'p'>) {
+function Description({ className, ...props }: React.ComponentProps<'p'>) {
   const { formDescriptionId } = useFieldContext()
 
   return (
@@ -98,7 +112,7 @@ function FormDescription({ className, ...props }: React.ComponentProps<'p'>) {
   )
 }
 
-function FormMessage({ className, ...props }: React.ComponentProps<'p'>) {
+function Message({ className, ...props }: React.ComponentProps<'p'>) {
   const { errors, formMessageId } = useFieldContext()
   const body = errors.length ? String(errors.at(0)?.message ?? '') : props.children
   if (!body) return null
@@ -110,4 +124,26 @@ function FormMessage({ className, ...props }: React.ComponentProps<'p'>) {
   )
 }
 
-export { useAppForm, useFormContext, useFieldContext, withForm }
+function TextField({ className, ...props }: React.ComponentProps<typeof TextFieldPrimitive>) {
+  const { errors } = useFieldContext()
+
+  return <TextFieldPrimitive aria-invalid={!!errors.length} className={className} {...props} />
+}
+
+function FormRoot({ children, ...props }: React.ComponentProps<typeof Form.Root>) {
+  return <Form.Root {...props}>{children}</Form.Root>
+}
+
+export {
+  useAppForm,
+  useFormContext,
+  useFieldContext,
+  withForm,
+  FormRoot,
+  Item,
+  Label,
+  Control,
+  Description,
+  Message,
+  TextField,
+}
