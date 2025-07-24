@@ -4,22 +4,17 @@
   "license": "MIT",
   "scripts": {
     "postinstall": "node patch-workspaces.js",
-    "format": "biome format --write ./",
-    "lint": "biome lint ./",
-    "lint:fix": "biome check --write ./",
     "lint-staged": "lint-staged --allow-empty",
     "clean": "rm -rf node_modules dist bun.lock && bun pm cache rm & find . -type d \\( -name 'node_modules' -o -name 'dist' -o -name '.output' -o -name '.vinxi' \\) -prune -exec rm -rf {} + & wait",
     "prepare": "husky && ts-patch install -s"
   },
   "lint-staged": {
-    "{apps,packages}/**/*.{ts,tsx,test.ts}": [
-      "bun run format",
-      "bun run lint",
-      "bun run lint:fix"
+    "{apps,packages}/**/*.{js,jsx,ts,tsx,json,jsonc,css,scss,md,mdx}": [
+      "bunx ultracite format"
     ]
   },
   "devDependencies": {
-    "@biomejs/biome": "1.9.4",
+    "@biomejs/biome": "2.1.2",
     "@effect/language-service": "catalog:",
     "@nx/js": "21.3.2",
     "@nx/node": "21.3.2",
@@ -29,12 +24,12 @@
     "@vitest/ui": "^3.0.0",
     "husky": "^9.1.7",
     "jiti": "2.4.2",
-    "lint-staged": "15.5.1",
+    "lint-staged": "^16.1.2",
     "nx": "21.3.2",
-    "prettier": "^2.6.2",
     "ts-patch": "^3.3.0",
     "tslib": "^2.3.0",
     "typescript": "5.8.3",
+    "ultracite": "5.0.48",
     "verdaccio": "^6.0.5",
     "vite": "catalog:",
     "vitest": "^3.0.0"
@@ -134,6 +129,5 @@
     "msgpackr-extract",
     "nx"
   ],
-  "dependencies": {
-  }
+  "dependencies": {}
 }

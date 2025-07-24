@@ -15,7 +15,8 @@
   },
   "editor.codeActionsOnSave": {
     "quickfix.biome": "explicit",
-    "source.organizeImports.biome": "explicit"
+    "source.organizeImports.biome": "explicit",
+    "source.fixAll.biome": "explicit"
   },
   "[javascriptreact]": {
     "editor.defaultFormatter": "biomejs.biome"
@@ -26,7 +27,6 @@
   "[css]": {
     "editor.defaultFormatter": "biomejs.biome"
   },
-
   "editor.formatOnSave": true,
   "files.exclude": {
     "**/.git": true,
@@ -42,8 +42,8 @@
     "tmp": true,
     "**/dist": false,
     "node_modules": true,
-    ".husky": true,
-    "bun.lock": true,
+    ".husky": false,
+    "bun.lock": true
   },
   "files.watcherExclude": {
     "**/routeTree.gen.ts": true
@@ -53,5 +53,11 @@
   },
   "files.readonlyInclude": {
     "**/routeTree.gen.ts": true
-  }
+  },
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "[javascript][typescript][javascriptreact][typescriptreact][json][jsonc][css][graphql]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "editor.formatOnPaste": true,
+  "emmet.showExpandedAbbreviation": "never"
 }

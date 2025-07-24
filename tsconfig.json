@@ -15,5 +15,8 @@
     {
       "path": "./apps/node-auth-app"
     }
-  ]
+  ],
+  "compilerOptions": {
+    "strictNullChecks": true
+  }
 }
