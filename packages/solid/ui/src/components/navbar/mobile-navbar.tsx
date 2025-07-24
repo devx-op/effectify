@@ -1,8 +1,7 @@
-import { AlignRightIcon, XIcon } from 'lucide-solid'
-
 import { Button } from '@effectify/solid-ui/components/primitives/button'
 import * as Popover from '@effectify/solid-ui/components/primitives/popover'
-import { type JSX, createSignal } from 'solid-js'
+import { AlignRightIcon, XIcon } from 'lucide-solid'
+import { createSignal, type JSX } from 'solid-js'
 
 export const MobileNavbar = (props: { children: JSX.Element }) => {
   // const { pathname } = useLocation()
@@ -15,13 +14,13 @@ export const MobileNavbar = (props: { children: JSX.Element }) => {
   // }, [pathname])
 
   return (
-    <Popover.Root open={open()} onOpenChange={(e) => setOpen(e)} placement="bottom" overflowPadding={0} overlap={true}>
+    <Popover.Root onOpenChange={(e) => setOpen(e)} open={open()} overflowPadding={0} overlap={true} placement="bottom">
       <Popover.Trigger>
         <Button aria-label="Open Menu" variant="ghost">
           {open() ? <XIcon /> : <AlignRightIcon />}
         </Button>
       </Popover.Trigger>
-      <Popover.Body showClose={false} class="w-screen">
+      <Popover.Body class="w-screen" showClose={false}>
         {props.children}
       </Popover.Body>
     </Popover.Root>

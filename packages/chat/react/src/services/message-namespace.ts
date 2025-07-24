@@ -1,4 +1,6 @@
-import type * as Message from '@effectify/chat-domain/message'
+import type * as Message from '@effectify/chat-domain/message.js'
+import { MessagesService } from '@effectify/chat-domain/message-service.js'
+import { createQueryKey } from '@effectify/react-query'
 import * as Array from 'effect/Array'
 import type * as Brand from 'effect/Brand'
 import * as Chunk from 'effect/Chunk'
@@ -8,12 +10,8 @@ import * as Fiber from 'effect/Fiber'
 import * as Option from 'effect/Option'
 import * as Queue from 'effect/Queue'
 import * as Stream from 'effect/Stream'
-
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { createQueryDataHelpers, useEffectQuery, useRuntime } from './tanstack-query.js'
-
-import { MessagesService } from '@effectify/chat-domain/message-service'
-import { createQueryKey } from '@effectify/react-query'
 
 export namespace MessagesOperations {
   const messagesQueryKey = createQueryKey('MessagesOperations.useMessagesQuery')
@@ -56,35 +54,45 @@ export namespace MessagesOperations {
     const offer = useCallback(
       (id: Message.Message['id']) => {
         queue.unsafeOffer(id)
-        messagesQueryData.setData(undefined, (messages) => {
-          const msgIndex = messages.findIndex((msg) => msg.id === id)
+        messagesQueryData.setData(undefined, (currentMessages) => {
+          const msgIndex = currentMessages.findIndex((msg) => msg.id === id)
           if (msgIndex !== -1) {
-            const existingMessage = messages[msgIndex]
-            if (existingMessage === undefined) return messages
-            if (existingMessage.readAt !== null) return messages
+            const existingMessage = currentMessages[msgIndex]
+            if (existingMessage === undefined) {
+              return currentMessages
+            }
+            if (existingMessage.readAt !== null) {
+              return currentMessages
+            }
             existingMessage.readAt = DateTime.unsafeNow()
           }
-          return messages
+          return currentMessages
         })
       },
       [queue],
     )
 
     useEffect(() => {
-      if (queue === null) return () => {}
+      if (queue === null) {
+        return
+      }
 
       const handleFocus = () => {
-        if (!document.hasFocus()) return
+        if (!document.hasFocus()) {
+          return
+        }
 
-        // biome-ignore lint/complexity/noForEach: <explanation>
+        // biome-ignore lint/complexity/noForEach: using forEach for side effects on DOM elements
         unreadMessages.forEach((message) => {
           const element = document.querySelector(`[data-message-id="${message.id}"]`)
-          if (element === null) return
+          if (element === null) {
+            return
+          }
 
           const rect = element.getBoundingClientRect()
           const isFullyVisible = rect.top >= 0 && rect.bottom <= window.innerHeight
           if (isFullyVisible) {
-            void offer(message.id)
+            offer(message.id)
           }
         })
       }
@@ -99,15 +107,17 @@ export namespace MessagesOperations {
 
     useEffect(() => {
       observerRef.current = new IntersectionObserver(
-        // biome-ignore lint/complexity/noForEach: <explanation>
+        // biome-ignore lint/complexity/noForEach: using forEach for side effects on intersection entries
         Array.forEach((entry) => {
-          if (!entry.isIntersecting || !document.hasFocus()) return
+          if (!(entry.isIntersecting && document.hasFocus())) {
+            return
+          }
 
           const messageId = Option.fromNullable(entry.target.getAttribute('data-message-id')).pipe(
             Option.flatMap(Option.liftPredicate((str) => str !== '')),
           )
           if (Option.isSome(messageId)) {
-            void offer(messageId.value as Message.Message['id'])
+            offer(messageId.value as Message.Message['id'])
           }
 
           observerRef.current?.unobserve(entry.target)

@@ -1,9 +1,7 @@
+import type { QueryFunctionContext, skipToken, UseMutationOptions, UseQueryOptions } from '@tanstack/react-query'
+import type { DurationInput } from 'effect/Duration'
 import type * as Effect from 'effect/Effect'
 import type * as Stream from 'effect/Stream'
-
-import type { QueryFunctionContext, UseMutationOptions, UseQueryOptions, skipToken } from '@tanstack/react-query'
-
-import type { DurationInput } from 'effect/Duration'
 
 export type QueryKey = readonly [string, Record<string, unknown>?]
 export type EffectfulError = { _tag: string }

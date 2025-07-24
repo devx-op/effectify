@@ -8,13 +8,19 @@ export type QueryDataUpdater<TData> = (draft: DeepMutable<TData>) => void
 
 // Simple deep clone function to replace mutative
 function deepClone<T>(obj: T): T {
-  if (obj === null || typeof obj !== 'object') return obj
-  if (obj instanceof Date) return new Date(obj.getTime()) as T
-  if (Array.isArray(obj)) return obj.map((item) => deepClone(item)) as T
+  if (obj === null || typeof obj !== 'object') {
+    return obj
+  }
+  if (obj instanceof Date) {
+    return new Date(obj.getTime()) as T
+  }
+  if (Array.isArray(obj)) {
+    return obj.map((item) => deepClone(item)) as T
+  }
   if (typeof obj === 'object') {
     const cloned = {} as T
     for (const key in obj) {
-      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      if (Object.hasOwn(obj, key)) {
         cloned[key] = deepClone(obj[key])
       }
     }
@@ -117,7 +123,9 @@ export const makeCreateQueryDataHelpers =
       },
       setData: (variables: TVariables, updater: QueryDataUpdater<TData>) => {
         return queryClient.setQueryData<TData>(queryKey(variables), (oldData) => {
-          if (oldData === undefined) return oldData
+          if (oldData === undefined) {
+            return oldData
+          }
           const clonedData = deepClone(oldData)
           updater(clonedData as DeepMutable<TData>)
           return clonedData

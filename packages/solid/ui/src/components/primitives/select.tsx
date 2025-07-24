@@ -31,19 +31,19 @@ export const SelectTrigger = <T extends ValidComponent = 'button'>(
       {local.children}
       <SelectPrimitive.Icon
         as="svg"
-        xmlns="http://www.w3.org/2000/svg"
-        width="1em"
+        class="flex size-4 items-center justify-center opacity-50"
         height="1em"
         viewBox="0 0 24 24"
-        class="flex size-4 items-center justify-center opacity-50"
+        width="1em"
+        xmlns="http://www.w3.org/2000/svg"
       >
         <path
+          d="m8 9l4-4l4 4m0 6l-4 4l-4-4"
           fill="none"
           stroke="currentColor"
           stroke-linecap="round"
           stroke-linejoin="round"
           stroke-width="2"
-          d="m8 9l4-4l4 4m0 6l-4 4l-4-4"
         />
       </SelectPrimitive.Icon>
     </SelectPrimitive.Trigger>
@@ -61,7 +61,7 @@ export const SelectContent = <T extends ValidComponent = 'div'>(props: Polymorph
     <SelectPrimitive.Portal>
       <SelectPrimitive.Content
         class={cn(
-          'relative z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md data-[expanded]:animate-in data-[closed]:animate-out data-[closed]:fade-out-0 data-[expanded]:fade-in-0 data-[closed]:zoom-out-95 data-[expanded]:zoom-in-95',
+          'data-[closed]:fade-out-0 data-[expanded]:fade-in-0 data-[closed]:zoom-out-95 data-[expanded]:zoom-in-95 relative z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md data-[closed]:animate-out data-[expanded]:animate-in',
           local.class,
         )}
         {...rest}
@@ -80,20 +80,20 @@ export const SelectItem = <T extends ValidComponent = 'li'>(props: PolymorphicPr
   return (
     <SelectPrimitive.Item
       class={cn(
-        'relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-2 pr-8 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+        'relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pr-8 pl-2 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
         local.class,
       )}
       {...rest}
     >
       <SelectPrimitive.ItemIndicator class="absolute right-2 flex h-3.5 w-3.5 items-center justify-center">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <path
+            d="m5 12l5 5L20 7"
             fill="none"
             stroke="currentColor"
             stroke-linecap="round"
             stroke-linejoin="round"
             stroke-width="2"
-            d="m5 12l5 5L20 7"
           />
           <title>Checked</title>
         </svg>

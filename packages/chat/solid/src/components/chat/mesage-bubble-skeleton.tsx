@@ -9,14 +9,14 @@ interface MessageBubbleSkeletonProps {
 export const MessageBubbleSkeleton: Component<MessageBubbleSkeletonProps> = ({ width = 200 }) => {
   return (
     <VStack>
-      <Flex align="end" gap="2" class="flex items-end gap-2">
-        <div class="bg-muted animate-pulse rounded-2xl px-4 py-2">
+      <Flex align="end" class="flex items-end gap-2" gap="2">
+        <div class="animate-pulse rounded-2xl bg-muted px-4 py-2">
           <VStack gap="1">
-            <div class="bg-muted-foreground/20 h-4 rounded" style={{ width: `${width}px` }} />
+            <div class="h-4 rounded bg-muted-foreground/20" style={{ width: `${width}px` }} />
 
-            <Flex align="center" justify="end" gap="1" class="mt-1">
-              <div class="bg-muted-foreground/20 h-3 w-12 rounded" />
-              <div class="bg-muted-foreground/20 h-4 w-4 rounded" />
+            <Flex align="center" class="mt-1" gap="1" justify="end">
+              <div class="h-3 w-12 rounded bg-muted-foreground/20" />
+              <div class="h-4 w-4 rounded bg-muted-foreground/20" />
             </Flex>
           </VStack>
         </div>

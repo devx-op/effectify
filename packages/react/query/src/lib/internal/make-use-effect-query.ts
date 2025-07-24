@@ -1,8 +1,8 @@
 import {
   type QueryFunction,
   type QueryFunctionContext,
-  type UseQueryResult,
   skipToken,
+  type UseQueryResult,
   useQuery,
 } from '@tanstack/react-query'
 import * as Duration from 'effect/Duration'

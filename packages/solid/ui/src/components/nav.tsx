@@ -15,16 +15,13 @@ type Props = {
 
 export const Nav = (props: Props) => {
   return (
-    <div data-collapsed={props.isCollapsed} class="group flex flex-col gap-4 py-2 data-[collapsed=true]:py-2">
+    <div class="group flex flex-col gap-4 py-2 data-[collapsed=true]:py-2" data-collapsed={props.isCollapsed}>
       <nav class="grid gap-1 px-2 group-[[data-collapsed=true]]:justify-center group-[[data-collapsed=true]]:px-2">
         <For each={props.links}>
           {(item) => (
             <Show
-              when={props.isCollapsed}
               fallback={
                 <a
-                  // biome-ignore lint/a11y/useValidAnchor: <explanation>
-                  href="#"
                   class={cn(
                     buttonVariants({
                       variant: item.variant,
@@ -35,6 +32,7 @@ export const Nav = (props: Props) => {
                       'dark:bg-muted dark:text-white dark:hover:bg-muted dark:hover:text-white',
                     'justify-start',
                   )}
+                  href="/"
                 >
                   <div class="mr-2">{item.icon}</div>
                   {item.title}
@@ -45,17 +43,18 @@ export const Nav = (props: Props) => {
                   )}
                 </a>
               }
+              when={props.isCollapsed}
             >
-              <Tooltip openDelay={0} closeDelay={0} placement="right">
+              <Tooltip closeDelay={0} openDelay={0} placement="right">
                 <TooltipTrigger
                   as="a"
-                  href="#"
                   class={cn(
                     buttonVariants({ variant: item.variant, size: 'icon' }),
                     'h-9 w-9',
                     item.variant === 'default' &&
                       'dark:bg-muted dark:text-muted-foreground dark:hover:bg-muted dark:hover:text-white',
                   )}
+                  href="#"
                 >
                   {item.icon}
                   <span class="sr-only">{item.title}</span>

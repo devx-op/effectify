@@ -10,7 +10,7 @@ export interface Props {
   groups?: Pages[][]
 }
 
-export const Sidebar = (props: Props) => {
+export const Sidebar = (_props: Props) => {
   return (
     <nav>
       <ul>sidebar list</ul>

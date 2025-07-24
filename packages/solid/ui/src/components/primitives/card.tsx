@@ -1,6 +1,5 @@
-import type { ComponentProps, ParentComponent } from 'solid-js'
-
 import { cn } from '@effectify/solid-ui/lib/utils'
+import type { ComponentProps, ParentComponent } from 'solid-js'
 import { splitProps } from 'solid-js'
 
 export const Root = (props: ComponentProps<'div'>) => {
@@ -24,7 +23,7 @@ export const Title: ParentComponent<ComponentProps<'h1'>> = (props) => {
 export const Description: ParentComponent<ComponentProps<'h3'>> = (props) => {
   const [local, rest] = splitProps(props, ['class'])
 
-  return <h3 class={cn('text-sm text-muted-foreground', local.class)} {...rest} />
+  return <h3 class={cn('text-muted-foreground text-sm', local.class)} {...rest} />
 }
 
 export const Body = (props: ComponentProps<'div'>) => {

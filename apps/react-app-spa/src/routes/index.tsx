@@ -1,5 +1,5 @@
-import { useCheckSession } from '@/hooks/check-session-hook'
 import { createFileRoute } from '@tanstack/react-router'
+import { useCheckSession } from '@/hooks/check-session-hook'
 
 export const Route = createFileRoute('/')({
   component: App,

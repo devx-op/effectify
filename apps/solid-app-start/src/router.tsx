@@ -1,8 +1,8 @@
 import { createRouter as createTanstackRouter } from '@tanstack/solid-router'
-import { routeTree } from './routeTree.gen'
+import { routeTree } from './routeTree.gen.ts'
 
 import './styles.css'
-import { RuntimeProvider, queryClient } from '@effectify/chat-solid/services/tanstack-query'
+import { queryClient, RuntimeProvider } from '@effectify/chat-solid/services/tanstack-query'
 
 export const createRouter = () => {
   const router = createTanstackRouter({

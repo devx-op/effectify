@@ -59,22 +59,22 @@ export const AccountSwitcher = (props: Props) => {
 
   return (
     <Select<Account>
-      value={selectedAccount()}
+      class={cn('flex h-[52px] items-center justify-center', props.isCollapsed ? 'h-[52px]' : 'px-2')}
+      disallowEmptySelection
+      itemComponent={(itemProps: any) => <SelectItem item={itemProps.item}>{itemProps.item.rawValue.email}</SelectItem>}
       onChange={setSelectedAccount}
       options={accounts}
-      optionValue="email"
       optionTextValue="label"
-      itemComponent={(props: any) => <SelectItem item={props.item}>{props.item.rawValue.email}</SelectItem>}
-      class={cn('flex h-[52px] items-center justify-center', props.isCollapsed ? 'h-[52px]' : 'px-2')}
+      optionValue="email"
       placement="bottom-start"
-      disallowEmptySelection
+      value={selectedAccount()}
     >
       <SelectTrigger
+        aria-label="Select account"
         class={cn(
           'flex items-center gap-2 [&>span]:line-clamp-1 [&>span]:flex [&>span]:w-full [&>span]:items-center [&>span]:gap-1 [&>span]:truncate [&_svg]:h-4 [&_svg]:w-4 [&_svg]:shrink-0',
           props.isCollapsed && 'flex h-9 w-9 shrink-0 items-center justify-center p-0 [&>span]:w-auto [&>svg]:hidden',
         )}
-        aria-label="Select account"
       >
         <SelectValue<Account>>
           {(state: any) => (

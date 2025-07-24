@@ -1,13 +1,15 @@
-import * as NodeHttpServerRequest from '@effect/platform-node/NodeHttpServerRequest'
 import * as HttpServerRequest from '@effect/platform/HttpServerRequest'
 import * as HttpServerResponse from '@effect/platform/HttpServerResponse'
-import * as Config from 'effect/Config'
-import * as Effect from 'effect/Effect'
-
+import * as NodeHttpServerRequest from '@effect/platform-node/NodeHttpServerRequest'
 import type { Auth } from 'better-auth'
 import { toNodeHandler } from 'better-auth/node'
+import * as Config from 'effect/Config'
 import type { ConfigError } from 'effect/ConfigError'
+import * as Effect from 'effect/Effect'
 import { BetterAuthApiError } from './better-auth-error.js'
+
+const TRAILING_SLASH_REGEX = /\/+$/
+const PROTOCOL_REGEX = /(https?:\/\/)+/
 
 export const toEffectHandler: (
   auth:
@@ -27,10 +29,7 @@ export const toEffectHandler: (
     const appUrl = yield* Config.url('APP_URL')
 
     const normalizeUrl = (url: URL) => {
-      return url
-        .toString()
-        .replace(/\/+$/, '')
-        .replace(/(https?:\/\/)+/, 'http://')
+      return url.toString().replace(TRAILING_SLASH_REGEX, '').replace(PROTOCOL_REGEX, 'http://')
     }
 
     const allowedOrigins = [normalizeUrl(appUrl)]
@@ -57,7 +56,6 @@ export const toEffectHandler: (
           ? toNodeHandler(auth.handler)(nodeRequest, nodeResponse)
           : toNodeHandler(auth)(nodeRequest, nodeResponse),
       catch: (cause) => {
-        console.log(cause)
         return new BetterAuthApiError({ cause })
       },
     })

@@ -1,8 +1,7 @@
-import { buttonVariants } from '@effectify/solid-ui/components/primitives/button'
-import { Link, createFileRoute } from '@tanstack/solid-router'
-
-import { authClient } from '@/libs/auth-client'
 import { RegisterForm } from '@effectify/chat-solid/components/register-form'
+import { buttonVariants } from '@effectify/solid-ui/components/primitives/button'
+import { createFileRoute, Link } from '@tanstack/solid-router'
+import { authClient } from '@/libs/auth-client'
 
 export const Route = createFileRoute('/(auth)/register')({
   component: RouteComponent,
@@ -13,7 +12,6 @@ function RouteComponent() {
   const handleSubmit = async (values: { name: string; email: string; password: string; confirmPassword: string }) => {
     // Check if passwords match
     if (values.password !== values.confirmPassword) {
-      console.error('Passwords do not match')
       return
     }
 
@@ -25,21 +23,19 @@ function RouteComponent() {
         name: values.name,
       })
       if (res.error) {
-        console.error('Error signing up', res.error)
         return
       }
       if (res.data?.user) {
         navigate({ to: '/dashboard' })
       }
-      console.log(values)
-    } catch (error) {
-      console.error('Registration error:', error)
+    } catch {
+      navigate({ to: '/register' })
     }
   }
 
   return (
     <RegisterForm handleSubmit={handleSubmit}>
-      <Link to="/login" class={buttonVariants({ variant: 'link' })}>
+      <Link class={buttonVariants({ variant: 'link' })} to="/login">
         Sign in here
       </Link>
     </RegisterForm>

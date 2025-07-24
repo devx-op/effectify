@@ -1,130 +1,135 @@
 {
-	"$schema": "https://biomejs.dev/schemas/2.1.2/schema.json",
-	"vcs": {
-		"enabled": false,
-		"clientKind": "git",
-		"useIgnoreFile": false
-	},
-	"files": {
-		"includes": [
-			"src/**/*.ts",
-			"src/**/*.tsx",
-			"src/**/*.js",
-			"src/**/*.jsx",
-			"lib/**/*.ts",
-			"test/**/*.test.ts",
-			"apps/**/*.ts",
-			"apps/**/*.tsx",
-			"apps/**/*.js",
-			"apps/**/*.jsx",
-			"packages/**/*.ts",
-			"packages/**/*.tsx",
-			"packages/**/*.js",
-			"packages/**/*.jsx",
-			"!node_modules/**",
-			"!.nx/**",
-			"!dist/**",
-			"!build/**",
-			"!coverage/**",
-			"!esm/**",
-			"!cjs/**",
-			"!es/**",
-			"!umd/**",
-			"!types/**",
-			"!typings/**",
-			"!docs/**",
-			"!public/**",
-			"!static/**",
-			"!out/**",
-			"!output/**",
-			"!temp/**",
-			"!tmp/**",
-			"!temporal/**",
-			"!src/generators/**",
-			"!tsconfig.lib.json",
-			"!app/routeTree.gen.ts",
-			"!src/routeTree.gen.ts"
-		]
-	},
+  "$schema": "https://biomejs.dev/schemas/2.1.2/schema.json",
+  "vcs": {
+    "enabled": false,
+    "clientKind": "git",
+    "useIgnoreFile": false
+  },
+  "files": {
+    "includes": [
+      "src/**/*.ts",
+      "src/**/*.tsx",
+      "src/**/*.js",
+      "src/**/*.jsx",
+      "lib/**/*.ts",
+      "test/**/*.test.ts",
+      "apps/**/*.ts",
+      "apps/**/*.tsx",
+      "apps/**/*.js",
+      "apps/**/*.jsx",
+      "packages/**/*.ts",
+      "packages/**/*.tsx",
+      "packages/**/*.js",
+      "packages/**/*.jsx",
+      "!node_modules/**",
+      "!.nx/**",
+      "!dist/**",
+      "!apps/**/dist/**",
+      "!packages/**/dist/**",
+      "!build/**",
+      "!coverage/**",
+      "!esm/**",
+      "!cjs/**",
+      "!es/**",
+      "!umd/**",
+      "!types/**",
+      "!typings/**",
+      "!docs/**",
+      "!public/**",
+      "!static/**",
+      "!out/**",
+      "!output/**",
+      "!temp/**",
+      "!tmp/**",
+      "!temporal/**",
+      "!src/generators/**",
+      "!tsconfig.lib.json",
+      "!app/routeTree.gen.ts",
+      "!src/routeTree.gen.ts",
+      "!**/routeTree.gen.ts"
+    ]
+  },
 
-	"formatter": {
-		"enabled": true,
-		"indentStyle": "space",
-		"indentWidth": 2,
-		"formatWithErrors": false,
-		"lineEnding": "lf",
-		"lineWidth": 120
-	},
-	"javascript": {
-		"parser": {
-			"unsafeParameterDecoratorsEnabled": true
-		},
-		"formatter": {
-			"semicolons": "asNeeded",
-			"quoteProperties": "asNeeded",
-			"bracketSpacing": true,
-			"jsxQuoteStyle": "double",
-			"arrowParentheses": "always",
-			"trailingCommas": "all",
-			"quoteStyle": "single"
-		}
-	},
-	"linter": {
-		"enabled": true,
-		"rules": {
-			"recommended": true,
-			"performance": {
-				"recommended": true
-			},
-			"suspicious": {
-				"noExplicitAny": "off",
-				"noEmptyInterface": "off",
-				"noShadowRestrictedNames": "off"
-			},
-			"style": {
-				"noUnusedTemplateLiteral": "off",
-				"noNonNullAssertion": "off"
-			},
-			"correctness": {
-				"useJsxKeyInIterable": "off",
-				"useImportExtensions": "error",
-				"noChildrenProp": "off"
-			},
-			"complexity": {
-				"noStaticOnlyClass": "off",
-				"useLiteralKeys": "off"
-			},
-			"security": {
-				"noDangerouslySetInnerHtml": "off"
-			},
-			"a11y": {
-				"useButtonType": "off"
-			}
-		}
-	},
-	"overrides": [
-		{
-			"includes": [
-				"apps/tanstack-solid-app/src/**/*.ts",
-				"apps/tanstack-solid-app/src/**/*.tsx",
-				"apps/tanstack-solid-app/src/**/*.js",
-				"apps/tanstack-solid-app/src/**/*.jsx",
-				"packages/solid/query/src/**/*.ts",
-				"packages/solid/query/src/**/*.tsx",
-				"packages/solid/query/src/**/*.js",
-				"packages/solid/query/src/**/*.jsx"
-			],
-			"linter": {
-				"rules": {
-					"suspicious": {
-						"noConsole": "off"
-					},
-					"correctness": {
-						"useImportExtensions": "off"
-					}
-				}
-			}
-		}
-	],
-	"extends": ["ultracite"]
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "formatWithErrors": false,
+    "lineEnding": "lf",
+    "lineWidth": 120
+  },
+  "javascript": {
+    "parser": {
+      "unsafeParameterDecoratorsEnabled": true
+    },
+    "formatter": {
+      "semicolons": "asNeeded",
+      "quoteProperties": "asNeeded",
+      "bracketSpacing": true,
+      "jsxQuoteStyle": "double",
+      "arrowParentheses": "always",
+      "trailingCommas": "all",
+      "quoteStyle": "single"
+    }
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "performance": {
+        "recommended": true,
+        "noNamespaceImport": "off"
+      },
+      "suspicious": {
+        "noExplicitAny": "off",
+        "noEmptyInterface": "off",
+        "noShadowRestrictedNames": "off"
+      },
+      "style": {
+        "noUnusedTemplateLiteral": "off",
+        "noNonNullAssertion": "off",
+        "noNamespace": "off"
+      },
+      "correctness": {
+        "useJsxKeyInIterable": "off",
+        "useImportExtensions": "error",
+        "noChildrenProp": "off"
+      },
+      "complexity": {
+        "noStaticOnlyClass": "off",
+        "useLiteralKeys": "off"
+      },
+      "security": {
+        "noDangerouslySetInnerHtml": "off"
+      },
+      "a11y": {
+        "useButtonType": "off"
+      }
+    }
+  },
+  "overrides": [
+    {
+      "includes": [
+        "apps/tanstack-solid-app/src/**/*.ts",
+        "apps/tanstack-solid-app/src/**/*.tsx",
+        "apps/tanstack-solid-app/src/**/*.js",
+        "apps/tanstack-solid-app/src/**/*.jsx",
+        "packages/solid/query/src/**/*.ts",
+        "packages/solid/query/src/**/*.tsx",
+        "packages/solid/query/src/**/*.js",
+        "packages/solid/query/src/**/*.jsx"
+      ],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noConsole": "off"
+          },
+          "correctness": {
+            "useImportExtensions": "off"
+          }
+        }
+      }
+    }
+  ],
+  "extends": ["ultracite"]
 }

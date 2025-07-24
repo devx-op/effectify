@@ -13,11 +13,11 @@ export const MessageList: Component<Props> = ({ messages }) => {
   const { observer } = MessagesOperations.useMarkMessagesAsRead(messages)
 
   return (
-    <VStack gap="4" class="p-4">
+    <VStack class="p-4" gap="4">
       {messages.map((message) => (
         <MessageBubble
-          message={message}
           data-message-id={message.id}
+          message={message}
           ref={(el) => {
             if (el !== null && message.readAt === null) {
               requestAnimationFrame(() => {

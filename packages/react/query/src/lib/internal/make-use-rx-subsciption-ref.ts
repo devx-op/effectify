@@ -1,18 +1,17 @@
-import { type Context, useContext, useEffect, useRef, useState } from 'react'
-
 import * as Effect from 'effect/Effect'
 import * as Fiber from 'effect/Fiber'
 import type * as ManagedRuntime from 'effect/ManagedRuntime'
 import * as Stream from 'effect/Stream'
 import * as SubscriptionRef from 'effect/SubscriptionRef'
+import { type Context, useContext, useEffect, useRef, useState } from 'react'
 import type { Subscribable, SubscriptionOptions } from '../types.js'
 
 export const makeUseRxSubscriptionRef =
   <R, E>(RuntimeContext: Context<ManagedRuntime.ManagedRuntime<R, E> | null>) =>
-  <A, E>(
+  <A, E2>(
     subscribable:
-      | Subscribable<A, E>
-      | Effect.Effect<Subscribable<A, E>, never, R>
+      | Subscribable<A, E2>
+      | Effect.Effect<Subscribable<A, E2>, never, R>
       | Effect.Effect<SubscriptionRef.SubscriptionRef<A>, never, R>,
     onNext: (value: A) => void,
     opts?: SubscriptionOptions,
@@ -29,26 +28,26 @@ export const makeUseRxSubscriptionRef =
       const initialValue = Effect.gen(function* () {
         const resolved = Effect.isEffect(subscribable) ? yield* subscribable : subscribable
 
-        const initialValue =
+        const resolvedValue =
           SubscriptionRef.SubscriptionRefTypeId in resolved ? yield* SubscriptionRef.get(resolved) : resolved.get()
 
         if (!options?.skipInitial) {
-          onNext(initialValue)
+          onNext(resolvedValue)
         }
 
-        return initialValue as A
+        return resolvedValue as A
       })
       const newVal = runtime.runSync(initialValue)
       return newVal
     }
     const [value, setValue] = useState(() => setInitialValue())
-    const fiberRef = useRef<Fiber.RuntimeFiber<never, E> | null>(null)
+    const fiberRef = useRef<Fiber.RuntimeFiber<never, E2> | null>(null)
 
     useEffect(() => {
       const fiber = Effect.gen(function* () {
         const resolved = Effect.isEffect(subscribable) ? yield* subscribable : subscribable
 
-        const adaptedSubscribable: Subscribable<A, E> =
+        const adaptedSubscribable: Subscribable<A, E2> =
           SubscriptionRef.SubscriptionRefTypeId in resolved
             ? {
                 changes: resolved.changes,

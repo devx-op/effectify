@@ -1,8 +1,7 @@
 import * as Layer from '@effectify/chat-domain/layer.ts'
-import * as Duration from 'effect/Duration'
-
 import { tanstackQueryEffect } from '@effectify/solid-query'
 import { QueryClient } from '@tanstack/solid-query'
+import * as Duration from 'effect/Duration'
 
 export const queryClient = new QueryClient({
   defaultOptions: {

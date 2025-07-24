@@ -1,8 +1,8 @@
 import {
   type QueryFunction,
   type QueryFunctionContext,
-  type UseQueryResult,
   skipToken,
+  type UseQueryResult,
   useQuery,
 } from '@tanstack/solid-query'
 import * as Duration from 'effect/Duration'

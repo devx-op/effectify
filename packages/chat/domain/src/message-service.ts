@@ -61,14 +61,14 @@ export class MessagesService extends Effect.Service<MessagesService>()('Messages
     return {
       getMessages: () =>
         Effect.gen(function* () {
-          const sleepFor = yield* Random.nextRange(1_000, 2_500)
+          const sleepFor = yield* Random.nextRange(1000, 2500)
           yield* Effect.sleep(`${sleepFor} millis`)
           return sampleMessages
         }),
 
       sendMarkAsReadBatch: (batch: Chunk.Chunk<Message['id']>) =>
         Effect.gen(function* () {
-          const sleepFor = yield* Random.nextRange(1_000, 2_500)
+          const sleepFor = yield* Random.nextRange(1000, 2500)
 
           yield* Effect.zipRight(
             Effect.sleep(`${sleepFor} millis`),

@@ -35,5 +35,5 @@ export const HStack = (props: HVStackProps) => {
 
 export const VStack = (props: HVStackProps) => {
   const { className, ...rest } = props
-  return <Stack {...rest} direction="col" className={className} />
+  return <Stack {...rest} className={className} direction="col" />
 }

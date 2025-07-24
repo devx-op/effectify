@@ -14,7 +14,7 @@ export const Breadcrumbs = () => {
     <HStack gap="1">
       {crumbs?.map((crumb, index, arr) => (
         <>
-          <span class="text-sm text-primary font-medium capitalize">{crumb}</span>
+          <span class="font-medium text-primary text-sm capitalize">{crumb}</span>
           {arr.length - 1 !== index && (
             <div class="color-bluegray">
               <ChevronRight size="16" />

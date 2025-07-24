@@ -16,7 +16,7 @@ export const RegisterSchema = Schema.standardSchemaV1(
     confirmPassword: Schema.String.pipe(Schema.minLength(6)),
   }).pipe(
     Schema.filter((input) => {
-      const issues: Array<Schema.FilterIssue> = []
+      const issues: Schema.FilterIssue[] = []
       if (input.password !== input.confirmPassword) {
         issues.push({
           path: ['confirmPassword'],

@@ -1,8 +1,7 @@
 import type { ContentProps, DescriptionProps, DynamicProps, LabelProps } from '@corvu/drawer'
-import type { ComponentProps, ParentProps, ValidComponent } from 'solid-js'
-
 import DrawerPrimitive from '@corvu/drawer'
 import { cn } from '@effectify/solid-ui/lib/utils'
+import type { ComponentProps, ParentProps, ValidComponent } from 'solid-js'
 import { splitProps } from 'solid-js'
 
 export const Root = DrawerPrimitive
@@ -61,7 +60,7 @@ export const Label = <T extends ValidComponent = 'h2'>(props: DynamicProps<T, Dr
   const [local, rest] = splitProps(props as DrawerLabelProps, ['class'])
 
   return (
-    <DrawerPrimitive.Label class={cn('text-lg font-semibold leading-none tracking-tight', local.class)} {...rest} />
+    <DrawerPrimitive.Label class={cn('font-semibold text-lg leading-none tracking-tight', local.class)} {...rest} />
   )
 }
 
@@ -72,5 +71,5 @@ type DrawerDescriptionProps = DescriptionProps & {
 export const Description = <T extends ValidComponent = 'p'>(props: DynamicProps<T, DrawerDescriptionProps>) => {
   const [local, rest] = splitProps(props as DrawerDescriptionProps, ['class'])
 
-  return <DrawerPrimitive.Description class={cn('text-sm text-muted-foreground', local.class)} {...rest} />
+  return <DrawerPrimitive.Description class={cn('text-muted-foreground text-sm', local.class)} {...rest} />
 }

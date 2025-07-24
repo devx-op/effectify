@@ -1,7 +1,5 @@
-import { createFileRoute, redirect } from '@tanstack/solid-router'
-
-import { useSession } from '@/libs/auth-client.js'
 import { ChatContainer } from '@effectify/chat-solid/components/chat/chat-container'
+import { createFileRoute } from '@tanstack/solid-router'
 
 export const Route = createFileRoute('/(protected)/dashboard/')({
   component: RouteComponent,
@@ -16,7 +14,7 @@ export const Route = createFileRoute('/(protected)/dashboard/')({
 function RouteComponent() {
   return (
     <div class="flex flex-col gap-4">
-      <h1 class="text-2xl font-bold">Dashboard</h1>
+      <h1 class="font-bold text-2xl">Dashboard</h1>
       <ChatContainer />
     </div>
   )

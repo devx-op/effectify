@@ -1,9 +1,8 @@
-import { type ConfigColorMode, type MaybeConfigColorMode, useColorMode } from '@kobalte/core/color-mode'
-import { type JSX, Match, Switch, createSignal, onMount } from 'solid-js'
-
 import { DesktopIcon } from '@effectify/solid-ui/components/icons'
 import { Button } from '@effectify/solid-ui/components/primitives/button'
+import { type ConfigColorMode, type MaybeConfigColorMode, useColorMode } from '@kobalte/core/color-mode'
 import { MoonIcon, SunIcon } from 'lucide-solid'
+import { createSignal, type JSX, Match, onMount, Switch } from 'solid-js'
 
 interface ThemeOption {
   value: ConfigColorMode
@@ -29,8 +28,10 @@ const THEME_OPTIONS: ThemeOption[] = [
   },
 ]
 
+const COLOR_MODE_COOKIE_REGEX = /(^| )kb-color-mode=([^;]+)/
+
 function parseCookie(): MaybeConfigColorMode {
-  const match = document.cookie.match(/(^| )kb-color-mode=([^;]+)/)
+  const match = document.cookie.match(COLOR_MODE_COOKIE_REGEX)
   return match?.[2] as MaybeConfigColorMode
 }
 
@@ -47,7 +48,7 @@ export function ThemeSelector() {
   }
 
   return (
-    <Button onClick={handleClick} variant="ghost" size={'sm'}>
+    <Button onClick={handleClick} size={'sm'} variant="ghost">
       <Switch fallback={<SunIcon />}>
         <Match when={colorMode() === 'dark'}>
           <SunIcon class="h-4" />

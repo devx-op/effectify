@@ -1,8 +1,7 @@
-import { type ComponentProps, createContext, createUniqueId, splitProps, useContext } from 'solid-js'
-import { Dynamic } from 'solid-js/web'
-
 import { cn } from '@effectify/solid-ui/lib/utils'
 import { createFormHook, createFormHookContexts } from '@tanstack/solid-form'
+import { type ComponentProps, createContext, createUniqueId, splitProps, useContext } from 'solid-js'
+import { Dynamic } from 'solid-js/web'
 
 // Label component (since it doesn't exist in solid-ui yet)
 function Label(props: ComponentProps<'label'> & { for?: string }) {
@@ -11,12 +10,12 @@ function Label(props: ComponentProps<'label'> & { for?: string }) {
   return (
     // biome-ignore lint/a11y/noLabelWithoutControl: This is a generic label component that will be properly associated when used
     <label
-      data-slot="label"
-      for={local.for}
       class={cn(
-        'flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50',
+        'flex select-none items-center gap-2 font-medium text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-50 group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50',
         local.class,
       )}
+      data-slot="label"
+      for={local.for}
       {...rest}
     />
   )
@@ -49,7 +48,7 @@ function FormItem(props: ComponentProps<'div'>) {
 
   return (
     <FormItemContext.Provider value={{ id }}>
-      <div data-slot="form-item" class={cn('grid gap-2', local.class)} {...rest} />
+      <div class={cn('grid gap-2', local.class)} data-slot="form-item" {...rest} />
     </FormItemContext.Provider>
   )
 }
@@ -81,9 +80,9 @@ function FormLabel(props: ComponentProps<typeof Label>) {
 
   return (
     <Label
-      data-slot="form-label"
-      data-error={!!errors().length}
       class={cn('data-[error=true]:text-destructive', local.class)}
+      data-error={!!errors().length}
+      data-slot="form-label"
       for={local.for || formItemId}
       {...rest}
     />
@@ -96,12 +95,12 @@ function FormControl(props: ComponentProps<'div'>) {
 
   return (
     <Dynamic
+      aria-describedby={errors().length ? `${formDescriptionId} ${formMessageId}` : `${formDescriptionId}`}
+      aria-invalid={!!errors().length}
+      class={local.class}
       component="div"
       data-slot="form-control"
       id={formItemId}
-      aria-describedby={!errors().length ? `${formDescriptionId}` : `${formDescriptionId} ${formMessageId}`}
-      aria-invalid={!!errors().length}
-      class={local.class}
       {...rest}
     >
       {local.children}
@@ -115,9 +114,9 @@ function FormDescription(props: ComponentProps<'p'>) {
 
   return (
     <p
+      class={cn('text-muted-foreground text-sm', local.class)}
       data-slot="form-description"
       id={formDescriptionId}
-      class={cn('text-muted-foreground text-sm', local.class)}
       {...rest}
     />
   )
@@ -128,10 +127,12 @@ function FormMessage(props: ComponentProps<'p'>) {
   const { errors, formMessageId } = useFieldContext()
   const errorList = errors()
   const body = errorList.length ? String(errorList[0]?.message ?? '') : local.children
-  if (!body) return null
+  if (!body) {
+    return null
+  }
 
   return (
-    <p data-slot="form-message" id={formMessageId} class={cn('text-destructive text-sm', local.class)} {...rest}>
+    <p class={cn('text-destructive text-sm', local.class)} data-slot="form-message" id={formMessageId} {...rest}>
       {body}
     </p>
   )
@@ -143,7 +144,7 @@ function Input(props: ComponentProps<'input'>) {
   return (
     <input
       class={cn(
-        'flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-shadow file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-[1.5px] focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
+        'flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-shadow file:border-0 file:bg-transparent file:font-medium file:text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-[1.5px] focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
         local.class,
       )}
       {...rest}

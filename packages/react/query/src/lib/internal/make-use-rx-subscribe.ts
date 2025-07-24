@@ -1,17 +1,16 @@
-import { type Context, useContext, useEffect, useRef, useState } from 'react'
-
 import * as Effect from 'effect/Effect'
 import * as Exit from 'effect/Exit'
 import * as Fiber from 'effect/Fiber'
 import type * as ManagedRuntime from 'effect/ManagedRuntime'
 import * as Stream from 'effect/Stream'
+import { type Context, useContext, useEffect, useRef, useState } from 'react'
 
 export const makeUseRxSubscribe = <R, E>(RuntimeContext: Context<ManagedRuntime.ManagedRuntime<R, E> | null>) => {
-  return <E, A>(
-    stream: Stream.Stream<A, E, R> | Effect.Effect<Stream.Stream<A, E, R>, E, R>,
+  return <E2, A>(
+    stream: Stream.Stream<A, E2, R> | Effect.Effect<Stream.Stream<A, E2, R>, E2, R>,
     initialValue: A,
     onNext: (value: A) => void,
-    onError?: (error: E) => void,
+    onError?: (error: E2) => void,
   ) => {
     const runtime = useContext(RuntimeContext)
     if (!runtime) {
@@ -34,7 +33,7 @@ export const makeUseRxSubscribe = <R, E>(RuntimeContext: Context<ManagedRuntime.
           Stream.fromEffect(
             Effect.sync(() => {
               onError?.(e)
-              return undefined
+              return
             }),
           ),
         ),

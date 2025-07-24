@@ -6,7 +6,7 @@ export const MessageListSkeleton: Component = () => {
   const widths = [180, 260, 200, 180, 260, 200, 180, 260, 200]
 
   return (
-    <VStack gap="4" class="p-4">
+    <VStack class="p-4" gap="4">
       {widths.map((width) => (
         <MessageBubbleSkeleton width={width} />
       ))}
