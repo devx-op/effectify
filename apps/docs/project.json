@@ -1,0 +1,9 @@
+{
+  "$schema": "./../../node_modules/nx/schemas/project-schema.json",
+  "name": "@effectify/docs",
+  "projectType": "application",
+  "sourceRoot": "apps/docs/src",
+  "tags": [
+    "docs"
+  ]
+}

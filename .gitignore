@@ -57,3 +57,6 @@ count.txt
 .env
 .nitro
 .tanstack
+
+# generated types
+.astro/

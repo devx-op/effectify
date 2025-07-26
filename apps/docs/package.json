@@ -1,0 +1,23 @@
+{
+  "name": "@effectify/docs",
+  "type": "module",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "catalog:",
+    "@astrojs/starlight-tailwind": "catalog:",
+    "@tailwindcss/vite": "catalog:",
+    "astro": "catalog:",
+    "sharp": "catalog:",
+    "tailwindcss": "catalog:",
+    "starlight-theme-nova": "catalog:",
+    "starlight-sidebar-topics": "catalog:",
+    "starlight-sidebar-topics-dropdown": "catalog:"
+  }
+}
