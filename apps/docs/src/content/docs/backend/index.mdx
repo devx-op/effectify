@@ -1,0 +1,375 @@
+---
+title: Backend Integration
+description: Effect integration packages for Node.js backend applications
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+# Backend Integration
+
+Effectify provides powerful Node.js backend integrations that combine the robustness and composability of Effect with popular backend frameworks and libraries. Our backend packages enable you to build scalable, maintainable server applications with excellent error handling and type safety.
+
+## Available Packages
+
+<CardGrid stagger>
+  <Card title="@effectify/node-better-auth" icon="bars">
+    Effect integration with better-auth for Node.js applications. Provides type-safe authentication with Effect's error handling and composability.
+    
+    [Learn more →](/backend/packages/node-better-auth/)
+  </Card>
+  
+  <Card title="@effectify/node-auth-app" icon="server">
+    Complete authentication server application built with Effect, better-auth, and modern Node.js patterns. Ready-to-deploy auth service.
+    
+    [Learn more →](/backend/packages/node-auth-app/)
+  </Card>
+</CardGrid>
+
+## Getting Started
+
+Ready to start building backend services with Effectify? Check out our getting started guide to set up your first Node.js project with Effect.
+
+<Card title="Quick Start" icon="rocket">
+  Get up and running with Effectify in your Node.js backend application in minutes.
+  
+  [Get Started →](/backend/getting-started/)
+</Card>
+
+## Key Features
+
+- **Type Safety**: Full TypeScript support with Effect's powerful type system
+- **Error Handling**: Robust error handling with Effect's error management
+- **Composability**: Build complex backend services from simple, composable parts
+- **Performance**: Optimized for Node.js performance and scalability
+- **Observability**: Built-in logging, metrics, and tracing support
+- **Testing**: Excellent testability with Effect's testing utilities
+
+## Architecture Overview
+
+Effectify backend packages follow a layered architecture pattern:
+
+```typescript
+// Domain Layer - Pure business logic
+const authenticateUser = (credentials: LoginCredentials) =>
+  Effect.gen(function* () {
+    const user = yield* UserRepository.findByEmail(credentials.email)
+    const isValid = yield* PasswordService.verify(credentials.password, user.hashedPassword)
+    
+    if (!isValid) {
+      yield* Effect.fail(new AuthenticationError('Invalid credentials'))
+    }
+    
+    return user
+  })
+
+// Service Layer - Application services
+const AuthService = {
+  login: (credentials: LoginCredentials) =>
+    Effect.gen(function* () {
+      const user = yield* authenticateUser(credentials)
+      const token = yield* TokenService.generate(user.id)
+      const session = yield* SessionService.create(user.id, token)
+      
+      return { user, token, session }
+    })
+}
+
+// Infrastructure Layer - External integrations
+const UserRepository = {
+  findByEmail: (email: string) =>
+    Effect.tryPromise({
+      try: () => db.user.findUnique({ where: { email } }),
+      catch: (error) => new DatabaseError('Failed to find user', { cause: error })
+    })
+}
+
+// HTTP Layer - API endpoints
+app.post('/auth/login', (req, res) => {
+  Effect.runPromise(
+    AuthService.login(req.body).pipe(
+      Effect.map(result => res.json(result)),
+      Effect.catchAll(error => Effect.sync(() => 
+        res.status(400).json({ error: error.message })
+      ))
+    )
+  )
+})
+```
+
+## Design Principles
+
+### 1. Effect-First Architecture
+
+All business logic is built using Effect, providing:
+- Composable error handling
+- Type-safe async operations
+- Built-in retry and timeout mechanisms
+- Excellent testability
+
+### 2. Layered Architecture
+
+- **Domain Layer**: Pure business logic with Effect
+- **Service Layer**: Application services and use cases
+- **Infrastructure Layer**: External system integrations
+- **HTTP Layer**: API endpoints and middleware
+
+### 3. Dependency Injection
+
+Using Effect's context system for clean dependency management:
+
+```typescript
+// Define services as Effect contexts
+class DatabaseService extends Context.Tag("DatabaseService")<
+  DatabaseService,
+  {
+    readonly query: (sql: string) => Effect.Effect<any[], DatabaseError>
+  }
+>() {}
+
+// Use in business logic
+const getUser = (id: string) =>
+  Effect.gen(function* () {
+    const db = yield* DatabaseService
+    const result = yield* db.query(`SELECT * FROM users WHERE id = ?`, [id])
+    return result[0]
+  })
+```
+
+## Common Patterns
+
+### Error Handling
+
+```typescript
+// Define domain-specific errors
+class UserNotFoundError extends Data.TaggedError("UserNotFoundError")<{
+  readonly userId: string
+}> {}
+
+class ValidationError extends Data.TaggedError("ValidationError")<{
+  readonly errors: Record<string, string>
+}> {}
+
+// Use in services
+const updateUser = (id: string, data: UserUpdateData) =>
+  Effect.gen(function* () {
+    const validation = yield* validateUserData(data)
+    const user = yield* UserRepository.findById(id)
+    
+    if (!user) {
+      yield* Effect.fail(new UserNotFoundError({ userId: id }))
+    }
+    
+    return yield* UserRepository.update(id, validation)
+  })
+```
+
+### Configuration Management
+
+```typescript
+// Define configuration schema
+class AppConfig extends Context.Tag("AppConfig")<
+  AppConfig,
+  {
+    readonly port: number
+    readonly database: {
+      readonly url: string
+      readonly maxConnections: number
+    }
+    readonly auth: {
+      readonly jwtSecret: string
+      readonly sessionTimeout: number
+    }
+  }
+>() {}
+
+// Load configuration with validation
+const loadConfig = Effect.gen(function* () {
+  const port = yield* Effect.fromNullable(process.env.PORT).pipe(
+    Effect.map(Number),
+    Effect.orElse(() => Effect.succeed(3000))
+  )
+  
+  const databaseUrl = yield* Effect.fromNullable(process.env.DATABASE_URL).pipe(
+    Effect.orElseFail(() => new ConfigError('DATABASE_URL is required'))
+  )
+  
+  return {
+    port,
+    database: { url: databaseUrl, maxConnections: 10 },
+    auth: { jwtSecret: process.env.JWT_SECRET!, sessionTimeout: 3600 }
+  }
+})
+```
+
+### HTTP Middleware
+
+```typescript
+// Effect-based middleware
+const authMiddleware = (req: Request) =>
+  Effect.gen(function* () {
+    const token = yield* Effect.fromNullable(req.headers.authorization).pipe(
+      Effect.orElseFail(() => new UnauthorizedError('Missing authorization header'))
+    )
+    
+    const user = yield* TokenService.verify(token.replace('Bearer ', ''))
+    
+    return { ...req, user }
+  })
+
+// Use in routes
+app.get('/protected', (req, res) => {
+  Effect.runPromise(
+    authMiddleware(req).pipe(
+      Effect.flatMap(authedReq => getProtectedData(authedReq.user.id)),
+      Effect.map(data => res.json(data)),
+      Effect.catchAll(error => Effect.sync(() => 
+        res.status(401).json({ error: error.message })
+      ))
+    )
+  )
+})
+```
+
+## Integration Examples
+
+### Express.js Integration
+
+```typescript
+import express from 'express'
+import { Effect, Layer } from 'effect'
+
+const app = express()
+
+// Effect-based route handler
+const createUser = (userData: CreateUserData) =>
+  Effect.gen(function* () {
+    const validation = yield* validateUserData(userData)
+    const hashedPassword = yield* PasswordService.hash(validation.password)
+    const user = yield* UserRepository.create({
+      ...validation,
+      password: hashedPassword
+    })
+    
+    return user
+  })
+
+app.post('/users', (req, res) => {
+  Effect.runPromise(
+    createUser(req.body).pipe(
+      Effect.map(user => res.status(201).json(user)),
+      Effect.catchTag('ValidationError', error => 
+        Effect.sync(() => res.status(400).json({ errors: error.errors }))
+      ),
+      Effect.catchAll(error => 
+        Effect.sync(() => res.status(500).json({ error: 'Internal server error' }))
+      )
+    )
+  )
+})
+```
+
+### Database Integration
+
+```typescript
+import { Pool } from 'pg'
+
+// Create database service
+const makeDatabaseService = Effect.gen(function* () {
+  const config = yield* AppConfig
+  const pool = new Pool({ connectionString: config.database.url })
+  
+  return {
+    query: (sql: string, params: any[] = []) =>
+      Effect.tryPromise({
+        try: () => pool.query(sql, params).then(result => result.rows),
+        catch: (error) => new DatabaseError('Query failed', { cause: error })
+      })
+  }
+})
+
+const DatabaseServiceLive = Layer.effect(DatabaseService, makeDatabaseService)
+```
+
+## Testing
+
+Effect provides excellent testing utilities for backend applications:
+
+```typescript
+import { Effect, Layer, TestContext } from 'effect'
+
+// Mock services for testing
+const MockUserRepository = Layer.succeed(UserRepository, {
+  findById: (id: string) => 
+    id === 'existing-user' 
+      ? Effect.succeed({ id, email: 'test@example.com' })
+      : Effect.fail(new UserNotFoundError({ userId: id })),
+  
+  create: (data: CreateUserData) =>
+    Effect.succeed({ id: 'new-user', ...data })
+})
+
+// Test with mocked dependencies
+const testCreateUser = Effect.gen(function* () {
+  const result = yield* createUser({
+    email: 'test@example.com',
+    password: 'password123'
+  })
+  
+  expect(result.email).toBe('test@example.com')
+}).pipe(
+  Effect.provide(MockUserRepository)
+)
+
+// Run test
+Effect.runPromise(testCreateUser)
+```
+
+## Deployment
+
+### Docker Integration
+
+```dockerfile
+FROM node:18-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci --only=production
+
+COPY dist ./dist
+
+EXPOSE 3000
+
+CMD ["node", "dist/index.js"]
+```
+
+### Environment Configuration
+
+```typescript
+// Production configuration
+const ProductionConfig = Layer.succeed(AppConfig, {
+  port: Number(process.env.PORT) || 3000,
+  database: {
+    url: process.env.DATABASE_URL!,
+    maxConnections: Number(process.env.DB_MAX_CONNECTIONS) || 20
+  },
+  auth: {
+    jwtSecret: process.env.JWT_SECRET!,
+    sessionTimeout: Number(process.env.SESSION_TIMEOUT) || 3600
+  }
+})
+```
+
+## Community & Support
+
+- [GitHub Repository](https://github.com/devx-op/effectify)
+- [Issues & Bug Reports](https://github.com/devx-op/effectify/issues)
+- [Discussions](https://github.com/devx-op/effectify/discussions)
+- [Effect Discord](https://discord.gg/effect-ts)
+
+## Examples
+
+Explore our example applications:
+
+- [Node.js Auth App](https://github.com/devx-op/effectify/tree/main/apps/node-auth-app) - Complete authentication service
+- [API Server Examples](https://github.com/devx-op/effectify/tree/main/examples/backend) - Various backend patterns

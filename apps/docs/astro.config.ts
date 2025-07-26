@@ -15,17 +15,21 @@ export default defineConfig({
           {
             label: 'ReactJs',
             icon: 'seti:react',
-            link: '/guides/',
-            id: 'guides',
+            link: '/react/',
+            id: 'react',
             items: [
               {
-                label: 'Start Here',
-                items: ['guides/example'],
+                label: 'Getting Started',
+                items: ['react/getting-started', 'react/installation'],
+              },
+              {
+                label: 'Packages',
+                items: ['react/packages/react-query', 'react/packages/react-ui', 'react/packages/chat-react'],
               },
               {
                 label: 'Reference',
                 autogenerate: {
-                  directory: 'reference',
+                  directory: 'react/reference',
                 },
               },
             ],
@@ -33,20 +37,68 @@ export default defineConfig({
           {
             label: 'SolidJs',
             icon: 'seti:sublime',
-            // The URL to the external resource to link to.
-            link: 'https://starlight.astro.build',
+            link: '/solid/',
+            id: 'solid',
+            items: [
+              {
+                label: 'Getting Started',
+                items: ['solid/getting-started', 'solid/installation'],
+              },
+              {
+                label: 'Packages',
+                items: ['solid/packages/solid-query', 'solid/packages/solid-ui', 'solid/packages/chat-solid'],
+              },
+              {
+                label: 'Reference',
+                autogenerate: {
+                  directory: 'solid/reference',
+                },
+              },
+            ],
           },
           {
             label: 'Backend',
             icon: 'bars',
-            // The URL to the external resource to link to.
-            link: 'https://starlight.astro.build',
+            link: '/backend/',
+            id: 'backend',
+            items: [
+              {
+                label: 'Getting Started',
+                items: ['backend/getting-started', 'backend/installation'],
+              },
+              {
+                label: 'Packages',
+                items: ['backend/packages/node-better-auth', 'backend/packages/node-auth-app'],
+              },
+              {
+                label: 'Reference',
+                autogenerate: {
+                  directory: 'backend/reference',
+                },
+              },
+            ],
           },
           {
             label: 'Universal',
             icon: 'puzzle',
-            // The URL to the external resource to link to.
-            link: 'https://starlight.astro.build',
+            link: '/universal/',
+            id: 'universal',
+            items: [
+              {
+                label: 'Getting Started',
+                items: ['universal/getting-started', 'universal/concepts'],
+              },
+              {
+                label: 'Packages',
+                items: ['universal/packages/chat-domain', 'universal/packages/shared-types'],
+              },
+              {
+                label: 'Reference',
+                autogenerate: {
+                  directory: 'universal/reference',
+                },
+              },
+            ],
           },
         ]),
         startlightThemeNova(),

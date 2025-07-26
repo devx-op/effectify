@@ -1,0 +1,433 @@
+---
+title: Universal Packages
+description: Shared packages and concepts that work across all Effectify platforms
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+# Universal Packages
+
+Effectify's universal packages provide shared functionality, types, and domain logic that work seamlessly across React, SolidJS, and Node.js applications. These packages embody the core principles of Effect programming and enable consistent behavior across your entire application stack.
+
+## Available Packages
+
+<CardGrid stagger>
+  <Card title="@effectify/chat-domain" icon="comment">
+    Domain logic and business rules for chat functionality. Provides pure, framework-agnostic chat operations built with Effect.
+    
+    [Learn more →](/universal/packages/chat-domain/)
+  </Card>
+  
+  <Card title="@effectify/shared-types" icon="document">
+    Common TypeScript types and interfaces shared across all Effectify packages. Ensures type consistency throughout your application.
+    
+    [Learn more →](/universal/packages/shared-types/)
+  </Card>
+</CardGrid>
+
+## Getting Started
+
+Ready to understand the universal concepts that power Effectify? Check out our getting started guide.
+
+<Card title="Quick Start" icon="rocket">
+  Learn the core concepts and patterns used across all Effectify packages.
+  
+  [Get Started →](/universal/getting-started/)
+</Card>
+
+## Core Principles
+
+### 1. Framework Agnostic
+
+Universal packages are designed to work with any frontend framework or backend runtime:
+
+```typescript
+// Pure domain logic - works everywhere
+import { ChatDomain } from '@effectify/chat-domain'
+import { Effect } from 'effect'
+
+const sendMessage = (roomId: string, content: string, userId: string) =>
+  Effect.gen(function* () {
+    const message = yield* ChatDomain.createMessage({
+      roomId,
+      content,
+      userId,
+      timestamp: new Date()
+    })
+    
+    const validation = yield* ChatDomain.validateMessage(message)
+    
+    return validation
+  })
+
+// Use in React
+function ReactChatComponent() {
+  const handleSend = (content: string) => {
+    Effect.runPromise(sendMessage('room-1', content, 'user-1'))
+  }
+  // ...
+}
+
+// Use in SolidJS
+function SolidChatComponent() {
+  const handleSend = (content: string) => {
+    Effect.runPromise(sendMessage('room-1', content, 'user-1'))
+  }
+  // ...
+}
+
+// Use in Node.js
+app.post('/messages', (req, res) => {
+  Effect.runPromise(
+    sendMessage(req.body.roomId, req.body.content, req.user.id)
+      .pipe(Effect.map(message => res.json(message)))
+  )
+})
+```
+
+### 2. Effect-First Design
+
+All universal packages are built with Effect as the primary abstraction:
+
+- **Composable**: Operations can be combined and transformed
+- **Type-safe**: Full TypeScript support with precise error types
+- **Testable**: Easy to test with Effect's testing utilities
+- **Reliable**: Built-in error handling and retry mechanisms
+
+### 3. Domain-Driven Design
+
+Universal packages follow domain-driven design principles:
+
+```typescript
+// Domain entities
+interface User {
+  readonly id: UserId
+  readonly email: Email
+  readonly name: UserName
+  readonly createdAt: Date
+}
+
+// Domain services
+const UserDomain = {
+  create: (data: CreateUserData) => Effect<User, ValidationError>,
+  validate: (user: User) => Effect<User, ValidationError>,
+  updateProfile: (user: User, updates: UserUpdates) => Effect<User, ValidationError>
+}
+
+// Domain events
+class UserCreatedEvent {
+  readonly _tag = 'UserCreatedEvent'
+  constructor(readonly user: User, readonly timestamp: Date) {}
+}
+```
+
+## Architecture Patterns
+
+### Layered Architecture
+
+Universal packages follow a clear layered architecture:
+
+```
+┌─────────────────────────────────────┐
+│           Presentation Layer        │
+│     (React, SolidJS, Express)       │
+├─────────────────────────────────────┤
+│          Application Layer          │
+│        (Use Cases, Services)        │
+├─────────────────────────────────────┤
+│            Domain Layer             │
+│      (Universal Packages)           │
+├─────────────────────────────────────┤
+│         Infrastructure Layer        │
+│    (Database, External APIs)        │
+└─────────────────────────────────────┘
+```
+
+### Dependency Inversion
+
+Universal packages define interfaces that infrastructure implements:
+
+```typescript
+// Domain interface (universal)
+export interface MessageRepository {
+  readonly save: (message: Message) => Effect<Message, RepositoryError>
+  readonly findById: (id: MessageId) => Effect<Message | null, RepositoryError>
+  readonly findByRoom: (roomId: RoomId) => Effect<Message[], RepositoryError>
+}
+
+// Infrastructure implementation (platform-specific)
+export const SqliteMessageRepository: MessageRepository = {
+  save: (message) => 
+    Effect.tryPromise({
+      try: () => db.insert(messages).values(message).returning(),
+      catch: (error) => new RepositoryError('Failed to save message', { cause: error })
+    }),
+  // ... other methods
+}
+
+export const PostgresMessageRepository: MessageRepository = {
+  save: (message) =>
+    Effect.tryPromise({
+      try: () => pool.query('INSERT INTO messages ...', [message]),
+      catch: (error) => new RepositoryError('Failed to save message', { cause: error })
+    }),
+  // ... other methods
+}
+```
+
+## Type Safety
+
+### Branded Types
+
+Universal packages use branded types for domain concepts:
+
+```typescript
+// Branded types prevent mixing up similar values
+export type UserId = string & { readonly _brand: 'UserId' }
+export type RoomId = string & { readonly _brand: 'RoomId' }
+export type MessageId = string & { readonly _brand: 'MessageId' }
+
+// Smart constructors ensure validity
+export const UserId = {
+  make: (value: string): Effect<UserId, ValidationError> =>
+    value.length > 0 && value.length <= 50
+      ? Effect.succeed(value as UserId)
+      : Effect.fail(new ValidationError('Invalid user ID'))
+}
+
+// Usage
+const userId = yield* UserId.make('user-123')
+const roomId = yield* RoomId.make('room-456')
+
+// This would be a compile-time error:
+// const message = createMessage(roomId, userId) // Wrong order!
+```
+
+### Schema Validation
+
+Universal packages provide schema validation:
+
+```typescript
+import { Schema } from '@effect/schema'
+
+// Define schemas for domain objects
+export const MessageSchema = Schema.struct({
+  id: Schema.string,
+  content: Schema.string.pipe(Schema.minLength(1), Schema.maxLength(1000)),
+  userId: Schema.string,
+  roomId: Schema.string,
+  timestamp: Schema.Date,
+  type: Schema.literal('text', 'image', 'file')
+})
+
+// Use for validation
+export const validateMessage = (data: unknown) =>
+  Schema.parse(MessageSchema)(data)
+
+// Use for encoding/decoding
+export const encodeMessage = Schema.encode(MessageSchema)
+export const decodeMessage = Schema.decode(MessageSchema)
+```
+
+## Error Handling
+
+### Domain-Specific Errors
+
+Universal packages define clear error hierarchies:
+
+```typescript
+// Base domain error
+export class DomainError extends Data.TaggedError("DomainError")<{
+  readonly message: string
+  readonly cause?: unknown
+}> {}
+
+// Specific domain errors
+export class ValidationError extends Data.TaggedError("ValidationError")<{
+  readonly field: string
+  readonly message: string
+}> {}
+
+export class BusinessRuleViolationError extends Data.TaggedError("BusinessRuleViolationError")<{
+  readonly rule: string
+  readonly message: string
+}> {}
+
+export class ResourceNotFoundError extends Data.TaggedError("ResourceNotFoundError")<{
+  readonly resource: string
+  readonly id: string
+}> {}
+```
+
+### Error Recovery
+
+Universal packages provide error recovery strategies:
+
+```typescript
+export const sendMessageWithRetry = (message: Message) =>
+  ChatDomain.sendMessage(message).pipe(
+    Effect.retry({
+      times: 3,
+      delay: (attempt) => `${attempt * 1000}ms`
+    }),
+    Effect.catchTag('NetworkError', () => 
+      Effect.succeed({ ...message, status: 'pending' })
+    ),
+    Effect.catchTag('ValidationError', error =>
+      Effect.fail(new BusinessRuleViolationError({
+        rule: 'message-validation',
+        message: error.message
+      }))
+    )
+  )
+```
+
+## Testing
+
+Universal packages are designed for easy testing:
+
+```typescript
+import { Effect, Layer, TestContext } from 'effect'
+
+// Mock implementations for testing
+const MockMessageRepository = Layer.succeed(MessageRepository, {
+  save: (message) => Effect.succeed(message),
+  findById: (id) => Effect.succeed(null),
+  findByRoom: (roomId) => Effect.succeed([])
+})
+
+// Test domain logic
+const testSendMessage = Effect.gen(function* () {
+  const message = yield* ChatDomain.sendMessage({
+    content: 'Hello, world!',
+    userId: 'user-1' as UserId,
+    roomId: 'room-1' as RoomId
+  })
+  
+  expect(message.content).toBe('Hello, world!')
+  expect(message.userId).toBe('user-1')
+}).pipe(
+  Effect.provide(MockMessageRepository)
+)
+
+// Run test
+await Effect.runPromise(testSendMessage)
+```
+
+## Performance
+
+### Lazy Evaluation
+
+Universal packages leverage Effect's lazy evaluation:
+
+```typescript
+// Operations are not executed until run
+const expensiveOperation = Effect.gen(function* () {
+  console.log('This only runs when executed')
+  const result = yield* performComplexCalculation()
+  return result
+})
+
+// Compose without executing
+const pipeline = expensiveOperation.pipe(
+  Effect.map(result => result * 2),
+  Effect.flatMap(doubled => saveToDatabase(doubled))
+)
+
+// Execute when needed
+await Effect.runPromise(pipeline)
+```
+
+### Resource Management
+
+Universal packages handle resources safely:
+
+```typescript
+const withDatabaseConnection = <A, E>(
+  operation: (db: Database) => Effect<A, E>
+) =>
+  Effect.acquireUseRelease(
+    // Acquire
+    Effect.tryPromise({
+      try: () => createDatabaseConnection(),
+      catch: (error) => new ConnectionError('Failed to connect', { cause: error })
+    }),
+    // Use
+    operation,
+    // Release
+    (db) => Effect.sync(() => db.close())
+  )
+```
+
+## Integration Examples
+
+### Cross-Platform Chat
+
+```typescript
+// Universal domain logic
+const chatOperations = {
+  sendMessage: (content: string, roomId: RoomId, userId: UserId) =>
+    Effect.gen(function* () {
+      const message = yield* ChatDomain.createMessage({
+        content,
+        roomId,
+        userId,
+        timestamp: new Date()
+      })
+      
+      const validated = yield* ChatDomain.validateMessage(message)
+      const saved = yield* MessageRepository.save(validated)
+      
+      yield* EventBus.publish(new MessageSentEvent(saved))
+      
+      return saved
+    })
+}
+
+// React implementation
+function ReactChat() {
+  const sendMessage = (content: string) => {
+    Effect.runPromise(
+      chatOperations.sendMessage(content, roomId, userId)
+        .pipe(Effect.provide(ReactDependencies))
+    )
+  }
+  // ...
+}
+
+// SolidJS implementation  
+function SolidChat() {
+  const sendMessage = (content: string) => {
+    Effect.runPromise(
+      chatOperations.sendMessage(content, roomId, userId)
+        .pipe(Effect.provide(SolidDependencies))
+    )
+  }
+  // ...
+}
+
+// Node.js implementation
+app.post('/messages', (req, res) => {
+  Effect.runPromise(
+    chatOperations.sendMessage(req.body.content, req.body.roomId, req.user.id)
+      .pipe(
+        Effect.provide(NodeDependencies),
+        Effect.map(message => res.json(message))
+      )
+  )
+})
+```
+
+## Community & Support
+
+- [GitHub Repository](https://github.com/devx-op/effectify)
+- [Issues & Bug Reports](https://github.com/devx-op/effectify/issues)
+- [Discussions](https://github.com/devx-op/effectify/discussions)
+- [Effect Discord](https://discord.gg/effect-ts)
+
+## Examples
+
+Explore our universal package implementations:
+
+- [Chat Domain Examples](https://github.com/devx-op/effectify/tree/main/packages/chat/domain)
+- [Shared Types Examples](https://github.com/devx-op/effectify/tree/main/packages/shared/types)

@@ -1,46 +1,134 @@
 ---
-title: Welcome to Starlight
-description: Get started building your docs site with Starlight.
+title: Welcome to Effectify
+description: Type-safe, composable applications with Effect across React, SolidJS, and Node.js
 template: splash
 hero:
   title: |
-    Welcome to Starlight with
+    Welcome to
     <span
       class="font-black text-transparent
         bg-clip-text bg-gradient-to-b
         from-accent-700 to-accent-400
         dark:from-accent-500 dark:to-accent-200"
     >
-      Tailwind
+      Effectify
     </span>
-  tagline: Congrats on setting up a new Starlight project!
+  tagline: Build robust, type-safe applications with Effect across React, SolidJS, and Node.js
   image:
     file: ../../assets/houston.webp
   actions:
-    - text: Example Guide
-      link: /guides/example/
+    - text: Get Started
+      link: /react/getting-started/
       icon: right-arrow
-    - text: Read the Starlight docs
-      link: https://starlight.astro.build
+    - text: View on GitHub
+      link: https://github.com/devx-op/effectify
       icon: external
       variant: minimal
+banner:
+  content: |
+    Effectify is in active development. Star us on
+    <a href="https://github.com/devx-op/effectify">GitHub</a>
+    to follow along with development.
 ---
 
 import { Card, CardGrid } from '@astrojs/starlight/components';
 
-## Next steps
+## What is Effectify?
+
+Effectify is a comprehensive suite of packages that brings the power of [Effect](https://effect.website/) to modern web development. It provides type-safe, composable solutions for React, SolidJS, and Node.js applications, enabling you to build robust applications with excellent error handling and developer experience.
+
+## Platform Support
 
 <CardGrid stagger>
-	<Card title="Update content" icon="pencil">
-		Edit `src/content/docs/index.mdx` to see this page change.
+	<Card title="React" icon="react">
+		Effect integration with TanStack Query, comprehensive UI components, and real-time chat functionality for React applications.
+
+		[Explore React packages →](/react/)
 	</Card>
-	<Card title="Add new content" icon="add-document">
-		Add Markdown or MDX files to `src/content/docs` to create new pages.
+	<Card title="SolidJS" icon="seti:sublime">
+		Reactive Effect integration optimized for SolidJS's fine-grained reactivity system with UI components and chat features.
+
+		[Explore SolidJS packages →](/solid/)
 	</Card>
-	<Card title="Configure your site" icon="setting">
-		Edit your `sidebar` and other config in `astro.config.mjs`.
+	<Card title="Node.js Backend" icon="bars">
+		Authentication services, better-auth integration, and complete backend solutions built with Effect.
+
+		[Explore Backend packages →](/backend/)
 	</Card>
-	<Card title="Read the docs" icon="open-book">
-		Learn more in [the Starlight Docs](https://starlight.astro.build/).
+	<Card title="Universal" icon="puzzle">
+		Shared domain logic, types, and business rules that work across all platforms and frameworks.
+
+		[Explore Universal packages →](/universal/)
+	</Card>
+</CardGrid>
+
+## Key Features
+
+### Type Safety First
+Every package is built with TypeScript and Effect's powerful type system, providing compile-time guarantees and excellent IDE support.
+
+### Composable Architecture
+Build complex applications from simple, composable parts using Effect's functional programming patterns.
+
+### Error Handling
+Robust error handling with Effect's error management system, making your applications more reliable and easier to debug.
+
+### Cross-Platform Consistency
+Share business logic and types across React, SolidJS, and Node.js applications for consistent behavior.
+
+## Quick Start
+
+Choose your platform to get started:
+
+<CardGrid>
+	<Card title="React Application" icon="react">
+		```bash
+		npm install @effectify/react-query @tanstack/react-query effect
+		```
+
+		[React Quick Start →](/react/getting-started/)
+	</Card>
+	<Card title="SolidJS Application" icon="seti:sublime">
+		```bash
+		npm install @effectify/solid-query @tanstack/solid-query effect
+		```
+
+		[SolidJS Quick Start →](/solid/getting-started/)
+	</Card>
+	<Card title="Node.js Backend" icon="bars">
+		```bash
+		npm install @effectify/node-better-auth better-auth effect
+		```
+
+		[Backend Quick Start →](/backend/getting-started/)
+	</Card>
+</CardGrid>
+
+## Example Applications
+
+Explore complete example applications built with Effectify:
+
+- **[React SPA](https://github.com/devx-op/effectify/tree/main/apps/react-app-spa)** - Single Page Application with authentication and chat
+- **[SolidJS SPA](https://github.com/devx-op/effectify/tree/main/apps/solid-app-spa)** - SolidJS application with reactive chat features
+- **[SolidJS Start](https://github.com/devx-op/effectify/tree/main/apps/solid-app-start)** - Full-stack SolidStart application
+- **[Node.js Auth Service](https://github.com/devx-op/effectify/tree/main/apps/node-auth-app)** - Complete authentication microservice
+
+## Community & Support
+
+<CardGrid>
+	<Card title="GitHub" icon="github">
+		View source code, report issues, and contribute to the project.
+
+		[Visit GitHub →](https://github.com/devx-op/effectify)
+	</Card>
+	<Card title="Discussions" icon="comment">
+		Join the community discussions, ask questions, and share your projects.
+
+		[Join Discussions →](https://github.com/devx-op/effectify/discussions)
+	</Card>
+	<Card title="Effect Discord" icon="discord">
+		Connect with the broader Effect community for support and collaboration.
+
+		[Join Discord →](https://discord.gg/effect-ts)
 	</Card>
 </CardGrid>
