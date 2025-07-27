@@ -1,0 +1,57 @@
+{
+  "name": "react-app",
+  "description": "React application with Effect-TS integration and modern tooling",
+  "version": "1.0.0",
+  "features": [
+    {
+      "name": "ui-library",
+      "description": "UI component library to use",
+      "optional": true,
+      "options": ["radix", "chakra", "mantine"],
+      "default": "radix",
+      "dependencies": {
+        "radix": [
+          "@radix-ui/react-slot",
+          "@radix-ui/react-label",
+          "class-variance-authority"
+        ],
+        "chakra": ["@chakra-ui/react"],
+        "mantine": ["@mantine/core", "@mantine/hooks"]
+      }
+    },
+    {
+      "name": "routing",
+      "description": "Routing solution",
+      "optional": true,
+      "options": ["tanstack-router", "react-router"],
+      "default": "tanstack-router",
+      "dependencies": {
+        "tanstack-router": ["@tanstack/react-router"],
+        "react-router": ["react-router-dom"]
+      }
+    },
+    {
+      "name": "auth",
+      "description": "Authentication system",
+      "optional": true,
+      "dependencies": ["better-auth", "@effectify/react-auth"]
+    }
+  ],
+  "base-dependencies": [
+    "react",
+    "react-dom",
+    "effect",
+    "@effect/platform",
+    "@effectify/react-query",
+    "@tanstack/react-query"
+  ],
+  "dev-dependencies": [
+    "@types/react",
+    "@types/react-dom",
+    "@vitejs/plugin-react",
+    "vite",
+    "typescript",
+    "tailwindcss"
+  ],
+  "package-manager": "bun"
+}

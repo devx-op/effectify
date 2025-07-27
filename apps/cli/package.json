@@ -1,0 +1,55 @@
+{
+  "name": "@effectify/cli",
+  "version": "0.1.0",
+  "description": "CLI tool for creating Effect-TS monorepos and managing components",
+  "type": "module",
+  "bin": {
+    "effectify": "./dist/main.js"
+  },
+  "files": [
+    "dist",
+    "templates",
+    "registry"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/main.js",
+    "test": "jest",
+    "test-watch": "jest --watch",
+    "lint": "biome check .",
+    "format": "biome format --write .",
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@effect/cli": "catalog:",
+    "@effect/platform": "catalog:",
+    "@effect/platform-node": "catalog:",
+    "effect": "catalog:",
+    "handlebars": "^4.7.8",
+    "tar": "^7.4.3",
+    "chalk": "^5.3.0"
+  },
+  "devDependencies": {
+    "@types/handlebars": "^4.1.0",
+    "@types/tar": "^6.1.13",
+    "@types/node": "catalog:",
+    "typescript": "catalog:"
+  },
+  "keywords": [
+    "effect-ts",
+    "cli",
+    "monorepo",
+    "scaffold",
+    "template",
+    "generator"
+  ],
+  "author": "Effectify Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/devx-op/effectify.git",
+    "directory": "apps/cli"
+  }
+}

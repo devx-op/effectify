@@ -1,0 +1,57 @@
+{
+  "name": "cli",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/cli/src",
+  "projectType": "application",
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "apps/cli/dist",
+        "main": "apps/cli/src/main.ts",
+        "tsConfig": "apps/cli/tsconfig.json",
+        "assets": [
+          {
+            "glob": "**/*",
+            "input": "apps/cli/templates",
+            "output": "templates"
+          },
+          {
+            "glob": "**/*",
+            "input": "apps/cli/registry",
+            "output": "registry"
+          }
+        ]
+      }
+    },
+    "serve": {
+      "executor": "@nx/js:node",
+      "options": {
+        "buildTarget": "cli:build"
+      }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/apps/cli"],
+      "options": {
+        "jestConfig": "apps/cli/jest.config.js"
+      }
+    },
+    "lint": {
+      "executor": "@nx/linter:eslint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["apps/cli/**/*.ts"]
+      }
+    },
+    "type-check": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit",
+        "cwd": "apps/cli"
+      }
+    }
+  },
+  "tags": ["type:application", "scope:cli"]
+}
