@@ -25,6 +25,7 @@
       "!.nx/**",
       "!dist/**",
       "!apps/**/dist/**",
+      "!apps/**/.astro/**",
       "!packages/**/dist/**",
       "!build/**",
       "!coverage/**",

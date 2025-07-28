@@ -18,7 +18,12 @@
       {
         "name": "@effect/language-service",
         "transform": "@effect/language-service/transform",
-        "namespaceImportPackages": ["effect", "@effect/platform", "@effect/platform-node"],
+        "namespaceImportPackages": [
+          "effect",
+          "@effect/platform",
+          "@effect/platform-node",
+          "@effectify/cli"
+        ],
         "diagnosticSeverity": {
           "importFromBarrel": "error"
         }
