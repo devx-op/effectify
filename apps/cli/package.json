@@ -11,17 +11,6 @@
     "templates",
     "registry"
   ],
-  "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
-    "start": "node dist/main.js",
-    "test": "jest",
-    "test-watch": "jest --watch",
-    "lint": "biome check .",
-    "format": "biome format --write .",
-    "type-check": "tsc --noEmit",
-    "clean": "rm -rf dist"
-  },
   "dependencies": {
     "@effect/cli": "catalog:",
     "@effect/platform": "catalog:",
@@ -45,7 +34,7 @@
     "template",
     "generator"
   ],
-  "author": "Effectify Team",
+  "author": "Andres Jimenez",
   "license": "MIT",
   "repository": {
     "type": "git",

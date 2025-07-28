@@ -1,6 +1,6 @@
 {
-  "name": "cli",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "cli",
   "sourceRoot": "apps/cli/src",
   "projectType": "application",
   "targets": {
