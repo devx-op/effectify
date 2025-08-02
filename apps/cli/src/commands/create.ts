@@ -1,6 +1,7 @@
 import * as Args from '@effect/cli/Args'
 import * as Command from '@effect/cli/Command'
 import * as Options from '@effect/cli/Options'
+import * as Prompt from '@effect/cli/Prompt'
 import * as FileSystem from '@effect/platform/FileSystem'
 import * as Path from '@effect/platform/Path'
 import * as Console from 'effect/Console'
@@ -16,7 +17,25 @@ const templateOption = Options.choice('template', ['monorepo', 'backend-only', '
   Options.withDefault('monorepo'),
 )
 
-// Features option with comma-separated values
+// Available features for multiselect
+const availableFeatures = [
+  { title: 'Authentication', value: 'auth', description: 'Add authentication system with better-auth' },
+  { title: 'UI Components', value: 'ui', description: 'Include UI component library' },
+  { title: 'Testing Setup', value: 'testing', description: 'Add testing configuration with Vitest' },
+  { title: 'Storybook', value: 'storybook', description: 'Include Storybook for component development' },
+  { title: 'Docker', value: 'docker', description: 'Add Docker configuration' },
+  { title: 'CI/CD', value: 'ci', description: 'Include GitHub Actions CI/CD pipeline' },
+] as const
+
+// Interactive multiselect prompt for features
+const featuresPrompt = Prompt.multiSelect({
+  message: 'Select features to include in your project:',
+  choices: availableFeatures,
+  min: 0,
+  max: availableFeatures.length,
+})
+
+// Keep the original text option for non-interactive mode
 const featuresOption = Options.text('features').pipe(
   Options.withAlias('f'),
   Options.withDescription('Comma-separated list of features (auth,ui,testing,storybook,docker,ci)'),
@@ -45,8 +64,11 @@ const createProject = (
     yield* Console.log(`🚀 Creating project: ${projectName}`)
     yield* Console.log(`📋 Template: ${options.template}`)
 
-    // Process comma-separated features
+    // Handle features selection
+    let selectedFeatures: string[] = []
+
     if (options.features) {
+      // Use command-line provided features
       const featureList = options.features
         .split(',')
         .map((f) => f.trim())
@@ -63,8 +85,18 @@ const createProject = (
           return
         }
 
-        yield* Console.log(`✨ Features: ${featureList.join(', ')}`)
+        selectedFeatures = featureList
       }
+    } else {
+      // Use interactive multiselect prompt
+      yield* Console.log('')
+      selectedFeatures = yield* Prompt.run(featuresPrompt)
+    }
+
+    if (selectedFeatures.length > 0) {
+      yield* Console.log(`✨ Features: ${selectedFeatures.join(', ')}`)
+    } else {
+      yield* Console.log('✨ No additional features selected')
     }
 
     yield* Console.log(`📦 Package Manager: ${options.packageManager}`)
