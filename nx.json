@@ -65,7 +65,7 @@
   "sync": {
     "disabledTaskSyncGenerators": ["@nx/js:typescript-sync"]
   },
-  "targetDefaults": {  
+  "targetDefaults": {
     "dev": {
       "cache": false,
       "dependsOn": ["^build"]

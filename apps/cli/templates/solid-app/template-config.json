@@ -1,0 +1,49 @@
+{
+  "name": "solid-app",
+  "description": "SolidJS application with Effect-TS integration and reactive patterns",
+  "version": "1.0.0",
+  "features": [
+    {
+      "name": "ui-library",
+      "description": "UI component library to use",
+      "optional": true,
+      "options": ["kobalte", "solid-ui"],
+      "default": "kobalte",
+      "dependencies": {
+        "kobalte": ["@kobalte/core", "class-variance-authority"],
+        "solid-ui": ["@solid-ui/core"]
+      }
+    },
+    {
+      "name": "routing",
+      "description": "Routing solution",
+      "optional": true,
+      "options": ["solid-router", "tanstack-solid-router"],
+      "default": "tanstack-solid-router",
+      "dependencies": {
+        "solid-router": ["@solidjs/router"],
+        "tanstack-solid-router": ["@tanstack/solid-router"]
+      }
+    },
+    {
+      "name": "auth",
+      "description": "Authentication system",
+      "optional": true,
+      "dependencies": ["better-auth", "@effectify/solid-auth"]
+    }
+  ],
+  "base-dependencies": [
+    "solid-js",
+    "effect",
+    "@effect/platform",
+    "@effectify/solid-query",
+    "@tanstack/solid-query"
+  ],
+  "dev-dependencies": [
+    "vite",
+    "vite-plugin-solid",
+    "typescript",
+    "tailwindcss"
+  ],
+  "package-manager": "bun"
+}

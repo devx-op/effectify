@@ -1,0 +1,25 @@
+{
+  "name": "button",
+  "version": "1.0.0",
+  "description": "A customizable button component with variants and sizes",
+  "registry": "@effectify/ui",
+  "component-type": "ui",
+  "framework-support": ["react", "solid"],
+  "dependencies": ["class-variance-authority", "clsx"],
+  "files": [
+    {
+      "file-path": "button.tsx",
+      "file-type": "template",
+      "target-directory": "components/ui"
+    },
+    {
+      "file-path": "button.stories.tsx",
+      "file-type": "template",
+      "target-directory": "components/ui",
+      "optional": true
+    }
+  ],
+  "exports": ["Button", "ButtonProps", "buttonVariants"],
+  "tags": ["ui", "button", "interactive"],
+  "documentation": "https://effectify.dev/docs/components/button"
+}

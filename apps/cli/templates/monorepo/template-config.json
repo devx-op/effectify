@@ -1,0 +1,51 @@
+{
+  "name": "monorepo",
+  "description": "Complete monorepo setup with Effect-TS, React, SolidJS and modern tooling",
+  "version": "1.0.0",
+  "features": [
+    {
+      "name": "react-app",
+      "description": "Include React application with Effect-TS integration",
+      "optional": true,
+      "dependencies": [
+        "react",
+        "react-dom",
+        "@effectify/react-query",
+        "@tanstack/react-query"
+      ]
+    },
+    {
+      "name": "solid-app",
+      "description": "Include SolidJS application with Effect-TS integration",
+      "optional": true,
+      "dependencies": [
+        "solid-js",
+        "@effectify/solid-query",
+        "@tanstack/solid-query"
+      ]
+    },
+    {
+      "name": "node-service",
+      "description": "Include Node.js service with Effect-TS",
+      "optional": true,
+      "dependencies": ["@effectify/node-better-auth", "better-auth", "fastify"]
+    },
+    {
+      "name": "ui-components",
+      "description": "Include UI component libraries",
+      "optional": true,
+      "dependencies": [
+        "@effectify/react-ui",
+        "@effectify/solid-ui",
+        "tailwindcss"
+      ]
+    }
+  ],
+  "base-dependencies": ["effect", "@effect/platform"],
+  "dev-dependencies": ["typescript", "nx", "@biomejs/biome", "vitest"],
+  "package-manager": "bun",
+  "hooks": {
+    "pre-install": "validate-project-name",
+    "post-install": "install-dependencies"
+  }
+}
