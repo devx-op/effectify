@@ -10,6 +10,7 @@ import {
 import { Center } from '@effectify/react-ui/components/primitives/center'
 import { Stack, VStack } from '@effectify/react-ui/components/primitives/stack'
 import { useAppForm } from '@effectify/react-ui/components/primitives/tanstack-form'
+import * as Schema from 'effect/Schema'
 import type React from 'react'
 
 type LoginFormProps = {
@@ -24,7 +25,7 @@ export const LoginForm: React.FC<LoginFormProps> = (props) => {
       password: '',
     },
     validators: {
-      onBlur: LoginSchema,
+      onBlur: Schema.standardSchemaV1(LoginSchema),
     },
     onSubmit: ({ value }: { value: { email: string; password: string } }) => {
       // Do something with form data

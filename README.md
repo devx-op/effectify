@@ -13,23 +13,23 @@ Monorepo of utilities for integrating [Effect](https://effect.website/) with dif
 
 ### Requirements
 
-- [Bun](https://bun.sh/)
+- [pnpm](https://pnpm.io/)
 - [Node.js](https://nodejs.org/)
 
 ### Commands
 
 ```bash
 # Install dependencies
-bun install
+pnpm install
 
 # Run example application
-bun nx dev tanstack-solid-app
+pnpm nx dev tanstack-solid-app
 
 # Build all packages
-bun nx affected -t build
+pnpm nx affected -t build
 
 # Clean project
-bun clean
+pnpm clean
 ```
 
 ## Credits & Inspiration

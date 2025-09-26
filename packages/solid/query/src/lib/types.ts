@@ -1,4 +1,5 @@
-import type { QueryFunctionContext, skipToken, UseMutationOptions, UseQueryOptions } from '@tanstack/solid-query'
+import type { QueryFunctionContext, skipToken } from '@tanstack/query-core'
+import type { UseMutationOptions, UseQueryOptions } from '@tanstack/solid-query'
 import type { DurationInput } from 'effect/Duration'
 import type * as Effect from 'effect/Effect'
 import type * as Stream from 'effect/Stream'

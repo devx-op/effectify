@@ -9,7 +9,7 @@
     "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
     "emitDeclarationOnly": false,
     "forceConsistentCasingInFileNames": true,
-    "types": ["react"],
+    "types": [],
     "preserveSymlinks": true
   },
   "include": ["src/**/*"],

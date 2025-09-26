@@ -24,6 +24,7 @@
   "dependencies": {
     "tslib": "catalog:",
     "@tanstack/solid-query": "catalog:",
+    "@tanstack/query-core": "catalog:",
     "effect": "catalog:",
     "solid-js": "catalog:"
   },

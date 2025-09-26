@@ -10,6 +10,7 @@ import {
 import { Center } from '@effectify/react-ui/components/primitives/center'
 import { Stack, VStack } from '@effectify/react-ui/components/primitives/stack'
 import { useAppForm } from '@effectify/react-ui/components/primitives/tanstack-form'
+import * as Schema from 'effect/Schema'
 import type * as React from 'react'
 
 type RegisterFormProps = {
@@ -26,7 +27,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = (props) => {
       confirmPassword: '',
     },
     validators: {
-      onBlur: RegisterSchema,
+      onBlur: Schema.standardSchemaV1(RegisterSchema),
     },
     onSubmit: ({ value }) => {
       // Do something with form data

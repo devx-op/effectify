@@ -2,19 +2,17 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "composite": true,
-    "types": ["better-sqlite3", "node"],
+    "types": ["node"],
     "typeRoots": ["./../../node_modules/@types"],
     "rootDir": "src",
     "module": "nodenext",
-    "moduleResolution": "nodenext",  
+    "moduleResolution": "nodenext",
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "outDir": "dist",
     "tsBuildInfoFile": "dist/tsconfig.app.tsbuildinfo",
     "baseUrl": "./"
   },
-  "include": [
-    "src/**/*.ts"
-  ],
+  "include": ["src/**/*.ts"],
   "exclude": []
 }

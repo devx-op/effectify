@@ -1,4 +1,4 @@
-import type { QueryClient } from '@tanstack/solid-query'
+import type { QueryClient } from '@tanstack/query-core'
 
 type DeepMutable<T> = {
   -readonly [P in keyof T]: T[P] extends object ? DeepMutable<T[P]> : T[P]

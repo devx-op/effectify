@@ -1,10 +1,5 @@
-import {
-  type QueryFunction,
-  type QueryFunctionContext,
-  skipToken,
-  type UseQueryResult,
-  useQuery,
-} from '@tanstack/react-query'
+import type { QueryFunction, QueryFunctionContext } from '@tanstack/query-core'
+import { skipToken, type UseQueryResult, useQuery } from '@tanstack/react-query'
 import * as Duration from 'effect/Duration'
 import { useMemo } from 'react'
 import type { EffectfulError, EffectfulQueryFunction, EffectfulQueryOptions, QueryKey, Runner } from '../types.js'

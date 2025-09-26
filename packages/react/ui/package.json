@@ -13,7 +13,7 @@
     "./components/primitives/*": "./src/components/primitives/*.tsx"
   },
   "scripts": {
-    "shadcn": "TS_NODE_PROJECT=tsconfig.lib.json bunx shadcn@latest"
+    "shadcn": "TS_NODE_PROJECT=tsconfig.lib.json pnpm exec shadcn@latest"
   },
   "dependencies": {
     "@radix-ui/react-label": "catalog:",
@@ -27,7 +27,8 @@
     "react": "catalog:",
     "react-dom": "catalog:",
     "tailwind-merge": "catalog:",
-    "tailwindcss": "catalog:"
+    "tailwindcss": "catalog:",
+    "tailwindcss-animate": "catalog:"
   },
   "devDependencies": {
     "@types/react": "catalog:",

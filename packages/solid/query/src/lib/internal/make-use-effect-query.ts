@@ -1,10 +1,6 @@
-import {
-  type QueryFunction,
-  type QueryFunctionContext,
-  skipToken,
-  type UseQueryResult,
-  useQuery,
-} from '@tanstack/solid-query'
+import type { QueryFunction, QueryFunctionContext } from '@tanstack/query-core'
+import { skipToken } from '@tanstack/query-core'
+import { type UseQueryResult, useQuery } from '@tanstack/solid-query'
 import * as Duration from 'effect/Duration'
 import { createMemo } from 'solid-js'
 import type { EffectfulError, EffectfulQueryFunction, EffectfulQueryOptions, QueryKey, Runner } from '../types.js'

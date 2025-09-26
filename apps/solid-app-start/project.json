@@ -4,18 +4,22 @@
   "projectType": "application",
   "sourceRoot": "apps/solid-app-start/src",
   "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "vite build",
+        "cwd": "apps/solid-app-start"
+      }
+    },
     "dev:watch": {
       "executor": "nx:run-commands",
       "options": {
-        "commands": [
-          "vite",
-          "nx run @effectify/solid-app-start:watch-deps "
-        ],
+        "commands": ["vite", "nx run @effectify/solid-app-start:watch-deps "],
         "cwd": "apps/solid-app-start",
         "parallel": true
       }
     },
-    "dev:server:watch":{
+    "dev:server:watch": {
       "executor": "nx:run-commands",
       "options": {
         "commands": [
@@ -28,7 +32,5 @@
       }
     }
   },
-  "tags": [
-    "solid-start"
-  ]
+  "tags": ["solid-start"]
 }

@@ -2,7 +2,7 @@
   "$schema": "./node_modules/nx/schemas/nx-schema.json",
   "defaultBase": "master",
   "cli": {
-    "packageManager": "bun"
+    "packageManager": "pnpm"
   },
   "namedInputs": {
     "default": ["{projectRoot}/**/*", "sharedGlobals"],
@@ -32,6 +32,7 @@
     },
     {
       "plugin": "@nx/vite/plugin",
+      "exclude": ["apps/solid-app-start/**/*"],
       "options": {
         "buildTargetName": "build",
         "testTargetName": "test",
@@ -59,7 +60,7 @@
     },
     "releaseTagPattern": "release/{version}",
     "version": {
-      "preVersionCommand": "bun nx run-many -t build"
+      "preVersionCommand": "pnpm nx run-many -t build"
     }
   },
   "sync": {

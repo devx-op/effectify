@@ -4,6 +4,7 @@ import * as Card from '@effectify/solid-ui/components/primitives/card'
 import { Center } from '@effectify/solid-ui/components/primitives/center'
 import { Stack, VStack } from '@effectify/solid-ui/components/primitives/stack'
 import { Input, useAppForm } from '@effectify/solid-ui/components/primitives/tanstack-form'
+import * as Schema from 'effect/Schema'
 import type { Component, JSX } from 'solid-js'
 
 type LoginFormProps = {
@@ -18,7 +19,7 @@ export const LoginForm: Component<LoginFormProps> = (props) => {
       password: '',
     },
     validators: {
-      onBlur: LoginSchema,
+      onBlur: Schema.standardSchemaV1(LoginSchema),
     },
     onSubmit: ({ value }: { value: { email: string; password: string } }) => {
       // Do something with form data

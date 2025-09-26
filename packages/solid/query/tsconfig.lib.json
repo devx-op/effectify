@@ -9,7 +9,7 @@
     "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
     "emitDeclarationOnly": false,
     "forceConsistentCasingInFileNames": true,
-    "types": ["solid-js"],
+    "types": [],
     "preserveSymlinks": true
   },
   "include": ["src/**/*"],

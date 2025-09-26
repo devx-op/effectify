@@ -9,7 +9,7 @@
     "./services/*": "./src/hooks/*.ts"
   },
   "scripts": {
-    "shadcn": "TS_NODE_PROJECT=tsconfig.ui.json bunx shadcn@latest"
+    "shadcn": "TS_NODE_PROJECT=tsconfig.ui.json pnpm exec shadcn@latest"
   },
   "dependencies": {
     "effect": "catalog:",

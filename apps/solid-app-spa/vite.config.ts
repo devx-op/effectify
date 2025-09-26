@@ -14,6 +14,8 @@ export default defineConfig({
       target: 'solid',
       routeToken: 'layout',
       autoCodeSplitting: true,
+      routesDirectory: './src/routes',
+      generatedRouteTree: './src/routeTree.gen.ts',
     }),
     solidPlugin(),
     tailwindcss(),

@@ -20,6 +20,7 @@
     "@tanstack/solid-query-devtools": "catalog:",
     "@tanstack/solid-router": "catalog:",
     "@tanstack/solid-router-devtools": "catalog:",
+    "better-auth": "catalog:",
     "solid-js": "catalog:",
     "tailwindcss": "catalog:",
     "vite-tsconfig-paths": "catalog:"

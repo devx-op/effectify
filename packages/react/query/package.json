@@ -24,6 +24,7 @@
   "dependencies": {
     "tslib": "catalog:",
     "@tanstack/react-query": "catalog:",
+    "@tanstack/query-core": "catalog:",
     "effect": "catalog:",
     "react": "catalog:"
   },
