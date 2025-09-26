@@ -1,14 +1,8 @@
 packages:
   - apps/*
-  - packages/chat/domain
-  - packages/chat/react
-  - packages/chat/solid
-  - packages/node/better-auth
-  - packages/react/query
-  - packages/react/ui
-  - packages/shared/domain
-  - packages/solid/query
-  - packages/solid/ui
+  - packages/*/*
+  - '!packages/*/dist'
+  - '!packages/*/*/dist'
 
 catalog:
   '@astrojs/starlight': 0.36.0
