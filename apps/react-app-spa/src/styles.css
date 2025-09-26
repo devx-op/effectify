@@ -1,10 +1,11 @@
-@import "tailwindcss" source("../../../packages/react/ui/src");
+@import "tailwindcss";
+@source ("../../../packages/react/ui/src");
 
 body {
   @apply m-0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
-    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
-    sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu",
+    "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-width: 320px;
@@ -12,8 +13,8 @@ body {
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
-    monospace;
+  font-family:
+    source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
 }
 
 @import "tw-animate-css";
@@ -75,8 +76,6 @@ a {
 a:hover {
   color: #535bf2;
 }
-
-
 
 h1 {
   font-size: 3.2em;

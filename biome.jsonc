@@ -25,7 +25,12 @@
       "!**/convex/_generated",
       "!**/tsconfig.json",
       "!packages/confect/**",
-      "!**/*.d.ts"
+      "!**/*.d.ts",
+      "!apps/docs/**",
+      "!**/node_modules",
+      "!**/coverage",
+      "!apps/node-auth-app/**",
+      "!tmp/**"
     ]
   },
   "formatter": {
@@ -53,6 +58,9 @@
   "linter": {
     "enabled": true,
     "rules": {
+      "a11y": {
+        "useButtonType": "off"
+      },
       "style": {
         "noHeadElement": "off",
         "noParameterAssign": "off",
@@ -76,7 +84,8 @@
         "noImgElement": "off"
       },
       "correctness": {
-        "noChildrenProp": "off"
+        "noChildrenProp": "off",
+        "noInvalidPositionAtImportRule": "off"
       }
     }
   },

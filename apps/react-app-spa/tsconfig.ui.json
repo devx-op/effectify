@@ -2,9 +2,7 @@
   "extends": "./tsconfig.app.json",
   "compilerOptions": {
     "paths": {
-      "@workspace/ui/*": [
-        "./../../packages/react/ui/src/*"
-      ]
+      "@workspace/ui/*": ["./../../packages/react/ui/src/*"]
     }
   }
 }

@@ -1,4 +1,3 @@
-/** biome-ignore-all lint/a11y/useButtonType: <explanation> */
 import type { ErrorComponentProps } from '@tanstack/solid-router'
 import { ErrorComponent, Link, rootRouteId, useMatch, useRouter } from '@tanstack/solid-router'
 

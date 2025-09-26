@@ -22,7 +22,7 @@ function RouteComponent() {
   }
   return (
     <HStack class="min-h-screen">
-      <Flex class=" w-full">
+      <Flex class="w-full">
         <aside class="b-r-black dark:b-r-gray hidden w-64 border-1 md:block">
           <SidebarContainer>
             <Sidebar groups={[]} />

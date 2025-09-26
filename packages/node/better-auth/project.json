@@ -6,9 +6,7 @@
   "targets": {
     "build": {
       "executor": "@nx/js:tsc",
-      "outputs": [
-        "{options.outputPath}"
-      ],
+      "outputs": ["{options.outputPath}"],
       "defaultConfiguration": "production",
       "options": {
         "outputPath": "packages/node/better-auth/dist",
@@ -18,7 +16,24 @@
         "generatePackageJson": false,
         "updateBuildableProjectDepsInPackageJson": false,
         "additionalEntryPoints": [],
-        "external": ["better-sqlite3", "ws", "events", "stream", "crypto", "buffer", "util", "path", "fs", "net", "tls", "http", "https", "zlib", "os", "url"]
+        "external": [
+          "better-sqlite3",
+          "ws",
+          "events",
+          "stream",
+          "crypto",
+          "buffer",
+          "util",
+          "path",
+          "fs",
+          "net",
+          "tls",
+          "http",
+          "https",
+          "zlib",
+          "os",
+          "url"
+        ]
       },
       "configurations": {
         "development": {},
@@ -26,7 +41,5 @@
       }
     }
   },
-  "tags": [
-    "node"
-  ]
+  "tags": ["node"]
 }

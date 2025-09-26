@@ -55,13 +55,14 @@ type Props = {
 }
 
 export const AccountSwitcher = (props: Props) => {
+  // biome-ignore lint/style/noNonNullAssertion: <testing>
   const [selectedAccount, setSelectedAccount] = createSignal<Account>(accounts[0]!)
 
   return (
     <Select<Account>
       class={cn('flex h-[52px] items-center justify-center', props.isCollapsed ? 'h-[52px]' : 'px-2')}
       disallowEmptySelection
-      itemComponent={(itemProps: any) => <SelectItem item={itemProps.item}>{itemProps.item.rawValue.email}</SelectItem>}
+      itemComponent={(itemProps) => <SelectItem item={itemProps.item}>{itemProps.item.rawValue.email}</SelectItem>}
       onChange={setSelectedAccount}
       options={accounts}
       optionTextValue="label"
@@ -77,7 +78,7 @@ export const AccountSwitcher = (props: Props) => {
         )}
       >
         <SelectValue<Account>>
-          {(state: any) => (
+          {(state) => (
             <>
               {state.selectedOption().icon}
               <div class={cn('ml-2', props.isCollapsed && 'hidden')}>{state.selectedOption().label}</div>

@@ -3,7 +3,5 @@
   "name": "@effectify/react-ui",
   "sourceRoot": "packages/react/ui/src",
   "projectType": "library",
-  "tags": [
-    "react"
-  ]
+  "tags": ["react"]
 }

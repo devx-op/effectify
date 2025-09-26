@@ -3,7 +3,5 @@
   "name": "@effectify/chat-react",
   "sourceRoot": "packages/chat/react/src",
   "projectType": "library",
-  "tags": [
-    "react"
-  ]
+  "tags": ["react"]
 }

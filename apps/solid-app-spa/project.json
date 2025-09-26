@@ -7,15 +7,12 @@
     "dev:watch": {
       "executor": "nx:run-commands",
       "options": {
-        "commands": [
-          "vite",
-          "nx run @effectify/solid-app-spa:watch-deps "
-        ],
+        "commands": ["vite", "nx run @effectify/solid-app-spa:watch-deps "],
         "cwd": "apps/solid-app-spa",
         "parallel": true
       }
     },
-    "dev:server:watch":{
+    "dev:server:watch": {
       "executor": "nx:run-commands",
       "options": {
         "commands": [
@@ -28,7 +25,5 @@
       }
     }
   },
-  "tags": [
-    "solid-start"
-  ]
+  "tags": ["solid-start"]
 }

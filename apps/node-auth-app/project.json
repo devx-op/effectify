@@ -6,9 +6,7 @@
   "targets": {
     "build": {
       "executor": "@nx/js:tsc",
-      "outputs": [
-        "{options.outputPath}"
-      ],
+      "outputs": ["{options.outputPath}"],
       "defaultConfiguration": "production",
       "options": {
         "outputPath": "apps/node-auth-app/dist",
@@ -40,9 +38,7 @@
     "serve": {
       "executor": "@nx/js:node",
       "defaultConfiguration": "development",
-      "dependsOn": [
-        "build"
-      ],
+      "dependsOn": ["build"],
       "options": {
         "buildTarget": "@effectify/node-auth-app:build",
         "runBuildTargetDependencies": true,
@@ -58,7 +54,5 @@
       }
     }
   },
-  "tags": [
-    "node"
-  ]
+  "tags": ["node"]
 }

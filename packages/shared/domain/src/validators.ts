@@ -5,4 +5,4 @@ import isEmail from 'validator/lib/isEmail.js'
  * Validate emails according to RFC 5322
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const isValidEmail = isEmail as any as (str: string, options?: IsEmailOptions) => boolean
+export const isValidEmail = isEmail as unknown as (str: string, options?: IsEmailOptions) => boolean

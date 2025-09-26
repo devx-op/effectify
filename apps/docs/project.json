@@ -3,7 +3,5 @@
   "name": "@effectify/docs",
   "projectType": "application",
   "sourceRoot": "apps/docs/src",
-  "tags": [
-    "docs"
-  ]
+  "tags": ["docs"]
 }

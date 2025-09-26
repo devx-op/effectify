@@ -3,7 +3,5 @@
   "name": "@effectify/solid-ui",
   "sourceRoot": "packages/solid/ui/src",
   "projectType": "library",
-  "tags": [
-    "solid"
-  ]
+  "tags": ["solid"]
 }
