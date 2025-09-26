@@ -1,25 +1,17 @@
-// router.tsx - TanStack Start router entry point
-
-import { queryClient, RuntimeProvider } from '@effectify/chat-solid/services/tanstack-query'
 import { createRouter } from '@tanstack/solid-router'
-import { routeTree } from './routeTree.gen.ts'
+import { DefaultCatchBoundary } from './components/default-error-bundaries'
+import { routeTree } from './routeTree.gen'
 
-const router = createRouter({
-  routeTree,
-  context: { queryClient },
-  defaultPreload: 'intent',
-  defaultPendingComponent: () => <div>Loading...</div>,
-  scrollRestoration: true,
-  defaultPreloadStaleTime: 0,
-  Wrap: ({ children }) => <RuntimeProvider>{children}</RuntimeProvider>,
-})
-
-declare module '@tanstack/solid-router' {
-  interface Register {
-    router: typeof router
-  }
-}
+import './styles.css'
 
 export function getRouter() {
+  const router = createRouter({
+    routeTree,
+    defaultPreload: 'intent',
+    defaultErrorComponent: DefaultCatchBoundary,
+    defaultNotFoundComponent: () => <>error</>,
+    scrollRestoration: true,
+  })
+
   return router
 }

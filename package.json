@@ -2,10 +2,6 @@
   "name": "@effectify/source",
   "version": "0.0.0",
   "license": "MIT",
-  "workspaces": [
-    "apps/*",
-    "packages/**/*"
-  ],
   "scripts": {
     "lint-staged": "lint-staged --allow-empty",
     "clean": "rm -rf node_modules dist pnpm-lock.yaml && pnpm store prune & find . -type d \\( -name 'node_modules' -o -name 'dist' -o -name '.output' -o -name '.vinxi' -o -name '.cache' -o -name '.expo' -o -name '.nx' \\) -prune -exec rm -rf {} + & wait",
