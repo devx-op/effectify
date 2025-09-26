@@ -20,5 +20,7 @@
   },
   "devDependencies": {
     "@types/better-sqlite3": "catalog:"
-  }
+  },
+  "peerDependencies": {},
+  "optionalDependencies": {}
 }

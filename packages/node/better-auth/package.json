@@ -25,5 +25,8 @@
     "@effect/platform-node": "catalog:",
     "better-auth": "catalog:",
     "effect": "catalog:"
-  }
+  },
+  "devDependencies": {},
+  "peerDependencies": {},
+  "optionalDependencies": {}
 }

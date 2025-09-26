@@ -12,5 +12,8 @@
     "@effectify/shared-domain": "workspace:*",
     "tslib": "catalog:",
     "effect": "catalog:"
-  }
+  },
+  "devDependencies": {},
+  "peerDependencies": {},
+  "optionalDependencies": {}
 }

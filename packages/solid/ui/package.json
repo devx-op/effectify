@@ -23,5 +23,8 @@
     "clsx": "catalog:",
     "tailwind-merge": "catalog:",
     "tailwindcss-animate": "catalog:"
-  }
+  },
+  "devDependencies": {},
+  "peerDependencies": {},
+  "optionalDependencies": {}
 }

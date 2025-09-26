@@ -40,5 +40,7 @@
     "jsdom": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:"
-  }
+  },
+  "peerDependencies": {},
+  "optionalDependencies": {}
 }

@@ -38,5 +38,7 @@
     "tw-animate-css": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:"
-  }
+  },
+  "peerDependencies": {},
+  "optionalDependencies": {}
 }

@@ -40,5 +40,7 @@
     "type": "git",
     "url": "https://github.com/devx-op/effectify.git",
     "directory": "apps/cli"
-  }
+  },
+  "peerDependencies": {},
+  "optionalDependencies": {}
 }

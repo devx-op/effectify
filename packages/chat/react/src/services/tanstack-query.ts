@@ -1,4 +1,4 @@
-import * as Layer from '@effectify/chat-domain/layer'
+import * as Layer from '@effectify/chat-domain/layer.js'
 import { tanstackQueryEffect } from '@effectify/react-query'
 import { QueryClient } from '@tanstack/react-query'
 import * as Duration from 'effect/Duration'

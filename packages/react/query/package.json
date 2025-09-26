@@ -35,5 +35,6 @@
   "peerDependencies": {
     "@tanstack/react-query": "catalog:",
     "react": "catalog:"
-  }
+  },
+  "optionalDependencies": {}
 }

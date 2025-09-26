@@ -18,5 +18,8 @@
     "@tanstack/solid-query": "catalog:",
     "@tanstack/solid-form": "catalog:",
     "lucide-solid": "catalog:"
-  }
+  },
+  "devDependencies": {},
+  "peerDependencies": {},
+  "optionalDependencies": {}
 }

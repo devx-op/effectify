@@ -66,6 +66,16 @@
   "sync": {
     "disabledTaskSyncGenerators": ["@nx/js:typescript-sync"]
   },
+  "targets": {
+    "local-registry": {
+      "executor": "@nx/js:verdaccio",
+      "options": {
+        "port": 4873,
+        "config": ".verdaccio/config.yml",
+        "storage": "tmp/local-registry/storage"
+      }
+    }
+  },
   "targetDefaults": {
     "dev": {
       "cache": false,

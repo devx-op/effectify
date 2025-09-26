@@ -13,5 +13,8 @@
     "effect": "catalog:",
     "@types/validator": "catalog:",
     "validator": "catalog:"
-  }
+  },
+  "devDependencies": {},
+  "peerDependencies": {},
+  "optionalDependencies": {}
 }

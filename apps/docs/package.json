@@ -19,5 +19,8 @@
     "starlight-theme-nova": "catalog:",
     "starlight-sidebar-topics": "catalog:",
     "starlight-sidebar-topics-dropdown": "catalog:"
-  }
+  },
+  "devDependencies": {},
+  "peerDependencies": {},
+  "optionalDependencies": {}
 }
