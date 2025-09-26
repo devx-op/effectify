@@ -1,0 +1,27 @@
+{
+  "name": "@effectify/react-router",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/react/router/src",
+  "projectType": "library",
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "defaultConfiguration": "production",
+      "options": {
+        "outputPath": "packages/react/router/dist",
+        "main": "packages/react/router/src/index.ts",
+        "tsConfig": "packages/react/router/tsconfig.lib.json",
+        "format": ["esm"],
+        "generatePackageJson": false,
+        "updateBuildableProjectDepsInPackageJson": false,
+        "additionalEntryPoints": []
+      },
+      "configurations": {
+        "development": {},
+        "production": {}
+      }
+    }
+  },
+  "tags": ["node", "react", "react-router"]
+}
