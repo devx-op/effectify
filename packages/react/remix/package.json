@@ -1,6 +1,6 @@
 {
-  "name": "@effectify/node-better-auth",
-  "version": "0.0.2",
+  "name": "@effectify/react-remix",
+  "version": "0.0.5",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -23,8 +23,9 @@
   "dependencies": {
     "@effect/platform": "catalog:",
     "@effect/platform-node": "catalog:",
-    "better-auth": "catalog:",
-    "effect": "catalog:"
+    "effect": "catalog:",
+    "@remix-run/react": "catalog:",
+    "@remix-run/node": "catalog:"
   },
   "devDependencies": {},
   "peerDependencies": {},

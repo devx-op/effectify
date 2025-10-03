@@ -1,0 +1,35 @@
+{
+  "name": "react-app-remix",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "build": "remix vite:build",
+    "dev": "remix vite:dev",
+    "start": "remix-serve ./build/index.js",
+    "typecheck": "tsc"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.14.0",
+  "dependencies": {
+    "effect": "catalog:",
+    "@effectify/react-remix": "workspace:*",
+    "@remix-run/node": "2.17.1",
+    "@remix-run/react": "2.17.1",
+    "@remix-run/serve": "2.17.1",
+    "isbot": "^4.4.0",
+    "react": "18.2.0",
+    "react-dom": "18.2.0"
+  },
+  "devDependencies": {
+    "@remix-run/dev": "2.17.1",
+    "@types/react": "^18.2.20",
+    "@types/react-dom": "^18.2.7",
+    "eslint": "^8.23.1",
+    "typescript": "^5.1.6",
+    "vite": "catalog:"
+  }
+}

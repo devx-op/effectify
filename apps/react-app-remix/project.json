@@ -1,0 +1,38 @@
+{
+  "name": "react-app-remix",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/react-app-remix",
+  "targets": {
+    "build": {
+      "executor": "@nx/vite:build",
+      "outputs": ["{options.outputPath}"],
+      "defaultConfiguration": "production",
+      "options": {
+        "outputPath": "dist/apps/react-app-remix"
+      }
+    },
+    "dev": {
+      "executor": "@nx/vite:dev-server",
+      "defaultConfiguration": "development",
+      "options": {
+        "buildTarget": "react-app-remix:build"
+      }
+    },
+    "serve": {
+      "executor": "@nx/js:node",
+      "defaultConfiguration": "development",
+      "options": {
+        "buildTarget": "react-app-remix:build",
+        "buildTargetOptions": {
+          "outputPath": "dist/apps/react-app-remix"
+        }
+      }
+    },
+    "typecheck": {
+      "executor": "@nx/vite:typecheck",
+      "options": {}
+    }
+  },
+  "tags": []
+}

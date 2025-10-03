@@ -1,0 +1,27 @@
+{
+  "name": "@effectify/react-remix",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/react/remix/src",
+  "projectType": "library",
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "defaultConfiguration": "production",
+      "options": {
+        "outputPath": "packages/react/remix/dist",
+        "main": "packages/react/remix/src/index.ts",
+        "tsConfig": "packages/react/remix/tsconfig.lib.json",
+        "format": ["esm"],
+        "generatePackageJson": false,
+        "updateBuildableProjectDepsInPackageJson": false,
+        "additionalEntryPoints": []
+      },
+      "configurations": {
+        "development": {},
+        "production": {}
+      }
+    }
+  },
+  "tags": ["node", "react", "react-remix"]
+}

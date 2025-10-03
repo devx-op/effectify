@@ -1,20 +1,20 @@
-import * as T from 'effect/Effect'
+import { type ActionFunctionArgs, json, type LoaderFunctionArgs, redirect } from '@remix-run/node'
+import * as Effect from 'effect/Effect'
 import * as Exit from 'effect/Exit'
 import { pipe } from 'effect/Function'
 import type * as Layer from 'effect/Layer'
 import * as Logger from 'effect/Logger'
 import * as ManagedRuntime from 'effect/ManagedRuntime'
-import { type ActionFunctionArgs, data, type LoaderFunctionArgs, redirect } from 'react-router'
-import { ActionArgsContext, LoaderArgsContext } from '../lib/context.js'
-import { type HttpResponse, matchHttpResponse } from '../lib/http-response.js'
+import { ActionArgsContext, LoaderArgsContext } from './context.js'
+import { type HttpResponse, matchHttpResponse } from './http-response.js'
 
 export const make = <R, E>(layer: Layer.Layer<R, E, never>) => {
   const runtime = ManagedRuntime.make(layer)
 
   const withLoaderEffect =
-    <A, B>(self: T.Effect<HttpResponse<A>, B, R | LoaderArgsContext>) =>
+    <A, B>(self: Effect.Effect<HttpResponse<A>, B, R | LoaderArgsContext>) =>
     (args: LoaderFunctionArgs) => {
-      const runnable = pipe(self, T.provide(Logger.pretty), T.provideService(LoaderArgsContext, args))
+      const runnable = pipe(self, Effect.provide(Logger.pretty), Effect.provideService(LoaderArgsContext, args))
       return runtime.runPromiseExit(runnable).then(
         Exit.match({
           onFailure: (cause) => {
@@ -40,14 +40,14 @@ export const make = <R, E>(layer: Layer.Layer<R, E, never>) => {
 
   // Don't throw the Error requests, handle them in the normal UI. No ErrorBoundary
   const withActionEffect =
-    <A, B>(self: T.Effect<HttpResponse<A>, B, R | ActionArgsContext>) =>
+    <A, B>(self: Effect.Effect<HttpResponse<A>, B, R | ActionArgsContext>) =>
     (args: ActionFunctionArgs) => {
       const runnable = pipe(
         self,
-        T.provide(Logger.pretty),
-        T.provideService(ActionArgsContext, args),
-        T.match({
-          onFailure: (errors) => data({ ok: false as const, errors }, { status: 400 }),
+        Effect.provide(Logger.pretty),
+        Effect.provideService(ActionArgsContext, args),
+        Effect.match({
+          onFailure: (errors) => json({ ok: false as const, errors }, { status: 400 }),
           onSuccess: matchHttpResponse<A>()({
             Ok: ({ data: response }) => {
               return { ok: true as const, response }

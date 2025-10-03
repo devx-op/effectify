@@ -32,7 +32,7 @@
     },
     {
       "plugin": "@nx/vite/plugin",
-      "exclude": ["apps/solid-app-start/**/*"],
+      "exclude": ["apps/solid-app-start/**/*", "apps/react-app-remix/**/*"],
       "options": {
         "buildTargetName": "build",
         "testTargetName": "test",
