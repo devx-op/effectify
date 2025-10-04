@@ -1,0 +1,45 @@
+{
+  "name": "react-app-router-rsc",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/react-app-router-rsc/src",
+  "projectType": "application",
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "outputs": ["{workspaceRoot}/apps/react-app-router-rsc/dist"],
+      "options": {
+        "command": "pnpm build",
+        "cwd": "apps/react-app-router-rsc"
+      }
+    },
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm dev",
+        "cwd": "apps/react-app-router-rsc"
+      }
+    },
+    "start": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm start",
+        "cwd": "apps/react-app-router-rsc"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm typecheck",
+        "cwd": "apps/react-app-router-rsc"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm lint",
+        "cwd": "apps/react-app-router-rsc"
+      }
+    }
+  },
+  "tags": ["type:app", "framework:react", "router:react-router"]
+}
