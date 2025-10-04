@@ -1,0 +1,31 @@
+{
+  "name": "react-app-router",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite dev",
+    "preview": "vite preview",
+    "typecheck": "tsc"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.14.0",
+  "dependencies": {
+    "effect": "catalog:",
+    "@effectify/react-router": "workspace:*",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "react-router": "catalog:"
+  },
+  "devDependencies": {
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:"
+  }
+}

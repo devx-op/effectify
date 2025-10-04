@@ -1,0 +1,8 @@
+{
+  "name": "react-app-router",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/react-app-router",
+  "targets": {},
+  "tags": ["npm:public"]
+}
