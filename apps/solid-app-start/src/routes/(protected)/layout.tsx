@@ -7,7 +7,7 @@ import { SidebarContainer } from '@effectify/solid-ui/components/sidebar/sidebar
 import { createFileRoute, Outlet } from '@tanstack/solid-router'
 import { authClient } from '@/libs/auth-client'
 
-export const Route = createFileRoute('/(protected)')({
+export const Route = createFileRoute('/(protected)/layout')({
   component: RouteComponent,
 })
 

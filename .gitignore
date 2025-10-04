@@ -61,3 +61,5 @@ count.txt
 
 # generated types
 .astro/
+
+.cache

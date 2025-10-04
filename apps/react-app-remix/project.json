@@ -5,33 +5,37 @@
   "sourceRoot": "apps/react-app-remix",
   "targets": {
     "build": {
-      "executor": "@nx/vite:build",
-      "outputs": ["{options.outputPath}"],
-      "defaultConfiguration": "production",
+      "executor": "nx:run-script",
+      "outputs": ["{projectRoot}/build"],
+      "cache": true,
+      "inputs": ["production", "^production"],
+      "dependsOn": ["^build"],
       "options": {
-        "outputPath": "dist/apps/react-app-remix"
+        "script": "build"
       }
     },
     "dev": {
-      "executor": "@nx/vite:dev-server",
-      "defaultConfiguration": "development",
+      "executor": "nx:run-script",
+      "cache": false,
+      "dependsOn": ["^build"],
       "options": {
-        "buildTarget": "react-app-remix:build"
+        "script": "dev"
       }
     },
-    "serve": {
-      "executor": "@nx/js:node",
-      "defaultConfiguration": "development",
+    "start": {
+      "executor": "nx:run-script",
+      "cache": false,
+      "dependsOn": ["build"],
       "options": {
-        "buildTarget": "react-app-remix:build",
-        "buildTargetOptions": {
-          "outputPath": "dist/apps/react-app-remix"
-        }
+        "script": "start"
       }
     },
     "typecheck": {
-      "executor": "@nx/vite:typecheck",
-      "options": {}
+      "executor": "nx:run-script",
+      "cache": true,
+      "options": {
+        "script": "typecheck"
+      }
     }
   },
   "tags": []
