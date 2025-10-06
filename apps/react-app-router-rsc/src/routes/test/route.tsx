@@ -1,7 +1,11 @@
 import { ActionArgsContext, LoaderArgsContext, Ok } from '@effectify/react-router'
 import * as Effect from 'effect/Effect'
-import { useActionData, useLoaderData } from 'react-router'
 import { withActionEffect, withLoaderEffect } from '../../lib/runtime.server'
+
+// Types based on the runtime implementation
+type LoaderResult<T> = { ok: true; data: T } | { ok: false; errors: string[] }
+
+type ActionResult<T> = { ok: true; response: T } | { ok: false; errors: unknown }
 
 export const loader = withLoaderEffect(
   Effect.gen(function* () {
@@ -33,10 +37,13 @@ export const action = withActionEffect(
   }),
 )
 
-export default function Test() {
-  const loaderData = useLoaderData<typeof loader>()
-  const actionData = useActionData<typeof action>()
-
+export default function Test({
+  loaderData,
+  actionData,
+}: {
+  loaderData?: LoaderResult<{ message: string }>
+  actionData?: ActionResult<{ message: string; inputValue: string }>
+}) {
   return (
     <main className="mx-auto max-w-screen-xl px-4 py-8 lg:py-12">
       <article className="prose mx-auto">
@@ -88,7 +95,7 @@ export default function Test() {
         {actionData && (
           <div className="rounded bg-blue-50 p-3">
             <h3>Action Result:</h3>
-            {actionData.ok ? (
+            {actionData?.ok ? (
               <div>
                 <p>
                   <strong>Message:</strong> {actionData.response.message}
@@ -98,7 +105,7 @@ export default function Test() {
                 </p>
               </div>
             ) : (
-              <p className="text-red-600">Error: {String(actionData.errors)}</p>
+              <p className="text-red-600">Error: {String(actionData?.errors)}</p>
             )}
           </div>
         )}

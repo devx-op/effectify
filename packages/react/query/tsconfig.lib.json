@@ -8,7 +8,7 @@
     "jsx": "preserve",
     "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
     "declaration": true,
-    "emitDeclarationOnly": true,
+    "emitDeclarationOnly": false,
     "forceConsistentCasingInFileNames": true,
     "types": [],
     "preserveSymlinks": true

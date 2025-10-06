@@ -12,7 +12,6 @@
   "exports": {
     "./package.json": "./package.json",
     ".": {
-      "@effectify/source": "./src/index.ts",
       "types": "./dist/src/index.d.ts",
       "import": "./dist/src/index.js",
       "default": "./dist/src/index.js"
