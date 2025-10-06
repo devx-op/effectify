@@ -47,7 +47,12 @@
     }
   ],
   "release": {
-    "projects": ["packages/react/remix", "packages/react/router"],
+    "projects": [
+      "packages/react/remix",
+      "packages/react/router",
+      "packages/node/better-auth",
+      "packages/solid/query"
+    ],
     "changelog": {
       "projectChangelogs": {
         "renderOptions": {
