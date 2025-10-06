@@ -1,6 +1,7 @@
 {
   "name": "@effectify/solid-query",
   "version": "0.0.3",
+  "description": "SolidJS query utilities with Effect integration",
   "type": "module",
   "main": "./dist/src/index.js",
   "module": "./dist/src/index.js",

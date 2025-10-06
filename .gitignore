@@ -63,3 +63,8 @@ count.txt
 .astro/
 
 .cache
+
+# Local testing files
+.secrets
+.actrc
+.secrets
