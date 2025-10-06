@@ -97,6 +97,15 @@ jobs:
           # Get the merge base
           BASE=$(git merge-base HEAD origin/dev)
           
+          # Check if there are any source code changes (not just config files)
+          CHANGED_FILES=$(git diff --name-only $BASE..HEAD | grep -E '\.(ts|tsx|js|jsx|json)$' | grep -v '\.github/' | grep -v 'nx\.json' | grep -v 'package\.json$' || true)
+          
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "No source code changes detected, skipping build"
+            echo "has-artifacts=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
           # Build affected projects
           pnpm nx affected --target=build --base=$BASE --head=HEAD
           
