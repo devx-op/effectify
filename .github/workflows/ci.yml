@@ -113,7 +113,7 @@ jobs:
         if: steps.build.outputs.has-artifacts == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: build-artifacts-${{ github.sha }}-${{ github.sha }}
+          name: build-artifacts-${{ github.sha }}
           path: |
             packages/*/dist/
             apps/*/dist/
