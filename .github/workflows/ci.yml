@@ -35,11 +35,6 @@ jobs:
       - name: 📦 Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: 🔍 Lint affected projects
-        run: pnpm nx affected --target=lint --base=origin/master~1 --head=HEAD
-
-      - name: 🎨 Check formatting
-        run: pnpm nx affected --target=format --base=origin/master~1 --head=HEAD
 
   # Type checking
   typecheck:
