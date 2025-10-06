@@ -113,7 +113,7 @@ jobs:
         if: steps.build.outputs.has-artifacts == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: build-artifacts-${{ github.sha }}
+          name: build-artifacts-${{ github.sha }}-${{ github.sha }}
           path: |
             packages/*/dist/
             apps/*/dist/
@@ -149,7 +149,7 @@ jobs:
         if: needs.build.outputs.has-build-artifacts == 'true'
         uses: actions/download-artifact@v4
         with:
-          name: build-artifacts
+          name: build-artifacts-${{ github.sha }}
 
       - name: 🧪 Test affected projects
         run: |
@@ -185,7 +185,7 @@ jobs:
         if: needs.build.outputs.has-build-artifacts == 'true'
         uses: actions/download-artifact@v4
         with:
-          name: build-artifacts
+          name: build-artifacts-${{ github.sha }}
 
       - name: 🎭 Run E2E tests
         run: |
