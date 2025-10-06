@@ -146,10 +146,10 @@ jobs:
           
           # Convert space-separated projects to comma-separated for Nx
           AFFECTED_PROJECTS="${{ needs.detect-changes.outputs.affected-projects }}"
-          # Trim whitespace and convert spaces to commas (use parameter expansion for reliability)
-          AFFECTED_PROJECTS_TRIMMED="${AFFECTED_PROJECTS#"${AFFECTED_PROJECTS%%[![:space:]]*}"}"
-          AFFECTED_PROJECTS_TRIMMED="${AFFECTED_PROJECTS_TRIMMED%"${AFFECTED_PROJECTS_TRIMMED##*[![:space:]]}"}"
-          AFFECTED_PROJECTS_COMMA=$(echo "$AFFECTED_PROJECTS_TRIMMED" | tr ' ' ',')
+          # Simple approach: remove trailing space and convert spaces to commas
+          AFFECTED_PROJECTS_COMMA=$(echo "$AFFECTED_PROJECTS" | sed 's/ *$//' | tr ' ' ',')
+          echo "🔍 DEBUG: AFFECTED_PROJECTS='$AFFECTED_PROJECTS'"
+          echo "🔍 DEBUG: AFFECTED_PROJECTS_COMMA='$AFFECTED_PROJECTS_COMMA'"
           
           # Build affected projects first
           pnpm nx build --projects="$AFFECTED_PROJECTS_COMMA"
