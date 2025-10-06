@@ -54,6 +54,7 @@
       "packages/solid/query"
     ],
     "changelog": {
+      "automaticFromRef": "HEAD~100",
       "projectChangelogs": {
         "renderOptions": {
           "authors": true,
