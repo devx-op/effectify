@@ -61,7 +61,9 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: 🔍 Type check affected projects
-        run: pnpm nx affected --target=typecheck --base=origin/dev --head=HEAD
+        run: |
+          BASE=$(git merge-base HEAD origin/dev)
+          pnpm nx affected --target=typecheck --base=$BASE --head=HEAD
 
   # Build affected projects
   build:
@@ -92,11 +94,14 @@ jobs:
       - name: 🏗️ Build affected projects
         id: build
         run: |
+          # Get the merge base
+          BASE=$(git merge-base HEAD origin/dev)
+          
           # Build affected projects
-          pnpm nx affected --target=build --base=origin/dev --head=HEAD
+          pnpm nx affected --target=build --base=$BASE --head=HEAD
           
           # Check if any projects were built
-          AFFECTED_PROJECTS=$(pnpm nx show projects --affected --base=origin/dev --head=HEAD --json | jq -r '.[]' | tr '\n' ' ')
+          AFFECTED_PROJECTS=$(pnpm nx show projects --affected --base=$BASE --head=HEAD --json | jq -r '.[]' | tr '\n' ' ')
           if [ -n "$AFFECTED_PROJECTS" ]; then
             echo "has-artifacts=true" >> $GITHUB_OUTPUT
             echo "📦 Built projects: $AFFECTED_PROJECTS"
@@ -148,7 +153,9 @@ jobs:
           name: build-artifacts
 
       - name: 🧪 Test affected projects
-        run: pnpm nx affected --target=test --base=origin/dev --head=HEAD --passWithNoTests
+        run: |
+          BASE=$(git merge-base HEAD origin/dev)
+          pnpm nx affected --target=test --base=$BASE --head=HEAD --passWithNoTests
 
   # E2E tests (if any)
   e2e:
@@ -182,7 +189,9 @@ jobs:
           name: build-artifacts
 
       - name: 🎭 Run E2E tests
-        run: pnpm nx affected --target=e2e --base=origin/dev --head=HEAD --passWithNoTests || echo "No E2E tests found"
+        run: |
+          BASE=$(git merge-base HEAD origin/dev)
+          pnpm nx affected --target=e2e --base=$BASE --head=HEAD --passWithNoTests || echo "No E2E tests found"
 
   # Summary job
   ci-summary:
