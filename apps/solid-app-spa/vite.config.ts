@@ -1,3 +1,4 @@
+import { resolve } from 'node:path'
 import tailwindcss from '@tailwindcss/vite'
 import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import { defineConfig } from 'vite'
@@ -14,8 +15,8 @@ export default defineConfig({
       target: 'solid',
       routeToken: 'layout',
       autoCodeSplitting: true,
-      routesDirectory: './src/routes',
-      generatedRouteTree: './src/routeTree.gen.ts',
+      routesDirectory: resolve(__dirname, './src/routes'),
+      generatedRouteTree: resolve(__dirname, './src/routeTree.gen.ts'),
     }),
     solidPlugin(),
     tailwindcss(),

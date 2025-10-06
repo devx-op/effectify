@@ -33,5 +33,11 @@
     "vite": "catalog:",
     "vitest": "^3.0.0"
   },
+  "pnpm": {
+    "overrides": {
+      "@types/react": "19.1.13",
+      "@types/react-dom": "19.1.9"
+    }
+  },
   "packageManager": "pnpm@10.14.0"
 }
