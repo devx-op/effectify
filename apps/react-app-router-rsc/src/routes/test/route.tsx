@@ -1,7 +1,7 @@
 import { ActionArgsContext, LoaderArgsContext, Ok } from '@effectify/react-router'
 import * as Effect from 'effect/Effect'
+import { useActionData, useLoaderData } from 'react-router'
 import { withActionEffect, withLoaderEffect } from '../../lib/runtime.server'
-import type { Route } from './+types/route'
 
 export const loader = withLoaderEffect(
   Effect.gen(function* () {
@@ -33,7 +33,10 @@ export const action = withActionEffect(
   }),
 )
 
-export default function Test({ loaderData, actionData }: Route.ComponentProps) {
+export default function Test() {
+  const loaderData = useLoaderData<typeof loader>()
+  const actionData = useActionData<typeof action>()
+
   return (
     <main className="mx-auto max-w-screen-xl px-4 py-8 lg:py-12">
       <article className="prose mx-auto">
