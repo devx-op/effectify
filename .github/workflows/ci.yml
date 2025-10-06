@@ -227,7 +227,7 @@ jobs:
             exit 0
           fi
           
-          pnpm nx affected --target=e2e --base=$BASE --head=HEAD --passWithNoTests || echo "No E2E tests found or some failed, but continuing..."
+          pnpm nx affected --target=e2e --base=$BASE --head=HEAD --with-target=e2e --passWithNoTests || echo "No E2E tests found or some failed, but continuing..."
 
   # Summary job
   ci-summary:
