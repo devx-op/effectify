@@ -63,15 +63,6 @@ jobs:
       - name: 🔍 Type check affected projects
         run: |
           BASE=$(git merge-base HEAD origin/dev)
-          
-          # Check if there are any source code changes (not just config files)
-          CHANGED_FILES=$(git diff --name-only $BASE..HEAD | grep -E '\.(ts|tsx|js|jsx|json)$' | grep -v '\.github/' | grep -v 'nx\.json' | grep -v 'package\.json$' || true)
-          
-          if [ -z "$CHANGED_FILES" ]; then
-            echo "No source code changes detected, skipping type check"
-            exit 0
-          fi
-          
           pnpm nx affected --target=typecheck --base=$BASE --head=HEAD
 
   # Build affected projects
@@ -103,17 +94,7 @@ jobs:
       - name: 🏗️ Build affected projects
         id: build
         run: |
-          # Get the merge base
           BASE=$(git merge-base HEAD origin/dev)
-          
-          # Check if there are any source code changes (not just config files)
-          CHANGED_FILES=$(git diff --name-only $BASE..HEAD | grep -E '\.(ts|tsx|js|jsx|json)$' | grep -v '\.github/' | grep -v 'nx\.json' | grep -v 'package\.json$' || true)
-          
-          if [ -z "$CHANGED_FILES" ]; then
-            echo "No source code changes detected, skipping build"
-            echo "has-artifacts=false" >> $GITHUB_OUTPUT
-            exit 0
-          fi
           
           # Build affected projects
           pnpm nx affected --target=build --base=$BASE --head=HEAD
@@ -173,15 +154,6 @@ jobs:
       - name: 🧪 Test affected projects
         run: |
           BASE=$(git merge-base HEAD origin/dev)
-          
-          # Check if there are any source code changes (not just config files)
-          CHANGED_FILES=$(git diff --name-only $BASE..HEAD | grep -E '\.(ts|tsx|js|jsx|json)$' | grep -v '\.github/' | grep -v 'nx\.json' | grep -v 'package\.json$' || true)
-          
-          if [ -z "$CHANGED_FILES" ]; then
-            echo "No source code changes detected, skipping tests"
-            exit 0
-          fi
-          
           pnpm nx affected --target=test --base=$BASE --head=HEAD --passWithNoTests || echo "Some tests failed or no tests found, but continuing..."
 
   # E2E tests (if any)
@@ -218,16 +190,7 @@ jobs:
       - name: 🎭 Run E2E tests
         run: |
           BASE=$(git merge-base HEAD origin/dev)
-          
-          # Check if there are any source code changes (not just config files)
-          CHANGED_FILES=$(git diff --name-only $BASE..HEAD | grep -E '\.(ts|tsx|js|jsx|json)$' | grep -v '\.github/' | grep -v 'nx\.json' | grep -v 'package\.json$' || true)
-          
-          if [ -z "$CHANGED_FILES" ]; then
-            echo "No source code changes detected, skipping E2E tests"
-            exit 0
-          fi
-          
-          pnpm nx affected --target=e2e --base=$BASE --head=HEAD --with-target=e2e --passWithNoTests || echo "No E2E tests found or some failed, but continuing..."
+          pnpm nx affected --target=e2e --base=$BASE --head=HEAD --passWithNoTests || echo "No E2E tests found or some failed, but continuing..."
 
   # Summary job
   ci-summary:
