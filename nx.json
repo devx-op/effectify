@@ -47,6 +47,7 @@
     }
   ],
   "release": {
+    "projectsRelationship": "independent",
     "projects": [
       "packages/react/remix",
       "packages/react/router",
