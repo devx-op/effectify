@@ -6,3 +6,5 @@ export * from './lib/types.js'
 // This is a fix to test conventional commits patch versioning
 // should release to patch version
 // Should not release to minor version
+// Should release to patch version
+// Should not release to major version
