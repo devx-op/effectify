@@ -5,3 +5,4 @@ export * from './lib/types.js'
 // Release test: Real code change to verify release workflow
 // This is a fix to test conventional commits patch versioning
 // should release to patch version
+// Should not release to minor version
