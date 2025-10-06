@@ -146,8 +146,8 @@ jobs:
           
           # Convert space-separated projects to comma-separated for Nx
           AFFECTED_PROJECTS="${{ needs.detect-changes.outputs.affected-projects }}"
-          # Trim whitespace and convert spaces to commas
-          AFFECTED_PROJECTS_COMMA=$(echo "$AFFECTED_PROJECTS" | xargs | tr ' ' ',')
+          # Trim whitespace and convert spaces to commas (xargs not available in GitHub Actions)
+          AFFECTED_PROJECTS_COMMA=$(echo "$AFFECTED_PROJECTS" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | tr ' ' ',')
           
           # Build affected projects first
           pnpm nx build --projects="$AFFECTED_PROJECTS_COMMA"
