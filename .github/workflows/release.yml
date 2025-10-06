@@ -41,22 +41,42 @@ jobs:
       - name: 🔍 Check for changes
         id: changes
         run: |
-          # Get affected projects using native Nx command with proper base detection
-          BASE=$(git merge-base HEAD origin/master)
-          AFFECTED_PROJECTS=$(pnpm nx show projects --affected --base=$BASE --head=HEAD --json | jq -r '.[]' | tr '\n' ' ')
+          # For release workflow, we need to compare against the previous commit
+          # since we're already on master after the merge
+          BASE=$(git rev-parse HEAD~1)
           
-          # Nx release will handle which projects to release based on nx.json configuration
-          # We just need to check if there are any affected projects
+          # Get affected projects as an array
+          AFFECTED_PROJECTS_ARRAY=($(pnpm nx show projects --affected --base=$BASE --head=HEAD --json | jq -r '.[]'))
+          
+          # Filter to only projects configured for release
+          RELEASE_PROJECTS=("@effectify/react-remix" "@effectify/react-router" "@effectify/node-better-auth" "@effectify/solid-query")
+          AFFECTED_RELEASE_PROJECTS=()
+          
+          for project in "${AFFECTED_PROJECTS_ARRAY[@]}"; do
+            for release_project in "${RELEASE_PROJECTS[@]}"; do
+              if [ "$project" = "$release_project" ]; then
+                AFFECTED_RELEASE_PROJECTS+=("$project")
+                break
+              fi
+            done
+          done
+          
+          # Check if any release projects are affected
           SHOULD_RELEASE=false
-          if [ -n "$AFFECTED_PROJECTS" ]; then
+          if [ ${#AFFECTED_RELEASE_PROJECTS[@]} -gt 0 ]; then
             SHOULD_RELEASE=true
           fi
           
+          # Convert arrays to strings for output
+          AFFECTED_PROJECTS_STR=$(printf '%s ' "${AFFECTED_PROJECTS_ARRAY[@]}")
+          AFFECTED_RELEASE_PROJECTS_STR=$(printf '%s ' "${AFFECTED_RELEASE_PROJECTS[@]}")
+          
           echo "should-release=$SHOULD_RELEASE" >> $GITHUB_OUTPUT
-          echo "affected-projects=$AFFECTED_PROJECTS" >> $GITHUB_OUTPUT
+          echo "affected-projects=$AFFECTED_RELEASE_PROJECTS_STR" >> $GITHUB_OUTPUT
           
           echo "🔍 Should release: $SHOULD_RELEASE"
-          echo "📦 Affected projects: $AFFECTED_PROJECTS"
+          echo "📦 All affected projects: $AFFECTED_PROJECTS_STR"
+          echo "📦 Affected release projects: $AFFECTED_RELEASE_PROJECTS_STR"
 
   # Main release job
   release:
@@ -92,7 +112,7 @@ jobs:
 
       - name: 🔍 Type check affected projects
         run: |
-          BASE=$(git merge-base HEAD origin/master)
+          BASE=$(git rev-parse HEAD~1)
           pnpm nx affected --target=typecheck --base=$BASE --head=HEAD
 
       - name: 📦 Try to download build artifacts from CI
@@ -106,12 +126,12 @@ jobs:
       - name: 🏗️ Build affected projects (if artifacts not found)
         if: steps.download-artifacts.outcome == 'failure'
         run: |
-          BASE=$(git merge-base HEAD origin/master)
+          BASE=$(git rev-parse HEAD~1)
           pnpm nx affected --target=build --base=$BASE --head=HEAD
 
       - name: 🧪 Test affected projects
         run: |
-          BASE=$(git merge-base HEAD origin/master)
+          BASE=$(git rev-parse HEAD~1)
           pnpm nx affected --target=test --base=$BASE --head=HEAD --passWithNoTests || echo "No tests found for affected projects"
 
       - name: 📝 Configure Git
