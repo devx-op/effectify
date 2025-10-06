@@ -67,7 +67,6 @@
     "releaseTagPattern": "release/{version}",
     "version": {
       "conventionalCommits": true,
-      "preVersionCommand": "pnpm nx build @effectify/react-remix @effectify/react-router @effectify/node-better-auth @effectify/solid-query",
       "fallbackCurrentVersionResolver": "disk"
     }
   },

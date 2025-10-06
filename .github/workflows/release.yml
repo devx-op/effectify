@@ -144,9 +144,13 @@ jobs:
           # Configure tokens for npm and JSR
           echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
           
+          # Build affected projects first
+          pnpm nx build --projects="${{ needs.detect-changes.outputs.affected-projects }}"
+          
           # Run release with Nx (handles versioning, changelog, and publishing)
           # With conventionalCommits: true, Nx will automatically determine version bump
-          pnpm nx release --verbose --yes
+          # Only release affected projects
+          pnpm nx release --verbose --yes --projects="${{ needs.detect-changes.outputs.affected-projects }}"
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           # JSR uses OIDC, no token needed
