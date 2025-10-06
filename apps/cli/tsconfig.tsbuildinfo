@@ -1,0 +1,1 @@
+{"root":["./src/main.ts","./src/commands/add.ts","./src/commands/create.ts","./src/commands/init.ts","./src/commands/registry.ts"],"version":"5.9.2"}

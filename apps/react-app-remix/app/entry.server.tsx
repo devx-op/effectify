@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/suspicious/noExplicitAny: <explanation> */
 import { PassThrough } from 'node:stream'
 
 import type { EntryContext } from '@remix-run/node'
@@ -30,14 +31,19 @@ function isBotRequest(userAgent: string | null) {
     return false
   }
 
-  // isbot >= 3.8.0, >4
+  // isbot >= 4.0.0
+  if (typeof isbotModule === 'function') {
+    return (isbotModule as any)(userAgent)
+  }
+
+  // isbot >= 3.8.0, <4
   if ('isbot' in isbotModule && typeof isbotModule.isbot === 'function') {
     return isbotModule.isbot(userAgent)
   }
 
   // isbot < 3.8.0
   if ('default' in isbotModule && typeof isbotModule.default === 'function') {
-    return isbotModule.default(userAgent)
+    return (isbotModule.default as any)(userAgent)
   }
 
   return false

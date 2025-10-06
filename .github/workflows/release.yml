@@ -41,21 +41,14 @@ jobs:
       - name: 🔍 Check for changes
         id: changes
         run: |
-          # Get affected projects using native Nx command
-          AFFECTED_PROJECTS=$(pnpm nx show projects --affected --base=origin/master~1 --head=HEAD --json | jq -r '.[]' | tr '\n' ' ')
+          # Get affected projects using native Nx command with proper base detection
+          BASE=$(git merge-base HEAD origin/master)
+          AFFECTED_PROJECTS=$(pnpm nx show projects --affected --base=$BASE --head=HEAD --json | jq -r '.[]' | tr '\n' ' ')
           
-          # Check if any release projects are affected
+          # Nx release will handle which projects to release based on nx.json configuration
+          # We just need to check if there are any affected projects
           SHOULD_RELEASE=false
-          for project in $AFFECTED_PROJECTS; do
-            if [[ "$project" == "packages/react/remix" || "$project" == "packages/react/router" || "$project" == "packages/node/better-auth" || "$project" == "packages/solid/query" ]]; then
-              SHOULD_RELEASE=true
-              break
-            fi
-          done
-          
-          # Also check for changes in configuration files
-          CHANGED_FILES=$(git diff --name-only origin/master~1..HEAD)
-          if echo "$CHANGED_FILES" | grep -E "(nx\.json|package\.json|\.github/workflows)" > /dev/null; then
+          if [ -n "$AFFECTED_PROJECTS" ]; then
             SHOULD_RELEASE=true
           fi
           
@@ -98,7 +91,9 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: 🔍 Type check affected projects
-        run: pnpm nx affected --target=typecheck --base=origin/master~1 --head=HEAD
+        run: |
+          BASE=$(git merge-base HEAD origin/master)
+          pnpm nx affected --target=typecheck --base=$BASE --head=HEAD
 
       - name: 📦 Try to download build artifacts from CI
         id: download-artifacts
@@ -110,10 +105,14 @@ jobs:
 
       - name: 🏗️ Build affected projects (if artifacts not found)
         if: steps.download-artifacts.outcome == 'failure'
-        run: pnpm nx affected --target=build --base=origin/master~1 --head=HEAD
+        run: |
+          BASE=$(git merge-base HEAD origin/master)
+          pnpm nx affected --target=build --base=$BASE --head=HEAD
 
       - name: 🧪 Test affected projects
-        run: pnpm nx affected --target=test --base=origin/master~1 --head=HEAD --passWithNoTests || echo "No tests found for affected projects"
+        run: |
+          BASE=$(git merge-base HEAD origin/master)
+          pnpm nx affected --target=test --base=$BASE --head=HEAD --passWithNoTests || echo "No tests found for affected projects"
 
       - name: 📝 Configure Git
         run: |

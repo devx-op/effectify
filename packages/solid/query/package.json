@@ -1,7 +1,7 @@
 {
   "name": "@effectify/solid-query",
   "version": "0.0.3",
-  "description": "SolidJS query utilities with Effect integration - CI test",
+  "description": "SolidJS query utilities with Effect integration - CI test with real change",
   "type": "module",
   "main": "./dist/src/index.js",
   "module": "./dist/src/index.js",
@@ -12,7 +12,6 @@
   "exports": {
     "./package.json": "./package.json",
     ".": {
-      "@effectify/source": "./src/index.ts",
       "types": "./dist/src/index.d.ts",
       "import": "./dist/src/index.js",
       "default": "./dist/src/index.js"
