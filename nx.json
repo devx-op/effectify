@@ -65,6 +65,7 @@
     },
     "releaseTagPattern": "release/{version}",
     "version": {
+      "conventionalCommits": true,
       "preVersionCommand": "pnpm nx build @effectify/react-remix @effectify/react-router"
     }
   },

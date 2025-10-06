@@ -145,7 +145,8 @@ jobs:
           echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
           
           # Run release with Nx (handles versioning, changelog, and publishing)
-          pnpm nx release --verbose
+          # With conventionalCommits: true, Nx will automatically determine version bump
+          pnpm nx release --verbose --yes --first-release
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           # JSR uses OIDC, no token needed
