@@ -47,7 +47,7 @@
     }
   ],
   "release": {
-    "projects": ["packages/**/*"],
+    "projects": ["packages/react/remix", "packages/react/router"],
     "changelog": {
       "projectChangelogs": {
         "renderOptions": {
@@ -60,7 +60,7 @@
     },
     "releaseTagPattern": "release/{version}",
     "version": {
-      "preVersionCommand": "pnpm nx run-many -t build"
+      "preVersionCommand": "pnpm nx build @effectify/react-remix @effectify/react-router"
     }
   },
   "sync": {
