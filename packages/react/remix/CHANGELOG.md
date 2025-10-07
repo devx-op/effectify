@@ -1,3 +1,13 @@
+## 0.2.0 (2025-10-07)
+
+### 🚀 Features
+
+- add manual publishing scripts with nx affected
+
+### ❤️ Thank You
+
+- Andres Jimenez
+
 ## 0.1.0 (2025-10-05)
 
 ### 🚀 Features
