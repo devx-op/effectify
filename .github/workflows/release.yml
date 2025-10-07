@@ -144,6 +144,7 @@ jobs:
           # Configure tokens for npm and JSR
           echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
           echo "@effectify:registry=https://registry.npmjs.org/" >> ~/.npmrc
+          echo "//registry.npmjs.org/@effectify/:_authToken=${{ secrets.NPM_TOKEN }}" >> ~/.npmrc
           
           # Convert space-separated projects to comma-separated for Nx
           AFFECTED_PROJECTS="${{ needs.detect-changes.outputs.affected-projects }}"
@@ -151,6 +152,8 @@ jobs:
           AFFECTED_PROJECTS_COMMA=$(echo "$AFFECTED_PROJECTS" | sed 's/ *$//' | tr ' ' ',')
           echo "🔍 DEBUG: AFFECTED_PROJECTS='$AFFECTED_PROJECTS'"
           echo "🔍 DEBUG: AFFECTED_PROJECTS_COMMA='$AFFECTED_PROJECTS_COMMA'"
+          echo "🔍 DEBUG: NPM configuration:"
+          cat ~/.npmrc
           
           # Build affected projects first
           pnpm nx run-many --target=build --projects=$AFFECTED_PROJECTS_COMMA
