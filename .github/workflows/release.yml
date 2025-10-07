@@ -152,7 +152,7 @@ jobs:
           echo "🔍 DEBUG: AFFECTED_PROJECTS_COMMA='$AFFECTED_PROJECTS_COMMA'"
           
           # Build affected projects first
-          pnpm nx build --projects="$AFFECTED_PROJECTS_COMMA"
+          pnpm nx run-many --target=build --projects=$AFFECTED_PROJECTS_COMMA
           
           # Run release with Nx (handles versioning, changelog, and publishing)
           # With conventionalCommits: true, Nx will automatically determine version bump
