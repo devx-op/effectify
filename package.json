@@ -5,7 +5,11 @@
   "scripts": {
     "lint-staged": "lint-staged --allow-empty",
     "clean": "rm -rf node_modules dist pnpm-lock.yaml && pnpm store prune & find . -type d \\( -name 'node_modules' -o -name 'dist' -o -name '.output' -o -name '.vinxi' -o -name '.cache' -o -name '.expo' -o -name '.nx' \\) -prune -exec rm -rf {} + & wait",
-    "prepare": "husky && ts-patch install -s"
+    "prepare": "husky && ts-patch install -s",
+    "build:affected": "pnpm nx affected --target=build",
+    "test:affected": "pnpm nx affected --target=test",
+    "typecheck:affected": "pnpm nx affected --target=typecheck",
+    "publish:affected": "pnpm nx affected --target=nx-release-publish"
   },
   "lint-staged": {
     "{apps,packages}/**/*.{js,jsx,ts,tsx,json,jsonc,css,scss,md,mdx}": [
