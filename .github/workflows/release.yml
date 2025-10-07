@@ -157,7 +157,7 @@ jobs:
           # Run release with Nx (handles versioning, changelog, and publishing)
           # With conventionalCommits: true, Nx will automatically determine version bump
           # Use correct syntax: --projects=pkg-1,pkg-2 (no spaces around =)
-          pnpm nx release --verbose --yes --projects="$AFFECTED_PROJECTS_COMMA"
+          pnpm nx release --verbose --yes --projects=$AFFECTED_PROJECTS_COMMA
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           # JSR uses OIDC, no token needed
