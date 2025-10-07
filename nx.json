@@ -82,6 +82,13 @@
         "config": ".verdaccio/config.yml",
         "storage": "tmp/local-registry/storage"
       }
+    },
+    "publish-affected": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "echo 'Enter your NPM OTP code:' && read -r NPM_OTP && RELEASE_PROJECTS=$(jq -r '.release.projects[]' nx.json | xargs -I {} pnpm nx show project {} --json | jq -r '.name') && AFFECTED_PROJECTS=$(pnpm nx show projects --affected --base=HEAD~1 --head=HEAD --json | jq -r '.[]') && FILTERED_PROJECTS=$(echo \"$AFFECTED_PROJECTS\" | grep -F \"$RELEASE_PROJECTS\" | tr '\\n' ',') && pnpm nx release publish --projects=$FILTERED_PROJECTS --otp=$NPM_OTP",
+        "shell": true
+      }
     }
   },
   "targetDefaults": {

@@ -9,7 +9,7 @@
     "build:affected": "pnpm nx affected --target=build",
     "test:affected": "pnpm nx affected --target=test",
     "typecheck:affected": "pnpm nx affected --target=typecheck",
-    "publish:affected": "pnpm nx affected --target=nx-release-publish"
+    "publish:affected": "pnpm nx publish-affected"
   },
   "lint-staged": {
     "{apps,packages}/**/*.{js,jsx,ts,tsx,json,jsonc,css,scss,md,mdx}": [
