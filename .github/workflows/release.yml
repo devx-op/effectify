@@ -143,6 +143,7 @@ jobs:
         run: |
           # Configure tokens for npm and JSR
           echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
+          echo "@effectify:registry=https://registry.npmjs.org/" >> ~/.npmrc
           
           # Convert space-separated projects to comma-separated for Nx
           AFFECTED_PROJECTS="${{ needs.detect-changes.outputs.affected-projects }}"
