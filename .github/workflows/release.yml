@@ -1,8 +1,9 @@
 name: 🚀 Release & Publish
 
-on:
-  push:
-    branches: [master]
+# Disabled automatic release - manual publishing preferred
+# on:
+#   push:
+#     branches: [master]
   workflow_dispatch:
 
 concurrency:

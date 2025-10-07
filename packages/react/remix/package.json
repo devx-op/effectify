@@ -1,5 +1,5 @@
 {
-  "name": "@effectify/react-remix",
+  "name": "effectify-react-remix",
   "version": "0.1.0",
   "description": "Integration of Remix with Effect for React applications",
   "type": "module",

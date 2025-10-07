@@ -1,5 +1,5 @@
 {
-  "name": "@effectify/react-router",
+  "name": "effectify-react-router",
   "version": "0.1.0",
   "description": "Integration of React Router with Effect for React applications",
   "type": "module",
