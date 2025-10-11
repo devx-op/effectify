@@ -1,4 +1,4 @@
-import { ActionArgsContext, LoaderArgsContext, Ok } from '@effectify/react-remix'
+import { ActionArgsContext, httpFailure, httpSuccess, LoaderArgsContext } from '@effectify/react-remix'
 import { Form, useActionData, useLoaderData } from '@remix-run/react'
 import * as Effect from 'effect/Effect'
 import { withActionEffect, withLoaderEffect } from '~/lib/runtime.server'
@@ -7,7 +7,9 @@ export const loader = withLoaderEffect(
   Effect.gen(function* () {
     const { request } = yield* LoaderArgsContext
     yield* Effect.log('request', request)
-    return yield* Effect.succeed(new Ok<{ message: string }>({ data: { message: 'Test route works!' } }))
+
+    // Use the new httpSuccess helper for better DX
+    return yield* httpSuccess({ message: 'Test route works!' })
   }),
 )
 
@@ -21,15 +23,16 @@ export const action = withActionEffect(
 
     yield* Effect.log('Form value received:', inputValue)
 
-    // Return processed value
-    return yield* Effect.succeed(
-      new Ok<{ message: string; inputValue: string }>({
-        data: {
-          message: 'Received successfully!',
-          inputValue: inputValue || 'No value',
-        },
-      }),
-    )
+    // Validate input
+    if (!inputValue || inputValue.trim().length === 0) {
+      return yield* httpFailure('Input value is required')
+    }
+
+    // Return processed value using the new httpSuccess helper
+    return yield* httpSuccess({
+      message: 'Received successfully!',
+      inputValue,
+    })
   }),
 )
 
@@ -108,6 +111,14 @@ export default function TestRoute() {
           )}
         </div>
       )}
+
+      {/* Navigation */}
+      <div style={{ marginTop: '30px', padding: '10px', backgroundColor: '#f8f9fa', borderRadius: '4px' }}>
+        <h4>Navigation:</h4>
+        <a href="/demo" style={{ color: '#007bff', textDecoration: 'none' }}>
+          → Try the Demo Route (New API Features)
+        </a>
+      </div>
     </div>
   )
 }

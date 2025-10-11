@@ -14,22 +14,52 @@ export const make = <R, E>(layer: Layer.Layer<R, E, never>) => {
   const withLoaderEffect =
     <A, B>(self: Effect.Effect<HttpResponse<A>, B, R | LoaderArgsContext>) =>
     (args: LoaderFunctionArgs) => {
-      const runnable = pipe(self, Effect.provide(Logger.pretty), Effect.provideService(LoaderArgsContext, args))
+      const runnable = pipe(
+        self,
+        Effect.provide(Logger.pretty),
+        Effect.provideService(LoaderArgsContext, args),
+        Effect.tapError((cause) => Effect.logError('Loader effect failed', cause)),
+      )
       return runtime.runPromiseExit(runnable).then(
         Exit.match({
           onFailure: (cause) => {
-            console.error(cause)
             if (cause._tag === 'Fail') {
-              throw pipe(cause.error)
+              // Preserve the original error for ErrorBoundary
+              const error = cause.error
+              if (error instanceof Response) {
+                throw error
+              }
+              if (error instanceof Error) {
+                throw error
+              }
+              // Convert other errors to Response for ErrorBoundary with ok: false
+              const errorData = { ok: false as const, errors: [String(error)] }
+              throw new Response(JSON.stringify(errorData), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' },
+              })
             }
-            // biome-ignore lint/style/useThrowOnlyError: <library uses non-Error throws>
-            throw { ok: false as const, errors: ['Something went wrong'] }
+            // Handle other types of failures (interrupts, defects, etc.)
+            const errorData = { ok: false as const, errors: ['Internal server error'] }
+            throw new Response(JSON.stringify(errorData), {
+              status: 500,
+              headers: { 'Content-Type': 'application/json' },
+            })
           },
           onSuccess: matchHttpResponse<A>()({
-            Ok: ({ data: response }) => {
+            HttpResponseSuccess: ({ data: response }) => {
               return { ok: true as const, data: response }
             },
-            Redirect: ({ to, init = {} }) => {
+            HttpResponseFailure: ({ cause }) => {
+              // Convert HttpResponseFailure to Response for ErrorBoundary with ok: false
+              const errorMessage = typeof cause === 'string' ? cause : String(cause)
+              const errorData = { ok: false as const, errors: [errorMessage] }
+              throw new Response(JSON.stringify(errorData), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' },
+              })
+            },
+            HttpResponseRedirect: ({ to, init = {} }) => {
               redirect(to, init)
               return { ok: false as const, errors: ['Redirecting...'] }
             },
@@ -46,13 +76,17 @@ export const make = <R, E>(layer: Layer.Layer<R, E, never>) => {
         self,
         Effect.provide(Logger.pretty),
         Effect.provideService(ActionArgsContext, args),
+        Effect.tapError((cause) => Effect.logError('Action effect failed', cause)),
         Effect.match({
           onFailure: (errors) => json({ ok: false as const, errors }, { status: 400 }),
           onSuccess: matchHttpResponse<A>()({
-            Ok: ({ data: response }) => {
+            HttpResponseSuccess: ({ data: response }) => {
               return { ok: true as const, response }
             },
-            Redirect: ({ to, init = {} }) => {
+            HttpResponseFailure: ({ cause }) => {
+              return json({ ok: false as const, errors: [String(cause)] }, { status: 400 })
+            },
+            HttpResponseRedirect: ({ to, init = {} }) => {
               return redirect(to, init)
             },
           }),
