@@ -41,7 +41,7 @@ Use the Effect-based loaders and actions in your Remix routes:
 ```typescript
 // routes/home.tsx
 import type * as Route from "./+types.home";
-import { Ok, LoaderArgsContext } from "@effectify/react-remix";
+import { httpSuccess, httpFailure, LoaderArgsContext } from "@effectify/react-remix";
 import { withLoaderEffect } from "~/lib/server-runtime";
 import * as Effect from "effect/Effect"
 
@@ -49,7 +49,12 @@ export const loader = withLoaderEffect(
   Effect.gen(function* () {
     const { request } = yield* LoaderArgsContext
     yield* Effect.log("request", request)
-    return yield* Effect.succeed(new Ok({ data: { hello: 'world' }}))
+    
+    // Improved DX: Simple syntax for success responses
+    return yield* httpSuccess({ hello: 'world' })
+    
+    // For error responses, use:
+    // return yield* httpFailure("Something went wrong")
   })
 )
 
@@ -61,6 +66,23 @@ export default function Home({ loaderData }: Route.ComponentProps) {
     </div>
   )
 }
+
+### Error Responses
+
+For error handling, use the `httpFailure` helper:
+```typescript
+return yield* httpFailure("Something went wrong")
+// or with more complex error objects
+return yield* httpFailure({ code: 'VALIDATION_ERROR', message: 'Invalid input' })
+```
+
+### Redirects
+
+For redirects, use the `httpRedirect` helper:
+```typescript
+return yield* httpRedirect('/login')
+// or with custom status/headers
+return yield* httpRedirect('/dashboard', { status: 301 })
 ```
 
 ## API
@@ -88,9 +110,49 @@ Effect context providing access to Remix loader arguments including:
 
 ### Response Types
 
-- `Ok(data)`: Successful response with data
-- `Redirect(url)`: Redirect response
-- `Error(message)`: Error response
+- `HttpResponseSuccess<T>(data)`: Successful HTTP response with data
+- `HttpResponseFailure<T>(cause)`: Failed HTTP response with cause
+- `HttpResponseRedirect(to, init?)`: HTTP redirect response
+
+### Helper Functions
+
+- `httpSuccess<T>(data: T)`: Creates a successful Effect with HttpResponseSuccess
+- `httpFailure<T>(cause: T)`: Creates a successful Effect with HttpResponseFailure
+- `httpRedirect(to: string, init?: ResponseInit)`: Creates a successful Effect with HttpResponseRedirect
+
+### Error Handling & Logging
+
+The library provides comprehensive error handling with full ErrorBoundary support:
+
+- **Automatic Error Logging**: Errors are automatically logged using `Effect.logError`
+- **ErrorBoundary Compatible**: Loader errors are properly thrown as `Response` objects for Remix ErrorBoundary
+- **Configurable Logging**: Users can configure their own logging system through Effect layers
+- **Non-blocking**: Logging doesn't block the main thread
+- **Structured Logging**: Errors are logged with context and structured data
+- **Error Preservation**: Original error context is preserved for better debugging
+
+```typescript
+// The library automatically logs errors like this:
+Effect.tapError((cause) => Effect.logError('Loader effect failed', cause))
+
+// Loader errors are automatically converted to Response objects for ErrorBoundary:
+// - Effect errors → Response with { ok: false, errors: [...] } and status 500
+// - HttpResponseFailure → Response with { ok: false, errors: [...] } and status 500
+// - Original Response/Error objects are preserved
+
+// Users can configure custom logging through Effect layers
+const customLogger = Logger.make(({ message, cause }) => {
+  // Custom logging implementation
+  console.log(`[${new Date().toISOString()}] ${message}`, cause)
+})
+
+const runtime = make(pipe(
+  // Your app layers
+  MyAppLayer,
+  // Custom logger layer
+  Logger.replace(Logger.defaultLogger, customLogger)
+))
+```
 
 ## Requirements
 
