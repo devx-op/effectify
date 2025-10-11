@@ -1,3 +1,14 @@
+## 0.3.0 (2025-10-11)
+
+### 🚀 Features
+
+- improve DX for @effectify/react-router with new HTTP response helpers
+- add manual publishing scripts with nx affected
+
+### ❤️ Thank You
+
+- Andres Jimenez @kattsushi
+
 ## 0.2.0 (2025-10-07)
 
 ### 🚀 Features

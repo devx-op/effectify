@@ -1,3 +1,14 @@
+## 0.2.0 (2025-10-11)
+
+### 🚀 Features
+
+- add manual publishing scripts with nx affected
+- effect better-auth integration package
+
+### ❤️ Thank You
+
+- Andres Jimenez @kattsushi
+
 ## 0.1.0 (2025-10-07)
 
 ### 🚀 Features

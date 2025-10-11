@@ -1,6 +1,6 @@
 {
   "name": "@effectify/react-remix",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Integration of Remix with Effect for React applications",
   "type": "module",
   "main": "./dist/index.js",
