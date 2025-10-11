@@ -65,7 +65,7 @@
         }
       }
     },
-    "releaseTagPattern": "release/{version}",
+    "releaseTagPattern": "{projectName}@{version}",
     "version": {
       "conventionalCommits": true,
       "fallbackCurrentVersionResolver": "disk"
@@ -86,7 +86,21 @@
     "publish-affected": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "echo 'Enter your NPM OTP code:' && read -r NPM_OTP && RELEASE_PROJECTS=$(jq -r '.release.projects[]' nx.json | xargs -I {} pnpm nx show project {} --json | jq -r '.name') && AFFECTED_PROJECTS=$(pnpm nx show projects --affected --base=HEAD~1 --head=HEAD --json | jq -r '.[]') && FILTERED_PROJECTS=$(echo \"$AFFECTED_PROJECTS\" | grep -F \"$RELEASE_PROJECTS\" | tr '\\n' ',') && pnpm nx release publish --projects=$FILTERED_PROJECTS --otp=$NPM_OTP",
+        "command": "echo 'Enter your NPM OTP code:' && read -r NPM_OTP && RELEASE_PROJECTS=$(jq -r '.release.projects[]' nx.json | xargs -I {} pnpm nx show project {} --json | jq -r '.name') && AFFECTED_PROJECTS=$(pnpm nx show projects --affected --base=HEAD~1 --head=HEAD --json | jq -r '.[]') && FILTERED_PROJECTS=$(echo \"$AFFECTED_PROJECTS\" | grep -F \"$RELEASE_PROJECTS\" | tr '\\n' ',' | sed 's/,$//') && pnpm nx release publish --projects=\"$FILTERED_PROJECTS\" --otp=$NPM_OTP",
+        "shell": true
+      }
+    },
+    "release-affected": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "echo 'Enter your NPM OTP code:' && read -r NPM_OTP && RELEASE_PROJECTS=$(jq -r '.release.projects[]' nx.json | xargs -I {} pnpm nx show project {} --json | jq -r '.name') && AFFECTED_PROJECTS=$(pnpm nx show projects --affected --base=HEAD~1 --head=HEAD --json | jq -r '.[]') && FILTERED_PROJECTS=$(echo \"$AFFECTED_PROJECTS\" | grep -F \"$RELEASE_PROJECTS\" | tr '\\n' ',' | sed 's/,$//') && pnpm nx release --projects=\"$FILTERED_PROJECTS\" --yes && pnpm nx release publish --projects=\"$FILTERED_PROJECTS\" --otp=$NPM_OTP",
+        "shell": true
+      }
+    },
+    "release-affected-dry-run": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm nx release --projects=@effectify/solid-query --dry-run",
         "shell": true
       }
     }
