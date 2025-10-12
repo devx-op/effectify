@@ -30,7 +30,8 @@
       "!**/node_modules",
       "!**/coverage",
       "!apps/node-auth-app/**",
-      "!tmp/**"
+      "!tmp/**",
+      "!**/generated/**"
     ]
   },
   "formatter": {
