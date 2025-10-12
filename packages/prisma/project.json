@@ -1,0 +1,55 @@
+{
+  "name": "@effectify/prisma",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/prisma/src",
+  "projectType": "library",
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "defaultConfiguration": "production",
+      "options": {
+        "outputPath": "packages/prisma/dist",
+        "main": "packages/prisma/src/index.ts",
+        "tsConfig": "packages/prisma/tsconfig.lib.json",
+        "format": ["esm"],
+        "generatePackageJson": false,
+        "updateBuildableProjectDepsInPackageJson": false,
+        "additionalEntryPoints": []
+      },
+      "configurations": {
+        "development": {},
+        "production": {}
+      }
+    },
+    "prisma:generate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm dlx prisma generate",
+        "cwd": "packages/prisma"
+      }
+    },
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsx src/messaround.ts",
+        "cwd": "packages/prisma"
+      }
+    },
+    "cli": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm dlx tsx src/cli.tsx",
+        "cwd": "packages/prisma"
+      }
+    },
+    "build:cli": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm exec bun build src/cli.tsx --compile --outfile dist/cli --minify",
+        "cwd": "packages/prisma"
+      }
+    }
+  },
+  "tags": ["node", "react", "prisma"]
+}
