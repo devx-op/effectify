@@ -1,0 +1,27 @@
+{
+  "name": "@effectify/solid-effect-atom",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/solid/effect-atom/src",
+  "projectType": "library",
+  "tags": ["solid"],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "defaultConfiguration": "production",
+      "options": {
+        "main": "packages/solid/effect-atom/src/index.ts",
+        "outputPath": "packages/solid/effect-atom/dist",
+        "tsConfig": "packages/solid/effect-atom/tsconfig.lib.json"
+      },
+      "configurations": {
+        "development": {
+          "minify": false
+        },
+        "production": {
+          "minify": true
+        }
+      }
+    }
+  }
+}

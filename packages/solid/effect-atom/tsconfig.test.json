@@ -1,0 +1,18 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "include": ["test"],
+  "references": [
+    {
+      "path": "tsconfig.lib.json"
+    }
+  ],
+  "compilerOptions": {
+    "composite": true,
+    "tsBuildInfoFile": ".tsbuildinfo/test.tsbuildinfo",
+    "rootDir": "test",
+    "outDir": "build/test",
+    "jsx": "preserve",
+    "jsxImportSource": "solid-js",
+    "types": ["@testing-library/jest-dom"]
+  }
+}

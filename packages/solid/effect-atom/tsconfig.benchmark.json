@@ -1,0 +1,15 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "include": ["benchmark"],
+  "compilerOptions": {
+    "composite": true,
+    "tsBuildInfoFile": ".tsbuildinfo/benchmark.tsbuildinfo",
+    "rootDir": "benchmark",
+    "outDir": "build/benchmark",
+    "types": ["node"],
+    "lib": ["ES2024", "DOM", "DOM.Iterable"],
+    "moduleResolution": "NodeNext",
+    "target": "ES2022",
+    "module": "NodeNext"
+  }
+}

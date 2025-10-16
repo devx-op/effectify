@@ -1,0 +1,45 @@
+{
+  "name": "@effectify/solid-effect-atom",
+  "version": "0.1.0",
+  "description": "Reactive toolkit for Effect with SolidJS",
+  "type": "module",
+  "publishConfig": {
+    "access": "public",
+    "directory": "dist"
+  },
+  "main": "index.js",
+  "scripts": {
+    "build": "pnpm build-esm && pnpm build-cjs && pnpm build-annotate && build-utils pack-v2",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "benchmark": "tsx benchmark/index.ts"
+  },
+  "keywords": [
+    "effect",
+    "solidjs",
+    "reactive",
+    "state-management",
+    "atoms",
+    "signals"
+  ],
+  "license": "MIT",
+  "sideEffects": [],
+  "devDependencies": {
+    "@solidjs/testing-library": "catalog:",
+    "@testing-library/jest-dom": "catalog:",
+    "@types/node": "catalog:",
+    "effect": "catalog:",
+    "jsdom": "catalog:",
+    "solid-js": "catalog:",
+    "tsx": "catalog:",
+    "vite-plugin-solid": "catalog:"
+  },
+  "peerDependencies": {
+    "effect": "catalog:",
+    "solid-js": "catalog:"
+  },
+  "dependencies": {
+    "@effect-atom/atom": "catalog:"
+  },
+  "packageManager": "pnpm@10.14.0"
+}
