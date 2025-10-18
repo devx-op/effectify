@@ -1,6 +1,6 @@
 {
   "name": "@effectify/solid-effect-atom",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Reactive toolkit for Effect with SolidJS",
   "type": "module",
   "publishConfig": {
@@ -26,12 +26,12 @@
   "readme": "README.md",
   "repository": {
     "type": "git",
-    "url": "https://github.com/effectify/effectify.git",
+    "url": "https://github.com/devx-op/effectify.git",
     "directory": "packages/solid/effect-atom"
   },
-  "homepage": "https://github.com/effectify/effectify/tree/main/packages/solid/effect-atom#readme",
+  "homepage": "https://github.com/devx-op/effectify/blob/master/packages/solid/effect-atom/README.md",
   "bugs": {
-    "url": "https://github.com/effectify/effectify/issues"
+    "url": "https://github.com/devx-op/effectify/issues"
   },
   "sideEffects": [],
   "devDependencies": {

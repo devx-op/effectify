@@ -254,7 +254,7 @@ Check out the [sample application](../../sample/solid) for complete examples inc
 
 ## Documentation
 
-Full documentation: [https://tim-smart.github.io/effect-atom/docs/atom-solid](https://tim-smart.github.io/effect-atom/docs/atom-solid)
+Full documentation: [https://github.com/devx-op/effectify/tree/master/packages/solid/effect-atom/docs](https://github.com/devx-op/effectify/tree/master/packages/solid/effect-atom/docs)
 
 ## License
 
@@ -264,5 +264,5 @@ MIT
 
 - [Effect Website](https://effect.website)
 - [SolidJS Website](https://solidjs.com)
-- [GitHub Repository](https://github.com/tim-smart/effect-atom)
+- [GitHub Repository](https://github.com/devx-op/effectify)
 ```
