@@ -1,12 +1,12 @@
 ---
 title: "SSR Guide"
-parent: "@effect-atom/atom-solid"
+parent: "@effectify/solid-effect-atom"
 nav_order: 4
 ---
 
 # Server-Side Rendering (SSR) Guide
 
-Complete guide for using `@effect-atom/atom-solid` with Server-Side Rendering, including SolidStart integration.
+Complete guide for using `@effectify/solid-effect-atom` with Server-Side Rendering, including SolidStart integration.
 
 ## Table of Contents
 
@@ -18,7 +18,7 @@ Complete guide for using `@effect-atom/atom-solid` with Server-Side Rendering, i
 
 ## Overview
 
-`@effect-atom/atom-solid` provides comprehensive SSR support through:
+`@effectify/solid-effect-atom` provides comprehensive SSR support through:
 
 - **HydrationBoundary**: Component for managing client-side hydration
 - **SSR Utilities**: Helper functions for server-side atom preloading
@@ -32,7 +32,7 @@ Complete guide for using `@effect-atom/atom-solid` with Server-Side Rendering, i
 ```tsx
 // server.tsx
 import { renderToString } from 'solid-js/web'
-import { RegistryProvider, createSSRRegistry, preloadAtoms, serializeState } from '@effect-atom/atom-solid'
+import { RegistryProvider, createSSRRegistry, preloadAtoms, serializeState } from '@effectify/solid-effect-atom'
 import { App } from './App'
 import { criticalAtoms } from './atoms'
 
@@ -77,7 +77,7 @@ import {
   HydrationBoundary, 
   deserializeState,
   markHydrationComplete 
-} from '@effect-atom/atom-solid'
+} from '@effectify/solid-effect-atom'
 import { App } from './App'
 
 // Get serialized state from server
@@ -134,7 +134,7 @@ import {
   RegistryProvider, 
   HydrationBoundary, 
   deserializeState 
-} from '@effect-atom/atom-solid'
+} from '@effectify/solid-effect-atom'
 
 export default function Root() {
   // Get hydration state from server
@@ -184,7 +184,7 @@ import {
   preloadAtoms, 
   createSSRRegistry,
   isSSR 
-} from '@effect-atom/atom-solid'
+} from '@effectify/solid-effect-atom'
 import { userAtom, createUserAtom } from '~/atoms/user'
 
 // Server-side data loading
@@ -271,7 +271,7 @@ async function fetchUserFromDB(id: string) {
 
 ```tsx
 // atoms/progressive.ts
-import { Atom, createSSRAtom, isHydrating } from '@effect-atom/atom-solid'
+import { Atom, createSSRAtom, isHydrating } from '@effectify/solid-effect-atom'
 import { Effect } from 'effect'
 
 // Critical data that should be SSR'd
@@ -318,7 +318,7 @@ export const userPreferencesAtom = createSSRAtom(
 ```tsx
 // components/SelectiveHydration.tsx
 import { createSignal, onMount } from 'solid-js'
-import { useAtomValue, isSSR } from '@effect-atom/atom-solid'
+import { useAtomValue, isSSR } from '@effectify/solid-effect-atom'
 import { heavyDataAtom } from '../atoms'
 
 export function HeavyComponent() {
@@ -367,7 +367,7 @@ function HydratedContent() {
 ```tsx
 // components/SSRErrorBoundary.tsx
 import { ErrorBoundary } from 'solid-js'
-import { isSSR } from '@effect-atom/atom-solid'
+import { isSSR } from '@effectify/solid-effect-atom'
 
 export function SSRErrorBoundary(props: { children: any }) {
   return (
@@ -491,4 +491,4 @@ export function debugSSRState(registry: Registry) {
 }
 ```
 
-This completes the comprehensive SSR guide for `@effect-atom/atom-solid`!
+This completes the comprehensive SSR guide for `@effectify/solid-effect-atom`!

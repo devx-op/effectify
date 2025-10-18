@@ -1,6 +1,6 @@
 ---
 title: "Context.ts"
-parent: "@effect-atom/atom-solid"
+parent: "@effectify/solid-effect-atom"
 nav_order: 3
 ---
 
@@ -45,7 +45,7 @@ export interface RegistryProviderProps {
 #### Basic Usage
 
 ```tsx
-import { RegistryProvider } from "@effect-atom/atom-solid"
+import { RegistryProvider } from "@effectify/solid-effect-atom"
 
 function App() {
   return (
@@ -61,7 +61,7 @@ function App() {
 
 ```tsx
 import { Registry } from "@effect-atom/atom"
-import { RegistryProvider } from "@effect-atom/atom-solid"
+import { RegistryProvider } from "@effectify/solid-effect-atom"
 
 const customRegistry = Registry.make({
   timeoutResolution: 1000,
@@ -81,7 +81,7 @@ function App() {
 
 ```tsx
 import { Atom } from "@effect-atom/atom"
-import { RegistryProvider } from "@effect-atom/atom-solid"
+import { RegistryProvider } from "@effectify/solid-effect-atom"
 
 const countAtom = Atom.make(0)
 const nameAtom = Atom.make("")
@@ -142,7 +142,7 @@ The current `Registry.Registry` instance from context, or the default registry i
 #### Direct Registry Access
 
 ```tsx
-import { useRegistry } from "@effect-atom/atom-solid"
+import { useRegistry } from "@effectify/solid-effect-atom"
 import { Atom } from "@effect-atom/atom"
 
 function AdvancedComponent() {

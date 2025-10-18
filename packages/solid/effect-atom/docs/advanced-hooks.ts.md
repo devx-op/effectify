@@ -1,6 +1,6 @@
 ---
 title: "AdvancedHooks.ts"
-parent: "@effect-atom/atom-solid"
+parent: "@effectify/solid-effect-atom"
 nav_order: 4
 ---
 
@@ -42,7 +42,7 @@ An object with:
 ```tsx
 import { Atom } from "@effect-atom/atom"
 import { Effect } from "effect"
-import { useAtomSuspenseResult } from "@effect-atom/atom-solid"
+import { useAtomSuspenseResult } from "@effectify/solid-effect-atom"
 
 const dataAtom = Atom.fn(() =>
   Effect.gen(function* () {
@@ -174,7 +174,7 @@ export const useAtomSubscribe: <A>(
 #### Logging Changes
 
 ```tsx
-import { useAtomSubscribe } from "@effect-atom/atom-solid"
+import { useAtomSubscribe } from "@effectify/solid-effect-atom"
 
 const countAtom = Atom.make(0)
 
