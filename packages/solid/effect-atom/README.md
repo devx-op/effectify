@@ -1,8 +1,8 @@
-# @effect-atom/atom-solid
+# @effectify/solid-effect-atom
 
 **Reactive state management for SolidJS applications using Effect atoms**
 
-`@effect-atom/atom-solid` provides seamless integration between [Effect](https://effect.website) atoms and [SolidJS](https://solidjs.com) applications, leveraging SolidJS's fine-grained reactivity system for optimal performance.
+`@effectify/solid-effect-atom` provides seamless integration between [Effect](https://effect.website) atoms and [SolidJS](https://solidjs.com) applications, leveraging SolidJS's fine-grained reactivity system for optimal performance.
 
 ## Features
 
@@ -16,18 +16,18 @@
 ## Installation
 
 ```bash
-npm install @effect-atom/atom-solid
+npm install @effectify/solid-effect-atom
 # or
-pnpm add @effect-atom/atom-solid
+pnpm add @effectify/solid-effect-atom
 # or
-yarn add @effect-atom/atom-solid
+yarn add @effectify/solid-effect-atom
 ```
 
 ## Quick Start
 
 ```tsx
 import { Atom } from "@effect-atom/atom"
-import { useAtomValue, useAtom, RegistryProvider } from "@effect-atom/atom-solid"
+import { useAtomValue, useAtom, RegistryProvider } from "@effectify/solid-effect-atom"
 
 // Create an atom
 const countAtom = Atom.make(0)
@@ -89,7 +89,7 @@ Handle async operations with built-in loading states:
 
 ```tsx
 import { Effect } from "effect"
-import { useAtomSuspenseResult } from "@effect-atom/atom-solid"
+import { useAtomSuspenseResult } from "@effectify/solid-effect-atom"
 
 const dataAtom = Atom.fn(() =>
   Effect.gen(function* () {
