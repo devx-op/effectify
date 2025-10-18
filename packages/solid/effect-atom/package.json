@@ -23,6 +23,16 @@
     "signals"
   ],
   "license": "MIT",
+  "readme": "README.md",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/effectify/effectify.git",
+    "directory": "packages/solid/effect-atom"
+  },
+  "homepage": "https://github.com/effectify/effectify/tree/main/packages/solid/effect-atom#readme",
+  "bugs": {
+    "url": "https://github.com/effectify/effectify/issues"
+  },
   "sideEffects": [],
   "devDependencies": {
     "@solidjs/testing-library": "catalog:",

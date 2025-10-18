@@ -1,12 +1,12 @@
 ---
 title: "Usage Guides"
-parent: "@effect-atom/atom-solid"
+parent: "@effectify/solid-effect-atom"
 nav_order: 2
 ---
 
 # Usage Guides
 
-Practical guides for common patterns and use cases with `@effect-atom/atom-solid`.
+Practical guides for common patterns and use cases with `@effectify/solid-effect-atom`.
 
 ## Table of Contents
 
@@ -23,14 +23,14 @@ Practical guides for common patterns and use cases with `@effect-atom/atom-solid
 
 1. **Install dependencies**:
 ```bash
-pnpm add @effect-atom/atom-solid @effect-atom/atom effect solid-js
+pnpm add @effectify/solid-effect-atom @effect-atom/atom effect solid-js
 ```
 
 2. **Setup your app**:
 ```tsx
 // src/index.tsx
 import { render } from 'solid-js/web'
-import { RegistryProvider } from '@effect-atom/atom-solid'
+import { RegistryProvider } from '@effectify/solid-effect-atom'
 import App from './App'
 
 render(() => (
@@ -43,7 +43,7 @@ render(() => (
 3. **Create your first atom**:
 ```tsx
 // src/atoms.ts
-import { Atom } from '@effect-atom/atom-solid'
+import { Atom } from '@effectify/solid-effect-atom'
 
 export const counterAtom = Atom.make(0)
 export const userAtom = Atom.make<User | null>(null)
@@ -53,7 +53,7 @@ export const userAtom = Atom.make<User | null>(null)
 
 ```tsx
 // src/Counter.tsx
-import { useAtom } from '@effect-atom/atom-solid'
+import { useAtom } from '@effectify/solid-effect-atom'
 import { counterAtom } from './atoms'
 
 export function Counter() {
@@ -541,7 +541,7 @@ describe('Counter Atoms', () => {
 // Counter.test.tsx
 import { render, fireEvent } from '@solidjs/testing-library'
 import { describe, test, expect } from 'vitest'
-import { RegistryProvider } from '@effect-atom/atom-solid'
+import { RegistryProvider } from '@effectify/solid-effect-atom'
 import { Counter } from './Counter'
 
 describe('Counter Component', () => {
@@ -569,7 +569,7 @@ describe('Counter Component', () => {
 import { render, waitFor } from '@solidjs/testing-library'
 import { describe, test, expect, vi } from 'vitest'
 import { Effect } from 'effect'
-import { RegistryProvider } from '@effect-atom/atom-solid'
+import { RegistryProvider } from '@effectify/solid-effect-atom'
 import { AsyncDataComponent } from './AsyncDataComponent'
 
 // Mock the API
@@ -604,7 +604,7 @@ describe('AsyncDataComponent', () => {
 // App.test.tsx
 import { render, fireEvent, waitFor } from '@solidjs/testing-library'
 import { describe, test, expect } from 'vitest'
-import { RegistryProvider } from '@effect-atom/atom-solid'
+import { RegistryProvider } from '@effectify/solid-effect-atom'
 import { App } from './App'
 
 describe('App Integration', () => {
@@ -703,4 +703,4 @@ export const persistedCounterAtom = withPersistence(
 )
 ```
 
-This completes our comprehensive usage guide covering all major patterns and best practices for `@effect-atom/atom-solid`!
+This completes our comprehensive usage guide covering all major patterns and best practices for `@effectify/solid-effect-atom`!

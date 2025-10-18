@@ -1,12 +1,12 @@
 ---
 title: "Debugging Guide"
-parent: "@effect-atom/atom-solid"
+parent: "@effectify/solid-effect-atom"
 nav_order: 5
 ---
 
 # Debugging Guide
 
-Advanced debugging techniques and troubleshooting for `@effect-atom/atom-solid`.
+Advanced debugging techniques and troubleshooting for `@effectify/solid-effect-atom`.
 
 ## Table of Contents
 
@@ -172,8 +172,8 @@ pnpm add -D @rollup/plugin-analyzer
 
 ```tsx
 // Check imports
-import { Atom } from '@effect-atom/atom-solid' // ✅ Tree-shakeable
-import * as AtomSolid from '@effect-atom/atom-solid' // ❌ Imports everything
+import { Atom } from '@effectify/solid-effect-atom' // ✅ Tree-shakeable
+import * as AtomSolid from '@effectify/solid-effect-atom' // ❌ Imports everything
 ```
 
 ## SSR Debugging
@@ -339,4 +339,4 @@ export function createTestRegistry() {
 }
 ```
 
-This debugging guide provides comprehensive tools and techniques for troubleshooting `@effect-atom/atom-solid` applications in development and production environments.
+This debugging guide provides comprehensive tools and techniques for troubleshooting `@effectify/solid-effect-atom` applications in development and production environments.

@@ -1,6 +1,6 @@
 ---
 title: "Primitives.ts"
-parent: "@effect-atom/atom-solid"
+parent: "@effectify/solid-effect-atom"
 nav_order: 2
 ---
 
@@ -36,7 +36,7 @@ A SolidJS `Accessor` that returns the current atom value.
 
 ```tsx
 import { Atom } from "@effect-atom/atom"
-import { useAtomValue } from "@effect-atom/atom-solid"
+import { useAtomValue } from "@effectify/solid-effect-atom"
 
 const nameAtom = Atom.make("John")
 
@@ -105,7 +105,7 @@ A tuple containing:
 
 ```tsx
 import { Atom } from "@effect-atom/atom"
-import { useAtom } from "@effect-atom/atom-solid"
+import { useAtom } from "@effectify/solid-effect-atom"
 
 const countAtom = Atom.make(0)
 
@@ -193,7 +193,7 @@ A setter function that can accept either a new value or an updater function.
 
 ```tsx
 import { Atom } from "@effect-atom/atom"
-import { useAtomSet } from "@effect-atom/atom-solid"
+import { useAtomSet } from "@effectify/solid-effect-atom"
 
 const countAtom = Atom.make(0)
 

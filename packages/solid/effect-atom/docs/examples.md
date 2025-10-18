@@ -1,12 +1,12 @@
 ---
 title: "Examples"
-parent: "@effect-atom/atom-solid"
+parent: "@effectify/solid-effect-atom"
 nav_order: 3
 ---
 
 # Examples
 
-Complete examples demonstrating various use cases with `@effect-atom/atom-solid`.
+Complete examples demonstrating various use cases with `@effectify/solid-effect-atom`.
 
 ## Table of Contents
 
@@ -23,7 +23,7 @@ A complete todo application demonstrating CRUD operations, filtering, and persis
 
 ```tsx
 // atoms/todos.ts
-import { Atom } from '@effect-atom/atom-solid'
+import { Atom } from '@effectify/solid-effect-atom'
 import { Effect } from 'effect'
 
 export interface Todo {
@@ -116,7 +116,7 @@ export const deleteTodoAtom = Atom.fn((get, id: string) =>
 
 ```tsx
 // components/TodoApp.tsx
-import { useAtomValue, useAtom, useAtomSet } from '@effect-atom/atom-solid'
+import { useAtomValue, useAtom, useAtomSet } from '@effectify/solid-effect-atom'
 import { createSignal, For } from 'solid-js'
 import { 
   todosAtom, 
@@ -253,7 +253,7 @@ A shopping cart with product catalog, cart management, and checkout.
 
 ```tsx
 // atoms/shopping.ts
-import { Atom } from '@effect-atom/atom-solid'
+import { Atom } from '@effectify/solid-effect-atom'
 import { Effect } from 'effect'
 
 export interface Product {
@@ -338,7 +338,7 @@ export const updateQuantityAtom = Atom.fn((get, productId: string, quantity: num
 
 ```tsx
 // components/ShoppingApp.tsx
-import { useAtomValue, useAtomSet } from '@effect-atom/atom-solid'
+import { useAtomValue, useAtomSet } from '@effectify/solid-effect-atom'
 import { For } from 'solid-js'
 import { 
   productsAtom,

@@ -1,17 +1,17 @@
 ---
-title: "@effect-atom/atom-solid"
+title: "@effectify/solid-effect-atom"
 has_children: true
 permalink: /docs/atom-solid
 nav_order: 6
 ---
 
-# @effect-atom/atom-solid
+# @effectify/solid-effect-atom
 
 Reactive state management for SolidJS applications using Effect Atom.
 
 ## Overview
 
-`@effect-atom/atom-solid` provides seamless integration between [Effect Atom](../atom) and [SolidJS](https://solidjs.com), leveraging SolidJS's fine-grained reactivity system for optimal performance.
+`@effectify/solid-effect-atom` provides seamless integration between [Effect Atom](../atom) and [SolidJS](https://solidjs.com), leveraging SolidJS's fine-grained reactivity system for optimal performance.
 
 ## Key Features
 
@@ -27,13 +27,13 @@ Reactive state management for SolidJS applications using Effect Atom.
 ### Installation
 
 ```bash
-pnpm add @effect-atom/atom-solid @effect-atom/atom effect solid-js
+pnpm add @effectify/solid-effect-atom @effect-atom/atom effect solid-js
 ```
 
 ### Basic Usage
 
 ```tsx
-import { Atom, useAtomValue, useAtom, RegistryProvider } from '@effect-atom/atom-solid'
+import { Atom, useAtomValue, useAtom, RegistryProvider } from '@effectify/solid-effect-atom'
 import { render } from 'solid-js/web'
 
 // Create an atom
@@ -80,7 +80,7 @@ const value = useAtomValue(() => myAtom)
 All atom operations require a registry context:
 
 ```tsx
-import { RegistryProvider } from '@effect-atom/atom-solid'
+import { RegistryProvider } from '@effectify/solid-effect-atom'
 
 function App() {
   return (
@@ -117,7 +117,7 @@ function App() {
 ### Basic Counter
 
 ```tsx
-import { Atom, useAtom } from '@effect-atom/atom-solid'
+import { Atom, useAtom } from '@effectify/solid-effect-atom'
 
 const counterAtom = Atom.make(0)
 
@@ -138,7 +138,7 @@ function Counter() {
 ### Computed Values
 
 ```tsx
-import { Atom, useAtomValue } from '@effect-atom/atom-solid'
+import { Atom, useAtomValue } from '@effectify/solid-effect-atom'
 
 const baseAtom = Atom.make(10)
 const doubledAtom = Atom.make((get) => get(baseAtom) * 2)
@@ -159,7 +159,7 @@ function ComputedExample() {
 ### Async Data
 
 ```tsx
-import { Atom, useAtomSuspenseResult, useAtomSet } from '@effect-atom/atom-solid'
+import { Atom, useAtomSuspenseResult, useAtomSet } from '@effectify/solid-effect-atom'
 import { Effect } from 'effect'
 
 const dataAtom = Atom.fn(() =>
@@ -189,7 +189,7 @@ function AsyncExample() {
 
 ## Performance
 
-`@effect-atom/atom-solid` is highly optimized:
+`@effectify/solid-effect-atom` is highly optimized:
 
 - **~10M operations/second** for async atom operations
 - **~2KB memory per atom** in stress tests

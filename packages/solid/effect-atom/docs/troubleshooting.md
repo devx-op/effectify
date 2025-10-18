@@ -1,12 +1,12 @@
 ---
 title: "Troubleshooting"
-parent: "@effect-atom/atom-solid"
+parent: "@effectify/solid-effect-atom"
 nav_order: 6
 ---
 
 # Troubleshooting
 
-Common problems and solutions when using `@effect-atom/atom-solid`.
+Common problems and solutions when using `@effectify/solid-effect-atom`.
 
 ## Table of Contents
 
@@ -23,7 +23,7 @@ Common problems and solutions when using `@effect-atom/atom-solid`.
 **Problem**: Warnings about peer dependencies during installation.
 
 ```bash
-npm WARN peer dep missing: solid-js@^1.8.0, required by @effect-atom/atom-solid
+npm WARN peer dep missing: solid-js@^1.8.0, required by @effectify/solid-effect-atom
 ```
 
 **Solution**: Install the required peer dependencies:
@@ -45,7 +45,7 @@ npm install solid-js effect
   "dependencies": {
     "solid-js": "^1.8.0",
     "effect": "^3.0.0",
-    "@effect-atom/atom-solid": "^0.1.0"
+    "@effectify/solid-effect-atom": "^0.1.0"
   }
 }
 ```
@@ -108,8 +108,8 @@ const complexAtom = Atom.fn((): Effect.Effect<number, string> =>
 **Problem**: TypeScript can't find module declarations.
 
 ```tsx
-// ❌ Cannot find module '@effect-atom/atom-solid'
-import { Atom } from '@effect-atom/atom-solid'
+// ❌ Cannot find module '@effectify/solid-effect-atom'
+import { Atom } from '@effectify/solid-effect-atom'
 ```
 
 **Solution**: Check your tsconfig.json:
