@@ -26,7 +26,7 @@ yarn add @effectify/solid-effect-atom
 ## Quick Start
 
 ```tsx
-import { Atom } from "@effect-atom/atom"
+import { Atom } from "@effectify/solid-effect-atom"
 import { useAtomValue, useAtom, RegistryProvider } from "@effectify/solid-effect-atom"
 
 // Create an atom

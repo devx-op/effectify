@@ -1,6 +1,6 @@
 {
   "name": "@effectify/solid-effect-atom",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Reactive toolkit for Effect with SolidJS",
   "type": "module",
   "publishConfig": {
