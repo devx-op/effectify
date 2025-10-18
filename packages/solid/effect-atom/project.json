@@ -12,7 +12,14 @@
       "options": {
         "main": "packages/solid/effect-atom/src/index.ts",
         "outputPath": "packages/solid/effect-atom/dist",
-        "tsConfig": "packages/solid/effect-atom/tsconfig.lib.json"
+        "tsConfig": "packages/solid/effect-atom/tsconfig.lib.json",
+        "assets": [
+          {
+            "input": "packages/solid/effect-atom",
+            "glob": "README.md",
+            "output": "."
+          }
+        ]
       },
       "configurations": {
         "development": {
