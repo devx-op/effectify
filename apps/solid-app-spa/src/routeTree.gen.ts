@@ -15,6 +15,8 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as authRegisterRouteImport } from './routes/(auth)/register'
 import { Route as authLoginRouteImport } from './routes/(auth)/login'
 import { Route as protectedDashboardIndexRouteImport } from './routes/(protected)/dashboard/index'
+import { Route as protectedDashboardSettingsRouteImport } from './routes/(protected)/dashboard/settings'
+import { Route as protectedDashboardProfileRouteImport } from './routes/(protected)/dashboard/profile'
 
 const protectedLayoutRoute = protectedLayoutRouteImport.update({
   id: '/(protected)',
@@ -44,17 +46,33 @@ const protectedDashboardIndexRoute = protectedDashboardIndexRouteImport.update({
   path: '/dashboard/',
   getParentRoute: () => protectedLayoutRoute,
 } as any)
+const protectedDashboardSettingsRoute =
+  protectedDashboardSettingsRouteImport.update({
+    id: '/dashboard/settings',
+    path: '/dashboard/settings',
+    getParentRoute: () => protectedLayoutRoute,
+  } as any)
+const protectedDashboardProfileRoute =
+  protectedDashboardProfileRouteImport.update({
+    id: '/dashboard/profile',
+    path: '/dashboard/profile',
+    getParentRoute: () => protectedLayoutRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof protectedLayoutRouteWithChildren
   '/login': typeof authLoginRoute
   '/register': typeof authRegisterRoute
+  '/dashboard/profile': typeof protectedDashboardProfileRoute
+  '/dashboard/settings': typeof protectedDashboardSettingsRoute
   '/dashboard': typeof protectedDashboardIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof protectedLayoutRouteWithChildren
   '/login': typeof authLoginRoute
   '/register': typeof authRegisterRoute
+  '/dashboard/profile': typeof protectedDashboardProfileRoute
+  '/dashboard/settings': typeof protectedDashboardSettingsRoute
   '/dashboard': typeof protectedDashboardIndexRoute
 }
 export interface FileRoutesById {
@@ -64,13 +82,27 @@ export interface FileRoutesById {
   '/(protected)': typeof protectedLayoutRouteWithChildren
   '/(auth)/login': typeof authLoginRoute
   '/(auth)/register': typeof authRegisterRoute
+  '/(protected)/dashboard/profile': typeof protectedDashboardProfileRoute
+  '/(protected)/dashboard/settings': typeof protectedDashboardSettingsRoute
   '/(protected)/dashboard/': typeof protectedDashboardIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/register' | '/dashboard'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/register'
+    | '/dashboard/profile'
+    | '/dashboard/settings'
+    | '/dashboard'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/register' | '/dashboard'
+  to:
+    | '/'
+    | '/login'
+    | '/register'
+    | '/dashboard/profile'
+    | '/dashboard/settings'
+    | '/dashboard'
   id:
     | '__root__'
     | '/'
@@ -78,6 +110,8 @@ export interface FileRouteTypes {
     | '/(protected)'
     | '/(auth)/login'
     | '/(auth)/register'
+    | '/(protected)/dashboard/profile'
+    | '/(protected)/dashboard/settings'
     | '/(protected)/dashboard/'
   fileRoutesById: FileRoutesById
 }
@@ -131,6 +165,20 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof protectedDashboardIndexRouteImport
       parentRoute: typeof protectedLayoutRoute
     }
+    '/(protected)/dashboard/settings': {
+      id: '/(protected)/dashboard/settings'
+      path: '/dashboard/settings'
+      fullPath: '/dashboard/settings'
+      preLoaderRoute: typeof protectedDashboardSettingsRouteImport
+      parentRoute: typeof protectedLayoutRoute
+    }
+    '/(protected)/dashboard/profile': {
+      id: '/(protected)/dashboard/profile'
+      path: '/dashboard/profile'
+      fullPath: '/dashboard/profile'
+      preLoaderRoute: typeof protectedDashboardProfileRouteImport
+      parentRoute: typeof protectedLayoutRoute
+    }
   }
 }
 
@@ -149,10 +197,14 @@ const authLayoutRouteWithChildren = authLayoutRoute._addFileChildren(
 )
 
 interface protectedLayoutRouteChildren {
+  protectedDashboardProfileRoute: typeof protectedDashboardProfileRoute
+  protectedDashboardSettingsRoute: typeof protectedDashboardSettingsRoute
   protectedDashboardIndexRoute: typeof protectedDashboardIndexRoute
 }
 
 const protectedLayoutRouteChildren: protectedLayoutRouteChildren = {
+  protectedDashboardProfileRoute: protectedDashboardProfileRoute,
+  protectedDashboardSettingsRoute: protectedDashboardSettingsRoute,
   protectedDashboardIndexRoute: protectedDashboardIndexRoute,
 }
 
