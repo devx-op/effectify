@@ -624,9 +624,15 @@ importers:
 
   apps/solid-app-spa:
     dependencies:
+      '@effect-atom/atom':
+        specifier: 'catalog:'
+        version: 0.3.2(@effect/experimental@0.55.0(@effect/platform@0.91.1(effect@3.17.14))(effect@3.17.14))(@effect/platform@0.91.1(effect@3.17.14))(@effect/rpc@0.70.2(@effect/platform@0.91.1(effect@3.17.14))(effect@3.17.14))(effect@3.17.14)
       '@effectify/chat-solid':
         specifier: workspace:*
         version: link:../../packages/chat/solid
+      '@effectify/solid-effect-atom':
+        specifier: workspace:*
+        version: link:../../packages/solid/effect-atom/dist
       '@effectify/solid-query':
         specifier: workspace:*
         version: link:../../packages/solid/query

@@ -10,6 +10,8 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@effect-atom/atom": "catalog:",
+    "@effectify/solid-effect-atom": "workspace:*",
     "@effectify/solid-query": "workspace:*",
     "@effectify/solid-ui": "workspace:*",
     "@effectify/chat-solid": "workspace:*",
