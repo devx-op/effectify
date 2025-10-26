@@ -113,8 +113,13 @@ const initializePrismaSchema = (options: { output: string }) =>
       `
 
 // Effect generators added by @effectify/prisma
-generator effect {
+generator effectServices {
   provider = "@effectify/prisma generate-effect"
+  output   = "../${options.output}/generated/effect-prisma"
+}
+
+generator effect {
+  provider = "prisma-effect-kysely"
   output   = "../${options.output}/generated/effect-prisma"
 }
 
