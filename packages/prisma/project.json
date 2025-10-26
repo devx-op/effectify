@@ -10,7 +10,7 @@
       "defaultConfiguration": "production",
       "options": {
         "outputPath": "packages/prisma/dist",
-        "main": "packages/prisma/src/index.ts",
+        "main": "packages/prisma/src/cli.tsx",
         "tsConfig": "packages/prisma/tsconfig.lib.json",
         "format": ["esm"],
         "generatePackageJson": false,
@@ -40,13 +40,6 @@
       "executor": "nx:run-commands",
       "options": {
         "command": "pnpm dlx tsx src/cli.tsx",
-        "cwd": "packages/prisma"
-      }
-    },
-    "build:cli": {
-      "executor": "nx:run-commands",
-      "options": {
-        "command": "pnpm exec bun build src/cli.tsx --compile --outfile dist/cli --minify",
         "cwd": "packages/prisma"
       }
     }

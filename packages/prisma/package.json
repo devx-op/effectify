@@ -15,25 +15,24 @@
     "prisma:generate": "pnpm dlx prisma generate",
     "test": "vitest",
     "dev": "tsx src/messaround.ts",
-    "cli": "pnpm dlx tsx src/cli.tsx",
-    "build": "pnpm exec bun build src/cli.tsx --compile --outfile dist/cli --minify",
-    "build:watch": "pnpm exec bun build src/cli.tsx --compile --outfile dist/cli --watch"
+    "cli": "pnpm dlx tsx src/cli.tsx"
   },
   "keywords": [],
   "author": "",
   "packageManager": "pnpm@10.14.0",
   "dependencies": {
-    "@prisma/client": "catalog:",
-    "effect": "catalog:",
-    "@effect/cli": "catalog:",
-    "@effect/platform": "catalog:",
-    "@effect/platform-node": "catalog:"
+    "prisma-effect-kysely": "1.9.2",
+    "@prisma/client": "6.12.0",
+    "@prisma/generator-helper": "6.12.0",
+    "effect": "3.17.14",
+    "@effect/cli": "0.70.0",
+    "@effect/platform": "0.91.1",
+    "@effect/platform-node": "0.97.1"
   },
   "devDependencies": {
     "@effect/build-utils": "catalog:",
     "@effect/language-service": "catalog:",
     "@effect/vitest": "catalog:",
-    "@prisma/generator-helper": "catalog:",
     "@prisma/internals": "catalog:",
     "@types/node": "catalog:",
     "bun": "1.3.0",
