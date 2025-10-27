@@ -5,14 +5,19 @@
     "packageManager": "pnpm"
   },
   "namedInputs": {
-    "default": ["{projectRoot}/**/*", "sharedGlobals"],
+    "default": [
+      "{projectRoot}/**/*",
+      "sharedGlobals"
+    ],
     "production": [
       "default",
       "!{projectRoot}/**/?(*.)+(spec|test).[jt]s?(x)?(.snap)",
       "!{projectRoot}/tsconfig.spec.json",
       "!{projectRoot}/src/test-setup.[jt]s"
     ],
-    "sharedGlobals": ["{workspaceRoot}/.github/workflows/ci.yml"]
+    "sharedGlobals": [
+      "{workspaceRoot}/.github/workflows/ci.yml"
+    ]
   },
   "nxCloudId": "683db0535b1b475e231bbf05",
   "plugins": [
@@ -32,7 +37,10 @@
     },
     {
       "plugin": "@nx/vite/plugin",
-      "exclude": ["apps/solid-app-start/**/*", "apps/react-app-remix/**/*"],
+      "exclude": [
+        "apps/solid-app-start/**/*",
+        "apps/react-app-remix/**/*"
+      ],
       "options": {
         "buildTargetName": "build",
         "testTargetName": "test",
@@ -65,14 +73,18 @@
         }
       }
     },
-    "releaseTagPattern": "{projectName}@{version}",
     "version": {
       "conventionalCommits": true,
       "fallbackCurrentVersionResolver": "disk"
+    },
+    "releaseTag": {
+      "pattern": "{projectName}@{version}"
     }
   },
   "sync": {
-    "disabledTaskSyncGenerators": ["@nx/js:typescript-sync"]
+    "disabledTaskSyncGenerators": [
+      "@nx/js:typescript-sync"
+    ]
   },
   "targets": {
     "local-registry": {
@@ -108,26 +120,45 @@
   "targetDefaults": {
     "dev": {
       "cache": false,
-      "dependsOn": ["^build"]
+      "dependsOn": [
+        "^build"
+      ]
     },
     "build": {
       "cache": true,
-      "inputs": ["production", "^production"],
-      "dependsOn": ["^build"]
+      "inputs": [
+        "production",
+        "^production"
+      ],
+      "dependsOn": [
+        "^build"
+      ]
     },
     "serve": {
       "cache": false,
-      "dependsOn": ["^build"]
+      "dependsOn": [
+        "^build"
+      ]
     },
     "@nx/esbuild:esbuild": {
       "cache": true,
-      "dependsOn": ["^build"],
-      "inputs": ["production", "^production"]
+      "dependsOn": [
+        "^build"
+      ],
+      "inputs": [
+        "production",
+        "^production"
+      ]
     },
     "@nx/js:tsc": {
       "cache": true,
-      "dependsOn": ["^build"],
-      "inputs": ["production", "^production"]
+      "dependsOn": [
+        "^build"
+      ],
+      "inputs": [
+        "production",
+        "^production"
+      ]
     }
   }
 }

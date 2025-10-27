@@ -3,6 +3,7 @@
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "packages/node/better-auth/src",
   "projectType": "library",
+  "tags": ["node"],
   "targets": {
     "build": {
       "executor": "@nx/js:tsc",
@@ -15,31 +16,12 @@
         "format": ["esm"],
         "generatePackageJson": false,
         "updateBuildableProjectDepsInPackageJson": false,
-        "additionalEntryPoints": [],
-        "external": [
-          "better-sqlite3",
-          "ws",
-          "events",
-          "stream",
-          "crypto",
-          "buffer",
-          "util",
-          "path",
-          "fs",
-          "net",
-          "tls",
-          "http",
-          "https",
-          "zlib",
-          "os",
-          "url"
-        ]
+        "additionalEntryPoints": []
       },
       "configurations": {
         "development": {},
         "production": {}
       }
     }
-  },
-  "tags": ["node"]
+  }
 }
