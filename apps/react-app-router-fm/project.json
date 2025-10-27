@@ -1,0 +1,9 @@
+{
+  "name": "react-app-router-fm",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/react-app-router-fm/src",
+  "projectType": "application",
+  "tags": [],
+  "// targets": "to see all targets run: nx show project react-app-router-fm --web",
+  "targets": {}
+}

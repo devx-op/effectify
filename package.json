@@ -23,14 +23,24 @@
     "@effect/language-service": "catalog:",
     "@nx/js": "catalog:",
     "@nx/node": "catalog:",
+    "@nx/react": "catalog:",
     "@nx/vite": "catalog:",
     "@nx/web": "catalog:",
+    "@react-router/dev": "catalog:",
+    "@swc-node/register": "catalog:",
+    "@swc/core": "catalog:",
+    "@swc/helpers": "catalog:",
     "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
     "@vitest/ui": "catalog:",
     "husky": "catalog:",
     "jiti": "catalog:",
+    "jsdom": "catalog:",
     "lint-staged": "catalog:",
     "nx": "catalog:",
+    "prettier": "catalog:",
     "ts-patch": "catalog:",
     "tslib": "catalog:",
     "typescript": "catalog:",
@@ -45,5 +55,13 @@
       "@types/react-dom": "19.1.9"
     }
   },
-  "packageManager": "pnpm@10.14.0"
+  "packageManager": "pnpm@10.14.0",
+  "dependencies": {
+    "@react-router/node": "catalog:",
+    "@react-router/serve": "catalog:",
+    "isbot": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "react-router": "catalog:"
+  }
 }
