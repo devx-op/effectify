@@ -29,6 +29,7 @@ catalog:
   '@effect/platform': 0.91.1
   '@effect/platform-bun': 0.97.1
   '@effect/platform-node': 0.97.1
+  '@effect/platform-http': 0.91.1
   '@effect/vitest': 0.25.0
   "@effect-atom/atom": "0.3.2"
   '@kobalte/core': 0.13.11
