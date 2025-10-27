@@ -10,6 +10,7 @@
     "emitDeclarationOnly": false,
     "forceConsistentCasingInFileNames": true,
     "types": ["node"],
+    "lib": ["DOM", "DOM.Iterable", "ES2022"],
     "paths": {
       "@/*": ["./src/*"]
     }

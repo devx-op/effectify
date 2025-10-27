@@ -31,7 +31,8 @@
       "!**/coverage",
       "!apps/node-auth-app/**",
       "!tmp/**",
-      "!**/generated/**"
+      "!**/generated/**",
+      "!apps/**/app/routes/**"
     ]
   },
   "formatter": {

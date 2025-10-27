@@ -7,6 +7,10 @@
   "dependencies": {
     "@react-router/node": "catalog:",
     "@react-router/serve": "catalog:",
+    "@effectify/react-router": "workspace:*",
+    "@effect/platform": "catalog:",
+    "@effect/platform-node": "catalog:",
+    "effect": "catalog:",
     "isbot": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
