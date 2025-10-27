@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.app.json",
+  "include": [
+    "tests/**/*.ts",
+    "tests/**/*.tsx",
+    "tests/**/*.js",
+    "tests/**/*.jsx"
+  ],
+  "compilerOptions": {
+    "types": ["node", "vite/client", "@react-router/node", "vitest/globals"],
+    "lib": ["DOM", "DOM.Iterable", "ES2022"],
+    "skipLibCheck": true
+  }
+}
