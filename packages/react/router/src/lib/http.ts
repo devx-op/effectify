@@ -1,5 +1,8 @@
-import { type HttpApi, HttpApiBuilder, HttpApiScalar, HttpServer } from '@effect/platform'
-import { Layer } from 'effect'
+import type * as HttpApi from '@effect/platform/HttpApi'
+import * as HttpApiBuilder from '@effect/platform/HttpApiBuilder'
+import * as HttpApiScalar from '@effect/platform/HttpApiScalar'
+import * as HttpServer from '@effect/platform/HttpServer'
+import * as Layer from 'effect/Layer'
 
 export type HttpApiOptions = {
   apiLive: Layer.Layer<HttpApi.Api, never, never>
