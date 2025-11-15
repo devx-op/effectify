@@ -7,43 +7,41 @@ packages:
 catalog:
   '@astrojs/starlight': 0.36.0
   '@astrojs/starlight-tailwind': 4.0.1
-  '@biomejs/biome': 2.1.3
-  '@nx/js': 22.0.1
-  '@nx/node': 22.0.1
-  '@nx/vite': 22.0.1
-  '@nx/web': 22.0.1
-  '@nx/react': 22.0.1
-  '@react-router/dev': 7.9.2
-  '@swc-node/register': 1.9.1
-  '@swc/core': 1.5.7
-  '@swc/helpers': 0.5.11
-  '@types/react': 19.0.0
-  '@types/react-dom': 19.0.0
-  '@vitejs/plugin-react': 4.3.3
-  jsdom: 22.1.0
-  prettier: 2.6.2
+  '@biomejs/biome': 2.3.5
   '@corvu/drawer': 0.2.4
+  '@effect-atom/atom': 0.3.2
   '@effect/build-utils': 0.7.7
   '@effect/cli': 0.70.0
   '@effect/language-service': 0.41.0
   '@effect/platform': 0.91.1
   '@effect/platform-bun': 0.97.1
-  '@effect/platform-node': 0.97.1
   '@effect/platform-http': 0.91.1
+  '@effect/platform-node': 0.97.1
   '@effect/vitest': 0.25.0
-  "@effect-atom/atom": "0.3.2"
   '@kobalte/core': 0.13.11
+  '@nx/js': 22.0.1
+  '@nx/node': 22.0.1
+  '@nx/react': 22.0.1
+  '@nx/vite': 22.0.1
+  '@nx/web': 22.0.1
   '@prisma/client': 6.12.0
   '@prisma/generator-helper': 6.12.0
   '@prisma/internals': 6.12.0
   '@radix-ui/react-form': 0.1.8
   '@radix-ui/react-label': 2.1.7
   '@radix-ui/react-slot': 1.2.3
+  '@react-router/dev': 7.9.2
+  '@react-router/node': 7.9.2
+  '@react-router/serve': 7.9.2
   '@remix-run/node': 2.17.1
   '@remix-run/node-fetch-server': 0.8.0
   '@remix-run/react': 2.17.1
   '@remix-run/serve': 2.17.1
   '@solidjs/start': 1.2.0
+  '@solidjs/testing-library': 0.8.6
+  '@swc-node/register': 1.9.1
+  '@swc/core': 1.5.7
+  '@swc/helpers': 0.5.11
   '@tailwindcss/postcss': 4.1.13
   '@tailwindcss/typography': 0.5.16
   '@tailwindcss/vite': 4.1.13
@@ -61,24 +59,23 @@ catalog:
   '@tanstack/solid-router-devtools': 1.132.7
   '@tanstack/solid-start': 1.132.9
   '@testing-library/dom': 10.4.1
+  '@testing-library/jest-dom': 6.7.0
   '@testing-library/react': 16.3.0
   '@types/better-sqlite3': 7.6.13
   '@types/compression': 1.8.1
   '@types/express': 5.0.3
   '@types/node': 20.0.0
+  '@types/react': 19.0.0
+  '@types/react-dom': 19.0.0
   '@types/validator': 13.15.3
-  '@react-router/node': 7.9.2
-  '@react-router/serve': 7.9.2
-  'isbot': 4.4.0
-  'bun': 1.3.0
+  '@vitejs/plugin-react': 4.3.3
   '@vitejs/plugin-rsc': 0.4.11
-  '@testing-library/jest-dom': 6.7.0
-  '@solidjs/testing-library': 0.8.6
-  'prisma-effect-kysely': 1.9.2
+  '@vitest/ui': 3.0.0
   astro: 5.14.1
   autoprefixer: 10.4.21
   better-auth: 1.3.18
   better-sqlite3: 12.4.1
+  bun: 1.3.0
   class-variance-authority: 0.7.1
   clsx: 2.1.1
   compression: 1.8.0
@@ -87,10 +84,18 @@ catalog:
   express: 5.1.0
   globals: 16.4.0
   globby: 14.1.0
+  husky: 9.1.7
+  isbot: 4.4.0
+  jiti: 2.4.2
+  jsdom: 22.1.0
+  lint-staged: 16.1.2
   lucide-react: 0.544.0
   lucide-solid: 0.544.0
+  nx: 22.0.1
   postcss: 8.5.6
+  prettier: 2.6.2
   prisma: 6.12.0
+  prisma-effect-kysely: 1.9.2
   react: 19.0.0
   react-dom: 19.0.0
   react-router: 7.9.2
@@ -102,25 +107,20 @@ catalog:
   tailwind-merge: 3.3.1
   tailwindcss: 4.1.13
   tailwindcss-animate: 1.0.7
+  ts-patch: 3.3.0
   tslib: 2.3.0
   tsx: 4.20.3
   tw-animate-css: 1.4.0
   typescript: 5.9.3
+  ultracite: 6.3.2
   validator: 13.15.15
-  vite: 7.1.7
-  '@vitest/ui': 3.0.0
-  husky: 9.1.7
-  jiti: 2.4.2
-  lint-staged: 16.1.2
-  nx: 22.0.1
-  ts-patch: 3.3.0
-  ultracite: 5.0.48
   verdaccio: 6.0.5
-  vitest: 3.0.0
+  vite: 7.1.7
   vite-plugin-devtools-json: 0.2.0
   vite-plugin-dts: 4.5.4
   vite-plugin-solid: 2.11.8
   vite-tsconfig-paths: 5.1.4
+  vitest: 3.0.0
   web-vitals: 5.1.0
 
 onlyBuiltDependencies:
