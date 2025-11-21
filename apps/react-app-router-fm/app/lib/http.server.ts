@@ -1,7 +1,7 @@
 import { HttpApi, HttpApiBuilder, HttpApiEndpoint, HttpApiGroup, OpenApi } from '@effect/platform'
 import { Effect, Layer, Schema } from 'effect'
 
-class ApiGroup extends HttpApiGroup.make('notes')
+class ApiGroup extends HttpApiGroup.make('api')
   .add(
     HttpApiEndpoint.get('getFirst', '/get-first')
       .annotate(OpenApi.Description, 'Get the first note, if there is one.')
@@ -14,7 +14,8 @@ class ApiGroup extends HttpApiGroup.make('notes')
       ),
   )
   .annotate(OpenApi.Title, 'Notes')
-  .annotate(OpenApi.Description, 'Operations on notes.') {}
+  .annotate(OpenApi.Description, 'Operations on notes.')
+  .prefix('/api/notes') {}
 
 export class Api extends HttpApi.make('Api')
   .annotate(OpenApi.Title, 'Confect Example')
@@ -28,10 +29,10 @@ An example API built with Confect and powered by [Scalar](https://github.com/sca
 See Scalar's documentation on [markdown support](https://github.com/scalar/scalar/blob/main/documentation/markdown.md) and [OpenAPI spec extensions](https://github.com/scalar/scalar/blob/main/documentation/openapi.md).
 	`,
   )
-  .add(ApiGroup)
-  .prefix('/path-prefix') {}
+  .prefix('/api')
+  .add(ApiGroup) {}
 
-const ApiGroupLive = HttpApiBuilder.group(Api, 'notes', (handlers) =>
+const ApiGroupLive = HttpApiBuilder.group(Api, 'api', (handlers) =>
   handlers.handle('getFirst', () =>
     Effect.gen(function* () {
       const firstNote = {
