@@ -15,7 +15,7 @@ export type HttpApiOptions = {
 
 export type RoutePath = '/' | `/${string}/`
 
-const makeHttpRouterHandler =
+export const make =
   (options: HttpApiOptions & { pathPrefix?: RoutePath }) =>
   ({ request }: ActionFunctionArgs | LoaderFunctionArgs) =>
     pipe(
@@ -36,5 +36,3 @@ const makeHttpRouterHandler =
         return handler(request)
       },
     )
-
-export { makeHttpRouterHandler }

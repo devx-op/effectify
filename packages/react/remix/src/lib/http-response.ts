@@ -1,3 +1,4 @@
+import type { ResponseInit } from '@effect/platform-node/Undici'
 import * as Data from 'effect/Data'
 import * as Effect from 'effect/Effect'
 import * as Match from 'effect/Match'

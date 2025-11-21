@@ -16,6 +16,8 @@
   "packageManager": "pnpm@10.14.0",
   "dependencies": {
     "effect": "catalog:",
+    "@effect/platform": "catalog:",
+    "@effect/platform-node": "catalog:",
     "@effectify/react-remix": "workspace:*",
     "@remix-run/node": "2.17.1",
     "@remix-run/react": "2.17.1",
