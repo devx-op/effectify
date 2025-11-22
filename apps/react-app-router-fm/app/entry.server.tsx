@@ -3,7 +3,6 @@
  * You are free to delete this file if you'd like to, but if you ever want it revealed again, you can run `npx remix reveal` ✨
  * For more information, see https://reactrouter.com/explanation/special-files#entryservertsx
  */
-
 import { PassThrough } from 'node:stream'
 import { createReadableStreamFromReadable } from '@react-router/node'
 import { isbot } from 'isbot'

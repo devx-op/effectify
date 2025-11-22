@@ -47,9 +47,7 @@ export const make = <R, E>(layer: Layer.Layer<R, E, never>) => {
             })
           },
           onSuccess: matchHttpResponse<A>()({
-            HttpResponseSuccess: ({ data: response }) => {
-              return { ok: true as const, data: response }
-            },
+            HttpResponseSuccess: ({ data: response }) => ({ ok: true as const, data: response }),
             HttpResponseFailure: ({ cause }) => {
               // Convert HttpResponseFailure to Response for ErrorBoundary with ok: false
               const errorMessage = typeof cause === 'string' ? cause : String(cause)
@@ -80,15 +78,9 @@ export const make = <R, E>(layer: Layer.Layer<R, E, never>) => {
         Effect.match({
           onFailure: (errors) => data({ ok: false as const, errors }, { status: 400 }),
           onSuccess: matchHttpResponse<A>()({
-            HttpResponseSuccess: ({ data: response }) => {
-              return { ok: true as const, response }
-            },
-            HttpResponseFailure: ({ cause }) => {
-              return data({ ok: false as const, errors: [String(cause)] }, { status: 400 })
-            },
-            HttpResponseRedirect: ({ to, init = {} }) => {
-              return redirect(to, init)
-            },
+            HttpResponseSuccess: ({ data: response }) => ({ ok: true as const, response }),
+            HttpResponseFailure: ({ cause }) => data({ ok: false as const, errors: [String(cause)] }, { status: 400 }),
+            HttpResponseRedirect: ({ to, init = {} }) => redirect(to, init),
           }),
         }),
       )
