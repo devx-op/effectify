@@ -1,5 +1,8 @@
 import { HttpApi, HttpApiBuilder, HttpApiEndpoint, HttpApiGroup, OpenApi } from '@effect/platform'
+import { toEffectHandler } from '@effectify/node-better-auth'
 import { Effect, Layer, Schema } from 'effect'
+import * as Auth from './auth.js'
+import { Authlayer } from './auth.js'
 
 class ApiGroup extends HttpApiGroup.make('api')
   .add(
@@ -45,4 +48,12 @@ const ApiGroupLive = HttpApiBuilder.group(Api, 'api', (handlers) =>
   ),
 )
 
-export const ApiLive = HttpApiBuilder.api(Api).pipe(Layer.provide(ApiGroupLive))
+export const ApiLive = HttpApiBuilder.api(Api)
+  .pipe(Layer.provide(ApiGroupLive))
+  .pipe(
+    Layer.provide(
+      Authlayer({
+        handler: toEffectHandler(Auth.auth),
+      }),
+    ),
+  )
