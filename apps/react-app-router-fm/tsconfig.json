@@ -5,10 +5,11 @@
     "esModuleInterop": false,
     "allowSyntheticDefaultImports": true,
     "strict": true,
-    "moduleResolution": "bundler",
+    "moduleResolution": "nodenext",
     "lib": ["DOM", "DOM.Iterable", "ES2022"],
     "skipLibCheck": true,
-    "types": ["node", "vite/client", "@react-router/node", "vitest/globals"]
+    "rootDirs": [".", "./.react-router/types"],
+    "types": ["node", "vite/client", "@react-router/node", "vitest/globals"],
   },
   "files": [],
   "include": [],

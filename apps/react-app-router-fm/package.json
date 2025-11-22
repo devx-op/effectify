@@ -2,7 +2,9 @@
   "name": "react-app-router-fm",
   "private": true,
   "type": "module",
-  "scripts": {},
+  "scripts": {
+    "typecheck": "react-router typegen && tsc"
+  },
   "sideEffects": false,
   "dependencies": {
     "@react-router/node": "catalog:",
