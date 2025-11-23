@@ -1,48 +1,67 @@
-import * as HttpApiBuilder from '@effect/platform/HttpApiBuilder'
-import type { PathInput } from '@effect/platform/HttpRouter'
-import { betterAuth } from 'better-auth'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { type BetterAuthOptions, betterAuth, type Session, type User } from 'better-auth'
+// import { getMigrations } from 'better-auth/db'
 import Database from 'better-sqlite3'
+import * as Context from 'effect/Context'
 import * as Effect from 'effect/Effect'
-import type * as Layer from 'effect/Layer'
+import * as Schema from 'effect/Schema'
 
-export const auth = betterAuth({
+export type AuthInstance = ReturnType<typeof betterAuth>
+
+// Get the directory of the current file to ensure we use the correct database path
+// auth.server.ts is in app/lib/, so we need to go up one level to reach app/ root where sqlite.db is located
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+// From app/lib/ to app/ root where sqlite.db is located
+const dbPath = join(__dirname, '../sqlite.db')
+
+const authOptions: BetterAuthOptions = {
+  baseURL: 'http://localhost:3000',
+  secret: 'hola',
   emailAndPassword: {
     enabled: true,
   },
-  // The workspace keeps a shared sqlite at `apps/sqlite.db` — the file
-  // path here must reach that file from this module's folder.
-  // `auth.server.ts` lives at `apps/react-app-router-fm/app/lib`, so
-  // '../../sqlite.db' resolves to `apps/sqlite.db`.
-  database: new Database('../../sqlite.db') as unknown,
+  database: new Database(dbPath) as unknown,
+  advanced: {
+    // Ensure cookies work in development
+    defaultCookieAttributes: {
+      sameSite: 'lax' as const,
+      secure: false, // Allow cookies over http in development
+      path: '/', // Ensure cookies are available for all routes
+    },
+    // Configure session token cookie explicitly
+    cookies: {
+      session_token: {
+        attributes: {
+          sameSite: 'lax' as const,
+          secure: false,
+          path: '/',
+        },
+      },
+    },
+  },
+}
+
+const authInstance = betterAuth(authOptions)
+
+const makeAuth = Effect.gen(function* () {
+  //const { runMigrations } = yield* Effect.promise(() => getMigrations(authOptions))
+  //yield* Effect.promise(runMigrations)
+  yield* Effect.logInfo(`Creating auth instance with database path: ${dbPath}`)
+  return authInstance
 })
 
-/**
- * @since 1.0.0
- * @category layers
- */
+export class AuthService extends Effect.Service<AuthService>()('Auth', {
+  effect: makeAuth,
+  dependencies: [],
+}) {}
 
-// biome-ignore lint/suspicious/noExplicitAny: <todo>
-export const Authlayer = (options?: { handler: any; path?: `/${string}` }): Layer.Layer<never, never, never> =>
-  HttpApiBuilder.Router.use((router) =>
-    Effect.gen(function* () {
-      const base = options?.path ?? '/auth'
-      const mountPath: PathInput = base.endsWith('/') ? `${base}*` : `${base}/*`
+//export const auth = betterAuth(authOptions)
 
-      // debug: print mount information so we can verify the layer is applied
-      yield* Effect.log(`Mounting auth handler at paths: ${base} and ${mountPath}`)
+export class AuthContext extends Context.Tag('AuthContext')<
+  AuthContext,
+  { readonly user: User; readonly session: Session }
+>() {}
 
-      // register both the exact base path and the wildcard subpaths
-      // This ensures the handler covers /auth and any child routes like /auth/callback
-      yield* router.all(base, options?.handler)
-      yield* router.all(mountPath, options?.handler)
-
-      // Also register the handler explicitly under /api to account for
-      // routers that mount the API under a '/api' prefix. This guarantees
-      // the auth endpoints are reachable at /api/auth and /api/auth/*.
-      const apiBase = `/api${base}` as PathInput
-      const apiMountPath = `/api${mountPath}` as PathInput
-      yield* Effect.log(`Also mounting auth handler at paths: ${apiBase} and ${apiMountPath}`)
-      yield* router.all(apiBase, options?.handler)
-      yield* router.all(apiMountPath, options?.handler)
-    }),
-  )
+export class Unauthorized extends Schema.TaggedError<Unauthorized>()('Unauthorized', { details: Schema.String }) {}
