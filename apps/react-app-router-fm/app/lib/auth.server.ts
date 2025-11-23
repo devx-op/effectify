@@ -5,7 +5,7 @@ import Database from 'better-sqlite3'
 import * as Effect from 'effect/Effect'
 import type * as Layer from 'effect/Layer'
 
-export const handler = betterAuth({
+export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
   },
