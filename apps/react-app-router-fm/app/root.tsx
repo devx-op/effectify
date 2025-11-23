@@ -1,6 +1,6 @@
 import { Links, type LinksFunction, Meta, type MetaFunction, Outlet, Scripts, ScrollRestoration } from 'react-router'
 
-import { AppNav } from './app-nav'
+import { AppNav } from './app-nav.js'
 
 export const meta: MetaFunction = () => [
   {
