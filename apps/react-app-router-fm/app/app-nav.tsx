@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router'
+import { authClient } from './lib/auth-client.js'
 
 export function AppNav() {
   return (
@@ -9,6 +10,7 @@ export function AppNav() {
       <NavLink end to="/about">
         About
       </NavLink>
+      <button onClick={() => authClient.signOut()}>Sign Out</button>
     </nav>
   )
 }

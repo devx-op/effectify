@@ -20,7 +20,7 @@
     "react-router": "catalog:",
     "@testing-library/react": "catalog:",
     "better-auth": "catalog:",
-    "better-sqlite3": "12.4.5"
+    "better-sqlite3": "12.4.6"
   },
   "devDependencies": {
     "@react-router/dev": "catalog:",

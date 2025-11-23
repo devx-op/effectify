@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { authClient } from "./../lib/auth-client";
+import { authClient } from "./../lib/auth-client.js";
 import { useNavigate } from "react-router";
 
 export default function SignUp() {
@@ -12,6 +12,7 @@ export default function SignUp() {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    console.log('[SignUp] Attempting to sign up with email:', email);
     await authClient.signUp.email(
       {
         email,
@@ -23,6 +24,7 @@ export default function SignUp() {
           navigate("/");
         },
         onError: (ctx) => {
+          console.error('[SignUp] Sign up error:', ctx.error);
           setError(ctx.error.message);
         },
       }

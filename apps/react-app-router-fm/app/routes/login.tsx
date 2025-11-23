@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { authClient } from "./../lib/auth-client";
+import { authClient } from "./../lib/auth-client.js";
 import { useNavigate } from "react-router";
 
 export default function Login() {
@@ -17,7 +17,9 @@ export default function Login() {
         password,
       },
       {
-        onSuccess: () => {
+        onSuccess: (ctx) => {
+          console.log("Login successful");
+          console.dir(ctx, { depth: null }  );
           navigate("/");
         },
         onError: (ctx) => {
