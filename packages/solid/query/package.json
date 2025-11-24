@@ -31,9 +31,5 @@
   "devDependencies": {
     "typescript": "catalog:"
   },
-  "peerDependencies": {
-    "@tanstack/solid-query": "catalog:",
-    "solid-js": "catalog:"
-  },
   "optionalDependencies": {}
 }

@@ -6,6 +6,11 @@
     "typecheck": "react-router typegen && tsc"
   },
   "sideEffects": false,
+  "pnpm": {
+    "overrides": {
+      "vite": "7.1.7"
+    }
+  },
   "dependencies": {
     "@react-router/node": "catalog:",
     "@react-router/serve": "catalog:",

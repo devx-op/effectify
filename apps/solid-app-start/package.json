@@ -32,7 +32,6 @@
     "tailwind-merge": "catalog:",
     "tailwindcss": "catalog:",
     "tailwindcss-animate": "catalog:",
-    "vite": "catalog:",
     "vite-tsconfig-paths": "catalog:"
   },
   "devDependencies": {

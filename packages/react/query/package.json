@@ -32,9 +32,5 @@
     "typescript": "catalog:",
     "@types/react": "catalog:"
   },
-  "peerDependencies": {
-    "@tanstack/react-query": "catalog:",
-    "react": "catalog:"
-  },
   "optionalDependencies": {}
 }
