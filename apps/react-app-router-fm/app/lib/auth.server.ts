@@ -16,13 +16,14 @@ const __dirname = dirname(__filename)
 // From app/lib/ to app/ root where sqlite.db is located
 const dbPath = join(__dirname, '../sqlite.db')
 
-const authOptions: BetterAuthOptions = {
+const authOptions = {
   baseURL: 'http://localhost:3000',
   secret: 'hola',
   emailAndPassword: {
     enabled: true,
   },
   database: new Database(dbPath) as unknown,
+
   advanced: {
     // Ensure cookies work in development
     defaultCookieAttributes: {
@@ -41,7 +42,7 @@ const authOptions: BetterAuthOptions = {
       },
     },
   },
-}
+} satisfies BetterAuthOptions
 
 const auth = betterAuth(authOptions)
 const makeAuth = Effect.gen(function* () {
@@ -55,8 +56,6 @@ export class AuthService extends Effect.Service<AuthService>()('Auth', {
   effect: makeAuth,
   dependencies: [],
 }) {}
-
-//export const auth = betterAuth(authOptions)
 
 export class AuthContext extends Context.Tag('AuthContext')<
   AuthContext,
