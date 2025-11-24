@@ -2,16 +2,16 @@ import type { Route } from "./+types/about.js"
 import * as Effect from "effect/Effect"
 import { LoaderArgsContext, httpSuccess } from "@effectify/react-router"
 import { withLoaderEffect } from "../lib/runtime.server.js"
-import { withAuthGuardMiddleware } from "../lib/auth-guard.server.js"
-import { AuthContext } from "../lib/auth.server.js"
+import { withAuthGuardMiddleware } from "@effectify/react-router-better-auth"
+import { AuthService } from "@effectify/node-better-auth"
 
 export const loader = Effect.gen(function* () {
   const { request } = yield* LoaderArgsContext
-  const { user } = yield* AuthContext
+  const { user } = yield* AuthService.AuthContext
 
   // Use the new httpSuccess helper for better DX
   return yield* httpSuccess({
-    message: 'Test route works! ' + request.url + ' ' + user.name,
+    message: 'Test route works! ' + request.url + ' ' + user.id,
     user: user.id,
   })
 }).pipe(withAuthGuardMiddleware, withLoaderEffect)

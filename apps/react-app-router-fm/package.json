@@ -16,6 +16,7 @@
     "@react-router/serve": "catalog:",
     "@effectify/react-router": "workspace:*",
     "@effectify/node-better-auth": "workspace:*",
+    "@effectify/react-router-better-auth": "workspace:*",
     "@effect/platform": "catalog:",
     "@effect/platform-node": "catalog:",
     "effect": "catalog:",

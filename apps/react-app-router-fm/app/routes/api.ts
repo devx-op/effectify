@@ -1,15 +1,12 @@
 import { HttpApiHandler } from "@effectify/react-router"
-import { ApiLive } from "../lib/http.server.js"
+import { ApiLive } from "../lib/http/http.server.js"
 
-export const loader = HttpApiHandler.make({ 
+const handler = HttpApiHandler.make({ 
     apiLive: ApiLive, 
     scalar: { 
         baseServerURL: 'http://localhost:3000/api' 
     },
 })
-export const action = HttpApiHandler.make({ 
-    apiLive: ApiLive, 
-    scalar: { 
-        baseServerURL: 'http://localhost:3000/api' 
-    },
-})
+
+export const loader = handler
+export const action = handler

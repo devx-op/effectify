@@ -1,8 +1,9 @@
+import { AuthService } from '@effectify/node-better-auth'
 import { Runtime } from '@effectify/react-router'
 import * as Layer from 'effect/Layer'
 import * as Logger from 'effect/Logger'
-import { AuthService } from './auth.server.js'
+import { authOptions } from './better-auth-options.server.js'
 
-const layers = AuthService.Default.pipe(Layer.provideMerge(Logger.pretty))
+const layer = AuthService.layer(authOptions).pipe(Layer.provideMerge(Logger.pretty))
 
-export const { withLoaderEffect, withActionEffect } = Runtime.make(layers)
+export const { withLoaderEffect, withActionEffect } = Runtime.make(layer)
