@@ -1,26 +1,25 @@
+import { AuthService } from '@effectify/node-better-auth'
 import { ActionArgsContext, HttpResponseFailure, httpFailure, LoaderArgsContext } from '@effectify/react-router'
 import * as Effect from 'effect/Effect'
-import * as Match from 'effect/Match'
-import { AuthContext, AuthService, Unauthorized } from './auth.server.js'
 
 const mapHeaders = (args: { request: Request }) => args.request.headers
 
 const verifySessionWithContext = (context: typeof LoaderArgsContext) =>
   Effect.gen(function* () {
     const args = yield* context
-    const auth = yield* AuthService
+    const { auth } = yield* AuthService.AuthServiceContext
     const forwardedHeaders = mapHeaders(args)
 
     const session = yield* Effect.tryPromise({
       try: () => auth.api.getSession({ headers: forwardedHeaders }),
       catch: (cause) => {
         const errorMessage = cause instanceof Error ? cause.message : String(cause)
-        return new Unauthorized({ details: errorMessage })
+        return new AuthService.Unauthorized({ details: errorMessage })
       },
     })
 
     if (!session) {
-      return yield* httpFailure(new Unauthorized({ details: 'Missing or invalid authentication' }))
+      return yield* httpFailure(new AuthService.Unauthorized({ details: 'Missing or invalid authentication' }))
     }
 
     return yield* Effect.succeed({ user: session.user, session: session.session } as const)
@@ -29,19 +28,19 @@ const verifySessionWithContext = (context: typeof LoaderArgsContext) =>
 const verifySessionWithActionContext = (context: typeof ActionArgsContext) =>
   Effect.gen(function* () {
     const args = yield* context
-    const auth = yield* AuthService
+    const { auth } = yield* AuthService.AuthServiceContext
     const forwardedHeaders = mapHeaders(args)
 
     const session = yield* Effect.tryPromise({
       try: () => auth.api.getSession({ headers: forwardedHeaders }),
       catch: (cause) => {
         const errorMessage = cause instanceof Error ? cause.message : String(cause)
-        return new Unauthorized({ details: errorMessage })
+        return new AuthService.Unauthorized({ details: errorMessage })
       },
     })
 
     if (!session) {
-      return yield* httpFailure(new Unauthorized({ details: 'Missing or invalid authentication' }))
+      return yield* httpFailure(new AuthService.Unauthorized({ details: 'Missing or invalid authentication' }))
     }
 
     return yield* Effect.succeed({ user: session.user, session: session.session } as const)
@@ -50,28 +49,36 @@ const verifySessionWithActionContext = (context: typeof ActionArgsContext) =>
 const verifySession = () => verifySessionWithContext(LoaderArgsContext)
 const verifySessionFromAction = () => verifySessionWithActionContext(ActionArgsContext)
 
-export const withAuthGuardMiddleware = <A, E>(effect: Effect.Effect<A, E, LoaderArgsContext | AuthContext>) =>
+export const withAuthGuardMiddleware = <A, E>(
+  effect: Effect.Effect<A, E, LoaderArgsContext | AuthService.AuthContext>,
+): Effect.Effect<
+  A | HttpResponseFailure<AuthService.Unauthorized>,
+  E | AuthService.Unauthorized,
+  LoaderArgsContext | AuthService.AuthServiceContext
+> =>
   Effect.gen(function* () {
     const authResult = yield* verifySession()
 
-    return yield* Match.value(authResult).pipe(
-      Match.when(
-        (result): result is HttpResponseFailure<Unauthorized> => result instanceof HttpResponseFailure,
-        (failure) => Effect.succeed(failure),
-      ),
-      Match.orElse((userContext) => Effect.provideService(effect, AuthContext, userContext)),
-    )
+    if (authResult instanceof HttpResponseFailure) {
+      return authResult
+    }
+
+    return yield* Effect.provideService(effect, AuthService.AuthContext, authResult)
   })
 
-export const withAuthGuardMiddlewareFromAction = <A, E>(effect: Effect.Effect<A, E, ActionArgsContext | AuthContext>) =>
+export const withAuthGuardMiddlewareFromAction = <A, E>(
+  effect: Effect.Effect<A, E, ActionArgsContext | AuthService.AuthContext>,
+): Effect.Effect<
+  A | HttpResponseFailure<AuthService.Unauthorized>,
+  E | AuthService.Unauthorized,
+  ActionArgsContext | AuthService.AuthServiceContext
+> =>
   Effect.gen(function* () {
     const authResult = yield* verifySessionFromAction()
 
-    return yield* Match.value(authResult).pipe(
-      Match.when(
-        (result): result is HttpResponseFailure<Unauthorized> => result instanceof HttpResponseFailure,
-        (failure) => Effect.succeed(failure),
-      ),
-      Match.orElse((userContext) => Effect.provideService(effect, AuthContext, userContext)),
-    )
+    if (authResult instanceof HttpResponseFailure) {
+      return authResult
+    }
+
+    return yield* Effect.provideService(effect, AuthService.AuthContext, authResult)
   })

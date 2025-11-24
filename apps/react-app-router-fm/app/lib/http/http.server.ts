@@ -1,5 +1,8 @@
 import { HttpApi, HttpApiBuilder, HttpApiEndpoint, HttpApiGroup, OpenApi } from '@effect/platform'
+import { AuthService } from '@effectify/node-better-auth'
 import { Effect, Layer, Schema } from 'effect'
+import { authOptions } from '../better-auth-options.server.js'
+import { Authorization, AuthorizationLive } from './auth-middleware.server.js'
 
 class ApiGroup extends HttpApiGroup.make('api')
   .add(
@@ -29,20 +32,26 @@ An example API built with Confect and powered by [Scalar](https://github.com/sca
 See Scalar's documentation on [markdown support](https://github.com/scalar/scalar/blob/main/documentation/markdown.md) and [OpenAPI spec extensions](https://github.com/scalar/scalar/blob/main/documentation/openapi.md).
 	`,
   )
+  .middleware(Authorization)
   .prefix('/api')
   .add(ApiGroup) {}
 
 const ApiGroupLive = HttpApiBuilder.group(Api, 'api', (handlers) =>
   handlers.handle('getFirst', () =>
     Effect.gen(function* () {
+      const { user } = yield* AuthService.AuthContext
       const firstNote = {
         id: '1',
         title: 'First Note',
-        content: 'This is the first note',
+        content: `This is the first note ${user.id}`,
       }
       return yield* Effect.succeed(firstNote)
     }),
   ),
 )
 
-export const ApiLive = HttpApiBuilder.api(Api).pipe(Layer.provide(ApiGroupLive))
+export const ApiLive = HttpApiBuilder.api(Api).pipe(
+  Layer.provide(ApiGroupLive),
+  Layer.provide(AuthorizationLive),
+  Layer.provide(AuthService.layer(authOptions)),
+)
