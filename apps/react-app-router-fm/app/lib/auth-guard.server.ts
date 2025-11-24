@@ -1,21 +1,15 @@
-/** biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: Session verification requires multiple checks */
-/** biome-ignore-all lint/performance/useTopLevelRegex: Regex is only used conditionally for cookie parsing */
 import { ActionArgsContext, HttpResponseFailure, httpFailure, LoaderArgsContext } from '@effectify/react-router'
 import * as Effect from 'effect/Effect'
 import * as Match from 'effect/Match'
 import { AuthContext, AuthService, Unauthorized } from './auth.server.js'
 
-const extractHeaders = (args: { request: Request }) => {
-  // Better Auth expects the original request headers, not a new Headers object
-  // Pass all headers from the original request
-  return args.request.headers
-}
+const mapHeaders = (args: { request: Request }) => args.request.headers
 
 const verifySessionWithContext = (context: typeof LoaderArgsContext) =>
   Effect.gen(function* () {
     const args = yield* context
     const auth = yield* AuthService
-    const forwardedHeaders = extractHeaders(args)
+    const forwardedHeaders = mapHeaders(args)
 
     const session = yield* Effect.tryPromise({
       try: () => auth.api.getSession({ headers: forwardedHeaders }),
@@ -36,7 +30,7 @@ const verifySessionWithActionContext = (context: typeof ActionArgsContext) =>
   Effect.gen(function* () {
     const args = yield* context
     const auth = yield* AuthService
-    const forwardedHeaders = extractHeaders(args)
+    const forwardedHeaders = mapHeaders(args)
 
     const session = yield* Effect.tryPromise({
       try: () => auth.api.getSession({ headers: forwardedHeaders }),

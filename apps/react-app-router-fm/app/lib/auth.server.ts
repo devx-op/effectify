@@ -43,13 +43,12 @@ const authOptions: BetterAuthOptions = {
   },
 }
 
-const authInstance = betterAuth(authOptions)
-
+const auth = betterAuth(authOptions)
 const makeAuth = Effect.gen(function* () {
   //const { runMigrations } = yield* Effect.promise(() => getMigrations(authOptions))
   //yield* Effect.promise(runMigrations)
   yield* Effect.logInfo(`Creating auth instance with database path: ${dbPath}`)
-  return authInstance
+  return auth
 })
 
 export class AuthService extends Effect.Service<AuthService>()('Auth', {
