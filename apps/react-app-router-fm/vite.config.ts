@@ -16,7 +16,23 @@ export default defineConfig(() => ({
     port: 3000,
     host: 'localhost',
   },
-  plugins: [!process.env.VITEST && reactRouter(), nxViteTsPaths(), nxCopyAssetsPlugin(['*.md'])],
+  plugins: [
+    !process.env.VITEST && reactRouter(),
+    nxViteTsPaths(),
+    nxCopyAssetsPlugin(['*.md']),
+    {
+      name: 'ignore-chrome-devtools',
+      configureServer(server) {
+        server.middlewares.use((req, res, next) => {
+          if (req.url?.startsWith('/.well-known/appspecific')) {
+            res.statusCode = 204
+            return res.end()
+          }
+          next()
+        })
+      },
+    },
+  ],
   // Uncomment this if you are using workers.
   // worker: {
   //  plugins: [ nxViteTsPaths() ],
