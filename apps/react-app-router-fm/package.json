@@ -12,29 +12,33 @@
     }
   },
   "dependencies": {
-    "@react-router/node": "catalog:",
-    "@react-router/serve": "catalog:",
-    "@effectify/react-router": "workspace:*",
-    "@effectify/node-better-auth": "workspace:*",
-    "@effectify/react-router-better-auth": "workspace:*",
     "@effect/platform": "catalog:",
     "@effect/platform-node": "catalog:",
-    "effect": "catalog:",
-    "isbot": "catalog:",
-    "react": "catalog:",
-    "react-dom": "catalog:",
-    "react-router": "catalog:",
+    "@effectify/node-better-auth": "workspace:*",
+    "@effectify/react-router": "workspace:*",
+    "@effectify/react-router-better-auth": "workspace:*",
+    "@prisma/adapter-pg": "catalog:",
+    "@prisma/client": "catalog:",
+    "@react-router/node": "catalog:",
+    "@react-router/serve": "catalog:",
     "@testing-library/react": "catalog:",
     "better-auth": "catalog:",
-    "better-sqlite3": "12.4.6"
+    "better-sqlite3": "12.4.6",
+    "dotenv": "catalog:",
+    "effect": "catalog:",
+    "isbot": "catalog:",
+    "pg": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "react-router": "catalog:"
   },
   "devDependencies": {
     "@react-router/dev": "catalog:",
+    "@types/better-sqlite3": "7.6.13",
     "@types/node": "catalog:",
+    "@types/pg": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
-    "@types/better-sqlite3": "7.6.13"
-  },
-  "peerDependencies": {},
-  "optionalDependencies": {}
+    "prisma": "catalog:"
+  }
 }
