@@ -31,5 +31,6 @@
   "devDependencies": {
     "typescript": "catalog:"
   },
-  "optionalDependencies": {}
+  "optionalDependencies": {},
+  "peerDependencies": {}
 }

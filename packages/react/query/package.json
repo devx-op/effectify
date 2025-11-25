@@ -32,5 +32,6 @@
     "typescript": "catalog:",
     "@types/react": "catalog:"
   },
-  "optionalDependencies": {}
+  "optionalDependencies": {},
+  "peerDependencies": {}
 }
