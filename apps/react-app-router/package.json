@@ -27,5 +27,7 @@
     "@vitejs/plugin-react": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:"
-  }
+  },
+  "peerDependencies": {},
+  "optionalDependencies": {}
 }
