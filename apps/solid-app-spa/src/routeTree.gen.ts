@@ -60,7 +60,7 @@ const protectedDashboardProfileRoute =
   } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof protectedLayoutRouteWithChildren
+  '/': typeof IndexRoute
   '/login': typeof authLoginRoute
   '/register': typeof authRegisterRoute
   '/dashboard/profile': typeof protectedDashboardProfileRoute
@@ -68,7 +68,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof protectedDashboardIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof protectedLayoutRouteWithChildren
+  '/': typeof IndexRoute
   '/login': typeof authLoginRoute
   '/register': typeof authRegisterRoute
   '/dashboard/profile': typeof protectedDashboardProfileRoute
@@ -125,15 +125,15 @@ declare module '@tanstack/solid-router' {
   interface FileRoutesByPath {
     '/(protected)': {
       id: '/(protected)'
-      path: '/'
-      fullPath: '/'
+      path: ''
+      fullPath: ''
       preLoaderRoute: typeof protectedLayoutRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/(auth)': {
       id: '/(auth)'
-      path: '/'
-      fullPath: '/'
+      path: ''
+      fullPath: ''
       preLoaderRoute: typeof authLayoutRouteImport
       parentRoute: typeof rootRouteImport
     }
