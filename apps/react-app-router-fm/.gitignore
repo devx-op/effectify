@@ -3,3 +3,5 @@ build
 public/build
 .env
 .react-router
+
+/generated/prisma

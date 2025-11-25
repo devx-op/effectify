@@ -1,11 +1,16 @@
 {
   "compilerOptions": {
+    "module": "EsNext",
+    "moduleResolution": "node",
+    "target": "ES2023",
+    "strict": "true",
+    "esModuleInterop": true,
+    "moduleResolution": "node",
+    "ignoreDeprecations": "6.0",
     "jsx": "react-jsx",
     "allowJs": false,
-    "esModuleInterop": false,
     "allowSyntheticDefaultImports": true,
     "strict": true,
-    "moduleResolution": "nodenext",
     "lib": ["DOM", "DOM.Iterable", "ES2022"],
     "skipLibCheck": true,
     "rootDirs": [".", "./.react-router/types"],
