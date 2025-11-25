@@ -53,7 +53,19 @@
     "overrides": {
       "@types/react": "19.1.13",
       "@types/react-dom": "19.1.9"
-    }
+    },
+    "onlyBuiltDependencies": [
+      "@biomejs/biome",
+      "@parcel/watcher",
+      "@swc/core",
+      "@tailwindcss/oxide",
+      "better-sqlite3",
+      "core-js",
+      "esbuild",
+      "msgpackr-extract",
+      "nx",
+      "sharp"
+    ]
   },
   "packageManager": "pnpm@10.14.0",
   "dependencies": {
