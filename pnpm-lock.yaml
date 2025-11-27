@@ -57,6 +57,12 @@ catalogs:
     '@prisma/client':
       specifier: 7.0.0
       version: 7.0.0
+    '@prisma/generator':
+      specifier: ^7.0.1
+      version: 7.0.1
+    '@prisma/generator-helper':
+      specifier: 7.0.0
+      version: 7.0.0
     '@radix-ui/react-form':
       specifier: 0.1.8
       version: 0.1.8
@@ -678,6 +684,12 @@ importers:
         specifier: 'catalog:'
         version: 7.9.6(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
     devDependencies:
+      '@prisma/generator':
+        specifier: 'catalog:'
+        version: 7.0.1
+      '@prisma/generator-helper':
+        specifier: 'catalog:'
+        version: 7.0.0
       '@react-router/dev':
         specifier: 'catalog:'
         version: 7.9.6(@react-router/serve@7.9.6(react-router@7.9.6(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(typescript@5.9.3))(@types/node@20.19.25)(@vitejs/plugin-rsc@0.5.1(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(vite@7.2.4(@types/node@20.19.25)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.1)(tsx@4.20.6)(yaml@2.8.1)))(babel-plugin-macros@3.1.0)(jiti@2.6.1)(lightningcss@1.30.2)(react-router@7.9.6(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(terser@5.44.1)(tsx@4.20.6)(typescript@5.9.3)(vite@7.2.4(@types/node@20.19.25)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.1)(tsx@4.20.6)(yaml@2.8.1))(yaml@2.8.1)
@@ -3761,6 +3773,9 @@ packages:
   '@prisma/dmmf@6.19.0':
     resolution: {integrity: sha512-hmMbAxnA+JAe9mGtfgO5BPumFIXsxHsp9o/9fV70TzBGAcTw+yARsHs1QnOkx1ZIIRDJ/iJ+WHhAvwCQBnNXmw==}
 
+  '@prisma/dmmf@7.0.0':
+    resolution: {integrity: sha512-Te1mE1K5M/qO4iYMC3LYrrAbAGlxcah+Bx1YFRLlewu6Ah5tgp9ZhDQ3W/nRAWBeWyNrnhnkTWBNkcXJYtRy+g==}
+
   '@prisma/driver-adapter-utils@7.0.1':
     resolution: {integrity: sha512-sBbxm/yysHLLF2iMAB+qcX/nn3WFgsiC4DQNz0uM6BwGSIs8lIvgo0u8nR9nxe5gvFgKiIH8f4z2fgOEMeXc8w==}
 
@@ -3776,8 +3791,17 @@ packages:
   '@prisma/generator-helper@6.19.0':
     resolution: {integrity: sha512-RwRzgm5O+xfCXkRltdHC7XSDhXNkS2dnJ9SNAL52Ke4r28Gb6lelR/eUGcY8w8BaX/jEu6vZgcyFRdqZB6B1gg==}
 
+  '@prisma/generator-helper@7.0.0':
+    resolution: {integrity: sha512-zVdOzhEBXBcJxUubW3SQ2y9Y+uHCSv44ZiX9yXVVVn9cev13sNOPbP24yglCUx2ehHlLjZ324KLDvqxVAcx4hQ==}
+
   '@prisma/generator@6.19.0':
     resolution: {integrity: sha512-yRfG3ZjkzzizEibA5HqwP64GS1+qit2YujV8pUBFHzDzi0mcxwBxpH2mcKjULXZvg1Nfvfnwwd8PpCEG7LuJfA==}
+
+  '@prisma/generator@7.0.0':
+    resolution: {integrity: sha512-nOcN8uFVVkw9QroZX2cZY7w+epb/5VsTbBpz7m9Lp1zhW/usxH7p8ZfP3LhFUSSelb7mslvBRNRRumQp5IAmiw==}
+
+  '@prisma/generator@7.0.1':
+    resolution: {integrity: sha512-d/rPH4p2hdZKg1kfWBAL+SLDGGbxl8I74dZv5+Fm/mpH0lWXRwQrtvpxrPaKbnJnCkyddUS+4SOl9WV2iBMH7w==}
 
   '@prisma/get-platform@6.8.2':
     resolution: {integrity: sha512-vXSxyUgX3vm1Q70QwzwkjeYfRryIvKno1SXbIqwSptKwqKzskINnDUcx85oX+ys6ooN2ATGSD0xN2UTfg6Zcow==}
@@ -14708,6 +14732,8 @@ snapshots:
 
   '@prisma/dmmf@6.19.0': {}
 
+  '@prisma/dmmf@7.0.0': {}
+
   '@prisma/driver-adapter-utils@7.0.1':
     dependencies:
       '@prisma/debug': 7.0.1
@@ -14733,7 +14759,17 @@ snapshots:
       '@prisma/dmmf': 6.19.0
       '@prisma/generator': 6.19.0
 
+  '@prisma/generator-helper@7.0.0':
+    dependencies:
+      '@prisma/debug': 7.0.0
+      '@prisma/dmmf': 7.0.0
+      '@prisma/generator': 7.0.0
+
   '@prisma/generator@6.19.0': {}
+
+  '@prisma/generator@7.0.0': {}
+
+  '@prisma/generator@7.0.1': {}
 
   '@prisma/get-platform@6.8.2':
     dependencies:

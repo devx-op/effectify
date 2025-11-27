@@ -12,7 +12,7 @@ import * as Exit from 'effect/Exit'
 import * as Layer from 'effect/Layer'
 import * as Runtime from 'effect/Runtime'
 
-import { Prisma, PrismaClient } from './../../generated/prisma/client.js'
+import { Prisma, PrismaClient } from './../../prisma/generated/client.js'
 
 const connectionString = `${process.env.DATABASE_URL}`
 export class PrismaClientService extends Context.Tag('PrismaClientService')<
