@@ -6,13 +6,15 @@
 
 generator client {
   provider = "prisma-client"
-  output   = "../generated/prisma"
+  output   = "./generated"
 }
 
 generator effect {
-  provider = "effect-prisma-generator"
-  output   = "../generated/effect" // relative to the schema.prisma file, e.g. prisma/generated/effect
+  provider         = "pnpm dlx tsx ./app/lib/prisma-effect-2.ts"
+  output           = "./generated/effect" // relative to the schema.prisma file, e.g. prisma/generated/effect
+  clientImport     = "../client/index.js"
   clientImportPath = "../client" // relative to the output path ^here (defaults to "@prisma/client")
+  importFileExtension = "js"
 }
 
 datasource db {

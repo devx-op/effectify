@@ -6,6 +6,9 @@ import { authOptions } from './better-auth-options.server.js'
 import { LivePrismaLayer, PrismaService } from './prisma-effect.js'
 
 const PrismaLayer = Layer.merge(LivePrismaLayer, PrismaService.Default)
+
+// const PrismaLayer = Prisma.Default
+
 const Authlayer = AuthService.layer(authOptions)
 
 const AppLayer = Layer.mergeAll(Authlayer, PrismaLayer).pipe(Layer.provide(Logger.pretty))
