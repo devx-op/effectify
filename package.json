@@ -15,7 +15,7 @@
   },
   "lint-staged": {
     "{apps,packages}/**/*.{js,jsx,ts,tsx,json,jsonc,css,scss,md,mdx}": [
-      "pnpm exec ultracite format"
+      "pnpm exec ultracite fix"
     ]
   },
   "devDependencies": {

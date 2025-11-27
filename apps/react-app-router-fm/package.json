@@ -39,6 +39,7 @@
     "@types/pg": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
+    "effect-prisma-generator": "catalog:",
     "prisma": "catalog:"
   }
 }

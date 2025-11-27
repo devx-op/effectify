@@ -9,6 +9,12 @@ generator client {
   output   = "../generated/prisma"
 }
 
+generator effect {
+  provider = "effect-prisma-generator"
+  output   = "../generated/effect" // relative to the schema.prisma file, e.g. prisma/generated/effect
+  clientImportPath = "../client" // relative to the output path ^here (defaults to "@prisma/client")
+}
+
 datasource db {
   provider = "postgresql"
 }

@@ -1,12 +1,9 @@
 {
   "compilerOptions": {
-    "module": "EsNext",
-    "moduleResolution": "node",
+    "module": "NodeNext",
+    "moduleResolution": "nodenext",
     "target": "ES2023",
-    "strict": "true",
     "esModuleInterop": true,
-    "moduleResolution": "node",
-    "ignoreDeprecations": "6.0",
     "jsx": "react-jsx",
     "allowJs": false,
     "allowSyntheticDefaultImports": true,
@@ -14,7 +11,10 @@
     "lib": ["DOM", "DOM.Iterable", "ES2022"],
     "skipLibCheck": true,
     "rootDirs": [".", "./.react-router/types"],
-    "types": ["node", "vite/client", "@react-router/node", "vitest/globals"],
+    "types": ["node", "vite/client", "@react-router/node", "vitest/globals", "react", "react-dom"],
+    "paths": {
+      "@prisma/*": ["./prisma/generated/*"]
+    }
   },
   "files": [],
   "include": [],
