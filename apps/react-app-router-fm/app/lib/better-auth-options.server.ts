@@ -1,10 +1,11 @@
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+// import { dirname, join } from 'node:path'
+// import { fileURLToPath } from 'node:url'
 import type { BetterAuthOptions } from 'better-auth/types'
-import Database from 'better-sqlite3'
+// import Database from 'better-sqlite3'
+import { pool } from './prisma.js'
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
+// const __filename = fileURLToPath(import.meta.url)
+// const __dirname = dirname(__filename)
 
 export const authOptions = {
   baseURL: 'http://localhost:3000',
@@ -12,7 +13,8 @@ export const authOptions = {
   emailAndPassword: {
     enabled: true,
   },
-  database: new Database(join(__dirname, '../sqlite.db')),
+  // database: new Database(join(__dirname, '../sqlite.db')),
+  database: pool,
 
   advanced: {
     defaultCookieAttributes: {

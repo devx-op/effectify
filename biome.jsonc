@@ -24,15 +24,16 @@
       "!**/.source",
       "!**/convex/_generated",
       "!**/tsconfig.json",
-      "!packages/confect/**",
+      "!packages/confect",
       "!**/*.d.ts",
-      "!apps/docs/**",
+      "!apps/docs",
       "!**/node_modules",
       "!**/coverage",
-      "!apps/node-auth-app/**",
-      "!tmp/**",
-      "!**/generated/**",
-      "!apps/**/app/routes/**"
+      "!apps/node-auth-app",
+      "!tmp",
+      "!**/generated",
+      "!apps/**/app/routes",
+      "!**/data"
     ]
   },
   "formatter": {
@@ -75,7 +76,7 @@
           "options": {
             "allow": ["error"]
           }
-        },
+        }
       },
       "nursery": {},
       "performance": {
@@ -85,7 +86,7 @@
       },
       "correctness": {
         "noChildrenProp": "off",
-        "noInvalidPositionAtImportRule": "off",
+        "noInvalidPositionAtImportRule": "off"
       }
     }
   },

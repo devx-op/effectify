@@ -19,7 +19,7 @@ export const make = <R, E>(layer: Layer.Layer<R, E, never>) => {
         Effect.provide(Logger.pretty),
         Effect.provideService(LoaderArgsContext, args),
         Effect.tapError((cause) => Effect.logError('Loader effect failed', cause)),
-      )
+      ) as Effect.Effect<HttpResponse<A> | Response, B, R>
       return runtime.runPromiseExit(runnable).then(
         Exit.match({
           onFailure: (cause) => {
@@ -40,6 +40,7 @@ export const make = <R, E>(layer: Layer.Layer<R, E, never>) => {
               })
             }
             // Handle other types of failures (interrupts, defects, etc.)
+            console.error('Runtime execution failed with defect:', JSON.stringify(cause, null, 2))
             const errorData = { ok: false as const, errors: ['Internal server error'] }
             throw new Response(JSON.stringify(errorData), {
               status: 500,
@@ -89,7 +90,7 @@ export const make = <R, E>(layer: Layer.Layer<R, E, never>) => {
           }
           return Effect.void
         }),
-      )
+      ) as Effect.Effect<HttpResponse<A> | Response, B, R>
 
       return runtime.runPromiseExit(runnable).then(
         Exit.match({

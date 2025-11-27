@@ -7,7 +7,14 @@
     "tests/**/*.jsx"
   ],
   "compilerOptions": {
-    "types": ["node", "vite/client", "@react-router/node", "vitest/globals"],
+    "types": [
+      "node",
+      "vite/client",
+      "@react-router/node",
+      "vitest/globals",
+      "react",
+      "react-dom"
+    ],
     "lib": ["DOM", "DOM.Iterable", "ES2022"],
     "skipLibCheck": true
   }

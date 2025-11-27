@@ -3,7 +3,11 @@ import { Runtime } from '@effectify/react-router'
 import * as Layer from 'effect/Layer'
 import * as Logger from 'effect/Logger'
 import { authOptions } from './better-auth-options.server.js'
+import { LivePrismaLayer, PrismaService } from './prisma-effect.js'
 
-const layer = AuthService.layer(authOptions).pipe(Layer.provideMerge(Logger.pretty))
+const PrismaLayer = Layer.merge(LivePrismaLayer, PrismaService.Default)
+const Authlayer = AuthService.layer(authOptions)
 
-export const { withLoaderEffect, withActionEffect } = Runtime.make(layer)
+const AppLayer = Layer.mergeAll(Authlayer, PrismaLayer).pipe(Layer.provide(Logger.pretty))
+
+export const { withLoaderEffect, withActionEffect } = Runtime.make(AppLayer)

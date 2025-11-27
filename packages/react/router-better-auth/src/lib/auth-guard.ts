@@ -49,12 +49,12 @@ const verifySessionWithActionContext = (context: typeof ActionArgsContext) =>
 const verifySession = () => verifySessionWithContext(LoaderArgsContext)
 const verifySessionFromAction = () => verifySessionWithActionContext(ActionArgsContext)
 
-export const withAuthGuardMiddleware = <A, E>(
-  effect: Effect.Effect<A, E, LoaderArgsContext | AuthService.AuthContext>,
+export const withAuthGuardMiddleware = <A, E, L>(
+  effect: Effect.Effect<A, E, LoaderArgsContext | AuthService.AuthContext | L>,
 ): Effect.Effect<
   A | HttpResponseFailure<AuthService.Unauthorized>,
   E | AuthService.Unauthorized,
-  LoaderArgsContext | AuthService.AuthServiceContext
+  LoaderArgsContext | AuthService.AuthServiceContext | L
 > =>
   Effect.gen(function* () {
     const authResult = yield* verifySession()
