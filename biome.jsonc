@@ -33,7 +33,10 @@
       "!tmp",
       "!**/generated",
       "!apps/**/app/routes",
-      "!**/data"
+      "!**/data",
+      "!**/prisma/generated",
+      "!**/prisma/generated/effect",
+      "!**/.react-router"
     ]
   },
   "formatter": {
