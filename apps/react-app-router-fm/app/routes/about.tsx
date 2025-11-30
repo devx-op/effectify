@@ -1,18 +1,44 @@
 import type { Route } from "./+types/about.js"
 import * as Effect from "effect/Effect"
-import { LoaderArgsContext, httpSuccess } from "@effectify/react-router"
+import { LoaderArgsContext, httpFailure, httpSuccess } from "@effectify/react-router"
 import { withLoaderEffect } from "../lib/runtime.server.js"
 import { withAuthGuardMiddleware } from "@effectify/react-router-better-auth"
 import { AuthService } from "@effectify/node-better-auth"
-import { PrismaService } from "../lib/prisma-effect.js"
+import { Prisma } from "@prisma/effect/index.js"
+import { makeRepo } from "../lib/prisma-model.js"
+import * as Model from "../lib/prisma-model.js"
+import * as Schema from "effect/Schema"
+
+class Todo extends Model.Class<Todo>("Todo")({
+  id: Schema.Number,
+  title: Schema.String,
+  content: Schema.String,
+  published: Schema.Boolean,
+  authorId: Schema.Number,
+}) {}
 
 export const loader = Effect.gen(function* () {
   const { request } = yield* LoaderArgsContext
   const { user } = yield* AuthService.AuthContext
-  const prisma = yield* PrismaService
+  const prisma = yield* Prisma
+  const todoRepo = yield* makeRepo(Todo, { modelName: 'todo', spanPrefix: 'todo' })
 
-  const todos = yield* prisma.Todo.findMany({})
+  const todoCreated = yield* todoRepo.create({
+    data: {
+      id: 10,
+      title: 'Test Todo',
+      content: 'Test Content',
+      published: false,
+      authorId: 1,
+    },
+  })
 
+  yield* Effect.log('todoCreated')
+  yield* Effect.log(todoCreated.id.toString())
+
+  const todos = yield* prisma.todo.findMany({})
+
+  yield* Effect.log('todos')
   yield* Effect.log(todos)
 
   // Use the new httpSuccess helper for better DX
@@ -21,7 +47,12 @@ export const loader = Effect.gen(function* () {
     user: user.id,
     todos,
   })
-}).pipe(withAuthGuardMiddleware, withLoaderEffect)
+}).pipe(
+  Effect.catchAllDefect((error) => {
+    console.error(error)
+    return httpFailure(error as unknown as string)
+  }),
+  withAuthGuardMiddleware, withLoaderEffect)
 
 
 export default function AboutComponent({
@@ -33,7 +64,7 @@ export default function AboutComponent({
         <h1>About!!!</h1>
         <p>{loaderData.data.message}</p>
         <ul>
-          {loaderData.data.todos.map((todo) => (
+          {loaderData.data.todos.map((todo: { id: number; title: string }) => (
             <li key={todo.id}>{todo.title}</li>
           ))}
         </ul>

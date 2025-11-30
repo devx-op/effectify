@@ -12,6 +12,7 @@
     }
   },
   "dependencies": {
+    "@effect/experimental": "catalog:",
     "@effect/platform": "catalog:",
     "@effect/platform-node": "catalog:",
     "@effectify/node-better-auth": "workspace:*",
@@ -26,8 +27,11 @@
     "better-sqlite3": "12.4.6",
     "dotenv": "catalog:",
     "effect": "catalog:",
+    "experimental": "link:@effect/experimental",
     "isbot": "catalog:",
+    "kysely": "catalog:",
     "pg": "catalog:",
+    "prisma-effect-kysely": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
     "react-router": "catalog:"

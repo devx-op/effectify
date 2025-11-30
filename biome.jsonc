@@ -67,7 +67,8 @@
       "style": {
         "noHeadElement": "off",
         "noParameterAssign": "off",
-        "noNamespace": "off"
+        "noNamespace": "off",
+        "useConsistentArrayType": "off"
       },
       "suspicious": {
         "noShadowRestrictedNames": "off",

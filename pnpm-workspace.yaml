@@ -12,6 +12,7 @@ catalog:
   '@effect-atom/atom': 0.4.3
   '@effect/build-utils': 0.8.9
   '@effect/cli': 0.72.1
+  '@effect/experimental': ^0.57.8
   '@effect/language-service': 0.56.0
   '@effect/platform': 0.93.3
   '@effect/platform-bun': 0.97.1
@@ -93,6 +94,7 @@ catalog:
   isbot: 5.1.32
   jiti: 2.6.1
   jsdom: 27.2.0
+  kysely: ^0.28.8
   lint-staged: 16.2.7
   lucide-react: 0.554.0
   lucide-solid: 0.554.0
