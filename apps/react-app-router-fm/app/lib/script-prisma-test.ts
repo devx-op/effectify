@@ -1,4 +1,4 @@
-/** biome-ignore-all lint/suspicious/noConsole: <explanation> */
+/** biome-ignore-all lint/suspicious/noConsole: <todo> */
 import { prisma } from './prisma.js'
 
 async function main() {

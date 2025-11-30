@@ -5,3 +5,4 @@ public/build
 .react-router
 
 /generated/prisma
+data
