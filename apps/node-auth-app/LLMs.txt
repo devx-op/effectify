@@ -7696,7 +7696,7 @@ Before starting the migration process, set up Better Auth in your project. Follo
               throw new Error(`Failed to fetch users: ${response.statusText}`);
           }
           const clerkUsersData = await response.json();
-          // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+          // biome-ignore lint/suspicious/noExplicitAny: <todo>
           clerkUsers.push(...clerkUsersData as any);
       }
       return clerkUsers;
