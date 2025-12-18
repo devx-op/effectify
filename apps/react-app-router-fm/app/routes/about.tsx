@@ -23,15 +23,46 @@ export const loader = Effect.gen(function* () {
   const prisma = yield* Prisma
   const todoRepo = yield* makeRepo(Todo, { modelName: 'todo', spanPrefix: 'todo' })
 
+  yield* prisma.todo.deleteMany({})
+
   const todoCreated = yield* todoRepo.create({
     data: {
-      id: 10,
+      id: 30,
       title: 'Test Todo',
       content: 'Test Content',
       published: false,
       authorId: 1,
     },
   })
+
+  const todosCreated = yield* todoRepo.createManyAndReturn({
+    data: [{
+      id: 31,
+      title: 'Test Todo',
+      content: 'Test Content',
+      published: false,
+      authorId: 1,
+    },
+    {
+      id: 32,
+      title: 'Test Todo 2',
+      content: 'Test Content 2',
+      published: false,
+      authorId: 1,
+    }],
+  })
+
+  const todoFindUnique = yield* todoRepo.findUnique({
+    where: {
+      id: 30,
+    },
+  })
+
+  yield* Effect.log('todoFindUnique')
+  yield* Effect.log(todoFindUnique)
+
+  yield* Effect.log('todosCreated')
+  yield* Effect.log(todosCreated)
 
   yield* Effect.log('todoCreated')
   yield* Effect.log(todoCreated.id.toString())

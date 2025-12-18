@@ -81,3 +81,14 @@ export const single = <IR, II, IA, AR, AI, A, R, E>(options: {
         Array.isArray(arr) && arr.length > 0 ? decode(arr[0]) : Effect.fail(new Cause.NoSuchElementException()),
     )
 }
+
+export const many = <IR, II, IA, AR, AI, A, R, E>(options: {
+  readonly Request: Schema.Schema<IA, II, IR>
+  readonly Result: Schema.Schema<A, AI, AR>
+  readonly execute: (request: II) => Effect.Effect<Array<unknown>, E, R>
+}) => {
+  const encodeRequest = Schema.encode(options.Request)
+  const decode = Schema.decodeUnknown(Schema.Array(options.Result))
+  return (request: IA): Effect.Effect<Array<A>, E | ParseError, R | IR | AR> =>
+    Effect.map(Effect.flatMap(Effect.flatMap(encodeRequest(request), options.execute), decode), (arr) => [...arr])
+}
