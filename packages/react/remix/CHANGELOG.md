@@ -1,3 +1,14 @@
+## 0.4.0 (2025-12-19)
+
+### 🚀 Features
+
+- improve DX with new HTTP response helpers and better error handling
+- add manual publishing scripts with nx affected
+
+### ❤️ Thank You
+
+- Andres Jimenez @kattsushi
+
 ## 0.3.0 (2025-10-11)
 
 ### 🚀 Features
