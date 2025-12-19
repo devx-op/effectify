@@ -12,7 +12,11 @@
     "forceConsistentCasingInFileNames": true,
     "types": ["node"],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@prisma/client": ["node_modules/@prisma/client"],
+      "@prisma/effect": ["./prisma/generated/effect/index.ts"],
+      "@prisma/effect/*": ["./prisma/generated/effect/*"],
+      "@prisma/*": ["./prisma/generated/*"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],

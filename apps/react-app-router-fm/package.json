@@ -38,6 +38,7 @@
   },
   "devDependencies": {
     "@effect/vitest": "catalog:",
+    "@effectify/prisma": "workspace:*",
     "@prisma/generator": "catalog:",
     "@prisma/generator-helper": "catalog:",
     "@react-router/dev": "catalog:",

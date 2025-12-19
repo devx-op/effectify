@@ -3,76 +3,29 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
+  output   = "./generated"
+}
+
+generator effect_schemas {
+  provider = "prisma-effect-kysely"
+  output   = "./generated/effect/schemas"
 }
 
 generator effect {
-  provider = "tsx ./generators/prisma-effect-generator.ts"
-  output   = "../src/generated/effect-prisma"
-}
-
-generator sqlSchema {
-  provider = "tsx ./generators/sql-schema-generator.ts"
-  output   = "../src/generated"
+  provider = "tsx ./src/effect-prisma.ts"
+  output   = "./generated/effect"
+  clientImportPath = "@prisma/client"
+  importFileExtension = "js"
 }
 
 datasource db {
   provider = "sqlite"
-  url      = env("DATABASE_URL")
-}
-
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  todos     Todo[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("users")
 }
 
 model Todo {
-  id          String    @id @default(cuid())
-  title       String
-  description String?
-  completed   Boolean   @default(false)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  userId      String?
-  user        User?     @relation(fields: [userId], references: [id])
-  TodoTag     TodoTag[]
-
-  @@map("todos")
-}
-
-// // Example of another model for demonstration
-model Tag {
-  id    String    @id @default(cuid())
-  name  String    @unique
-  todos TodoTag[]
-
-  @@map("tags")
-}
-
-model TodoTag {
-  todoId String
-  tagId  String
-  todo   Todo   @relation(fields: [todoId], references: [id])
-  tag    Tag    @relation(fields: [tagId], references: [id])
-
-  @@id([todoId, tagId])
-  @@map("todo_tags")
-}
-
-
-// Effect generators added by @effectify/prisma
-generator effect {
-  provider = "@effectify/prisma prisma generate-effect"
-  output   = "../app/generated/effect-prisma"
-}
-
-generator sqlSchema {
-  provider = "@effectify/prisma prisma generate-sql-schema"
-  output   = "../app/generated"
+  id        Int     @id @default(autoincrement())
+  title     String
+  content   String?
+  published Boolean @default(false)
+  authorId  Int
 }

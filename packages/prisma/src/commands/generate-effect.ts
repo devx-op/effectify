@@ -5,7 +5,8 @@ import * as NodePath from '@effect/platform-node/NodePath'
 import * as Console from 'effect/Console'
 import * as Effect from 'effect/Effect'
 import * as Match from 'effect/Match'
-import { generateEffectPrisma } from '../generators/prisma-effect-generator.js'
+
+// import { generateEffectPrisma } from '../generators/prisma-effect-generator.js'
 
 // Check if file exists
 const fileExists = (path: string) =>
@@ -83,12 +84,12 @@ const generateEffectServices = () =>
     yield* Effect.tryPromise({
       try: () => {
         // Create mock options for the generator
-        const mockOptions = {
-          dmmf: { datamodel: { models: [] } }, // Empty models for now
-          generator: { output: { value: 'src/generated/effect-prisma' } },
-        }
-
-        return generateEffectPrisma(mockOptions)
+        // const mockOptions = {
+        //   dmmf: { datamodel: { models: [] } }, // Empty models for now
+        //   generator: { output: { value: 'src/generated/effect-prisma' } },
+        // }
+        return Promise.resolve()
+        // return generateEffectPrisma(mockOptions)
       },
       catch: (error) => new Error(`Generator execution failed: ${error}`),
     })

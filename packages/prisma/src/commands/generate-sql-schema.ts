@@ -5,7 +5,8 @@ import * as NodePath from '@effect/platform-node/NodePath'
 import * as Console from 'effect/Console'
 import * as Effect from 'effect/Effect'
 import * as Match from 'effect/Match'
-import { generateSqlSchema } from '../generators/sql-schema-generator.js'
+
+// import { generateSqlSchema } from '../generators/sql-schema-generator.js'
 
 // Check if file exists
 const fileExists = (path: string) =>
@@ -83,11 +84,12 @@ const generateSqlSchemaServices = () =>
     yield* Effect.tryPromise({
       try: () => {
         // Create mock options for the generator
-        const mockOptions = {
-          generator: { output: { value: 'src/generated' } },
-        }
+        // const mockOptions = {
+        //   generator: { output: { value: 'src/generated' } },
+        // }
 
-        return generateSqlSchema(mockOptions)
+        // return generateSqlSchema(mockOptions)
+        return Promise.resolve()
       },
       catch: (error) => new Error(`Generator execution failed: ${error}`),
     })
