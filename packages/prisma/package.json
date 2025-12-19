@@ -1,6 +1,6 @@
 {
   "name": "@effectify/prisma",
-  "version": "1.0.0",
+  "version": "0.1.1",
   "description": "",
   "main": "index.js",
   "type": "module",
@@ -10,6 +10,9 @@
   },
   "exports": {
     "./prisma": "./prisma/index.ts"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "prisma:generate": "pnpm dlx prisma generate",
