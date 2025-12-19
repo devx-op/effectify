@@ -1,19 +1,9 @@
 import { layer } from '@effect/vitest'
-import { Prisma } from '@prisma/effect/index.js'
-import { Effect, Option, Schema } from 'effect'
+import { Effect, Option } from 'effect'
 import { beforeEach, expect } from 'vitest'
+import { Prisma, TodoModel } from '../../../prisma/generated/effect/index.js'
+import * as PrismaRepository from '../../../prisma/generated/effect/prisma-repository.js'
 import { adapter, prisma as db } from '../prisma.js'
-import * as Model from '../prisma-model.js'
-import { makeRepo } from '../prisma-model.js'
-
-// Define the Todo model
-class Todo extends Model.Class<Todo>('Todo')({
-  id: Schema.Number,
-  title: Schema.String,
-  content: Schema.String,
-  published: Schema.Boolean,
-  authorId: Schema.Number,
-}) {}
 
 // Create the Prisma layer
 const PrismaLayer = Prisma.layer({ adapter })
@@ -25,7 +15,7 @@ layer(PrismaLayer)('Prisma Model Repository', (it) => {
 
   it.effect('create', () =>
     Effect.gen(function* () {
-      const todoRepo = yield* makeRepo(Todo, { modelName: 'todo', spanPrefix: 'todo' })
+      const todoRepo = yield* PrismaRepository.make(TodoModel, { modelName: 'todo', spanPrefix: 'todo' })
 
       const created = yield* todoRepo.create({
         data: {
@@ -43,7 +33,7 @@ layer(PrismaLayer)('Prisma Model Repository', (it) => {
 
   it.effect('createMany', () =>
     Effect.gen(function* () {
-      const todoRepo = yield* makeRepo(Todo, { modelName: 'todo', spanPrefix: 'todo' })
+      const todoRepo = yield* PrismaRepository.make(TodoModel, { modelName: 'todo', spanPrefix: 'todo' })
 
       const result = yield* todoRepo.createMany({
         data: [
@@ -57,7 +47,7 @@ layer(PrismaLayer)('Prisma Model Repository', (it) => {
 
   it.effect('createManyAndReturn', () =>
     Effect.gen(function* () {
-      const todoRepo = yield* makeRepo(Todo, { modelName: 'todo', spanPrefix: 'todo' })
+      const todoRepo = yield* PrismaRepository.make(TodoModel, { modelName: 'todo', spanPrefix: 'todo' })
 
       const result = yield* todoRepo.createManyAndReturn({
         data: [
@@ -73,7 +63,7 @@ layer(PrismaLayer)('Prisma Model Repository', (it) => {
 
   it.effect('findUnique', () =>
     Effect.gen(function* () {
-      const todoRepo = yield* makeRepo(Todo, { modelName: 'todo', spanPrefix: 'todo' })
+      const todoRepo = yield* PrismaRepository.make(TodoModel, { modelName: 'todo', spanPrefix: 'todo' })
 
       yield* todoRepo.create({
         data: { id: 1, title: 'Find Unique', content: 'Content', published: false, authorId: 1 },
@@ -96,7 +86,7 @@ layer(PrismaLayer)('Prisma Model Repository', (it) => {
 
   it.effect('findUniqueOrThrow', () =>
     Effect.gen(function* () {
-      const todoRepo = yield* makeRepo(Todo, { modelName: 'todo', spanPrefix: 'todo' })
+      const todoRepo = yield* PrismaRepository.make(TodoModel, { modelName: 'todo', spanPrefix: 'todo' })
 
       yield* todoRepo.create({
         data: { id: 1, title: 'Find Unique Or Throw', content: 'Content', published: false, authorId: 1 },
@@ -119,7 +109,7 @@ layer(PrismaLayer)('Prisma Model Repository', (it) => {
 
   it.effect('findFirst', () =>
     Effect.gen(function* () {
-      const todoRepo = yield* makeRepo(Todo, { modelName: 'todo', spanPrefix: 'todo' })
+      const todoRepo = yield* PrismaRepository.make(TodoModel, { modelName: 'todo', spanPrefix: 'todo' })
 
       yield* todoRepo.create({
         data: { id: 1, title: 'Find First', content: 'Content', published: false, authorId: 1 },
@@ -134,7 +124,7 @@ layer(PrismaLayer)('Prisma Model Repository', (it) => {
 
   it.effect('findFirstOrThrow', () =>
     Effect.gen(function* () {
-      const todoRepo = yield* makeRepo(Todo, { modelName: 'todo', spanPrefix: 'todo' })
+      const todoRepo = yield* PrismaRepository.make(TodoModel, { modelName: 'todo', spanPrefix: 'todo' })
 
       yield* todoRepo.create({
         data: { id: 1, title: 'Find First Or Throw', content: 'Content', published: false, authorId: 1 },
@@ -157,7 +147,7 @@ layer(PrismaLayer)('Prisma Model Repository', (it) => {
 
   it.effect('findMany', () =>
     Effect.gen(function* () {
-      const todoRepo = yield* makeRepo(Todo, { modelName: 'todo', spanPrefix: 'todo' })
+      const todoRepo = yield* PrismaRepository.make(TodoModel, { modelName: 'todo', spanPrefix: 'todo' })
 
       yield* todoRepo.createMany({
         data: [
@@ -176,7 +166,7 @@ layer(PrismaLayer)('Prisma Model Repository', (it) => {
 
   it.effect('update', () =>
     Effect.gen(function* () {
-      const todoRepo = yield* makeRepo(Todo, { modelName: 'todo', spanPrefix: 'todo' })
+      const todoRepo = yield* PrismaRepository.make(TodoModel, { modelName: 'todo', spanPrefix: 'todo' })
 
       yield* todoRepo.create({
         data: { id: 1, title: 'Original', content: 'Content', published: false, authorId: 1 },
@@ -192,7 +182,7 @@ layer(PrismaLayer)('Prisma Model Repository', (it) => {
 
   it.effect('updateMany', () =>
     Effect.gen(function* () {
-      const todoRepo = yield* makeRepo(Todo, { modelName: 'todo', spanPrefix: 'todo' })
+      const todoRepo = yield* PrismaRepository.make(TodoModel, { modelName: 'todo', spanPrefix: 'todo' })
 
       yield* todoRepo.createMany({
         data: [
@@ -211,7 +201,7 @@ layer(PrismaLayer)('Prisma Model Repository', (it) => {
 
   it.effect('upsert', () =>
     Effect.gen(function* () {
-      const todoRepo = yield* makeRepo(Todo, { modelName: 'todo', spanPrefix: 'todo' })
+      const todoRepo = yield* PrismaRepository.make(TodoModel, { modelName: 'todo', spanPrefix: 'todo' })
 
       // Create new
       const created = yield* todoRepo.upsert({
@@ -233,7 +223,7 @@ layer(PrismaLayer)('Prisma Model Repository', (it) => {
 
   it.effect('delete', () =>
     Effect.gen(function* () {
-      const todoRepo = yield* makeRepo(Todo, { modelName: 'todo', spanPrefix: 'todo' })
+      const todoRepo = yield* PrismaRepository.make(TodoModel, { modelName: 'todo', spanPrefix: 'todo' })
 
       yield* todoRepo.create({
         data: { id: 1, title: 'To Delete', content: 'Content', published: false, authorId: 1 },
@@ -253,7 +243,7 @@ layer(PrismaLayer)('Prisma Model Repository', (it) => {
 
   it.effect('deleteMany', () =>
     Effect.gen(function* () {
-      const todoRepo = yield* makeRepo(Todo, { modelName: 'todo', spanPrefix: 'todo' })
+      const todoRepo = yield* PrismaRepository.make(TodoModel, { modelName: 'todo', spanPrefix: 'todo' })
 
       yield* todoRepo.createMany({
         data: [
@@ -271,7 +261,7 @@ layer(PrismaLayer)('Prisma Model Repository', (it) => {
 
   it.effect('count', () =>
     Effect.gen(function* () {
-      const todoRepo = yield* makeRepo(Todo, { modelName: 'todo', spanPrefix: 'todo' })
+      const todoRepo = yield* PrismaRepository.make(TodoModel, { modelName: 'todo', spanPrefix: 'todo' })
 
       yield* todoRepo.createMany({
         data: [
@@ -292,7 +282,7 @@ layer(PrismaLayer)('Prisma Model Repository', (it) => {
 
   it.effect('aggregate', () =>
     Effect.gen(function* () {
-      const todoRepo = yield* makeRepo(Todo, { modelName: 'todo', spanPrefix: 'todo' })
+      const todoRepo = yield* PrismaRepository.make(TodoModel, { modelName: 'todo', spanPrefix: 'todo' })
 
       yield* todoRepo.createMany({
         data: [
@@ -315,7 +305,7 @@ layer(PrismaLayer)('Prisma Model Repository', (it) => {
 
   it.effect('groupBy', () =>
     Effect.gen(function* () {
-      const todoRepo = yield* makeRepo(Todo, { modelName: 'todo', spanPrefix: 'todo' })
+      const todoRepo = yield* PrismaRepository.make(TodoModel, { modelName: 'todo', spanPrefix: 'todo' })
 
       yield* todoRepo.createMany({
         data: [

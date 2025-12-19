@@ -262,8 +262,8 @@ catalogs:
       specifier: 7.0.0
       version: 7.0.0
     prisma-effect-kysely:
-      specifier: 1.11.0
-      version: 1.11.0
+      specifier: 1.13.1
+      version: 1.13.1
     react:
       specifier: 19.2.0
       version: 19.2.0
@@ -697,7 +697,7 @@ importers:
         version: 8.16.3
       prisma-effect-kysely:
         specifier: 'catalog:'
-        version: 1.11.0(effect@3.19.6)(kysely@0.28.8)
+        version: 1.13.1(effect@3.19.6)(kysely@0.28.8)
       react:
         specifier: 'catalog:'
         version: 19.2.0
@@ -9835,8 +9835,8 @@ packages:
     resolution: {integrity: sha512-973driJZvxiGOQ5ONsFhOF/DtzPMOMtgC11kCpUrPGMTgqp2q/1gwzCquocrN33is0VZ5GFHXZYMM9l6h67v2Q==}
     engines: {node: '>=10'}
 
-  prisma-effect-kysely@1.11.0:
-    resolution: {integrity: sha512-hbMJdKsHx6mekoaIMP8AnnnEnAvAuuUWUY48KMy5QOqOADnzr6nEoPQ2fGFhdskugDZ12S05LvpxxXTzLQ0S2g==}
+  prisma-effect-kysely@1.13.1:
+    resolution: {integrity: sha512-5IJfMulEXuHuSLBU/BuaOBYPr0G2+rvmHuglfQ9r9misjcP9J5/ogarSD2kUAMID2z9nTqlssZmCGjpdUnHpYg==}
     engines: {node: '>=18.0.0', pnpm: '>=8.0.0'}
     hasBin: true
     peerDependencies:
@@ -22331,7 +22331,7 @@ snapshots:
     dependencies:
       parse-ms: 2.1.0
 
-  prisma-effect-kysely@1.11.0(effect@3.19.6)(kysely@0.28.8):
+  prisma-effect-kysely@1.13.1(effect@3.19.6)(kysely@0.28.8):
     dependencies:
       '@prisma/generator-helper': 7.0.0
       effect: 3.19.6

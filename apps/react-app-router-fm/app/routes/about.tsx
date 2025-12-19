@@ -4,26 +4,15 @@ import { LoaderArgsContext, httpFailure, httpSuccess } from "@effectify/react-ro
 import { withLoaderEffect } from "../lib/runtime.server.js"
 import { withAuthGuardMiddleware } from "@effectify/react-router-better-auth"
 import { AuthService } from "@effectify/node-better-auth"
-import { Prisma } from "@prisma/effect/index.js"
-import { makeRepo } from "../lib/prisma-model.js"
-import * as Model from "../lib/prisma-model.js"
-import * as Schema from "effect/Schema"
-
-class Todo extends Model.Class<Todo>("Todo")({
-  id: Schema.Number,
-  title: Schema.String,
-  content: Schema.String,
-  published: Schema.Boolean,
-  authorId: Schema.Number,
-}) {}
+import { TodoModel } from "@prisma/effect/index.js"
+import * as PrismaRepository from "@prisma/effect/prisma-repository.js"
 
 export const loader = Effect.gen(function* () {
   const { request } = yield* LoaderArgsContext
   const { user } = yield* AuthService.AuthContext
-  const prisma = yield* Prisma
-  const todoRepo = yield* makeRepo(Todo, { modelName: 'todo', spanPrefix: 'todo' })
+  const todoRepo = yield* PrismaRepository.make(TodoModel, { modelName: 'todo', spanPrefix: 'todo' })
 
-  yield* prisma.todo.deleteMany({})
+  yield* todoRepo.deleteMany({})
 
   const todoCreated = yield* todoRepo.create({
     data: {
@@ -67,7 +56,7 @@ export const loader = Effect.gen(function* () {
   yield* Effect.log('todoCreated')
   yield* Effect.log(todoCreated.id.toString())
 
-  const todos = yield* prisma.todo.findMany({})
+  const todos = yield* todoRepo.findMany({})
 
   yield* Effect.log('todos')
   yield* Effect.log(todos)
