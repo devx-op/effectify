@@ -1,12 +1,13 @@
 import { layer } from '@effect/vitest'
-import { Effect, Option } from 'effect'
+import { Prisma, PrismaClient, TodoModel } from '@prisma/effect'
+import * as PrismaRepository from '@prisma/effect/prisma-repository.js'
+import { Effect, Layer, Option } from 'effect'
 import { beforeEach, expect } from 'vitest'
-import { Prisma, TodoModel } from '../../../prisma/generated/effect/index.js'
-import * as PrismaRepository from '../../../prisma/generated/effect/prisma-repository.js'
-import { adapter, prisma as db } from '../prisma.js'
+import { prisma as db } from './utils.js'
 
-// Create the Prisma layer
-const PrismaLayer = Prisma.layer({ adapter })
+// Create the Prisma layer manually to use the existing client instance
+const ClientLayer = Layer.succeed(PrismaClient, { tx: db, client: db })
+const PrismaLayer = Layer.merge(ClientLayer, Prisma.Default.pipe(Layer.provide(ClientLayer)))
 
 layer(PrismaLayer)('Prisma Model Repository', (it) => {
   beforeEach(async () => {

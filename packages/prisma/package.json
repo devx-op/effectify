@@ -6,7 +6,7 @@
   "type": "module",
   "license": "MIT",
   "bin": {
-    "@effectify/prisma": "./dist/cli"
+    "effect-prisma": "./src/effect-prisma.ts"
   },
   "exports": {
     "./prisma": "./prisma/index.ts"
@@ -21,24 +21,31 @@
   "author": "",
   "packageManager": "pnpm@10.14.0",
   "dependencies": {
-    "prisma-effect-kysely": "1.13.1",
-    "@prisma/client": "6.12.0",
-    "@prisma/generator-helper": "6.12.0",
-    "effect": "3.17.14",
     "@effect/cli": "0.70.0",
     "@effect/platform": "0.91.1",
-    "@effect/platform-node": "0.97.1"
+    "@effect/platform-node": "0.97.1",
+    "@prisma/adapter-better-sqlite3": "catalog:",
+    "@prisma/client": "catalog:",
+    "@prisma/generator": "catalog:",
+    "@prisma/generator-helper": "catalog:",
+    "better-sqlite3": "catalog:",
+    "effect": "3.17.14",
+    "kysely": "catalog:",
+    "prisma-effect-kysely": "1.13.1"
   },
   "devDependencies": {
     "@effect/build-utils": "catalog:",
+    "@effect/experimental": "catalog:",
     "@effect/language-service": "catalog:",
     "@effect/vitest": "catalog:",
     "@prisma/internals": "catalog:",
+    "@types/better-sqlite3": "catalog:",
     "@types/node": "catalog:",
     "bun": "1.3.0",
     "prisma": "catalog:",
     "tsx": "catalog:",
     "typescript": "catalog:",
+    "vite-tsconfig-paths": "catalog:",
     "vitest": "catalog:"
   }
 }

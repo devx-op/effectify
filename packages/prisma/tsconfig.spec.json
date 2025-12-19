@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist/out-tsc",
+    "types": ["vitest/globals", "node"],
+    "baseUrl": ".",
+    "paths": {
+      "@prisma/client": ["node_modules/@prisma/client"],
+      "@prisma/effect": ["./prisma/generated/effect/index.ts"],
+      "@prisma/effect/*": ["./prisma/generated/effect/*"],
+      "@prisma/*": ["./prisma/generated/*"]
+    }
+  },
+  "include": ["test/**/*.ts", "src/**/*.ts", "prisma/generated/**/*.ts"]
+}
