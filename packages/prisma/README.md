@@ -13,7 +13,7 @@ A powerful Prisma generator that creates **Effect** services and layers from you
 ## 📦 Installation
 
 ```bash
-pnpm add -D @effectify/prisma
+pnpm add -D @effectify/prisma prisma-effect-kysely
 pnpm add effect @prisma/client
 ```
 
@@ -24,6 +24,11 @@ Add the generator to your `schema.prisma` file:
 ```prisma
 generator client {
   provider = "prisma-client-js"
+}
+
+generator effect_schemas {
+  provider = "prisma-effect-kysely"
+  output   = "./generated/effect/schemas"
 }
 
 generator effect {
