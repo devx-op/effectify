@@ -54,18 +54,23 @@ pnpm prisma generate
 
 ### 2. Use the Generated Services
 
-The generator creates a `Prisma` service and a `PrismaClient` tag that you can use in your Effect programs.
+The generator creates a `Prisma` service for transactions and raw queries, and Model classes that you can use to create repositories.
 
 ```typescript
 import { Effect, Layer } from "effect";
-import { Prisma, PrismaClient } from "./prisma/generated/effect/index.js";
+import { Prisma, UserModel } from "./generated/effect/index.js";
+import * as PrismaRepository from "./generated/effect/prisma-repository.js";
 
 // Define a program using the generated Prisma service
 const program = Effect.gen(function* () {
-  const prisma = yield* Prisma;
+  // Create a repository for the User model
+  const userRepo = yield* PrismaRepository.make(UserModel, {
+    modelName: "user",
+    spanPrefix: "User",
+  });
 
   // Create a new user
-  const newUser = yield* prisma.user.create({
+  const newUser = yield* userRepo.create({
     data: {
       email: "hello@effect.website",
       name: "Effect User",
@@ -73,7 +78,7 @@ const program = Effect.gen(function* () {
   });
 
   // Find the user
-  const user = yield* prisma.user.findUnique({
+  const user = yield* userRepo.findUnique({
     where: { id: newUser.id },
   });
 
@@ -96,14 +101,18 @@ The generated layers make testing easy by allowing you to provide alternative im
 
 ```typescript
 import { it } from "@effect/vitest";
-import { Effect, Layer } from "effect";
-import { Prisma, PrismaClient } from "./prisma/generated/effect/index.js";
+import { Effect } from "effect";
+import { Prisma, UserModel } from "./generated/effect/index.js";
+import * as PrismaRepository from "./generated/effect/prisma-repository.js";
 
 it.effect("should create a user", () =>
   Effect.gen(function* () {
-    const prisma = yield* Prisma;
+    const userRepo = yield* PrismaRepository.make(UserModel, {
+      modelName: "user",
+      spanPrefix: "User",
+    });
 
-    const user = yield* prisma.user.create({
+    const user = yield* userRepo.create({
       data: { email: "test@example.com" },
     });
 
@@ -120,12 +129,17 @@ All Prisma errors are mapped to specific tagged errors in Effect, allowing you t
 
 ```typescript
 import { Effect } from "effect";
-import { Prisma } from "./prisma/generated/effect/index.js";
+import { Prisma, UserModel } from "./generated/effect/index.js";
+import * as PrismaRepository from "./generated/effect/prisma-repository.js";
 
 const createUser = (email: string) =>
   Effect.gen(function* () {
-    const prisma = yield* Prisma;
-    return yield* prisma.user.create({
+    const userRepo = yield* PrismaRepository.make(UserModel, {
+      modelName: "user",
+      spanPrefix: "User",
+    });
+
+    return yield* userRepo.create({
       data: { email },
     });
   }).pipe(
