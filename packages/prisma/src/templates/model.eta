@@ -1,0 +1,6 @@
+import * as Model from "../prisma-repository.js"
+import { _<%= it.model.name %> } from "../schemas/index.js"
+
+export class <%= it.model.name %>Model extends Model.Class<<%= it.model.name %>Model>("<%= it.model.name %>")({
+  ..._<%= it.model.name %>.fields
+}) {}
