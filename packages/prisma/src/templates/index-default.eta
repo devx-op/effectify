@@ -3,7 +3,6 @@
 import { Context, Data, Effect, Exit, Layer } from "effect"
 import { Service } from "effect/Effect"
 import { Prisma as PrismaNamespace, PrismaClient as BasePrismaClient } from "<%= it.clientImportPath %>"
-import * as Model from "./prisma-repository.js"
 
 // Symbol used to identify intentional rollbacks vs actual errors
 const ROLLBACK = Symbol.for("prisma.effect.rollback")
