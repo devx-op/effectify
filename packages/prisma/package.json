@@ -6,7 +6,7 @@
   "type": "module",
   "license": "MIT",
   "bin": {
-    "effect-prisma": "./src/effect-prisma.ts"
+    "effect-prisma": "./src/cli.tsx"
   },
   "exports": {
     "./prisma": "./prisma/index.ts"
@@ -33,6 +33,7 @@
     "@prisma/generator-helper": "catalog:",
     "better-sqlite3": "catalog:",
     "effect": "3.17.14",
+    "eta": "catalog:",
     "kysely": "catalog:",
     "prisma-effect-kysely": "1.13.1"
   },

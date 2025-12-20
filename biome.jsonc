@@ -36,7 +36,8 @@
       "!**/data",
       "!**/prisma/generated",
       "!**/prisma/generated/effect",
-      "!**/.react-router"
+      "!**/.react-router",
+      "!packages/prisma/inspiration"
     ]
   },
   "formatter": {
