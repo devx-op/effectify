@@ -12,7 +12,7 @@ generator effect_schemas {
 }
 
 generator effect {
-  provider = "tsx ./src/cli.tsx"
+  provider = "tsx ./src/cli.ts"
   output   = "./generated/effect"
   clientImportPath = "@prisma/client"
   importFileExtension = "js"

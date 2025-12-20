@@ -1,0 +1,31 @@
+    $executeRaw: (args: PrismaNamespace.Sql | [PrismaNamespace.Sql, ...any[]]): Effect.Effect<number, <%= it.errorType %>, PrismaClient> =>
+      Effect.flatMap(PrismaClient, ({ tx: client }) =>
+        Effect.tryPromise({
+          try: () => (Array.isArray(args) ? client.$executeRaw(args[0], ...args.slice(1)) : client.$executeRaw(args)),
+          catch: (error) => mapError(error, "$executeRaw", "Prisma")
+        })
+      ),
+
+    $executeRawUnsafe: (query: string, ...values: any[]): Effect.Effect<number, <%= it.errorType %>, PrismaClient> =>
+      Effect.flatMap(PrismaClient, ({ tx: client }) =>
+        Effect.tryPromise({
+          try: () => client.$executeRawUnsafe(query, ...values),
+          catch: (error) => mapError(error, "$executeRawUnsafe", "Prisma")
+        })
+      ),
+
+    $queryRaw: <T = unknown>(args: PrismaNamespace.Sql | [PrismaNamespace.Sql, ...any[]]): Effect.Effect<T, <%= it.errorType %>, PrismaClient> =>
+      Effect.flatMap(PrismaClient, ({ tx: client }) =>
+        Effect.tryPromise({
+          try: () => (Array.isArray(args) ? client.$queryRaw(args[0], ...args.slice(1)) : client.$queryRaw(args)) as Promise<T>,
+          catch: (error) => mapError(error, "$queryRaw", "Prisma")
+        })
+      ),
+
+    $queryRawUnsafe: <T = unknown>(query: string, ...values: any[]): Effect.Effect<T, <%= it.errorType %>, PrismaClient> =>
+      Effect.flatMap(PrismaClient, ({ tx: client }) =>
+        Effect.tryPromise({
+          try: () => client.$queryRawUnsafe(query, ...values) as Promise<T>,
+          catch: (error) => mapError(error, "$queryRawUnsafe", "Prisma")
+        })
+      ),

@@ -21,42 +21,6 @@ export class GeneratorService extends Context.Tag('GeneratorService')<
       const path = yield* Path.Path
       const render = yield* RenderService
 
-      const generateRawSqlOperations = (customError: { className: string } | null) => {
-        const errorType = customError ? customError.className : 'PrismaError'
-        return `
-    $executeRaw: (args: PrismaNamespace.Sql | [PrismaNamespace.Sql, ...any[]]): Effect.Effect<number, ${errorType}, PrismaClient> =>
-      Effect.flatMap(PrismaClient, ({ tx: client }) =>
-        Effect.tryPromise({
-          try: () => (Array.isArray(args) ? client.$executeRaw(args[0], ...args.slice(1)) : client.$executeRaw(args)),
-          catch: (error) => mapError(error, "$executeRaw", "Prisma")
-        })
-      ),
-
-    $executeRawUnsafe: (query: string, ...values: any[]): Effect.Effect<number, ${errorType}, PrismaClient> =>
-      Effect.flatMap(PrismaClient, ({ tx: client }) =>
-        Effect.tryPromise({
-          try: () => client.$executeRawUnsafe(query, ...values),
-          catch: (error) => mapError(error, "$executeRawUnsafe", "Prisma")
-        })
-      ),
-
-    $queryRaw: <T = unknown>(args: PrismaNamespace.Sql | [PrismaNamespace.Sql, ...any[]]): Effect.Effect<T, ${errorType}, PrismaClient> =>
-      Effect.flatMap(PrismaClient, ({ tx: client }) =>
-        Effect.tryPromise({
-          try: () => (Array.isArray(args) ? client.$queryRaw(args[0], ...args.slice(1)) : client.$queryRaw(args)) as Promise<T>,
-          catch: (error) => mapError(error, "$queryRaw", "Prisma")
-        })
-      ),
-
-    $queryRawUnsafe: <T = unknown>(query: string, ...values: any[]): Effect.Effect<T, ${errorType}, PrismaClient> =>
-      Effect.flatMap(PrismaClient, ({ tx: client }) =>
-        Effect.tryPromise({
-          try: () => client.$queryRawUnsafe(query, ...values) as Promise<T>,
-          catch: (error) => mapError(error, "$queryRawUnsafe", "Prisma")
-        })
-      ),`
-      }
-
       const parseErrorImportPath = (
         errorImportPath: string | undefined,
       ): { path: string; className: string } | null => {
@@ -151,7 +115,9 @@ export class GeneratorService extends Context.Tag('GeneratorService')<
 
           // Generate index.ts
           const schemaImports = models.map((m) => `_${m.name}`).join(', ')
-          const rawSqlOperations = generateRawSqlOperations(customError)
+
+          const errorType = customError ? customError.className : 'PrismaError'
+          const rawSqlOperations = yield* render.render('prisma-raw-sql', { errorType })
 
           const templateName = customError ? 'index-custom-error' : 'index-default'
           const indexContent = yield* render.render(templateName, {
