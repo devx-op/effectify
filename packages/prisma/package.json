@@ -6,7 +6,7 @@
   "type": "module",
   "license": "MIT",
   "bin": {
-    "effect-prisma": "./src/cli.tsx"
+    "effect-prisma": "./src/cli.ts"
   },
   "exports": {
     "./prisma": "./prisma/index.ts"
@@ -18,7 +18,7 @@
     "prisma:generate": "pnpm dlx prisma generate",
     "test": "vitest",
     "dev": "tsx src/messaround.ts",
-    "cli": "pnpm dlx tsx src/cli.tsx"
+    "cli": "pnpm dlx tsx src/cli.ts"
   },
   "keywords": [],
   "author": "",
