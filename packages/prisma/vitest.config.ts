@@ -7,6 +7,7 @@ export default defineConfig({
   test: {
     setupFiles: [path.join(__dirname, 'setup-tests.ts')],
     include: ['**/*.test.ts'],
+    exclude: ['**/node_modules/**', '**/dist/**', 'inspiration/**'],
     globals: true,
   },
   resolve: {
