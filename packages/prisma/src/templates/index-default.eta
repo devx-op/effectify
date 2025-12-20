@@ -4,7 +4,6 @@ import { Context, Data, Effect, Exit, Layer } from "effect"
 import { Service } from "effect/Effect"
 import { Prisma as PrismaNamespace, PrismaClient as BasePrismaClient } from "<%= it.clientImportPath %>"
 import * as Model from "./prisma-repository.js"
-import { <%= it.schemaImports %> } from "./schemas/index.js"
 
 // Symbol used to identify intentional rollbacks vs actual errors
 const ROLLBACK = Symbol.for("prisma.effect.rollback")
@@ -361,8 +360,5 @@ export const PrismaService = Prisma
 export const makePrismaLayer = PrismaClient.layer
 export const makePrismaLayerEffect = PrismaClient.layerEffect
 
-<% it.models.forEach(function(model) { %>
-export class <%= model.name %>Model extends Model.Class<<%= model.name %>Model>("<%= model.name %>")({
-  ..._<%= model.name %>.fields
-}) {}
-<% }) %>
+<%~ it.modelExports %>
+

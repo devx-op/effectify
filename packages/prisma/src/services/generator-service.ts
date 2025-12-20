@@ -114,18 +114,24 @@ export class GeneratorService extends Context.Tag('GeneratorService')<
           yield* fs.writeFileString(path.join(outputDir, 'prisma-repository.ts'), prismaRepoContent)
 
           // Generate index.ts
-          const schemaImports = models.map((m) => `_${m.name}`).join(', ')
-
           const errorType = customError ? customError.className : 'PrismaError'
           const rawSqlOperations = yield* render.render('prisma-raw-sql', { errorType })
+
+          // Generate models
+          yield* fs.makeDirectory(path.join(outputDir, 'models'), { recursive: true })
+          for (const model of models) {
+            const content = yield* render.render('model', { model })
+            yield* fs.writeFileString(path.join(outputDir, 'models', `${model.name}.ts`), content)
+          }
+
+          const modelExports = models.map((m) => `export * from "./models/${m.name}.js"`).join('\n')
 
           const templateName = customError ? 'index-custom-error' : 'index-default'
           const indexContent = yield* render.render(templateName, {
             clientImportPath,
             customError,
-            schemaImports,
-            models,
             rawSqlOperations,
+            modelExports,
           })
 
           yield* fs.writeFileString(path.join(outputDir, 'index.ts'), indexContent)
