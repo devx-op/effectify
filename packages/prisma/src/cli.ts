@@ -5,21 +5,16 @@ import * as NodeContext from '@effect/platform-node/NodeContext'
 import * as NodeRuntime from '@effect/platform-node/NodeRuntime'
 import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
-import { generateEffectCommand } from './commands/generate-effect.js'
-import { generateSqlSchemaCommand } from './commands/generate-sql-schema.js'
 import { initCommand } from './commands/init.js'
 import { prismaCommand } from './commands/prisma.js'
 import { GeneratorService } from './services/generator-service.js'
 import { RenderService } from './services/render-service.js'
 
 // Run the CLI
-const cli = Command.run(
-  prismaCommand.pipe(Command.withSubcommands([initCommand, generateEffectCommand, generateSqlSchemaCommand])),
-  {
-    name: '@effectify/prisma CLI',
-    version: '0.1.0',
-  },
-)
+const cli = Command.run(prismaCommand.pipe(Command.withSubcommands([initCommand])), {
+  name: '@effectify/prisma CLI',
+  version: '0.1.0',
+})
 
 // Layer composition for the CLI execution
 const GeneratorLayer = GeneratorService.Live.pipe(Layer.provide(RenderService.Live), Layer.provide(NodeContext.layer))
