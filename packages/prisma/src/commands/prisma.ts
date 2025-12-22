@@ -11,7 +11,6 @@ import { GeneratorContext } from '../services/generator-context.js'
 import { GeneratorService } from '../services/generator-service.js'
 import type { RenderService } from '../services/render-service.js'
 
-// Main CLI command
 export const prismaCommand = Command.make('prisma', {}, () =>
   Effect.gen(function* () {
     const generator = yield* GeneratorService

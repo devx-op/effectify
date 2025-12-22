@@ -138,11 +138,9 @@ generator sqlSchema {
     yield* Console.log('   2. Run: @effectify/prisma prisma generate-effect')
     yield* Console.log('   3. Run: @effectify/prisma prisma generate-sql-schema')
 
-    // Ensure the effect completes and exits
     yield* Effect.sync(() => process.exit(0))
   })
 
-// Export the init command
 export const initCommand = Command.make(
   'init',
   {
