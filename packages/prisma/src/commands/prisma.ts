@@ -1,10 +1,13 @@
 import * as Command from '@effect/cli/Command'
 import type * as NodeContext from '@effect/platform-node/NodeContext'
+import type { GeneratorOptions } from '@prisma/generator-helper'
 import generatorHelper from '@prisma/generator-helper'
 import * as Console from 'effect/Console'
+import * as Deferred from 'effect/Deferred'
 import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
 import * as Runtime from 'effect/Runtime'
+import * as Stream from 'effect/Stream'
 import { GeneratorContext } from '../services/generator-context.js'
 import { GeneratorService } from '../services/generator-service.js'
 import type { RenderService } from '../services/render-service.js'
@@ -18,28 +21,39 @@ export const prismaCommand = Command.make('prisma', {}, () =>
 
     const generator = yield* GeneratorService
 
-    // We need to capture the current runtime to run the generator effect inside the Prisma callback
-    // This is because Prisma's onGenerate is a callback-based API that expects a Promise
-    // We use Effect.runtime() to get the current runtime which includes all the provided services
+    // We capture the runtime to bridge the Prisma callback to the Effect world
+    // This allows us to dispatch events from the callback to the stream
     const runtime = yield* Effect.runtime<GeneratorService | RenderService | NodeContext.NodeContext>()
     const run = Runtime.runPromise(runtime)
 
-    yield* Effect.promise(
-      () =>
-        new Promise<void>((_resolve) => {
-          generatorHelper.generatorHandler({
-            onManifest() {
-              return {
-                defaultOutput: '../generated/effect',
-                prettyName: 'Prisma Effect Generator',
-                requiresEngines: [],
-              }
-            },
-            async onGenerate(options) {
-              await run(generator.generate.pipe(Effect.provide(Layer.succeed(GeneratorContext, options))))
-            },
-          })
-        }),
+    const events = Stream.async<[GeneratorOptions, Deferred.Deferred<void, unknown>]>((emit) => {
+      generatorHelper.generatorHandler({
+        onManifest() {
+          return {
+            defaultOutput: '../generated/effect',
+            prettyName: 'Prisma Effect Generator',
+            requiresEngines: [],
+          }
+        },
+        async onGenerate(options) {
+          await run(
+            Effect.gen(function* () {
+              const deferred = yield* Deferred.make<void, unknown>()
+              yield* Effect.promise(() => emit.single([options, deferred]))
+              yield* Deferred.await(deferred)
+            }),
+          )
+        },
+      })
+    })
+
+    yield* events.pipe(
+      Stream.runForEach(([options, deferred]) =>
+        generator.generate.pipe(
+          Effect.provide(Layer.succeed(GeneratorContext, options)),
+          Effect.intoDeferred(deferred),
+        ),
+      ),
     )
   }),
 )
