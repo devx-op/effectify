@@ -1,17 +1,15 @@
 import * as FileSystem from '@effect/platform/FileSystem'
 import * as Path from '@effect/platform/Path'
-import type { GeneratorOptions } from '@prisma/generator-helper'
 import * as Context from 'effect/Context'
 import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
+import { GeneratorContext } from './generator-context.js'
 import { RenderService } from './render-service.js'
 
 export class GeneratorService extends Context.Tag('GeneratorService')<
   GeneratorService,
   {
-    readonly generate: (
-      options: GeneratorOptions,
-    ) => Effect.Effect<void, Error, FileSystem.FileSystem | Path.Path | RenderService>
+    readonly generate: Effect.Effect<void, Error, FileSystem.FileSystem | Path.Path | RenderService | GeneratorContext>
   }
 >() {
   static Live = Layer.effect(
@@ -67,9 +65,10 @@ export class GeneratorService extends Context.Tag('GeneratorService')<
           }
         })
 
-      const generate = (options: GeneratorOptions) =>
+      const generate =
         // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Refactoring target
         Effect.gen(function* () {
+          const options = yield* GeneratorContext
           const models = options.dmmf.datamodel.models
           const outputDir = options.generator.output?.value
           const schemaDir = path.dirname(options.schemaPath)
