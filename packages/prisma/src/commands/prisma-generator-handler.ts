@@ -1,11 +1,16 @@
-import * as NodeContext from '@effect/platform-node/NodeContext'
+import type * as NodeContext from '@effect/platform-node/NodeContext'
 import generatorHelper from '@prisma/generator-helper'
 import * as Effect from 'effect/Effect'
+import * as Layer from 'effect/Layer'
+import * as Runtime from 'effect/Runtime'
+import { GeneratorContext } from '../services/generator-context.js'
 import { GeneratorService } from '../services/generator-service.js'
-import { RenderService } from '../services/render-service.js'
+import type { RenderService } from '../services/render-service.js'
 
 export const runGeneratorHandler = Effect.gen(function* () {
   const generator = yield* GeneratorService
+  const runtime = yield* Effect.runtime<GeneratorService | RenderService | NodeContext.NodeContext>()
+  const run = Runtime.runPromise(runtime)
 
   yield* Effect.promise(
     () =>
@@ -19,14 +24,7 @@ export const runGeneratorHandler = Effect.gen(function* () {
             }
           },
           async onGenerate(options) {
-            await Effect.runPromise(
-              generator.generate(options).pipe(
-                // We need to provide the context here because onGenerate is called by Prisma
-                // and we are starting a new Effect run
-                Effect.provide(RenderService.Live),
-                Effect.provide(NodeContext.layer),
-              ),
-            )
+            await run(generator.generate.pipe(Effect.provide(Layer.succeed(GeneratorContext, options))))
           },
         })
       }),
