@@ -1,6 +1,6 @@
 {
   "name": "@effectify/prisma",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "",
   "main": "index.js",
   "type": "module",
@@ -24,20 +24,22 @@
   "author": "",
   "packageManager": "pnpm@10.14.0",
   "dependencies": {
-    "@effect/cli": "0.70.0",
-    "@effect/platform": "0.91.1",
-    "@effect/platform-node": "0.97.1",
+    "@effect/cli": "catalog:",
     "@prisma/adapter-better-sqlite3": "catalog:",
-    "@prisma/client": "catalog:",
     "@prisma/generator": "catalog:",
     "@prisma/generator-helper": "catalog:",
     "better-sqlite3": "catalog:",
-    "effect": "3.17.14",
     "eta": "catalog:",
-    "kysely": "catalog:",
-    "prisma-effect-kysely": "1.13.1"
+    "kysely": "catalog:"
+  },
+  "peerDependencies": {
+    "@effect/platform": "catalog:",
+    "@effect/platform-node": "catalog:",
+    "effect": "catalog:",
+    "@prisma/client": "catalog:"
   },
   "devDependencies": {
+    "prisma-effect-kysely": "1.13.1",
     "@effect/build-utils": "catalog:",
     "@effect/experimental": "catalog:",
     "@effect/language-service": "catalog:",
