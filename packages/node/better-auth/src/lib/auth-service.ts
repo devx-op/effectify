@@ -25,7 +25,12 @@ export namespace AuthService {
         yield* Effect.logInfo(`Creating auth instance with database path: ${dbPathForLog}`)
 
         const isAdapter =
-          options.database && typeof options.database === 'object' && 'createSession' in options.database
+          options.database &&
+          typeof options.database === 'object' &&
+          ('createSession' in options.database || 'createUser' in options.database)
+
+        yield* Effect.logInfo(`DEBUG: options.database keys: ${JSON.stringify(Object.keys(options.database || {}))}`)
+        yield* Effect.logInfo(`DEBUG: isAdapter detection result: ${isAdapter}`)
 
         if (!isAdapter) {
           const { runMigrations } = yield* Effect.promise(() => getMigrations(options))
