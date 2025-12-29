@@ -1,5 +1,7 @@
 // import { dirname, join } from 'node:path'
 // import { fileURLToPath } from 'node:url'
+
+import { openAPI } from 'better-auth/plugins'
 import type { BetterAuthOptions } from 'better-auth/types'
 // import Database from 'better-sqlite3'
 import { pool } from './prisma.js'
@@ -32,4 +34,5 @@ export const authOptions = {
       },
     },
   },
+  plugins: [openAPI()],
 } satisfies BetterAuthOptions
