@@ -1,11 +1,11 @@
 {
   "name": "@effectify/react-router",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Integration of React Router with Effect for React applications",
   "type": "module",
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/src/index.js",
+  "module": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
   "publishConfig": {
     "access": "public"
   },
