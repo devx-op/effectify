@@ -1,11 +1,11 @@
 {
   "name": "@effectify/node-better-auth",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Integration of better-auth with Effect for Node.js applications",
   "type": "module",
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/src/index.js",
+  "module": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
   "publishConfig": {
     "access": "public"
   },
@@ -21,13 +21,13 @@
     "dist",
     "!**/*.tsbuildinfo"
   ],
-  "dependencies": {
+  "peerDependencies": {
     "@effect/platform": "catalog:",
     "@effect/platform-node": "catalog:",
     "better-auth": "catalog:",
     "effect": "catalog:"
   },
   "devDependencies": {},
-  "peerDependencies": {},
+  "dependencies": {},
   "optionalDependencies": {}
 }
