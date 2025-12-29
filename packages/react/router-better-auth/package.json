@@ -1,6 +1,6 @@
 {
   "name": "@effectify/react-router-better-auth",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Integration of React Router + better-auth with Effect for React applications",
   "type": "module",
   "main": "./dist/src/index.js",
@@ -21,12 +21,12 @@
     "dist",
     "!**/*.tsbuildinfo"
   ],
-  "dependencies": {
+  "peerDependencies": {
     "@effectify/react-router": "workspace:*",
     "@effectify/node-better-auth": "workspace:*",
     "effect": "catalog:"
   },
   "devDependencies": {},
-  "peerDependencies": {},
+  "dependencies": {},
   "optionalDependencies": {}
 }
