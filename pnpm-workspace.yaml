@@ -2,81 +2,81 @@ packages:
   - apps/*
   - packages/*
   - packages/*/*
-  - '!packages/*/dist'
-  - '!packages/*/*/dist'
+  - "!packages/*/dist"
+  - "!packages/*/*/dist"
 
 catalog:
-  '@astrojs/starlight': 0.36.3
-  '@astrojs/starlight-tailwind': 4.0.2
-  '@biomejs/biome': 2.3.7
-  '@corvu/drawer': 0.2.4
-  '@effect-atom/atom': 0.4.3
-  '@effect/build-utils': 0.8.9
-  '@effect/cli': 0.72.1
-  '@effect/experimental': 0.57.8
-  '@effect/language-service': 0.56.0
-  '@effect/platform': 0.93.3
-  '@effect/platform-bun': 0.97.1
-  '@effect/platform-http': 0.91.1
-  '@effect/platform-node': 0.101.1
-  '@effect/vitest': 0.27.0
-  '@kobalte/core': 0.13.11
-  '@nx/js': 22.1.1
-  '@nx/node': 22.1.1
-  '@nx/react': 22.1.1
-  '@nx/vite': 22.1.1
-  '@nx/web': 22.1.1
-  '@prisma/adapter-better-sqlite3': 7.0.0
-  '@prisma/adapter-pg': ^7.0.1
-  '@prisma/client': 7.0.0
-  '@prisma/generator': ^7.0.1
-  '@prisma/generator-helper': 7.0.0
-  '@prisma/internals': 7.0.0
-  '@radix-ui/react-form': 0.1.8
-  '@radix-ui/react-label': 2.1.8
-  '@radix-ui/react-slot': 1.2.4
-  '@react-router/dev': 7.9.6
-  '@react-router/node': 7.9.6
-  '@react-router/serve': 7.9.6
-  '@remix-run/node': 2.17.2
-  '@remix-run/node-fetch-server': 0.12.0
-  '@remix-run/react': 2.17.2
-  '@remix-run/serve': 2.17.2
-  '@solidjs/start': 1.2.0
-  '@solidjs/testing-library': 0.8.10
-  '@swc-node/register': 1.11.1
-  '@swc/core': 1.15.3
-  '@swc/helpers': 0.5.17
-  '@tailwindcss/postcss': 4.1.17
-  '@tailwindcss/typography': 0.5.19
-  '@tailwindcss/vite': 4.1.17
-  '@tanstack/query-core': 5.90.10
-  '@tanstack/react-form': 1.25.0
-  '@tanstack/react-query': 5.90.10
-  '@tanstack/react-query-devtools': 5.91.0
-  '@tanstack/react-router': 1.139.3
-  '@tanstack/react-router-devtools': 1.139.3
-  '@tanstack/router-plugin': 1.139.3
-  '@tanstack/solid-form': 1.25.0
-  '@tanstack/solid-query': 5.90.13
-  '@tanstack/solid-query-devtools': 5.91.0
-  '@tanstack/solid-router': 1.139.3
-  '@tanstack/solid-router-devtools': 1.139.3
-  '@tanstack/solid-start': 1.139.3
-  '@testing-library/dom': 10.4.1
-  '@testing-library/jest-dom': 6.9.1
-  '@testing-library/react': 16.3.0
-  '@types/better-sqlite3': 7.6.13
-  '@types/compression': 1.8.1
-  '@types/express': 5.0.5
-  '@types/node': 20.19.25
-  '@types/pg': ^8.15.6
-  '@types/react': 19.2.7
-  '@types/react-dom': 19.2.3
-  '@types/validator': 13.15.10
-  '@vitejs/plugin-react': 5.1.1
-  '@vitejs/plugin-rsc': 0.5.1
-  '@vitest/ui': 4.0.13
+  "@astrojs/starlight": 0.36.3
+  "@astrojs/starlight-tailwind": 4.0.2
+  "@biomejs/biome": 2.3.7
+  "@corvu/drawer": 0.2.4
+  "@effect-atom/atom": 0.4.3
+  "@effect/build-utils": 0.8.9
+  "@effect/cli": 0.72.1
+  "@effect/experimental": 0.58.0
+  "@effect/language-service": 0.56.0
+  "@effect/platform": 0.94.0
+  "@effect/platform-bun": 0.97.1
+  "@effect/platform-http": 0.91.1
+  "@effect/platform-node": 0.104.0
+  "@effect/vitest": 0.27.0
+  "@kobalte/core": 0.13.11
+  "@nx/js": 22.1.1
+  "@nx/node": 22.1.1
+  "@nx/react": 22.1.1
+  "@nx/vite": 22.1.1
+  "@nx/web": 22.1.1
+  "@prisma/adapter-better-sqlite3": 7.0.0
+  "@prisma/adapter-pg": ^7.0.1
+  "@prisma/client": 7.0.0
+  "@prisma/generator": ^7.0.1
+  "@prisma/generator-helper": 7.0.0
+  "@prisma/internals": 7.0.0
+  "@radix-ui/react-form": 0.1.8
+  "@radix-ui/react-label": 2.1.8
+  "@radix-ui/react-slot": 1.2.4
+  "@react-router/dev": 7.9.6
+  "@react-router/node": 7.9.6
+  "@react-router/serve": 7.9.6
+  "@remix-run/node": 2.17.2
+  "@remix-run/node-fetch-server": 0.12.0
+  "@remix-run/react": 2.17.2
+  "@remix-run/serve": 2.17.2
+  "@solidjs/start": 1.2.0
+  "@solidjs/testing-library": 0.8.10
+  "@swc-node/register": 1.11.1
+  "@swc/core": 1.15.3
+  "@swc/helpers": 0.5.17
+  "@tailwindcss/postcss": 4.1.17
+  "@tailwindcss/typography": 0.5.19
+  "@tailwindcss/vite": 4.1.17
+  "@tanstack/query-core": 5.90.10
+  "@tanstack/react-form": 1.25.0
+  "@tanstack/react-query": 5.90.10
+  "@tanstack/react-query-devtools": 5.91.0
+  "@tanstack/react-router": 1.139.3
+  "@tanstack/react-router-devtools": 1.139.3
+  "@tanstack/router-plugin": 1.139.3
+  "@tanstack/solid-form": 1.25.0
+  "@tanstack/solid-query": 5.90.13
+  "@tanstack/solid-query-devtools": 5.91.0
+  "@tanstack/solid-router": 1.139.3
+  "@tanstack/solid-router-devtools": 1.139.3
+  "@tanstack/solid-start": 1.139.3
+  "@testing-library/dom": 10.4.1
+  "@testing-library/jest-dom": 6.9.1
+  "@testing-library/react": 16.3.0
+  "@types/better-sqlite3": 7.6.13
+  "@types/compression": 1.8.1
+  "@types/express": 5.0.5
+  "@types/node": 20.19.25
+  "@types/pg": ^8.15.6
+  "@types/react": 19.2.7
+  "@types/react-dom": 19.2.3
+  "@types/validator": 13.15.10
+  "@vitejs/plugin-react": 5.1.1
+  "@vitejs/plugin-rsc": 0.5.1
+  "@vitest/ui": 4.0.13
   astro: 5.16.0
   autoprefixer: 10.4.22
   better-auth: 1.4.1
@@ -87,7 +87,7 @@ catalog:
   compression: 1.8.1
   cross-env: 10.1.0
   dotenv: ^17.2.3
-  effect: 3.19.6
+  effect: 3.19.13
   effect-prisma-generator: ^0.4.0
   eta: ^4.5.0
   express: 5.1.0
@@ -139,10 +139,10 @@ catalogMode: prefer
 cleanupUnusedCatalogs: true
 
 onlyBuiltDependencies:
-  - '@biomejs/biome'
-  - '@parcel/watcher'
-  - '@swc/core'
-  - '@tailwindcss/oxide'
+  - "@biomejs/biome"
+  - "@parcel/watcher"
+  - "@swc/core"
+  - "@tailwindcss/oxide"
   - better-sqlite3
   - core-js
   - esbuild
