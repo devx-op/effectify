@@ -23,8 +23,15 @@ export namespace AuthService {
             ? String((options.database as { name?: string }).name || 'unknown')
             : 'unknown'
         yield* Effect.logInfo(`Creating auth instance with database path: ${dbPathForLog}`)
-        const { runMigrations } = yield* Effect.promise(() => getMigrations(options))
-        yield* Effect.promise(runMigrations)
+
+        const isAdapter =
+          options.database && typeof options.database === 'object' && 'createSession' in options.database
+
+        if (!isAdapter) {
+          const { runMigrations } = yield* Effect.promise(() => getMigrations(options))
+          yield* Effect.promise(runMigrations)
+        }
+
         return { auth: betterAuth(options) }
       }),
     )
