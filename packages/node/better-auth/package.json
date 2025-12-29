@@ -1,6 +1,6 @@
 {
   "name": "@effectify/node-better-auth",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Integration of better-auth with Effect for Node.js applications",
   "type": "module",
   "main": "./dist/src/index.js",
