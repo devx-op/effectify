@@ -1,6 +1,6 @@
 {
   "name": "@effectify/react-router",
-  "version": "0.4.1",
+  "version": "0.4.5",
   "description": "Integration of React Router with Effect for React applications",
   "type": "module",
   "main": "./dist/index.js",
