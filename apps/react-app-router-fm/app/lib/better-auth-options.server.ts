@@ -1,6 +1,7 @@
 // import { dirname, join } from 'node:path'
 // import { fileURLToPath } from 'node:url'
 
+import { betterAuth } from 'better-auth'
 import { openAPI } from 'better-auth/plugins'
 import type { BetterAuthOptions } from 'better-auth/types'
 // import Database from 'better-sqlite3'
@@ -36,3 +37,5 @@ export const authOptions = {
   },
   plugins: [openAPI()],
 } satisfies BetterAuthOptions
+
+export const auth = betterAuth(authOptions)

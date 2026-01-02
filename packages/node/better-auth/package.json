@@ -21,13 +21,22 @@
     "dist",
     "!**/*.tsbuildinfo"
   ],
+  "scripts": {
+    "test": "vitest"
+  },
   "peerDependencies": {
     "@effect/platform": "catalog:",
     "@effect/platform-node": "catalog:",
     "better-auth": "catalog:",
     "effect": "catalog:"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "@effect/vitest": "catalog:",
+    "vitest": "catalog:",
+    "better-sqlite3": "catalog:",
+    "@types/better-sqlite3": "catalog:",
+    "@types/node": "catalog:"
+  },
   "dependencies": {},
   "optionalDependencies": {}
 }

@@ -1,5 +1,5 @@
 import { type BetterAuthOptions, betterAuth, type Session, type User } from 'better-auth'
-import { getMigrations } from 'better-auth/db'
+
 import * as Context from 'effect/Context'
 import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
@@ -30,8 +30,9 @@ export namespace AuthService {
           ('createSession' in options.database || 'createUser' in options.database || 'client' in options.database)
 
         if (!isAdapter) {
-          const { runMigrations } = yield* Effect.promise(() => getMigrations(options))
-          yield* Effect.promise(runMigrations)
+          yield* Effect.logInfo(
+            "Auto-migration is disabled in better-auth v1.4.10+. Please run 'better-auth migrate' manually.",
+          )
         }
 
         return { auth: betterAuth(options) }
