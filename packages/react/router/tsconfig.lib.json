@@ -3,18 +3,11 @@
   "compilerOptions": {
     "composite": true,
     "baseUrl": ".",
-    "rootDir": "src",
     "outDir": "dist",
     "target": "es2022",
-    "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
-    "emitDeclarationOnly": false,
-    "forceConsistentCasingInFileNames": true,
-    "types": ["node"],
-    "lib": ["DOM", "DOM.Iterable", "ES2022"],
-    "paths": {
-      "@/*": ["./src/*"]
-    }
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx"
   },
-  "include": ["src/**/*.ts"],
-  "references": []
+  "include": ["src/**/*.ts", "src/**/*.tsx"]
 }

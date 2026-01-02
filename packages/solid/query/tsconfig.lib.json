@@ -2,10 +2,12 @@
   "extends": "../../../tsconfig.base.json",
   "compilerOptions": {
     "baseUrl": ".",
-    "rootDir": "src",
     "outDir": "dist",
-    "jsxImportSource": "solid-js",
+    "target": "es2022",
+    "module": "esnext",
+    "moduleResolution": "bundler",
     "jsx": "preserve",
+    "jsxImportSource": "solid-js",
     "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
     "declaration": true,
     "emitDeclarationOnly": false,
@@ -13,6 +15,6 @@
     "types": [],
     "preserveSymlinks": true
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
   "references": []
 }

@@ -2,17 +2,11 @@
   "extends": "../../../tsconfig.base.json",
   "compilerOptions": {
     "baseUrl": ".",
-    "rootDir": "src",
     "outDir": "dist",
-    "jsxImportSource": "react",
-    "jsx": "preserve",
-    "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
-    "declaration": true,
-    "emitDeclarationOnly": false,
-    "forceConsistentCasingInFileNames": true,
-    "types": [],
-    "preserveSymlinks": true
+    "target": "es2022",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx"
   },
-  "include": ["src/**/*"],
-  "references": []
+  "include": ["src/**/*.ts", "src/**/*.tsx"]
 }
