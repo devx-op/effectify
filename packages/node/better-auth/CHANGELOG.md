@@ -1,3 +1,13 @@
+## 0.4.7 (2026-01-02)
+
+### 🩹 Fixes
+
+- update package entry points to match build output structure (dist/src)
+
+### ❤️ Thank You
+
+- Andres Jimenez
+
 ## 0.4.6 (2026-01-02)
 
 ### 🩹 Fixes
