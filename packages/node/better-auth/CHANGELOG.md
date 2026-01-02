@@ -1,3 +1,13 @@
+## 0.4.5 (2026-01-02)
+
+### 🩹 Fixes
+
+- correct package entry points to point to dist instead of dist/src
+
+### ❤️ Thank You
+
+- Andres Jimenez
+
 ## 0.3.1 (2026-01-02)
 
 ### 🩹 Fixes
