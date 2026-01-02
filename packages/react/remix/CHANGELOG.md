@@ -1,3 +1,7 @@
+## 0.4.1 (2026-01-02)
+
+This was a version bump only for @effectify/react-remix to align it with other projects, there were no code changes.
+
 ## 0.4.0 (2025-12-19)
 
 ### 🚀 Features

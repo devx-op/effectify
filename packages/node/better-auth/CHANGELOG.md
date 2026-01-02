@@ -1,3 +1,13 @@
+## 0.3.1 (2026-01-02)
+
+### 🩹 Fixes
+
+- **better-auth:** update to v1.4.10, fix migrations, add tests
+
+### ❤️ Thank You
+
+- Andres Jimenez
+
 ## 0.3.0 (2025-12-19)
 
 ### 🚀 Features
