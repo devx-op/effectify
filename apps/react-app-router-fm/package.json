@@ -3,7 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "typecheck": "react-router typegen && tsc"
+    "typecheck": "react-router typegen && tsc",
+    "db:migrate": "better-auth migrate --config ./app/lib/better-auth-options.server.ts",
+    "dev": "react-router dev"
   },
   "sideEffects": false,
   "pnpm": {
@@ -37,6 +39,7 @@
     "react-router": "catalog:"
   },
   "devDependencies": {
+    "@better-auth/cli": "catalog:",
     "@effect/vitest": "catalog:",
     "@effectify/prisma": "workspace:*",
     "@prisma/generator": "catalog:",
