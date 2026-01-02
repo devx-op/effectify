@@ -1,3 +1,13 @@
+## 0.4.6 (2026-01-02)
+
+### 🩹 Fixes
+
+- ensure consistent build output structure (flattened dist)
+
+### ❤️ Thank You
+
+- Andres Jimenez
+
 ## 0.4.5 (2026-01-02)
 
 ### 🩹 Fixes
