@@ -12,11 +12,7 @@
       "options": {
         "outputPath": "packages/node/better-auth/dist",
         "main": "packages/node/better-auth/src/index.ts",
-        "tsConfig": "packages/node/better-auth/tsconfig.lib.json",
-        "format": ["esm"],
-        "generatePackageJson": false,
-        "updateBuildableProjectDepsInPackageJson": false,
-        "additionalEntryPoints": []
+        "tsConfig": "packages/node/better-auth/tsconfig.lib.json"
       },
       "configurations": {
         "development": {},
