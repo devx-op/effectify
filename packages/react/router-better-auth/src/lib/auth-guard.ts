@@ -1,5 +1,5 @@
 import { AuthService } from '@effectify/node-better-auth'
-import { ActionArgsContext, HttpResponseFailure, httpFailure, LoaderArgsContext } from '@effectify/react-router'
+import { ActionArgsContext, LoaderArgsContext } from '@effectify/react-router'
 import * as Effect from 'effect/Effect'
 
 const mapHeaders = (args: { request: Request }) => args.request.headers
@@ -19,7 +19,7 @@ const verifySessionWithContext = (context: typeof LoaderArgsContext) =>
     })
 
     if (!session) {
-      return yield* httpFailure(new AuthService.Unauthorized({ details: 'Missing or invalid authentication' }))
+      return yield* Effect.fail(new AuthService.Unauthorized({ details: 'Missing or invalid authentication' }))
     }
 
     return yield* Effect.succeed({ user: session.user, session: session.session } as const)
@@ -40,7 +40,7 @@ const verifySessionWithActionContext = (context: typeof ActionArgsContext) =>
     })
 
     if (!session) {
-      return yield* httpFailure(new AuthService.Unauthorized({ details: 'Missing or invalid authentication' }))
+      return yield* Effect.fail(new AuthService.Unauthorized({ details: 'Missing or invalid authentication' }))
     }
 
     return yield* Effect.succeed({ user: session.user, session: session.session } as const)
@@ -49,36 +49,27 @@ const verifySessionWithActionContext = (context: typeof ActionArgsContext) =>
 const verifySession = () => verifySessionWithContext(LoaderArgsContext)
 const verifySessionFromAction = () => verifySessionWithActionContext(ActionArgsContext)
 
-export const withAuthGuardMiddleware = <A, E, L>(
+export const withBetterAuthGuard = <A, E, L>(
   effect: Effect.Effect<A, E, LoaderArgsContext | AuthService.AuthContext | L>,
 ): Effect.Effect<
-  A | HttpResponseFailure<AuthService.Unauthorized>,
+  A,
   E | AuthService.Unauthorized,
   LoaderArgsContext | AuthService.AuthServiceContext | L
 > =>
   Effect.gen(function* () {
     const authResult = yield* verifySession()
 
-    if (authResult instanceof HttpResponseFailure) {
-      return authResult
-    }
-
     return yield* Effect.provideService(effect, AuthService.AuthContext, authResult)
   })
 
-export const withAuthGuardMiddlewareFromAction = <A, E>(
+export const withBetterAuthGuardAction = <A, E>(
   effect: Effect.Effect<A, E, ActionArgsContext | AuthService.AuthContext>,
 ): Effect.Effect<
-  A | HttpResponseFailure<AuthService.Unauthorized>,
+  A,
   E | AuthService.Unauthorized,
   ActionArgsContext | AuthService.AuthServiceContext
 > =>
   Effect.gen(function* () {
     const authResult = yield* verifySessionFromAction()
-
-    if (authResult instanceof HttpResponseFailure) {
-      return authResult
-    }
-
     return yield* Effect.provideService(effect, AuthService.AuthContext, authResult)
   })

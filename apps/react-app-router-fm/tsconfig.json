@@ -11,7 +11,12 @@
     "lib": ["DOM", "DOM.Iterable", "ES2022"],
     "skipLibCheck": true,
     "rootDirs": [".", "./.react-router/types"],
-    "types": ["node", "vite/client", "@react-router/node", "vitest/globals", "react", "react-dom"]
+    "types": ["node", "vite/client", "@react-router/node", "vitest/globals", "react", "react-dom"],
+    "baseUrl": ".",
+    "paths": {
+      "@prisma/effect": ["./prisma/generated/effect/index.ts"],
+      "@prisma/effect/*": ["./prisma/generated/effect/*"]
+    }
   },
   "files": [],
   "include": [],
