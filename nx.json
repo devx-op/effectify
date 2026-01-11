@@ -63,7 +63,8 @@
       "packages/react/remix",
       "packages/react/router",
       "packages/node/better-auth",
-      "packages/solid/query"
+      "packages/solid/query",
+      "packages/react/router-better-auth"
     ],
     "changelog": {
       "automaticFromRef": "HEAD~100",

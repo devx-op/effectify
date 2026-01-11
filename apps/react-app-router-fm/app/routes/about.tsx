@@ -1,20 +1,20 @@
 import type { Route } from "./+types/about.js"
 import * as Effect from "effect/Effect"
-import { LoaderArgsContext, httpFailure, httpSuccess } from "@effectify/react-router"
+import { LoaderArgsContext, httpSuccess } from "@effectify/react-router"
 import { withLoaderEffect } from "../lib/runtime.server.js"
-import { withAuthGuardMiddleware } from "@effectify/react-router-better-auth"
+import { withBetterAuthGuard } from "@effectify/react-router-better-auth"
 import { AuthService } from "@effectify/node-better-auth"
-import { TodoModel } from "@prisma/effect/index.js"
-import * as PrismaRepository from "@prisma/effect/prisma-repository.js"
+import { Prisma } from "@prisma/effect/index.js"
+import { redirect } from "react-router"
 
 export const loader = Effect.gen(function* () {
   const { request } = yield* LoaderArgsContext
   const { user } = yield* AuthService.AuthContext
-  const todoRepo = yield* PrismaRepository.make(TodoModel, { modelName: 'todo', spanPrefix: 'todo' })
+  const prisma = yield* Prisma
 
-  yield* todoRepo.deleteMany({})
+  yield* prisma.todo.deleteMany({})
 
-  const todoCreated = yield* todoRepo.create({
+  const todoCreated = yield* prisma.todo.create({
     data: {
       id: 30,
       title: 'Test Todo',
@@ -24,7 +24,7 @@ export const loader = Effect.gen(function* () {
     },
   })
 
-  const todosCreated = yield* todoRepo.createManyAndReturn({
+  const todosCreated = yield* prisma.todo.createManyAndReturn({
     data: [{
       id: 31,
       title: 'Test Todo',
@@ -41,7 +41,7 @@ export const loader = Effect.gen(function* () {
     }],
   })
 
-  const todoFindUnique = yield* todoRepo.findUnique({
+  const todoFindUnique = yield* prisma.todo.findUnique({
     where: {
       id: 30,
     },
@@ -56,7 +56,7 @@ export const loader = Effect.gen(function* () {
   yield* Effect.log('todoCreated')
   yield* Effect.log(todoCreated.id.toString())
 
-  const todos = yield* todoRepo.findMany({})
+  const todos = yield* prisma.todo.findMany({})
 
   yield* Effect.log('todos')
   yield* Effect.log(todos)
@@ -68,11 +68,10 @@ export const loader = Effect.gen(function* () {
     todos,
   })
 }).pipe(
-  Effect.catchAllDefect((error) => {
-    console.error(error)
-    return httpFailure(error as unknown as string)
-  }),
-  withAuthGuardMiddleware, withLoaderEffect)
+  withBetterAuthGuard, 
+  Effect.catchTag('Unauthorized', ()=> Effect.sync(() => redirect('/login'))),
+  withLoaderEffect
+)
 
 
 export default function AboutComponent({
