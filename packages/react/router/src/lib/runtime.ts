@@ -12,14 +12,14 @@ export const make = <R, E>(layer: Layer.Layer<R, E, never>) => {
   const runtime = ManagedRuntime.make(layer)
 
   const withLoaderEffect =
-    <A, B>(self: Effect.Effect<HttpResponse<A> | Response, B, R | LoaderArgsContext>) =>
+    <A, B, R0 extends R | LoaderArgsContext>(self: Effect.Effect<HttpResponse<A> | Response, B, R0>) =>
     (args: LoaderFunctionArgs) => {
       const runnable = pipe(
         self,
         Effect.provide(Logger.pretty),
         Effect.provideService(LoaderArgsContext, args),
         Effect.tapError((cause) => Effect.logError('Loader effect failed', cause)),
-      ) as Effect.Effect<HttpResponse<A> | Response, B, R>
+      )
       return runtime.runPromiseExit(runnable).then(
         Exit.match({
           onFailure: (cause) => {
@@ -77,7 +77,7 @@ export const make = <R, E>(layer: Layer.Layer<R, E, never>) => {
 
   // Don't throw the Error requests, handle them in the normal UI. No ErrorBoundary
   const withActionEffect =
-    <A, B>(self: Effect.Effect<HttpResponse<A> | Response, B, R | ActionArgsContext>) =>
+    <A, B, R0 extends R | ActionArgsContext>(self: Effect.Effect<HttpResponse<A> | Response, B, R0>) => 
     (args: ActionFunctionArgs) => {
       const runnable = pipe(
         self,
@@ -90,8 +90,7 @@ export const make = <R, E>(layer: Layer.Layer<R, E, never>) => {
           }
           return Effect.void
         }),
-      ) as Effect.Effect<HttpResponse<A> | Response, B, R>
-
+      )
       return runtime.runPromiseExit(runnable).then(
         Exit.match({
           onFailure: (cause) => {
