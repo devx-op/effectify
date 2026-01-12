@@ -1,6 +1,6 @@
 import type { Route } from "./+types/about.js"
 import * as Effect from "effect/Effect"
-import { LoaderArgsContext, httpSuccess } from "@effectify/react-router"
+import { httpSuccess } from "@effectify/react-router"
 import { withLoaderEffect } from "../lib/runtime.server.js"
 import { withBetterAuthGuard } from "@effectify/react-router-better-auth"
 import { AuthService } from "@effectify/node-better-auth"
@@ -8,7 +8,6 @@ import { Prisma } from "@prisma/effect/index.js"
 import { redirect } from "react-router"
 
 export const loader = Effect.gen(function* () {
-  const { request } = yield* LoaderArgsContext
   const { user } = yield* AuthService.AuthContext
   const prisma = yield* Prisma
 
@@ -63,13 +62,11 @@ export const loader = Effect.gen(function* () {
 
   // Use the new httpSuccess helper for better DX
   return yield* httpSuccess({
-    message: 'Test route works! ' + request.url + ' ' + user.id,
     user: user.id,
     todos,
   })
 }).pipe(
-  withBetterAuthGuard, 
-  Effect.catchTag('Unauthorized', ()=> Effect.sync(() => redirect('/login'))),
+  withBetterAuthGuard.with({ redirectOnFail: '/login' }),
   withLoaderEffect
 )
 
@@ -81,7 +78,7 @@ export default function AboutComponent({
     return (
       <div>
         <h1>About!!!</h1>
-        <p>{loaderData.data.message}</p>
+        <p>{loaderData.data?.todos?.length}</p>
         <ul>
           {loaderData.data.todos.map((todo: { id: number; title: string }) => (
             <li key={todo.id}>{todo.title}</li>
