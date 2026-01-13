@@ -39,7 +39,7 @@
     "jiti": "catalog:",
     "jsdom": "catalog:",
     "lint-staged": "catalog:",
-    "nx": "catalog:",
+    "nx": "22.1.1",
     "prettier": "catalog:",
     "ts-patch": "catalog:",
     "tslib": "catalog:",
