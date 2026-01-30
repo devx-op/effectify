@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.1] - 2026-01-30
+
+### Fixes
+
+- Fixed CHANGELOG.md formatting and structure
+- Added missing changelog entry for version 1.0.1
+
 ## [1.0.0] - 2026-01-30
 
 ### Major Changes
