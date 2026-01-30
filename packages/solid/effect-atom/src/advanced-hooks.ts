@@ -1,7 +1,6 @@
 /**
  * @since 1.0.0
  */
-/** biome-ignore-all lint/suspicious/noExplicitAny: <lib> */
 
 import type * as Atom from '@effect-atom/atom/Atom'
 import type * as Result from '@effect-atom/atom/Result'

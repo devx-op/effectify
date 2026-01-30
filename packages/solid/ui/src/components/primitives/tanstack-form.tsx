@@ -8,7 +8,7 @@ function Label(props: ComponentProps<'label'> & { for?: string }) {
   const [local, rest] = splitProps(props, ['class', 'for'])
 
   return (
-    // biome-ignore lint/a11y/noLabelWithoutControl: This is a generic label component that will be properly associated when used
+    
     <label
       class={cn(
         'flex select-none items-center gap-2 font-medium text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-50 group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50',

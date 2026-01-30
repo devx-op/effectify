@@ -9,17 +9,18 @@
     "build:affected": "pnpm nx affected --target=build",
     "test:affected": "pnpm nx affected --target=test",
     "typecheck:affected": "pnpm nx affected --target=typecheck",
+    "lint:affected": "pnpm nx affected --target=lint",
+    "lint:many": "pnpm nx run-many --target=lint",
     "publish:affected": "pnpm nx publish-affected",
     "release:affected": "pnpm nx release-affected",
     "release:affected:dry-run": "pnpm nx release-affected-dry-run"
   },
   "lint-staged": {
-    "{apps,packages}/**/*.{js,jsx,ts,tsx,json,jsonc,css,scss,md,mdx}": [
-      "pnpm exec ultracite fix"
+    "*.{js,jsx,ts,tsx,json,jsonc,css,scss,md,mdx}": [
+      "pnpm oxlint --fix"
     ]
   },
   "devDependencies": {
-    "@biomejs/biome": "catalog:",
     "@effect/language-service": "catalog:",
     "@nx/js": "catalog:",
     "@nx/node": "catalog:",
@@ -40,6 +41,8 @@
     "jsdom": "catalog:",
     "lint-staged": "catalog:",
     "nx": "22.1.1",
+    "nx-oxlint": "catalog:",
+    "oxlint": "1.42.0",
     "prettier": "catalog:",
     "ts-patch": "catalog:",
     "tslib": "catalog:",
@@ -55,7 +58,6 @@
       "@types/react-dom": "19.1.9"
     },
     "onlyBuiltDependencies": [
-      "@biomejs/biome",
       "@parcel/watcher",
       "@swc/core",
       "@tailwindcss/oxide",

@@ -1,10 +1,6 @@
 /**
  * @since 1.0.0
  */
-/** biome-ignore-all lint/nursery/noShadow: <todo fix this> */
-/** biome-ignore-all lint/correctness/useHookAtTopLevel: <todo fix this> */
-/** biome-ignore-all lint/suspicious/noExplicitAny: <lib> */
-/** biome-ignore-all lint/style/noNonNullAssertion: <lib> */
 
 import * as Atom from '@effect-atom/atom/Atom'
 import type * as AtomRef from '@effect-atom/atom/AtomRef'

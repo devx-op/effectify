@@ -51,7 +51,7 @@ export const makeUseRxSubscribe = <R, E>(RuntimeContext: Context<ManagedRuntime.
 
     onCleanup(() => {
       if (fiberRef() !== null) {
-        // biome-ignore lint/style/noNonNullAssertion: <testing>
+        
         runtime.runCallback(Fiber.interrupt(fiberRef()!))
       }
     })

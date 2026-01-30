@@ -55,6 +55,12 @@
         "buildDepsTargetName": "build-deps",
         "typecheckTargetName": "typecheck"
       }
+    },
+    {
+      "plugin": "nx-oxlint",
+      "options": {
+        "lintTargetName": "lint"
+      }
     }
   ],
   "release": {

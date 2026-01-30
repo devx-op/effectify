@@ -1,4 +1,4 @@
-/** biome-ignore-all lint/suspicious/noExplicitAny: <explanation> */
+
 import { PassThrough } from 'node:stream'
 
 import type { EntryContext } from '@remix-run/node'

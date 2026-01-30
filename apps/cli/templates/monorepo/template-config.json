@@ -42,7 +42,7 @@
     }
   ],
   "base-dependencies": ["effect", "@effect/platform"],
-  "dev-dependencies": ["typescript", "nx", "@biomejs/biome", "vitest"],
+  "dev-dependencies": ["typescript", "nx", "vitest"],
   "package-manager": "bun",
   "hooks": {
     "pre-install": "validate-project-name",

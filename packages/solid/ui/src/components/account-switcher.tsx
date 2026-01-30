@@ -55,7 +55,7 @@ type Props = {
 }
 
 export const AccountSwitcher = (props: Props) => {
-  // biome-ignore lint/style/noNonNullAssertion: <testing>
+  
   const [selectedAccount, setSelectedAccount] = createSignal<Account>(accounts[0]!)
 
   return (

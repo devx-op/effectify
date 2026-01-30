@@ -49,6 +49,13 @@
         "command": "pnpm dlx tsx src/cli.tsx",
         "cwd": "packages/prisma"
       }
+    },
+    "lint": {
+      "executor": "nx-oxlint:lint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["packages/prisma/**/*.{ts,tsx,js,jsx}"]
+      }
     }
   },
   "tags": ["node", "react", "prisma"]

@@ -3,7 +3,6 @@
  *
  * Run with: pnpm benchmark
  */
-/** biome-ignore-all lint/suspicious/noConsole: This is a benchmark file that needs console output */
 
 import * as Atom from '@effect-atom/atom/Atom'
 import * as Registry from '@effect-atom/atom/Registry'

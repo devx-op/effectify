@@ -9,7 +9,7 @@ catalog:
   "@astrojs/starlight": 0.36.3
   "@astrojs/starlight-tailwind": 4.0.2
   "@better-auth/cli": 1.4.10
-  "@biomejs/biome": 2.3.7
+
   "@corvu/drawer": 0.2.4
   "@effect-atom/atom": 0.4.3
   "@effect/build-utils": 0.8.9
@@ -88,6 +88,7 @@ catalog:
   compression: 1.8.1
   cross-env: 10.1.0
   dotenv: ^17.2.3
+  dprint: 0.51.1
   effect: 3.19.13
   effect-prisma-generator: ^0.4.0
   eta: ^4.5.0
@@ -102,6 +103,8 @@ catalog:
   lint-staged: 16.2.7
   lucide-react: 0.554.0
   lucide-solid: 0.554.0
+  nx-oxlint: 0.1.1
+  oxlint: 0.15.15
   pg: ^8.16.3
   postcss: 8.5.6
   prettier: 2.8.8
@@ -139,7 +142,6 @@ catalogMode: prefer
 cleanupUnusedCatalogs: true
 
 onlyBuiltDependencies:
-  - "@biomejs/biome"
   - "@parcel/watcher"
   - "@swc/core"
   - "@tailwindcss/oxide"

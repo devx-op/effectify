@@ -18,6 +18,13 @@
         "development": {},
         "production": {}
       }
+    },
+    "lint": {
+      "executor": "nx-oxlint:lint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["packages/node/better-auth/**/*.{ts,tsx,js,jsx}"]
+      }
     }
   }
 }

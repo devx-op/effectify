@@ -8,7 +8,7 @@ export const MessageListSkeleton: Component = () => {
   return (
     <VStack class="p-4" gap="4">
       {widths.map((width) => (
-        // biome-ignore lint/correctness/useJsxKeyInIterable: <solid todo: suppress rule for solid>
+        
         <MessageBubbleSkeleton width={width} />
       ))}
     </VStack>

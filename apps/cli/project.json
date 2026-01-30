@@ -39,10 +39,10 @@
       }
     },
     "lint": {
-      "executor": "@nx/linter:eslint",
+      "executor": "nx-oxlint:lint",
       "outputs": ["{options.outputFile}"],
       "options": {
-        "lintFilePatterns": ["apps/cli/**/*.ts"]
+        "lintFilePatterns": ["apps/cli/**/*.{ts,tsx,js,jsx}"]
       }
     },
     "type-check": {

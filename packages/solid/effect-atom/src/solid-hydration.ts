@@ -1,9 +1,7 @@
 /**
  * @since 1.0.0
  */
-/** biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: <lib> */
-/** biome-ignore-all lint/style/useConsistentArrayType: <lib> */
-/** biome-ignore-all lint/suspicious/noExplicitAny: <todo fix this> */
+
 import * as Hydration from '@effect-atom/atom/Hydration'
 import * as Result from '@effect-atom/atom/Result'
 import { createEffect, createMemo, type JSX } from 'solid-js'

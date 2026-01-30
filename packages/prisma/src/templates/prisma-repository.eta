@@ -1,6 +1,3 @@
-/** biome-ignore-all lint/suspicious/noExplicitAny: <todo> */
-/** biome-ignore-all lint/style/useDefaultSwitchClause: <todo> */
-
 import * as VariantSchema from '@effect/experimental/VariantSchema'
 import { type PrismaClient as BasePrismaClient, Prisma as PrismaNamespace } from '<%= it.clientImportPath %>'
 import { PrismaClient } from './index.js'

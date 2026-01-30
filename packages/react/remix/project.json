@@ -21,6 +21,13 @@
         "development": {},
         "production": {}
       }
+    },
+    "lint": {
+      "executor": "nx-oxlint:lint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["packages/react/remix/**/*.{ts,tsx,js,jsx}"]
+      }
     }
   },
   "tags": ["node", "react", "react-remix"]

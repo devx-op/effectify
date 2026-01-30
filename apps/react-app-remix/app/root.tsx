@@ -1,4 +1,4 @@
-/** biome-ignore-all lint/a11y/useHtmlLang: <test> */
+
 
 import type { HtmlLinkDescriptor } from '@remix-run/react'
 import { Links, Meta, Outlet, Scripts } from '@remix-run/react'

@@ -7,10 +7,7 @@
     "start": "node .output/server/index.mjs",
     "build": "vite build",
     "serve": "vite preview",
-    "test": "vitest run",
-    "format": "biome format",
-    "lint": "biome lint",
-    "check": "biome check"
+    "test": "vitest run"
   },
   "dependencies": {
     "@effectify/solid-query": "workspace:*",
@@ -35,7 +32,6 @@
     "vite-tsconfig-paths": "catalog:"
   },
   "devDependencies": {
-    "@biomejs/biome": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plugin-solid": "catalog:"
