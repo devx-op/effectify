@@ -3,6 +3,8 @@ name: 🧪 CI
 on:
   pull_request:
     branches: [master, dev]
+  push:
+    branches: [master, dev]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event.number }}
