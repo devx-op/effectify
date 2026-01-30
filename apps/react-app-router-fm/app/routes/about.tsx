@@ -6,7 +6,7 @@ import { randomUUID } from "node:crypto"
 // import { withBetterAuthGuard } from "@effectify/react-router-better-auth"
 // import { AuthService } from "@effectify/node-better-auth"
 import * as PrismaRepository from "@prisma/effect/prisma-repository.js"
-import { Todo, TodoModel } from "@prisma/effect/models/Todo.js"
+import { TodoModel } from "@prisma/effect/models/Todo.js"
 
 export const loader = Effect.gen(function*() {
   // const { user } = yield* AuthService.AuthContext
