@@ -27,12 +27,19 @@ jobs:
       - name: 🏗️ Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'pnpm'
+          node-version: "20"
+          cache: "pnpm"
 
       - name: 📦 Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: 🔍 Run oxlint on affected projects
+        run: |
+          BASE=$(git merge-base HEAD origin/dev)
+          pnpm nx affected --target=lint --base=$BASE --head=HEAD --parallel=3
+
+      - name: 🎨 Check code formatting with dprint
+        run: pnpm exec dprint check || (echo "❌ Some files are not formatted. Run 'pnpm exec dprint fmt' to fix formatting." && exit 1)
 
   # Type checking
   typecheck:
@@ -52,8 +59,8 @@ jobs:
       - name: 🏗️ Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'pnpm'
+          node-version: "20"
+          cache: "pnpm"
 
       - name: 📦 Install dependencies
         run: pnpm install --frozen-lockfile
@@ -61,7 +68,7 @@ jobs:
       - name: 🔍 Type check affected projects
         run: |
           BASE=$(git merge-base HEAD origin/dev)
-          pnpm nx affected --target=typecheck --base=$BASE --head=HEAD
+          pnpm nx affected --target=typecheck --base=$BASE --head=HEAD --parallel=3 --verbose
 
   # Build affected projects
   build:
@@ -83,8 +90,8 @@ jobs:
       - name: 🏗️ Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'pnpm'
+          node-version: "20"
+          cache: "pnpm"
 
       - name: 📦 Install dependencies
         run: pnpm install --frozen-lockfile
@@ -93,15 +100,18 @@ jobs:
         id: build
         run: |
           BASE=$(git merge-base HEAD origin/dev)
-          
-          # Build affected projects
-          pnpm nx affected --target=build --base=$BASE --head=HEAD
-          
+
+          # Build affected projects with caching
+          pnpm nx affected --target=build --base=$BASE --head=HEAD --parallel=3 --verbose
+
           # Check if any projects were built
           AFFECTED_PROJECTS=$(pnpm nx show projects --affected --base=$BASE --head=HEAD --json | jq -r '.[]' | tr '\n' ' ')
           if [ -n "$AFFECTED_PROJECTS" ]; then
             echo "has-artifacts=true" >> $GITHUB_OUTPUT
             echo "📦 Built projects: $AFFECTED_PROJECTS"
+            
+            # Create build manifest for artifact upload
+            echo "BUILT_PROJECTS=$AFFECTED_PROJECTS" >> $GITHUB_ENV
           else
             echo "has-artifacts=false" >> $GITHUB_OUTPUT
             echo "ℹ️ No projects to build"
@@ -137,8 +147,8 @@ jobs:
       - name: 🏗️ Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'pnpm'
+          node-version: "20"
+          cache: "pnpm"
 
       - name: 📦 Install dependencies
         run: pnpm install --frozen-lockfile
@@ -152,7 +162,7 @@ jobs:
       - name: 🧪 Test affected projects
         run: |
           BASE=$(git merge-base HEAD origin/dev)
-          pnpm nx affected --target=test --base=$BASE --head=HEAD --passWithNoTests || echo "Some tests failed or no tests found, but continuing..."
+          pnpm nx affected --target=test --base=$BASE --head=HEAD --parallel=3 --verbose --passWithNoTests
 
   # E2E tests (if any)
   e2e:
@@ -173,8 +183,8 @@ jobs:
       - name: 🏗️ Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'pnpm'
+          node-version: "20"
+          cache: "pnpm"
 
       - name: 📦 Install dependencies
         run: pnpm install --frozen-lockfile
@@ -188,7 +198,7 @@ jobs:
       - name: 🎭 Run E2E tests
         run: |
           BASE=$(git merge-base HEAD origin/dev)
-          pnpm nx affected --target=e2e --base=$BASE --head=HEAD --passWithNoTests || echo "No E2E tests found or some failed, but continuing..."
+          pnpm nx affected --target=e2e --base=$BASE --head=HEAD --parallel=2 --verbose --passWithNoTests
 
   # Summary job
   ci-summary:
@@ -200,10 +210,23 @@ jobs:
       - name: 📊 CI Summary
         run: |
           echo "## 🧪 CI Results Summary" >> $GITHUB_STEP_SUMMARY
-          echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| 🔍 Lint & Format | ${{ needs.lint.result == 'success' && '✅ Success' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🔍 Type Check | ${{ needs.typecheck.result == 'success' && '✅ Success' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🏗️ Build | ${{ needs.build.result == 'success' && '✅ Success' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🧪 Test | ${{ needs.test.result == 'success' && '✅ Success' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🎭 E2E Tests | ${{ needs.e2e.result == 'success' && '✅ Success' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Status | Details |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|---------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔍 Lint & Format | ${{ needs.lint.result == 'success' && '✅ Success' || '❌ Failed' }} | Uses oxlint + dprint |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔍 Type Check | ${{ needs.typecheck.result == 'success' && '✅ Success' || '❌ Failed' }} | TypeScript compiler checks |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🏗️ Build | ${{ needs.build.result == 'success' && '✅ Success' || '❌ Failed' }} | Nx affected build |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🧪 Test | ${{ needs.test.result == 'success' && '✅ Success' || '❌ Failed' }} | Unit tests with Vitest |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🎭 E2E Tests | ${{ needs.e2e.result == 'success' && '✅ Success' || '❌ Failed' }} | End-to-end tests |" >> $GITHUB_STEP_SUMMARY
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📈 Performance Metrics" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔄 Parallel execution: 3x for lint/typecheck/build/test" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔄 Parallel execution: 2x for E2E tests" >> $GITHUB_STEP_SUMMARY
+          echo "- 📦 Caching: Nx computation caching enabled" >> $GITHUB_STEP_SUMMARY
+          echo "- 🎯 Affected projects only: Runs only on changed code" >> $GITHUB_STEP_SUMMARY
+
+          if [[ "${{ needs.lint.result }}" != "success" ]]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### ❌ Linting Issues" >> $GITHUB_STEP_SUMMARY
+            echo "Please run 'pnpm exec dprint fmt' to fix formatting issues" >> $GITHUB_STEP_SUMMARY
+          fi
