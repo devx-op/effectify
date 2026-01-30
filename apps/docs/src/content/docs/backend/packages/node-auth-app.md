@@ -14,6 +14,7 @@ npm install @effectify/node-auth-app
 ```
 
 **Dependencies:**
+
 ```bash
 npm install express cors helmet dotenv better-auth better-sqlite3
 ```
@@ -54,21 +55,21 @@ GOOGLE_CLIENT_SECRET=your-google-client-secret
 ### 2. Basic Usage
 
 ```typescript
-import { createAuthApp } from '@effectify/node-auth-app'
-import { Effect } from 'effect'
+import { createAuthApp } from "@effectify/node-auth-app"
+import { Effect } from "effect"
 
 // Create and start the auth server
-const startAuthServer = Effect.gen(function* () {
+const startAuthServer = Effect.gen(function*() {
   const app = yield* createAuthApp({
     port: 3001,
-    corsOrigin: 'http://localhost:3000',
+    corsOrigin: "http://localhost:3000",
     database: {
-      provider: 'sqlite',
-      url: 'file:./auth.db'
-    }
+      provider: "sqlite",
+      url: "file:./auth.db",
+    },
   })
-  
-  console.log('Auth server running on port 3001')
+
+  console.log("Auth server running on port 3001")
   return app
 })
 
@@ -78,50 +79,50 @@ Effect.runPromise(startAuthServer)
 ### 3. Custom Configuration
 
 ```typescript
-import { createAuthApp, AuthAppConfig } from '@effectify/node-auth-app'
+import { AuthAppConfig, createAuthApp } from "@effectify/node-auth-app"
 
 const config: AuthAppConfig = {
   port: 3001,
-  corsOrigin: ['http://localhost:3000', 'https://myapp.com'],
+  corsOrigin: ["http://localhost:3000", "https://myapp.com"],
   database: {
-    provider: 'postgresql',
-    url: process.env.DATABASE_URL!
+    provider: "postgresql",
+    url: process.env.DATABASE_URL!,
   },
   auth: {
     session: {
       expiresIn: 60 * 60 * 24 * 7, // 7 days
-      updateAge: 60 * 60 * 24 // 1 day
+      updateAge: 60 * 60 * 24, // 1 day
     },
     emailVerification: {
       enabled: true,
-      expiresIn: 60 * 60 * 24 // 24 hours
+      expiresIn: 60 * 60 * 24, // 24 hours
     },
     passwordReset: {
       enabled: true,
-      expiresIn: 60 * 60 // 1 hour
-    }
+      expiresIn: 60 * 60, // 1 hour
+    },
   },
   socialProviders: {
     github: {
       clientId: process.env.GITHUB_CLIENT_ID!,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET!
+      clientSecret: process.env.GITHUB_CLIENT_SECRET!,
     },
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!
-    }
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    },
   },
   email: {
-    provider: 'smtp',
+    provider: "smtp",
     config: {
       host: process.env.SMTP_HOST!,
       port: Number(process.env.SMTP_PORT!),
       auth: {
         user: process.env.SMTP_USER!,
-        pass: process.env.SMTP_PASS!
-      }
-    }
-  }
+        pass: process.env.SMTP_PASS!,
+      },
+    },
+  },
 }
 
 const app = await Effect.runPromise(createAuthApp(config))
@@ -186,12 +187,11 @@ Sign out the current user.
 
 ```typescript
 // Headers
-Authorization: Bearer <session-token>
-
-// Response
-{
-  "success": true
-}
+Authorization: Bearer < session - token >
+  // Response
+  {
+    "success": true,
+  }
 ```
 
 #### GET `/api/auth/session`
@@ -200,13 +200,12 @@ Get current session information.
 
 ```typescript
 // Headers
-Authorization: Bearer <session-token>
-
-// Response
-{
-  "user": { /* user object */ },
-  "session": { /* session object */ }
-}
+Authorization: Bearer < session - token >
+  // Response
+  {
+    "user": {/* user object */},
+    "session": {/* session object */},
+  }
 ```
 
 ### User Management
@@ -217,17 +216,16 @@ Get current user profile.
 
 ```typescript
 // Headers
-Authorization: Bearer <session-token>
-
-// Response
-{
-  "id": "user-id",
-  "email": "user@example.com",
-  "name": "John Doe",
-  "emailVerified": true,
-  "createdAt": "2024-01-01T00:00:00.000Z",
-  "updatedAt": "2024-01-01T00:00:00.000Z"
-}
+Authorization: Bearer < session - token >
+  // Response
+  {
+    "id": "user-id",
+    "email": "user@example.com",
+    "name": "John Doe",
+    "emailVerified": true,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z",
+  }
 ```
 
 #### PUT `/api/auth/user`
@@ -278,13 +276,12 @@ Send email verification.
 
 ```typescript
 // Headers
-Authorization: Bearer <session-token>
-
-// Response
-{
-  "success": true,
-  "message": "Verification email sent"
-}
+Authorization: Bearer < session - token >
+  // Response
+  {
+    "success": true,
+    "message": "Verification email sent",
+  }
 ```
 
 #### POST `/api/auth/verify-email`
@@ -365,63 +362,63 @@ Google OAuth callback.
 
 ```typescript
 // auth.ts
-const API_BASE = 'http://localhost:3001/api/auth'
+const API_BASE = "http://localhost:3001/api/auth"
 
 export const authAPI = {
   signUp: async (email: string, password: string, name: string) => {
     const response = await fetch(`${API_BASE}/sign-up`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, name })
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password, name }),
     })
     return response.json()
   },
 
   signIn: async (email: string, password: string) => {
     const response = await fetch(`${API_BASE}/sign-in`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
     })
     return response.json()
   },
 
   getSession: async (token: string) => {
     const response = await fetch(`${API_BASE}/session`, {
-      headers: { Authorization: `Bearer ${token}` }
+      headers: { Authorization: `Bearer ${token}` },
     })
     return response.json()
   },
 
   signOut: async (token: string) => {
     const response = await fetch(`${API_BASE}/sign-out`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` }
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
     })
     return response.json()
-  }
+  },
 }
 
 // React hook
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from "react"
 
 export function useAuth() {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const token = localStorage.getItem('auth-token')
+    const token = localStorage.getItem("auth-token")
     if (token) {
       authAPI.getSession(token)
-        .then(data => {
+        .then((data) => {
           if (data.user) {
             setUser(data.user)
           } else {
-            localStorage.removeItem('auth-token')
+            localStorage.removeItem("auth-token")
           }
         })
         .catch(() => {
-          localStorage.removeItem('auth-token')
+          localStorage.removeItem("auth-token")
         })
         .finally(() => setLoading(false))
     } else {
@@ -432,17 +429,17 @@ export function useAuth() {
   const signIn = async (email: string, password: string) => {
     const data = await authAPI.signIn(email, password)
     if (data.session) {
-      localStorage.setItem('auth-token', data.session.token)
+      localStorage.setItem("auth-token", data.session.token)
       setUser(data.user)
     }
     return data
   }
 
   const signOut = async () => {
-    const token = localStorage.getItem('auth-token')
+    const token = localStorage.getItem("auth-token")
     if (token) {
       await authAPI.signOut(token)
-      localStorage.removeItem('auth-token')
+      localStorage.removeItem("auth-token")
       setUser(null)
     }
   }
@@ -455,25 +452,25 @@ export function useAuth() {
 
 ```typescript
 // auth.ts
-import { createSignal, createEffect } from 'solid-js'
+import { createEffect, createSignal } from "solid-js"
 
 export function createAuth() {
   const [user, setUser] = createSignal(null)
   const [loading, setLoading] = createSignal(true)
 
   createEffect(() => {
-    const token = localStorage.getItem('auth-token')
+    const token = localStorage.getItem("auth-token")
     if (token) {
       authAPI.getSession(token)
-        .then(data => {
+        .then((data) => {
           if (data.user) {
             setUser(data.user)
           } else {
-            localStorage.removeItem('auth-token')
+            localStorage.removeItem("auth-token")
           }
         })
         .catch(() => {
-          localStorage.removeItem('auth-token')
+          localStorage.removeItem("auth-token")
         })
         .finally(() => setLoading(false))
     } else {
@@ -484,17 +481,17 @@ export function createAuth() {
   const signIn = async (email: string, password: string) => {
     const data = await authAPI.signIn(email, password)
     if (data.session) {
-      localStorage.setItem('auth-token', data.session.token)
+      localStorage.setItem("auth-token", data.session.token)
       setUser(data.user)
     }
     return data
   }
 
   const signOut = async () => {
-    const token = localStorage.getItem('auth-token')
+    const token = localStorage.getItem("auth-token")
     if (token) {
       await authAPI.signOut(token)
-      localStorage.removeItem('auth-token')
+      localStorage.removeItem("auth-token")
       setUser(null)
     }
   }
@@ -600,7 +597,7 @@ interface AuthAppConfig {
   port?: number
   corsOrigin?: string | string[]
   database: {
-    provider: 'sqlite' | 'postgresql' | 'mysql'
+    provider: "sqlite" | "postgresql" | "mysql"
     url: string
   }
   auth?: {
@@ -628,7 +625,7 @@ interface AuthAppConfig {
     }
   }
   email?: {
-    provider: 'smtp' | 'sendgrid' | 'mailgun'
+    provider: "smtp" | "sendgrid" | "mailgun"
     config: any
   }
   rateLimit?: {
@@ -636,7 +633,7 @@ interface AuthAppConfig {
     max?: number
   }
   logging?: {
-    level?: 'error' | 'warn' | 'info' | 'debug'
+    level?: "error" | "warn" | "info" | "debug"
   }
 }
 ```
@@ -675,6 +672,7 @@ GET /metrics
 ## Examples
 
 Check out the complete implementation:
+
 - [Node Auth App Source](https://github.com/devx-op/effectify/tree/main/apps/node-auth-app)
 - [Integration Examples](https://github.com/devx-op/effectify/tree/main/examples/auth-integration)
 

@@ -26,7 +26,7 @@ Create a server runtime with your Effect layers:
 
 ```typescript
 // lib/server-runtime.ts
-import { Runtime } from "@effectify/react-remix";
+import { Runtime } from "@effectify/react-remix"
 import * as Layer from "effect/Layer"
 
 const layers = Layer.empty
@@ -38,7 +38,7 @@ export const { withLoaderEffect, withActionEffect } = Runtime.make(layers)
 
 Use the Effect-based loaders and actions in your Remix routes:
 
-```typescript
+````typescript
 // routes/home.tsx
 import type * as Route from "./+types.home";
 import { httpSuccess, httpFailure, LoaderArgsContext } from "@effectify/react-remix";
@@ -74,15 +74,16 @@ For error handling, use the `httpFailure` helper:
 return yield* httpFailure("Something went wrong")
 // or with more complex error objects
 return yield* httpFailure({ code: 'VALIDATION_ERROR', message: 'Invalid input' })
-```
+````
 
 ### Redirects
 
 For redirects, use the `httpRedirect` helper:
+
 ```typescript
-return yield* httpRedirect('/login')
+return yield * httpRedirect("/login")
 // or with custom status/headers
-return yield* httpRedirect('/dashboard', { status: 301 })
+return yield * httpRedirect("/dashboard", { status: 301 })
 ```
 
 ## API
@@ -98,12 +99,14 @@ Creates Effect-based runtime helpers for Remix.
 #### Returns
 
 An object containing:
+
 - `withLoaderEffect`: Wrapper for Remix loaders using Effect
 - `withActionEffect`: Wrapper for Remix actions using Effect
 
 ### `LoaderArgsContext`
 
 Effect context providing access to Remix loader arguments including:
+
 - `request`: The incoming Request object
 - `params`: Route parameters
 - `context`: Additional context data
@@ -133,7 +136,7 @@ The library provides comprehensive error handling with full ErrorBoundary suppor
 
 ```typescript
 // The library automatically logs errors like this:
-Effect.tapError((cause) => Effect.logError('Loader effect failed', cause))
+Effect.tapError((cause) => Effect.logError("Loader effect failed", cause))
 
 // Loader errors are automatically converted to Response objects for ErrorBoundary:
 // - Effect errors → Response with { ok: false, errors: [...] } and status 500
@@ -150,7 +153,7 @@ const runtime = make(pipe(
   // Your app layers
   MyAppLayer,
   // Custom logger layer
-  Logger.replace(Logger.defaultLogger, customLogger)
+  Logger.replace(Logger.defaultLogger, customLogger),
 ))
 ```
 

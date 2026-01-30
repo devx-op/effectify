@@ -22,6 +22,7 @@ npm install @effectify/react-query
 ```
 
 **Peer Dependencies:**
+
 ```bash
 npm install @tanstack/react-query effect react
 ```
@@ -35,6 +36,7 @@ npm install @effectify/react-ui
 ```
 
 **Peer Dependencies:**
+
 ```bash
 npm install react react-dom tailwindcss
 ```
@@ -48,6 +50,7 @@ npm install @effectify/chat-react
 ```
 
 **Peer Dependencies:**
+
 ```bash
 npm install @effectify/react-query @effectify/chat-domain react
 ```
@@ -57,6 +60,7 @@ npm install @effectify/react-query @effectify/chat-domain react
 ### Create React App
 
 1. Install the packages:
+
 ```bash
 npx create-react-app my-app --template typescript
 cd my-app
@@ -64,21 +68,23 @@ npm install @effectify/react-query @tanstack/react-query effect
 ```
 
 2. Configure TanStack Query in `src/index.tsx`:
+
 ```tsx
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
 const queryClient = new QueryClient()
 
 root.render(
   <QueryClientProvider client={queryClient}>
     <App />
-  </QueryClientProvider>
+  </QueryClientProvider>,
 )
 ```
 
 ### Vite
 
 1. Create a new Vite project:
+
 ```bash
 npm create vite@latest my-app -- --template react-ts
 cd my-app
@@ -86,21 +92,23 @@ npm install @effectify/react-query @tanstack/react-query effect
 ```
 
 2. Configure in `src/main.tsx`:
+
 ```tsx
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
 const queryClient = new QueryClient()
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
+ReactDOM.createRoot(document.getElementById("root")!).render(
   <QueryClientProvider client={queryClient}>
     <App />
-  </QueryClientProvider>
+  </QueryClientProvider>,
 )
 ```
 
 ### Next.js
 
 1. Create a new Next.js project:
+
 ```bash
 npx create-next-app@latest my-app --typescript
 cd my-app
@@ -108,10 +116,11 @@ npm install @effectify/react-query @tanstack/react-query effect
 ```
 
 2. Create `app/providers.tsx`:
+
 ```tsx
-'use client'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { useState } from 'react'
+"use client"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { useState } from "react"
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient())
@@ -125,8 +134,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
 ```
 
 3. Update `app/layout.tsx`:
+
 ```tsx
-import { Providers } from './providers'
+import { Providers } from "./providers"
 
 export default function RootLayout({
   children,
@@ -148,18 +158,20 @@ export default function RootLayout({
 If you're using `@effectify/react-ui`, you'll need to configure Tailwind CSS:
 
 1. Install Tailwind CSS:
+
 ```bash
 npm install -D tailwindcss postcss autoprefixer
 npx tailwindcss init -p
 ```
 
 2. Configure `tailwind.config.js`:
+
 ```js
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
     "./src/**/*.{js,ts,jsx,tsx}",
-    "./node_modules/@effectify/react-ui/**/*.{js,ts,jsx,tsx}"
+    "./node_modules/@effectify/react-ui/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
     extend: {},
@@ -169,6 +181,7 @@ module.exports = {
 ```
 
 3. Add Tailwind directives to your CSS:
+
 ```css
 /* src/index.css */
 @tailwind base;
@@ -209,15 +222,15 @@ Create a simple component to verify everything is working:
 
 ```tsx
 // src/components/TestComponent.tsx
-import { useQuery } from '@tanstack/react-query'
-import { Effect } from 'effect'
+import { useQuery } from "@tanstack/react-query"
+import { Effect } from "effect"
 
 const testEffect = Effect.succeed("Effectify is working!")
 
 export function TestComponent() {
   const { data } = useQuery({
-    queryKey: ['test'],
-    queryFn: () => Effect.runPromise(testEffect)
+    queryKey: ["test"],
+    queryFn: () => Effect.runPromise(testEffect),
   })
 
   return <div>{data}</div>

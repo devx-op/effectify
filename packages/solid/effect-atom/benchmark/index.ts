@@ -4,9 +4,9 @@
  * Run with: pnpm benchmark
  */
 
-import * as Atom from '@effect-atom/atom/Atom'
-import * as Registry from '@effect-atom/atom/Registry'
-import { Effect } from 'effect'
+import * as Atom from "@effect-atom/atom/Atom"
+import * as Registry from "@effect-atom/atom/Registry"
+import { Effect } from "effect"
 
 // Use the global performance API available in Node.js 16+ and browsers
 
@@ -34,7 +34,7 @@ function benchmark(name: string, fn: () => void, iterations = 1000) {
 }
 
 function memoryUsage() {
-  if (typeof process !== 'undefined' && process.memoryUsage) {
+  if (typeof process !== "undefined" && process.memoryUsage) {
     const usage = process.memoryUsage()
     return {
       heapUsed: Math.round((usage.heapUsed / 1024 / 1024) * 100) / 100,
@@ -47,8 +47,8 @@ function memoryUsage() {
 
 // Benchmark tests
 function runBenchmarks() {
-  console.log('🚀 atom-solid Performance Benchmarks')
-  console.log('=====================================\n')
+  console.log("🚀 atom-solid Performance Benchmarks")
+  console.log("=====================================\n")
 
   const initialMemory = memoryUsage()
   if (initialMemory) {
@@ -56,7 +56,7 @@ function runBenchmarks() {
   }
 
   // 1. Atom creation benchmark
-  benchmark('Atom Creation', () => {
+  benchmark("Atom Creation", () => {
     const atom = Atom.make(Math.random())
     // Prevent optimization
     atom.toString()
@@ -66,11 +66,11 @@ function runBenchmarks() {
   const registry = Registry.make()
   const testAtom = Atom.make(42)
 
-  benchmark('Registry Get', () => {
+  benchmark("Registry Get", () => {
     registry.get(testAtom)
   })
 
-  benchmark('Registry Set', () => {
+  benchmark("Registry Set", () => {
     registry.set(testAtom, Math.random())
   })
 
@@ -78,14 +78,14 @@ function runBenchmarks() {
   const baseAtom = Atom.make(0)
   const computedAtom = Atom.make((get) => get(baseAtom) * 2)
 
-  benchmark('Computed Atom Evaluation', () => {
+  benchmark("Computed Atom Evaluation", () => {
     registry.set(baseAtom, Math.random())
     registry.get(computedAtom)
   })
 
   // 4. Subscription performance
   let subscriptionCount = 0
-  benchmark('Atom Subscription', () => {
+  benchmark("Atom Subscription", () => {
     const unsubscribe = registry.subscribe(testAtom, () => {
       subscriptionCount++
     })
@@ -96,12 +96,12 @@ function runBenchmarks() {
   // 5. Async atoms
   const asyncAtom = Atom.fn(() => Effect.succeed(Math.random()))
 
-  benchmark('Async Atom Creation', () => {
+  benchmark("Async Atom Creation", () => {
     registry.get(asyncAtom)
   })
 
   // 6. Memory stress test
-  console.log('Memory Stress Test (1000 atoms):')
+  console.log("Memory Stress Test (1000 atoms):")
   const atoms: Atom.Atom<number>[] = []
   const startMemory = memoryUsage()
 

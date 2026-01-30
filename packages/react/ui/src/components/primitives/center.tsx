@@ -1,5 +1,5 @@
-import { cn } from '@effectify/react-ui/lib/utils'
-import type React from 'react'
+import { cn } from "@effectify/react-ui/lib/utils"
+import type React from "react"
 
 interface CenterProps {
   children?: React.ReactNode
@@ -9,7 +9,7 @@ interface CenterProps {
 
 export const Center = (props: CenterProps) => {
   return (
-    <div className={cn(props.inline ? 'inline-flex' : 'flex', 'items-center justify-center', props.class)}>
+    <div className={cn(props.inline ? "inline-flex" : "flex", "items-center justify-center", props.class)}>
       {props.children}
     </div>
   )

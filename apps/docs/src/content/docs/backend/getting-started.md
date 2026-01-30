@@ -116,12 +116,12 @@ BETTER_AUTH_URL=http://localhost:3000
 Create `src/index.ts`:
 
 ```typescript
-import express from 'express'
-import cors from 'cors'
-import helmet from 'helmet'
-import { Effect, Layer } from 'effect'
-import { config } from './config'
-import { authRoutes } from './routes/auth'
+import express from "express"
+import cors from "cors"
+import helmet from "helmet"
+import { Effect, Layer } from "effect"
+import { config } from "./config"
+import { authRoutes } from "./routes/auth"
 
 const app = express()
 
@@ -131,24 +131,24 @@ app.use(cors())
 app.use(express.json())
 
 // Routes
-app.use('/auth', authRoutes)
+app.use("/auth", authRoutes)
 
 // Health check
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() })
+app.get("/health", (req, res) => {
+  res.json({ status: "ok", timestamp: new Date().toISOString() })
 })
 
 // Start server
-const startServer = Effect.gen(function* () {
+const startServer = Effect.gen(function*() {
   const { port } = yield* config
-  
+
   return yield* Effect.async<void>((resume) => {
     const server = app.listen(port, () => {
       console.log(`Server running on port ${port}`)
       resume(Effect.succeed(void 0))
     })
-    
-    server.on('error', (error) => {
+
+    server.on("error", (error) => {
       resume(Effect.fail(error))
     })
   })
@@ -163,7 +163,7 @@ Effect.runPromise(startServer).catch(console.error)
 Create `src/config/index.ts`:
 
 ```typescript
-import { Effect, Context } from 'effect'
+import { Context, Effect } from "effect"
 
 // Define configuration interface
 export interface AppConfig {
@@ -186,29 +186,29 @@ export class AppConfigService extends Context.Tag("AppConfigService")<
 >() {}
 
 // Load configuration with validation
-export const loadConfig = Effect.gen(function* () {
+export const loadConfig = Effect.gen(function*() {
   const port = Number(process.env.PORT) || 3000
-  const nodeEnv = process.env.NODE_ENV || 'development'
-  
+  const nodeEnv = process.env.NODE_ENV || "development"
+
   const databaseUrl = yield* Effect.fromNullable(process.env.DATABASE_URL).pipe(
-    Effect.orElseFail(() => new Error('DATABASE_URL is required'))
+    Effect.orElseFail(() => new Error("DATABASE_URL is required")),
   )
-  
+
   const jwtSecret = yield* Effect.fromNullable(process.env.JWT_SECRET).pipe(
-    Effect.orElseFail(() => new Error('JWT_SECRET is required'))
+    Effect.orElseFail(() => new Error("JWT_SECRET is required")),
   )
-  
+
   const betterAuthSecret = yield* Effect.fromNullable(process.env.BETTER_AUTH_SECRET).pipe(
-    Effect.orElseFail(() => new Error('BETTER_AUTH_SECRET is required'))
+    Effect.orElseFail(() => new Error("BETTER_AUTH_SECRET is required")),
   )
-  
-  const betterAuthUrl = process.env.BETTER_AUTH_URL || 'http://localhost:3000'
-  
+
+  const betterAuthUrl = process.env.BETTER_AUTH_URL || "http://localhost:3000"
+
   return {
     port,
     nodeEnv,
     database: { url: databaseUrl },
-    auth: { jwtSecret, betterAuthSecret, betterAuthUrl }
+    auth: { jwtSecret, betterAuthSecret, betterAuthUrl },
   } satisfies AppConfig
 })
 
@@ -224,7 +224,7 @@ export const config = AppConfigService
 Create `src/types/errors.ts`:
 
 ```typescript
-import { Data } from 'effect'
+import { Data } from "effect"
 
 // Base application error
 export class AppError extends Data.TaggedError("AppError")<{
@@ -267,8 +267,8 @@ export class UserAlreadyExistsError extends Data.TaggedError("UserAlreadyExistsE
 Create `src/services/user.ts`:
 
 ```typescript
-import { Effect, Context } from 'effect'
-import { UserNotFoundError, UserAlreadyExistsError, ValidationError } from '../types/errors'
+import { Context, Effect } from "effect"
+import { UserAlreadyExistsError, UserNotFoundError, ValidationError } from "../types/errors"
 
 // User types
 export interface User {
@@ -310,98 +310,98 @@ export class PasswordService extends Context.Tag("PasswordService")<
 export const UserService = {
   // Get user by ID
   getById: (id: string) =>
-    Effect.gen(function* () {
+    Effect.gen(function*() {
       const userRepo = yield* UserRepository
       const user = yield* userRepo.findById(id)
-      
+
       if (!user) {
         yield* Effect.fail(new UserNotFoundError({ userId: id }))
       }
-      
+
       return user
     }),
 
   // Create new user
   create: (data: CreateUserData) =>
-    Effect.gen(function* () {
+    Effect.gen(function*() {
       const userRepo = yield* UserRepository
       const passwordService = yield* PasswordService
-      
+
       // Validate input
       const validation = yield* validateCreateUserData(data)
-      
+
       // Check if user already exists
       const existingUser = yield* userRepo.findByEmail(validation.email)
       if (existingUser) {
         yield* Effect.fail(new UserAlreadyExistsError({ email: validation.email }))
       }
-      
+
       // Hash password
       const hashedPassword = yield* passwordService.hash(validation.password)
-      
+
       // Create user
       const user = yield* userRepo.create({
         ...validation,
-        password: hashedPassword
+        password: hashedPassword,
       })
-      
+
       return user
     }),
 
   // Update user
   update: (id: string, data: Partial<User>) =>
-    Effect.gen(function* () {
+    Effect.gen(function*() {
       const userRepo = yield* UserRepository
-      
+
       // Ensure user exists
       yield* UserService.getById(id)
-      
+
       // Update user
       const updatedUser = yield* userRepo.update(id, data)
-      
+
       return updatedUser
     }),
 
   // Delete user
   delete: (id: string) =>
-    Effect.gen(function* () {
+    Effect.gen(function*() {
       const userRepo = yield* UserRepository
-      
+
       // Ensure user exists
       yield* UserService.getById(id)
-      
+
       // Delete user
       yield* userRepo.delete(id)
-    })
+    }),
 }
 
 // Validation helper
 const validateCreateUserData = (data: CreateUserData) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const errors: Record<string, string> = {}
-    
+
     if (!data.email) {
-      errors.email = 'Email is required'
+      errors.email = "Email is required"
     } else if (!/\S+@\S+\.\S+/.test(data.email)) {
-      errors.email = 'Invalid email format'
+      errors.email = "Invalid email format"
     }
-    
+
     if (!data.name) {
-      errors.name = 'Name is required'
+      errors.name = "Name is required"
     } else if (data.name.length < 2) {
-      errors.name = 'Name must be at least 2 characters'
+      errors.name = "Name must be at least 2 characters"
     }
-    
+
     if (!data.password) {
-      errors.password = 'Password is required'
+      errors.password = "Password is required"
     } else if (data.password.length < 8) {
-      errors.password = 'Password must be at least 8 characters'
+      errors.password = "Password must be at least 8 characters"
     }
-    
+
     if (Object.keys(errors).length > 0) {
       yield* Effect.fail(new ValidationError({ errors }))
     }
-    
+
     return data
   })
 ```
@@ -411,57 +411,57 @@ const validateCreateUserData = (data: CreateUserData) =>
 Create `src/routes/auth.ts`:
 
 ```typescript
-import { Router } from 'express'
-import { Effect } from 'effect'
-import { UserService } from '../services/user'
-import { ValidationError, UserAlreadyExistsError } from '../types/errors'
+import { Router } from "express"
+import { Effect } from "effect"
+import { UserService } from "../services/user"
+import { UserAlreadyExistsError, ValidationError } from "../types/errors"
 
 export const authRoutes = Router()
 
 // Register endpoint
-authRoutes.post('/register', (req, res) => {
+authRoutes.post("/register", (req, res) => {
   Effect.runPromise(
     UserService.create(req.body).pipe(
-      Effect.map(user => {
+      Effect.map((user) => {
         // Don't return password in response
         const { password, ...userWithoutPassword } = user
         res.status(201).json({ user: userWithoutPassword })
       }),
-      Effect.catchTag('ValidationError', error =>
-        Effect.sync(() => res.status(400).json({ errors: error.errors }))
-      ),
-      Effect.catchTag('UserAlreadyExistsError', error =>
-        Effect.sync(() => res.status(409).json({ 
-          error: `User with email ${error.email} already exists` 
-        }))
-      ),
-      Effect.catchAll(error =>
+      Effect.catchTag("ValidationError", (error) => Effect.sync(() => res.status(400).json({ errors: error.errors }))),
+      Effect.catchTag("UserAlreadyExistsError", (error) =>
+        Effect.sync(() =>
+          res.status(409).json({
+            error: `User with email ${error.email} already exists`,
+          })
+        )),
+      Effect.catchAll((error) =>
         Effect.sync(() => {
-          console.error('Registration error:', error)
-          res.status(500).json({ error: 'Internal server error' })
+          console.error("Registration error:", error)
+          res.status(500).json({ error: "Internal server error" })
         })
-      )
-    )
+      ),
+    ),
   )
 })
 
 // Get user endpoint
-authRoutes.get('/user/:id', (req, res) => {
+authRoutes.get("/user/:id", (req, res) => {
   Effect.runPromise(
     UserService.getById(req.params.id).pipe(
-      Effect.map(user => res.json({ user })),
-      Effect.catchTag('UserNotFoundError', error =>
-        Effect.sync(() => res.status(404).json({ 
-          error: `User with ID ${error.userId} not found` 
-        }))
-      ),
-      Effect.catchAll(error =>
+      Effect.map((user) => res.json({ user })),
+      Effect.catchTag("UserNotFoundError", (error) =>
+        Effect.sync(() =>
+          res.status(404).json({
+            error: `User with ID ${error.userId} not found`,
+          })
+        )),
+      Effect.catchAll((error) =>
         Effect.sync(() => {
-          console.error('Get user error:', error)
-          res.status(500).json({ error: 'Internal server error' })
+          console.error("Get user error:", error)
+          res.status(500).json({ error: "Internal server error" })
         })
-      )
-    )
+      ),
+    ),
   )
 })
 ```
@@ -502,6 +502,7 @@ curl http://localhost:3000/health
 ```
 
 You should see:
+
 ```json
 {
   "status": "ok",
@@ -522,21 +523,22 @@ Now that you have the basics set up, explore the specific packages:
 ### Database Integration
 
 ```typescript
-import { Pool } from 'pg'
+import { Pool } from "pg"
 
-const makeDatabaseService = Effect.gen(function* () {
+const makeDatabaseService = Effect.gen(function*() {
   const config = yield* AppConfigService
   const pool = new Pool({ connectionString: config.database.url })
-  
+
   return {
     query: <T>(sql: string, params: any[] = []) =>
       Effect.tryPromise({
-        try: () => pool.query(sql, params).then(result => result.rows as T[]),
-        catch: (error) => new DatabaseError({ 
-          message: 'Database query failed', 
-          cause: error 
-        })
-      })
+        try: () => pool.query(sql, params).then((result) => result.rows as T[]),
+        catch: (error) =>
+          new DatabaseError({
+            message: "Database query failed",
+            cause: error,
+          }),
+      }),
   }
 })
 ```
@@ -547,14 +549,12 @@ const makeDatabaseService = Effect.gen(function* () {
 const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
   Effect.runPromise(
     validateAuthToken(req.headers.authorization).pipe(
-      Effect.map(user => {
+      Effect.map((user) => {
         req.user = user
         next()
       }),
-      Effect.catchAll(error => Effect.sync(() => 
-        res.status(401).json({ error: 'Unauthorized' })
-      ))
-    )
+      Effect.catchAll((error) => Effect.sync(() => res.status(401).json({ error: "Unauthorized" }))),
+    ),
   )
 }
 ```

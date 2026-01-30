@@ -4,15 +4,15 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@effectify/solid-ui/components/primitives/select'
+} from "@effectify/solid-ui/components/primitives/select"
 
-import { cn } from '@effectify/solid-ui/lib/utils'
-import { createSignal } from 'solid-js'
+import { cn } from "@effectify/solid-ui/lib/utils"
+import { createSignal } from "solid-js"
 
 export const accounts = [
   {
-    label: 'Alicia Koch',
-    email: 'alicia@example.com',
+    label: "Alicia Koch",
+    email: "alicia@example.com",
     icon: (
       <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
         <title>Vercel</title>
@@ -21,8 +21,8 @@ export const accounts = [
     ),
   },
   {
-    label: 'Alicia Koch',
-    email: 'alicia@gmail.com',
+    label: "Alicia Koch",
+    email: "alicia@gmail.com",
     icon: (
       <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
         <title>Gmail</title>
@@ -34,8 +34,8 @@ export const accounts = [
     ),
   },
   {
-    label: 'Alicia Koch',
-    email: 'alicia@me.com',
+    label: "Alicia Koch",
+    email: "alicia@me.com",
     icon: (
       <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
         <title>iCloud</title>
@@ -55,12 +55,11 @@ type Props = {
 }
 
 export const AccountSwitcher = (props: Props) => {
-  
   const [selectedAccount, setSelectedAccount] = createSignal<Account>(accounts[0]!)
 
   return (
     <Select<Account>
-      class={cn('flex h-[52px] items-center justify-center', props.isCollapsed ? 'h-[52px]' : 'px-2')}
+      class={cn("flex h-[52px] items-center justify-center", props.isCollapsed ? "h-[52px]" : "px-2")}
       disallowEmptySelection
       itemComponent={(itemProps) => <SelectItem item={itemProps.item}>{itemProps.item.rawValue.email}</SelectItem>}
       onChange={setSelectedAccount}
@@ -73,15 +72,15 @@ export const AccountSwitcher = (props: Props) => {
       <SelectTrigger
         aria-label="Select account"
         class={cn(
-          'flex items-center gap-2 [&>span]:line-clamp-1 [&>span]:flex [&>span]:w-full [&>span]:items-center [&>span]:gap-1 [&>span]:truncate [&_svg]:h-4 [&_svg]:w-4 [&_svg]:shrink-0',
-          props.isCollapsed && 'flex h-9 w-9 shrink-0 items-center justify-center p-0 [&>span]:w-auto [&>svg]:hidden',
+          "flex items-center gap-2 [&>span]:line-clamp-1 [&>span]:flex [&>span]:w-full [&>span]:items-center [&>span]:gap-1 [&>span]:truncate [&_svg]:h-4 [&_svg]:w-4 [&_svg]:shrink-0",
+          props.isCollapsed && "flex h-9 w-9 shrink-0 items-center justify-center p-0 [&>span]:w-auto [&>svg]:hidden",
         )}
       >
         <SelectValue<Account>>
           {(state) => (
             <>
               {state.selectedOption().icon}
-              <div class={cn('ml-2', props.isCollapsed && 'hidden')}>{state.selectedOption().label}</div>
+              <div class={cn("ml-2", props.isCollapsed && "hidden")}>{state.selectedOption().label}</div>
             </>
           )}
         </SelectValue>

@@ -1,11 +1,10 @@
+import { PassThrough } from "node:stream"
 
-import { PassThrough } from 'node:stream'
-
-import type { EntryContext } from '@remix-run/node'
-import { createReadableStreamFromReadable } from '@remix-run/node'
-import { RemixServer } from '@remix-run/react'
-import * as isbotModule from 'isbot'
-import { renderToPipeableStream } from 'react-dom/server'
+import type { EntryContext } from "@remix-run/node"
+import { createReadableStreamFromReadable } from "@remix-run/node"
+import { RemixServer } from "@remix-run/react"
+import * as isbotModule from "isbot"
+import { renderToPipeableStream } from "react-dom/server"
 
 const ABORT_DELAY = 5000
 
@@ -16,7 +15,7 @@ export default function handleRequest(
   remixContext: EntryContext,
   // loadContext: AppLoadContext
 ) {
-  const prohibitOutOfOrderStreaming = isBotRequest(request.headers.get('user-agent')) || remixContext.isSpaMode
+  const prohibitOutOfOrderStreaming = isBotRequest(request.headers.get("user-agent")) || remixContext.isSpaMode
 
   return prohibitOutOfOrderStreaming
     ? handleBotRequest(request, responseStatusCode, responseHeaders, remixContext)
@@ -32,17 +31,17 @@ function isBotRequest(userAgent: string | null) {
   }
 
   // isbot >= 4.0.0
-  if (typeof isbotModule === 'function') {
+  if (typeof isbotModule === "function") {
     return (isbotModule as any)(userAgent)
   }
 
   // isbot >= 3.8.0, <4
-  if ('isbot' in isbotModule && typeof isbotModule.isbot === 'function') {
+  if ("isbot" in isbotModule && typeof isbotModule.isbot === "function") {
     return isbotModule.isbot(userAgent)
   }
 
   // isbot < 3.8.0
-  if ('default' in isbotModule && typeof isbotModule.default === 'function') {
+  if ("default" in isbotModule && typeof isbotModule.default === "function") {
     return (isbotModule.default as any)(userAgent)
   }
 
@@ -65,7 +64,7 @@ function handleBotRequest(
           const body = new PassThrough()
           const stream = createReadableStreamFromReadable(body)
 
-          responseHeaders.set('Content-Type', 'text/html')
+          responseHeaders.set("Content-Type", "text/html")
 
           resolve(
             new Response(stream, {
@@ -111,7 +110,7 @@ function handleBrowserRequest(
           const body = new PassThrough()
           const stream = createReadableStreamFromReadable(body)
 
-          responseHeaders.set('Content-Type', 'text/html')
+          responseHeaders.set("Content-Type", "text/html")
 
           resolve(
             new Response(stream, {

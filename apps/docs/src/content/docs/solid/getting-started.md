@@ -51,8 +51,8 @@ First, set up TanStack Query in your app root:
 
 ```tsx
 // src/App.tsx
-import { QueryClient, QueryClientProvider } from '@tanstack/solid-query'
-import { SolidQueryDevtools } from '@tanstack/solid-query-devtools'
+import { QueryClient, QueryClientProvider } from "@tanstack/solid-query"
+import { SolidQueryDevtools } from "@tanstack/solid-query-devtools"
 
 const queryClient = new QueryClient()
 
@@ -74,7 +74,7 @@ Create a simple Effect that fetches data:
 
 ```tsx
 // src/effects/user.ts
-import { Effect } from 'effect'
+import { Effect } from "effect"
 
 export interface User {
   id: number
@@ -84,8 +84,8 @@ export interface User {
 
 export const fetchUser = (id: number) =>
   Effect.tryPromise({
-    try: () => fetch(`/api/users/${id}`).then(res => res.json()),
-    catch: (error) => new Error(`Failed to fetch user: ${error}`)
+    try: () => fetch(`/api/users/${id}`).then((res) => res.json()),
+    catch: (error) => new Error(`Failed to fetch user: ${error}`),
   })
 ```
 
@@ -95,9 +95,9 @@ SolidJS provides `createResource` for async data fetching:
 
 ```tsx
 // src/components/UserProfile.tsx
-import { createResource, Show } from 'solid-js'
-import { Effect } from 'effect'
-import { fetchUser } from '../effects/user'
+import { createResource, Show } from "solid-js"
+import { Effect } from "effect"
+import { fetchUser } from "../effects/user"
 
 interface UserProfileProps {
   userId: number
@@ -106,7 +106,7 @@ interface UserProfileProps {
 export function UserProfile(props: UserProfileProps) {
   const [user] = createResource(
     () => props.userId,
-    (id) => Effect.runPromise(fetchUser(id))
+    (id) => Effect.runPromise(fetchUser(id)),
   )
 
   return (
@@ -128,10 +128,10 @@ For more advanced caching and synchronization:
 
 ```tsx
 // src/components/UserProfileQuery.tsx
-import { createQuery } from '@tanstack/solid-query'
-import { Show } from 'solid-js'
-import { Effect } from 'effect'
-import { fetchUser } from '../effects/user'
+import { createQuery } from "@tanstack/solid-query"
+import { Show } from "solid-js"
+import { Effect } from "effect"
+import { fetchUser } from "../effects/user"
 
 interface UserProfileProps {
   userId: number
@@ -139,8 +139,8 @@ interface UserProfileProps {
 
 export function UserProfileQuery(props: UserProfileProps) {
   const userQuery = createQuery(() => ({
-    queryKey: ['user', props.userId],
-    queryFn: () => Effect.runPromise(fetchUser(props.userId))
+    queryKey: ["user", props.userId],
+    queryFn: () => Effect.runPromise(fetchUser(props.userId)),
   }))
 
   return (
@@ -166,19 +166,20 @@ export function UserProfileQuery(props: UserProfileProps) {
 Combine SolidJS signals with Effects:
 
 ```tsx
-import { createSignal, createEffect } from 'solid-js'
-import { Effect } from 'effect'
+import { createEffect, createSignal } from "solid-js"
+import { Effect } from "effect"
 
 function UserSearch() {
-  const [query, setQuery] = createSignal('')
+  const [query, setQuery] = createSignal("")
   const [results, setResults] = createSignal([])
   const [loading, setLoading] = createSignal(false)
 
   const searchUsers = (searchQuery: string) =>
     Effect.tryPromise({
-      try: () => fetch(`/api/users/search?q=${searchQuery}`)
-        .then(res => res.json()),
-      catch: (error) => new Error(`Search failed: ${error}`)
+      try: () =>
+        fetch(`/api/users/search?q=${searchQuery}`)
+          .then((res) => res.json()),
+      catch: (error) => new Error(`Search failed: ${error}`),
     })
 
   createEffect(() => {
@@ -187,10 +188,10 @@ function UserSearch() {
       setLoading(true)
       Effect.runPromise(
         searchUsers(currentQuery).pipe(
-          Effect.tap(results => Effect.sync(() => setResults(results))),
-          Effect.catchAll(error => Effect.sync(() => console.error(error))),
-          Effect.finalize(() => Effect.sync(() => setLoading(false)))
-        )
+          Effect.tap((results) => Effect.sync(() => setResults(results))),
+          Effect.catchAll((error) => Effect.sync(() => console.error(error))),
+          Effect.finalize(() => Effect.sync(() => setLoading(false))),
+        ),
       )
     }
   })
@@ -223,20 +224,20 @@ Effect provides excellent error handling capabilities:
 ```tsx
 const fetchUserWithRetry = (id: number) =>
   fetchUser(id).pipe(
-    Effect.retry({ times: 3, delay: '1 second' }),
-    Effect.catchAll(error => 
-      Effect.succeed({ 
-        id, 
-        name: 'Unknown User', 
-        email: 'unknown@example.com' 
+    Effect.retry({ times: 3, delay: "1 second" }),
+    Effect.catchAll((error) =>
+      Effect.succeed({
+        id,
+        name: "Unknown User",
+        email: "unknown@example.com",
       })
-    )
+    ),
   )
 
 function UserProfile(props: { userId: number }) {
   const [user] = createResource(
     () => props.userId,
-    (id) => Effect.runPromise(fetchUserWithRetry(id))
+    (id) => Effect.runPromise(fetchUserWithRetry(id)),
   )
 
   return (
@@ -260,15 +261,15 @@ You can compose multiple Effects together:
 const fetchUserWithPosts = (id: number) =>
   Effect.all([
     fetchUser(id),
-    fetchUserPosts(id)
+    fetchUserPosts(id),
   ]).pipe(
-    Effect.map(([user, posts]) => ({ user, posts }))
+    Effect.map(([user, posts]) => ({ user, posts })),
   )
 
 function UserDashboard(props: { userId: number }) {
   const [data] = createResource(
     () => props.userId,
-    (id) => Effect.runPromise(fetchUserWithPosts(id))
+    (id) => Effect.runPromise(fetchUserWithPosts(id)),
   )
 
   return (
@@ -297,33 +298,34 @@ Now that you have the basics set up, explore the specific packages:
 ### Form Handling
 
 ```tsx
-import { createSignal } from 'solid-js'
-import { Effect } from 'effect'
+import { createSignal } from "solid-js"
+import { Effect } from "effect"
 
 const submitForm = (data: FormData) =>
   Effect.tryPromise({
-    try: () => fetch('/api/submit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    }).then(res => res.json()),
-    catch: (error) => new Error(`Form submission failed: ${error}`)
+    try: () =>
+      fetch("/api/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      }).then((res) => res.json()),
+    catch: (error) => new Error(`Form submission failed: ${error}`),
   })
 
 function ContactForm() {
-  const [formData, setFormData] = createSignal({ name: '', email: '' })
+  const [formData, setFormData] = createSignal({ name: "", email: "" })
   const [submitting, setSubmitting] = createSignal(false)
 
   const handleSubmit = (e: Event) => {
     e.preventDefault()
     setSubmitting(true)
-    
+
     Effect.runPromise(
       submitForm(formData()).pipe(
-        Effect.tap(() => Effect.sync(() => console.log('Form submitted!'))),
-        Effect.catchAll(error => Effect.sync(() => console.error(error))),
-        Effect.finalize(() => Effect.sync(() => setSubmitting(false)))
-      )
+        Effect.tap(() => Effect.sync(() => console.log("Form submitted!"))),
+        Effect.catchAll((error) => Effect.sync(() => console.error(error))),
+        Effect.finalize(() => Effect.sync(() => setSubmitting(false))),
+      ),
     )
   }
 
@@ -332,23 +334,25 @@ function ContactForm() {
       <input
         type="text"
         value={formData().name}
-        onInput={(e) => setFormData(prev => ({ 
-          ...prev, 
-          name: e.currentTarget.value 
-        }))}
+        onInput={(e) =>
+          setFormData((prev) => ({
+            ...prev,
+            name: e.currentTarget.value,
+          }))}
         placeholder="Name"
       />
       <input
         type="email"
         value={formData().email}
-        onInput={(e) => setFormData(prev => ({ 
-          ...prev, 
-          email: e.currentTarget.value 
-        }))}
+        onInput={(e) =>
+          setFormData((prev) => ({
+            ...prev,
+            email: e.currentTarget.value,
+          }))}
         placeholder="Email"
       />
       <button type="submit" disabled={submitting()}>
-        {submitting() ? 'Submitting...' : 'Submit'}
+        {submitting() ? "Submitting..." : "Submit"}
       </button>
     </form>
   )

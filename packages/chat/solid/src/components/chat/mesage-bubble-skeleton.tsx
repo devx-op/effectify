@@ -1,6 +1,6 @@
-import { Flex } from '@effectify/solid-ui/components/primitives/flex'
-import { VStack } from '@effectify/solid-ui/components/primitives/stack'
-import type { Component } from 'solid-js'
+import { Flex } from "@effectify/solid-ui/components/primitives/flex"
+import { VStack } from "@effectify/solid-ui/components/primitives/stack"
+import type { Component } from "solid-js"
 
 interface MessageBubbleSkeletonProps {
   width?: number

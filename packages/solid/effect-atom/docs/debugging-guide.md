@@ -40,6 +40,7 @@ function MyComponent() {
 ```
 
 **Debugging Steps**:
+
 1. Check if atom is created outside component
 2. Verify atom factory function is stable
 3. Use browser DevTools to inspect atom state
@@ -88,7 +89,7 @@ if (import.meta.env.DEV) {
   // Log atom state changes
   const originalSet = registry.set
   registry.set = function(atom, value) {
-    console.log('Atom updated:', { atom: atom.toString(), value })
+    console.log("Atom updated:", { atom: atom.toString(), value })
     return originalSet.call(this, atom, value)
   }
 }
@@ -99,9 +100,9 @@ if (import.meta.env.DEV) {
 Create a debugging component to inspect atom state:
 
 ```tsx
-function AtomInspector({ atom, name }: { atom: Atom.Atom<any>, name: string }) {
+function AtomInspector({ atom, name }: { atom: Atom.Atom<any>; name: string }) {
   const value = useAtomValue(() => atom)
-  
+
   return (
     <div style="position: fixed; top: 10px; right: 10px; background: white; padding: 10px; border: 1px solid #ccc;">
       <h4>{name}</h4>
@@ -124,11 +125,11 @@ function createProfiledAtom<T>(computation: () => T, name: string) {
     const start = performance.now()
     const result = computation()
     const end = performance.now()
-    
+
     if (end - start > 10) { // Log slow computations
       console.warn(`Slow atom computation: ${name} took ${end - start}ms`)
     }
-    
+
     return result
   })
 }
@@ -141,9 +142,9 @@ function createProfiledAtom<T>(computation: () => T, name: string) {
 ```tsx
 // Wrap expensive computations
 const expensiveAtom = Atom.make((get) => {
-  console.time('expensive-computation')
+  console.time("expensive-computation")
   const result = heavyComputation(get(dataAtom))
-  console.timeEnd('expensive-computation')
+  console.timeEnd("expensive-computation")
   return result
 })
 ```
@@ -172,8 +173,8 @@ pnpm add -D @rollup/plugin-analyzer
 
 ```tsx
 // Check imports
-import { Atom } from '@effectify/solid-effect-atom' // ✅ Tree-shakeable
-import * as AtomSolid from '@effectify/solid-effect-atom' // ❌ Imports everything
+import { Atom } from "@effectify/solid-effect-atom" // ✅ Tree-shakeable
+import * as AtomSolid from "@effectify/solid-effect-atom" // ❌ Imports everything
 ```
 
 ## SSR Debugging
@@ -184,14 +185,14 @@ import * as AtomSolid from '@effectify/solid-effect-atom' // ❌ Imports everyth
 // Debug hydration state
 function DebugHydration() {
   const [isHydrated, setIsHydrated] = createSignal(false)
-  
+
   onMount(() => {
     setIsHydrated(true)
   })
-  
+
   return (
     <div>
-      <p>Hydration status: {isHydrated() ? 'Hydrated' : 'SSR'}</p>
+      <p>Hydration status: {isHydrated() ? "Hydrated" : "SSR"}</p>
       {/* Your components */}
     </div>
   )
@@ -204,15 +205,15 @@ function DebugHydration() {
 // Server-side debugging
 export async function renderApp() {
   const registry = createSSRRegistry()
-  
+
   // Debug preloaded atoms
   const result = await preloadAtoms(registry, criticalAtoms)
-  console.log('SSR State:', {
+  console.log("SSR State:", {
     atoms: result.dehydratedState.length,
     errors: result.errors,
-    timeouts: result.timeouts
+    timeouts: result.timeouts,
   })
-  
+
   return { html, state: result.dehydratedState }
 }
 ```
@@ -246,16 +247,14 @@ function AtomErrorBoundary(props: { children: JSX.Element }) {
 
 ```tsx
 const resilientAtom = Atom.fn(() =>
-  Effect.gen(function* () {
-    const data = yield* Effect.tryPromise(() => 
-      fetch('/api/data').then(r => r.json())
-    ).pipe(
-      Effect.timeout('5000ms'),
+  Effect.gen(function*() {
+    const data = yield* Effect.tryPromise(() => fetch("/api/data").then((r) => r.json())).pipe(
+      Effect.timeout("5000ms"),
       Effect.retry({ times: 3 }),
       Effect.catchAll((error) => {
-        console.error('Atom error:', error)
+        console.error("Atom error:", error)
         return Effect.succeed({ error: true, message: error.message })
-      })
+      }),
     )
     return data
   })
@@ -272,7 +271,7 @@ if (import.meta.env.DEV) {
       console.warn(`Slow atom detected: ${atom.toString()} took ${time}ms`)
     }
   }
-  
+
   // Patch atom creation to add timing
   const originalMake = Atom.make
   Atom.make = function(...args) {
@@ -294,7 +293,7 @@ const atom1 = Atom.make(null) // ❌
 
 // Add labels for debugging
 const debugAtom = Atom.make(0).pipe(
-  Atom.withLabel('counter-debug')
+  Atom.withLabel("counter-debug"),
 )
 ```
 
@@ -303,18 +302,18 @@ const debugAtom = Atom.make(0).pipe(
 ```tsx
 // Centralized error reporting
 const errorReportingAtom = Atom.fn((get, error: Error) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     // Log to console in development
     if (import.meta.env.DEV) {
-      console.error('Atom error:', error)
+      console.error("Atom error:", error)
     }
-    
+
     // Report to service in production
     if (import.meta.env.PROD) {
       yield* Effect.tryPromise(() =>
-        fetch('/api/errors', {
-          method: 'POST',
-          body: JSON.stringify({ error: error.message, stack: error.stack })
+        fetch("/api/errors", {
+          method: "POST",
+          body: JSON.stringify({ error: error.message, stack: error.stack }),
         })
       )
     }
@@ -328,13 +327,13 @@ const errorReportingAtom = Atom.fn((get, error: Error) =>
 // Test utilities
 export function createTestRegistry() {
   const registry = Registry.make()
-  
+
   // Add debugging helpers
   registry.debug = {
     getAtomCount: () => registry.getNodes().size,
-    logState: () => console.log(Array.from(registry.getNodes().entries()))
+    logState: () => console.log(Array.from(registry.getNodes().entries())),
   }
-  
+
   return registry
 }
 ```

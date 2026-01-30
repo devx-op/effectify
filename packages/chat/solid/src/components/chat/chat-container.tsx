@@ -1,14 +1,14 @@
-import type * as Message from '@effectify/chat-domain/message.js'
-import { Button } from '@effectify/solid-ui/components/primitives/button'
-import { Center } from '@effectify/solid-ui/components/primitives/center'
-import { Flex } from '@effectify/solid-ui/components/primitives/flex'
-import { VStack } from '@effectify/solid-ui/components/primitives/stack'
-import type { UseQueryResult } from '@tanstack/solid-query'
-import { AlertCircle } from 'lucide-solid'
-import type { Component } from 'solid-js'
-import { MessagesOperations } from './../../services/message-namespace.js'
-import { MessageList } from './message-list.js'
-import { MessageListSkeleton } from './message-list-skeleton.js'
+import type * as Message from "@effectify/chat-domain/message.js"
+import { Button } from "@effectify/solid-ui/components/primitives/button"
+import { Center } from "@effectify/solid-ui/components/primitives/center"
+import { Flex } from "@effectify/solid-ui/components/primitives/flex"
+import { VStack } from "@effectify/solid-ui/components/primitives/stack"
+import type { UseQueryResult } from "@tanstack/solid-query"
+import { AlertCircle } from "lucide-solid"
+import type { Component } from "solid-js"
+import { MessagesOperations } from "./../../services/message-namespace.js"
+import { MessageList } from "./message-list.js"
+import { MessageListSkeleton } from "./message-list-skeleton.js"
 
 const ErrorState: Component<{ messagesQuery: UseQueryResult<Message.Message[]> }> = ({ messagesQuery }) => {
   return (

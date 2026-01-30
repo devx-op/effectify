@@ -1,5 +1,5 @@
-import { cn } from '@effectify/solid-ui/lib/utils'
-import type { JSX } from 'solid-js'
+import { cn } from "@effectify/solid-ui/lib/utils"
+import type { JSX } from "solid-js"
 
 interface GridProps {
   children?: JSX.Element
@@ -15,7 +15,7 @@ export const Grid = (props: GridProps) => {
   return (
     <div
       class={cn(
-        'grid',
+        "grid",
         props.columns && `grid-cols-${props.columns}`,
         props.minChildWidth && `grid-cols-[repeat(auto-fit,minmax(${props.minChildWidth}px,1fr))]`,
         props.gap && `gap-${props.gap}`,

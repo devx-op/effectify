@@ -1,8 +1,8 @@
-import { DesktopIcon } from '@effectify/solid-ui/components/icons'
-import { Button } from '@effectify/solid-ui/components/primitives/button'
-import { type ConfigColorMode, type MaybeConfigColorMode, useColorMode } from '@kobalte/core/color-mode'
-import { MoonIcon, SunIcon } from 'lucide-solid'
-import { createSignal, type JSX, Match, onMount, Switch } from 'solid-js'
+import { DesktopIcon } from "@effectify/solid-ui/components/icons"
+import { Button } from "@effectify/solid-ui/components/primitives/button"
+import { type ConfigColorMode, type MaybeConfigColorMode, useColorMode } from "@kobalte/core/color-mode"
+import { MoonIcon, SunIcon } from "lucide-solid"
+import { createSignal, type JSX, Match, onMount, Switch } from "solid-js"
 
 interface ThemeOption {
   value: ConfigColorMode
@@ -12,18 +12,18 @@ interface ThemeOption {
 
 const THEME_OPTIONS: ThemeOption[] = [
   {
-    value: 'light',
-    label: 'Light',
+    value: "light",
+    label: "Light",
     icon: (clazz: string) => <SunIcon class={clazz} />,
   },
   {
-    value: 'dark',
-    label: 'Dark',
+    value: "dark",
+    label: "Dark",
     icon: (clazz: string) => <MoonIcon class={clazz} />,
   },
   {
-    value: 'system',
-    label: 'System',
+    value: "system",
+    label: "System",
     icon: (clazz: string) => <DesktopIcon class={clazz} />,
   },
 ]
@@ -44,16 +44,16 @@ export function ThemeSelector() {
   })
 
   const handleClick = () => {
-    setColorMode(colorMode() === 'light' ? 'dark' : 'light')
+    setColorMode(colorMode() === "light" ? "dark" : "light")
   }
 
   return (
-    <Button onClick={handleClick} size={'sm'} variant="ghost">
+    <Button onClick={handleClick} size={"sm"} variant="ghost">
       <Switch fallback={<SunIcon />}>
-        <Match when={colorMode() === 'dark'}>
+        <Match when={colorMode() === "dark"}>
           <SunIcon class="h-4" />
         </Match>
-        <Match when={colorMode() === 'light'}>
+        <Match when={colorMode() === "light"}>
           <MoonIcon class="h-4" />
         </Match>
       </Switch>

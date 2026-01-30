@@ -23,8 +23,8 @@ A complete todo application demonstrating CRUD operations, filtering, and persis
 
 ```tsx
 // atoms/todos.ts
-import { Atom } from '@effectify/solid-effect-atom'
-import { Effect } from 'effect'
+import { Atom } from "@effectify/solid-effect-atom"
+import { Effect } from "effect"
 
 export interface Todo {
   id: string
@@ -33,22 +33,22 @@ export interface Todo {
   createdAt: Date
 }
 
-export type Filter = 'all' | 'active' | 'completed'
+export type Filter = "all" | "active" | "completed"
 
 // Base atoms
 export const todosAtom = Atom.make<Todo[]>([])
-export const filterAtom = Atom.make<Filter>('all')
+export const filterAtom = Atom.make<Filter>("all")
 
 // Computed atoms
 export const filteredTodosAtom = Atom.make((get) => {
   const todos = get(todosAtom)
   const filter = get(filterAtom)
-  
+
   switch (filter) {
-    case 'active':
-      return todos.filter(todo => !todo.completed)
-    case 'completed':
-      return todos.filter(todo => todo.completed)
+    case "active":
+      return todos.filter((todo) => !todo.completed)
+    case "completed":
+      return todos.filter((todo) => todo.completed)
     default:
       return todos
   }
@@ -56,58 +56,50 @@ export const filteredTodosAtom = Atom.make((get) => {
 
 export const todoStatsAtom = Atom.make((get) => {
   const todos = get(todosAtom)
-  const completed = todos.filter(todo => todo.completed).length
+  const completed = todos.filter((todo) => todo.completed).length
   const active = todos.length - completed
-  
+
   return { total: todos.length, completed, active }
 })
 
 // Actions
 export const addTodoAtom = Atom.fn((get, text: string) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const currentTodos = get(todosAtom)
     const newTodo: Todo = {
       id: crypto.randomUUID(),
       text: text.trim(),
       completed: false,
-      createdAt: new Date()
+      createdAt: new Date(),
     }
-    
+
     const updatedTodos = [...currentTodos, newTodo]
     yield* Effect.sync(() => todosAtom.set(updatedTodos))
-    
+
     // Persist to localStorage
-    yield* Effect.sync(() => 
-      localStorage.setItem('todos', JSON.stringify(updatedTodos))
-    )
-    
+    yield* Effect.sync(() => localStorage.setItem("todos", JSON.stringify(updatedTodos)))
+
     return newTodo
   })
 )
 
 export const toggleTodoAtom = Atom.fn((get, id: string) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const currentTodos = get(todosAtom)
-    const updatedTodos = currentTodos.map(todo =>
-      todo.id === id ? { ...todo, completed: !todo.completed } : todo
-    )
-    
+    const updatedTodos = currentTodos.map((todo) => todo.id === id ? { ...todo, completed: !todo.completed } : todo)
+
     yield* Effect.sync(() => todosAtom.set(updatedTodos))
-    yield* Effect.sync(() => 
-      localStorage.setItem('todos', JSON.stringify(updatedTodos))
-    )
+    yield* Effect.sync(() => localStorage.setItem("todos", JSON.stringify(updatedTodos)))
   })
 )
 
 export const deleteTodoAtom = Atom.fn((get, id: string) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const currentTodos = get(todosAtom)
-    const updatedTodos = currentTodos.filter(todo => todo.id !== id)
-    
+    const updatedTodos = currentTodos.filter((todo) => todo.id !== id)
+
     yield* Effect.sync(() => todosAtom.set(updatedTodos))
-    yield* Effect.sync(() => 
-      localStorage.setItem('todos', JSON.stringify(updatedTodos))
-    )
+    yield* Effect.sync(() => localStorage.setItem("todos", JSON.stringify(updatedTodos)))
   })
 )
 ```
@@ -116,32 +108,32 @@ export const deleteTodoAtom = Atom.fn((get, id: string) =>
 
 ```tsx
 // components/TodoApp.tsx
-import { useAtomValue, useAtom, useAtomSet } from '@effectify/solid-effect-atom'
-import { createSignal, For } from 'solid-js'
-import { 
-  todosAtom, 
-  filteredTodosAtom, 
-  todoStatsAtom, 
-  filterAtom,
+import { useAtom, useAtomSet, useAtomValue } from "@effectify/solid-effect-atom"
+import { createSignal, For } from "solid-js"
+import {
   addTodoAtom,
-  toggleTodoAtom,
   deleteTodoAtom,
-  type Filter 
-} from '../atoms/todos'
+  type Filter,
+  filterAtom,
+  filteredTodosAtom,
+  todosAtom,
+  todoStatsAtom,
+  toggleTodoAtom,
+} from "../atoms/todos"
 
 function TodoInput() {
-  const [newTodo, setNewTodo] = createSignal('')
+  const [newTodo, setNewTodo] = createSignal("")
   const addTodo = useAtomSet(() => addTodoAtom)
-  
+
   const handleSubmit = (e: Event) => {
     e.preventDefault()
     const text = newTodo().trim()
     if (text) {
       addTodo(text)
-      setNewTodo('')
+      setNewTodo("")
     }
   }
-  
+
   return (
     <form onSubmit={handleSubmit} class="todo-input">
       <input
@@ -161,16 +153,16 @@ function TodoInput() {
 function TodoItem(props: { todo: Todo }) {
   const toggleTodo = useAtomSet(() => toggleTodoAtom)
   const deleteTodo = useAtomSet(() => deleteTodoAtom)
-  
+
   return (
-    <li class={`todo-item ${props.todo.completed ? 'completed' : ''}`}>
+    <li class={`todo-item ${props.todo.completed ? "completed" : ""}`}>
       <input
         type="checkbox"
         checked={props.todo.completed}
         onChange={() => toggleTodo(props.todo.id)}
       />
       <span class="todo-text">{props.todo.text}</span>
-      <button 
+      <button
         onClick={() => deleteTodo(props.todo.id)}
         class="delete-btn"
       >
@@ -182,34 +174,32 @@ function TodoItem(props: { todo: Todo }) {
 
 function TodoList() {
   const filteredTodos = useAtomValue(() => filteredTodosAtom)
-  
+
   return (
     <ul class="todo-list">
       <For each={filteredTodos()}>
         {(todo) => <TodoItem todo={todo} />}
       </For>
-      {filteredTodos().length === 0 && (
-        <li class="empty-state">No todos found</li>
-      )}
+      {filteredTodos().length === 0 && <li class="empty-state">No todos found</li>}
     </ul>
   )
 }
 
 function TodoFilters() {
   const [filter, setFilter] = useAtom(() => filterAtom)
-  
+
   const filters: { key: Filter; label: string }[] = [
-    { key: 'all', label: 'All' },
-    { key: 'active', label: 'Active' },
-    { key: 'completed', label: 'Completed' }
+    { key: "all", label: "All" },
+    { key: "active", label: "Active" },
+    { key: "completed", label: "Completed" },
   ]
-  
+
   return (
     <div class="todo-filters">
       <For each={filters}>
         {(filterOption) => (
           <button
-            class={`filter-btn ${filter() === filterOption.key ? 'active' : ''}`}
+            class={`filter-btn ${filter() === filterOption.key ? "active" : ""}`}
             onClick={() => setFilter(filterOption.key)}
           >
             {filterOption.label}
@@ -222,7 +212,7 @@ function TodoFilters() {
 
 function TodoStats() {
   const stats = useAtomValue(() => todoStatsAtom)
-  
+
   return (
     <div class="todo-stats">
       <span>Total: {stats().total}</span>
@@ -253,8 +243,8 @@ A shopping cart with product catalog, cart management, and checkout.
 
 ```tsx
 // atoms/shopping.ts
-import { Atom } from '@effectify/solid-effect-atom'
-import { Effect } from 'effect'
+import { Atom } from "@effectify/solid-effect-atom"
+import { Effect } from "effect"
 
 export interface Product {
   id: string
@@ -276,9 +266,7 @@ export const cartAtom = Atom.make<CartItem[]>([])
 // Computed atoms
 export const cartTotalAtom = Atom.make((get) => {
   const cart = get(cartAtom)
-  return cart.reduce((total, item) => 
-    total + (item.product.price * item.quantity), 0
-  )
+  return cart.reduce((total, item) => total + (item.product.price * item.quantity), 0)
 })
 
 export const cartItemCountAtom = Atom.make((get) => {
@@ -288,13 +276,13 @@ export const cartItemCountAtom = Atom.make((get) => {
 
 // Actions
 export const addToCartAtom = Atom.fn((get, product: Product, quantity = 1) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const currentCart = get(cartAtom)
-    const existingItem = currentCart.find(item => item.product.id === product.id)
-    
+    const existingItem = currentCart.find((item) => item.product.id === product.id)
+
     let updatedCart: CartItem[]
     if (existingItem) {
-      updatedCart = currentCart.map(item =>
+      updatedCart = currentCart.map((item) =>
         item.product.id === product.id
           ? { ...item, quantity: item.quantity + quantity }
           : item
@@ -302,28 +290,28 @@ export const addToCartAtom = Atom.fn((get, product: Product, quantity = 1) =>
     } else {
       updatedCart = [...currentCart, { product, quantity }]
     }
-    
+
     yield* Effect.sync(() => cartAtom.set(updatedCart))
   })
 )
 
 export const removeFromCartAtom = Atom.fn((get, productId: string) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const currentCart = get(cartAtom)
-    const updatedCart = currentCart.filter(item => item.product.id !== productId)
+    const updatedCart = currentCart.filter((item) => item.product.id !== productId)
     yield* Effect.sync(() => cartAtom.set(updatedCart))
   })
 )
 
 export const updateQuantityAtom = Atom.fn((get, productId: string, quantity: number) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const currentCart = get(cartAtom)
-    
+
     if (quantity <= 0) {
-      const updatedCart = currentCart.filter(item => item.product.id !== productId)
+      const updatedCart = currentCart.filter((item) => item.product.id !== productId)
       yield* Effect.sync(() => cartAtom.set(updatedCart))
     } else {
-      const updatedCart = currentCart.map(item =>
+      const updatedCart = currentCart.map((item) =>
         item.product.id === productId
           ? { ...item, quantity }
           : item
@@ -338,29 +326,29 @@ export const updateQuantityAtom = Atom.fn((get, productId: string, quantity: num
 
 ```tsx
 // components/ShoppingApp.tsx
-import { useAtomValue, useAtomSet } from '@effectify/solid-effect-atom'
-import { For } from 'solid-js'
-import { 
-  productsAtom,
-  cartAtom,
-  cartTotalAtom,
-  cartItemCountAtom,
+import { useAtomSet, useAtomValue } from "@effectify/solid-effect-atom"
+import { For } from "solid-js"
+import {
   addToCartAtom,
+  cartAtom,
+  cartItemCountAtom,
+  cartTotalAtom,
+  type Product,
+  productsAtom,
   removeFromCartAtom,
   updateQuantityAtom,
-  type Product 
-} from '../atoms/shopping'
+} from "../atoms/shopping"
 
 function ProductCard(props: { product: Product }) {
   const addToCart = useAtomSet(() => addToCartAtom)
-  
+
   return (
     <div class="product-card">
       <img src={props.product.image} alt={props.product.name} />
       <h3>{props.product.name}</h3>
       <p class="description">{props.product.description}</p>
       <p class="price">${props.product.price.toFixed(2)}</p>
-      <button 
+      <button
         onClick={() => addToCart(props.product)}
         class="add-to-cart-btn"
       >
@@ -372,7 +360,7 @@ function ProductCard(props: { product: Product }) {
 
 function ProductCatalog() {
   const products = useAtomValue(() => productsAtom)
-  
+
   return (
     <div class="product-catalog">
       <h2>Products</h2>
@@ -388,7 +376,7 @@ function ProductCatalog() {
 function CartItem(props: { item: CartItem }) {
   const updateQuantity = useAtomSet(() => updateQuantityAtom)
   const removeFromCart = useAtomSet(() => removeFromCartAtom)
-  
+
   return (
     <div class="cart-item">
       <img src={props.item.product.image} alt={props.item.product.name} />
@@ -397,19 +385,19 @@ function CartItem(props: { item: CartItem }) {
         <p>${props.item.product.price.toFixed(2)}</p>
       </div>
       <div class="quantity-controls">
-        <button 
+        <button
           onClick={() => updateQuantity(props.item.product.id, props.item.quantity - 1)}
         >
           -
         </button>
         <span>{props.item.quantity}</span>
-        <button 
+        <button
           onClick={() => updateQuantity(props.item.product.id, props.item.quantity + 1)}
         >
           +
         </button>
       </div>
-      <button 
+      <button
         onClick={() => removeFromCart(props.item.product.id)}
         class="remove-btn"
       >
@@ -422,13 +410,11 @@ function CartItem(props: { item: CartItem }) {
 function ShoppingCart() {
   const cart = useAtomValue(() => cartAtom)
   const total = useAtomValue(() => cartTotalAtom)
-  
+
   return (
     <div class="shopping-cart">
       <h2>Shopping Cart</h2>
-      {cart().length === 0 ? (
-        <p>Your cart is empty</p>
-      ) : (
+      {cart().length === 0 ? <p>Your cart is empty</p> : (
         <>
           <For each={cart()}>
             {(item) => <CartItem item={item} />}
@@ -445,7 +431,7 @@ function ShoppingCart() {
 
 function CartBadge() {
   const itemCount = useAtomValue(() => cartItemCountAtom)
-  
+
   return (
     <div class="cart-badge">
       🛒 {itemCount() > 0 && <span class="badge">{itemCount()}</span>}

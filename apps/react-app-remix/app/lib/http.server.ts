@@ -1,10 +1,10 @@
-import { HttpApi, HttpApiBuilder, HttpApiEndpoint, HttpApiGroup, OpenApi } from '@effect/platform'
-import { Effect, Layer, Schema } from 'effect'
+import { HttpApi, HttpApiBuilder, HttpApiEndpoint, HttpApiGroup, OpenApi } from "@effect/platform"
+import { Effect, Layer, Schema } from "effect"
 
-class ApiGroup extends HttpApiGroup.make('api')
+class ApiGroup extends HttpApiGroup.make("api")
   .add(
-    HttpApiEndpoint.get('getFirst', '/get-first')
-      .annotate(OpenApi.Description, 'Get the first note, if there is one.')
+    HttpApiEndpoint.get("getFirst", "/get-first")
+      .annotate(OpenApi.Description, "Get the first note, if there is one.")
       .addSuccess(
         Schema.Struct({
           id: Schema.String,
@@ -13,12 +13,13 @@ class ApiGroup extends HttpApiGroup.make('api')
         }),
       ),
   )
-  .annotate(OpenApi.Title, 'Notes')
-  .annotate(OpenApi.Description, 'Operations on notes.')
-  .prefix('/api/notes') {}
+  .annotate(OpenApi.Title, "Notes")
+  .annotate(OpenApi.Description, "Operations on notes.")
+  .prefix("/api/notes")
+{}
 
-export class Api extends HttpApi.make('Api')
-  .annotate(OpenApi.Title, 'Confect Example')
+export class Api extends HttpApi.make("Api")
+  .annotate(OpenApi.Title, "Confect Example")
   .annotate(
     OpenApi.Description,
     `
@@ -29,20 +30,23 @@ An example API built with Confect and powered by [Scalar](https://github.com/sca
 See Scalar's documentation on [markdown support](https://github.com/scalar/scalar/blob/main/documentation/markdown.md) and [OpenAPI spec extensions](https://github.com/scalar/scalar/blob/main/documentation/openapi.md).
 	`,
   )
-  .prefix('/api')
-  .add(ApiGroup) {}
+  .prefix("/api")
+  .add(ApiGroup)
+{}
 
-const ApiGroupLive = HttpApiBuilder.group(Api, 'api', (handlers) =>
-  handlers.handle('getFirst', () =>
-    Effect.gen(function* () {
-      const firstNote = {
-        id: '1',
-        title: 'First Note',
-        content: 'This is the first note',
-      }
-      return yield* Effect.succeed(firstNote)
-    }),
-  ),
+const ApiGroupLive = HttpApiBuilder.group(
+  Api,
+  "api",
+  (handlers) =>
+    handlers.handle("getFirst", () =>
+      Effect.gen(function*() {
+        const firstNote = {
+          id: "1",
+          title: "First Note",
+          content: "This is the first note",
+        }
+        return yield* Effect.succeed(firstNote)
+      })),
 )
 
 export const ApiLive = HttpApiBuilder.api(Api).pipe(Layer.provide(ApiGroupLive))

@@ -14,6 +14,7 @@ npm install @effectify/solid-ui
 ```
 
 **Peer Dependencies:**
+
 ```bash
 npm install solid-js tailwindcss @kobalte/core
 ```
@@ -29,7 +30,7 @@ Add the package to your Tailwind config:
 module.exports = {
   content: [
     "./src/**/*.{js,ts,jsx,tsx}",
-    "./node_modules/@effectify/solid-ui/**/*.{js,ts,jsx,tsx}"
+    "./node_modules/@effectify/solid-ui/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
     extend: {},
@@ -42,7 +43,7 @@ module.exports = {
 
 ```tsx
 // src/index.tsx
-import '@effectify/solid-ui/globals.css'
+import "@effectify/solid-ui/globals.css"
 ```
 
 ## Components
@@ -52,7 +53,7 @@ import '@effectify/solid-ui/globals.css'
 #### Button
 
 ```tsx
-import { Button } from '@effectify/solid-ui/components/button'
+import { Button } from "@effectify/solid-ui/components/button"
 
 function MyComponent() {
   return (
@@ -71,26 +72,26 @@ function MyComponent() {
 #### Input
 
 ```tsx
-import { Input } from '@effectify/solid-ui/components/input'
-import { Label } from '@effectify/solid-ui/components/label'
+import { Input } from "@effectify/solid-ui/components/input"
+import { Label } from "@effectify/solid-ui/components/label"
 
 function LoginForm() {
   return (
     <div class="space-y-4">
       <div>
         <Label for="email">Email</Label>
-        <Input 
-          id="email" 
-          type="email" 
-          placeholder="Enter your email" 
+        <Input
+          id="email"
+          type="email"
+          placeholder="Enter your email"
         />
       </div>
       <div>
         <Label for="password">Password</Label>
-        <Input 
-          id="password" 
-          type="password" 
-          placeholder="Enter your password" 
+        <Input
+          id="password"
+          type="password"
+          placeholder="Enter your password"
         />
       </div>
     </div>
@@ -101,10 +102,10 @@ function LoginForm() {
 #### Form with TanStack Form
 
 ```tsx
-import { createForm } from '@tanstack/solid-form'
-import { Button } from '@effectify/solid-ui/components/button'
-import { Input } from '@effectify/solid-ui/components/input'
-import { Label } from '@effectify/solid-ui/components/label'
+import { createForm } from "@tanstack/solid-form"
+import { Button } from "@effectify/solid-ui/components/button"
+import { Input } from "@effectify/solid-ui/components/input"
+import { Label } from "@effectify/solid-ui/components/label"
 
 interface LoginData {
   email: string
@@ -114,12 +115,12 @@ interface LoginData {
 function LoginForm() {
   const form = createForm(() => ({
     defaultValues: {
-      email: '',
-      password: '',
+      email: "",
+      password: "",
     } as LoginData,
     onSubmit: async ({ value }) => {
       // Handle form submission with Effect
-      console.log('Form data:', value)
+      console.log("Form data:", value)
     },
   }))
 
@@ -148,13 +149,13 @@ function LoginForm() {
             />
             <Show when={field().state.meta.errors.length > 0}>
               <p class="text-sm text-red-600">
-                {field().state.meta.errors.join(', ')}
+                {field().state.meta.errors.join(", ")}
               </p>
             </Show>
           </div>
         )}
       />
-      
+
       <form.Field
         name="password"
         children={(field) => (
@@ -171,13 +172,13 @@ function LoginForm() {
             />
             <Show when={field().state.meta.errors.length > 0}>
               <p class="text-sm text-red-600">
-                {field().state.meta.errors.join(', ')}
+                {field().state.meta.errors.join(", ")}
               </p>
             </Show>
           </div>
         )}
       />
-      
+
       <Button type="submit">Sign In</Button>
     </form>
   )
@@ -189,15 +190,15 @@ function LoginForm() {
 #### Card
 
 ```tsx
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
-} from '@effectify/solid-ui/components/card'
-import { Button } from '@effectify/solid-ui/components/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@effectify/solid-ui/components/card"
+import { Button } from "@effectify/solid-ui/components/button"
 
 function UserCard(props: { user: User }) {
   return (
@@ -231,9 +232,9 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@effectify/solid-ui/components/dialog'
-import { Button } from '@effectify/solid-ui/components/button'
-import { createSignal } from 'solid-js'
+} from "@effectify/solid-ui/components/dialog"
+import { Button } from "@effectify/solid-ui/components/button"
+import { createSignal } from "solid-js"
 
 function DeleteUserDialog(props: { onConfirm: () => void }) {
   const [open, setOpen] = createSignal(false)
@@ -254,8 +255,8 @@ function DeleteUserDialog(props: { onConfirm: () => void }) {
           <Button variant="outline" onClick={() => setOpen(false)}>
             Cancel
           </Button>
-          <Button 
-            variant="destructive" 
+          <Button
+            variant="destructive"
             onClick={() => {
               props.onConfirm()
               setOpen(false)
@@ -281,8 +282,8 @@ import {
   DrawerHeader,
   DrawerTitle,
   DrawerTrigger,
-} from '@effectify/solid-ui/components/drawer'
-import { Button } from '@effectify/solid-ui/components/button'
+} from "@effectify/solid-ui/components/drawer"
+import { Button } from "@effectify/solid-ui/components/button"
 
 function MobileMenu() {
   return (
@@ -322,22 +323,23 @@ function MobileMenu() {
 ### Form with SolidJS Signals
 
 ```tsx
-import { createSignal } from 'solid-js'
-import { Effect } from 'effect'
+import { createSignal } from "solid-js"
+import { Effect } from "effect"
 
 const submitLoginEffect = (data: LoginData) =>
   Effect.tryPromise({
-    try: () => fetch('/api/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    }).then(res => res.json()),
-    catch: (error) => new Error(`Login failed: ${error}`)
+    try: () =>
+      fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      }).then((res) => res.json()),
+    catch: (error) => new Error(`Login failed: ${error}`),
   })
 
 function ReactiveLoginForm() {
-  const [email, setEmail] = createSignal('')
-  const [password, setPassword] = createSignal('')
+  const [email, setEmail] = createSignal("")
+  const [password, setPassword] = createSignal("")
   const [loading, setLoading] = createSignal(false)
   const [error, setError] = createSignal<string | null>(null)
 
@@ -348,11 +350,11 @@ function ReactiveLoginForm() {
 
     try {
       await Effect.runPromise(
-        submitLoginEffect({ email: email(), password: password() })
+        submitLoginEffect({ email: email(), password: password() }),
       )
       // Handle success
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed')
+      setError(err instanceof Error ? err.message : "Login failed")
     } finally {
       setLoading(false)
     }
@@ -370,7 +372,7 @@ function ReactiveLoginForm() {
           placeholder="Enter your email"
         />
       </div>
-      
+
       <div>
         <Label for="password">Password</Label>
         <Input
@@ -387,7 +389,7 @@ function ReactiveLoginForm() {
       </Show>
 
       <Button type="submit" disabled={loading()}>
-        {loading() ? 'Signing in...' : 'Sign In'}
+        {loading() ? "Signing in..." : "Sign In"}
       </Button>
     </form>
   )
@@ -397,33 +399,33 @@ function ReactiveLoginForm() {
 ### Form Validation with Effect
 
 ```tsx
-import { Effect, pipe } from 'effect'
+import { Effect, pipe } from "effect"
 
 class ValidationError {
-  readonly _tag = 'ValidationError'
+  readonly _tag = "ValidationError"
   constructor(readonly errors: Record<string, string>) {}
 }
 
 const validateLoginForm = (data: LoginData) =>
   pipe(
     Effect.succeed(data),
-    Effect.flatMap(data => {
+    Effect.flatMap((data) => {
       const errors: Record<string, string> = {}
-      
-      if (!data.email) errors.email = 'Email is required'
-      else if (!/\S+@\S+\.\S+/.test(data.email)) errors.email = 'Invalid email'
-      
-      if (!data.password) errors.password = 'Password is required'
-      else if (data.password.length < 6) errors.password = 'Password must be at least 6 characters'
-      
+
+      if (!data.email) errors.email = "Email is required"
+      else if (!/\S+@\S+\.\S+/.test(data.email)) errors.email = "Invalid email"
+
+      if (!data.password) errors.password = "Password is required"
+      else if (data.password.length < 6) errors.password = "Password must be at least 6 characters"
+
       return Object.keys(errors).length > 0
         ? Effect.fail(new ValidationError(errors))
         : Effect.succeed(data)
-    })
+    }),
   )
 
 function ValidatedLoginForm() {
-  const [formData, setFormData] = createSignal({ email: '', password: '' })
+  const [formData, setFormData] = createSignal({ email: "", password: "" })
   const [errors, setErrors] = createSignal<Record<string, string>>({})
   const [loading, setLoading] = createSignal(false)
 
@@ -434,9 +436,9 @@ function ValidatedLoginForm() {
 
     try {
       const validatedData = await Effect.runPromise(
-        validateLoginForm(formData())
+        validateLoginForm(formData()),
       )
-      
+
       await Effect.runPromise(submitLoginEffect(validatedData))
       // Handle success
     } catch (err) {
@@ -456,30 +458,32 @@ function ValidatedLoginForm() {
           id="email"
           type="email"
           value={formData().email}
-          onInput={(e) => setFormData(prev => ({ 
-            ...prev, 
-            email: e.currentTarget.value 
-          }))}
+          onInput={(e) =>
+            setFormData((prev) => ({
+              ...prev,
+              email: e.currentTarget.value,
+            }))}
           placeholder="Enter your email"
-          class={errors().email ? 'border-red-500' : ''}
+          class={errors().email ? "border-red-500" : ""}
         />
         <Show when={errors().email}>
           <p class="text-sm text-red-600">{errors().email}</p>
         </Show>
       </div>
-      
+
       <div>
         <Label for="password">Password</Label>
         <Input
           id="password"
           type="password"
           value={formData().password}
-          onInput={(e) => setFormData(prev => ({ 
-            ...prev, 
-            password: e.currentTarget.value 
-          }))}
+          onInput={(e) =>
+            setFormData((prev) => ({
+              ...prev,
+              password: e.currentTarget.value,
+            }))}
           placeholder="Enter your password"
-          class={errors().password ? 'border-red-500' : ''}
+          class={errors().password ? "border-red-500" : ""}
         />
         <Show when={errors().password}>
           <p class="text-sm text-red-600">{errors().password}</p>
@@ -487,7 +491,7 @@ function ValidatedLoginForm() {
       </div>
 
       <Button type="submit" disabled={loading()}>
-        {loading() ? 'Signing in...' : 'Sign In'}
+        {loading() ? "Signing in..." : "Sign In"}
       </Button>
     </form>
   )
@@ -499,12 +503,12 @@ function ValidatedLoginForm() {
 ### Class Name Utilities
 
 ```tsx
-import { cn } from '@effectify/solid-ui/lib/utils'
+import { cn } from "@effectify/solid-ui/lib/utils"
 
 function MyComponent(props: { class?: string }) {
   return (
-    <div 
-      class={cn("default-classes", props.class)} 
+    <div
+      class={cn("default-classes", props.class)}
     />
   )
 }
@@ -513,17 +517,17 @@ function MyComponent(props: { class?: string }) {
 ### Validation Utilities
 
 ```tsx
-import { validateEmail, validateRequired } from '@effectify/solid-ui/lib/validation'
+import { validateEmail, validateRequired } from "@effectify/solid-ui/lib/validation"
 
 const form = createForm(() => ({
-  defaultValues: { email: '' },
+  defaultValues: { email: "" },
   validators: {
     onChange: ({ value }) => ({
       fields: {
-        email: validateEmail(value.email) || validateRequired(value.email)
-      }
-    })
-  }
+        email: validateEmail(value.email) || validateRequired(value.email),
+      },
+    }),
+  },
 }))
 ```
 
@@ -602,7 +606,7 @@ import { Button } from '@effectify/solid-ui/components/button'
 function SubmitButton(props: { isLoading: boolean }) {
   return (
     <Button disabled={props.isLoading}>
-      {props.isLoading ? 'Submitting...' : 'Submit'}
+      {props.isLoading ? "Submitting..." : "Submit"}
     </Button>
   )
 }
@@ -612,15 +616,15 @@ function SubmitButton(props: { isLoading: boolean }) {
 
 ```tsx
 function DynamicForm() {
-  const [formType, setFormType] = createSignal<'login' | 'register'>('login')
+  const [formType, setFormType] = createSignal<"login" | "register">("login")
 
   return (
     <div>
       <Switch>
-        <Match when={formType() === 'login'}>
+        <Match when={formType() === "login"}>
           <LoginForm />
         </Match>
-        <Match when={formType() === 'register'}>
+        <Match when={formType() === "register"}>
           <RegisterForm />
         </Match>
       </Switch>
@@ -632,5 +636,6 @@ function DynamicForm() {
 ## Examples
 
 Check out the complete component usage in:
+
 - [SolidJS SPA example](https://github.com/devx-op/effectify/tree/main/apps/solid-app-spa)
 - [SolidJS Start example](https://github.com/devx-op/effectify/tree/main/apps/solid-app-start)

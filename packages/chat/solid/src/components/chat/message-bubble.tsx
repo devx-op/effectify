@@ -1,8 +1,8 @@
-import type * as Message from '@effectify/chat-domain/message.js'
-import { cn } from '@effectify/solid-ui/lib/utils'
-import { DateTime } from 'effect'
-import { CheckCheckIcon } from 'lucide-solid'
-import type { Component, JSX } from 'solid-js'
+import type * as Message from "@effectify/chat-domain/message.js"
+import { cn } from "@effectify/solid-ui/lib/utils"
+import { DateTime } from "effect"
+import { CheckCheckIcon } from "lucide-solid"
+import type { Component, JSX } from "solid-js"
 
 type Props = {
   message: Message.Message
@@ -18,13 +18,13 @@ export const MessageBubble: Component<Props & JSX.HTMLAttributes<HTMLDivElement>
           <span class="text-muted-foreground text-xs">
             {props.message.createdAt.pipe(
               DateTime.formatLocal({
-                hour: '2-digit',
-                minute: '2-digit',
+                hour: "2-digit",
+                minute: "2-digit",
               }),
             )}
           </span>
 
-          <CheckCheckIcon class={cn('size-4', props.message.readAt ? 'text-blue-500' : 'text-muted-foreground')} />
+          <CheckCheckIcon class={cn("size-4", props.message.readAt ? "text-blue-500" : "text-muted-foreground")} />
         </div>
       </div>
     </div>

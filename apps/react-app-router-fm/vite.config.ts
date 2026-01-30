@@ -1,11 +1,11 @@
 /// <reference types='vitest' />
 
-import { dirname } from 'node:path'
-import { fileURLToPath } from 'node:url'
-import { nxCopyAssetsPlugin } from '@nx/vite/plugins/nx-copy-assets.plugin'
-import { nxViteTsPaths } from '@nx/vite/plugins/nx-tsconfig-paths.plugin'
-import { reactRouter } from '@react-router/dev/vite'
-import { defineConfig } from 'vite'
+import { dirname } from "node:path"
+import { fileURLToPath } from "node:url"
+import { nxCopyAssetsPlugin } from "@nx/vite/plugins/nx-copy-assets.plugin"
+import { nxViteTsPaths } from "@nx/vite/plugins/nx-tsconfig-paths.plugin"
+import { reactRouter } from "@react-router/dev/vite"
+import { defineConfig } from "vite"
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -16,16 +16,16 @@ const plugins = [
   nxCopyAssetsPlugin([
     {
       // Copy all markdown files from the root of the project
-      input: '',
-      glob: '*.md',
-      output: '.',
+      input: "",
+      glob: "*.md",
+      output: ".",
     },
   ]),
   {
-    name: 'ignore-chrome-devtools',
+    name: "ignore-chrome-devtools",
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
-        if (req.url?.startsWith('/.well-known/appspecific')) {
+        if (req.url?.startsWith("/.well-known/appspecific")) {
           res.statusCode = 204
           return res.end()
         }
@@ -37,14 +37,14 @@ const plugins = [
 
 export default defineConfig({
   root: __dirname,
-  cacheDir: '../../node_modules/.vite/apps/react-app-router-fm',
+  cacheDir: "../../node_modules/.vite/apps/react-app-router-fm",
   server: {
     port: 3000,
-    host: 'localhost',
+    host: "localhost",
   },
   preview: {
     port: 3000,
-    host: 'localhost',
+    host: "localhost",
   },
   // @ts-expect-error - Multiple Vite versions causing type incompatibility
   plugins,
@@ -53,7 +53,7 @@ export default defineConfig({
   //  plugins: [ nxViteTsPaths() ],
   // },
   build: {
-    outDir: '../../dist/apps/react-app-router-fm',
+    outDir: "../../dist/apps/react-app-router-fm",
     emptyOutDir: true,
     reportCompressedSize: true,
     commonjsOptions: {

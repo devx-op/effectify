@@ -1,7 +1,7 @@
-import { Breadcrumbs } from '@effectify/solid-ui/components/bread-crumbs'
-import { HStack } from '@effectify/solid-ui/components/primitives/stack'
-import { MobileSidebar } from '@effectify/solid-ui/components/sidebar/mobile-sidebar'
-import { type Pages, Sidebar } from '../sidebar/sidebar.jsx'
+import { Breadcrumbs } from "@effectify/solid-ui/components/bread-crumbs"
+import { HStack } from "@effectify/solid-ui/components/primitives/stack"
+import { MobileSidebar } from "@effectify/solid-ui/components/sidebar/mobile-sidebar"
+import { type Pages, Sidebar } from "../sidebar/sidebar.jsx"
 
 export const Navbar = () => {
   const groups = [[]] as Pages[][]

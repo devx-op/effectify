@@ -1,12 +1,12 @@
-import { AuthService } from '@effectify/node-better-auth'
-import { ActionArgsContext, type HttpResponse, LoaderArgsContext } from '@effectify/react-router'
-import * as Effect from 'effect/Effect'
-import { redirect } from 'react-router'
+import { AuthService } from "@effectify/node-better-auth"
+import { ActionArgsContext, type HttpResponse, LoaderArgsContext } from "@effectify/react-router"
+import * as Effect from "effect/Effect"
+import { redirect } from "react-router"
 
 const mapHeaders = (args: { request: Request }) => args.request.headers
 
 const verifySessionWithContext = (context: typeof LoaderArgsContext) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const args = yield* context
     const { auth } = yield* AuthService.AuthServiceContext
     const forwardedHeaders = mapHeaders(args)
@@ -20,14 +20,14 @@ const verifySessionWithContext = (context: typeof LoaderArgsContext) =>
     })
 
     if (!session) {
-      return yield* Effect.fail(new AuthService.Unauthorized({ details: 'Missing or invalid authentication' }))
+      return yield* Effect.fail(new AuthService.Unauthorized({ details: "Missing or invalid authentication" }))
     }
 
     return yield* Effect.succeed({ user: session.user, session: session.session } as const)
   })
 
 const verifySessionWithActionContext = (context: typeof ActionArgsContext) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const args = yield* context
     const { auth } = yield* AuthService.AuthServiceContext
     const forwardedHeaders = mapHeaders(args)
@@ -41,7 +41,7 @@ const verifySessionWithActionContext = (context: typeof ActionArgsContext) =>
     })
 
     if (!session) {
-      return yield* Effect.fail(new AuthService.Unauthorized({ details: 'Missing or invalid authentication' }))
+      return yield* Effect.fail(new AuthService.Unauthorized({ details: "Missing or invalid authentication" }))
     }
 
     return yield* Effect.succeed({ user: session.user, session: session.session } as const)
@@ -83,26 +83,25 @@ export const withBetterAuthGuard: WithBetterAuthGuard = Object.assign(
     E | AuthService.Unauthorized,
     Exclude<R, AuthService.AuthContext> | AuthService.AuthServiceContext | LoaderArgsContext
   > =>
-    Effect.gen(function* () {
+    Effect.gen(function*() {
       const authResult = yield* verifySession()
       return yield* Effect.provideService(eff, AuthService.AuthContext, authResult)
     }),
   {
-    with:
-      (opts: AuthGuardOptions) =>
-      <A, E, R>(
-        eff: Effect.Effect<HttpResponse<A> | Response, E, R>,
-      ): Effect.Effect<
-        HttpResponse<A> | Response,
-        E,
-        Exclude<R, AuthService.AuthContext> | AuthService.AuthServiceContext | LoaderArgsContext
-      > =>
-        Effect.gen(function* () {
-          return yield* verifySession().pipe(
-            Effect.flatMap((authResult) => Effect.provideService(eff, AuthService.AuthContext, authResult)),
-            Effect.catchTag('Unauthorized', () => Effect.sync(() => redirect(opts.redirectOnFail!, opts.redirectInit))),
-          )
-        }),
+    with: (opts: AuthGuardOptions) =>
+    <A, E, R>(
+      eff: Effect.Effect<HttpResponse<A> | Response, E, R>,
+    ): Effect.Effect<
+      HttpResponse<A> | Response,
+      E,
+      Exclude<R, AuthService.AuthContext> | AuthService.AuthServiceContext | LoaderArgsContext
+    > =>
+      Effect.gen(function*() {
+        return yield* verifySession().pipe(
+          Effect.flatMap((authResult) => Effect.provideService(eff, AuthService.AuthContext, authResult)),
+          Effect.catchTag("Unauthorized", () => Effect.sync(() => redirect(opts.redirectOnFail!, opts.redirectInit))),
+        )
+      }),
   },
 )
 
@@ -135,25 +134,24 @@ export const withBetterAuthGuardAction: WithBetterAuthGuardAction = Object.assig
     E | AuthService.Unauthorized,
     Exclude<R, AuthService.AuthContext> | AuthService.AuthServiceContext | ActionArgsContext
   > =>
-    Effect.gen(function* () {
+    Effect.gen(function*() {
       const authResult = yield* verifySessionFromAction()
       return yield* Effect.provideService(eff, AuthService.AuthContext, authResult)
     }),
   {
-    with:
-      (opts: AuthGuardOptions) =>
-      <A, E, R>(
-        eff: Effect.Effect<HttpResponse<A> | Response, E, R>,
-      ): Effect.Effect<
-        HttpResponse<A> | Response,
-        E,
-        Exclude<R, AuthService.AuthContext> | AuthService.AuthServiceContext | ActionArgsContext
-      > =>
-        Effect.gen(function* () {
-          return yield* verifySessionFromAction().pipe(
-            Effect.flatMap((authResult) => Effect.provideService(eff, AuthService.AuthContext, authResult)),
-            Effect.catchTag('Unauthorized', () => Effect.sync(() => redirect(opts.redirectOnFail!, opts.redirectInit))),
-          )
-        }),
+    with: (opts: AuthGuardOptions) =>
+    <A, E, R>(
+      eff: Effect.Effect<HttpResponse<A> | Response, E, R>,
+    ): Effect.Effect<
+      HttpResponse<A> | Response,
+      E,
+      Exclude<R, AuthService.AuthContext> | AuthService.AuthServiceContext | ActionArgsContext
+    > =>
+      Effect.gen(function*() {
+        return yield* verifySessionFromAction().pipe(
+          Effect.flatMap((authResult) => Effect.provideService(eff, AuthService.AuthContext, authResult)),
+          Effect.catchTag("Unauthorized", () => Effect.sync(() => redirect(opts.redirectOnFail!, opts.redirectInit))),
+        )
+      }),
   },
 )

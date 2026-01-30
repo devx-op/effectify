@@ -1,18 +1,18 @@
 #!/usr/bin/env -S pnpm dlx tsx
 
-import * as Command from '@effect/cli/Command'
-import * as NodeContext from '@effect/platform-node/NodeContext'
-import * as NodeRuntime from '@effect/platform-node/NodeRuntime'
-import * as Effect from 'effect/Effect'
-import * as Layer from 'effect/Layer'
-import { initCommand } from './commands/init.js'
-import { prismaCommand } from './commands/prisma.js'
-import { GeneratorService } from './services/generator-service.js'
-import { RenderService } from './services/render-service.js'
+import * as Command from "@effect/cli/Command"
+import * as NodeContext from "@effect/platform-node/NodeContext"
+import * as NodeRuntime from "@effect/platform-node/NodeRuntime"
+import * as Effect from "effect/Effect"
+import * as Layer from "effect/Layer"
+import { initCommand } from "./commands/init.js"
+import { prismaCommand } from "./commands/prisma.js"
+import { GeneratorService } from "./services/generator-service.js"
+import { RenderService } from "./services/render-service.js"
 
 const cli = Command.run(prismaCommand.pipe(Command.withSubcommands([initCommand])), {
-  name: '@effectify/prisma CLI',
-  version: '0.1.0',
+  name: "@effectify/prisma CLI",
+  version: "0.1.0"
 })
 
 const GeneratorLayer = GeneratorService.Live.pipe(Layer.provide(RenderService.Live), Layer.provide(NodeContext.layer))

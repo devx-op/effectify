@@ -1,5 +1,5 @@
-import * as Email from '@effectify/shared-domain/email.js'
-import * as Schema from 'effect/Schema'
+import * as Email from "@effectify/shared-domain/email.js"
+import * as Schema from "effect/Schema"
 
 export const LoginSchema = Schema.Struct({
   email: Email.Email,
@@ -16,8 +16,8 @@ export const RegisterSchema = Schema.Struct({
     const issues: Schema.FilterIssue[] = []
     if (input.password !== input.confirmPassword) {
       issues.push({
-        path: ['confirmPassword'],
-        message: 'Passwords do not match',
+        path: ["confirmPassword"],
+        message: "Passwords do not match",
       })
     }
     return issues

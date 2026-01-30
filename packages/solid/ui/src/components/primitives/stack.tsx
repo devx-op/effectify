@@ -1,23 +1,23 @@
-import { cn } from '@effectify/solid-ui/lib/utils'
-import type { JSX } from 'solid-js'
+import { cn } from "@effectify/solid-ui/lib/utils"
+import type { JSX } from "solid-js"
 
 interface StackProps {
   children?: JSX.Element
   gap?: number | string
   class?: string
-  direction?: 'row' | 'col' | 'row-reverse' | 'column-reverse'
-  align?: 'start' | 'end' | 'center' | 'baseline' | 'stretch'
-  justify?: 'start' | 'end' | 'center' | 'between' | 'around' | 'evenly'
+  direction?: "row" | "col" | "row-reverse" | "column-reverse"
+  align?: "start" | "end" | "center" | "baseline" | "stretch"
+  justify?: "start" | "end" | "center" | "between" | "around" | "evenly"
 }
 
-type HVStackProps = Omit<StackProps, 'direction'>
+type HVStackProps = Omit<StackProps, "direction">
 
 export const Stack = (props: StackProps) => {
   return (
     <div
       class={cn(
-        'flex',
-        props.direction ? `flex-${props.direction}` : 'flex-col',
+        "flex",
+        props.direction ? `flex-${props.direction}` : "flex-col",
         props.align && `items-${props.align}`,
         props.justify && `justify-${props.justify}`,
         props.gap && `gap-${props.gap}`,

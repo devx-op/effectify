@@ -1,7 +1,5 @@
-
-
-import type { HtmlLinkDescriptor } from '@remix-run/react'
-import { Links, Meta, Outlet, Scripts } from '@remix-run/react'
+import type { HtmlLinkDescriptor } from "@remix-run/react"
+import { Links, Meta, Outlet, Scripts } from "@remix-run/react"
 
 export default function App() {
   return (
@@ -20,5 +18,5 @@ export default function App() {
 }
 
 export function links(): HtmlLinkDescriptor[] {
-  return [{ rel: 'icon', href: 'data:image/x-icon;base64,AA' }]
+  return [{ rel: "icon", href: "data:image/x-icon;base64,AA" }]
 }

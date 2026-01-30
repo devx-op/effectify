@@ -1,11 +1,11 @@
-import Home from './routes/_index'
-import Layout from './routes/_layout'
-import About from './routes/about'
-import Test, { action, loader } from './routes/test'
+import Home from "./routes/_index"
+import Layout from "./routes/_layout"
+import About from "./routes/about"
+import Test, { action, loader } from "./routes/test"
 
 export const routes = [
   {
-    path: '/',
+    path: "/",
     element: <Layout />,
     children: [
       {
@@ -13,11 +13,11 @@ export const routes = [
         element: <Home />,
       },
       {
-        path: 'about',
+        path: "about",
         element: <About />,
       },
       {
-        path: 'test',
+        path: "test",
         element: <Test />,
         loader,
         action,

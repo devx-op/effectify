@@ -1,5 +1,5 @@
-import type { IsEmailOptions } from 'validator/lib/isEmail.js'
-import isEmail from 'validator/lib/isEmail.js'
+import type { IsEmailOptions } from "validator/lib/isEmail.js"
+import isEmail from "validator/lib/isEmail.js"
 
 /**
  * Validate emails according to RFC 5322

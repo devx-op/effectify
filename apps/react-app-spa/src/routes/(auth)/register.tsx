@@ -1,9 +1,9 @@
-import { RegisterForm } from '@effectify/chat-react/components/register-form'
-import { buttonVariants } from '@effectify/react-ui/components/primitives/button'
-import { createFileRoute, Link } from '@tanstack/react-router'
-import { authClient } from '@/libs/auth-client'
+import { RegisterForm } from "@effectify/chat-react/components/register-form"
+import { buttonVariants } from "@effectify/react-ui/components/primitives/button"
+import { createFileRoute, Link } from "@tanstack/react-router"
+import { authClient } from "@/libs/auth-client"
 
-export const Route = createFileRoute('/(auth)/register')({
+export const Route = createFileRoute("/(auth)/register")({
   component: RouteComponent,
 })
 
@@ -26,16 +26,16 @@ function RouteComponent() {
         return
       }
       if (res.data?.user) {
-        navigate({ to: '/' })
+        navigate({ to: "/" })
       }
     } catch {
-      navigate({ to: '/register' })
+      navigate({ to: "/register" })
     }
   }
 
   return (
     <RegisterForm handleSubmit={handleSubmit}>
-      <Link className={buttonVariants({ variant: 'link' })} to="/login">
+      <Link className={buttonVariants({ variant: "link" })} to="/login">
         Sign in here
       </Link>
     </RegisterForm>

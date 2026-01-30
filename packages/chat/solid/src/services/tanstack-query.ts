@@ -1,12 +1,12 @@
-import * as Layer from '@effectify/chat-domain/layer.ts'
-import { tanstackQueryEffect } from '@effectify/solid-query'
-import { QueryClient } from '@tanstack/solid-query'
-import * as Duration from 'effect/Duration'
+import * as Layer from "@effectify/chat-domain/layer.ts"
+import { tanstackQueryEffect } from "@effectify/solid-query"
+import { QueryClient } from "@tanstack/solid-query"
+import * as Duration from "effect/Duration"
 
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: Duration.toMillis('1 minute'),
+      staleTime: Duration.toMillis("1 minute"),
       retry: false,
       refetchOnWindowFocus: false,
     },

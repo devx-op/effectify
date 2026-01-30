@@ -6,22 +6,22 @@ import { randomUUID } from "node:crypto"
 // import { withBetterAuthGuard } from "@effectify/react-router-better-auth"
 // import { AuthService } from "@effectify/node-better-auth"
 import * as PrismaRepository from "@prisma/effect/prisma-repository.js"
-import { TodoModel, Todo } from "@prisma/effect/models/Todo.js"
+import { Todo, TodoModel } from "@prisma/effect/models/Todo.js"
 
-export const loader = Effect.gen(function* () {
+export const loader = Effect.gen(function*() {
   // const { user } = yield* AuthService.AuthContext
 
   const todoRepo = yield* PrismaRepository.make(TodoModel, {
     modelName: "todo",
-    spanPrefix: "todo"
+    spanPrefix: "todo",
   })
 
   yield* todoRepo.deleteMany({})
   const todoCreated = yield* todoRepo.create({
     data: {
       id: randomUUID(),
-      title: 'Test Todo',
-      content: 'Test Content',
+      title: "Test Todo",
+      content: "Test Content",
       published: false,
       authorId: 1,
     },
@@ -30,15 +30,14 @@ export const loader = Effect.gen(function* () {
   const todosCreated = yield* todoRepo.createManyAndReturn({
     data: [{
       id: randomUUID(),
-      title: 'Test Todo',
-      content: 'Test Content',
+      title: "Test Todo",
+      content: "Test Content",
       published: false,
       authorId: 1,
-    },
-    {
+    }, {
       id: randomUUID(),
-      title: 'Test Todo 2',
-      content: 'Test Content 2',
+      title: "Test Todo 2",
+      content: "Test Content 2",
       published: false,
       authorId: 1,
     }],
@@ -50,18 +49,18 @@ export const loader = Effect.gen(function* () {
     },
   })
 
-  yield* Effect.log('todoFindUnique')
+  yield* Effect.log("todoFindUnique")
   yield* Effect.log(todoFindUnique)
 
-  yield* Effect.log('todosCreated')
+  yield* Effect.log("todosCreated")
   yield* Effect.log(todosCreated)
 
-  yield* Effect.log('todoCreated')
+  yield* Effect.log("todoCreated")
   yield* Effect.log(todoCreated.id.toString())
 
   const todos = yield* todoRepo.findMany({})
 
-  yield* Effect.log('todos')
+  yield* Effect.log("todos")
   yield* Effect.log(todos)
 
   // Use the new httpSuccess helper for better DX
@@ -70,7 +69,7 @@ export const loader = Effect.gen(function* () {
   })
 }).pipe(
   // withBetterAuthGuard.with({ redirectOnFail: '/login' }),
-  withLoaderEffect
+  withLoaderEffect,
 )
 
 export default function AboutComponent({
@@ -82,9 +81,7 @@ export default function AboutComponent({
         <h1>About!!!</h1>
         <p>{loaderData.data?.todos?.length}</p>
         <ul>
-          {loaderData.data.todos.map((todo: { id: string; title: string }) => (
-            <li key={todo.id}>{todo.title}</li>
-          ))}
+          {loaderData.data.todos.map((todo: { id: string; title: string }) => <li key={todo.id}>{todo.title}</li>)}
         </ul>
       </div>
     )

@@ -1,16 +1,16 @@
-import { useState } from "react";
-import { authClient } from "./../lib/auth-client.js";
-import { useNavigate } from "react-router";
+import { useState } from "react"
+import { authClient } from "./../lib/auth-client.js"
+import { useNavigate } from "react-router"
 
 export default function Login() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const navigate = useNavigate();
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [error, setError] = useState<string | null>(null)
+  const navigate = useNavigate()
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
+    e.preventDefault()
+    setError(null)
     await authClient.signIn.email(
       {
         email,
@@ -18,16 +18,16 @@ export default function Login() {
       },
       {
         onSuccess: (ctx) => {
-          console.log("Login successful");
-          console.dir(ctx, { depth: null }  );
-          navigate("/");
+          console.log("Login successful")
+          console.dir(ctx, { depth: null })
+          navigate("/")
         },
         onError: (ctx) => {
-          setError(ctx.error.message);
+          setError(ctx.error.message)
         },
-      }
-    );
-  };
+      },
+    )
+  }
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-4">
@@ -73,9 +73,7 @@ export default function Login() {
             </div>
           </div>
 
-          {error && (
-            <div className="text-red-500 text-sm text-center">{error}</div>
-          )}
+          {error && <div className="text-red-500 text-sm text-center">{error}</div>}
 
           <div>
             <button
@@ -87,11 +85,11 @@ export default function Login() {
           </div>
         </form>
         <div className="text-center text-sm">
-            <a href="/signup" className="font-medium text-indigo-600 hover:text-indigo-500">
-                Don't have an account? Sign up
-            </a>
+          <a href="/signup" className="font-medium text-indigo-600 hover:text-indigo-500">
+            Don't have an account? Sign up
+          </a>
         </div>
       </div>
     </div>
-  );
+  )
 }

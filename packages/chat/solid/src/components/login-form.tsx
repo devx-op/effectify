@@ -1,11 +1,11 @@
-import { LoginSchema } from '@effectify/chat-domain/auth.ts'
-import { Button } from '@effectify/solid-ui/components/primitives/button'
-import * as Card from '@effectify/solid-ui/components/primitives/card'
-import { Center } from '@effectify/solid-ui/components/primitives/center'
-import { Stack, VStack } from '@effectify/solid-ui/components/primitives/stack'
-import { Input, useAppForm } from '@effectify/solid-ui/components/primitives/tanstack-form'
-import * as Schema from 'effect/Schema'
-import type { Component, JSX } from 'solid-js'
+import { LoginSchema } from "@effectify/chat-domain/auth.ts"
+import { Button } from "@effectify/solid-ui/components/primitives/button"
+import * as Card from "@effectify/solid-ui/components/primitives/card"
+import { Center } from "@effectify/solid-ui/components/primitives/center"
+import { Stack, VStack } from "@effectify/solid-ui/components/primitives/stack"
+import { Input, useAppForm } from "@effectify/solid-ui/components/primitives/tanstack-form"
+import * as Schema from "effect/Schema"
+import type { Component, JSX } from "solid-js"
 
 type LoginFormProps = {
   handleSubmit: (values: { email: string; password: string }) => Promise<void>
@@ -15,8 +15,8 @@ type LoginFormProps = {
 export const LoginForm: Component<LoginFormProps> = (props) => {
   const form = useAppForm(() => ({
     defaultValues: {
-      email: '',
-      password: '',
+      email: "",
+      password: "",
     },
     validators: {
       onBlur: Schema.standardSchemaV1(LoginSchema),
@@ -61,7 +61,7 @@ export const LoginForm: Component<LoginFormProps> = (props) => {
                               name={field().name}
                               onBlur={field().handleBlur}
                               onInput={(e: Event) => field().handleChange((e.currentTarget as HTMLInputElement).value)}
-                              placeholder={'email'}
+                              placeholder={"email"}
                               value={field().state.value as string}
                             />
                           </field.FormControl>
@@ -71,10 +71,10 @@ export const LoginForm: Component<LoginFormProps> = (props) => {
                       validators={{
                         onBlur: ({ value }: { value: string }) => {
                           if (!value || value.trim().length === 0) {
-                            return 'Email is required'
+                            return "Email is required"
                           }
                           if (value.length < 3) {
-                            return 'Email must have a length of at least 3'
+                            return "Email must have a length of at least 3"
                           }
                           return
                         },
@@ -89,7 +89,7 @@ export const LoginForm: Component<LoginFormProps> = (props) => {
                               name={field().name}
                               onBlur={field().handleBlur}
                               onInput={(e: Event) => field().handleChange((e.currentTarget as HTMLInputElement).value)}
-                              placeholder={'password'}
+                              placeholder={"password"}
                               type="password"
                               value={field().state.value as string}
                             />
@@ -100,10 +100,10 @@ export const LoginForm: Component<LoginFormProps> = (props) => {
                       validators={{
                         onBlur: ({ value }: { value: string }) => {
                           if (!value || value.trim().length === 0) {
-                            return 'Password is required'
+                            return "Password is required"
                           }
                           if (value.length < 6) {
-                            return 'Password must have a length of at least 6'
+                            return "Password must have a length of at least 6"
                           }
                           return
                         },

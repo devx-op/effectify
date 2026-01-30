@@ -20,16 +20,16 @@ npm install @effectify/shared-types
 Branded types prevent mixing up similar primitive values:
 
 ```typescript
-import { Brand } from '@effectify/shared-types'
+import { Brand } from "@effectify/shared-types"
 
 // Create branded types
-export type UserId = Brand<string, 'UserId'>
-export type Email = Brand<string, 'Email'>
-export type Timestamp = Brand<number, 'Timestamp'>
+export type UserId = Brand<string, "UserId">
+export type Email = Brand<string, "Email">
+export type Timestamp = Brand<number, "Timestamp">
 
 // Usage
-const userId: UserId = 'user-123' as UserId
-const email: Email = 'user@example.com' as Email
+const userId: UserId = "user-123" as UserId
+const email: Email = "user@example.com" as Email
 
 // This would be a compile-time error:
 // const wrongUsage: UserId = email // Error: Type 'Email' is not assignable to type 'UserId'
@@ -40,42 +40,42 @@ const email: Email = 'user@example.com' as Email
 Result types for handling success and error cases:
 
 ```typescript
-import { Result, Success, Failure } from '@effectify/shared-types'
+import { Failure, Result, Success } from "@effectify/shared-types"
 
 // Result type definition
 type Result<T, E = Error> = Success<T> | Failure<E>
 
 interface Success<T> {
-  readonly _tag: 'Success'
+  readonly _tag: "Success"
   readonly value: T
 }
 
 interface Failure<E> {
-  readonly _tag: 'Failure'
+  readonly _tag: "Failure"
   readonly error: E
 }
 
 // Helper functions
 export const success = <T>(value: T): Success<T> => ({
-  _tag: 'Success',
-  value
+  _tag: "Success",
+  value,
 })
 
 export const failure = <E>(error: E): Failure<E> => ({
-  _tag: 'Failure',
-  error
+  _tag: "Failure",
+  error,
 })
 
 // Usage
 const parseNumber = (input: string): Result<number, string> => {
   const num = Number(input)
-  return isNaN(num) 
-    ? failure('Invalid number')
+  return isNaN(num)
+    ? failure("Invalid number")
     : success(num)
 }
 
-const result = parseNumber('42')
-if (result._tag === 'Success') {
+const result = parseNumber("42")
+if (result._tag === "Success") {
   console.log(result.value) // 42
 } else {
   console.error(result.error) // Invalid number
@@ -87,42 +87,41 @@ if (result._tag === 'Success') {
 Option types for handling nullable values:
 
 ```typescript
-import { Option, Some, None } from '@effectify/shared-types'
+import { None, Option, Some } from "@effectify/shared-types"
 
 // Option type definition
 type Option<T> = Some<T> | None
 
 interface Some<T> {
-  readonly _tag: 'Some'
+  readonly _tag: "Some"
   readonly value: T
 }
 
 interface None {
-  readonly _tag: 'None'
+  readonly _tag: "None"
 }
 
 // Helper functions
 export const some = <T>(value: T): Some<T> => ({
-  _tag: 'Some',
-  value
+  _tag: "Some",
+  value,
 })
 
-export const none: None = { _tag: 'None' }
+export const none: None = { _tag: "None" }
 
-export const fromNullable = <T>(value: T | null | undefined): Option<T> =>
-  value != null ? some(value) : none
+export const fromNullable = <T>(value: T | null | undefined): Option<T> => value != null ? some(value) : none
 
 // Usage
 const findUser = (id: string): Option<User> => {
-  const user = users.find(u => u.id === id)
+  const user = users.find((u) => u.id === id)
   return fromNullable(user)
 }
 
-const userOption = findUser('123')
-if (userOption._tag === 'Some') {
+const userOption = findUser("123")
+if (userOption._tag === "Some") {
   console.log(userOption.value.name)
 } else {
-  console.log('User not found')
+  console.log("User not found")
 }
 ```
 
@@ -133,7 +132,7 @@ if (userOption._tag === 'Some') {
 Base interface for all entities:
 
 ```typescript
-import { BaseEntity, EntityId } from '@effectify/shared-types'
+import { BaseEntity, EntityId } from "@effectify/shared-types"
 
 interface BaseEntity<T extends string = string> {
   readonly id: EntityId<T>
@@ -146,15 +145,15 @@ interface BaseEntity<T extends string = string> {
 type EntityId<T extends string> = Brand<string, `EntityId<${T}>`>
 
 // Usage
-interface User extends BaseEntity<'User'> {
+interface User extends BaseEntity<"User"> {
   readonly email: string
   readonly name: string
   readonly status: UserStatus
 }
 
-interface ChatRoom extends BaseEntity<'ChatRoom'> {
+interface ChatRoom extends BaseEntity<"ChatRoom"> {
   readonly name: string
-  readonly participants: Set<EntityId<'User'>>
+  readonly participants: Set<EntityId<"User">>
   readonly settings: RoomSettings
 }
 ```
@@ -164,7 +163,7 @@ interface ChatRoom extends BaseEntity<'ChatRoom'> {
 Base interface for aggregate roots in domain-driven design:
 
 ```typescript
-import { AggregateRoot, DomainEvent } from '@effectify/shared-types'
+import { AggregateRoot, DomainEvent } from "@effectify/shared-types"
 
 interface AggregateRoot<T extends string = string> extends BaseEntity<T> {
   readonly events: ReadonlyArray<DomainEvent>
@@ -179,9 +178,9 @@ interface DomainEvent {
 }
 
 // Usage
-interface ChatRoomAggregate extends AggregateRoot<'ChatRoom'> {
+interface ChatRoomAggregate extends AggregateRoot<"ChatRoom"> {
   readonly name: string
-  readonly participants: Set<EntityId<'User'>>
+  readonly participants: Set<EntityId<"User">>
   readonly messages: Message[]
 }
 ```
@@ -193,7 +192,7 @@ interface ChatRoomAggregate extends AggregateRoot<'ChatRoom'> {
 Base interface for value objects:
 
 ```typescript
-import { ValueObject } from '@effectify/shared-types'
+import { ValueObject } from "@effectify/shared-types"
 
 interface ValueObject {
   readonly equals: (other: ValueObject) => boolean
@@ -204,7 +203,7 @@ interface ValueObject {
 class Email implements ValueObject {
   constructor(private readonly value: string) {
     if (!this.isValid(value)) {
-      throw new Error('Invalid email format')
+      throw new Error("Invalid email format")
     }
   }
 
@@ -227,7 +226,7 @@ class Email implements ValueObject {
 Common value object for monetary values:
 
 ```typescript
-import { Money, Currency } from '@effectify/shared-types'
+import { Currency, Money } from "@effectify/shared-types"
 
 interface Money extends ValueObject {
   readonly amount: number
@@ -238,10 +237,10 @@ interface Money extends ValueObject {
   readonly divide: (divisor: number) => Money
 }
 
-type Currency = 'USD' | 'EUR' | 'GBP' | 'JPY' | 'CAD' | 'AUD'
+type Currency = "USD" | "EUR" | "GBP" | "JPY" | "CAD" | "AUD"
 
 // Usage
-const price = new Money(99.99, 'USD')
+const price = new Money(99.99, "USD")
 const tax = price.multiply(0.08)
 const total = price.add(tax)
 ```
@@ -253,7 +252,7 @@ const total = price.add(tax)
 Common error interfaces:
 
 ```typescript
-import { DomainError, ValidationError, NotFoundError } from '@effectify/shared-types'
+import { DomainError, NotFoundError, ValidationError } from "@effectify/shared-types"
 
 interface DomainError {
   readonly name: string
@@ -264,26 +263,26 @@ interface DomainError {
 }
 
 interface ValidationError extends DomainError {
-  readonly name: 'ValidationError'
+  readonly name: "ValidationError"
   readonly field: string
   readonly value: unknown
   readonly constraints: string[]
 }
 
 interface NotFoundError extends DomainError {
-  readonly name: 'NotFoundError'
+  readonly name: "NotFoundError"
   readonly resource: string
   readonly identifier: string
 }
 
 interface UnauthorizedError extends DomainError {
-  readonly name: 'UnauthorizedError'
+  readonly name: "UnauthorizedError"
   readonly action: string
   readonly resource?: string
 }
 
 interface BusinessRuleViolationError extends DomainError {
-  readonly name: 'BusinessRuleViolationError'
+  readonly name: "BusinessRuleViolationError"
   readonly rule: string
   readonly context: Record<string, unknown>
 }
@@ -294,45 +293,45 @@ interface BusinessRuleViolationError extends DomainError {
 Factory functions for creating errors:
 
 ```typescript
-import { ErrorFactory } from '@effectify/shared-types'
+import { ErrorFactory } from "@effectify/shared-types"
 
 export const ErrorFactory = {
   validation: (field: string, value: unknown, constraints: string[]): ValidationError => ({
-    name: 'ValidationError',
+    name: "ValidationError",
     message: `Validation failed for field '${field}'`,
-    code: 'VALIDATION_ERROR',
+    code: "VALIDATION_ERROR",
     timestamp: new Date(),
     field,
     value,
-    constraints
+    constraints,
   }),
 
   notFound: (resource: string, identifier: string): NotFoundError => ({
-    name: 'NotFoundError',
+    name: "NotFoundError",
     message: `${resource} with identifier '${identifier}' not found`,
-    code: 'NOT_FOUND',
+    code: "NOT_FOUND",
     timestamp: new Date(),
     resource,
-    identifier
+    identifier,
   }),
 
   unauthorized: (action: string, resource?: string): UnauthorizedError => ({
-    name: 'UnauthorizedError',
-    message: `Unauthorized to perform action '${action}'${resource ? ` on ${resource}` : ''}`,
-    code: 'UNAUTHORIZED',
+    name: "UnauthorizedError",
+    message: `Unauthorized to perform action '${action}'${resource ? ` on ${resource}` : ""}`,
+    code: "UNAUTHORIZED",
     timestamp: new Date(),
     action,
-    resource
+    resource,
   }),
 
   businessRuleViolation: (rule: string, context: Record<string, unknown>): BusinessRuleViolationError => ({
-    name: 'BusinessRuleViolationError',
+    name: "BusinessRuleViolationError",
     message: `Business rule '${rule}' violated`,
-    code: 'BUSINESS_RULE_VIOLATION',
+    code: "BUSINESS_RULE_VIOLATION",
     timestamp: new Date(),
     rule,
-    context
-  })
+    context,
+  }),
 }
 ```
 
@@ -343,7 +342,7 @@ export const ErrorFactory = {
 Generic repository interface:
 
 ```typescript
-import { Repository, EntityId, BaseEntity } from '@effectify/shared-types'
+import { BaseEntity, EntityId, Repository } from "@effectify/shared-types"
 
 interface Repository<T extends BaseEntity, ID extends EntityId<string>> {
   readonly findById: (id: ID) => Promise<T | null>
@@ -361,8 +360,7 @@ interface Specification<T> {
   readonly not: () => Specification<T>
 }
 
-interface SpecificationRepository<T extends BaseEntity, ID extends EntityId<string>> 
-  extends Repository<T, ID> {
+interface SpecificationRepository<T extends BaseEntity, ID extends EntityId<string>> extends Repository<T, ID> {
   readonly findBySpecification: (spec: Specification<T>) => Promise<T[]>
   readonly countBySpecification: (spec: Specification<T>) => Promise<number>
 }
@@ -375,7 +373,7 @@ interface SpecificationRepository<T extends BaseEntity, ID extends EntityId<stri
 Common service patterns:
 
 ```typescript
-import { Service, Command, Query, Event } from '@effectify/shared-types'
+import { Command, Event, Query, Service } from "@effectify/shared-types"
 
 interface Service {
   readonly name: string
@@ -427,13 +425,7 @@ interface EventHandler<T extends Event> {
 Useful TypeScript utility types:
 
 ```typescript
-import { 
-  DeepReadonly, 
-  DeepPartial, 
-  NonEmptyArray, 
-  Opaque,
-  Prettify 
-} from '@effectify/shared-types'
+import { DeepPartial, DeepReadonly, NonEmptyArray, Opaque, Prettify } from "@effectify/shared-types"
 
 // Deep readonly
 type DeepReadonly<T> = {
@@ -452,15 +444,17 @@ type NonEmptyArray<T> = [T, ...T[]]
 type Opaque<T, K> = T & { readonly __opaque: K }
 
 // Prettify complex types
-type Prettify<T> = {
-  [K in keyof T]: T[K]
-} & {}
+type Prettify<T> =
+  & {
+    [K in keyof T]: T[K]
+  }
+  & {}
 
 // Usage examples
 type ReadonlyUser = DeepReadonly<User>
 type PartialUserUpdate = DeepPartial<User>
 type UserIds = NonEmptyArray<UserId>
-type SecureToken = Opaque<string, 'SecureToken'>
+type SecureToken = Opaque<string, "SecureToken">
 ```
 
 ### Functional Utility Types
@@ -468,7 +462,7 @@ type SecureToken = Opaque<string, 'SecureToken'>
 Types for functional programming patterns:
 
 ```typescript
-import { Predicate, Mapper, Reducer, Comparator } from '@effectify/shared-types'
+import { Comparator, Mapper, Predicate, Reducer } from "@effectify/shared-types"
 
 type Predicate<T> = (value: T) => boolean
 type Mapper<T, U> = (value: T) => U
@@ -492,7 +486,7 @@ type Pipe<T, U, V> = (g: Mapper<T, U>, f: Mapper<U, V>) => Mapper<T, V>
 Common configuration interfaces:
 
 ```typescript
-import { AppConfig, DatabaseConfig, AuthConfig, LoggingConfig } from '@effectify/shared-types'
+import { AppConfig, AuthConfig, DatabaseConfig, LoggingConfig } from "@effectify/shared-types"
 
 interface AppConfig {
   readonly environment: Environment
@@ -504,7 +498,7 @@ interface AppConfig {
   readonly features: FeatureFlags
 }
 
-type Environment = 'development' | 'staging' | 'production' | 'test'
+type Environment = "development" | "staging" | "production" | "test"
 
 interface DatabaseConfig {
   readonly provider: DatabaseProvider
@@ -514,7 +508,7 @@ interface DatabaseConfig {
   readonly queryTimeout: number
 }
 
-type DatabaseProvider = 'postgresql' | 'mysql' | 'sqlite' | 'mongodb'
+type DatabaseProvider = "postgresql" | "mysql" | "sqlite" | "mongodb"
 
 interface AuthConfig {
   readonly jwtSecret: string
@@ -530,9 +524,9 @@ interface LoggingConfig {
   readonly outputs: LogOutput[]
 }
 
-type LogLevel = 'error' | 'warn' | 'info' | 'debug' | 'trace'
-type LogFormat = 'json' | 'text' | 'structured'
-type LogOutput = 'console' | 'file' | 'database' | 'external'
+type LogLevel = "error" | "warn" | "info" | "debug" | "trace"
+type LogFormat = "json" | "text" | "structured"
+type LogOutput = "console" | "file" | "database" | "external"
 
 interface FeatureFlags {
   readonly [key: string]: boolean
@@ -546,20 +540,11 @@ interface FeatureFlags {
 Common types for HTTP APIs:
 
 ```typescript
-import { 
-  HttpMethod, 
-  HttpStatus, 
-  ApiRequest, 
-  ApiResponse, 
-  ApiError 
-} from '@effectify/shared-types'
+import { ApiError, ApiRequest, ApiResponse, HttpMethod, HttpStatus } from "@effectify/shared-types"
 
-type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'HEAD' | 'OPTIONS'
+type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE" | "HEAD" | "OPTIONS"
 
-type HttpStatus = 
-  | 200 | 201 | 202 | 204
-  | 400 | 401 | 403 | 404 | 409 | 422 | 429
-  | 500 | 502 | 503 | 504
+type HttpStatus = 200 | 201 | 202 | 204 | 400 | 401 | 403 | 404 | 409 | 422 | 429 | 500 | 502 | 503 | 504
 
 interface ApiRequest<T = unknown> {
   readonly method: HttpMethod
@@ -599,7 +584,7 @@ interface AuthenticatedUser {
 Common pagination interfaces:
 
 ```typescript
-import { PaginatedRequest, PaginatedResponse, PageInfo } from '@effectify/shared-types'
+import { PageInfo, PaginatedRequest, PaginatedResponse } from "@effectify/shared-types"
 
 interface PaginatedRequest {
   readonly page: number
@@ -609,7 +594,7 @@ interface PaginatedRequest {
   readonly filters?: Record<string, unknown>
 }
 
-type SortOrder = 'asc' | 'desc'
+type SortOrder = "asc" | "desc"
 
 interface PaginatedResponse<T> {
   readonly data: T[]
@@ -656,17 +641,17 @@ interface CursorPageInfo {
 ### Type-Safe API Client
 
 ```typescript
-import { ApiRequest, ApiResponse, Result } from '@effectify/shared-types'
+import { ApiRequest, ApiResponse, Result } from "@effectify/shared-types"
 
 class TypeSafeApiClient {
   async request<TRequest, TResponse>(
-    request: ApiRequest<TRequest>
+    request: ApiRequest<TRequest>,
   ): Promise<Result<ApiResponse<TResponse>, ApiError>> {
     try {
       const response = await fetch(request.path, {
         method: request.method,
         headers: request.headers,
-        body: JSON.stringify(request.body)
+        body: JSON.stringify(request.body),
       })
 
       const data = await response.json()
@@ -674,15 +659,15 @@ class TypeSafeApiClient {
       return success({
         status: response.status as HttpStatus,
         headers: Object.fromEntries(response.headers.entries()),
-        body: data
+        body: data,
       })
     } catch (error) {
       return failure({
-        code: 'NETWORK_ERROR',
-        message: 'Failed to make request',
+        code: "NETWORK_ERROR",
+        message: "Failed to make request",
         timestamp: new Date(),
         path: request.path,
-        method: request.method
+        method: request.method,
       })
     }
   }
@@ -692,16 +677,16 @@ class TypeSafeApiClient {
 ### Domain Entity with Types
 
 ```typescript
-import { BaseEntity, EntityId, ValueObject } from '@effectify/shared-types'
+import { BaseEntity, EntityId, ValueObject } from "@effectify/shared-types"
 
-class User implements BaseEntity<'User'> {
+class User implements BaseEntity<"User"> {
   constructor(
-    public readonly id: EntityId<'User'>,
+    public readonly id: EntityId<"User">,
     public readonly email: Email,
     public readonly name: UserName,
     public readonly createdAt: Date,
     public readonly updatedAt: Date,
-    public readonly version: number
+    public readonly version: number,
   ) {}
 
   updateProfile(name: UserName): User {
@@ -711,7 +696,7 @@ class User implements BaseEntity<'User'> {
       name,
       this.createdAt,
       new Date(),
-      this.version + 1
+      this.version + 1,
     )
   }
 }
@@ -719,7 +704,7 @@ class User implements BaseEntity<'User'> {
 class Email implements ValueObject {
   constructor(private readonly value: string) {
     if (!this.isValid(value)) {
-      throw new Error('Invalid email format')
+      throw new Error("Invalid email format")
     }
   }
 

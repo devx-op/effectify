@@ -1,17 +1,17 @@
-import { LoginSchema } from '@effectify/chat-domain/auth.ts'
-import { Button } from '@effectify/react-ui/components/primitives/button'
+import { LoginSchema } from "@effectify/chat-domain/auth.ts"
+import { Button } from "@effectify/react-ui/components/primitives/button"
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@effectify/react-ui/components/primitives/card'
-import { Center } from '@effectify/react-ui/components/primitives/center'
-import { Stack, VStack } from '@effectify/react-ui/components/primitives/stack'
-import { useAppForm } from '@effectify/react-ui/components/primitives/tanstack-form'
-import * as Schema from 'effect/Schema'
-import type React from 'react'
+} from "@effectify/react-ui/components/primitives/card"
+import { Center } from "@effectify/react-ui/components/primitives/center"
+import { Stack, VStack } from "@effectify/react-ui/components/primitives/stack"
+import { useAppForm } from "@effectify/react-ui/components/primitives/tanstack-form"
+import * as Schema from "effect/Schema"
+import type React from "react"
 
 type LoginFormProps = {
   handleSubmit: (values: { email: string; password: string }) => Promise<void>
@@ -21,8 +21,8 @@ type LoginFormProps = {
 export const LoginForm: React.FC<LoginFormProps> = (props) => {
   const form = useAppForm({
     defaultValues: {
-      email: '',
-      password: '',
+      email: "",
+      password: "",
     },
     validators: {
       onBlur: Schema.standardSchemaV1(LoginSchema),
@@ -67,7 +67,7 @@ export const LoginForm: React.FC<LoginFormProps> = (props) => {
                             name={field.name}
                             onBlur={field.handleBlur}
                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => field.handleChange(e.target.value)}
-                            placeholder={'email'}
+                            placeholder={"email"}
                             value={field.state.value as string}
                           />
                         </field.Control>
@@ -85,7 +85,7 @@ export const LoginForm: React.FC<LoginFormProps> = (props) => {
                             name={field.name}
                             onBlur={field.handleBlur}
                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => field.handleChange(e.target.value)}
-                            placeholder={'password'}
+                            placeholder={"password"}
                             type="password"
                             value={field.state.value as string}
                           />

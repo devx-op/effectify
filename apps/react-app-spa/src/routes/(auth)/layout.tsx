@@ -1,9 +1,9 @@
-import { Flex } from '@effectify/react-ui/components/primitives/flex'
-import { VStack } from '@effectify/react-ui/components/primitives/stack'
-import { createFileRoute, Outlet } from '@tanstack/react-router'
-import { useCheckSession } from '@/hooks/check-session-hook'
+import { Flex } from "@effectify/react-ui/components/primitives/flex"
+import { VStack } from "@effectify/react-ui/components/primitives/stack"
+import { createFileRoute, Outlet } from "@tanstack/react-router"
+import { useCheckSession } from "@/hooks/check-session-hook"
 
-export const Route = createFileRoute('/(auth)')({
+export const Route = createFileRoute("/(auth)")({
   component: Layout,
 })
 

@@ -51,8 +51,8 @@ First, set up TanStack Query in your app root:
 
 ```tsx
 // App.tsx
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools"
 
 const queryClient = new QueryClient()
 
@@ -72,7 +72,7 @@ Create a simple Effect that fetches data:
 
 ```tsx
 // effects/user.ts
-import { Effect } from 'effect'
+import { Effect } from "effect"
 
 export interface User {
   id: number
@@ -82,8 +82,8 @@ export interface User {
 
 export const fetchUser = (id: number) =>
   Effect.tryPromise({
-    try: () => fetch(`/api/users/${id}`).then(res => res.json()),
-    catch: (error) => new Error(`Failed to fetch user: ${error}`)
+    try: () => fetch(`/api/users/${id}`).then((res) => res.json()),
+    catch: (error) => new Error(`Failed to fetch user: ${error}`),
   })
 ```
 
@@ -93,9 +93,9 @@ Now use the Effect in a React component:
 
 ```tsx
 // components/UserProfile.tsx
-import { useQuery } from '@tanstack/react-query'
-import { Effect } from 'effect'
-import { fetchUser } from '../effects/user'
+import { useQuery } from "@tanstack/react-query"
+import { Effect } from "effect"
+import { fetchUser } from "../effects/user"
 
 interface UserProfileProps {
   userId: number
@@ -103,8 +103,8 @@ interface UserProfileProps {
 
 export function UserProfile({ userId }: UserProfileProps) {
   const { data: user, isLoading, error } = useQuery({
-    queryKey: ['user', userId],
-    queryFn: () => Effect.runPromise(fetchUser(userId))
+    queryKey: ["user", userId],
+    queryFn: () => Effect.runPromise(fetchUser(userId)),
   })
 
   if (isLoading) return <div>Loading...</div>
@@ -138,9 +138,7 @@ Effect provides excellent error handling capabilities:
 const fetchUserWithRetry = (id: number) =>
   fetchUser(id).pipe(
     Effect.retry({ times: 3 }),
-    Effect.catchAll(error => 
-      Effect.succeed({ id, name: 'Unknown', email: 'unknown@example.com' })
-    )
+    Effect.catchAll((error) => Effect.succeed({ id, name: "Unknown", email: "unknown@example.com" })),
   )
 ```
 
@@ -152,9 +150,9 @@ You can compose multiple Effects together:
 const fetchUserWithPosts = (id: number) =>
   Effect.all([
     fetchUser(id),
-    fetchUserPosts(id)
+    fetchUserPosts(id),
   ]).pipe(
-    Effect.map(([user, posts]) => ({ user, posts }))
+    Effect.map(([user, posts]) => ({ user, posts })),
   )
 ```
 

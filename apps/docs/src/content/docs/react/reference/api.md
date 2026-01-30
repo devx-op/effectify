@@ -17,24 +17,27 @@ Creates a query function that integrates Effect with TanStack Query.
 
 ```tsx
 function createEffectQuery<T, E>(
-  effect: Effect<T, E, never>
+  effect: Effect<T, E, never>,
 ): () => Promise<T>
 ```
 
 **Parameters:**
+
 - `effect`: The Effect to execute
 
 **Returns:**
+
 - A function that can be used as a TanStack Query `queryFn`
 
 **Example:**
+
 ```tsx
-const fetchUser = (id: number) => Effect.succeed({ id, name: 'John' })
+const fetchUser = (id: number) => Effect.succeed({ id, name: "John" })
 const queryFn = createEffectQuery(fetchUser(1))
 
 const { data } = useQuery({
-  queryKey: ['user', 1],
-  queryFn
+  queryKey: ["user", 1],
+  queryFn,
 })
 ```
 
@@ -44,7 +47,7 @@ Creates a mutation function that integrates Effect with TanStack Query.
 
 ```tsx
 function createEffectMutation<T, E, A>(
-  effect: (args: A) => Effect<T, E, never>
+  effect: (args: A) => Effect<T, E, never>,
 ): (args: A) => Promise<T>
 ```
 
@@ -58,7 +61,7 @@ A hook that combines useQuery with Effect execution.
 function useEffectQuery<T, E>(
   queryKey: QueryKey,
   effect: Effect<T, E, never>,
-  options?: UseQueryOptions<T, E>
+  options?: UseQueryOptions<T, E>,
 ): UseQueryResult<T, E>
 ```
 
@@ -69,7 +72,7 @@ A hook that combines useMutation with Effect execution.
 ```tsx
 function useEffectMutation<T, E, A>(
   effect: (args: A) => Effect<T, E, never>,
-  options?: UseMutationOptions<T, E, A>
+  options?: UseMutationOptions<T, E, A>,
 ): UseMutationResult<T, E, A>
 ```
 
@@ -81,8 +84,8 @@ function useEffectMutation<T, E, A>(
 
 ```tsx
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link'
-  size?: 'default' | 'sm' | 'lg' | 'icon'
+  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link"
+  size?: "default" | "sm" | "lg" | "icon"
   asChild?: boolean
 }
 
@@ -270,12 +273,12 @@ function useChatRoom(): {
   isConnected: boolean
   isLoading: boolean
   error: Error | null
-  
+
   // Actions
   sendMessage: (message: Partial<Message>) => void
   joinRoom: (roomId: string) => void
   leaveRoom: () => void
-  
+
   // Typing
   typingUsers: User[]
   startTyping: () => void
@@ -336,7 +339,7 @@ interface Message {
   replyTo?: string
 }
 
-type MessageType = 'text' | 'file' | 'image' | 'system'
+type MessageType = "text" | "file" | "image" | "system"
 ```
 
 #### User
@@ -350,7 +353,7 @@ interface User {
   lastSeen?: Date
 }
 
-type UserStatus = 'online' | 'away' | 'offline'
+type UserStatus = "online" | "away" | "offline"
 ```
 
 #### Reaction
@@ -367,21 +370,21 @@ interface Reaction {
 
 ```tsx
 class ChatError extends Error {
-  readonly _tag = 'ChatError'
+  readonly _tag = "ChatError"
   constructor(
     message: string,
     readonly code: ChatErrorCode,
-    readonly cause?: unknown
+    readonly cause?: unknown,
   )
 }
 
-type ChatErrorCode = 
-  | 'CONNECTION_FAILED'
-  | 'MESSAGE_SEND_FAILED'
-  | 'AUTHENTICATION_FAILED'
-  | 'ROOM_NOT_FOUND'
-  | 'USER_NOT_FOUND'
-  | 'PERMISSION_DENIED'
+type ChatErrorCode =
+  | "CONNECTION_FAILED"
+  | "MESSAGE_SEND_FAILED"
+  | "AUTHENTICATION_FAILED"
+  | "ROOM_NOT_FOUND"
+  | "USER_NOT_FOUND"
+  | "PERMISSION_DENIED"
 ```
 
 ## Error Types
@@ -401,12 +404,12 @@ class EffectifyError extends Error {
 
 // Network errors
 class NetworkError extends EffectifyError {
-  readonly _tag = 'NetworkError'
+  readonly _tag = "NetworkError"
 }
 
 // Validation errors
 class ValidationError extends EffectifyError {
-  readonly _tag = 'ValidationError'
+  readonly _tag = "ValidationError"
   constructor(message: string, readonly errors: string[]) {
     super(message)
   }
@@ -414,6 +417,6 @@ class ValidationError extends EffectifyError {
 
 // Authentication errors
 class AuthenticationError extends EffectifyError {
-  readonly _tag = 'AuthenticationError'
+  readonly _tag = "AuthenticationError"
 }
 ```

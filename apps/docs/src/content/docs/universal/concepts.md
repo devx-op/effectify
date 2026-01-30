@@ -20,18 +20,18 @@ Effect is a powerful TypeScript library for building robust, composable applicat
 - **Concurrency**: Built-in support for async operations
 
 ```typescript
-import { Effect } from 'effect'
+import { Effect } from "effect"
 
 // Effect<Success, Error, Requirements>
 const fetchUser = (id: string): Effect<User, UserNotFoundError, UserRepository> =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const repo = yield* UserRepository
     const user = yield* repo.findById(id)
-    
+
     if (!user) {
       yield* Effect.fail(new UserNotFoundError({ userId: id }))
     }
-    
+
     return user
   })
 ```
@@ -43,11 +43,11 @@ Effects can be composed in various ways:
 ```typescript
 // Sequential composition
 const processUser = (id: string) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const user = yield* fetchUser(id)
     const validated = yield* validateUser(user)
     const updated = yield* updateUser(validated)
-    
+
     return updated
   })
 
@@ -56,15 +56,13 @@ const fetchUserData = (id: string) =>
   Effect.all([
     fetchUser(id),
     fetchUserPreferences(id),
-    fetchUserActivity(id)
+    fetchUserActivity(id),
   ])
 
 // Conditional composition
 const fetchUserWithFallback = (id: string) =>
   fetchUser(id).pipe(
-    Effect.catchTag('UserNotFoundError', () => 
-      createDefaultUser(id)
-    )
+    Effect.catchTag("UserNotFoundError", () => createDefaultUser(id)),
   )
 ```
 
@@ -94,16 +92,16 @@ interface UserProfile {
 // Value object constructor
 const UserProfile = {
   create: (name: string, bio: string, avatar?: string) =>
-    Effect.gen(function* () {
+    Effect.gen(function*() {
       const validName = yield* UserName.make(name)
       const validBio = yield* validateBio(bio)
-      
+
       return {
         name: validName,
         bio: validBio,
-        avatar
+        avatar,
       }
-    })
+    }),
 }
 ```
 
@@ -125,59 +123,65 @@ interface ChatRoom {
 const ChatRoomAggregate = {
   // Factory method
   create: (name: string, creatorId: UserId) =>
-    Effect.gen(function* () {
+    Effect.gen(function*() {
       const roomId = yield* RoomId.generate()
       const roomName = yield* RoomName.make(name)
-      
+
       return {
         id: roomId,
         name: roomName,
         participants: new Set([creatorId]),
         messages: [],
         settings: defaultRoomSettings,
-        createdAt: new Date()
+        createdAt: new Date(),
       }
     }),
 
   // Business methods
   addParticipant: (room: ChatRoom, userId: UserId) =>
-    Effect.gen(function* () {
+    Effect.gen(function*() {
       if (room.participants.has(userId)) {
-        yield* Effect.fail(new BusinessRuleViolationError({
-          rule: 'unique-participant',
-          message: 'User is already a participant'
-        }))
+        yield* Effect.fail(
+          new BusinessRuleViolationError({
+            rule: "unique-participant",
+            message: "User is already a participant",
+          }),
+        )
       }
-      
+
       if (room.participants.size >= room.settings.maxParticipants) {
-        yield* Effect.fail(new BusinessRuleViolationError({
-          rule: 'max-participants',
-          message: 'Room has reached maximum participants'
-        }))
+        yield* Effect.fail(
+          new BusinessRuleViolationError({
+            rule: "max-participants",
+            message: "Room has reached maximum participants",
+          }),
+        )
       }
-      
+
       return {
         ...room,
-        participants: new Set([...room.participants, userId])
+        participants: new Set([...room.participants, userId]),
       }
     }),
 
   sendMessage: (room: ChatRoom, message: Message) =>
-    Effect.gen(function* () {
+    Effect.gen(function*() {
       if (!room.participants.has(message.userId)) {
-        yield* Effect.fail(new BusinessRuleViolationError({
-          rule: 'participant-only-messaging',
-          message: 'Only participants can send messages'
-        }))
+        yield* Effect.fail(
+          new BusinessRuleViolationError({
+            rule: "participant-only-messaging",
+            message: "Only participants can send messages",
+          }),
+        )
       }
-      
+
       const validatedMessage = yield* validateMessage(message)
-      
+
       return {
         ...room,
-        messages: [...room.messages, validatedMessage]
+        messages: [...room.messages, validatedMessage],
       }
-    })
+    }),
 }
 ```
 
@@ -189,46 +193,48 @@ Domain services contain business logic that doesn't naturally fit in entities:
 const ChatDomainService = {
   // Complex business logic
   calculateUserEngagement: (userId: UserId, timeframe: TimeFrame) =>
-    Effect.gen(function* () {
+    Effect.gen(function*() {
       const messages = yield* MessageRepository.findByUserAndTimeframe(userId, timeframe)
       const reactions = yield* ReactionRepository.findByUserAndTimeframe(userId, timeframe)
       const sessions = yield* SessionRepository.findByUserAndTimeframe(userId, timeframe)
-      
+
       const messageScore = messages.length * 1.0
       const reactionScore = reactions.length * 0.5
       const sessionScore = sessions.reduce((acc, s) => acc + s.duration, 0) / 1000 / 60 // minutes
-      
+
       return {
         userId,
         timeframe,
         messageScore,
         reactionScore,
         sessionScore,
-        totalScore: messageScore + reactionScore + sessionScore
+        totalScore: messageScore + reactionScore + sessionScore,
       }
     }),
 
   // Cross-aggregate operations
   migrateUserToNewRoom: (userId: UserId, fromRoomId: RoomId, toRoomId: RoomId) =>
-    Effect.gen(function* () {
+    Effect.gen(function*() {
       const fromRoom = yield* ChatRoomRepository.findById(fromRoomId)
       const toRoom = yield* ChatRoomRepository.findById(toRoomId)
-      
+
       if (!fromRoom || !toRoom) {
-        yield* Effect.fail(new ResourceNotFoundError({
-          resource: 'ChatRoom',
-          id: !fromRoom ? fromRoomId : toRoomId
-        }))
+        yield* Effect.fail(
+          new ResourceNotFoundError({
+            resource: "ChatRoom",
+            id: !fromRoom ? fromRoomId : toRoomId,
+          }),
+        )
       }
-      
+
       const updatedFromRoom = yield* ChatRoomAggregate.removeParticipant(fromRoom, userId)
       const updatedToRoom = yield* ChatRoomAggregate.addParticipant(toRoom, userId)
-      
+
       yield* ChatRoomRepository.save(updatedFromRoom)
       yield* ChatRoomRepository.save(updatedToRoom)
-      
+
       yield* EventBus.publish(new UserMigratedEvent(userId, fromRoomId, toRoomId))
-    })
+    }),
 }
 ```
 
@@ -251,26 +257,26 @@ interface DomainEvent {
 // Specific domain events
 class UserRegisteredEvent implements DomainEvent {
   readonly eventId = crypto.randomUUID()
-  readonly eventType = 'UserRegistered'
+  readonly eventType = "UserRegistered"
   readonly occurredAt = new Date()
   readonly version = 1
-  
+
   constructor(
     readonly aggregateId: string,
-    readonly user: User
+    readonly user: User,
   ) {}
 }
 
 class MessageSentEvent implements DomainEvent {
   readonly eventId = crypto.randomUUID()
-  readonly eventType = 'MessageSent'
+  readonly eventType = "MessageSent"
   readonly occurredAt = new Date()
   readonly version = 1
-  
+
   constructor(
     readonly aggregateId: string,
     readonly message: Message,
-    readonly roomId: RoomId
+    readonly roomId: RoomId,
   ) {}
 }
 ```
@@ -282,41 +288,40 @@ Event handlers respond to domain events:
 ```typescript
 const UserEventHandlers = {
   onUserRegistered: (event: UserRegisteredEvent) =>
-    Effect.gen(function* () {
+    Effect.gen(function*() {
       const logger = yield* Logger
       const emailService = yield* EmailService
-      
-      yield* logger.info('User registered', { userId: event.user.id })
-      
+
+      yield* logger.info("User registered", { userId: event.user.id })
+
       // Send welcome email
       yield* emailService.sendWelcomeEmail(event.user.email, event.user.name)
-      
+
       // Create default preferences
       yield* UserPreferencesRepository.create({
         userId: event.user.id,
-        preferences: defaultUserPreferences
+        preferences: defaultUserPreferences,
       })
     }),
 
   onMessageSent: (event: MessageSentEvent) =>
-    Effect.gen(function* () {
+    Effect.gen(function*() {
       const notificationService = yield* NotificationService
       const room = yield* ChatRoomRepository.findById(event.roomId)
-      
+
       if (!room) return
-      
+
       // Notify other participants
       const otherParticipants = Array.from(room.participants)
-        .filter(id => id !== event.message.userId)
-      
-      yield* Effect.forEach(otherParticipants, participantId =>
+        .filter((id) => id !== event.message.userId)
+
+      yield* Effect.forEach(otherParticipants, (participantId) =>
         notificationService.sendMessageNotification(
           participantId,
           event.message,
-          room.name
-        )
-      )
-    })
+          room.name,
+        ))
+    }),
 }
 ```
 
@@ -329,33 +334,32 @@ export interface EventBus {
   readonly publish: <T extends DomainEvent>(event: T) => Effect<void>
   readonly subscribe: <T extends DomainEvent>(
     eventType: string,
-    handler: (event: T) => Effect<void>
+    handler: (event: T) => Effect<void>,
   ) => Effect<void>
 }
 
 // In-memory implementation
 const InMemoryEventBus = Layer.succeed(EventBus, {
   publish: <T extends DomainEvent>(event: T) =>
-    Effect.gen(function* () {
+    Effect.gen(function*() {
       const handlers = eventHandlers.get(event.eventType) || []
-      
-      yield* Effect.forEach(handlers, handler =>
+
+      yield* Effect.forEach(handlers, (handler) =>
         handler(event).pipe(
-          Effect.catchAll(error =>
-            Effect.gen(function* () {
+          Effect.catchAll((error) =>
+            Effect.gen(function*() {
               const logger = yield* Logger
-              yield* logger.error('Event handler failed', { event, error })
+              yield* logger.error("Event handler failed", { event, error })
             })
-          )
-        )
-      )
+          ),
+        ))
     }),
 
   subscribe: <T extends DomainEvent>(eventType: string, handler: (event: T) => Effect<void>) =>
     Effect.sync(() => {
       const handlers = eventHandlers.get(eventType) || []
       eventHandlers.set(eventType, [...handlers, handler])
-    })
+    }),
 })
 ```
 
@@ -393,49 +397,50 @@ Different platforms can provide different implementations:
 const SqliteUserRepository: UserRepository = {
   findById: (id) =>
     Effect.tryPromise({
-      try: () => db.selectFrom('users').where('id', '=', id).executeTakeFirst(),
-      catch: (error) => new RepositoryError('Failed to find user', { cause: error })
+      try: () => db.selectFrom("users").where("id", "=", id).executeTakeFirst(),
+      catch: (error) => new RepositoryError("Failed to find user", { cause: error }),
     }).pipe(
-      Effect.map(row => row ? mapRowToUser(row) : null)
+      Effect.map((row) => row ? mapRowToUser(row) : null),
     ),
 
   save: (user) =>
     Effect.tryPromise({
-      try: () => db.insertInto('users').values(mapUserToRow(user)).execute(),
-      catch: (error) => new RepositoryError('Failed to save user', { cause: error })
+      try: () => db.insertInto("users").values(mapUserToRow(user)).execute(),
+      catch: (error) => new RepositoryError("Failed to save user", { cause: error }),
     }).pipe(
-      Effect.map(() => user)
+      Effect.map(() => user),
     ),
 
   findByEmail: (email) =>
     Effect.tryPromise({
-      try: () => db.selectFrom('users').where('email', '=', email).executeTakeFirst(),
-      catch: (error) => new RepositoryError('Failed to find user by email', { cause: error })
+      try: () => db.selectFrom("users").where("email", "=", email).executeTakeFirst(),
+      catch: (error) => new RepositoryError("Failed to find user by email", { cause: error }),
     }).pipe(
-      Effect.map(row => row ? mapRowToUser(row) : null)
-    )
+      Effect.map((row) => row ? mapRowToUser(row) : null),
+    ),
 }
 
 // PostgreSQL implementation
 const PostgresUserRepository: UserRepository = {
   findById: (id) =>
     Effect.tryPromise({
-      try: () => pool.query('SELECT * FROM users WHERE id = $1', [id]),
-      catch: (error) => new RepositoryError('Failed to find user', { cause: error })
+      try: () => pool.query("SELECT * FROM users WHERE id = $1", [id]),
+      catch: (error) => new RepositoryError("Failed to find user", { cause: error }),
     }).pipe(
-      Effect.map(result => result.rows[0] ? mapRowToUser(result.rows[0]) : null)
+      Effect.map((result) => result.rows[0] ? mapRowToUser(result.rows[0]) : null),
     ),
 
   save: (user) =>
     Effect.tryPromise({
-      try: () => pool.query(
-        'INSERT INTO users (id, email, name, created_at) VALUES ($1, $2, $3, $4) ON CONFLICT (id) DO UPDATE SET email = $2, name = $3',
-        [user.id, user.email, user.name, user.createdAt]
-      ),
-      catch: (error) => new RepositoryError('Failed to save user', { cause: error })
+      try: () =>
+        pool.query(
+          "INSERT INTO users (id, email, name, created_at) VALUES ($1, $2, $3, $4) ON CONFLICT (id) DO UPDATE SET email = $2, name = $3",
+          [user.id, user.email, user.name, user.createdAt],
+        ),
+      catch: (error) => new RepositoryError("Failed to save user", { cause: error }),
     }).pipe(
-      Effect.map(() => user)
-    )
+      Effect.map(() => user),
+    ),
 }
 ```
 
@@ -454,17 +459,17 @@ interface Specification<T> {
 
 // User specifications
 const ActiveUserSpecification: Specification<User> = {
-  isSatisfiedBy: (user) => Effect.succeed(user.status === 'active'),
+  isSatisfiedBy: (user) => Effect.succeed(user.status === "active"),
   and: (other) => AndSpecification(ActiveUserSpecification, other),
   or: (other) => OrSpecification(ActiveUserSpecification, other),
-  not: () => NotSpecification(ActiveUserSpecification)
+  not: () => NotSpecification(ActiveUserSpecification),
 }
 
 const EmailVerifiedSpecification: Specification<User> = {
   isSatisfiedBy: (user) => Effect.succeed(user.emailVerified),
   and: (other) => AndSpecification(EmailVerifiedSpecification, other),
   or: (other) => OrSpecification(EmailVerifiedSpecification, other),
-  not: () => NotSpecification(EmailVerifiedSpecification)
+  not: () => NotSpecification(EmailVerifiedSpecification),
 }
 
 // Composite specifications
@@ -475,22 +480,24 @@ const EligibleForPremiumSpecification = ActiveUserSpecification
 // Usage in domain service
 const UserDomainService = {
   upgradeUserToPremium: (user: User) =>
-    Effect.gen(function* () {
+    Effect.gen(function*() {
       const isEligible = yield* EligibleForPremiumSpecification.isSatisfiedBy(user)
-      
+
       if (!isEligible) {
-        yield* Effect.fail(new BusinessRuleViolationError({
-          rule: 'premium-eligibility',
-          message: 'User is not eligible for premium upgrade'
-        }))
+        yield* Effect.fail(
+          new BusinessRuleViolationError({
+            rule: "premium-eligibility",
+            message: "User is not eligible for premium upgrade",
+          }),
+        )
       }
-      
+
       return yield* UserRepository.save({
         ...user,
-        plan: 'premium',
-        upgradedAt: new Date()
+        plan: "premium",
+        upgradedAt: new Date(),
       })
-    })
+    }),
 }
 ```
 
@@ -502,101 +509,119 @@ Value objects use smart constructors to ensure validity:
 
 ```typescript
 // Email value object
-export type Email = string & { readonly _brand: 'Email' }
+export type Email = string & { readonly _brand: "Email" }
 
 export const Email = {
   make: (value: string): Effect<Email, ValidationError> =>
-    Effect.gen(function* () {
+    Effect.gen(function*() {
       if (!value) {
-        yield* Effect.fail(new ValidationError({
-          field: 'email',
-          message: 'Email is required'
-        }))
+        yield* Effect.fail(
+          new ValidationError({
+            field: "email",
+            message: "Email is required",
+          }),
+        )
       }
-      
+
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-        yield* Effect.fail(new ValidationError({
-          field: 'email',
-          message: 'Invalid email format'
-        }))
+        yield* Effect.fail(
+          new ValidationError({
+            field: "email",
+            message: "Invalid email format",
+          }),
+        )
       }
-      
+
       if (value.length > 254) {
-        yield* Effect.fail(new ValidationError({
-          field: 'email',
-          message: 'Email is too long'
-        }))
+        yield* Effect.fail(
+          new ValidationError({
+            field: "email",
+            message: "Email is too long",
+          }),
+        )
       }
-      
+
       return value.toLowerCase() as Email
     }),
 
   toString: (email: Email): string => email,
-  
-  equals: (a: Email, b: Email): boolean => a === b
+
+  equals: (a: Email, b: Email): boolean => a === b,
 }
 
 // Password value object with complex validation
-export type Password = string & { readonly _brand: 'Password' }
+export type Password = string & { readonly _brand: "Password" }
 
 export const Password = {
   make: (value: string): Effect<Password, ValidationError> =>
-    Effect.gen(function* () {
+    Effect.gen(function*() {
       if (!value) {
-        yield* Effect.fail(new ValidationError({
-          field: 'password',
-          message: 'Password is required'
-        }))
+        yield* Effect.fail(
+          new ValidationError({
+            field: "password",
+            message: "Password is required",
+          }),
+        )
       }
-      
+
       if (value.length < 8) {
-        yield* Effect.fail(new ValidationError({
-          field: 'password',
-          message: 'Password must be at least 8 characters'
-        }))
+        yield* Effect.fail(
+          new ValidationError({
+            field: "password",
+            message: "Password must be at least 8 characters",
+          }),
+        )
       }
-      
+
       if (!/[A-Z]/.test(value)) {
-        yield* Effect.fail(new ValidationError({
-          field: 'password',
-          message: 'Password must contain at least one uppercase letter'
-        }))
+        yield* Effect.fail(
+          new ValidationError({
+            field: "password",
+            message: "Password must contain at least one uppercase letter",
+          }),
+        )
       }
-      
+
       if (!/[a-z]/.test(value)) {
-        yield* Effect.fail(new ValidationError({
-          field: 'password',
-          message: 'Password must contain at least one lowercase letter'
-        }))
+        yield* Effect.fail(
+          new ValidationError({
+            field: "password",
+            message: "Password must contain at least one lowercase letter",
+          }),
+        )
       }
-      
+
       if (!/[0-9]/.test(value)) {
-        yield* Effect.fail(new ValidationError({
-          field: 'password',
-          message: 'Password must contain at least one number'
-        }))
+        yield* Effect.fail(
+          new ValidationError({
+            field: "password",
+            message: "Password must contain at least one number",
+          }),
+        )
       }
-      
+
       return value as Password
     }),
 
   hash: (password: Password) =>
     Effect.tryPromise({
       try: () => bcrypt.hash(password, 12),
-      catch: (error) => new ValidationError({
-        field: 'password',
-        message: 'Failed to hash password'
-      })
+      catch: (error) =>
+        new ValidationError({
+          field: "password",
+          message: "Failed to hash password",
+        }),
     }),
 
   verify: (password: Password, hash: string) =>
     Effect.tryPromise({
       try: () => bcrypt.compare(password, hash),
-      catch: (error) => new ValidationError({
-        field: 'password',
-        message: 'Failed to verify password'
-      })
-    })
+      catch: (error) =>
+        new ValidationError({
+          field: "password",
+          message: "Failed to verify password",
+        }),
+    }),
 }
 ```
 
@@ -607,47 +632,48 @@ Universal packages handle resources safely using Effect's resource management:
 ```typescript
 // Database connection resource
 const withDatabaseConnection = <A, E>(
-  operation: (db: Database) => Effect<A, E>
+  operation: (db: Database) => Effect<A, E>,
 ) =>
   Effect.acquireUseRelease(
     // Acquire
     Effect.tryPromise({
       try: () => createDatabaseConnection(),
-      catch: (error) => new ConnectionError('Failed to connect', { cause: error })
+      catch: (error) => new ConnectionError("Failed to connect", { cause: error }),
     }),
     // Use
     operation,
     // Release
-    (db) => Effect.sync(() => db.close())
+    (db) => Effect.sync(() => db.close()),
   )
 
 // File system resource
 const withTempFile = <A, E>(
-  operation: (filePath: string) => Effect<A, E>
+  operation: (filePath: string) => Effect<A, E>,
 ) =>
   Effect.acquireUseRelease(
     // Acquire
     Effect.tryPromise({
-      try: () => fs.mkdtemp(path.join(os.tmpdir(), 'effectify-')),
-      catch: (error) => new FileSystemError('Failed to create temp file', { cause: error })
+      try: () => fs.mkdtemp(path.join(os.tmpdir(), "effectify-")),
+      catch: (error) => new FileSystemError("Failed to create temp file", { cause: error }),
     }),
     // Use
     operation,
     // Release
-    (filePath) => Effect.tryPromise({
-      try: () => fs.rm(filePath, { recursive: true }),
-      catch: () => void 0 // Ignore cleanup errors
-    })
+    (filePath) =>
+      Effect.tryPromise({
+        try: () => fs.rm(filePath, { recursive: true }),
+        catch: () => void 0, // Ignore cleanup errors
+      }),
   )
 
 // HTTP client resource
 const withHttpClient = <A, E>(
-  operation: (client: HttpClient) => Effect<A, E>
+  operation: (client: HttpClient) => Effect<A, E>,
 ) =>
   Effect.acquireUseRelease(
     Effect.sync(() => new HttpClient()),
     operation,
-    (client) => Effect.sync(() => client.destroy())
+    (client) => Effect.sync(() => client.destroy()),
   )
 ```
 

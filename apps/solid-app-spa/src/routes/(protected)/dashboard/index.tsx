@@ -1,7 +1,7 @@
-import { ChatContainer } from '@effectify/chat-solid/components/chat/chat-container'
-import { createFileRoute } from '@tanstack/solid-router'
+import { ChatContainer } from "@effectify/chat-solid/components/chat/chat-container"
+import { createFileRoute } from "@tanstack/solid-router"
 
-export const Route = createFileRoute('/(protected)/dashboard/')({
+export const Route = createFileRoute("/(protected)/dashboard/")({
   component: RouteComponent,
   beforeLoad: () => {
     // const session = useSession()

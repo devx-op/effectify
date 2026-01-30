@@ -16,7 +16,7 @@ Handle async atoms with built-in loading, success, and error states without thro
 
 ```typescript
 export const useAtomSuspenseResult: <A>(
-  atomFactory: () => Atom.Atom<Result.Result<A, any>>
+  atomFactory: () => Atom.Atom<Result.Result<A, any>>,
 ) => {
   readonly loading: boolean
   readonly data: A | undefined
@@ -31,6 +31,7 @@ export const useAtomSuspenseResult: <A>(
 ### Returns
 
 An object with:
+
 - `loading`: `true` when the atom is in loading state
 - `data`: The successful result data, or `undefined` if loading/error
 - `error`: The error if the atom failed, or `undefined` if loading/success
@@ -45,7 +46,7 @@ import { Effect } from "effect"
 import { useAtomSuspenseResult } from "@effectify/solid-effect-atom"
 
 const dataAtom = Atom.fn(() =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     yield* Effect.sleep("1 second")
     const response = yield* Effect.promise(() => fetch("/api/data"))
     return yield* Effect.promise(() => response.json())
@@ -54,7 +55,7 @@ const dataAtom = Atom.fn(() =>
 
 function AsyncData() {
   const result = useAtomSuspenseResult(() => dataAtom)
-  
+
   return (
     <div>
       {result.loading && <p>Loading data...</p>}
@@ -78,7 +79,7 @@ function AsyncData() {
 
 ```tsx
 const refreshableDataAtom = Atom.fn(() =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const timestamp = new Date().toLocaleTimeString()
     yield* Effect.sleep("500 millis")
     return `Data loaded at ${timestamp}`
@@ -88,7 +89,7 @@ const refreshableDataAtom = Atom.fn(() =>
 function RefreshableData() {
   const result = useAtomSuspenseResult(() => refreshableDataAtom)
   const refreshData = useAtomSet(() => refreshableDataAtom)
-  
+
   return (
     <div>
       {result.loading && <p>Loading...</p>}
@@ -96,7 +97,7 @@ function RefreshableData() {
       {result.data && (
         <div>
           <p>{result.data}</p>
-          <button 
+          <button
             onClick={() => refreshData(null)}
             disabled={result.loading}
           >
@@ -113,7 +114,7 @@ function RefreshableData() {
 
 ```tsx
 const riskyAtom = Atom.fn(() =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const shouldFail = Math.random() > 0.5
     if (shouldFail) {
       yield* Effect.fail(new Error("Random failure"))
@@ -125,7 +126,7 @@ const riskyAtom = Atom.fn(() =>
 function RiskyOperation() {
   const result = useAtomSuspenseResult(() => riskyAtom)
   const retry = useAtomSet(() => riskyAtom)
-  
+
   return (
     <div>
       {result.loading && <p>Attempting operation...</p>}
@@ -160,7 +161,7 @@ Subscribe to atom changes for side effects without reading the atom value.
 ```typescript
 export const useAtomSubscribe: <A>(
   atomFactory: () => Atom.Atom<A>,
-  callback: (value: A) => void
+  callback: (value: A) => void,
 ) => void
 ```
 
@@ -182,7 +183,7 @@ function Logger() {
   useAtomSubscribe(() => countAtom, (count) => {
     console.log(`Count changed to: ${count}`)
   })
-  
+
   return null // This component doesn't render anything
 }
 
@@ -201,14 +202,14 @@ function App() {
 ```tsx
 const userPreferencesAtom = Atom.make({
   theme: "light",
-  language: "en"
+  language: "en",
 })
 
 function LocalStorageSync() {
   useAtomSubscribe(() => userPreferencesAtom, (preferences) => {
     localStorage.setItem("userPreferences", JSON.stringify(preferences))
   })
-  
+
   return null
 }
 ```
@@ -225,7 +226,7 @@ function AnalyticsTracker() {
       analytics.track("page_view", { page })
     }
   })
-  
+
   return null
 }
 ```
@@ -252,7 +253,7 @@ export const useAtomMount: <A>(atomFactory: () => Atom.Atom<A>) => void
 
 ```tsx
 const expensiveDataAtom = Atom.fn(() =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     // Expensive computation or API call
     yield* Effect.sleep("2 seconds")
     return "Expensive data"
@@ -262,7 +263,7 @@ const expensiveDataAtom = Atom.fn(() =>
 function DataPreloader() {
   // Mount the atom to start loading immediately
   useAtomMount(() => expensiveDataAtom)
-  
+
   return null
 }
 
@@ -285,7 +286,7 @@ const importantAtom = Atom.make("important data")
 function AtomKeeper() {
   // Keep this atom mounted even if no components are using it
   useAtomMount(() => importantAtom)
-  
+
   return null
 }
 ```
@@ -297,18 +298,21 @@ function AtomKeeper() {
 ### When to Use Advanced Hooks
 
 #### useAtomSuspenseResult
+
 - ✅ When you need to handle loading/error states manually
 - ✅ When you want to show custom loading/error UI
 - ✅ When you need to access error details
 - ❌ When you want automatic suspense behavior (use regular hooks instead)
 
 #### useAtomSubscribe
+
 - ✅ For side effects (logging, analytics, storage sync)
 - ✅ When you don't need the atom value in render
 - ✅ For triggering other actions based on atom changes
 - ❌ For rendering data (use `useAtomValue` instead)
 
 #### useAtomMount
+
 - ✅ For preloading expensive atoms
 - ✅ For keeping important atoms alive
 - ✅ For background data fetching
@@ -322,10 +326,10 @@ Advanced hooks are automatically cleaned up when components unmount:
 function MyComponent() {
   // Subscription is automatically cleaned up on unmount
   useAtomSubscribe(() => myAtom, callback)
-  
+
   // Mount is automatically released on unmount
   useAtomMount(() => expensiveAtom)
-  
+
   return <div>...</div>
 }
 ```
@@ -355,23 +359,23 @@ import { vi } from "vitest"
 test("useAtomSubscribe calls callback", () => {
   const callback = vi.fn()
   const testAtom = Atom.make("initial")
-  
+
   function TestComponent() {
     useAtomSubscribe(() => testAtom, callback)
     return null
   }
-  
+
   const { unmount } = render(() => (
     <RegistryProvider>
       <TestComponent />
     </RegistryProvider>
   ))
-  
+
   // Trigger atom change
   registry.set(testAtom, "changed")
-  
+
   expect(callback).toHaveBeenCalledWith("changed")
-  
+
   unmount()
 })
 ```

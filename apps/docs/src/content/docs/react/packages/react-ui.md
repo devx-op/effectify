@@ -14,6 +14,7 @@ npm install @effectify/react-ui
 ```
 
 **Peer Dependencies:**
+
 ```bash
 npm install react react-dom tailwindcss
 ```
@@ -29,7 +30,7 @@ Add the package to your Tailwind config:
 module.exports = {
   content: [
     "./src/**/*.{js,ts,jsx,tsx}",
-    "./node_modules/@effectify/react-ui/**/*.{js,ts,jsx,tsx}"
+    "./node_modules/@effectify/react-ui/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
     extend: {},
@@ -42,7 +43,7 @@ module.exports = {
 
 ```tsx
 // src/index.tsx or src/main.tsx
-import '@effectify/react-ui/globals.css'
+import "@effectify/react-ui/globals.css"
 ```
 
 ## Components
@@ -52,7 +53,7 @@ import '@effectify/react-ui/globals.css'
 #### Button
 
 ```tsx
-import { Button } from '@effectify/react-ui/components/button'
+import { Button } from "@effectify/react-ui/components/button"
 
 function MyComponent() {
   return (
@@ -71,26 +72,26 @@ function MyComponent() {
 #### Input
 
 ```tsx
-import { Input } from '@effectify/react-ui/components/input'
-import { Label } from '@effectify/react-ui/components/label'
+import { Input } from "@effectify/react-ui/components/input"
+import { Label } from "@effectify/react-ui/components/label"
 
 function LoginForm() {
   return (
     <div className="space-y-4">
       <div>
         <Label htmlFor="email">Email</Label>
-        <Input 
-          id="email" 
-          type="email" 
-          placeholder="Enter your email" 
+        <Input
+          id="email"
+          type="email"
+          placeholder="Enter your email"
         />
       </div>
       <div>
         <Label htmlFor="password">Password</Label>
-        <Input 
-          id="password" 
-          type="password" 
-          placeholder="Enter your password" 
+        <Input
+          id="password"
+          type="password"
+          placeholder="Enter your password"
         />
       </div>
     </div>
@@ -101,10 +102,10 @@ function LoginForm() {
 #### Form with TanStack Form
 
 ```tsx
-import { useForm } from '@tanstack/react-form'
-import { Button } from '@effectify/react-ui/components/button'
-import { Input } from '@effectify/react-ui/components/input'
-import { Label } from '@effectify/react-ui/components/label'
+import { useForm } from "@tanstack/react-form"
+import { Button } from "@effectify/react-ui/components/button"
+import { Input } from "@effectify/react-ui/components/input"
+import { Label } from "@effectify/react-ui/components/label"
 
 interface LoginData {
   email: string
@@ -114,12 +115,12 @@ interface LoginData {
 function LoginForm() {
   const form = useForm<LoginData>({
     defaultValues: {
-      email: '',
-      password: '',
+      email: "",
+      password: "",
     },
     onSubmit: async ({ value }) => {
       // Handle form submission with Effect
-      console.log('Form data:', value)
+      console.log("Form data:", value)
     },
   })
 
@@ -148,13 +149,13 @@ function LoginForm() {
             />
             {field.state.meta.errors && (
               <p className="text-sm text-red-600">
-                {field.state.meta.errors.join(', ')}
+                {field.state.meta.errors.join(", ")}
               </p>
             )}
           </div>
         )}
       />
-      
+
       <form.Field
         name="password"
         children={(field) => (
@@ -171,13 +172,13 @@ function LoginForm() {
             />
             {field.state.meta.errors && (
               <p className="text-sm text-red-600">
-                {field.state.meta.errors.join(', ')}
+                {field.state.meta.errors.join(", ")}
               </p>
             )}
           </div>
         )}
       />
-      
+
       <Button type="submit">Sign In</Button>
     </form>
   )
@@ -189,15 +190,15 @@ function LoginForm() {
 #### Card
 
 ```tsx
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
-} from '@effectify/react-ui/components/card'
-import { Button } from '@effectify/react-ui/components/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@effectify/react-ui/components/card"
+import { Button } from "@effectify/react-ui/components/button"
 
 function UserCard({ user }) {
   return (
@@ -231,8 +232,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@effectify/react-ui/components/dialog'
-import { Button } from '@effectify/react-ui/components/button'
+} from "@effectify/react-ui/components/dialog"
+import { Button } from "@effectify/react-ui/components/button"
 
 function DeleteUserDialog({ onConfirm }) {
   return (
@@ -266,23 +267,24 @@ function DeleteUserDialog({ onConfirm }) {
 A custom hook that integrates TanStack Form with common patterns:
 
 ```tsx
-import { useAppForm } from '@effectify/react-ui/hooks/use-app-form'
-import { Effect } from 'effect'
+import { useAppForm } from "@effectify/react-ui/hooks/use-app-form"
+import { Effect } from "effect"
 
 const submitLoginEffect = (data: LoginData) =>
   Effect.tryPromise({
-    try: () => fetch('/api/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    }).then(res => res.json()),
-    catch: (error) => new Error(`Login failed: ${error}`)
+    try: () =>
+      fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      }).then((res) => res.json()),
+    catch: (error) => new Error(`Login failed: ${error}`),
   })
 
 function LoginForm() {
   const form = useAppForm({
-    defaultValues: { email: '', password: '' },
-    onSubmit: (data) => Effect.runPromise(submitLoginEffect(data))
+    defaultValues: { email: "", password: "" },
+    onSubmit: (data) => Effect.runPromise(submitLoginEffect(data)),
   })
 
   return (
@@ -298,13 +300,13 @@ function LoginForm() {
 ### Class Name Utilities
 
 ```tsx
-import { cn } from '@effectify/react-ui/lib/utils'
+import { cn } from "@effectify/react-ui/lib/utils"
 
 function MyComponent({ className, ...props }) {
   return (
-    <div 
-      className={cn("default-classes", className)} 
-      {...props} 
+    <div
+      className={cn("default-classes", className)}
+      {...props}
     />
   )
 }
@@ -313,17 +315,17 @@ function MyComponent({ className, ...props }) {
 ### Validation Utilities
 
 ```tsx
-import { validateEmail, validateRequired } from '@effectify/react-ui/lib/validation'
+import { validateEmail, validateRequired } from "@effectify/react-ui/lib/validation"
 
 const form = useForm({
-  defaultValues: { email: '' },
+  defaultValues: { email: "" },
   validators: {
     onChange: ({ value }) => ({
       fields: {
-        email: validateEmail(value.email) || validateRequired(value.email)
-      }
-    })
-  }
+        email: validateEmail(value.email) || validateRequired(value.email),
+      },
+    }),
+  },
 })
 ```
 
@@ -393,7 +395,7 @@ import { Button } from '@effectify/react-ui/components/button'
 function SubmitButton({ isLoading }) {
   return (
     <Button disabled={isLoading}>
-      {isLoading ? 'Submitting...' : 'Submit'}
+      {isLoading ? "Submitting..." : "Submit"}
     </Button>
   )
 }
@@ -406,11 +408,14 @@ const form = useForm({
   validators: {
     onChange: ({ value }) => ({
       fields: {
-        email: !value.email ? 'Email is required' : 
-               !validateEmail(value.email) ? 'Invalid email' : undefined
-      }
-    })
-  }
+        email: !value.email ?
+          "Email is required" :
+          !validateEmail(value.email)
+          ? "Invalid email"
+          : undefined,
+      },
+    }),
+  },
 })
 ```
 

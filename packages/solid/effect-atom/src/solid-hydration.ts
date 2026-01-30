@@ -2,10 +2,10 @@
  * @since 1.0.0
  */
 
-import * as Hydration from '@effect-atom/atom/Hydration'
-import * as Result from '@effect-atom/atom/Result'
-import { createEffect, createMemo, type JSX } from 'solid-js'
-import { useRegistry } from './context.js'
+import * as Hydration from "@effect-atom/atom/Hydration"
+import * as Result from "@effect-atom/atom/Result"
+import { createEffect, createMemo, type JSX } from "solid-js"
+import { useRegistry } from "./context.js"
 
 /**
  * Check if hydration data is newer than the existing node value
@@ -25,7 +25,7 @@ function isHydrationDataNewer(existingNode: any, dehydratedAtom: Hydration.Dehyd
     // For Failure Results, check if there's a previousSuccess with timestamp
     if (Result.isResult(currentValue) && Result.isFailure(currentValue)) {
       const previousSuccess = currentValue.previousSuccess
-      if (previousSuccess._tag === 'Some' && Result.isSuccess(previousSuccess.value)) {
+      if (previousSuccess._tag === "Some" && Result.isSuccess(previousSuccess.value)) {
         return dehydratedAtom.dehydratedAt > previousSuccess.value.timestamp
       }
     }

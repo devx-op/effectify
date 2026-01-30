@@ -2,10 +2,10 @@
  * @since 1.0.0
  */
 
-import * as Atom from '@effect-atom/atom/Atom'
-import * as Hydration from '@effect-atom/atom/Hydration'
-import * as Registry from '@effect-atom/atom/Registry'
-import * as Effect from 'effect/Effect'
+import * as Atom from "@effect-atom/atom/Atom"
+import * as Hydration from "@effect-atom/atom/Hydration"
+import * as Registry from "@effect-atom/atom/Registry"
+import * as Effect from "effect/Effect"
 
 // Extend the Window interface to include our hydration flag
 declare global {
@@ -94,14 +94,14 @@ export const preloadAtoms = (
   atoms: Atom.Atom<any>[],
   options: SSROptions = {},
 ): Effect.Effect<SSRResult, never> =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const { includeErrors = false, timeout = 5000 } = options
     const errors: Array<{ atomKey: string; error: unknown }> = []
     const timeouts: string[] = []
 
     // Preload all atoms with timeout
     const preloadEffects = atoms.map((atom) =>
-      Effect.gen(function* () {
+      Effect.gen(function*() {
         try {
           yield* Effect.sync(() => registry.get(atom))
         } catch (error) {
@@ -113,18 +113,18 @@ export const preloadAtoms = (
         Effect.catchAll((error) =>
           Effect.sync(() => {
             const atomKey = getAtomKey(atom)
-            if (error._tag === 'TimeoutException') {
+            if (error._tag === "TimeoutException") {
               timeouts.push(atomKey)
             } else {
               errors.push({ atomKey, error })
             }
-          }),
+          })
         ),
-      ),
+      )
     )
 
     // Wait for all preloads to complete or timeout
-    yield* Effect.all(preloadEffects, { concurrency: 'unbounded' })
+    yield* Effect.all(preloadEffects, { concurrency: "unbounded" })
 
     // Dehydrate the registry state
     const dehydratedState = Array.from(Hydration.dehydrate(registry))
@@ -203,7 +203,7 @@ export const extractCriticalAtoms = (registry: Registry.Registry, criticalKeys: 
 
   for (const [atomOrKey, _node] of nodes.entries()) {
     // atomOrKey can be either an Atom or a string (serializable key)
-    if (typeof atomOrKey === 'string') {
+    if (typeof atomOrKey === "string") {
       // If it's already a string key, check directly
       if (criticalKeys.includes(atomOrKey)) {
         // We need to get the actual atom from the node
@@ -228,7 +228,7 @@ export const serializeState = (dehydratedState: Hydration.DehydratedAtom[]): str
   try {
     return JSON.stringify(dehydratedState)
   } catch (_error) {
-    return '[]'
+    return "[]"
   }
 }
 
@@ -255,7 +255,7 @@ export const deserializeState = (serializedState: string): Hydration.DehydratedA
 export const createSSRAtom = <T>(serverValue: T, clientAtom: Atom.Atom<T>): Atom.Atom<T> => {
   return Atom.make((get) => {
     // During SSR, return server value
-    if (typeof window === 'undefined') {
+    if (typeof window === "undefined") {
       return serverValue
     }
 
@@ -271,7 +271,7 @@ export const createSSRAtom = <T>(serverValue: T, clientAtom: Atom.Atom<T>): Atom
  * @category SSR
  */
 export const isSSR = (): boolean => {
-  return typeof window === 'undefined'
+  return typeof window === "undefined"
 }
 
 /**
@@ -281,7 +281,7 @@ export const isSSR = (): boolean => {
  * @category SSR
  */
 export const isHydrating = (): boolean => {
-  return typeof window !== 'undefined' && !window.__ATOM_SOLID_HYDRATED__
+  return typeof window !== "undefined" && !window.__ATOM_SOLID_HYDRATED__
 }
 
 /**
@@ -291,7 +291,7 @@ export const isHydrating = (): boolean => {
  * @category SSR
  */
 export const markHydrationComplete = (): void => {
-  if (typeof window !== 'undefined') {
+  if (typeof window !== "undefined") {
     ;(window as any).__ATOM_SOLID_HYDRATED__ = true
   }
 }
@@ -303,7 +303,7 @@ export const markHydrationComplete = (): void => {
  * @category SSR
  */
 export const clientOnlyEffect = <A, E, R>(effect: Effect.Effect<A, E, R>): Effect.Effect<A | null, E, R> => {
-  return Effect.gen(function* () {
+  return Effect.gen(function*() {
     if (isSSR()) {
       return null
     }

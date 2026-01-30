@@ -57,7 +57,7 @@ npm start
 This template includes three entry points:
 
 - **`entry.rsc.tsx`** - React Server Components entry point
-- **`entry.ssr.tsx`** - Server-side rendering entry point  
+- **`entry.ssr.tsx`** - Server-side rendering entry point
 - **`entry.browser.tsx`** - Client-side hydration entry point
 
 Learn more about React Server Components with React Router in our [comprehensive guide](https://reactrouter.com/how-to/react-server-components).
@@ -68,4 +68,4 @@ This template comes with [Tailwind CSS](https://tailwindcss.com/) already config
 
 ---
 
-Built with ❤️ using React Router. 
+Built with ❤️ using React Router.

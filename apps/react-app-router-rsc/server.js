@@ -1,29 +1,29 @@
-import { createRequestListener } from '@remix-run/node-fetch-server'
-import compression from 'compression'
-import express from 'express'
+import { createRequestListener } from "@remix-run/node-fetch-server"
+import compression from "compression"
+import express from "express"
 
-import build from './dist/rsc/index.js'
+import build from "./dist/rsc/index.js"
 
 const app = express()
 
 app.use(
-  '/assets',
+  "/assets",
   compression(),
-  express.static('dist/client/assets', {
+  express.static("dist/client/assets", {
     immutable: true,
-    maxAge: '1y',
+    maxAge: "1y",
   }),
 )
-app.use(compression(), express.static('dist/client'))
+app.use(compression(), express.static("dist/client"))
 
-app.get('/.well-known/appspecific/com.chrome.devtools.json', (_, res) => {
+app.get("/.well-known/appspecific/com.chrome.devtools.json", (_, res) => {
   res.status(404)
   res.end()
 })
 
 app.use(createRequestListener(build))
 
-const PORT = Number.parseInt(process.env.PORT || '3000', 10)
+const PORT = Number.parseInt(process.env.PORT || "3000", 10)
 app.listen(PORT, () => {
   // Server started successfully
 })

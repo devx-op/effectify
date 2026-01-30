@@ -27,7 +27,7 @@ yarn add @effectify/solid-effect-atom
 
 ```tsx
 import { Atom } from "@effect-atom/atom"
-import { useAtomValue, useAtom, RegistryProvider } from "@effectify/solid-effect-atom"
+import { RegistryProvider, useAtom, useAtomValue } from "@effectify/solid-effect-atom"
 
 // Create an atom
 const countAtom = Atom.make(0)
@@ -92,8 +92,8 @@ import { Effect } from "effect"
 import { useAtomSuspenseResult } from "@effectify/solid-effect-atom"
 
 const dataAtom = Atom.fn(() =>
-  Effect.gen(function* () {
-    const response = yield* Effect.promise(() => fetch('/api/data'))
+  Effect.gen(function*() {
+    const response = yield* Effect.promise(() => fetch("/api/data"))
     return yield* Effect.promise(() => response.json())
   })
 )
@@ -118,9 +118,7 @@ Create derived state that automatically updates:
 ```tsx
 const firstNameAtom = Atom.make("John")
 const lastNameAtom = Atom.make("Doe")
-const fullNameAtom = Atom.make((get) =>
-  `${get(firstNameAtom)} ${get(lastNameAtom)}`
-)
+const fullNameAtom = Atom.make((get) => `${get(firstNameAtom)} ${get(lastNameAtom)}`)
 
 function FullName() {
   const fullName = useAtomValue(() => fullNameAtom)
@@ -147,18 +145,19 @@ Run benchmarks yourself: `pnpm benchmark`
 
 ### Comparison with React
 
-| Feature | atom-react | atom-solid |
-|---------|------------|------------|
-| Re-renders | Component re-renders | Fine-grained updates |
-| Performance | Good | Excellent |
-| Bundle size | ~15kb | ~12kb |
-| Learning curve | Familiar to React devs | SolidJS concepts |
+| Feature        | atom-react             | atom-solid           |
+| -------------- | ---------------------- | -------------------- |
+| Re-renders     | Component re-renders   | Fine-grained updates |
+| Performance    | Good                   | Excellent            |
+| Bundle size    | ~15kb                  | ~12kb                |
+| Learning curve | Familiar to React devs | SolidJS concepts     |
 
 ## Migration from atom-react
 
 ### Key Differences
 
 #### 1. **Hook Signatures**
+
 ```tsx
 // atom-react
 const value = useAtomValue(myAtom)
@@ -168,6 +167,7 @@ const value = useAtomValue(() => myAtom)
 ```
 
 #### 2. **Return Values**
+
 ```tsx
 // atom-react - Direct values
 const count = useAtomValue(countAtom)
@@ -179,6 +179,7 @@ return <div>{count()}</div>
 ```
 
 #### 3. **Suspense Implementation**
+
 ```tsx
 // atom-react - Direct Promise throwing
 const result = useAtomSuspense(asyncAtom)
@@ -188,6 +189,7 @@ const result = useAtomSuspense(() => asyncAtom)
 ```
 
 #### 4. **Performance Characteristics**
+
 - **atom-react**: React reconciliation, component re-renders
 - **atom-solid**: Fine-grained updates, no virtual DOM
 
@@ -210,16 +212,19 @@ Check out the [sample application](../../sample/solid) for complete examples inc
 ## API Reference
 
 ### Core Hooks
+
 - `useAtomValue` - Read atom values
 - `useAtom` - Read and write atom values
 - `useAtomSet` - Write-only atom access
 
 ### Advanced Hooks
+
 - `useAtomSuspenseResult` - Handle async atoms with loading states
 - `useAtomSubscribe` - Subscribe to atom changes for side effects
 - `useAtomMount` - Ensure atoms are mounted and active
 
 ### Context
+
 - `RegistryProvider` - Provide atom registry to component tree
 - `useRegistry` - Access the current registry
 
@@ -240,7 +245,7 @@ Check out the [sample application](../../sample/solid) for complete examples inc
    const doubledAtom = Atom.make((get) => get(countAtom) * 2)
 
    // ❌ Bad
-   const doubled = useAtomValue(() => countAtom, count => count * 2)
+   const doubled = useAtomValue(() => countAtom, (count) => count * 2)
    ```
 
 3. **Use useAtomSet for write-only operations**: When you only need to update
@@ -265,4 +270,6 @@ MIT
 - [Effect Website](https://effect.website)
 - [SolidJS Website](https://solidjs.com)
 - [GitHub Repository](https://github.com/devx-op/effectify)
+
+```
 ```

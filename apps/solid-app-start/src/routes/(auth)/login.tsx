@@ -1,9 +1,9 @@
-import { LoginForm } from '@effectify/chat-solid/components/login-form'
-import { buttonVariants } from '@effectify/solid-ui/components/primitives/button'
-import { createFileRoute, Link } from '@tanstack/solid-router'
-import { authClient } from '@/libs/auth-client'
+import { LoginForm } from "@effectify/chat-solid/components/login-form"
+import { buttonVariants } from "@effectify/solid-ui/components/primitives/button"
+import { createFileRoute, Link } from "@tanstack/solid-router"
+import { authClient } from "@/libs/auth-client"
 
-export const Route = createFileRoute('/(auth)/login')({
+export const Route = createFileRoute("/(auth)/login")({
   component: RouteComponent,
 })
 
@@ -16,14 +16,14 @@ function RouteComponent() {
         email: values.email,
         password: values.password,
       })
-      navigate({ to: '/dashboard' })
+      navigate({ to: "/dashboard" })
     } catch {
-      navigate({ to: '/login' })
+      navigate({ to: "/login" })
     }
   }
   return (
     <LoginForm handleSubmit={handleSubmit}>
-      <Link class={buttonVariants({ variant: 'link' })} to="/register">
+      <Link class={buttonVariants({ variant: "link" })} to="/register">
         Create account here
       </Link>
     </LoginForm>

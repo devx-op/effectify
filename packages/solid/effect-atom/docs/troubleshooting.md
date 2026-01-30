@@ -82,7 +82,7 @@ const atom = Atom.make("initial") // Inferred as Atom<string>
 ```tsx
 // ❌ Complex Effect type
 const complexAtom = Atom.fn(() =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const a = yield* Effect.succeed(1)
     const b = yield* Effect.fail("error")
     return a + b
@@ -95,7 +95,7 @@ const complexAtom = Atom.fn(() =>
 ```tsx
 // ✅ Explicit return type
 const complexAtom = Atom.fn((): Effect.Effect<number, string> =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const a = yield* Effect.succeed(1)
     const b = yield* Effect.fail("error")
     return a + b
@@ -109,7 +109,7 @@ const complexAtom = Atom.fn((): Effect.Effect<number, string> =>
 
 ```tsx
 // ❌ Cannot find module '@effectify/solid-effect-atom'
-import { Atom } from '@effectify/solid-effect-atom'
+import { Atom } from "@effectify/solid-effect-atom"
 ```
 
 **Solution**: Check your tsconfig.json:
@@ -220,7 +220,7 @@ const atomB = Atom.make((get) => get(configAtom).b)
 // ❌ Expensive computation on every access
 const expensiveAtom = Atom.make((get) => {
   const data = get(dataAtom)
-  return data.map(item => heavyComputation(item)) // Slow!
+  return data.map((item) => heavyComputation(item)) // Slow!
 })
 ```
 
@@ -230,7 +230,7 @@ const expensiveAtom = Atom.make((get) => {
 // ✅ Memoize expensive computations
 const expensiveAtom = Atom.make((get) => {
   const data = get(dataAtom)
-  return data.map(item => memoizedHeavyComputation(item))
+  return data.map((item) => memoizedHeavyComputation(item))
 })
 
 // ✅ Or split into smaller atoms
@@ -329,14 +329,14 @@ const timeAtom = Atom.make(new Date().toISOString())
 ```tsx
 // ✅ SSR-safe atom
 const timeAtom = Atom.make(() => {
-  if (typeof window === 'undefined') {
-    return 'SSR' // Server value
+  if (typeof window === "undefined") {
+    return "SSR" // Server value
   }
   return new Date().toISOString() // Client value
 })
 
 // ✅ Or use SSR utilities
-const ssrTimeAtom = createSSRAtom('SSR', clientTimeAtom)
+const ssrTimeAtom = createSSRAtom("SSR", clientTimeAtom)
 ```
 
 ### Suspense Boundary Issues
@@ -363,12 +363,12 @@ function MyComponent() {
 // ✅ Or handle loading states manually
 function MyComponent() {
   const result = useAtomValue(() => asyncAtom)
-  
+
   return (
     <div>
-      {result()._tag === 'Success' && <div>{result().value}</div>}
-      {result()._tag === 'Initial' && <div>Loading...</div>}
-      {result()._tag === 'Failure' && <div>Error occurred</div>}
+      {result()._tag === "Success" && <div>{result().value}</div>}
+      {result()._tag === "Initial" && <div>Loading...</div>}
+      {result()._tag === "Failure" && <div>Error occurred</div>}
     </div>
   )
 }

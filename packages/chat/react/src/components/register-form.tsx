@@ -1,17 +1,17 @@
-import { RegisterSchema } from '@effectify/chat-domain/auth.ts'
-import { Button } from '@effectify/react-ui/components/primitives/button'
+import { RegisterSchema } from "@effectify/chat-domain/auth.ts"
+import { Button } from "@effectify/react-ui/components/primitives/button"
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@effectify/react-ui/components/primitives/card'
-import { Center } from '@effectify/react-ui/components/primitives/center'
-import { Stack, VStack } from '@effectify/react-ui/components/primitives/stack'
-import { useAppForm } from '@effectify/react-ui/components/primitives/tanstack-form'
-import * as Schema from 'effect/Schema'
-import type * as React from 'react'
+} from "@effectify/react-ui/components/primitives/card"
+import { Center } from "@effectify/react-ui/components/primitives/center"
+import { Stack, VStack } from "@effectify/react-ui/components/primitives/stack"
+import { useAppForm } from "@effectify/react-ui/components/primitives/tanstack-form"
+import * as Schema from "effect/Schema"
+import type * as React from "react"
 
 type RegisterFormProps = {
   handleSubmit: (values: { name: string; email: string; password: string; confirmPassword: string }) => Promise<void>
@@ -21,10 +21,10 @@ type RegisterFormProps = {
 export const RegisterForm: React.FC<RegisterFormProps> = (props) => {
   const form = useAppForm({
     defaultValues: {
-      name: '',
-      email: '',
-      password: '',
-      confirmPassword: '',
+      name: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
     },
     validators: {
       onBlur: Schema.standardSchemaV1(RegisterSchema),
@@ -80,10 +80,10 @@ export const RegisterForm: React.FC<RegisterFormProps> = (props) => {
                     validators={{
                       onBlur: ({ value }: { value: string }) => {
                         if (!value || value.trim().length === 0) {
-                          return 'Name is required'
+                          return "Name is required"
                         }
                         if (value.length < 2) {
-                          return 'Name must have a length of at least 2'
+                          return "Name must have a length of at least 2"
                         }
                         return
                       },
@@ -110,10 +110,10 @@ export const RegisterForm: React.FC<RegisterFormProps> = (props) => {
                     validators={{
                       onBlur: ({ value }: { value: string }) => {
                         if (!value || value.trim().length === 0) {
-                          return 'Email is required'
+                          return "Email is required"
                         }
                         if (value.length < 3) {
-                          return 'Email must have a length of at least 3'
+                          return "Email must have a length of at least 3"
                         }
                         return
                       },
@@ -140,10 +140,10 @@ export const RegisterForm: React.FC<RegisterFormProps> = (props) => {
                     validators={{
                       onBlur: ({ value }: { value: string }) => {
                         if (!value || value.trim().length === 0) {
-                          return 'Password is required'
+                          return "Password is required"
                         }
                         if (value.length < 6) {
-                          return 'Password must have a length of at least 6'
+                          return "Password must have a length of at least 6"
                         }
                         return
                       },
@@ -170,10 +170,10 @@ export const RegisterForm: React.FC<RegisterFormProps> = (props) => {
                     validators={{
                       onBlur: ({ value }: { value: string }) => {
                         if (!value || value.trim().length === 0) {
-                          return 'Confirm password is required'
+                          return "Confirm password is required"
                         }
                         if (value.length < 6) {
-                          return 'Confirm password must have a length of at least 6'
+                          return "Confirm password must have a length of at least 6"
                         }
                         return
                       },
