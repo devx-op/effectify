@@ -2,20 +2,24 @@ import type { Route } from "./+types/about.js"
 import * as Effect from "effect/Effect"
 import { httpSuccess } from "@effectify/react-router"
 import { withLoaderEffect } from "../lib/runtime.server.js"
-import { withBetterAuthGuard } from "@effectify/react-router-better-auth"
-import { AuthService } from "@effectify/node-better-auth"
-import { Prisma } from "@prisma/effect/index.js"
-import { redirect } from "react-router"
+import { randomUUID } from "node:crypto"
+// import { withBetterAuthGuard } from "@effectify/react-router-better-auth"
+// import { AuthService } from "@effectify/node-better-auth"
+import * as PrismaRepository from "@prisma/effect/prisma-repository.js"
+import { TodoModel, Todo } from "@prisma/effect/models/Todo.js"
 
 export const loader = Effect.gen(function* () {
-  const { user } = yield* AuthService.AuthContext
-  const prisma = yield* Prisma
+  // const { user } = yield* AuthService.AuthContext
 
-  yield* prisma.todo.deleteMany({})
+  const todoRepo = yield* PrismaRepository.make(TodoModel, {
+    modelName: "todo",
+    spanPrefix: "todo"
+  })
 
-  const todoCreated = yield* prisma.todo.create({
+  yield* todoRepo.deleteMany({})
+  const todoCreated = yield* todoRepo.create({
     data: {
-      id: 30,
+      id: randomUUID(),
       title: 'Test Todo',
       content: 'Test Content',
       published: false,
@@ -23,16 +27,16 @@ export const loader = Effect.gen(function* () {
     },
   })
 
-  const todosCreated = yield* prisma.todo.createManyAndReturn({
+  const todosCreated = yield* todoRepo.createManyAndReturn({
     data: [{
-      id: 31,
+      id: randomUUID(),
       title: 'Test Todo',
       content: 'Test Content',
       published: false,
       authorId: 1,
     },
     {
-      id: 32,
+      id: randomUUID(),
       title: 'Test Todo 2',
       content: 'Test Content 2',
       published: false,
@@ -40,9 +44,9 @@ export const loader = Effect.gen(function* () {
     }],
   })
 
-  const todoFindUnique = yield* prisma.todo.findUnique({
+  const todoFindUnique = yield* todoRepo.findUnique({
     where: {
-      id: 30,
+      id: todoCreated.id,
     },
   })
 
@@ -55,18 +59,17 @@ export const loader = Effect.gen(function* () {
   yield* Effect.log('todoCreated')
   yield* Effect.log(todoCreated.id.toString())
 
-  const todos = yield* prisma.todo.findMany({})
+  const todos = yield* todoRepo.findMany({})
 
   yield* Effect.log('todos')
   yield* Effect.log(todos)
 
   // Use the new httpSuccess helper for better DX
   return yield* httpSuccess({
-    user: user.id,
     todos,
   })
 }).pipe(
-  withBetterAuthGuard.with({ redirectOnFail: '/login' }),
+  // withBetterAuthGuard.with({ redirectOnFail: '/login' }),
   withLoaderEffect
 )
 
@@ -80,7 +83,7 @@ export default function AboutComponent({
         <h1>About!!!</h1>
         <p>{loaderData.data?.todos?.length}</p>
         <ul>
-          {loaderData.data.todos.map((todo: { id: number; title: string }) => (
+          {loaderData.data.todos.map((todo: { id: string; title: string }) => (
             <li key={todo.id}>{todo.title}</li>
           ))}
         </ul>

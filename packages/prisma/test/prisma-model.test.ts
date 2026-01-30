@@ -3,6 +3,8 @@ import { Prisma, PrismaClient, TodoModel } from '@prisma/effect'
 import * as PrismaRepository from '@prisma/effect/prisma-repository.js'
 import { Effect, Layer, Option } from 'effect'
 import { beforeEach, expect } from 'vitest'
+
+import { randomUUID } from 'node:crypto'
 import { prisma as db } from './utils.js'
 
 // Create the Prisma layer manually to use the existing client instance
@@ -10,6 +12,24 @@ const ClientLayer = Layer.succeed(PrismaClient, { tx: db, client: db })
 const PrismaLayer = Layer.merge(ClientLayer, Prisma.Default.pipe(Layer.provide(ClientLayer)))
 
 layer(PrismaLayer)('Prisma Model Repository', (it) => {
+  // UUIDs generados para usar en los tests
+  const testUUIDs = {
+    create: randomUUID(),
+    findMany1: randomUUID(),
+    findMany2: randomUUID(),
+    findUnique: randomUUID(),
+    findUniqueOrThrow: randomUUID(),
+    findFirst: randomUUID(),
+    findFirstOrThrow: randomUUID(),
+    update: randomUUID(),
+    delete: randomUUID(),
+    aggregate1: randomUUID(),
+    aggregate2: randomUUID(),
+    groupBy1: randomUUID(),
+    groupBy2: randomUUID(),
+    groupBy3: randomUUID(),
+  }
+
   beforeEach(async () => {
     await db.todo.deleteMany({})
   })
@@ -20,14 +40,14 @@ layer(PrismaLayer)('Prisma Model Repository', (it) => {
 
       const created = yield* todoRepo.create({
         data: {
-          id: 1,
+          id: testUUIDs.create,
           title: 'Create Test',
           content: 'Content',
           published: false,
           authorId: 1,
         },
       })
-      expect(created.id).toBe(1)
+      expect(created.id).toBe(testUUIDs.create)
       expect(created.title).toBe('Create Test')
     }),
   )
@@ -38,8 +58,8 @@ layer(PrismaLayer)('Prisma Model Repository', (it) => {
 
       const result = yield* todoRepo.createMany({
         data: [
-          { id: 1, title: 'Todo 1', content: 'C1', published: false, authorId: 1 },
-          { id: 2, title: 'Todo 2', content: 'C2', published: true, authorId: 1 },
+          { id: testUUIDs.findMany1, title: 'Todo 1', content: 'C1', published: false, authorId: 1 },
+          { id: testUUIDs.findMany2, title: 'Todo 2', content: 'C2', published: true, authorId: 1 },
         ],
       })
       expect(result.count).toBe(2)
@@ -52,8 +72,8 @@ layer(PrismaLayer)('Prisma Model Repository', (it) => {
 
       const result = yield* todoRepo.createManyAndReturn({
         data: [
-          { id: 1, title: 'Todo 1', content: 'C1', published: false, authorId: 1 },
-          { id: 2, title: 'Todo 2', content: 'C2', published: true, authorId: 1 },
+          { id: testUUIDs.findMany1, title: 'Todo 1', content: 'C1', published: false, authorId: 1 },
+          { id: testUUIDs.findMany2, title: 'Todo 2', content: 'C2', published: true, authorId: 1 },
         ],
       })
       expect(result).toHaveLength(2)
@@ -67,11 +87,11 @@ layer(PrismaLayer)('Prisma Model Repository', (it) => {
       const todoRepo = yield* PrismaRepository.make(TodoModel, { modelName: 'todo', spanPrefix: 'todo' })
 
       yield* todoRepo.create({
-        data: { id: 1, title: 'Find Unique', content: 'Content', published: false, authorId: 1 },
+        data: { id: testUUIDs.findUnique, title: 'Find Unique', content: 'Content', published: false, authorId: 1 },
       })
 
       const found = yield* todoRepo.findUnique({
-        where: { id: 1 },
+        where: { id: testUUIDs.findUnique },
       })
       expect(Option.isSome(found)).toBe(true)
       if (Option.isSome(found)) {
@@ -79,7 +99,7 @@ layer(PrismaLayer)('Prisma Model Repository', (it) => {
       }
 
       const notFound = yield* todoRepo.findUnique({
-        where: { id: 999 },
+        where: { id: '550e8400-e29b-41d4-a716-4466554409923' },
       })
       expect(Option.isNone(notFound)).toBe(true)
     }),
@@ -90,17 +110,17 @@ layer(PrismaLayer)('Prisma Model Repository', (it) => {
       const todoRepo = yield* PrismaRepository.make(TodoModel, { modelName: 'todo', spanPrefix: 'todo' })
 
       yield* todoRepo.create({
-        data: { id: 1, title: 'Find Unique Or Throw', content: 'Content', published: false, authorId: 1 },
+        data: { id: testUUIDs.findUniqueOrThrow, title: 'Find Unique Or Throw', content: 'Content', published: false, authorId: 1 },
       })
 
       const found = yield* todoRepo.findUniqueOrThrow({
-        where: { id: 1 },
+        where: { id: testUUIDs.findUniqueOrThrow },
       })
       expect(found.title).toBe('Find Unique Or Throw')
 
       const error = yield* todoRepo
         .findUniqueOrThrow({
-          where: { id: 999 },
+          where: { id: '550e8400-e29b-41d4-a716-446655440999' },
         })
         .pipe(Effect.flip)
 
@@ -113,7 +133,7 @@ layer(PrismaLayer)('Prisma Model Repository', (it) => {
       const todoRepo = yield* PrismaRepository.make(TodoModel, { modelName: 'todo', spanPrefix: 'todo' })
 
       yield* todoRepo.create({
-        data: { id: 1, title: 'Find First', content: 'Content', published: false, authorId: 1 },
+        data: { id: testUUIDs.findFirst, title: 'Find First', content: 'Content', published: false, authorId: 1 },
       })
 
       const found = yield* todoRepo.findFirst({
@@ -128,7 +148,7 @@ layer(PrismaLayer)('Prisma Model Repository', (it) => {
       const todoRepo = yield* PrismaRepository.make(TodoModel, { modelName: 'todo', spanPrefix: 'todo' })
 
       yield* todoRepo.create({
-        data: { id: 1, title: 'Find First Or Throw', content: 'Content', published: false, authorId: 1 },
+        data: { id: '550e8400-e29b-41d4-a716-446655440332', title: 'Find First Or Throw', content: 'Content', published: false, authorId: 1 },
       })
 
       const found = yield* todoRepo.findFirstOrThrow({
@@ -152,9 +172,9 @@ layer(PrismaLayer)('Prisma Model Repository', (it) => {
 
       yield* todoRepo.createMany({
         data: [
-          { id: 1, title: 'T1', content: 'C', published: true, authorId: 1 },
-          { id: 2, title: 'T2', content: 'C', published: true, authorId: 1 },
-          { id: 3, title: 'T3', content: 'C', published: false, authorId: 1 },
+          { id: '550e8400-e29b-41d4-a716-446655440232', title: 'T1', content: 'C', published: true, authorId: 1 },
+          { id: '21312312-e29b-41d4-a716-446655440002', title: 'T2', content: 'C', published: true, authorId: 1 },
+          { id: '31234123-e29b-41d4-a716-446655440003', title: 'T3', content: 'C', published: false, authorId: 1 },
         ],
       })
 
@@ -170,11 +190,11 @@ layer(PrismaLayer)('Prisma Model Repository', (it) => {
       const todoRepo = yield* PrismaRepository.make(TodoModel, { modelName: 'todo', spanPrefix: 'todo' })
 
       yield* todoRepo.create({
-        data: { id: 1, title: 'Original', content: 'Content', published: false, authorId: 1 },
+        data: { id: '550e8400-e29b-41d4-a716-446655440002', title: 'Create Test', content: 'Content', published: false, authorId: 1 },
       })
 
       const updated = yield* todoRepo.update({
-        where: { id: 1 },
+        where: { id: '550e8400-e29b-41d4-a716-446655440002' },
         data: { title: 'Updated' },
       })
       expect(updated.title).toBe('Updated')
@@ -187,8 +207,8 @@ layer(PrismaLayer)('Prisma Model Repository', (it) => {
 
       yield* todoRepo.createMany({
         data: [
-          { id: 1, title: 'T1', content: 'C', published: false, authorId: 1 },
-          { id: 2, title: 'T2', content: 'C', published: false, authorId: 1 },
+          { id: '550e8400-e29b-41d4-a716-446655440033', title: 'T1', content: 'C', published: false, authorId: 1 },
+          { id: '550e8400-e29b-41d4-a716-446655440044', title: 'T2', content: 'C', published: false, authorId: 1 },
         ],
       })
 
@@ -206,16 +226,16 @@ layer(PrismaLayer)('Prisma Model Repository', (it) => {
 
       // Create new
       const created = yield* todoRepo.upsert({
-        where: { id: 1 },
-        create: { id: 1, title: 'Upsert Created', content: 'Content', published: false, authorId: 1 },
+        where: { id: '550e8400-e29b-41d4-a716-4466554499999' },
+        create: { id: '550e8400-e29b-41d4-a716-4466554499999', title: 'Upsert Created', content: 'Content', published: false, authorId: 1 },
         update: { title: 'Upsert Updated' },
       })
       expect(created.title).toBe('Upsert Created')
 
       // Update existing
       const updated = yield* todoRepo.upsert({
-        where: { id: 1 },
-        create: { id: 1, title: 'Upsert Created', content: 'Content', published: false, authorId: 1 },
+        where: { id: '550e8400-e29b-41d4-a716-4466554499999' },
+        create: { id: '550e8400-e29b-41d4-a716-4466554499999', title: 'Upsert Created', content: 'Content', published: false, authorId: 1 },
         update: { title: 'Upsert Updated' },
       })
       expect(updated.title).toBe('Upsert Updated')
@@ -227,16 +247,16 @@ layer(PrismaLayer)('Prisma Model Repository', (it) => {
       const todoRepo = yield* PrismaRepository.make(TodoModel, { modelName: 'todo', spanPrefix: 'todo' })
 
       yield* todoRepo.create({
-        data: { id: 1, title: 'To Delete', content: 'Content', published: false, authorId: 1 },
+        data: { id: '550e8400-e29b-41d4-a716-446655442222', title: 'To Delete', content: 'Content', published: false, authorId: 1 },
       })
 
       const deleted = yield* todoRepo.delete({
-        where: { id: 1 },
+        where: { id: '550e8400-e29b-41d4-a716-446655442222' },
       })
       expect(deleted.title).toBe('To Delete')
 
       const found = yield* todoRepo.findUnique({
-        where: { id: 1 },
+        where: { id: '550e8400-e29b-41d4-a716-446655442222' },
       })
       expect(Option.isNone(found)).toBe(true)
     }),
@@ -248,8 +268,8 @@ layer(PrismaLayer)('Prisma Model Repository', (it) => {
 
       yield* todoRepo.createMany({
         data: [
-          { id: 1, title: 'T1', content: 'C', published: false, authorId: 1 },
-          { id: 2, title: 'T2', content: 'C', published: false, authorId: 1 },
+          { id: '550e8400-e29b-41d4-a716-446655666666', title: 'T1', content: 'C', published: false, authorId: 1 },
+          { id: '550e8400-e29b-41d4-a716-446655666667', title: 'T2', content: 'C', published: false, authorId: 1 },
         ],
       })
 
@@ -266,8 +286,8 @@ layer(PrismaLayer)('Prisma Model Repository', (it) => {
 
       yield* todoRepo.createMany({
         data: [
-          { id: 1, title: 'T1', content: 'C', published: false, authorId: 1 },
-          { id: 2, title: 'T2', content: 'C', published: false, authorId: 1 },
+          { id: '550e8400-e29b-41d4-a716-446655666666', title: 'T1', content: 'C', published: false, authorId: 1 },
+          { id: '550e8400-e29b-41d4-a716-446655666667', title: 'T2', content: 'C', published: false, authorId: 1 },
         ],
       })
 
@@ -275,7 +295,7 @@ layer(PrismaLayer)('Prisma Model Repository', (it) => {
       expect(count).toBe(2)
 
       const filteredCount = yield* todoRepo.count({
-        where: { id: 1 },
+        where: { id: '550e8400-e29b-41d4-a716-446655666666' },
       })
       expect(filteredCount).toBe(1)
     }),
@@ -287,8 +307,8 @@ layer(PrismaLayer)('Prisma Model Repository', (it) => {
 
       yield* todoRepo.createMany({
         data: [
-          { id: 1, title: 'T1', content: 'C', published: false, authorId: 1 },
-          { id: 2, title: 'T2', content: 'C', published: false, authorId: 1 },
+          { id: '550e8400-e29b-41d4-a716-446655666666', title: 'T1', content: 'C', published: false, authorId: 1 },
+          { id: '550e8400-e29b-41d4-a716-446655666667', title: 'T2', content: 'C', published: false, authorId: 1 },
         ],
       })
 
@@ -299,8 +319,8 @@ layer(PrismaLayer)('Prisma Model Repository', (it) => {
       })
 
       expect(result._count).toBe(2)
-      expect(result._min.id).toBe(1)
-      expect(result._max.id).toBe(2)
+      expect(result._min.id).toBe('550e8400-e29b-41d4-a716-446655666666')
+      expect(result._max.id).toBe('550e8400-e29b-41d4-a716-446655666667')
     }),
   )
 
@@ -310,9 +330,9 @@ layer(PrismaLayer)('Prisma Model Repository', (it) => {
 
       yield* todoRepo.createMany({
         data: [
-          { id: 1, title: 'T1', content: 'C', published: true, authorId: 1 },
-          { id: 2, title: 'T2', content: 'C', published: true, authorId: 1 },
-          { id: 3, title: 'T3', content: 'C', published: false, authorId: 2 },
+          { id: '550e8400-e29b-41d4-a716-446655666666', title: 'T1', content: 'C', published: true, authorId: 1 },
+          { id: '550e8400-e29b-41d4-a716-446655666667', title: 'T2', content: 'C', published: true, authorId: 1 },
+          { id: '550e8400-e29b-41d4-a716-446655666668', title: 'T3', content: 'C', published: false, authorId: 2 },
         ],
       })
 

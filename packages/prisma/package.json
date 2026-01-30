@@ -1,15 +1,15 @@
 {
   "name": "@effectify/prisma",
-  "version": "0.1.2",
+  "version": "1.0.0",
   "description": "",
-  "main": "./dist/index.js",
+  "main": "./dist/src/cli.js",
   "type": "module",
   "license": "MIT",
   "bin": {
-    "effect-prisma": "./dist/cli.js"
+    "effect-prisma": "./dist/src/cli.js"
   },
   "exports": {
-    ".": "./dist/index.js",
+    ".": "./dist/src/cli.js",
     "./prisma": "./dist/prisma/index.js"
   },
   "files": [
@@ -43,7 +43,7 @@
     "@prisma/client": "catalog:"
   },
   "devDependencies": {
-    "prisma-effect-kysely": "1.13.1",
+    "prisma-effect-kysely": "catalog:",
     "@effect/build-utils": "catalog:",
     "@effect/experimental": "catalog:",
     "@effect/language-service": "catalog:",

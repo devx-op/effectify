@@ -34,6 +34,8 @@ export const prismaCommand = Command.make('prisma', {}, () =>
               yield* Deferred.await(deferred)
             }),
           )
+          // Cerrar el stream después de procesar la generación
+          emit.end()
         },
       })
     })
