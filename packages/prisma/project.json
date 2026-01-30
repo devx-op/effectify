@@ -15,7 +15,14 @@
         "format": ["esm"],
         "generatePackageJson": false,
         "updateBuildableProjectDepsInPackageJson": false,
-        "additionalEntryPoints": []
+        "additionalEntryPoints": [],
+        "assets": [
+          {
+            "glob": "**/*.eta",
+            "input": "packages/prisma/src/templates",
+            "output": "src/templates"
+          }
+        ]
       },
       "configurations": {
         "development": {},

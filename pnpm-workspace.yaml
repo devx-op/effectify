@@ -27,12 +27,12 @@ catalog:
   "@nx/react": 22.1.1
   "@nx/vite": 22.1.1
   "@nx/web": 22.1.1
-  "@prisma/adapter-better-sqlite3": 7.0.0
-  "@prisma/adapter-pg": ^7.0.1
-  "@prisma/client": 7.0.0
-  "@prisma/generator": ^7.0.1
-  "@prisma/generator-helper": 7.0.0
-  "@prisma/internals": 7.0.0
+  "@prisma/adapter-better-sqlite3": 7.3.0
+  "@prisma/adapter-pg": 7.3.0
+  "@prisma/client": 7.3.0
+  "@prisma/generator": 7.3.0
+  "@prisma/generator-helper": 7.3.0
+  "@prisma/internals": 7.3.0
   "@radix-ui/react-form": 0.1.8
   "@radix-ui/react-label": 2.1.8
   "@radix-ui/react-slot": 1.2.4
@@ -105,8 +105,8 @@ catalog:
   pg: ^8.16.3
   postcss: 8.5.6
   prettier: 2.8.8
-  prisma: 7.0.0
-  prisma-effect-kysely: 2.0.0
+  prisma: 7.3.0
+  prisma-effect-kysely: 5.2.0
   react: 19.2.0
   react-dom: 19.2.0
   react-router: 7.9.6
