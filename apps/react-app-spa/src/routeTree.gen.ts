@@ -8,70 +8,70 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root'
-import { Route as authLayoutRouteImport } from './routes/(auth)/layout'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as protectedDashboardRouteImport } from './routes/(protected)/dashboard'
-import { Route as authRegisterRouteImport } from './routes/(auth)/register'
-import { Route as authLoginRouteImport } from './routes/(auth)/login'
+import { Route as rootRouteImport } from "./routes/__root"
+import { Route as authLayoutRouteImport } from "./routes/(auth)/layout"
+import { Route as IndexRouteImport } from "./routes/index"
+import { Route as protectedDashboardRouteImport } from "./routes/(protected)/dashboard"
+import { Route as authRegisterRouteImport } from "./routes/(auth)/register"
+import { Route as authLoginRouteImport } from "./routes/(auth)/login"
 
 const authLayoutRoute = authLayoutRouteImport.update({
-  id: '/(auth)',
+  id: "/(auth)",
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+  id: "/",
+  path: "/",
   getParentRoute: () => rootRouteImport,
 } as any)
 const protectedDashboardRoute = protectedDashboardRouteImport.update({
-  id: '/(protected)/dashboard',
-  path: '/dashboard',
+  id: "/(protected)/dashboard",
+  path: "/dashboard",
   getParentRoute: () => rootRouteImport,
 } as any)
 const authRegisterRoute = authRegisterRouteImport.update({
-  id: '/register',
-  path: '/register',
+  id: "/register",
+  path: "/register",
   getParentRoute: () => authLayoutRoute,
 } as any)
 const authLoginRoute = authLoginRouteImport.update({
-  id: '/login',
-  path: '/login',
+  id: "/login",
+  path: "/login",
   getParentRoute: () => authLayoutRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/login': typeof authLoginRoute
-  '/register': typeof authRegisterRoute
-  '/dashboard': typeof protectedDashboardRoute
+  "/": typeof IndexRoute
+  "/login": typeof authLoginRoute
+  "/register": typeof authRegisterRoute
+  "/dashboard": typeof protectedDashboardRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/login': typeof authLoginRoute
-  '/register': typeof authRegisterRoute
-  '/dashboard': typeof protectedDashboardRoute
+  "/": typeof IndexRoute
+  "/login": typeof authLoginRoute
+  "/register": typeof authRegisterRoute
+  "/dashboard": typeof protectedDashboardRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/(auth)': typeof authLayoutRouteWithChildren
-  '/(auth)/login': typeof authLoginRoute
-  '/(auth)/register': typeof authRegisterRoute
-  '/(protected)/dashboard': typeof protectedDashboardRoute
+  "/": typeof IndexRoute
+  "/(auth)": typeof authLayoutRouteWithChildren
+  "/(auth)/login": typeof authLoginRoute
+  "/(auth)/register": typeof authRegisterRoute
+  "/(protected)/dashboard": typeof protectedDashboardRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/register' | '/dashboard'
+  fullPaths: "/" | "/login" | "/register" | "/dashboard"
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/register' | '/dashboard'
+  to: "/" | "/login" | "/register" | "/dashboard"
   id:
-    | '__root__'
-    | '/'
-    | '/(auth)'
-    | '/(auth)/login'
-    | '/(auth)/register'
-    | '/(protected)/dashboard'
+    | "__root__"
+    | "/"
+    | "/(auth)"
+    | "/(auth)/login"
+    | "/(auth)/register"
+    | "/(protected)/dashboard"
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -80,40 +80,40 @@ export interface RootRouteChildren {
   protectedDashboardRoute: typeof protectedDashboardRoute
 }
 
-declare module '@tanstack/react-router' {
+declare module "@tanstack/react-router" {
   interface FileRoutesByPath {
-    '/(auth)': {
-      id: '/(auth)'
-      path: ''
-      fullPath: ''
+    "/(auth)": {
+      id: "/(auth)"
+      path: ""
+      fullPath: ""
       preLoaderRoute: typeof authLayoutRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
+    "/": {
+      id: "/"
+      path: "/"
+      fullPath: "/"
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/(protected)/dashboard': {
-      id: '/(protected)/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
+    "/(protected)/dashboard": {
+      id: "/(protected)/dashboard"
+      path: "/dashboard"
+      fullPath: "/dashboard"
       preLoaderRoute: typeof protectedDashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/(auth)/register': {
-      id: '/(auth)/register'
-      path: '/register'
-      fullPath: '/register'
+    "/(auth)/register": {
+      id: "/(auth)/register"
+      path: "/register"
+      fullPath: "/register"
       preLoaderRoute: typeof authRegisterRouteImport
       parentRoute: typeof authLayoutRoute
     }
-    '/(auth)/login': {
-      id: '/(auth)/login'
-      path: '/login'
-      fullPath: '/login'
+    "/(auth)/login": {
+      id: "/(auth)/login"
+      path: "/login"
+      fullPath: "/login"
       preLoaderRoute: typeof authLoginRouteImport
       parentRoute: typeof authLayoutRoute
     }
