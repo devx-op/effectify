@@ -32,5 +32,16 @@
       }
     }
   },
+  "targets": {
+    "lint": {
+      "executor": "nx-oxlint:lint",
+      "options": {
+        "lintFilePatterns": [
+          "apps/solid-app-start/**/*.{ts,tsx,js,jsx}",
+          "!apps/solid-app-start/src/routeTree.gen.ts"
+        ]
+      }
+    }
+  },
   "tags": ["solid-start"]
 }

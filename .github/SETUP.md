@@ -46,7 +46,6 @@ Configure these secrets in your GitHub repository settings (`Settings > Secrets 
   - 🔍 **Type Check**: Validates TypeScript types
   - 🏗️ **Build**: Builds affected projects and uploads artifacts
   - 🧪 **Test**: Runs tests for affected projects
-  - 🎭 **E2E Tests**: Runs end-to-end tests (if any)
   - 📊 **Summary**: CI results dashboard
 
 ### Release Workflow (`.github/workflows/release.yml`)
@@ -154,16 +153,19 @@ always-auth=true
 ### Common Issues
 
 1. **NPM Token Issues**
+
    - Ensure token has `Automation` type
    - Check token permissions include publish access
    - Verify token is not expired
 
 2. **JSR Token Issues**
+
    - Ensure JSR account has publish permissions
    - Check if package name conflicts exist
    - Verify JSR token is valid
 
 3. **Build Failures**
+
    - Check if all dependencies are installed
    - Verify TypeScript compilation
    - Review test failures

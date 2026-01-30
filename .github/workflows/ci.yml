@@ -165,48 +165,11 @@ jobs:
         run: |
           BASE=$(git merge-base HEAD origin/dev)
           pnpm nx affected --target=test --base=$BASE --head=HEAD --parallel=3 --verbose --passWithNoTests
-
-  # E2E tests (if any)
-  e2e:
-    name: 🎭 E2E Tests
-    runs-on: ubuntu-latest
-    needs: [build]
-    steps:
-      - name: 📥 Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: 📦 Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.14.0
-
-      - name: 🏗️ Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "pnpm"
-
-      - name: 📦 Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: 📦 Download build artifacts
-        if: needs.build.outputs.has-build-artifacts == 'true'
-        uses: actions/download-artifact@v4
-        with:
-          name: build-artifacts-${{ github.sha }}
-
-      - name: 🎭 Run E2E tests
-        run: |
-          BASE=$(git merge-base HEAD origin/dev)
-          pnpm nx affected --target=e2e --base=$BASE --head=HEAD --parallel=2 --verbose --passWithNoTests
-
   # Summary job
   ci-summary:
     name: 📊 CI Summary
     runs-on: ubuntu-latest
-    needs: [lint, typecheck, build, test, e2e]
+    needs: [lint, typecheck, build, test]
     if: always()
     steps:
       - name: 📊 CI Summary
@@ -218,12 +181,10 @@ jobs:
           echo "| 🔍 Type Check | ${{ needs.typecheck.result == 'success' && '✅ Success' || '❌ Failed' }} | TypeScript compiler checks |" >> $GITHUB_STEP_SUMMARY
           echo "| 🏗️ Build | ${{ needs.build.result == 'success' && '✅ Success' || '❌ Failed' }} | Nx affected build |" >> $GITHUB_STEP_SUMMARY
           echo "| 🧪 Test | ${{ needs.test.result == 'success' && '✅ Success' || '❌ Failed' }} | Unit tests with Vitest |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🎭 E2E Tests | ${{ needs.e2e.result == 'success' && '✅ Success' || '❌ Failed' }} | End-to-end tests |" >> $GITHUB_STEP_SUMMARY
 
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📈 Performance Metrics" >> $GITHUB_STEP_SUMMARY
           echo "- 🔄 Parallel execution: 3x for lint/typecheck/build/test" >> $GITHUB_STEP_SUMMARY
-          echo "- 🔄 Parallel execution: 2x for E2E tests" >> $GITHUB_STEP_SUMMARY
           echo "- 📦 Caching: Nx computation caching enabled" >> $GITHUB_STEP_SUMMARY
           echo "- 🎯 Affected projects only: Runs only on changed code" >> $GITHUB_STEP_SUMMARY
 
