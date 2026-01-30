@@ -33,8 +33,8 @@ pnpm add @effectify/solid-effect-atom @effect-atom/atom effect solid-js
 ### Basic Usage
 
 ```tsx
-import { Atom, useAtomValue, useAtom, RegistryProvider } from '@effectify/solid-effect-atom'
-import { render } from 'solid-js/web'
+import { Atom, RegistryProvider, useAtom, useAtomValue } from "@effectify/solid-effect-atom"
+import { render } from "solid-js/web"
 
 // Create an atom
 const counterAtom = Atom.make(0)
@@ -60,7 +60,7 @@ function App() {
   )
 }
 
-render(() => <App />, document.getElementById('root')!)
+render(() => <App />, document.getElementById("root")!)
 ```
 
 ## Core Concepts
@@ -80,7 +80,7 @@ const value = useAtomValue(() => myAtom)
 All atom operations require a registry context:
 
 ```tsx
-import { RegistryProvider } from '@effectify/solid-effect-atom'
+import { RegistryProvider } from "@effectify/solid-effect-atom"
 
 function App() {
   return (
@@ -117,7 +117,7 @@ function App() {
 ### Basic Counter
 
 ```tsx
-import { Atom, useAtom } from '@effectify/solid-effect-atom'
+import { Atom, useAtom } from "@effectify/solid-effect-atom"
 
 const counterAtom = Atom.make(0)
 
@@ -138,7 +138,7 @@ function Counter() {
 ### Computed Values
 
 ```tsx
-import { Atom, useAtomValue } from '@effectify/solid-effect-atom'
+import { Atom, useAtomValue } from "@effectify/solid-effect-atom"
 
 const baseAtom = Atom.make(10)
 const doubledAtom = Atom.make((get) => get(baseAtom) * 2)
@@ -159,11 +159,11 @@ function ComputedExample() {
 ### Async Data
 
 ```tsx
-import { Atom, useAtomSuspenseResult, useAtomSet } from '@effectify/solid-effect-atom'
-import { Effect } from 'effect'
+import { Atom, useAtomSet, useAtomSuspenseResult } from "@effectify/solid-effect-atom"
+import { Effect } from "effect"
 
 const dataAtom = Atom.fn(() =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     yield* Effect.sleep(1000)
     return `Data loaded at ${new Date().toLocaleTimeString()}`
   })
@@ -198,13 +198,13 @@ function AsyncExample() {
 
 ## Comparison with React
 
-| Feature | atom-solid | atom-react |
-|---------|------------|------------|
-| Bundle Size | ~15KB | ~25KB |
-| Runtime Performance | 20%+ faster | Baseline |
-| Memory Usage | 15%+ less | Baseline |
-| Reactivity | Fine-grained | Component-level |
-| TypeScript | Excellent | Good |
+| Feature             | atom-solid   | atom-react      |
+| ------------------- | ------------ | --------------- |
+| Bundle Size         | ~15KB        | ~25KB           |
+| Runtime Performance | 20%+ faster  | Baseline        |
+| Memory Usage        | 15%+ less    | Baseline        |
+| Reactivity          | Fine-grained | Component-level |
+| TypeScript          | Excellent    | Good            |
 
 ## Migration from atom-react
 
@@ -217,7 +217,7 @@ return <div>{value}</div>
 
 // atom-solid
 const value = useAtomValue(() => atom)
-return <div>{value()}</div>  // Note the function call
+return <div>{value()}</div> // Note the function call
 ```
 
 ## Best Practices

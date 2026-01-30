@@ -18,26 +18,26 @@ npm install @effectify/react-query @tanstack/react-query effect react
 ### Simple Data Fetching
 
 ```tsx
-import { useQuery } from '@tanstack/react-query'
-import { Effect } from 'effect'
+import { useQuery } from "@tanstack/react-query"
+import { Effect } from "effect"
 
 // Define your Effect
 const fetchUser = (id: number) =>
   Effect.tryPromise({
-    try: () => fetch(`/api/users/${id}`).then(res => res.json()),
-    catch: (error) => new Error(`Failed to fetch user: ${error}`)
+    try: () => fetch(`/api/users/${id}`).then((res) => res.json()),
+    catch: (error) => new Error(`Failed to fetch user: ${error}`),
   })
 
 // Use in component
 function UserProfile({ userId }: { userId: number }) {
   const { data, isLoading, error } = useQuery({
-    queryKey: ['user', userId],
-    queryFn: () => Effect.runPromise(fetchUser(userId))
+    queryKey: ["user", userId],
+    queryFn: () => Effect.runPromise(fetchUser(userId)),
   })
 
   if (isLoading) return <div>Loading...</div>
   if (error) return <div>Error: {error.message}</div>
-  
+
   return <div>Hello, {data?.name}!</div>
 }
 ```
@@ -45,25 +45,25 @@ function UserProfile({ userId }: { userId: number }) {
 ### With Error Handling
 
 ```tsx
-import { Effect, pipe } from 'effect'
+import { Effect, pipe } from "effect"
 
 const fetchUserWithRetry = (id: number) =>
   pipe(
     fetchUser(id),
-    Effect.retry({ times: 3, delay: '1 second' }),
-    Effect.catchAll(error => 
-      Effect.succeed({ 
-        id, 
-        name: 'Unknown User', 
-        email: 'unknown@example.com' 
+    Effect.retry({ times: 3, delay: "1 second" }),
+    Effect.catchAll((error) =>
+      Effect.succeed({
+        id,
+        name: "Unknown User",
+        email: "unknown@example.com",
       })
-    )
+    ),
   )
 
 function UserProfile({ userId }: { userId: number }) {
   const { data } = useQuery({
-    queryKey: ['user', userId],
-    queryFn: () => Effect.runPromise(fetchUserWithRetry(userId))
+    queryKey: ["user", userId],
+    queryFn: () => Effect.runPromise(fetchUserWithRetry(userId)),
   })
 
   return <div>Hello, {data?.name}!</div>
@@ -78,15 +78,15 @@ function UserProfile({ userId }: { userId: number }) {
 const fetchUserWithPosts = (userId: number) =>
   Effect.all([
     fetchUser(userId),
-    fetchUserPosts(userId)
+    fetchUserPosts(userId),
   ]).pipe(
-    Effect.map(([user, posts]) => ({ user, posts }))
+    Effect.map(([user, posts]) => ({ user, posts })),
   )
 
 function UserDashboard({ userId }: { userId: number }) {
   const { data, isLoading } = useQuery({
-    queryKey: ['userDashboard', userId],
-    queryFn: () => Effect.runPromise(fetchUserWithPosts(userId))
+    queryKey: ["userDashboard", userId],
+    queryFn: () => Effect.runPromise(fetchUserWithPosts(userId)),
   })
 
   if (isLoading) return <div>Loading dashboard...</div>
@@ -104,12 +104,12 @@ function UserDashboard({ userId }: { userId: number }) {
 
 ```tsx
 class UserNotFoundError {
-  readonly _tag = 'UserNotFoundError'
+  readonly _tag = "UserNotFoundError"
   constructor(readonly userId: number) {}
 }
 
 class NetworkError {
-  readonly _tag = 'NetworkError'
+  readonly _tag = "NetworkError"
   constructor(readonly message: string) {}
 }
 
@@ -129,13 +129,13 @@ const fetchUserTyped = (id: number) =>
       if (error instanceof UserNotFoundError) return error
       if (error instanceof NetworkError) return error
       return new NetworkError(String(error))
-    }
+    },
   })
 
 function UserProfile({ userId }: { userId: number }) {
   const { data, error } = useQuery({
-    queryKey: ['user', userId],
-    queryFn: () => Effect.runPromise(fetchUserTyped(userId))
+    queryKey: ["user", userId],
+    queryFn: () => Effect.runPromise(fetchUserTyped(userId)),
   })
 
   if (error) {
@@ -154,27 +154,27 @@ function UserProfile({ userId }: { userId: number }) {
 ### Mutations with Effect
 
 ```tsx
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 const updateUser = (id: number, data: Partial<User>) =>
   Effect.tryPromise({
-    try: () => fetch(`/api/users/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    }).then(res => res.json()),
-    catch: (error) => new Error(`Failed to update user: ${error}`)
+    try: () =>
+      fetch(`/api/users/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      }).then((res) => res.json()),
+    catch: (error) => new Error(`Failed to update user: ${error}`),
   })
 
 function EditUserForm({ userId }: { userId: number }) {
   const queryClient = useQueryClient()
-  
+
   const mutation = useMutation({
-    mutationFn: (data: Partial<User>) => 
-      Effect.runPromise(updateUser(userId, data)),
+    mutationFn: (data: Partial<User>) => Effect.runPromise(updateUser(userId, data)),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['user', userId] })
-    }
+      queryClient.invalidateQueries({ queryKey: ["user", userId] })
+    },
   })
 
   const handleSubmit = (formData: Partial<User>) => {
@@ -184,11 +184,11 @@ function EditUserForm({ userId }: { userId: number }) {
   return (
     <form onSubmit={handleSubmit}>
       {/* form fields */}
-      <button 
-        type="submit" 
+      <button
+        type="submit"
         disabled={mutation.isPending}
       >
-        {mutation.isPending ? 'Saving...' : 'Save'}
+        {mutation.isPending ? "Saving..." : "Save"}
       </button>
     </form>
   )
@@ -204,7 +204,7 @@ Define specific error types for better error handling:
 ```tsx
 // Good
 class ValidationError {
-  readonly _tag = 'ValidationError'
+  readonly _tag = "ValidationError"
   constructor(readonly errors: string[]) {}
 }
 
@@ -217,12 +217,12 @@ class ValidationError {
 const fetchUserProfile = (id: number) =>
   pipe(
     fetchUser(id),
-    Effect.flatMap(user => 
+    Effect.flatMap((user) =>
       pipe(
         fetchUserPreferences(user.id),
-        Effect.map(preferences => ({ user, preferences }))
+        Effect.map((preferences) => ({ user, preferences })),
       )
-    )
+    ),
   )
 ```
 
@@ -231,10 +231,10 @@ const fetchUserProfile = (id: number) =>
 ```tsx
 // Create query key factories
 const userKeys = {
-  all: ['users'] as const,
-  lists: () => [...userKeys.all, 'list'] as const,
+  all: ["users"] as const,
+  lists: () => [...userKeys.all, "list"] as const,
   list: (filters: string) => [...userKeys.lists(), { filters }] as const,
-  details: () => [...userKeys.all, 'detail'] as const,
+  details: () => [...userKeys.all, "detail"] as const,
   detail: (id: number) => [...userKeys.details(), id] as const,
 }
 ```

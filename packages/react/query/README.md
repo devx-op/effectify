@@ -21,13 +21,13 @@ bun add @effectify/react-query
 ## Basic Usage
 
 ```tsx
-import * as Layer from 'effect/Layer'
-import * as Effect from 'effect/Effect'
-import { QueryClient } from '@tanstack/react-query'
-import { tanstackQueryEffect } from '@effectify/react-query'
+import * as Layer from "effect/Layer"
+import * as Effect from "effect/Effect"
+import { QueryClient } from "@tanstack/react-query"
+import { tanstackQueryEffect } from "@effectify/react-query"
 
 // Create an Effect layer
-const AppLayer = Layer.succeed('AppConfig', { apiUrl: 'https://api.example.com' })
+const AppLayer = Layer.succeed("AppConfig", { apiUrl: "https://api.example.com" })
 
 // Create a QueryClient instance
 const queryClient = new QueryClient()
@@ -54,21 +54,15 @@ function App() {
 // Use in components
 function YourComponent() {
   const query = useEffectQuery({
-    queryKey: ['data'],
-    queryFn: () => Effect.succeed(['item1', 'item2']),
+    queryKey: ["data"],
+    queryFn: () => Effect.succeed(["item1", "item2"]),
   })
 
   return (
     <div>
-      {query.isPending ? (
-        <p>Loading...</p>
-      ) : query.isError ? (
-        <p>Error: {query.error.message}</p>
-      ) : (
+      {query.isPending ? <p>Loading...</p> : query.isError ? <p>Error: {query.error.message}</p> : (
         <ul>
-          {query.data.map((item) => (
-            <li>{item}</li>
-          ))}
+          {query.data.map((item) => <li>{item}</li>)}
         </ul>
       )}
     </div>

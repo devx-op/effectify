@@ -1,12 +1,12 @@
-import { describe, it } from '@effect/vitest'
-import { betterAuth } from 'better-auth'
-import Database from 'better-sqlite3'
-import { Effect } from 'effect'
-import { assert, expect } from 'vitest'
-import { AuthService } from '../src/lib/auth-service.js'
+import { describe, it } from "@effect/vitest"
+import { betterAuth } from "better-auth"
+import Database from "better-sqlite3"
+import { Effect } from "effect"
+import { assert, expect } from "vitest"
+import { AuthService } from "../src/lib/auth-service.js"
 
-describe('AuthService', () => {
-  const testDb = new Database(':memory:')
+describe("AuthService", () => {
+  const testDb = new Database(":memory:")
   const authOptions = {
     database: testDb,
     emailAndPassword: {
@@ -21,30 +21,28 @@ describe('AuthService', () => {
     // However, getMigrations takes options directly.
     // If betterAuth(authOptions) is strictly required for side effects:
     betterAuth(authOptions)
-    const { runMigrations: run } = await import('better-auth/db').then((m) => m.getMigrations(authOptions))
+    const { runMigrations: run } = await import("better-auth/db").then((m) => m.getMigrations(authOptions))
     await run()
   }
 
   const AuthLayer = AuthService.layer(authOptions)
 
-  it.effect('should create the layer and provide the service', () =>
-    Effect.gen(function* () {
+  it.effect("should create the layer and provide the service", () =>
+    Effect.gen(function*() {
       const { auth } = yield* AuthService.AuthServiceContext
       assert.ok(auth)
       assert.ok(auth.api)
       assert.ok(auth.handler)
-    }).pipe(Effect.provide(AuthLayer)),
-  )
+    }).pipe(Effect.provide(AuthLayer)))
 
-  it.effect('should handle session verification simulation', () =>
-    Effect.gen(function* () {
+  it.effect("should handle session verification simulation", () =>
+    Effect.gen(function*() {
       const { auth } = yield* AuthService.AuthServiceContext
       expect(!!auth).toBe(true)
-    }).pipe(Effect.provide(AuthLayer)),
-  )
+    }).pipe(Effect.provide(AuthLayer)))
 
-  it.effect('should create user and login', () =>
-    Effect.gen(function* () {
+  it.effect("should create user and login", () =>
+    Effect.gen(function*() {
       // Run migrations before testing DB operations
       yield* Effect.promise(() => runMigrations())
 
@@ -52,15 +50,15 @@ describe('AuthService', () => {
 
       // 1. Create User
       const testUser = {
-        email: 'test@example.com',
-        password: 'password123',
-        name: 'Test User',
+        email: "test@example.com",
+        password: "password123",
+        name: "Test User",
       }
 
       const user = yield* Effect.promise(() =>
         auth.api.signUpEmail({
           body: testUser,
-        }),
+        })
       )
 
       assert.ok(user)
@@ -73,11 +71,10 @@ describe('AuthService', () => {
             email: testUser.email,
             password: testUser.password,
           },
-        }),
+        })
       )
 
       assert.ok(session)
       expect(session.user.email).toBe(testUser.email)
-    }).pipe(Effect.provide(AuthLayer)),
-  )
+    }).pipe(Effect.provide(AuthLayer)))
 })

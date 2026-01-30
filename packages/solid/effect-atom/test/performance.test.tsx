@@ -2,14 +2,14 @@
  * Performance tests for atom-solid optimizations
  */
 
-import * as Atom from '@effect-atom/atom/Atom'
-import * as Registry from '@effect-atom/atom/Registry'
-import { cleanup, render } from '@solidjs/testing-library'
-import type { JSX } from 'solid-js/jsx-runtime'
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import { RegistryProvider, useAtomValue } from '../src/index.js'
+import * as Atom from "@effect-atom/atom/Atom"
+import * as Registry from "@effect-atom/atom/Registry"
+import { cleanup, render } from "@solidjs/testing-library"
+import type { JSX } from "solid-js/jsx-runtime"
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest"
+import { RegistryProvider, useAtomValue } from "../src/index.js"
 
-describe('Performance Optimizations', () => {
+describe("Performance Optimizations", () => {
   let registry: Registry.Registry
 
   beforeEach(() => {
@@ -20,7 +20,7 @@ describe('Performance Optimizations', () => {
     cleanup()
   })
 
-  test('should reuse signals for same atom instances', () => {
+  test("should reuse signals for same atom instances", () => {
     const atom = Atom.make(0)
     let renderCount = 0
 
@@ -49,7 +49,7 @@ describe('Performance Optimizations', () => {
     expect(registry.get(atom)).toBe(1)
   })
 
-  test('should handle rapid updates efficiently', async () => {
+  test("should handle rapid updates efficiently", async () => {
     const atom = Atom.make(0)
     let updateCount = 0
 
@@ -80,13 +80,13 @@ describe('Performance Optimizations', () => {
     expect(updateCount).toBeGreaterThanOrEqual(initialUpdateCount)
   })
 
-  test('should clean up subscriptions properly', () => {
+  test("should clean up subscriptions properly", () => {
     const atom = Atom.make(0)
     let subscriptionCount = 0
 
     // Mock the subscription to count active subscriptions
     const originalSubscribe = registry.subscribe
-    vi.spyOn(registry, 'subscribe').mockImplementation(
+    vi.spyOn(registry, "subscribe").mockImplementation(
       (atom: Atom.Atom<any>, callback: (_: any) => void, options?: { readonly immediate?: boolean }) => {
         subscriptionCount++
         const unsubscribe = originalSubscribe.call(registry, atom, callback, options)
@@ -119,7 +119,7 @@ describe('Performance Optimizations', () => {
     vi.restoreAllMocks()
   })
 
-  test('should handle memory efficiently with many atoms', () => {
+  test("should handle memory efficiently with many atoms", () => {
     const atoms: Atom.Atom<number>[] = []
 
     // Create many atoms
@@ -145,14 +145,14 @@ describe('Performance Optimizations', () => {
     expect(registry.get(atoms[99])).toBe(99)
   })
 
-  test('should optimize computed atom evaluations', () => {
+  test("should optimize computed atom evaluations", () => {
     const baseAtom = Atom.make(1)
     const computedAtom = Atom.make((get) => get(baseAtom) * 2)
     let computeCount = 0
 
     // Spy on the registry.get method to count evaluations
     const originalGet = registry.get.bind(registry)
-    vi.spyOn(registry, 'get').mockImplementation((atom: Atom.Atom<any>) => {
+    vi.spyOn(registry, "get").mockImplementation((atom: Atom.Atom<any>) => {
       if (atom === computedAtom) {
         computeCount++
       }

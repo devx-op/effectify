@@ -26,7 +26,7 @@ Create a server runtime with your Effect layers:
 
 ```typescript
 // lib/server-runtime.ts
-import { make } from "@effectify/react-router";
+import { make } from "@effectify/react-router"
 import * as Layer from "effect/Layer"
 
 const layers = Layer.empty
@@ -40,22 +40,22 @@ Use the Effect-based loaders and actions in your React Router routes:
 
 ```typescript
 // routes/home.tsx
-import type * as Route from "./+types.home";
-import { httpSuccess, httpFailure, LoaderArgsContext } from "@effectify/react-router";
-import { withLoaderEffect } from "~/lib/server-runtime";
+import type * as Route from "./+types.home"
+import { httpFailure, httpSuccess, LoaderArgsContext } from "@effectify/react-router"
+import { withLoaderEffect } from "~/lib/server-runtime"
 import * as Effect from "effect/Effect"
 
 export const loader = withLoaderEffect(
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const { request } = yield* LoaderArgsContext
     yield* Effect.log("request", request)
-    
+
     // Improved DX: Simple syntax for success responses
-    return yield* httpSuccess({ hello: 'world' })
-    
+    return yield* httpSuccess({ hello: "world" })
+
     // For error responses, use:
     // return yield* httpFailure("Something went wrong")
-  })
+  }),
 )
 
 export default function Home({ loaderData }: Route.ComponentProps) {
@@ -75,31 +75,35 @@ The library provides helper functions for better DX when returning HTTP response
 ### Success Responses
 
 Instead of the verbose:
+
 ```typescript
-return yield* Effect.succeed(new HttpResponseSuccess({ data: { hello: 'world' }}))
+return yield * Effect.succeed(new HttpResponseSuccess({ data: { hello: "world" } }))
 ```
 
 Use the simplified syntax:
+
 ```typescript
-return yield* httpSuccess({ hello: 'world' })
+return yield * httpSuccess({ hello: "world" })
 ```
 
 ### Error Responses
 
 For error handling, use the `httpFailure` helper:
+
 ```typescript
-return yield* httpFailure("Something went wrong")
+return yield * httpFailure("Something went wrong")
 // or with more complex error objects
-return yield* httpFailure({ code: 'VALIDATION_ERROR', message: 'Invalid input' })
+return yield * httpFailure({ code: "VALIDATION_ERROR", message: "Invalid input" })
 ```
 
 ### Redirects
 
 For redirects, use the `httpRedirect` helper:
+
 ```typescript
-return yield* httpRedirect('/login')
+return yield * httpRedirect("/login")
 // or with custom status/headers
-return yield* httpRedirect('/dashboard', { status: 301 })
+return yield * httpRedirect("/dashboard", { status: 301 })
 ```
 
 ## API
@@ -115,12 +119,14 @@ Creates Effect-based runtime helpers for React Router.
 #### Returns
 
 An object containing:
+
 - `withLoaderEffect`: Wrapper for React Router loaders using Effect
 - `withActionEffect`: Wrapper for React Router actions using Effect
 
 ### `LoaderArgsContext`
 
 Effect context providing access to React Router loader arguments including:
+
 - `request`: The incoming Request object
 - `params`: Route parameters
 - `context`: Additional context data
@@ -150,7 +156,7 @@ The library provides comprehensive error handling with full ErrorBoundary suppor
 
 ```typescript
 // The library automatically logs errors like this:
-Effect.tapError((cause) => Effect.logError('Loader effect failed', cause))
+Effect.tapError((cause) => Effect.logError("Loader effect failed", cause))
 
 // Loader errors are automatically converted to Response objects for ErrorBoundary:
 // - Effect errors → Response with { ok: false, errors: [...] } and status 500
@@ -167,7 +173,7 @@ const runtime = make(pipe(
   // Your app layers
   MyAppLayer,
   // Custom logger layer
-  Logger.replace(Logger.defaultLogger, customLogger)
+  Logger.replace(Logger.defaultLogger, customLogger),
 ))
 ```
 

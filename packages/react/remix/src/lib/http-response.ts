@@ -1,17 +1,17 @@
-import type { ResponseInit } from '@effect/platform-node/Undici'
-import * as Data from 'effect/Data'
-import * as Effect from 'effect/Effect'
-import * as Match from 'effect/Match'
+import type { ResponseInit } from "@effect/platform-node/Undici"
+import * as Data from "effect/Data"
+import * as Effect from "effect/Effect"
+import * as Match from "effect/Match"
 
-export class HttpResponseSuccess<T> extends Data.TaggedClass('HttpResponseSuccess')<{
+export class HttpResponseSuccess<T> extends Data.TaggedClass("HttpResponseSuccess")<{
   readonly data: T
 }> {}
 
-export class HttpResponseFailure<T = unknown> extends Data.TaggedClass('HttpResponseFailure')<{
+export class HttpResponseFailure<T = unknown> extends Data.TaggedClass("HttpResponseFailure")<{
   readonly cause: T
 }> {}
 
-export class HttpResponseRedirect extends Data.TaggedClass('HttpResponseRedirect')<{
+export class HttpResponseRedirect extends Data.TaggedClass("HttpResponseRedirect")<{
   readonly to: string
   readonly init?: number | ResponseInit | undefined
 }> {}

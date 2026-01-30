@@ -1,13 +1,13 @@
-import { MainNavbar } from '@effectify/solid-ui/components/navbar/main-navbar'
-import { Navbar } from '@effectify/solid-ui/components/navbar/navbar'
-import { Flex } from '@effectify/solid-ui/components/primitives/flex'
-import { HStack } from '@effectify/solid-ui/components/primitives/stack'
-import { Sidebar } from '@effectify/solid-ui/components/sidebar/sidebar'
-import { SidebarContainer } from '@effectify/solid-ui/components/sidebar/sidebar-container'
-import { createFileRoute, Outlet } from '@tanstack/solid-router'
-import { authClient } from '@/libs/auth-client'
+import { MainNavbar } from "@effectify/solid-ui/components/navbar/main-navbar"
+import { Navbar } from "@effectify/solid-ui/components/navbar/navbar"
+import { Flex } from "@effectify/solid-ui/components/primitives/flex"
+import { HStack } from "@effectify/solid-ui/components/primitives/stack"
+import { Sidebar } from "@effectify/solid-ui/components/sidebar/sidebar"
+import { SidebarContainer } from "@effectify/solid-ui/components/sidebar/sidebar-container"
+import { createFileRoute, Outlet } from "@tanstack/solid-router"
+import { authClient } from "@/libs/auth-client"
 
-export const Route = createFileRoute('/(protected)')({
+export const Route = createFileRoute("/(protected)")({
   component: RouteComponent,
 })
 
@@ -16,9 +16,9 @@ function RouteComponent() {
     try {
       await authClient.signOut()
       // Forzar navegación inmediata
-      window.location.href = '/login'
+      window.location.href = "/login"
     } catch (_error) {
-      window.location.href = '/login'
+      window.location.href = "/login"
     }
   }
 

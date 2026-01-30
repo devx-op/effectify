@@ -1,7 +1,7 @@
-import { Button } from '@effectify/solid-ui/components/primitives/button'
-import * as Popover from '@effectify/solid-ui/components/primitives/popover'
-import { AlignRightIcon, XIcon } from 'lucide-solid'
-import { createSignal, type JSX } from 'solid-js'
+import { Button } from "@effectify/solid-ui/components/primitives/button"
+import * as Popover from "@effectify/solid-ui/components/primitives/popover"
+import { AlignRightIcon, XIcon } from "lucide-solid"
+import { createSignal, type JSX } from "solid-js"
 
 export const MobileNavbar = (props: { children: JSX.Element }) => {
   // const { pathname } = useLocation()

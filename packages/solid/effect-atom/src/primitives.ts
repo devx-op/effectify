@@ -2,16 +2,16 @@
  * @since 1.0.0
  */
 
-import * as Atom from '@effect-atom/atom/Atom'
-import type * as AtomRef from '@effect-atom/atom/AtomRef'
-import * as Registry from '@effect-atom/atom/Registry'
-import type * as Result from '@effect-atom/atom/Result'
-import { Effect } from 'effect'
-import * as Cause from 'effect/Cause'
-import * as Exit from 'effect/Exit'
-import { globalValue } from 'effect/GlobalValue'
-import { type Accessor, batch, createEffect, createMemo, createSignal, onCleanup } from 'solid-js'
-import { useRegistry } from './context.js'
+import * as Atom from "@effect-atom/atom/Atom"
+import type * as AtomRef from "@effect-atom/atom/AtomRef"
+import * as Registry from "@effect-atom/atom/Registry"
+import type * as Result from "@effect-atom/atom/Result"
+import { Effect } from "effect"
+import * as Cause from "effect/Cause"
+import * as Exit from "effect/Exit"
+import { globalValue } from "effect/GlobalValue"
+import { type Accessor, batch, createEffect, createMemo, createSignal, onCleanup } from "solid-js"
+import { useRegistry } from "./context.js"
 
 interface AtomStore<A> {
   readonly subscribe: (f: () => void) => () => void
@@ -20,7 +20,7 @@ interface AtomStore<A> {
 }
 
 const storeRegistry = globalValue(
-  '@effect-atom/atom-solid/storeRegistry',
+  "@effect-atom/atom-solid/storeRegistry",
   () => new WeakMap<Registry.Registry, WeakMap<Atom.Atom<any>, AtomStore<any>>>(),
 )
 
@@ -102,7 +102,7 @@ function useStore<A>(registry: Registry.Registry, atom: Atom.Atom<A>): Accessor<
 }
 
 const initialValuesSet = globalValue(
-  '@effect-atom/atom-solid/initialValuesSet',
+  "@effect-atom/atom-solid/initialValuesSet",
   () => new WeakMap<Registry.Registry, WeakSet<Atom.Atom<any>>>(),
 )
 
@@ -155,29 +155,28 @@ function mountAtom<A>(registry: Registry.Registry, atom: Atom.Atom<A>): void {
   })
 }
 
-function setAtom<R, W, Mode extends 'value' | 'promise' | 'promiseExit' = never>(
+function setAtom<R, W, Mode extends "value" | "promise" | "promiseExit" = never>(
   registry: Registry.Registry,
   atom: Atom.Writable<R, W>,
   options?: {
-    readonly mode?: ([R] extends [Result.Result<any, any>] ? Mode : 'value') | undefined
+    readonly mode?: ([R] extends [Result.Result<any, any>] ? Mode : "value") | undefined
   },
-): 'promise' extends Mode
-  ? (value: W) => Promise<Result.Result.Success<R>>
-  : 'promiseExit' extends Mode
-    ? (value: W) => Promise<Exit.Exit<Result.Result.Success<R>, Result.Result.Failure<R>>>
-    : (value: W | ((value: R) => W)) => void {
-  if (options?.mode === 'promise' || options?.mode === 'promiseExit') {
+): "promise" extends Mode ? (value: W) => Promise<Result.Result.Success<R>>
+  : "promiseExit" extends Mode ? (value: W) => Promise<Exit.Exit<Result.Result.Success<R>, Result.Result.Failure<R>>>
+  : (value: W | ((value: R) => W)) => void
+{
+  if (options?.mode === "promise" || options?.mode === "promiseExit") {
     return ((value: W) => {
       registry.set(atom, value)
       const promise = Effect.runPromiseExit(
         Registry.getResult(registry, atom as Atom.Atom<Result.Result<any, any>>, { suspendOnWaiting: true }),
       )
-      return options!.mode === 'promise' ? promise.then(flattenExit) : promise
+      return options!.mode === "promise" ? promise.then(flattenExit) : promise
     }) as any
   }
 
   return ((value: W | ((value: R) => W)) => {
-    registry.set(atom, typeof value === 'function' ? (value as any)(registry.get(atom)) : value)
+    registry.set(atom, typeof value === "function" ? (value as any)(registry.get(atom)) : value)
   }) as any
 }
 
@@ -202,16 +201,15 @@ export const useAtomMount = <A>(atomFactory: () => Atom.Atom<A>): void => {
  * @since 1.0.0
  * @category hooks
  */
-export const useAtomSet = <R, W, Mode extends 'value' | 'promise' | 'promiseExit' = never>(
+export const useAtomSet = <R, W, Mode extends "value" | "promise" | "promiseExit" = never>(
   atomFactory: () => Atom.Writable<R, W>,
   options?: {
-    readonly mode?: ([R] extends [Result.Result<any, any>] ? Mode : 'value') | undefined
+    readonly mode?: ([R] extends [Result.Result<any, any>] ? Mode : "value") | undefined
   },
-): 'promise' extends Mode
-  ? (value: W) => Promise<Result.Result.Success<R>>
-  : 'promiseExit' extends Mode
-    ? (value: W) => Promise<Exit.Exit<Result.Result.Success<R>, Result.Result.Failure<R>>>
-    : (value: W | ((value: R) => W)) => void => {
+): "promise" extends Mode ? (value: W) => Promise<Result.Result.Success<R>>
+  : "promiseExit" extends Mode ? (value: W) => Promise<Exit.Exit<Result.Result.Success<R>, Result.Result.Failure<R>>>
+  : (value: W | ((value: R) => W)) => void =>
+{
   const registry = useRegistry()
   const atomRef = createMemo(atomFactory)
   mountAtom(registry, atomRef())
@@ -222,7 +220,7 @@ export const useAtomSet = <R, W, Mode extends 'value' | 'promise' | 'promiseExit
  * @since 1.0.0
  * @category hooks
  */
-export const useAtomRefresh = <A>(atomFactory: () => Atom.Atom<A>): (() => void) => {
+export const useAtomRefresh = <A>(atomFactory: () => Atom.Atom<A>): () => void => {
   const registry = useRegistry()
   const atomRef = createMemo(atomFactory)
   mountAtom(registry, atomRef())
@@ -235,18 +233,16 @@ export const useAtomRefresh = <A>(atomFactory: () => Atom.Atom<A>): (() => void)
  * @since 1.0.0
  * @category hooks
  */
-export const useAtom = <R, W, const Mode extends 'value' | 'promise' | 'promiseExit' = never>(
+export const useAtom = <R, W, const Mode extends "value" | "promise" | "promiseExit" = never>(
   atomFactory: () => Atom.Writable<R, W>,
   options?: {
-    readonly mode?: ([R] extends [Result.Result<any, any>] ? Mode : 'value') | undefined
+    readonly mode?: ([R] extends [Result.Result<any, any>] ? Mode : "value") | undefined
   },
 ): readonly [
   value: Accessor<R>,
-  write: 'promise' extends Mode
-    ? (value: W) => Promise<Result.Result.Success<R>>
-    : 'promiseExit' extends Mode
-      ? (value: W) => Promise<Exit.Exit<Result.Result.Success<R>, Result.Result.Failure<R>>>
-      : (value: W | ((value: R) => W)) => void,
+  write: "promise" extends Mode ? (value: W) => Promise<Result.Result.Success<R>>
+    : "promiseExit" extends Mode ? (value: W) => Promise<Exit.Exit<Result.Result.Success<R>, Result.Result.Failure<R>>>
+    : (value: W | ((value: R) => W)) => void,
 ] => {
   const registry = useRegistry()
   const atomRef = createMemo(atomFactory)
@@ -296,7 +292,7 @@ export const useAtomRef = <A>(refFactory: () => AtomRef.ReadonlyRef<A>): Accesso
 export const useAtomRefProp = <A, K extends keyof A>(
   refFactory: () => AtomRef.AtomRef<A>,
   prop: K,
-): (() => AtomRef.AtomRef<A[K]>) => createMemo(() => refFactory().prop(prop))
+): () => AtomRef.AtomRef<A[K]> => createMemo(() => refFactory().prop(prop))
 
 /**
  * @since 1.0.0

@@ -1,9 +1,9 @@
-import * as Effect from 'effect/Effect'
-import * as Exit from 'effect/Exit'
-import * as Fiber from 'effect/Fiber'
-import type * as ManagedRuntime from 'effect/ManagedRuntime'
-import * as Stream from 'effect/Stream'
-import { type Context, useContext, useEffect, useRef, useState } from 'react'
+import * as Effect from "effect/Effect"
+import * as Exit from "effect/Exit"
+import * as Fiber from "effect/Fiber"
+import type * as ManagedRuntime from "effect/ManagedRuntime"
+import * as Stream from "effect/Stream"
+import { type Context, useContext, useEffect, useRef, useState } from "react"
 
 export const makeUseRxSubscribe = <R, E>(RuntimeContext: Context<ManagedRuntime.ManagedRuntime<R, E> | null>) => {
   return <E2, A>(
@@ -14,7 +14,7 @@ export const makeUseRxSubscribe = <R, E>(RuntimeContext: Context<ManagedRuntime.
   ) => {
     const runtime = useContext(RuntimeContext)
     if (!runtime) {
-      throw new Error('Runtime context not found. Make sure to wrap your app with RuntimeProvider')
+      throw new Error("Runtime context not found. Make sure to wrap your app with RuntimeProvider")
     }
     const [value, setValue] = useState<A | undefined>(initialValue)
     const fiberRef = useRef<Fiber.RuntimeFiber<never, never> | null>(null)
@@ -27,7 +27,7 @@ export const makeUseRxSubscribe = <R, E>(RuntimeContext: Context<ManagedRuntime.
           Effect.sync(() => {
             setValue(a)
             onNext(a)
-          }),
+          })
         ),
         Stream.catchAll((e) =>
           Stream.fromEffect(
@@ -35,7 +35,7 @@ export const makeUseRxSubscribe = <R, E>(RuntimeContext: Context<ManagedRuntime.
               onError?.(e)
               return
             }),
-          ),
+          )
         ),
         Stream.runDrain,
         Effect.forever,

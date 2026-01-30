@@ -1,18 +1,18 @@
-import { useState } from "react";
-import { authClient } from "./../lib/auth-client.js";
-import { useNavigate } from "react-router";
+import { useState } from "react"
+import { authClient } from "./../lib/auth-client.js"
+import { useNavigate } from "react-router"
 
 export default function SignUp() {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const navigate = useNavigate();
+  const [name, setName] = useState("")
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [error, setError] = useState<string | null>(null)
+  const navigate = useNavigate()
 
   const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    console.log('[SignUp] Attempting to sign up with email:', email);
+    e.preventDefault()
+    setError(null)
+    console.log("[SignUp] Attempting to sign up with email:", email)
     await authClient.signUp.email(
       {
         email,
@@ -21,15 +21,15 @@ export default function SignUp() {
       },
       {
         onSuccess: () => {
-          navigate("/");
+          navigate("/")
         },
         onError: (ctx) => {
-          console.error('[SignUp] Sign up error:', ctx.error);
-          setError(ctx.error.message);
+          console.error("[SignUp] Sign up error:", ctx.error)
+          setError(ctx.error.message)
         },
-      }
-    );
-  };
+      },
+    )
+  }
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-4">
@@ -91,9 +91,7 @@ export default function SignUp() {
             </div>
           </div>
 
-          {error && (
-            <div className="text-red-500 text-sm text-center">{error}</div>
-          )}
+          {error && <div className="text-red-500 text-sm text-center">{error}</div>}
 
           <div>
             <button
@@ -105,11 +103,11 @@ export default function SignUp() {
           </div>
         </form>
         <div className="text-center text-sm">
-            <a href="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
-                Already have an account? Sign in
-            </a>
+          <a href="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
+            Already have an account? Sign in
+          </a>
         </div>
       </div>
     </div>
-  );
+  )
 }

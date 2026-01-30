@@ -2,11 +2,11 @@
  * SSR tests for @effect-atom/atom-solid
  */
 
-import * as Atom from '@effect-atom/atom/Atom'
-import * as Hydration from '@effect-atom/atom/Hydration'
-import * as Registry from '@effect-atom/atom/Registry'
-import { Effect, Schema } from 'effect'
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import * as Atom from "@effect-atom/atom/Atom"
+import * as Hydration from "@effect-atom/atom/Hydration"
+import * as Registry from "@effect-atom/atom/Registry"
+import { Effect, Schema } from "effect"
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest"
 import {
   clientOnlyEffect,
   createIsomorphicAtom,
@@ -18,9 +18,9 @@ import {
   preloadAtoms,
   renderAtomsStatic,
   serializeState,
-} from '../src/ssr-utils.js'
+} from "../src/ssr-utils.js"
 
-describe('SSR Utilities', () => {
+describe("SSR Utilities", () => {
   let registry: Registry.Registry
 
   beforeEach(() => {
@@ -31,8 +31,8 @@ describe('SSR Utilities', () => {
     vi.restoreAllMocks()
   })
 
-  describe('createSSRRegistry', () => {
-    test('should create registry with infinite TTL', () => {
+  describe("createSSRRegistry", () => {
+    test("should create registry with infinite TTL", () => {
       const ssrRegistry = createSSRRegistry()
       expect(ssrRegistry).toBeDefined()
 
@@ -42,7 +42,7 @@ describe('SSR Utilities', () => {
       expect(ssrRegistry.get(testAtom)).toBe(100)
     })
 
-    test('should use custom scheduler', () => {
+    test("should use custom scheduler", () => {
       const mockScheduler = vi.fn((f) => f())
       const ssrRegistry = createSSRRegistry({ scheduler: mockScheduler })
 
@@ -53,8 +53,8 @@ describe('SSR Utilities', () => {
     })
   })
 
-  describe('preloadAtoms', () => {
-    test('should preload simple atoms', async () => {
+  describe("preloadAtoms", () => {
+    test("should preload simple atoms", async () => {
       const atom1 = Atom.make(10)
       const atom2 = Atom.make(20)
 
@@ -69,12 +69,12 @@ describe('SSR Utilities', () => {
       expect(result.timeouts).toHaveLength(0)
     })
 
-    test('should handle async atoms', async () => {
+    test("should handle async atoms", async () => {
       const asyncAtom = Atom.fn(() =>
-        Effect.gen(function* () {
-          yield* Effect.sleep('100 millis')
-          return 'async result'
-        }),
+        Effect.gen(function*() {
+          yield* Effect.sleep("100 millis")
+          return "async result"
+        })
       )
 
       // Access the atom first
@@ -86,12 +86,12 @@ describe('SSR Utilities', () => {
       expect(result.errors).toHaveLength(0)
     })
 
-    test('should handle timeouts', async () => {
+    test("should handle timeouts", async () => {
       const slowAtom = Atom.fn(() =>
-        Effect.gen(function* () {
-          yield* Effect.sleep('2000 millis')
-          return 'slow result'
-        }),
+        Effect.gen(function*() {
+          yield* Effect.sleep("2000 millis")
+          return "slow result"
+        })
       )
 
       const result = await Effect.runPromise(preloadAtoms(registry, [slowAtom], { timeout: 100 }))
@@ -100,8 +100,8 @@ describe('SSR Utilities', () => {
       expect(result.timeouts.length).toBeGreaterThanOrEqual(0)
     })
 
-    test('should handle errors', async () => {
-      const errorAtom = Atom.fn(() => Effect.fail(new Error('Test error')))
+    test("should handle errors", async () => {
+      const errorAtom = Atom.fn(() => Effect.fail(new Error("Test error")))
 
       const result = await Effect.runPromise(preloadAtoms(registry, [errorAtom]))
 
@@ -110,17 +110,17 @@ describe('SSR Utilities', () => {
     })
   })
 
-  describe('renderAtomsStatic', () => {
-    test('should render atoms to static values', () => {
+  describe("renderAtomsStatic", () => {
+    test("should render atoms to static values", () => {
       const atom1 = Atom.make(100)
-      const atom2 = Atom.make('hello')
+      const atom2 = Atom.make("hello")
 
       // First get the atoms to ensure they're in the registry
       registry.get(atom1)
       registry.get(atom2)
 
       registry.set(atom1, 200)
-      registry.set(atom2, 'world')
+      registry.set(atom2, "world")
 
       const staticValues = renderAtomsStatic(registry, [atom1, atom2])
 
@@ -129,7 +129,7 @@ describe('SSR Utilities', () => {
       expect(Object.values(staticValues).length).toBeGreaterThanOrEqual(1)
     })
 
-    test('should handle atoms without values', () => {
+    test("should handle atoms without values", () => {
       const atom1 = Atom.make(100)
       const atom2 = Atom.make(200)
 
@@ -143,29 +143,29 @@ describe('SSR Utilities', () => {
     })
   })
 
-  describe('createServerRegistry', () => {
-    test('should create registry with initial data', () => {
+  describe("createServerRegistry", () => {
+    test("should create registry with initial data", () => {
       const initialData = {
-        'atom-1': 42,
-        'atom-2': 'hello',
+        "atom-1": 42,
+        "atom-2": "hello",
       }
 
       const serverRegistry = createServerRegistry(initialData)
       expect(serverRegistry).toBeDefined()
     })
 
-    test('should work without initial data', () => {
+    test("should work without initial data", () => {
       const serverRegistry = createServerRegistry()
       expect(serverRegistry).toBeDefined()
     })
   })
 
-  describe('serializeState and deserializeState', () => {
-    test('should serialize and deserialize state', () => {
+  describe("serializeState and deserializeState", () => {
+    test("should serialize and deserialize state", () => {
       const now = Date.now()
       const dehydratedState: Array<Hydration.DehydratedAtom> = [
-        { key: 'atom-1', value: 42, dehydratedAt: now },
-        { key: 'atom-2', value: 'hello', dehydratedAt: now },
+        { key: "atom-1", value: 42, dehydratedAt: now },
+        { key: "atom-2", value: "hello", dehydratedAt: now },
       ]
 
       const serialized = serializeState(dehydratedState)
@@ -174,145 +174,140 @@ describe('SSR Utilities', () => {
       expect(deserialized).toEqual(dehydratedState)
     })
 
-    test('should handle serialization errors', () => {
+    test("should handle serialization errors", () => {
       const circularObj: any = {
-        key: 'test',
+        key: "test",
         value: null as any,
         dehydratedAt: Date.now(),
       }
       circularObj.value = circularObj // Create circular reference
 
       const serialized = serializeState([circularObj])
-      expect(serialized).toBe('[]') // Should fallback to empty array
+      expect(serialized).toBe("[]") // Should fallback to empty array
     })
 
-    test('should handle deserialization errors', () => {
-      const invalidJson = '{ invalid json'
+    test("should handle deserialization errors", () => {
+      const invalidJson = "{ invalid json"
       const deserialized = deserializeState(invalidJson)
       expect(deserialized).toEqual([])
     })
   })
 
-  describe('createSSRAtom', () => {
-    test('should return server value during SSR', () => {
+  describe("createSSRAtom", () => {
+    test("should return server value during SSR", () => {
       // Mock SSR environment
       const originalWindow = (global as any).window
       delete (global as any).window
 
-      const clientAtom = Atom.make('client')
-      const ssrAtom = createSSRAtom('server', clientAtom)
+      const clientAtom = Atom.make("client")
+      const ssrAtom = createSSRAtom("server", clientAtom)
 
       const value = registry.get(ssrAtom)
-      expect(value).toBe('server')
-
-      // Restore window
+      expect(value).toBe("server") // Restore window
       ;(global as any).window = originalWindow
     })
 
-    test('should use client atom in browser', () => {
+    test("should use client atom in browser", () => {
       // Ensure we're in browser environment
       ;(global as any).window = {} as any
 
-      const clientAtom = Atom.make('client')
-      const ssrAtom = createSSRAtom('server', clientAtom)
+      const clientAtom = Atom.make("client")
+      const ssrAtom = createSSRAtom("server", clientAtom)
 
-      registry.set(clientAtom, 'client-value')
+      registry.set(clientAtom, "client-value")
       const value = registry.get(ssrAtom)
-      expect(value).toBe('client-value')
+      expect(value).toBe("client-value")
     })
   })
 
-  describe('isSSR', () => {
-    test('should detect SSR environment', () => {
+  describe("isSSR", () => {
+    test("should detect SSR environment", () => {
       const originalWindow = (global as any).window
       delete (global as any).window
 
       expect(isSSR()).toBe(true)
-
       ;(global as any).window = originalWindow
       expect(isSSR()).toBe(false)
     })
   })
 
-  describe('createIsomorphicAtom', () => {
-    test('should use server factory during SSR', () => {
+  describe("createIsomorphicAtom", () => {
+    test("should use server factory during SSR", () => {
       const originalWindow = (global as any).window
       delete (global as any).window
 
-      const serverAtom = Atom.make('server-data')
-      const clientAtom = Atom.make('client-data')
+      const serverAtom = Atom.make("server-data")
+      const clientAtom = Atom.make("client-data")
 
       const isomorphicAtom = createIsomorphicAtom(
         () => serverAtom,
         () => clientAtom,
       )
 
-      registry.set(serverAtom, 'server-value')
-      registry.set(clientAtom, 'client-value')
+      registry.set(serverAtom, "server-value")
+      registry.set(clientAtom, "client-value")
 
       const value = registry.get(isomorphicAtom)
-      expect(value).toBe('server-value')
-
+      expect(value).toBe("server-value")
       ;(global as any).window = originalWindow
     })
 
-    test('should use client factory in browser', () => {
+    test("should use client factory in browser", () => {
       ;(global as any).window = {} as any
 
-      const serverAtom = Atom.make('server-data')
-      const clientAtom = Atom.make('client-data')
+      const serverAtom = Atom.make("server-data")
+      const clientAtom = Atom.make("client-data")
 
       const isomorphicAtom = createIsomorphicAtom(
         () => serverAtom,
         () => clientAtom,
       )
 
-      registry.set(serverAtom, 'server-value')
-      registry.set(clientAtom, 'client-value')
+      registry.set(serverAtom, "server-value")
+      registry.set(clientAtom, "client-value")
 
       const value = registry.get(isomorphicAtom)
-      expect(value).toBe('client-value')
+      expect(value).toBe("client-value")
     })
   })
 
-  describe('clientOnlyEffect', () => {
-    test('should return null during SSR', async () => {
+  describe("clientOnlyEffect", () => {
+    test("should return null during SSR", async () => {
       const originalWindow = (global as any).window
       delete (global as any).window
 
-      const effect = clientOnlyEffect(Effect.succeed('client-only'))
+      const effect = clientOnlyEffect(Effect.succeed("client-only"))
       const result = await Effect.runPromise(effect)
 
       expect(result).toBe(null)
-
       ;(global as any).window = originalWindow
     })
 
-    test('should run effect in browser', async () => {
+    test("should run effect in browser", async () => {
       ;(global as any).window = {} as any
 
-      const effect = clientOnlyEffect(Effect.succeed('client-only'))
+      const effect = clientOnlyEffect(Effect.succeed("client-only"))
       const result = await Effect.runPromise(effect)
 
-      expect(result).toBe('client-only')
+      expect(result).toBe("client-only")
     })
   })
 })
 
-describe('SSR Integration', () => {
-  test('should handle complete SSR flow', async () => {
+describe("SSR Integration", () => {
+  test("should handle complete SSR flow", async () => {
     // Create atoms
-    const userAtom = Atom.make<{ name: string; id: number }>({ name: '', id: 0 })
+    const userAtom = Atom.make<{ name: string; id: number }>({ name: "", id: 0 })
     const asyncDataAtom = Atom.fn(() =>
-      Effect.gen(function* () {
-        yield* Effect.sleep('50 millis')
-        return { data: 'async-result' }
-      }),
+      Effect.gen(function*() {
+        yield* Effect.sleep("50 millis")
+        return { data: "async-result" }
+      })
     )
 
     // Server-side: preload atoms
     const serverRegistry = createSSRRegistry()
-    serverRegistry.set(userAtom, { name: 'John', id: 1 })
+    serverRegistry.set(userAtom, { name: "John", id: 1 })
 
     const ssrResult = await Effect.runPromise(preloadAtoms(serverRegistry, [userAtom, asyncDataAtom]))
 
@@ -331,30 +326,30 @@ describe('SSR Integration', () => {
     // Verify data is available (hydration might not work exactly as expected in tests)
     const userData = clientRegistry.get(userAtom)
     expect(userData).toBeDefined()
-    expect(typeof userData.name).toBe('string')
-    expect(typeof userData.id).toBe('number')
+    expect(typeof userData.name).toBe("string")
+    expect(typeof userData.id).toBe("number")
   })
 
-  test('should compare timestamps and only hydrate newer data', () => {
+  test("should compare timestamps and only hydrate newer data", () => {
     const registry = createSSRRegistry()
 
     // Create a serializable atom for testing
-    const resultAtom = Atom.make('old-value').pipe(
+    const resultAtom = Atom.make("old-value").pipe(
       Atom.serializable({
-        key: 'timestamped',
+        key: "timestamped",
         schema: Schema.String,
       }),
     )
 
     // Set initial value
-    registry.set(resultAtom, 'old-value')
+    registry.set(resultAtom, "old-value")
 
     // Create dehydrated state with newer timestamp (should hydrate)
     const newTimestamp = Date.now()
     const newerDehydratedState: Array<Hydration.DehydratedAtom> = [
       {
-        key: 'timestamped',
-        value: 'new-value',
+        key: "timestamped",
+        value: "new-value",
         dehydratedAt: newTimestamp,
       },
     ]
@@ -363,18 +358,18 @@ describe('SSR Integration', () => {
     const olderTimestamp = Date.now() - 6 * 60 * 1000 // 6 minutes ago
     const olderDehydratedState: Array<Hydration.DehydratedAtom> = [
       {
-        key: 'timestamped',
-        value: 'older-value',
+        key: "timestamped",
+        value: "older-value",
         dehydratedAt: olderTimestamp,
       },
     ]
 
     // Test hydration with newer data
     Hydration.hydrate(registry, newerDehydratedState)
-    expect(registry.get(resultAtom)).toBe('new-value')
+    expect(registry.get(resultAtom)).toBe("new-value")
 
     // Reset to old value
-    registry.set(resultAtom, 'old-value')
+    registry.set(resultAtom, "old-value")
 
     // Test hydration with older data - should not change the value
     // because our HydrationBoundary logic should prevent hydration of old data
@@ -383,6 +378,6 @@ describe('SSR Integration', () => {
     // Note: This test verifies that the hydration logic works at the registry level
     // The actual timestamp comparison happens in HydrationBoundary component
     // For now, we verify that basic hydration works
-    expect(registry.get(resultAtom)).toBe('older-value') // Hydration still works at registry level
+    expect(registry.get(resultAtom)).toBe("older-value") // Hydration still works at registry level
   })
 })

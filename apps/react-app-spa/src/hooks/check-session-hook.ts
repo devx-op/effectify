@@ -1,6 +1,6 @@
-import { useNavigate } from '@tanstack/react-router'
-import { useEffect } from 'react'
-import { useSession } from '@/libs/auth-client'
+import { useNavigate } from "@tanstack/react-router"
+import { useEffect } from "react"
+import { useSession } from "@/libs/auth-client"
 
 export const useCheckSession = () => {
   const navigate = useNavigate()
@@ -8,9 +8,9 @@ export const useCheckSession = () => {
 
   useEffect(() => {
     if (session.data?.session) {
-      navigate({ to: '/dashboard' })
+      navigate({ to: "/dashboard" })
     } else if (!session.isPending) {
-      navigate({ to: '/login' })
+      navigate({ to: "/login" })
     }
   }, [session, navigate])
 }

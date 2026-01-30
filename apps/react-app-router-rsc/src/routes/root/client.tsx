@@ -1,6 +1,6 @@
-'use client'
+"use client"
 
-import { isRouteErrorResponse, Link, NavLink, useNavigation, useRouteError } from 'react-router'
+import { isRouteErrorResponse, Link, NavLink, useNavigation, useRouteError } from "react-router"
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const navigation = useNavigation()
@@ -35,7 +35,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   </li>
                 </ul>
               </nav>
-              <div>{navigation.state !== 'idle' && <p>Loading...</p>}</div>
+              <div>{navigation.state !== "idle" && <p>Loading...</p>}</div>
             </div>
           </div>
         </header>
@@ -48,11 +48,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
 export function ErrorBoundary() {
   const error = useRouteError()
   let status = 500
-  let message = 'An unexpected error occurred.'
+  let message = "An unexpected error occurred."
 
   if (isRouteErrorResponse(error)) {
     status = error.status
-    message = status === 404 ? 'Page not found.' : error.statusText || message
+    message = status === 404 ? "Page not found." : error.statusText || message
   }
 
   return (

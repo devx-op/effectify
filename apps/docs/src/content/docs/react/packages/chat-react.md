@@ -14,6 +14,7 @@ npm install @effectify/chat-react
 ```
 
 **Peer Dependencies:**
+
 ```bash
 npm install @effectify/react-query @effectify/chat-domain react
 ```
@@ -23,12 +24,12 @@ npm install @effectify/react-query @effectify/chat-domain react
 ### Simple Chat Component
 
 ```tsx
-import { ChatRoom } from '@effectify/chat-react/components/chat-room'
-import { ChatProvider } from '@effectify/chat-react/components/chat-provider'
+import { ChatRoom } from "@effectify/chat-react/components/chat-room"
+import { ChatProvider } from "@effectify/chat-react/components/chat-provider"
 
 function App() {
   return (
-    <ChatProvider 
+    <ChatProvider
       userId="user-123"
       roomId="general"
       websocketUrl="ws://localhost:3001"
@@ -42,19 +43,15 @@ function App() {
 ### Custom Chat Interface
 
 ```tsx
-import { 
-  ChatMessages, 
-  ChatInput, 
-  ChatUserList 
-} from '@effectify/chat-react/components'
-import { useChatRoom } from '@effectify/chat-react/hooks/use-chat-room'
+import { ChatInput, ChatMessages, ChatUserList } from "@effectify/chat-react/components"
+import { useChatRoom } from "@effectify/chat-react/hooks/use-chat-room"
 
 function CustomChatRoom() {
-  const { 
-    messages, 
-    users, 
-    sendMessage, 
-    isConnected 
+  const {
+    messages,
+    users,
+    sendMessage,
+    isConnected,
   } = useChatRoom()
 
   return (
@@ -63,7 +60,7 @@ function CustomChatRoom() {
         <div className="flex-1 overflow-y-auto">
           <ChatMessages messages={messages} />
         </div>
-        <ChatInput 
+        <ChatInput
           onSendMessage={sendMessage}
           disabled={!isConnected}
         />
@@ -83,7 +80,7 @@ function CustomChatRoom() {
 The root provider that manages chat state and WebSocket connections:
 
 ```tsx
-import { ChatProvider } from '@effectify/chat-react/components/chat-provider'
+import { ChatProvider } from "@effectify/chat-react/components/chat-provider"
 
 function App() {
   return (
@@ -94,7 +91,7 @@ function App() {
       options={{
         reconnectAttempts: 5,
         reconnectDelay: 1000,
-        messageHistory: 50
+        messageHistory: 50,
       }}
     >
       <YourChatComponents />
@@ -108,12 +105,12 @@ function App() {
 A complete chat room component with messages, input, and user list:
 
 ```tsx
-import { ChatRoom } from '@effectify/chat-react/components/chat-room'
+import { ChatRoom } from "@effectify/chat-react/components/chat-room"
 
 function MyChatApp() {
   return (
     <div className="h-screen">
-      <ChatRoom 
+      <ChatRoom
         className="h-full"
         showUserList={true}
         showTypingIndicator={true}
@@ -129,14 +126,14 @@ function MyChatApp() {
 Displays a list of chat messages with proper formatting:
 
 ```tsx
-import { ChatMessages } from '@effectify/chat-react/components/chat-messages'
-import { useChatRoom } from '@effectify/chat-react/hooks/use-chat-room'
+import { ChatMessages } from "@effectify/chat-react/components/chat-messages"
+import { useChatRoom } from "@effectify/chat-react/hooks/use-chat-room"
 
 function MessageArea() {
   const { messages } = useChatRoom()
 
   return (
-    <ChatMessages 
+    <ChatMessages
       messages={messages}
       className="flex-1 overflow-y-auto p-4"
       renderMessage={(message) => (
@@ -154,8 +151,8 @@ function MessageArea() {
 Input component for sending messages:
 
 ```tsx
-import { ChatInput } from '@effectify/chat-react/components/chat-input'
-import { useChatRoom } from '@effectify/chat-react/hooks/use-chat-room'
+import { ChatInput } from "@effectify/chat-react/components/chat-input"
+import { useChatRoom } from "@effectify/chat-react/hooks/use-chat-room"
 
 function MessageInput() {
   const { sendMessage, isConnected } = useChatRoom()
@@ -180,8 +177,8 @@ function MessageInput() {
 Displays online users in the chat room:
 
 ```tsx
-import { ChatUserList } from '@effectify/chat-react/components/chat-user-list'
-import { useChatRoom } from '@effectify/chat-react/hooks/use-chat-room'
+import { ChatUserList } from "@effectify/chat-react/components/chat-user-list"
+import { useChatRoom } from "@effectify/chat-react/hooks/use-chat-room"
 
 function UserSidebar() {
   const { users } = useChatRoom()
@@ -189,7 +186,7 @@ function UserSidebar() {
   return (
     <div className="w-64 border-l bg-gray-50">
       <h3 className="p-4 font-semibold">Online Users</h3>
-      <ChatUserList 
+      <ChatUserList
         users={users}
         renderUser={(user) => (
           <div key={user.id} className="flex items-center p-2">
@@ -210,7 +207,7 @@ function UserSidebar() {
 Main hook for accessing chat room state and actions:
 
 ```tsx
-import { useChatRoom } from '@effectify/chat-react/hooks/use-chat-room'
+import { useChatRoom } from "@effectify/chat-react/hooks/use-chat-room"
 
 function ChatComponent() {
   const {
@@ -221,20 +218,20 @@ function ChatComponent() {
     isConnected,
     isLoading,
     error,
-    
+
     // Actions
     sendMessage,
     joinRoom,
     leaveRoom,
-    
+
     // Typing indicators
     typingUsers,
     startTyping,
-    stopTyping
+    stopTyping,
   } = useChatRoom()
 
   const handleSendMessage = (content: string) => {
-    sendMessage({ content, type: 'text' })
+    sendMessage({ content, type: "text" })
   }
 
   if (isLoading) return <div>Connecting to chat...</div>
@@ -242,7 +239,7 @@ function ChatComponent() {
 
   return (
     <div>
-      <div>Connected: {isConnected ? 'Yes' : 'No'}</div>
+      <div>Connected: {isConnected ? "Yes" : "No"}</div>
       <div>Messages: {messages.length}</div>
       <div>Users: {users.length}</div>
     </div>
@@ -255,7 +252,7 @@ function ChatComponent() {
 Hook for managing message-specific functionality:
 
 ```tsx
-import { useChatMessages } from '@effectify/chat-react/hooks/use-chat-messages'
+import { useChatMessages } from "@effectify/chat-react/hooks/use-chat-messages"
 
 function MessageManager() {
   const {
@@ -264,7 +261,7 @@ function MessageManager() {
     editMessage,
     deleteMessage,
     reactToMessage,
-    loadMoreMessages
+    loadMoreMessages,
   } = useChatMessages()
 
   const handleEdit = (messageId: string, newContent: string) => {
@@ -277,10 +274,10 @@ function MessageManager() {
 
   return (
     <div>
-      {messages.map(message => (
+      {messages.map((message) => (
         <div key={message.id}>
           {message.content}
-          <button onClick={() => handleReact(message.id, '👍')}>
+          <button onClick={() => handleReact(message.id, "👍")}>
             👍
           </button>
         </div>
@@ -297,24 +294,24 @@ function MessageManager() {
 Effect-based service for chat operations:
 
 ```tsx
-import { ChatService } from '@effectify/chat-react/services/chat-service'
-import { Effect } from 'effect'
+import { ChatService } from "@effectify/chat-react/services/chat-service"
+import { Effect } from "effect"
 
 // Send a message
 const sendMessageEffect = ChatService.sendMessage({
-  roomId: 'room-123',
-  content: 'Hello, world!',
-  type: 'text'
+  roomId: "room-123",
+  content: "Hello, world!",
+  type: "text",
 })
 
 // Join a room
-const joinRoomEffect = ChatService.joinRoom('room-123')
+const joinRoomEffect = ChatService.joinRoom("room-123")
 
 // Get message history
 const getHistoryEffect = ChatService.getMessageHistory({
-  roomId: 'room-123',
+  roomId: "room-123",
   limit: 50,
-  before: new Date()
+  before: new Date(),
 })
 
 // Usage in component
@@ -322,11 +319,11 @@ function ChatComponent() {
   const sendMessage = (content: string) => {
     Effect.runPromise(
       sendMessageEffect.pipe(
-        Effect.catchAll(error => {
-          console.error('Failed to send message:', error)
+        Effect.catchAll((error) => {
+          console.error("Failed to send message:", error)
           return Effect.succeed(null)
-        })
-      )
+        }),
+      ),
     )
   }
 
@@ -339,7 +336,7 @@ function ChatComponent() {
 ### Message Reactions
 
 ```tsx
-import { MessageReactions } from '@effectify/chat-react/components/message-reactions'
+import { MessageReactions } from "@effectify/chat-react/components/message-reactions"
 
 function MessageWithReactions({ message }) {
   const { reactToMessage } = useChatMessages()
@@ -359,16 +356,16 @@ function MessageWithReactions({ message }) {
 ### File Uploads
 
 ```tsx
-import { FileUpload } from '@effectify/chat-react/components/file-upload'
+import { FileUpload } from "@effectify/chat-react/components/file-upload"
 
 function ChatWithFiles() {
   const { sendMessage } = useChatRoom()
 
   const handleFileUpload = (file: File) => {
     sendMessage({
-      type: 'file',
+      type: "file",
       content: file.name,
-      fileData: file
+      fileData: file,
     })
   }
 
@@ -376,7 +373,7 @@ function ChatWithFiles() {
     <div>
       <FileUpload
         onUpload={handleFileUpload}
-        acceptedTypes={['image/*', '.pdf', '.doc', '.docx']}
+        acceptedTypes={["image/*", ".pdf", ".doc", ".docx"]}
         maxSize={10 * 1024 * 1024} // 10MB
       />
     </div>
@@ -387,7 +384,7 @@ function ChatWithFiles() {
 ### Typing Indicators
 
 ```tsx
-import { TypingIndicator } from '@effectify/chat-react/components/typing-indicator'
+import { TypingIndicator } from "@effectify/chat-react/components/typing-indicator"
 
 function ChatWithTyping() {
   const { typingUsers, startTyping, stopTyping } = useChatRoom()
@@ -450,7 +447,7 @@ const messageStore = MessageStore.localStorage({
 ## Error Handling
 
 ```tsx
-import { ChatErrorBoundary } from '@effectify/chat-react/components/chat-error-boundary'
+import { ChatErrorBoundary } from "@effectify/chat-react/components/chat-error-boundary"
 
 function App() {
   return (
@@ -476,6 +473,7 @@ function App() {
 ## Examples
 
 Check out the complete chat implementation in:
+
 - [React SPA Chat Example](https://github.com/devx-op/effectify/tree/main/apps/react-app-spa)
 - [SolidJS Chat Example](https://github.com/devx-op/effectify/tree/main/apps/solid-app-spa)
 
@@ -487,7 +485,7 @@ Check out the complete chat implementation in:
 interface Message {
   id: string
   content: string
-  type: 'text' | 'file' | 'system'
+  type: "text" | "file" | "system"
   userId: string
   user: User
   timestamp: Date
@@ -499,7 +497,7 @@ interface User {
   id: string
   name: string
   avatar?: string
-  status: 'online' | 'away' | 'offline'
+  status: "online" | "away" | "offline"
 }
 
 interface ChatRoom {

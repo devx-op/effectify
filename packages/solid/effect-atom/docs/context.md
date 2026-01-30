@@ -25,7 +25,7 @@ export interface RegistryProviderProps {
   readonly children?: any
   readonly registry?: Registry.Registry
   readonly initialValues?: Iterable<readonly [Atom.Atom<any>, any]>
-  readonly scheduleTask?: ((f: () => void) => void)
+  readonly scheduleTask?: (f: () => void) => void
   readonly timeoutResolution?: number
   readonly defaultIdleTTL?: number
 }
@@ -65,7 +65,7 @@ import { RegistryProvider } from "@effectify/solid-effect-atom"
 
 const customRegistry = Registry.make({
   timeoutResolution: 1000,
-  defaultIdleTTL: 2000
+  defaultIdleTTL: 2000,
 })
 
 function App() {
@@ -89,9 +89,9 @@ const nameAtom = Atom.make("")
 function App() {
   const initialValues = [
     [countAtom, 10],
-    [nameAtom, "John Doe"]
+    [nameAtom, "John Doe"],
   ] as const
-  
+
   return (
     <RegistryProvider initialValues={initialValues}>
       <MyApp />
@@ -108,7 +108,7 @@ function App() {
     // Custom scheduling logic
     setTimeout(task, 0)
   }
-  
+
   return (
     <RegistryProvider
       scheduleTask={scheduleTask}
@@ -148,12 +148,12 @@ import { Atom } from "@effect-atom/atom"
 function AdvancedComponent() {
   const registry = useRegistry()
   const myAtom = Atom.make("initial")
-  
+
   const handleDirectUpdate = () => {
     // Direct registry manipulation (advanced use case)
     registry.set(myAtom, "updated directly")
   }
-  
+
   return (
     <button onClick={handleDirectUpdate}>
       Update Directly
@@ -167,7 +167,7 @@ function AdvancedComponent() {
 ```tsx
 function RegistryInfo() {
   const registry = useRegistry()
-  
+
   return (
     <div>
       <p>Registry timeout resolution: {registry.timeoutResolution}ms</p>
@@ -209,7 +209,7 @@ function App() {
       {/* Global registry */}
       <RegistryProvider>
         <GlobalState />
-        
+
         {/* Scoped registry for modal */}
         <RegistryProvider>
           <Modal />
@@ -245,11 +245,11 @@ const failingAtom = Atom.fn(() => Effect.fail("Something went wrong"))
 
 function ErrorHandling() {
   const result = useAtomSuspenseResult(() => failingAtom)
-  
+
   if (result.error) {
     return <div>Error: {result.error.message}</div>
   }
-  
+
   return <div>Success: {result.data}</div>
 }
 ```
@@ -264,13 +264,13 @@ import { render } from "@solidjs/testing-library"
 
 test("component with atoms", () => {
   const testRegistry = Registry.make()
-  
+
   render(() => (
     <RegistryProvider registry={testRegistry}>
       <MyComponent />
     </RegistryProvider>
   ))
-  
+
   // Test assertions...
 })
 ```

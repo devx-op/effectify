@@ -18,22 +18,22 @@ npm install @effectify/solid-query @tanstack/solid-query effect solid-js
 ### Simple Data Fetching with createQuery
 
 ```tsx
-import { createQuery } from '@tanstack/solid-query'
-import { Effect } from 'effect'
-import { Show } from 'solid-js'
+import { createQuery } from "@tanstack/solid-query"
+import { Effect } from "effect"
+import { Show } from "solid-js"
 
 // Define your Effect
 const fetchUser = (id: number) =>
   Effect.tryPromise({
-    try: () => fetch(`/api/users/${id}`).then(res => res.json()),
-    catch: (error) => new Error(`Failed to fetch user: ${error}`)
+    try: () => fetch(`/api/users/${id}`).then((res) => res.json()),
+    catch: (error) => new Error(`Failed to fetch user: ${error}`),
   })
 
 // Use in component
 function UserProfile(props: { userId: number }) {
   const userQuery = createQuery(() => ({
-    queryKey: ['user', props.userId],
-    queryFn: () => Effect.runPromise(fetchUser(props.userId))
+    queryKey: ["user", props.userId],
+    queryFn: () => Effect.runPromise(fetchUser(props.userId)),
   }))
 
   return (
@@ -56,13 +56,13 @@ function UserProfile(props: { userId: number }) {
 For simpler use cases, you can use SolidJS's built-in `createResource`:
 
 ```tsx
-import { createResource, Show } from 'solid-js'
-import { Effect } from 'effect'
+import { createResource, Show } from "solid-js"
+import { Effect } from "effect"
 
 function UserProfile(props: { userId: number }) {
   const [user] = createResource(
     () => props.userId,
-    (id) => Effect.runPromise(fetchUser(id))
+    (id) => Effect.runPromise(fetchUser(id)),
   )
 
   return (
@@ -81,25 +81,25 @@ function UserProfile(props: { userId: number }) {
 ### With Error Handling and Retry
 
 ```tsx
-import { Effect, pipe } from 'effect'
+import { Effect, pipe } from "effect"
 
 const fetchUserWithRetry = (id: number) =>
   pipe(
     fetchUser(id),
-    Effect.retry({ times: 3, delay: '1 second' }),
-    Effect.catchAll(error => 
-      Effect.succeed({ 
-        id, 
-        name: 'Unknown User', 
-        email: 'unknown@example.com' 
+    Effect.retry({ times: 3, delay: "1 second" }),
+    Effect.catchAll((error) =>
+      Effect.succeed({
+        id,
+        name: "Unknown User",
+        email: "unknown@example.com",
       })
-    )
+    ),
   )
 
 function UserProfile(props: { userId: number }) {
   const userQuery = createQuery(() => ({
-    queryKey: ['user', props.userId],
-    queryFn: () => Effect.runPromise(fetchUserWithRetry(props.userId))
+    queryKey: ["user", props.userId],
+    queryFn: () => Effect.runPromise(fetchUserWithRetry(props.userId)),
   }))
 
   return (
@@ -117,16 +117,16 @@ function UserProfile(props: { userId: number }) {
 Combine SolidJS signals with TanStack Query:
 
 ```tsx
-import { createSignal, createMemo } from 'solid-js'
-import { createQuery } from '@tanstack/solid-query'
+import { createMemo, createSignal } from "solid-js"
+import { createQuery } from "@tanstack/solid-query"
 
 function UserSearch() {
-  const [searchTerm, setSearchTerm] = createSignal('')
-  
+  const [searchTerm, setSearchTerm] = createSignal("")
+
   const searchQuery = createQuery(() => ({
-    queryKey: ['users', 'search', searchTerm()],
+    queryKey: ["users", "search", searchTerm()],
     queryFn: () => Effect.runPromise(searchUsers(searchTerm())),
-    enabled: searchTerm().length > 2
+    enabled: searchTerm().length > 2,
   }))
 
   return (
@@ -153,15 +153,15 @@ function UserSearch() {
 const fetchUserWithPosts = (userId: number) =>
   Effect.all([
     fetchUser(userId),
-    fetchUserPosts(userId)
+    fetchUserPosts(userId),
   ]).pipe(
-    Effect.map(([user, posts]) => ({ user, posts }))
+    Effect.map(([user, posts]) => ({ user, posts })),
   )
 
 function UserDashboard(props: { userId: number }) {
   const dashboardQuery = createQuery(() => ({
-    queryKey: ['userDashboard', props.userId],
-    queryFn: () => Effect.runPromise(fetchUserWithPosts(props.userId))
+    queryKey: ["userDashboard", props.userId],
+    queryFn: () => Effect.runPromise(fetchUserWithPosts(props.userId)),
   }))
 
   return (
@@ -181,12 +181,12 @@ function UserDashboard(props: { userId: number }) {
 
 ```tsx
 class UserNotFoundError {
-  readonly _tag = 'UserNotFoundError'
+  readonly _tag = "UserNotFoundError"
   constructor(readonly userId: number) {}
 }
 
 class NetworkError {
-  readonly _tag = 'NetworkError'
+  readonly _tag = "NetworkError"
   constructor(readonly message: string) {}
 }
 
@@ -206,13 +206,13 @@ const fetchUserTyped = (id: number) =>
       if (error instanceof UserNotFoundError) return error
       if (error instanceof NetworkError) return error
       return new NetworkError(String(error))
-    }
+    },
   })
 
 function UserProfile(props: { userId: number }) {
   const userQuery = createQuery(() => ({
-    queryKey: ['user', props.userId],
-    queryFn: () => Effect.runPromise(fetchUserTyped(props.userId))
+    queryKey: ["user", props.userId],
+    queryFn: () => Effect.runPromise(fetchUserTyped(props.userId)),
   }))
 
   return (
@@ -242,30 +242,30 @@ function UserProfile(props: { userId: number }) {
 ### Mutations with Effect
 
 ```tsx
-import { createMutation, useQueryClient } from '@tanstack/solid-query'
+import { createMutation, useQueryClient } from "@tanstack/solid-query"
 
 const updateUser = (id: number, data: Partial<User>) =>
   Effect.tryPromise({
-    try: () => fetch(`/api/users/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    }).then(res => res.json()),
-    catch: (error) => new Error(`Failed to update user: ${error}`)
+    try: () =>
+      fetch(`/api/users/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      }).then((res) => res.json()),
+    catch: (error) => new Error(`Failed to update user: ${error}`),
   })
 
 function EditUserForm(props: { userId: number }) {
   const queryClient = useQueryClient()
-  
+
   const updateMutation = createMutation(() => ({
-    mutationFn: (data: Partial<User>) => 
-      Effect.runPromise(updateUser(props.userId, data)),
+    mutationFn: (data: Partial<User>) => Effect.runPromise(updateUser(props.userId, data)),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['user', props.userId] })
-    }
+      queryClient.invalidateQueries({ queryKey: ["user", props.userId] })
+    },
   }))
 
-  const [formData, setFormData] = createSignal({ name: '', email: '' })
+  const [formData, setFormData] = createSignal({ name: "", email: "" })
 
   const handleSubmit = (e: Event) => {
     e.preventDefault()
@@ -277,26 +277,28 @@ function EditUserForm(props: { userId: number }) {
       <input
         type="text"
         value={formData().name}
-        onInput={(e) => setFormData(prev => ({ 
-          ...prev, 
-          name: e.currentTarget.value 
-        }))}
+        onInput={(e) =>
+          setFormData((prev) => ({
+            ...prev,
+            name: e.currentTarget.value,
+          }))}
         placeholder="Name"
       />
       <input
         type="email"
         value={formData().email}
-        onInput={(e) => setFormData(prev => ({ 
-          ...prev, 
-          email: e.currentTarget.value 
-        }))}
+        onInput={(e) =>
+          setFormData((prev) => ({
+            ...prev,
+            email: e.currentTarget.value,
+          }))}
         placeholder="Email"
       />
-      <button 
-        type="submit" 
+      <button
+        type="submit"
         disabled={updateMutation.isPending}
       >
-        {updateMutation.isPending ? 'Saving...' : 'Save'}
+        {updateMutation.isPending ? "Saving..." : "Save"}
       </button>
     </form>
   )
@@ -310,14 +312,14 @@ function EditUserForm(props: { userId: number }) {
 ```tsx
 function UserWithPosts(props: { userId: number }) {
   const userQuery = createQuery(() => ({
-    queryKey: ['user', props.userId],
-    queryFn: () => Effect.runPromise(fetchUser(props.userId))
+    queryKey: ["user", props.userId],
+    queryFn: () => Effect.runPromise(fetchUser(props.userId)),
   }))
 
   const postsQuery = createQuery(() => ({
-    queryKey: ['posts', props.userId],
+    queryKey: ["posts", props.userId],
     queryFn: () => Effect.runPromise(fetchUserPosts(props.userId)),
-    enabled: !!userQuery.data
+    enabled: !!userQuery.data,
   }))
 
   return (
@@ -338,22 +340,20 @@ function UserWithPosts(props: { userId: number }) {
 ### Infinite Queries
 
 ```tsx
-import { createInfiniteQuery } from '@tanstack/solid-query'
+import { createInfiniteQuery } from "@tanstack/solid-query"
 
 const fetchPosts = (page: number) =>
   Effect.tryPromise({
-    try: () => fetch(`/api/posts?page=${page}`).then(res => res.json()),
-    catch: (error) => new Error(`Failed to fetch posts: ${error}`)
+    try: () => fetch(`/api/posts?page=${page}`).then((res) => res.json()),
+    catch: (error) => new Error(`Failed to fetch posts: ${error}`),
   })
 
 function PostList() {
   const postsQuery = createInfiniteQuery(() => ({
-    queryKey: ['posts'],
-    queryFn: ({ pageParam = 1 }) => 
-      Effect.runPromise(fetchPosts(pageParam)),
-    getNextPageParam: (lastPage, pages) => 
-      lastPage.hasMore ? pages.length + 1 : undefined,
-    initialPageParam: 1
+    queryKey: ["posts"],
+    queryFn: ({ pageParam = 1 }) => Effect.runPromise(fetchPosts(pageParam)),
+    getNextPageParam: (lastPage, pages) => lastPage.hasMore ? pages.length + 1 : undefined,
+    initialPageParam: 1,
   }))
 
   return (
@@ -366,11 +366,11 @@ function PostList() {
         )}
       </For>
       <Show when={postsQuery.hasNextPage}>
-        <button 
+        <button
           onClick={() => postsQuery.fetchNextPage()}
           disabled={postsQuery.isFetchingNextPage}
         >
-          {postsQuery.isFetchingNextPage ? 'Loading...' : 'Load More'}
+          {postsQuery.isFetchingNextPage ? "Loading..." : "Load More"}
         </button>
       </Show>
     </div>
@@ -386,17 +386,17 @@ Create query key factories for consistency:
 
 ```tsx
 const userKeys = {
-  all: ['users'] as const,
-  lists: () => [...userKeys.all, 'list'] as const,
+  all: ["users"] as const,
+  lists: () => [...userKeys.all, "list"] as const,
   list: (filters: string) => [...userKeys.lists(), { filters }] as const,
-  details: () => [...userKeys.all, 'detail'] as const,
+  details: () => [...userKeys.all, "detail"] as const,
   detail: (id: number) => [...userKeys.details(), id] as const,
 }
 
 // Usage
 const userQuery = createQuery(() => ({
   queryKey: userKeys.detail(props.userId),
-  queryFn: () => Effect.runPromise(fetchUser(props.userId))
+  queryFn: () => Effect.runPromise(fetchUser(props.userId)),
 }))
 ```
 
@@ -405,8 +405,8 @@ const userQuery = createQuery(() => ({
 ```tsx
 function UserProfile(props: { userId: number }) {
   const userQuery = createQuery(() => ({
-    queryKey: ['user', props.userId],
-    queryFn: () => Effect.runPromise(fetchUser(props.userId))
+    queryKey: ["user", props.userId],
+    queryFn: () => Effect.runPromise(fetchUser(props.userId)),
   }))
 
   return (
@@ -436,14 +436,14 @@ function UserProfile(props: { userId: number }) {
 const fetchUserProfile = (id: number) =>
   pipe(
     fetchUser(id),
-    Effect.flatMap(user => 
+    Effect.flatMap((user) =>
       pipe(
         fetchUserPreferences(user.id),
-        Effect.map(preferences => ({ user, preferences }))
+        Effect.map((preferences) => ({ user, preferences })),
       )
     ),
     Effect.retry({ times: 2 }),
-    Effect.timeout('10 seconds')
+    Effect.timeout("10 seconds"),
   )
 ```
 
@@ -452,14 +452,14 @@ const fetchUserProfile = (id: number) =>
 ### With SolidJS Router
 
 ```tsx
-import { useParams } from '@solidjs/router'
+import { useParams } from "@solidjs/router"
 
 function UserPage() {
   const params = useParams()
-  
+
   const userQuery = createQuery(() => ({
-    queryKey: ['user', params.id],
-    queryFn: () => Effect.runPromise(fetchUser(Number(params.id)))
+    queryKey: ["user", params.id],
+    queryFn: () => Effect.runPromise(fetchUser(Number(params.id))),
   }))
 
   return (
@@ -473,20 +473,20 @@ function UserPage() {
 ### With SolidJS Store
 
 ```tsx
-import { createStore } from 'solid-js/store'
+import { createStore } from "solid-js/store"
 
 function UserManager() {
   const [store, setStore] = createStore({ selectedUserId: null })
-  
+
   const userQuery = createQuery(() => ({
-    queryKey: ['user', store.selectedUserId],
+    queryKey: ["user", store.selectedUserId],
     queryFn: () => Effect.runPromise(fetchUser(store.selectedUserId)),
-    enabled: !!store.selectedUserId
+    enabled: !!store.selectedUserId,
   }))
 
   return (
     <div>
-      <button onClick={() => setStore('selectedUserId', 1)}>
+      <button onClick={() => setStore("selectedUserId", 1)}>
         Load User 1
       </button>
       <Show when={userQuery.data}>
@@ -500,6 +500,7 @@ function UserManager() {
 ## Examples
 
 Check out the complete implementation in:
+
 - [SolidJS SPA example](https://github.com/devx-op/effectify/tree/main/apps/solid-app-spa)
 - [SolidJS Start example](https://github.com/devx-op/effectify/tree/main/apps/solid-app-start)
 

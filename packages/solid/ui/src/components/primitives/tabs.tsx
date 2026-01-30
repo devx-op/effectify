@@ -1,39 +1,39 @@
-import { cn } from '@effectify/solid-ui/lib/utils'
-import type { PolymorphicProps } from '@kobalte/core/polymorphic'
+import { cn } from "@effectify/solid-ui/lib/utils"
+import type { PolymorphicProps } from "@kobalte/core/polymorphic"
 import type {
   TabsContentProps,
   TabsIndicatorProps,
   TabsListProps,
   TabsRootProps,
   TabsTriggerProps,
-} from '@kobalte/core/tabs'
-import { Tabs as TabsPrimitive } from '@kobalte/core/tabs'
-import type { VariantProps } from 'class-variance-authority'
-import { cva } from 'class-variance-authority'
-import type { ValidComponent, VoidProps } from 'solid-js'
-import { splitProps } from 'solid-js'
+} from "@kobalte/core/tabs"
+import { Tabs as TabsPrimitive } from "@kobalte/core/tabs"
+import type { VariantProps } from "class-variance-authority"
+import { cva } from "class-variance-authority"
+import type { ValidComponent, VoidProps } from "solid-js"
+import { splitProps } from "solid-js"
 
-type tabsProps<T extends ValidComponent = 'div'> = TabsRootProps<T> & {
+type tabsProps<T extends ValidComponent = "div"> = TabsRootProps<T> & {
   class?: string
 }
 
-export const Root = <T extends ValidComponent = 'div'>(props: PolymorphicProps<T, tabsProps<T>>) => {
-  const [local, rest] = splitProps(props as tabsProps, ['class'])
+export const Root = <T extends ValidComponent = "div">(props: PolymorphicProps<T, tabsProps<T>>) => {
+  const [local, rest] = splitProps(props as tabsProps, ["class"])
 
-  return <TabsPrimitive class={cn('w-full data-[orientation=vertical]:flex', local.class)} {...rest} />
+  return <TabsPrimitive class={cn("w-full data-[orientation=vertical]:flex", local.class)} {...rest} />
 }
 
-type tabsListProps<T extends ValidComponent = 'div'> = TabsListProps<T> & {
+type tabsListProps<T extends ValidComponent = "div"> = TabsListProps<T> & {
   class?: string
 }
 
-export const List = <T extends ValidComponent = 'div'>(props: PolymorphicProps<T, tabsListProps<T>>) => {
-  const [local, rest] = splitProps(props as tabsListProps, ['class'])
+export const List = <T extends ValidComponent = "div">(props: PolymorphicProps<T, tabsListProps<T>>) => {
+  const [local, rest] = splitProps(props as tabsListProps, ["class"])
 
   return (
     <TabsPrimitive.List
       class={cn(
-        'relative flex w-full rounded-lg bg-muted p-1 text-muted-foreground data-[orientation=vertical]:flex-col data-[orientation=horizontal]:items-center data-[orientation=vertical]:items-stretch',
+        "relative flex w-full rounded-lg bg-muted p-1 text-muted-foreground data-[orientation=vertical]:flex-col data-[orientation=horizontal]:items-center data-[orientation=vertical]:items-stretch",
         local.class,
       )}
       {...rest}
@@ -41,17 +41,17 @@ export const List = <T extends ValidComponent = 'div'>(props: PolymorphicProps<T
   )
 }
 
-type tabsContentProps<T extends ValidComponent = 'div'> = TabsContentProps<T> & {
+type tabsContentProps<T extends ValidComponent = "div"> = TabsContentProps<T> & {
   class?: string
 }
 
-export const Content = <T extends ValidComponent = 'div'>(props: PolymorphicProps<T, tabsContentProps<T>>) => {
-  const [local, rest] = splitProps(props as tabsContentProps, ['class'])
+export const Content = <T extends ValidComponent = "div">(props: PolymorphicProps<T, tabsContentProps<T>>) => {
+  const [local, rest] = splitProps(props as tabsContentProps, ["class"])
 
   return (
     <TabsPrimitive.Content
       class={cn(
-        'transition-shadow duration-200 focus-visible:outline-none focus-visible:ring-[1.5px] focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background data-[orientation=horizontal]:mt-2 data-[orientation=vertical]:ml-2',
+        "transition-shadow duration-200 focus-visible:outline-none focus-visible:ring-[1.5px] focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background data-[orientation=horizontal]:mt-2 data-[orientation=vertical]:ml-2",
         local.class,
       )}
       {...rest}
@@ -59,17 +59,17 @@ export const Content = <T extends ValidComponent = 'div'>(props: PolymorphicProp
   )
 }
 
-type tabsTriggerProps<T extends ValidComponent = 'button'> = TabsTriggerProps<T> & {
+type tabsTriggerProps<T extends ValidComponent = "button"> = TabsTriggerProps<T> & {
   class?: string
 }
 
-export const Trigger = <T extends ValidComponent = 'button'>(props: PolymorphicProps<T, tabsTriggerProps<T>>) => {
-  const [local, rest] = splitProps(props as tabsTriggerProps, ['class'])
+export const Trigger = <T extends ValidComponent = "button">(props: PolymorphicProps<T, tabsTriggerProps<T>>) => {
+  const [local, rest] = splitProps(props as tabsTriggerProps, ["class"])
 
   return (
     <TabsPrimitive.Trigger
       class={cn(
-        'peer relative z-10 inline-flex h-7 w-full items-center justify-center whitespace-nowrap rounded-md px-3 py-1 font-medium text-sm outline-none transition-colors disabled:pointer-events-none disabled:opacity-50 data-[selected]:text-foreground',
+        "peer relative z-10 inline-flex h-7 w-full items-center justify-center whitespace-nowrap rounded-md px-3 py-1 font-medium text-sm outline-none transition-colors disabled:pointer-events-none disabled:opacity-50 data-[selected]:text-foreground",
         local.class,
       )}
       {...rest}
@@ -77,29 +77,30 @@ export const Trigger = <T extends ValidComponent = 'button'>(props: PolymorphicP
   )
 }
 
-const tabsIndicatorVariants = cva('absolute outline-none transition-all duration-200', {
+const tabsIndicatorVariants = cva("absolute outline-none transition-all duration-200", {
   variants: {
     variant: {
       block:
-        'rounded-md bg-background shadow peer-focus-visible:outline-none peer-focus-visible:ring-[1.5px] peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-background data-[orientation=vertical]:top-0 data-[orientation=vertical]:right-1 data-[orientation=horizontal]:bottom-1 data-[orientation=horizontal]:left-0 data-[orientation=horizontal]:h-[calc(100%-0.5rem)] data-[orientation=vertical]:w-[calc(100%-0.5rem)]',
+        "rounded-md bg-background shadow peer-focus-visible:outline-none peer-focus-visible:ring-[1.5px] peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-background data-[orientation=vertical]:top-0 data-[orientation=vertical]:right-1 data-[orientation=horizontal]:bottom-1 data-[orientation=horizontal]:left-0 data-[orientation=horizontal]:h-[calc(100%-0.5rem)] data-[orientation=vertical]:w-[calc(100%-0.5rem)]",
       underline:
-        'data-[orientation=horizontal]:-bottom-[1px] data-[orientation=vertical]:-right-[1px] bg-primary data-[orientation=vertical]:top-0 data-[orientation=horizontal]:left-0 data-[orientation=horizontal]:h-[2px] data-[orientation=vertical]:w-[2px]',
+        "data-[orientation=horizontal]:-bottom-[1px] data-[orientation=vertical]:-right-[1px] bg-primary data-[orientation=vertical]:top-0 data-[orientation=horizontal]:left-0 data-[orientation=horizontal]:h-[2px] data-[orientation=vertical]:w-[2px]",
     },
   },
   defaultVariants: {
-    variant: 'block',
+    variant: "block",
   },
 })
 
-type tabsIndicatorProps<T extends ValidComponent = 'div'> = VoidProps<
-  TabsIndicatorProps<T> &
-    VariantProps<typeof tabsIndicatorVariants> & {
-      class?: string
-    }
+type tabsIndicatorProps<T extends ValidComponent = "div"> = VoidProps<
+  & TabsIndicatorProps<T>
+  & VariantProps<typeof tabsIndicatorVariants>
+  & {
+    class?: string
+  }
 >
 
-export const Indicator = <T extends ValidComponent = 'div'>(props: PolymorphicProps<T, tabsIndicatorProps<T>>) => {
-  const [local, rest] = splitProps(props as tabsIndicatorProps, ['class', 'variant'])
+export const Indicator = <T extends ValidComponent = "div">(props: PolymorphicProps<T, tabsIndicatorProps<T>>) => {
+  const [local, rest] = splitProps(props as tabsIndicatorProps, ["class", "variant"])
 
   return (
     <TabsPrimitive.Indicator class={cn(tabsIndicatorVariants({ variant: local.variant }), local.class)} {...rest} />

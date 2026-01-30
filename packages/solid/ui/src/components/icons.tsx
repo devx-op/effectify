@@ -1,6 +1,6 @@
-import type { ComponentProps } from 'solid-js'
+import type { ComponentProps } from "solid-js"
 
-export function GitHubIcon(props: ComponentProps<'svg'>) {
+export function GitHubIcon(props: ComponentProps<"svg">) {
   return (
     <svg viewBox="0 0 15 15" {...props}>
       <title>GitHub</title>
@@ -14,7 +14,7 @@ export function GitHubIcon(props: ComponentProps<'svg'>) {
   )
 }
 
-export function DiscordIcon(props: ComponentProps<'svg'>) {
+export function DiscordIcon(props: ComponentProps<"svg">) {
   return (
     <svg viewBox="0 0 15 15" {...props}>
       <title>Discord</title>
@@ -28,7 +28,7 @@ export function DiscordIcon(props: ComponentProps<'svg'>) {
   )
 }
 
-export function OpenCollectiveIcon(props: ComponentProps<'svg'>) {
+export function OpenCollectiveIcon(props: ComponentProps<"svg">) {
   return (
     <svg viewBox="0 0 32 32" {...props}>
       <title>OpenCollective</title>
@@ -40,7 +40,7 @@ export function OpenCollectiveIcon(props: ComponentProps<'svg'>) {
   )
 }
 
-export function TwitterIcon(props: ComponentProps<'svg'>) {
+export function TwitterIcon(props: ComponentProps<"svg">) {
   return (
     <svg viewBox="0 0 15 15" {...props}>
       <title>Twitter</title>
@@ -54,7 +54,7 @@ export function TwitterIcon(props: ComponentProps<'svg'>) {
   )
 }
 
-export function SunIcon(props: ComponentProps<'svg'>) {
+export function SunIcon(props: ComponentProps<"svg">) {
   return (
     <svg viewBox="0 0 15 15" {...props}>
       <title>Sun</title>
@@ -68,7 +68,7 @@ export function SunIcon(props: ComponentProps<'svg'>) {
   )
 }
 
-export function MoonIcon(props: ComponentProps<'svg'>) {
+export function MoonIcon(props: ComponentProps<"svg">) {
   return (
     <svg viewBox="0 0 15 15" {...props}>
       <title>Moon</title>
@@ -82,7 +82,7 @@ export function MoonIcon(props: ComponentProps<'svg'>) {
   )
 }
 
-export function DesktopIcon(props: ComponentProps<'svg'>) {
+export function DesktopIcon(props: ComponentProps<"svg">) {
   return (
     <svg fill="none" viewBox="0 0 15 15" {...props}>
       <title>Desktop</title>
@@ -96,7 +96,7 @@ export function DesktopIcon(props: ComponentProps<'svg'>) {
   )
 }
 
-export function CopyIcon(props: ComponentProps<'svg'>) {
+export function CopyIcon(props: ComponentProps<"svg">) {
   return (
     <svg viewBox="0 0 15 15" {...props}>
       <title>Copy</title>
@@ -110,7 +110,7 @@ export function CopyIcon(props: ComponentProps<'svg'>) {
   )
 }
 
-export function CheckIcon(props: ComponentProps<'svg'>) {
+export function CheckIcon(props: ComponentProps<"svg">) {
   return (
     <svg viewBox="0 0 15 15" {...props}>
       <title>Check</title>
@@ -124,7 +124,7 @@ export function CheckIcon(props: ComponentProps<'svg'>) {
   )
 }
 
-export function CaretSortIcon(props: ComponentProps<'svg'>) {
+export function CaretSortIcon(props: ComponentProps<"svg">) {
   return (
     <svg viewBox="0 0 15 15" {...props}>
       <title>Sort</title>
@@ -138,7 +138,7 @@ export function CaretSortIcon(props: ComponentProps<'svg'>) {
   )
 }
 
-export function CrossIcon(props: ComponentProps<'svg'>) {
+export function CrossIcon(props: ComponentProps<"svg">) {
   return (
     <svg viewBox="0 0 15 15" {...props}>
       <title>Cross</title>
@@ -152,7 +152,7 @@ export function CrossIcon(props: ComponentProps<'svg'>) {
   )
 }
 
-export function DotFilledIcon(props: ComponentProps<'svg'>) {
+export function DotFilledIcon(props: ComponentProps<"svg">) {
   return (
     <svg viewBox="0 0 15 15" {...props}>
       <title>Dot</title>
@@ -164,7 +164,7 @@ export function DotFilledIcon(props: ComponentProps<'svg'>) {
   )
 }
 
-export function ChevronRightIcon(props: ComponentProps<'svg'>) {
+export function ChevronRightIcon(props: ComponentProps<"svg">) {
   return (
     <svg viewBox="0 0 15 15" {...props}>
       <title>Chevron</title>
@@ -178,7 +178,7 @@ export function ChevronRightIcon(props: ComponentProps<'svg'>) {
   )
 }
 
-export function ChevronDownIcon(props: ComponentProps<'svg'>) {
+export function ChevronDownIcon(props: ComponentProps<"svg">) {
   return (
     <svg viewBox="0 0 15 15" {...props}>
       <title>Chevron</title>
@@ -192,7 +192,7 @@ export function ChevronDownIcon(props: ComponentProps<'svg'>) {
   )
 }
 
-export function HamburgerMenuIcon(props: ComponentProps<'svg'>) {
+export function HamburgerMenuIcon(props: ComponentProps<"svg">) {
   return (
     <svg viewBox="0 0 15 15" {...props}>
       <title>Menu</title>
@@ -206,7 +206,7 @@ export function HamburgerMenuIcon(props: ComponentProps<'svg'>) {
   )
 }
 
-export function VolumeOnIcon(props: ComponentProps<'svg'>) {
+export function VolumeOnIcon(props: ComponentProps<"svg">) {
   return (
     <svg viewBox="0 0 24 24" {...props}>
       <title>Volume On</title>
@@ -222,7 +222,7 @@ export function VolumeOnIcon(props: ComponentProps<'svg'>) {
   )
 }
 
-export function VolumeOffIcon(props: ComponentProps<'svg'>) {
+export function VolumeOffIcon(props: ComponentProps<"svg">) {
   return (
     <svg viewBox="0 0 24 24" {...props}>
       <title>Volume Off</title>
@@ -238,7 +238,7 @@ export function VolumeOffIcon(props: ComponentProps<'svg'>) {
   )
 }
 
-export function LoaderIcon(props: ComponentProps<'svg'>) {
+export function LoaderIcon(props: ComponentProps<"svg">) {
   return (
     <svg
       fill="none"
@@ -256,7 +256,7 @@ export function LoaderIcon(props: ComponentProps<'svg'>) {
   )
 }
 
-export function ArrowIcon(props: ComponentProps<'svg'>) {
+export function ArrowIcon(props: ComponentProps<"svg">) {
   return (
     <svg fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" {...props}>
       <title>Arrow</title>
@@ -265,7 +265,7 @@ export function ArrowIcon(props: ComponentProps<'svg'>) {
   )
 }
 
-export function MagnifyingGlassIcon(props: ComponentProps<'svg'>) {
+export function MagnifyingGlassIcon(props: ComponentProps<"svg">) {
   return (
     <svg fill="currentColor" viewBox="0 0 15 15" xmlns="http://www.w3.org/2000/svg" {...props}>
       <title>Magnifying Glass</title>
@@ -279,7 +279,7 @@ export function MagnifyingGlassIcon(props: ComponentProps<'svg'>) {
   )
 }
 
-export function ReloadIcon(props: ComponentProps<'svg'>) {
+export function ReloadIcon(props: ComponentProps<"svg">) {
   return (
     <svg fill="currentColor" viewBox="0 0 15 15" xmlns="http://www.w3.org/2000/svg" {...props}>
       <title>Reload</title>

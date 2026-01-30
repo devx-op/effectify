@@ -1,6 +1,6 @@
-import { createFileRoute } from '@tanstack/solid-router'
+import { createFileRoute } from "@tanstack/solid-router"
 
-export const Route = createFileRoute('/(protected)/dashboard/profile')({
+export const Route = createFileRoute("/(protected)/dashboard/profile")({
   component: RouteComponent,
   beforeLoad: () => {
     // const session = useSession()

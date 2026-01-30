@@ -22,33 +22,33 @@ bun add @effectify/node-better-auth
 
 ```typescript
 // Auth.js
-import { betterAuth } from 'better-auth'
-import Database from 'better-sqlite3'
+import { betterAuth } from "better-auth"
+import Database from "better-sqlite3"
 
 export const handler = betterAuth({
   emailAndPassword: {
     enabled: true,
   },
-  database: new Database('../sqlite.db') as any,
+  database: new Database("../sqlite.db") as any,
 })
 
 // Main.ts
-import * as Auth from '@/Auth.js'
-import * as NodeHttpServer from '@effect/platform-node/NodeHttpServer'
-import * as HttpMiddleware from '@effect/platform/HttpMiddleware'
-import * as HttpRouter from '@effect/platform/HttpRouter'
-import * as HttpServer from '@effect/platform/HttpServer'
-import * as Layer from 'effect/Layer'
-import * as NodeRuntime from '@effect/platform-node/NodeRuntime'
+import * as Auth from "@/Auth.js"
+import * as NodeHttpServer from "@effect/platform-node/NodeHttpServer"
+import * as HttpMiddleware from "@effect/platform/HttpMiddleware"
+import * as HttpRouter from "@effect/platform/HttpRouter"
+import * as HttpServer from "@effect/platform/HttpServer"
+import * as Layer from "effect/Layer"
+import * as NodeRuntime from "@effect/platform-node/NodeRuntime"
 
-import { createServer } from 'node:http'
-import { toEffectHandler } from '@effectify/node-better-auth'
+import { createServer } from "node:http"
+import { toEffectHandler } from "@effectify/node-better-auth"
 
 export const Live = HttpRouter.empty.pipe(
-  HttpRouter.all('/api/auth/*', toEffectHandler(Auth.handler)),
+  HttpRouter.all("/api/auth/*", toEffectHandler(Auth.handler)),
   HttpServer.serve(HttpMiddleware.logger),
   HttpServer.withLogAddress,
-  Layer.provide(NodeHttpServer.layer(createServer, { port: 3000 }))
+  Layer.provide(NodeHttpServer.layer(createServer, { port: 3000 })),
 )
 
 Layer.launch(Live).pipe(NodeRuntime.runMain())

@@ -1,30 +1,30 @@
-import * as Args from '@effect/cli/Args'
-import * as Command from '@effect/cli/Command'
-import * as Options from '@effect/cli/Options'
-import * as Console from 'effect/Console'
-import * as Effect from 'effect/Effect'
-import * as Option from 'effect/Option'
+import * as Args from "@effect/cli/Args"
+import * as Command from "@effect/cli/Command"
+import * as Options from "@effect/cli/Options"
+import * as Console from "effect/Console"
+import * as Effect from "effect/Effect"
+import * as Option from "effect/Option"
 
 // Arguments and options for add command
-const componentNameArg = Args.text({ name: 'component-name' }).pipe(
-  Args.withDescription('Name of the component to add'),
+const componentNameArg = Args.text({ name: "component-name" }).pipe(
+  Args.withDescription("Name of the component to add"),
 )
 
-const registryOption = Options.text('registry').pipe(
-  Options.withAlias('r'),
-  Options.withDescription('Registry to use for the component'),
-  Options.withDefault('@effectify/ui'),
+const registryOption = Options.text("registry").pipe(
+  Options.withAlias("r"),
+  Options.withDescription("Registry to use for the component"),
+  Options.withDefault("@effectify/ui"),
 )
 
-const versionOption = Options.text('version').pipe(
-  Options.withAlias('v'),
-  Options.withDescription('Specific version of the component to install'),
+const versionOption = Options.text("version").pipe(
+  Options.withAlias("v"),
+  Options.withDescription("Specific version of the component to install"),
   Options.optional,
 )
 
-const pathOption = Options.text('path').pipe(
-  Options.withAlias('p'),
-  Options.withDescription('Custom path to install the component'),
+const pathOption = Options.text("path").pipe(
+  Options.withAlias("p"),
+  Options.withDescription("Custom path to install the component"),
   Options.optional,
 )
 
@@ -37,7 +37,7 @@ const addComponent = (
   },
   componentName: string,
 ) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     yield* Console.log(`📦 Adding component: ${componentName}`)
     yield* Console.log(`🏪 Registry: ${options.registry}`)
 
@@ -50,12 +50,12 @@ const addComponent = (
     }
 
     // TODO: Implement actual component installation logic
-    yield* Console.log('⚠️  Component installation not yet implemented')
+    yield* Console.log("⚠️  Component installation not yet implemented")
   })
 
 // Export the add command
 export const addCommand = Command.make(
-  'add',
+  "add",
   {
     componentName: componentNameArg,
     registry: registryOption,

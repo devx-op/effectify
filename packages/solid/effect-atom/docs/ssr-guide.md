@@ -31,38 +31,38 @@ Complete guide for using `@effectify/solid-effect-atom` with Server-Side Renderi
 
 ```tsx
 // server.tsx
-import { renderToString } from 'solid-js/web'
-import { RegistryProvider, createSSRRegistry, preloadAtoms, serializeState } from '@effectify/solid-effect-atom'
-import { App } from './App'
-import { criticalAtoms } from './atoms'
+import { renderToString } from "solid-js/web"
+import { createSSRRegistry, preloadAtoms, RegistryProvider, serializeState } from "@effectify/solid-effect-atom"
+import { App } from "./App"
+import { criticalAtoms } from "./atoms"
 
 export async function renderApp(url: string) {
   // Create SSR-optimized registry
   const registry = createSSRRegistry({
     timeout: 5000,
-    includeErrors: false
+    includeErrors: false,
   })
-  
+
   // Preload critical atoms
   const ssrResult = await preloadAtoms(registry, criticalAtoms, {
-    timeout: 3000
+    timeout: 3000,
   })
-  
+
   // Render app to string
   const html = renderToString(() => (
     <RegistryProvider registry={registry}>
       <App />
     </RegistryProvider>
   ))
-  
+
   // Serialize state for client hydration
   const serializedState = serializeState(ssrResult.dehydratedState)
-  
+
   return {
     html,
     state: serializedState,
     errors: ssrResult.errors,
-    timeouts: ssrResult.timeouts
+    timeouts: ssrResult.timeouts,
   }
 }
 ```
@@ -71,17 +71,17 @@ export async function renderApp(url: string) {
 
 ```tsx
 // client.tsx
-import { hydrate } from 'solid-js/web'
-import { 
-  RegistryProvider, 
-  HydrationBoundary, 
+import { hydrate } from "solid-js/web"
+import {
   deserializeState,
-  markHydrationComplete 
-} from '@effectify/solid-effect-atom'
-import { App } from './App'
+  HydrationBoundary,
+  markHydrationComplete,
+  RegistryProvider,
+} from "@effectify/solid-effect-atom"
+import { App } from "./App"
 
 // Get serialized state from server
-const serializedState = document.getElementById('atom-state')?.textContent || '[]'
+const serializedState = document.getElementById("atom-state")?.textContent || "[]"
 const dehydratedState = deserializeState(serializedState)
 
 hydrate(() => (
@@ -90,7 +90,7 @@ hydrate(() => (
       <App />
     </HydrationBoundary>
   </RegistryProvider>
-), document.getElementById('root')!)
+), document.getElementById("root")!)
 
 // Mark hydration as complete
 markHydrationComplete()
@@ -118,36 +118,22 @@ markHydrationComplete()
 
 ```tsx
 // src/root.tsx
-import { Suspense } from 'solid-js'
-import { 
-  Body, 
-  ErrorBoundary, 
-  FileRoutes, 
-  Head, 
-  Html, 
-  Meta, 
-  Routes, 
-  Scripts, 
-  Title 
-} from 'solid-start'
-import { 
-  RegistryProvider, 
-  HydrationBoundary, 
-  deserializeState 
-} from '@effectify/solid-effect-atom'
+import { Suspense } from "solid-js"
+import { Body, ErrorBoundary, FileRoutes, Head, Html, Meta, Routes, Scripts, Title } from "solid-start"
+import { deserializeState, HydrationBoundary, RegistryProvider } from "@effectify/solid-effect-atom"
 
 export default function Root() {
   // Get hydration state from server
   const getHydrationState = () => {
-    if (typeof window !== 'undefined') {
-      const stateElement = document.getElementById('atom-state')
+    if (typeof window !== "undefined") {
+      const stateElement = document.getElementById("atom-state")
       if (stateElement) {
-        return deserializeState(stateElement.textContent || '[]')
+        return deserializeState(stateElement.textContent || "[]")
       }
     }
     return []
   }
-  
+
   return (
     <Html lang="en">
       <Head>
@@ -178,32 +164,27 @@ export default function Root() {
 
 ```tsx
 // src/routes/users/[id].tsx
-import { useParams, createRouteData } from 'solid-start'
-import { 
-  useAtomValue, 
-  preloadAtoms, 
-  createSSRRegistry,
-  isSSR 
-} from '@effectify/solid-effect-atom'
-import { userAtom, createUserAtom } from '~/atoms/user'
+import { createRouteData, useParams } from "solid-start"
+import { createSSRRegistry, isSSR, preloadAtoms, useAtomValue } from "@effectify/solid-effect-atom"
+import { createUserAtom, userAtom } from "~/atoms/user"
 
 // Server-side data loading
 export function routeData() {
   return createRouteData(async (key) => {
     const userId = key.params.id
-    
+
     if (isSSR()) {
       // Preload user data on server
       const registry = createSSRRegistry()
       const userAtomInstance = createUserAtom(userId)
-      
+
       const result = await preloadAtoms(registry, [userAtomInstance])
       return {
         userId,
-        ssrState: result.dehydratedState
+        ssrState: result.dehydratedState,
       }
     }
-    
+
     return { userId, ssrState: [] }
   })
 }
@@ -211,18 +192,18 @@ export function routeData() {
 export default function UserPage() {
   const params = useParams()
   const data = useRouteData<typeof routeData>()
-  
+
   // Create user atom for this specific user
   const userAtomInstance = () => createUserAtom(params.id)
   const user = useAtomValue(userAtomInstance)
-  
+
   return (
     <div>
       <h1>User Profile</h1>
       {(() => {
         const userData = user()
         if (!userData) return <p>Loading...</p>
-        
+
         return (
           <div>
             <h2>{userData.name}</h2>
@@ -239,19 +220,19 @@ export default function UserPage() {
 
 ```tsx
 // src/routes/api/users/[id].ts
-import { json } from 'solid-start/api'
-import type { APIEvent } from 'solid-start/api'
+import { json } from "solid-start/api"
+import type { APIEvent } from "solid-start/api"
 
 export async function GET({ params }: APIEvent) {
   const userId = params.id
-  
+
   // Fetch user data from database
   const user = await fetchUserFromDB(userId)
-  
+
   if (!user) {
-    return new Response('User not found', { status: 404 })
+    return new Response("User not found", { status: 404 })
   }
-  
+
   return json(user)
 }
 
@@ -260,7 +241,7 @@ async function fetchUserFromDB(id: string) {
   return {
     id,
     name: `User ${id}`,
-    email: `user${id}@example.com`
+    email: `user${id}@example.com`,
   }
 }
 ```
@@ -271,30 +252,26 @@ async function fetchUserFromDB(id: string) {
 
 ```tsx
 // atoms/progressive.ts
-import { Atom, createSSRAtom, isHydrating } from '@effectify/solid-effect-atom'
-import { Effect } from 'effect'
+import { Atom, createSSRAtom, isHydrating } from "@effectify/solid-effect-atom"
+import { Effect } from "effect"
 
 // Critical data that should be SSR'd
 export const criticalDataAtom = Atom.fn(() =>
-  Effect.gen(function* () {
-    const data = yield* Effect.tryPromise(() =>
-      fetch('/api/critical-data').then(r => r.json())
-    )
+  Effect.gen(function*() {
+    const data = yield* Effect.tryPromise(() => fetch("/api/critical-data").then((r) => r.json()))
     return data
   })
 )
 
 // Non-critical data that can load after hydration
 export const nonCriticalDataAtom = Atom.fn(() =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     // Only load after hydration is complete
     if (isHydrating()) {
       return null
     }
-    
-    const data = yield* Effect.tryPromise(() =>
-      fetch('/api/non-critical-data').then(r => r.json())
-    )
+
+    const data = yield* Effect.tryPromise(() => fetch("/api/non-critical-data").then((r) => r.json()))
     return data
   })
 )
@@ -302,14 +279,14 @@ export const nonCriticalDataAtom = Atom.fn(() =>
 // Fallback atom for SSR
 export const userPreferencesAtom = createSSRAtom(
   // Server fallback
-  { theme: 'light', language: 'en' },
+  { theme: "light", language: "en" },
   // Client atom
   Atom.fn(() =>
-    Effect.gen(function* () {
-      const prefs = localStorage.getItem('user-preferences')
-      return prefs ? JSON.parse(prefs) : { theme: 'light', language: 'en' }
+    Effect.gen(function*() {
+      const prefs = localStorage.getItem("user-preferences")
+      return prefs ? JSON.parse(prefs) : { theme: "light", language: "en" }
     })
-  )
+  ),
 )
 ```
 
@@ -317,13 +294,13 @@ export const userPreferencesAtom = createSSRAtom(
 
 ```tsx
 // components/SelectiveHydration.tsx
-import { createSignal, onMount } from 'solid-js'
-import { useAtomValue, isSSR } from '@effectify/solid-effect-atom'
-import { heavyDataAtom } from '../atoms'
+import { createSignal, onMount } from "solid-js"
+import { isSSR, useAtomValue } from "@effectify/solid-effect-atom"
+import { heavyDataAtom } from "../atoms"
 
 export function HeavyComponent() {
   const [shouldHydrate, setShouldHydrate] = createSignal(false)
-  
+
   // Only hydrate when component becomes visible
   onMount(() => {
     if (!isSSR()) {
@@ -333,26 +310,22 @@ export function HeavyComponent() {
           observer.disconnect()
         }
       })
-      
-      const element = document.getElementById('heavy-component')
+
+      const element = document.getElementById("heavy-component")
       if (element) observer.observe(element)
     }
   })
-  
+
   return (
     <div id="heavy-component">
-      {shouldHydrate() ? (
-        <HydratedContent />
-      ) : (
-        <div>Loading heavy content...</div>
-      )}
+      {shouldHydrate() ? <HydratedContent /> : <div>Loading heavy content...</div>}
     </div>
   )
 }
 
 function HydratedContent() {
   const data = useAtomValue(() => heavyDataAtom)
-  
+
   return (
     <div>
       {/* Heavy content here */}
@@ -366,8 +339,8 @@ function HydratedContent() {
 
 ```tsx
 // components/SSRErrorBoundary.tsx
-import { ErrorBoundary } from 'solid-js'
-import { isSSR } from '@effectify/solid-effect-atom'
+import { ErrorBoundary } from "solid-js"
+import { isSSR } from "@effectify/solid-effect-atom"
 
 export function SSRErrorBoundary(props: { children: any }) {
   return (
@@ -375,10 +348,10 @@ export function SSRErrorBoundary(props: { children: any }) {
       fallback={(error, reset) => {
         // Different error handling for SSR vs client
         if (isSSR()) {
-          console.error('SSR Error:', error)
+          console.error("SSR Error:", error)
           return <div>Server error occurred</div>
         }
-        
+
         return (
           <div class="error-boundary">
             <h2>Something went wrong</h2>
@@ -403,14 +376,14 @@ export function SSRErrorBoundary(props: { children: any }) {
 const criticalAtoms = [
   userAtom,
   navigationAtom,
-  themeAtom
+  themeAtom,
 ]
 
 // Non-critical atoms can load after hydration
 const nonCriticalAtoms = [
   analyticsAtom,
   recommendationsAtom,
-  adsAtom
+  adsAtom,
 ]
 ```
 
@@ -421,7 +394,7 @@ const nonCriticalAtoms = [
 const ssrConfig = {
   critical: { timeout: 2000 },
   normal: { timeout: 5000 },
-  optional: { timeout: 1000 }
+  optional: { timeout: 1000 },
 }
 ```
 
@@ -430,14 +403,10 @@ const ssrConfig = {
 ```tsx
 // Graceful degradation for SSR failures
 export const resilientDataAtom = Atom.fn(() =>
-  Effect.gen(function* () {
-    const data = yield* Effect.tryPromise(() =>
-      fetch('/api/data').then(r => r.json())
-    ).pipe(
-      Effect.timeout('3000ms'),
-      Effect.catchAll(() => 
-        Effect.succeed({ fallback: true, message: 'Using fallback data' })
-      )
+  Effect.gen(function*() {
+    const data = yield* Effect.tryPromise(() => fetch("/api/data").then((r) => r.json())).pipe(
+      Effect.timeout("3000ms"),
+      Effect.catchAll(() => Effect.succeed({ fallback: true, message: "Using fallback data" })),
     )
     return data
   })
@@ -450,18 +419,18 @@ export const resilientDataAtom = Atom.fn(() =>
 // Monitor SSR performance
 export async function renderWithMetrics(url: string) {
   const startTime = Date.now()
-  
+
   const result = await renderApp(url)
-  
+
   const metrics = {
     renderTime: Date.now() - startTime,
     atomsPreloaded: result.state.length,
     errors: result.errors.length,
-    timeouts: result.timeouts.length
+    timeouts: result.timeouts.length,
   }
-  
-  console.log('SSR Metrics:', metrics)
-  
+
+  console.log("SSR Metrics:", metrics)
+
   return { ...result, metrics }
 }
 ```
@@ -481,12 +450,12 @@ export async function renderWithMetrics(url: string) {
 // Debug SSR state
 export function debugSSRState(registry: Registry) {
   const nodes = registry.getNodes()
-  console.log('SSR Registry State:', {
+  console.log("SSR Registry State:", {
     atomCount: nodes.size,
     atoms: Array.from(nodes.entries()).map(([atom, node]) => ({
       key: node.key,
-      hasValue: registry.has(atom)
-    }))
+      hasValue: registry.has(atom),
+    })),
   })
 }
 ```

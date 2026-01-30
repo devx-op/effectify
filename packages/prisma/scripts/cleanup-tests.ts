@@ -1,10 +1,10 @@
-import { existsSync } from 'node:fs'
-import { readdir, rmdir } from 'node:fs/promises'
-import { resolve } from 'node:path'
+import { existsSync } from "node:fs"
+import { readdir, rmdir } from "node:fs/promises"
+import { resolve } from "node:path"
 
 async function cleanupTests() {
-  const testsDir = resolve('src/generated/tests')
-  const testDbsDir = resolve('src/generated/tests-dbs')
+  const testsDir = resolve("src/generated/tests")
+  const testDbsDir = resolve("src/generated/tests-dbs")
 
   // Clean up test files
   if (existsSync(testsDir)) {
@@ -21,6 +21,6 @@ async function cleanupTests() {
 }
 
 cleanupTests().catch((error) => {
-  console.error('❌ Cleanup failed:', error)
+  console.error("❌ Cleanup failed:", error)
   process.exit(1)
 })

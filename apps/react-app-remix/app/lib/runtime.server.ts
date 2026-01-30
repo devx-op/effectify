@@ -1,5 +1,5 @@
-import { Runtime } from '@effectify/react-remix'
-import * as Layer from 'effect/Layer'
+import { Runtime } from "@effectify/react-remix"
+import * as Layer from "effect/Layer"
 
 const layers = Layer.empty
 

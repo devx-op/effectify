@@ -1,7 +1,7 @@
-import { buttonVariants } from '@effectify/solid-ui/components/primitives/button'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@effectify/solid-ui/components/primitives/tooltip'
-import { cn } from '@effectify/solid-ui/lib/utils'
-import { For, type JSX, Show } from 'solid-js'
+import { buttonVariants } from "@effectify/solid-ui/components/primitives/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@effectify/solid-ui/components/primitives/tooltip"
+import { cn } from "@effectify/solid-ui/lib/utils"
+import { For, type JSX, Show } from "solid-js"
 
 type Props = {
   isCollapsed: boolean
@@ -9,7 +9,7 @@ type Props = {
     title: string
     label?: string
     icon: JSX.Element
-    variant: 'default' | 'ghost'
+    variant: "default" | "ghost"
   }[]
 }
 
@@ -25,19 +25,19 @@ export const Nav = (props: Props) => {
                   class={cn(
                     buttonVariants({
                       variant: item.variant,
-                      size: 'sm',
-                      class: 'text-sm',
+                      size: "sm",
+                      class: "text-sm",
                     }),
-                    item.variant === 'default' &&
-                      'dark:bg-muted dark:text-white dark:hover:bg-muted dark:hover:text-white',
-                    'justify-start',
+                    item.variant === "default" &&
+                      "dark:bg-muted dark:text-white dark:hover:bg-muted dark:hover:text-white",
+                    "justify-start",
                   )}
                   href="/"
                 >
                   <div class="mr-2">{item.icon}</div>
                   {item.title}
                   {item.label && (
-                    <span class={cn('ml-auto', item.variant === 'default' && 'text-background dark:text-white')}>
+                    <span class={cn("ml-auto", item.variant === "default" && "text-background dark:text-white")}>
                       {item.label}
                     </span>
                   )}
@@ -49,10 +49,10 @@ export const Nav = (props: Props) => {
                 <TooltipTrigger
                   as="a"
                   class={cn(
-                    buttonVariants({ variant: item.variant, size: 'icon' }),
-                    'h-9 w-9',
-                    item.variant === 'default' &&
-                      'dark:bg-muted dark:text-muted-foreground dark:hover:bg-muted dark:hover:text-white',
+                    buttonVariants({ variant: item.variant, size: "icon" }),
+                    "h-9 w-9",
+                    item.variant === "default" &&
+                      "dark:bg-muted dark:text-muted-foreground dark:hover:bg-muted dark:hover:text-white",
                   )}
                   href="#"
                 >

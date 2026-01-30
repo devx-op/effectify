@@ -1,6 +1,6 @@
-import * as Atom from '@effect-atom/atom/Atom'
-import { RegistryProvider, useAtom, useAtomValue } from '@effectify/solid-effect-atom'
-import { createFileRoute } from '@tanstack/solid-router'
+import * as Atom from "@effect-atom/atom/Atom"
+import { RegistryProvider, useAtom, useAtomValue } from "@effectify/solid-effect-atom"
+import { createFileRoute } from "@tanstack/solid-router"
 
 // Create atoms for the counter example
 const countAtom = Atom.make(0)
@@ -28,8 +28,8 @@ function CounterExample() {
           </div>
           <div class="text-center">
             <p class="text-gray-600 text-sm dark:text-gray-400">Is Even</p>
-            <p class={`font-bold text-2xl ${isEven() ? 'text-green-600' : 'text-red-600'}`}>
-              {isEven() ? 'Yes' : 'No'}
+            <p class={`font-bold text-2xl ${isEven() ? "text-green-600" : "text-red-600"}`}>
+              {isEven() ? "Yes" : "No"}
             </p>
           </div>
         </div>
@@ -71,7 +71,7 @@ function CounterExample() {
   )
 }
 
-export const Route = createFileRoute('/(protected)/dashboard/settings')({
+export const Route = createFileRoute("/(protected)/dashboard/settings")({
   component: RouteComponent,
   beforeLoad: () => {
     // const session = useSession()

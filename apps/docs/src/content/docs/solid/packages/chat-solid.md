@@ -14,6 +14,7 @@ npm install @effectify/chat-solid
 ```
 
 **Peer Dependencies:**
+
 ```bash
 npm install @effectify/solid-query @effectify/chat-domain solid-js
 ```
@@ -23,12 +24,12 @@ npm install @effectify/solid-query @effectify/chat-domain solid-js
 ### Simple Chat Component
 
 ```tsx
-import { ChatRoom } from '@effectify/chat-solid/components/chat-room'
-import { ChatProvider } from '@effectify/chat-solid/components/chat-provider'
+import { ChatRoom } from "@effectify/chat-solid/components/chat-room"
+import { ChatProvider } from "@effectify/chat-solid/components/chat-provider"
 
 function App() {
   return (
-    <ChatProvider 
+    <ChatProvider
       userId="user-123"
       roomId="general"
       websocketUrl="ws://localhost:3001"
@@ -42,19 +43,15 @@ function App() {
 ### Custom Chat Interface
 
 ```tsx
-import { 
-  ChatMessages, 
-  ChatInput, 
-  ChatUserList 
-} from '@effectify/chat-solid/components'
-import { useChatRoom } from '@effectify/chat-solid/hooks/use-chat-room'
+import { ChatInput, ChatMessages, ChatUserList } from "@effectify/chat-solid/components"
+import { useChatRoom } from "@effectify/chat-solid/hooks/use-chat-room"
 
 function CustomChatRoom() {
-  const { 
-    messages, 
-    users, 
-    sendMessage, 
-    isConnected 
+  const {
+    messages,
+    users,
+    sendMessage,
+    isConnected,
   } = useChatRoom()
 
   return (
@@ -63,7 +60,7 @@ function CustomChatRoom() {
         <div class="flex-1 overflow-y-auto">
           <ChatMessages messages={messages()} />
         </div>
-        <ChatInput 
+        <ChatInput
           onSendMessage={sendMessage}
           disabled={!isConnected()}
         />
@@ -83,7 +80,7 @@ function CustomChatRoom() {
 The root provider that manages chat state and WebSocket connections:
 
 ```tsx
-import { ChatProvider } from '@effectify/chat-solid/components/chat-provider'
+import { ChatProvider } from "@effectify/chat-solid/components/chat-provider"
 
 function App() {
   return (
@@ -94,7 +91,7 @@ function App() {
       options={{
         reconnectAttempts: 5,
         reconnectDelay: 1000,
-        messageHistory: 50
+        messageHistory: 50,
       }}
     >
       <YourChatComponents />
@@ -108,12 +105,12 @@ function App() {
 A complete chat room component with messages, input, and user list:
 
 ```tsx
-import { ChatRoom } from '@effectify/chat-solid/components/chat-room'
+import { ChatRoom } from "@effectify/chat-solid/components/chat-room"
 
 function MyChatApp() {
   return (
     <div class="h-screen">
-      <ChatRoom 
+      <ChatRoom
         class="h-full"
         showUserList={true}
         showTypingIndicator={true}
@@ -129,14 +126,14 @@ function MyChatApp() {
 Displays a list of chat messages with proper formatting:
 
 ```tsx
-import { ChatMessages } from '@effectify/chat-solid/components/chat-messages'
-import { useChatRoom } from '@effectify/chat-solid/hooks/use-chat-room'
+import { ChatMessages } from "@effectify/chat-solid/components/chat-messages"
+import { useChatRoom } from "@effectify/chat-solid/hooks/use-chat-room"
 
 function MessageArea() {
   const { messages } = useChatRoom()
 
   return (
-    <ChatMessages 
+    <ChatMessages
       messages={messages()}
       class="flex-1 overflow-y-auto p-4"
       renderMessage={(message) => (
@@ -154,8 +151,8 @@ function MessageArea() {
 Input component for sending messages:
 
 ```tsx
-import { ChatInput } from '@effectify/chat-solid/components/chat-input'
-import { useChatRoom } from '@effectify/chat-solid/hooks/use-chat-room'
+import { ChatInput } from "@effectify/chat-solid/components/chat-input"
+import { useChatRoom } from "@effectify/chat-solid/hooks/use-chat-room"
 
 function MessageInput() {
   const { sendMessage, isConnected } = useChatRoom()
@@ -180,8 +177,8 @@ function MessageInput() {
 Displays online users in the chat room:
 
 ```tsx
-import { ChatUserList } from '@effectify/chat-solid/components/chat-user-list'
-import { useChatRoom } from '@effectify/chat-solid/hooks/use-chat-room'
+import { ChatUserList } from "@effectify/chat-solid/components/chat-user-list"
+import { useChatRoom } from "@effectify/chat-solid/hooks/use-chat-room"
 
 function UserSidebar() {
   const { users } = useChatRoom()
@@ -189,7 +186,7 @@ function UserSidebar() {
   return (
     <div class="w-64 border-l bg-gray-50">
       <h3 class="p-4 font-semibold">Online Users</h3>
-      <ChatUserList 
+      <ChatUserList
         users={users()}
         renderUser={(user) => (
           <div class="flex items-center p-2">
@@ -210,7 +207,7 @@ function UserSidebar() {
 Main hook for accessing chat room state and actions:
 
 ```tsx
-import { useChatRoom } from '@effectify/chat-solid/hooks/use-chat-room'
+import { useChatRoom } from "@effectify/chat-solid/hooks/use-chat-room"
 
 function ChatComponent() {
   const {
@@ -221,20 +218,20 @@ function ChatComponent() {
     isConnected,
     isLoading,
     error,
-    
+
     // Actions
     sendMessage,
     joinRoom,
     leaveRoom,
-    
+
     // Typing indicators
     typingUsers,
     startTyping,
-    stopTyping
+    stopTyping,
   } = useChatRoom()
 
   const handleSendMessage = (content: string) => {
-    sendMessage({ content, type: 'text' })
+    sendMessage({ content, type: "text" })
   }
 
   return (
@@ -242,7 +239,7 @@ function ChatComponent() {
       <Show when={error()}>
         <div>Error: {error()?.message}</div>
       </Show>
-      <div>Connected: {isConnected() ? 'Yes' : 'No'}</div>
+      <div>Connected: {isConnected() ? "Yes" : "No"}</div>
       <div>Messages: {messages().length}</div>
       <div>Users: {users().length}</div>
     </Show>
@@ -255,7 +252,7 @@ function ChatComponent() {
 Hook for managing message-specific functionality:
 
 ```tsx
-import { useChatMessages } from '@effectify/chat-solid/hooks/use-chat-messages'
+import { useChatMessages } from "@effectify/chat-solid/hooks/use-chat-messages"
 
 function MessageManager() {
   const {
@@ -264,7 +261,7 @@ function MessageManager() {
     editMessage,
     deleteMessage,
     reactToMessage,
-    loadMoreMessages
+    loadMoreMessages,
   } = useChatMessages()
 
   const handleEdit = (messageId: string, newContent: string) => {
@@ -281,7 +278,7 @@ function MessageManager() {
         {(message) => (
           <div>
             {message.content}
-            <button onClick={() => handleReact(message.id, '👍')}>
+            <button onClick={() => handleReact(message.id, "👍")}>
               👍
             </button>
           </div>
@@ -297,7 +294,7 @@ function MessageManager() {
 ### Real-time Message Updates
 
 ```tsx
-import { createEffect } from 'solid-js'
+import { createEffect } from "solid-js"
 
 function ChatNotifications() {
   const { messages } = useChatRoom()
@@ -317,7 +314,7 @@ function ChatNotifications() {
 ### Typing Indicators
 
 ```tsx
-import { createSignal, createEffect } from 'solid-js'
+import { createEffect, createSignal } from "solid-js"
 
 function TypingIndicator() {
   const { typingUsers, startTyping, stopTyping } = useChatRoom()
@@ -346,8 +343,8 @@ function TypingIndicator() {
       />
       <Show when={typingUsers().length > 0}>
         <div class="text-sm text-gray-500">
-          {typingUsers().map(u => u.name).join(', ')} 
-          {typingUsers().length === 1 ? ' is' : ' are'} typing...
+          {typingUsers().map((u) => u.name).join(", ")}
+          {typingUsers().length === 1 ? " is" : " are"} typing...
         </div>
       </Show>
     </div>
@@ -358,7 +355,7 @@ function TypingIndicator() {
 ### Message Reactions
 
 ```tsx
-import { MessageReactions } from '@effectify/chat-solid/components/message-reactions'
+import { MessageReactions } from "@effectify/chat-solid/components/message-reactions"
 
 function MessageWithReactions(props: { message: Message }) {
   const { reactToMessage } = useChatMessages()
@@ -382,24 +379,24 @@ function MessageWithReactions(props: { message: Message }) {
 Effect-based service for chat operations:
 
 ```tsx
-import { ChatService } from '@effectify/chat-solid/services/chat-service'
-import { Effect } from 'effect'
+import { ChatService } from "@effectify/chat-solid/services/chat-service"
+import { Effect } from "effect"
 
 // Send a message
 const sendMessageEffect = ChatService.sendMessage({
-  roomId: 'room-123',
-  content: 'Hello, world!',
-  type: 'text'
+  roomId: "room-123",
+  content: "Hello, world!",
+  type: "text",
 })
 
 // Join a room
-const joinRoomEffect = ChatService.joinRoom('room-123')
+const joinRoomEffect = ChatService.joinRoom("room-123")
 
 // Get message history
 const getHistoryEffect = ChatService.getMessageHistory({
-  roomId: 'room-123',
+  roomId: "room-123",
   limit: 50,
-  before: new Date()
+  before: new Date(),
 })
 
 // Usage in component
@@ -407,11 +404,11 @@ function ChatComponent() {
   const sendMessage = (content: string) => {
     Effect.runPromise(
       sendMessageEffect.pipe(
-        Effect.catchAll(error => {
-          console.error('Failed to send message:', error)
+        Effect.catchAll((error) => {
+          console.error("Failed to send message:", error)
           return Effect.succeed(null)
-        })
-      )
+        }),
+      ),
     )
   }
 
@@ -424,16 +421,16 @@ function ChatComponent() {
 ### File Uploads
 
 ```tsx
-import { FileUpload } from '@effectify/chat-solid/components/file-upload'
+import { FileUpload } from "@effectify/chat-solid/components/file-upload"
 
 function ChatWithFiles() {
   const { sendMessage } = useChatRoom()
 
   const handleFileUpload = (file: File) => {
     sendMessage({
-      type: 'file',
+      type: "file",
       content: file.name,
-      fileData: file
+      fileData: file,
     })
   }
 
@@ -441,7 +438,7 @@ function ChatWithFiles() {
     <div>
       <FileUpload
         onUpload={handleFileUpload}
-        acceptedTypes={['image/*', '.pdf', '.doc', '.docx']}
+        acceptedTypes={["image/*", ".pdf", ".doc", ".docx"]}
         maxSize={10 * 1024 * 1024} // 10MB
       />
     </div>
@@ -452,17 +449,17 @@ function ChatWithFiles() {
 ### Message Search
 
 ```tsx
-import { createSignal, createMemo } from 'solid-js'
+import { createMemo, createSignal } from "solid-js"
 
 function MessageSearch() {
   const { messages } = useChatRoom()
-  const [searchTerm, setSearchTerm] = createSignal('')
+  const [searchTerm, setSearchTerm] = createSignal("")
 
   const filteredMessages = createMemo(() => {
     const term = searchTerm().toLowerCase()
     if (!term) return messages()
-    
-    return messages().filter(message => 
+
+    return messages().filter((message) =>
       message.content.toLowerCase().includes(term) ||
       message.user.name.toLowerCase().includes(term)
     )
@@ -526,7 +523,7 @@ const messageStore = MessageStore.localStorage({
 ## Error Handling
 
 ```tsx
-import { ChatErrorBoundary } from '@effectify/chat-solid/components/chat-error-boundary'
+import { ChatErrorBoundary } from "@effectify/chat-solid/components/chat-error-boundary"
 
 function App() {
   return (
@@ -552,6 +549,7 @@ function App() {
 ## Examples
 
 Check out the complete chat implementation in:
+
 - [SolidJS SPA Chat Example](https://github.com/devx-op/effectify/tree/main/apps/solid-app-spa)
 - [SolidJS Start Chat Example](https://github.com/devx-op/effectify/tree/main/apps/solid-app-start)
 
@@ -560,7 +558,7 @@ Check out the complete chat implementation in:
 ### Virtual Scrolling for Large Message Lists
 
 ```tsx
-import { createVirtualizer } from '@tanstack/solid-virtual'
+import { createVirtualizer } from "@tanstack/solid-virtual"
 
 function VirtualizedMessages() {
   const { messages } = useChatRoom()
@@ -577,18 +575,18 @@ function VirtualizedMessages() {
       <div
         style={{
           height: `${virtualizer.getTotalSize()}px`,
-          width: '100%',
-          position: 'relative',
+          width: "100%",
+          position: "relative",
         }}
       >
         <For each={virtualizer.getVirtualItems()}>
           {(virtualItem) => (
             <div
               style={{
-                position: 'absolute',
+                position: "absolute",
                 top: 0,
                 left: 0,
-                width: '100%',
+                width: "100%",
                 height: `${virtualItem.size}px`,
                 transform: `translateY(${virtualItem.start}px)`,
               }}
@@ -636,16 +634,16 @@ function ReliableMessageSender() {
 
   const queueMessage = (content: string) => {
     if (isConnected()) {
-      sendMessage({ content, type: 'text' })
+      sendMessage({ content, type: "text" })
     } else {
-      setMessageQueue(prev => [...prev, content])
+      setMessageQueue((prev) => [...prev, content])
     }
   }
 
   createEffect(() => {
     if (isConnected() && messageQueue().length > 0) {
-      messageQueue().forEach(content => {
-        sendMessage({ content, type: 'text' })
+      messageQueue().forEach((content) => {
+        sendMessage({ content, type: "text" })
       })
       setMessageQueue([])
     }

@@ -1,8 +1,8 @@
-import { Flex } from '@effectify/solid-ui/components/primitives/flex'
-import { VStack } from '@effectify/solid-ui/components/primitives/stack'
-import { createFileRoute, Outlet } from '@tanstack/solid-router'
+import { Flex } from "@effectify/solid-ui/components/primitives/flex"
+import { VStack } from "@effectify/solid-ui/components/primitives/stack"
+import { createFileRoute, Outlet } from "@tanstack/solid-router"
 
-export const Route = createFileRoute('/(auth)')({
+export const Route = createFileRoute("/(auth)")({
   component: Layout,
 })
 

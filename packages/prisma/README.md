@@ -57,42 +57,42 @@ pnpm prisma generate
 The generator creates a `Prisma` service for transactions and raw queries, and Model classes that you can use to create repositories.
 
 ```typescript
-import { Effect, Layer } from "effect";
-import { Prisma, UserModel } from "./generated/effect/index.js";
-import * as PrismaRepository from "./generated/effect/prisma-repository.js";
+import { Effect, Layer } from "effect"
+import { Prisma, UserModel } from "./generated/effect/index.js"
+import * as PrismaRepository from "./generated/effect/prisma-repository.js"
 
 // Define a program using the generated Prisma service
-const program = Effect.gen(function* () {
+const program = Effect.gen(function*() {
   // Create a repository for the User model
   const userRepo = yield* PrismaRepository.make(UserModel, {
     modelName: "user",
-    spanPrefix: "User",
-  });
+    spanPrefix: "User"
+  })
 
   // Create a new user
   const newUser = yield* userRepo.create({
     data: {
       email: "hello@effect.website",
-      name: "Effect User",
-    },
-  });
+      name: "Effect User"
+    }
+  })
 
   // Find the user
   const user = yield* userRepo.findUnique({
-    where: { id: newUser.id },
-  });
+    where: { id: newUser.id }
+  })
 
-  return user;
-});
+  return user
+})
 
 // Provide the Prisma layer
 const MainLayer = Prisma.layer({
   // Prisma Client options
-  log: ["query", "info", "warn", "error"],
-});
+  log: ["query", "info", "warn", "error"]
+})
 
 // Run the program
-Effect.runPromise(program.pipe(Effect.provide(MainLayer)));
+Effect.runPromise(program.pipe(Effect.provide(MainLayer)))
 ```
 
 ## 🧪 Testing
@@ -100,27 +100,26 @@ Effect.runPromise(program.pipe(Effect.provide(MainLayer)));
 The generated layers make testing easy by allowing you to provide alternative implementations or test databases.
 
 ```typescript
-import { it } from "@effect/vitest";
-import { Effect } from "effect";
-import { Prisma, UserModel } from "./generated/effect/index.js";
-import * as PrismaRepository from "./generated/effect/prisma-repository.js";
+import { it } from "@effect/vitest"
+import { Effect } from "effect"
+import { Prisma, UserModel } from "./generated/effect/index.js"
+import * as PrismaRepository from "./generated/effect/prisma-repository.js"
 
 it.effect("should create a user", () =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const userRepo = yield* PrismaRepository.make(UserModel, {
       modelName: "user",
-      spanPrefix: "User",
-    });
+      spanPrefix: "User"
+    })
 
     const user = yield* userRepo.create({
-      data: { email: "test@example.com" },
-    });
+      data: { email: "test@example.com" }
+    })
 
-    expect(user.email).toBe("test@example.com");
+    expect(user.email).toBe("test@example.com")
   }).pipe(
     Effect.provide(Prisma.layer()) // In tests, you might want to use a specific test DB url
-  )
-);
+  ))
 ```
 
 ## ⚠️ Error Handling
@@ -128,25 +127,26 @@ it.effect("should create a user", () =>
 All Prisma errors are mapped to specific tagged errors in Effect, allowing you to handle them precisely.
 
 ```typescript
-import { Effect } from "effect";
-import { Prisma, UserModel } from "./generated/effect/index.js";
-import * as PrismaRepository from "./generated/effect/prisma-repository.js";
+import { Effect } from "effect"
+import { Prisma, UserModel } from "./generated/effect/index.js"
+import * as PrismaRepository from "./generated/effect/prisma-repository.js"
 
 const createUser = (email: string) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const userRepo = yield* PrismaRepository.make(UserModel, {
       modelName: "user",
-      spanPrefix: "User",
-    });
+      spanPrefix: "User"
+    })
 
     return yield* userRepo.create({
-      data: { email },
-    });
+      data: { email }
+    })
   }).pipe(
-    Effect.catchTag("PrismaUniqueConstraintError", (error) =>
-      Effect.logError(`User with email ${email} already exists`)
+    Effect.catchTag(
+      "PrismaUniqueConstraintError",
+      (error) => Effect.logError(`User with email ${email} already exists`)
     )
-  );
+  )
 ```
 
 ## 📝 License

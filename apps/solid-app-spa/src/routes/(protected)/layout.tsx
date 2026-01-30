@@ -1,10 +1,10 @@
-import { MainNavbar } from '@effectify/solid-ui/components/navbar/main-navbar'
-import { Navbar } from '@effectify/solid-ui/components/navbar/navbar'
-import { Flex } from '@effectify/solid-ui/components/primitives/flex'
-import { HStack } from '@effectify/solid-ui/components/primitives/stack'
-import { createFileRoute, Link, Outlet } from '@tanstack/solid-router'
+import { MainNavbar } from "@effectify/solid-ui/components/navbar/main-navbar"
+import { Navbar } from "@effectify/solid-ui/components/navbar/navbar"
+import { Flex } from "@effectify/solid-ui/components/primitives/flex"
+import { HStack } from "@effectify/solid-ui/components/primitives/stack"
+import { createFileRoute, Link, Outlet } from "@tanstack/solid-router"
 
-export const Route = createFileRoute('/(protected)')({
+export const Route = createFileRoute("/(protected)")({
   component: RouteComponent,
 })
 

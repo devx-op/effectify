@@ -2,10 +2,10 @@
  * @since 1.0.0
  */
 
-import type * as Atom from '@effect-atom/atom/Atom'
-import * as Registry from '@effect-atom/atom/Registry'
-import { globalValue } from 'effect/GlobalValue'
-import { createContext, type JSX, useContext } from 'solid-js'
+import type * as Atom from "@effect-atom/atom/Atom"
+import * as Registry from "@effect-atom/atom/Registry"
+import { globalValue } from "effect/GlobalValue"
+import { createContext, type JSX, useContext } from "solid-js"
 
 /**
  * @since 1.0.0
@@ -25,11 +25,13 @@ export const RegistryContext = createContext<Registry.Registry>()
  * @since 1.0.0
  * @category context
  */
-export const defaultRegistry: Registry.Registry = globalValue('@effect-atom/atom-solid/defaultRegistry', () =>
-  Registry.make({
-    scheduleTask,
-    defaultIdleTTL: 400,
-  }),
+export const defaultRegistry: Registry.Registry = globalValue(
+  "@effect-atom/atom-solid/defaultRegistry",
+  () =>
+    Registry.make({
+      scheduleTask,
+      defaultIdleTTL: 400,
+    }),
 )
 
 /**
@@ -62,8 +64,7 @@ export interface RegistryProviderProps {
  * @category context
  */
 export const RegistryProvider = (props: RegistryProviderProps): JSX.Element => {
-  const registry =
-    props.registry ??
+  const registry = props.registry ??
     Registry.make({
       scheduleTask: props.scheduleTask ?? scheduleTask,
       initialValues: props.initialValues,

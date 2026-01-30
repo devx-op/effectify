@@ -17,7 +17,8 @@
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,json,jsonc,css,scss,md,mdx}": [
-      "pnpm oxlint --fix"
+      "pnpm oxlint --fix",
+      "pnpm exec dprint fmt"
     ]
   },
   "devDependencies": {
@@ -36,6 +37,7 @@
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "@vitest/ui": "catalog:",
+    "dprint": "catalog:",
     "husky": "catalog:",
     "jiti": "catalog:",
     "jsdom": "catalog:",

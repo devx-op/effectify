@@ -14,35 +14,35 @@ This page provides a comprehensive API reference for all Effectify SolidJS packa
 #### `createQuery` with Effect
 
 ```tsx
-import { createQuery } from '@tanstack/solid-query'
-import { Effect } from 'effect'
+import { createQuery } from "@tanstack/solid-query"
+import { Effect } from "effect"
 
 const userQuery = createQuery(() => ({
-  queryKey: ['user', userId()],
-  queryFn: () => Effect.runPromise(fetchUserEffect(userId()))
+  queryKey: ["user", userId()],
+  queryFn: () => Effect.runPromise(fetchUserEffect(userId())),
 }))
 ```
 
 #### `createMutation` with Effect
 
 ```tsx
-import { createMutation } from '@tanstack/solid-query'
+import { createMutation } from "@tanstack/solid-query"
 
 const updateMutation = createMutation(() => ({
-  mutationFn: (data: UserData) => Effect.runPromise(updateUserEffect(data))
+  mutationFn: (data: UserData) => Effect.runPromise(updateUserEffect(data)),
 }))
 ```
 
 #### `createInfiniteQuery` with Effect
 
 ```tsx
-import { createInfiniteQuery } from '@tanstack/solid-query'
+import { createInfiniteQuery } from "@tanstack/solid-query"
 
 const postsQuery = createInfiniteQuery(() => ({
-  queryKey: ['posts'],
+  queryKey: ["posts"],
   queryFn: ({ pageParam = 1 }) => Effect.runPromise(fetchPostsEffect(pageParam)),
   getNextPageParam: (lastPage) => lastPage.nextPage,
-  initialPageParam: 1
+  initialPageParam: 1,
 }))
 ```
 
@@ -51,11 +51,11 @@ const postsQuery = createInfiniteQuery(() => ({
 #### `createResource` with Effect
 
 ```tsx
-import { createResource } from 'solid-js'
+import { createResource } from "solid-js"
 
 const [user] = createResource(
   () => userId(),
-  (id) => Effect.runPromise(fetchUserEffect(id))
+  (id) => Effect.runPromise(fetchUserEffect(id)),
 )
 ```
 
@@ -67,8 +67,8 @@ const [user] = createResource(
 
 ```tsx
 interface ButtonProps extends JSX.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link'
-  size?: 'default' | 'sm' | 'lg' | 'icon'
+  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link"
+  size?: "default" | "sm" | "lg" | "icon"
   children: JSX.Element
 }
 
@@ -151,13 +151,12 @@ function cn(...inputs: ClassValue[]): string
 ```
 
 **Usage:**
+
 ```tsx
-import { cn } from '@effectify/solid-ui/lib/utils'
+import { cn } from "@effectify/solid-ui/lib/utils"
 
 function MyComponent(props: { class?: string }) {
-  return (
-    <div class={cn("base-classes", props.class)} />
-  )
+  return <div class={cn("base-classes", props.class)} />
 }
 ```
 
@@ -262,12 +261,12 @@ function useChatRoom(): {
   isConnected: Accessor<boolean>
   isLoading: Accessor<boolean>
   error: Accessor<Error | null>
-  
+
   // Actions
   sendMessage: (message: Partial<Message>) => void
   joinRoom: (roomId: string) => void
   leaveRoom: () => void
-  
+
   // Typing indicators
   typingUsers: Accessor<User[]>
   startTyping: () => void
@@ -328,7 +327,7 @@ interface Message {
   replyTo?: string
 }
 
-type MessageType = 'text' | 'file' | 'image' | 'system'
+type MessageType = "text" | "file" | "image" | "system"
 ```
 
 #### User
@@ -342,7 +341,7 @@ interface User {
   lastSeen?: Date
 }
 
-type UserStatus = 'online' | 'away' | 'offline'
+type UserStatus = "online" | "away" | "offline"
 ```
 
 #### Reaction
@@ -359,21 +358,21 @@ interface Reaction {
 
 ```tsx
 class ChatError extends Error {
-  readonly _tag = 'ChatError'
+  readonly _tag = "ChatError"
   constructor(
     message: string,
     readonly code: ChatErrorCode,
-    readonly cause?: unknown
+    readonly cause?: unknown,
   )
 }
 
-type ChatErrorCode = 
-  | 'CONNECTION_FAILED'
-  | 'MESSAGE_SEND_FAILED'
-  | 'AUTHENTICATION_FAILED'
-  | 'ROOM_NOT_FOUND'
-  | 'USER_NOT_FOUND'
-  | 'PERMISSION_DENIED'
+type ChatErrorCode =
+  | "CONNECTION_FAILED"
+  | "MESSAGE_SEND_FAILED"
+  | "AUTHENTICATION_FAILED"
+  | "ROOM_NOT_FOUND"
+  | "USER_NOT_FOUND"
+  | "PERMISSION_DENIED"
 ```
 
 ## SolidJS-Specific Patterns
@@ -385,8 +384,8 @@ type ChatErrorCode =
 const [userId, setUserId] = createSignal(1)
 
 const userQuery = createQuery(() => ({
-  queryKey: ['user', userId()],
-  queryFn: () => Effect.runPromise(fetchUser(userId()))
+  queryKey: ["user", userId()],
+  queryFn: () => Effect.runPromise(fetchUser(userId())),
 }))
 ```
 
@@ -396,28 +395,26 @@ const userQuery = createQuery(() => ({
 // Using createResource with Effect
 const [user, { mutate, refetch }] = createResource(
   () => userId(),
-  (id) => Effect.runPromise(fetchUser(id))
+  (id) => Effect.runPromise(fetchUser(id)),
 )
 ```
 
 ### Store Integration
 
 ```tsx
-import { createStore } from 'solid-js/store'
+import { createStore } from "solid-js/store"
 
 const [chatState, setChatState] = createStore({
   messages: [],
   users: [],
-  currentRoom: null
+  currentRoom: null,
 })
 
 // Update store with Effect results
 Effect.runPromise(
   fetchMessages(roomId).pipe(
-    Effect.tap(messages => Effect.sync(() => 
-      setChatState('messages', messages)
-    ))
-  )
+    Effect.tap((messages) => Effect.sync(() => setChatState("messages", messages))),
+  ),
 )
 ```
 
@@ -436,12 +433,12 @@ class EffectifyError extends Error {
 
 // Network errors
 class NetworkError extends EffectifyError {
-  readonly _tag = 'NetworkError'
+  readonly _tag = "NetworkError"
 }
 
 // Validation errors
 class ValidationError extends EffectifyError {
-  readonly _tag = 'ValidationError'
+  readonly _tag = "ValidationError"
   constructor(message: string, readonly errors: string[]) {
     super(message)
   }
@@ -451,7 +448,7 @@ class ValidationError extends EffectifyError {
 ### Error Boundaries
 
 ```tsx
-import { ErrorBoundary } from 'solid-js'
+import { ErrorBoundary } from "solid-js"
 
 function App() {
   return (
@@ -469,22 +466,20 @@ function App() {
 ### Memoization
 
 ```tsx
-import { createMemo } from 'solid-js'
+import { createMemo } from "solid-js"
 
 const filteredMessages = createMemo(() => {
   const term = searchTerm()
-  return messages().filter(msg => 
-    msg.content.toLowerCase().includes(term.toLowerCase())
-  )
+  return messages().filter((msg) => msg.content.toLowerCase().includes(term.toLowerCase()))
 })
 ```
 
 ### Lazy Loading
 
 ```tsx
-import { lazy } from 'solid-js'
+import { lazy } from "solid-js"
 
-const ChatRoom = lazy(() => import('./ChatRoom'))
+const ChatRoom = lazy(() => import("./ChatRoom"))
 
 function App() {
   return (
@@ -498,7 +493,7 @@ function App() {
 ### Virtual Scrolling
 
 ```tsx
-import { createVirtualizer } from '@tanstack/solid-virtual'
+import { createVirtualizer } from "@tanstack/solid-virtual"
 
 const virtualizer = createVirtualizer({
   count: messages().length,

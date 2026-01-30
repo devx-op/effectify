@@ -1,13 +1,13 @@
-import { HStack } from '@effectify/solid-ui/components/primitives/stack'
-import { ChevronRight } from 'lucide-solid'
+import { HStack } from "@effectify/solid-ui/components/primitives/stack"
+import { ChevronRight } from "lucide-solid"
 
 export const Breadcrumbs = () => {
   // const { pathname } = useLocation()
-  const crumbs = ''
-    .split('/')
+  const crumbs = ""
+    .split("/")
     .filter(Boolean)
-    .filter((path) => !['docs', 'react', 'vue', 'solid', 'usage', 'types'].includes(path))
-    .map((path) => path.replace(/-/g, ' '))
+    .filter((path) => !["docs", "react", "vue", "solid", "usage", "types"].includes(path))
+    .map((path) => path.replace(/-/g, " "))
     .map((item) => item.charAt(0).toUpperCase() + item.substring(1))
 
   return (

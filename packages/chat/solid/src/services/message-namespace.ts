@@ -1,26 +1,26 @@
-import type * as Message from '@effectify/chat-domain/message.ts'
-import { MessagesService } from '@effectify/chat-domain/message-service.ts'
-import { createQueryKey } from '@effectify/solid-query'
-import * as Array from 'effect/Array'
-import type * as Brand from 'effect/Brand'
-import * as Chunk from 'effect/Chunk'
-import * as DateTime from 'effect/DateTime'
-import * as Effect from 'effect/Effect'
-import * as Fiber from 'effect/Fiber'
-import * as Option from 'effect/Option'
-import * as Queue from 'effect/Queue'
-import * as Stream from 'effect/Stream'
-import { createEffect, createMemo, onCleanup } from 'solid-js'
-import { createQueryDataHelpers, useEffectQuery, useRuntime } from './tanstack-query.js'
+import type * as Message from "@effectify/chat-domain/message.ts"
+import { MessagesService } from "@effectify/chat-domain/message-service.ts"
+import { createQueryKey } from "@effectify/solid-query"
+import * as Array from "effect/Array"
+import type * as Brand from "effect/Brand"
+import * as Chunk from "effect/Chunk"
+import * as DateTime from "effect/DateTime"
+import * as Effect from "effect/Effect"
+import * as Fiber from "effect/Fiber"
+import * as Option from "effect/Option"
+import * as Queue from "effect/Queue"
+import * as Stream from "effect/Stream"
+import { createEffect, createMemo, onCleanup } from "solid-js"
+import { createQueryDataHelpers, useEffectQuery, useRuntime } from "./tanstack-query.js"
 
 export namespace MessagesOperations {
-  const messagesQueryKey = createQueryKey('MessagesOperations.useMessagesQuery')
+  const messagesQueryKey = createQueryKey("MessagesOperations.useMessagesQuery")
   const messagesQueryData = createQueryDataHelpers<Message.Message[]>(messagesQueryKey)
   export const useMessagesQuery = () => {
     return useEffectQuery({
       queryKey: messagesQueryKey(),
       queryFn: () => MessagesService.use((service) => service.getMessages()),
-      staleTime: '6.5 millis',
+      staleTime: "6.5 millis",
     })
   }
 
@@ -31,12 +31,12 @@ export namespace MessagesOperations {
     createEffect(() => {
       const streamFiber = Stream.fromQueue(queue).pipe(
         Stream.tap((value) => Effect.log(`Queued up ${value}`)),
-        Stream.groupedWithin(25, '5 seconds'),
-        Stream.tap((batch) => Effect.log(`Batching: ${Chunk.join(batch as Chunk.Chunk<string>, ', ')}`)),
+        Stream.groupedWithin(25, "5 seconds"),
+        Stream.tap((batch) => Effect.log(`Batching: ${Chunk.join(batch as Chunk.Chunk<string>, ", ")}`)),
         Stream.mapEffect(
-          (batch) => MessagesService.sendMarkAsReadBatch(batch as Chunk.Chunk<string & Brand.Brand<'MessageId'>>),
+          (batch) => MessagesService.sendMarkAsReadBatch(batch as Chunk.Chunk<string & Brand.Brand<"MessageId">>),
           {
-            concurrency: 'unbounded',
+            concurrency: "unbounded",
           },
         ),
         Stream.catchAllCause(() => Effect.void),
@@ -51,7 +51,7 @@ export namespace MessagesOperations {
 
     const unreadMessages = createMemo(() => messages.filter((message) => message.readAt === null), [messages])
 
-    const offer = (id: Message.Message['id']) => {
+    const offer = (id: Message.Message["id"]) => {
       queue.unsafeOffer(id)
       messagesQueryData.setData(undefined, (currentMessages) => {
         const msgIndex = currentMessages.findIndex((msg) => msg.id === id)
@@ -79,7 +79,6 @@ export namespace MessagesOperations {
           return
         }
 
-        
         unreadMessages().forEach((message) => {
           const element = document.querySelector(`[data-message-id="${message.id}"]`)
           if (element === null) {
@@ -94,9 +93,9 @@ export namespace MessagesOperations {
         })
       }
 
-      window.addEventListener('focus', handleFocus)
+      window.addEventListener("focus", handleFocus)
       onCleanup(() => {
-        window.removeEventListener('focus', handleFocus)
+        window.removeEventListener("focus", handleFocus)
       })
       return
     }, [offer, unreadMessages])
@@ -104,17 +103,16 @@ export namespace MessagesOperations {
     let observer: IntersectionObserver | null = null
     createEffect(() => {
       observer = new IntersectionObserver(
-        
         Array.forEach((entry) => {
           if (!(entry.isIntersecting && document.hasFocus())) {
             return
           }
 
-          const messageId = Option.fromNullable(entry.target.getAttribute('data-message-id')).pipe(
-            Option.flatMap(Option.liftPredicate((str) => str !== '')),
+          const messageId = Option.fromNullable(entry.target.getAttribute("data-message-id")).pipe(
+            Option.flatMap(Option.liftPredicate((str) => str !== "")),
           )
           if (Option.isSome(messageId)) {
-            offer(messageId.value as Message.Message['id'])
+            offer(messageId.value as Message.Message["id"])
           }
 
           observer?.unobserve(entry.target)

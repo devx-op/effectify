@@ -24,14 +24,14 @@ yarn add @effectify/solid-effect-atom
 
 ```tsx
 import { Atom } from "@effect-atom/atom"
-import { useAtomValue, useAtom, RegistryProvider } from "@effectify/solid-effect-atom"
+import { RegistryProvider, useAtom, useAtomValue } from "@effectify/solid-effect-atom"
 
 // Create an atom
 const countAtom = Atom.make(0)
 
 function Counter() {
   const [count, setCount] = useAtom(() => countAtom)
-  
+
   return (
     <div>
       <p>Count: {count()}</p>
@@ -63,6 +63,7 @@ function App() {
 ## Core Concepts
 
 ### Atoms
+
 Atoms are the fundamental units of state in Effect. They can hold any value and can be derived from other atoms.
 
 ```tsx
@@ -75,15 +76,16 @@ const nameAtom = Atom.make("John")
 const greetingAtom = Atom.make((get) => `Hello, ${get(nameAtom)}!`)
 
 // Async atom
-const dataAtom = Atom.fn(() => 
-  Effect.gen(function* () {
-    const response = yield* Effect.promise(() => fetch('/api/data'))
+const dataAtom = Atom.fn(() =>
+  Effect.gen(function*() {
+    const response = yield* Effect.promise(() => fetch("/api/data"))
     return yield* Effect.promise(() => response.json())
   })
 )
 ```
 
 ### Registry
+
 The registry manages atom state and subscriptions. Use `RegistryProvider` to provide a registry to your component tree.
 
 ```tsx
@@ -101,6 +103,7 @@ function App() {
 ## Hooks
 
 ### useAtomValue
+
 Read the current value of an atom and subscribe to changes.
 
 ```tsx
@@ -113,6 +116,7 @@ function DisplayName() {
 ```
 
 ### useAtom
+
 Get both the current value and a setter function for an atom.
 
 ```tsx
@@ -120,7 +124,7 @@ import { useAtom } from "@effectify/solid-effect-atom"
 
 function NameInput() {
   const [name, setName] = useAtom(() => nameAtom)
-  
+
   return (
     <input
       value={name()}
@@ -131,6 +135,7 @@ function NameInput() {
 ```
 
 ### useAtomSet
+
 Get only the setter function for an atom.
 
 ```tsx
@@ -138,7 +143,7 @@ import { useAtomSet } from "@effectify/solid-effect-atom"
 
 function ResetButton() {
   const resetName = useAtomSet(() => nameAtom)
-  
+
   return (
     <button onClick={() => resetName("")}>
       Reset
@@ -150,6 +155,7 @@ function ResetButton() {
 ## Advanced Usage
 
 ### Async Atoms with Suspense
+
 Handle async atoms with built-in loading states.
 
 ```tsx
@@ -157,7 +163,7 @@ import { useAtomSuspenseResult } from "@effectify/solid-effect-atom"
 
 function AsyncData() {
   const result = useAtomSuspenseResult(() => dataAtom)
-  
+
   return (
     <div>
       {result.loading && <p>Loading...</p>}
@@ -169,6 +175,7 @@ function AsyncData() {
 ```
 
 ### Atom Subscriptions
+
 Subscribe to atom changes for side effects.
 
 ```tsx
@@ -176,9 +183,9 @@ import { useAtomSubscribe } from "@effectify/solid-effect-atom"
 
 function Logger() {
   useAtomSubscribe(() => countAtom, (value) => {
-    console.log('Count changed to:', value)
+    console.log("Count changed to:", value)
   })
-  
+
   return null
 }
 ```
@@ -193,12 +200,12 @@ SolidJS's fine-grained reactivity system means that atom-solid can update only t
 
 ## Comparison with React
 
-| Feature | atom-react | atom-solid |
-|---------|------------|------------|
-| Re-renders | Component re-renders | Fine-grained updates |
-| Performance | Good | Excellent |
-| Bundle size | ~15kb | ~12kb |
-| Learning curve | Familiar to React devs | SolidJS concepts |
+| Feature        | atom-react             | atom-solid           |
+| -------------- | ---------------------- | -------------------- |
+| Re-renders     | Component re-renders   | Fine-grained updates |
+| Performance    | Good                   | Excellent            |
+| Bundle size    | ~15kb                  | ~12kb                |
+| Learning curve | Familiar to React devs | SolidJS concepts     |
 
 ## Examples
 

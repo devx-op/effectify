@@ -13,6 +13,7 @@ This guide explains how to set up the automated CI/CD pipeline for publishing pa
 Configure these secrets in your GitHub repository settings (`Settings > Secrets and variables > Actions`):
 
 ### NPM Token
+
 - **Name**: `NPM_TOKEN`
 - **Description**: NPM authentication token for publishing packages
 - **How to get**:
@@ -23,6 +24,7 @@ Configure these secrets in your GitHub repository settings (`Settings > Secrets 
   5. Copy the token and add it as `NPM_TOKEN` secret
 
 ### JSR OIDC Configuration (Recommended)
+
 - **Method**: OIDC (OpenID Connect) - more secure than personal tokens
 - **Setup**: Link your package to your GitHub repository in JSR
 - **How to configure**:
@@ -36,6 +38,7 @@ Configure these secrets in your GitHub repository settings (`Settings > Secrets 
 ## 🏗️ Workflow Overview
 
 ### CI Workflow (`.github/workflows/ci.yml`)
+
 - **Triggers**: Push to `master`, `main`, `develop` branches and PRs
 - **Purpose**: Development and PR validation
 - **Jobs**:
@@ -47,6 +50,7 @@ Configure these secrets in your GitHub repository settings (`Settings > Secrets 
   - 📊 **Summary**: CI results dashboard
 
 ### Release Workflow (`.github/workflows/release.yml`)
+
 - **Triggers**: Push to `master` branch only
 - **Purpose**: Production release and publishing
 - **Optimized**: Tries to reuse build artifacts from CI
@@ -58,20 +62,26 @@ Configure these secrets in your GitHub repository settings (`Settings > Secrets 
 ## 🎯 How It Works
 
 ### 1. Change Detection
+
 The workflow automatically detects if any of the configured release projects have changes:
+
 - `packages/react/remix`
 - `packages/react/router`
 - `packages/node/better-auth`
 - `packages/solid/query`
 
 ### 2. Affected Projects
+
 Uses Nx's native `affected` commands to:
+
 - Build only changed projects: `nx affected --target=build`
 - Test only changed projects: `nx affected --target=test`
 - Lint only changed projects: `nx affected --target=lint`
 
 ### 3. Release Process
+
 When changes are detected on master:
+
 1. **Try to reuse** build artifacts from CI (if available)
 2. **Build** affected projects (only if artifacts not found)
 3. **Test** affected projects
@@ -83,6 +93,7 @@ When changes are detected on master:
 ## 🔧 Configuration Files
 
 ### `.npmrc`
+
 ```ini
 registry=https://registry.npmjs.org/
 always-auth=true
@@ -90,12 +101,13 @@ always-auth=true
 ```
 
 ### `nx.json` (Release Configuration)
+
 ```json
 {
   "release": {
     "projects": [
       "packages/react/remix",
-      "packages/react/router", 
+      "packages/react/router",
       "packages/node/better-auth",
       "packages/solid/query"
     ],
@@ -120,16 +132,19 @@ always-auth=true
 ## 🚀 Usage
 
 ### Automatic Release
+
 - Push changes to `master` branch
 - The workflow automatically detects affected packages
 - If changes are found, it triggers the release process
 
 ### Manual Release
+
 - Go to `Actions` tab in GitHub
 - Select `🚀 Release & Publish` workflow
 - Click `Run workflow` button
 
 ### Check Status
+
 - Go to `Actions` tab to see workflow status
 - Check the `📊 CI Summary` for detailed results
 - Review published packages in NPM and JSR
@@ -165,6 +180,7 @@ always-auth=true
 We've set up **act** to test GitHub Actions workflows locally before pushing to GitHub.
 
 #### Prerequisites
+
 ```bash
 # Install act (if not already installed)
 brew install act
@@ -174,6 +190,7 @@ brew install act
 ```
 
 #### Quick Testing
+
 ```bash
 # Test all workflows
 ./scripts/test-workflows.sh
@@ -190,6 +207,7 @@ brew install act
 ```
 
 #### Manual Testing with Act
+
 ```bash
 # List jobs in a workflow
 act -W .github/workflows/ci.yml --list

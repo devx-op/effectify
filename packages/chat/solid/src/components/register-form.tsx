@@ -1,11 +1,11 @@
-import { RegisterSchema } from '@effectify/chat-domain/auth.ts'
-import { Button } from '@effectify/solid-ui/components/primitives/button'
-import * as Card from '@effectify/solid-ui/components/primitives/card'
-import { Center } from '@effectify/solid-ui/components/primitives/center'
-import { Stack, VStack } from '@effectify/solid-ui/components/primitives/stack'
-import { Input, useAppForm } from '@effectify/solid-ui/components/primitives/tanstack-form'
-import * as Schema from 'effect/Schema'
-import type { Component, JSX } from 'solid-js'
+import { RegisterSchema } from "@effectify/chat-domain/auth.ts"
+import { Button } from "@effectify/solid-ui/components/primitives/button"
+import * as Card from "@effectify/solid-ui/components/primitives/card"
+import { Center } from "@effectify/solid-ui/components/primitives/center"
+import { Stack, VStack } from "@effectify/solid-ui/components/primitives/stack"
+import { Input, useAppForm } from "@effectify/solid-ui/components/primitives/tanstack-form"
+import * as Schema from "effect/Schema"
+import type { Component, JSX } from "solid-js"
 
 type RegisterFormProps = {
   handleSubmit: (values: { name: string; email: string; password: string; confirmPassword: string }) => Promise<void>
@@ -15,10 +15,10 @@ type RegisterFormProps = {
 export const RegisterForm: Component<RegisterFormProps> = (props) => {
   const form = useAppForm(() => ({
     defaultValues: {
-      name: '',
-      email: '',
-      password: '',
-      confirmPassword: '',
+      name: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
     },
     schema: Schema.standardSchemaV1(RegisterSchema),
     onSubmit: ({ value }: { value: { name: string; email: string; password: string; confirmPassword: string } }) => {
@@ -61,7 +61,7 @@ export const RegisterForm: Component<RegisterFormProps> = (props) => {
                             name={field().name}
                             onBlur={field().handleBlur}
                             onInput={(e: Event) => field().handleChange((e.currentTarget as HTMLInputElement).value)}
-                            placeholder={'Your full name'}
+                            placeholder={"Your full name"}
                             value={field().state.value as string}
                           />
                         </field.FormControl>
@@ -71,10 +71,10 @@ export const RegisterForm: Component<RegisterFormProps> = (props) => {
                     validators={{
                       onBlur: ({ value }: { value: string }) => {
                         if (!value || value.trim().length === 0) {
-                          return 'Name is required'
+                          return "Name is required"
                         }
                         if (value.length < 2) {
-                          return 'Name must have a length of at least 2'
+                          return "Name must have a length of at least 2"
                         }
                         return
                       },
@@ -89,7 +89,7 @@ export const RegisterForm: Component<RegisterFormProps> = (props) => {
                             name={field().name}
                             onBlur={field().handleBlur}
                             onInput={(e: Event) => field().handleChange((e.currentTarget as HTMLInputElement).value)}
-                            placeholder={'email@example.com'}
+                            placeholder={"email@example.com"}
                             type="email"
                             value={field().state.value as string}
                           />
@@ -100,10 +100,10 @@ export const RegisterForm: Component<RegisterFormProps> = (props) => {
                     validators={{
                       onBlur: ({ value }: { value: string }) => {
                         if (!value || value.trim().length === 0) {
-                          return 'Email is required'
+                          return "Email is required"
                         }
                         if (value.length < 3) {
-                          return 'Email must have a length of at least 3'
+                          return "Email must have a length of at least 3"
                         }
                         return
                       },
@@ -118,7 +118,7 @@ export const RegisterForm: Component<RegisterFormProps> = (props) => {
                             name={field().name}
                             onBlur={field().handleBlur}
                             onInput={(e: Event) => field().handleChange((e.currentTarget as HTMLInputElement).value)}
-                            placeholder={'password'}
+                            placeholder={"password"}
                             type="password"
                             value={field().state.value as string}
                           />
@@ -129,10 +129,10 @@ export const RegisterForm: Component<RegisterFormProps> = (props) => {
                     validators={{
                       onBlur: ({ value }: { value: string }) => {
                         if (!value || value.trim().length === 0) {
-                          return 'Password is required'
+                          return "Password is required"
                         }
                         if (value.length < 6) {
-                          return 'Password must have a length of at least 6'
+                          return "Password must have a length of at least 6"
                         }
                         return
                       },
@@ -147,7 +147,7 @@ export const RegisterForm: Component<RegisterFormProps> = (props) => {
                             name={field().name}
                             onBlur={field().handleBlur}
                             onInput={(e: Event) => field().handleChange((e.currentTarget as HTMLInputElement).value)}
-                            placeholder={'Confirm your password'}
+                            placeholder={"Confirm your password"}
                             type="password"
                             value={field().state.value as string}
                           />
@@ -158,10 +158,10 @@ export const RegisterForm: Component<RegisterFormProps> = (props) => {
                     validators={{
                       onBlur: ({ value }: { value: string }) => {
                         if (!value || value.trim().length === 0) {
-                          return 'Confirm password is required'
+                          return "Confirm password is required"
                         }
                         if (value.length < 6) {
-                          return 'Confirm password must have a length of at least 6'
+                          return "Confirm password must have a length of at least 6"
                         }
                         return
                       },

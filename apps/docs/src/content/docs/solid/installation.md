@@ -22,6 +22,7 @@ npm install @effectify/solid-query
 ```
 
 **Peer Dependencies:**
+
 ```bash
 npm install @tanstack/solid-query effect solid-js
 ```
@@ -35,6 +36,7 @@ npm install @effectify/solid-ui
 ```
 
 **Peer Dependencies:**
+
 ```bash
 npm install solid-js tailwindcss @kobalte/core
 ```
@@ -48,6 +50,7 @@ npm install @effectify/chat-solid
 ```
 
 **Peer Dependencies:**
+
 ```bash
 npm install @effectify/solid-query @effectify/chat-domain solid-js
 ```
@@ -57,6 +60,7 @@ npm install @effectify/solid-query @effectify/chat-domain solid-js
 ### Vite + SolidJS
 
 1. Create a new SolidJS project:
+
 ```bash
 npm create solid@latest my-app
 cd my-app
@@ -64,10 +68,11 @@ npm install @effectify/solid-query @tanstack/solid-query effect
 ```
 
 2. Configure TanStack Query in `src/index.tsx`:
+
 ```tsx
-import { render } from 'solid-js/web'
-import { QueryClient, QueryClientProvider } from '@tanstack/solid-query'
-import App from './App'
+import { render } from "solid-js/web"
+import { QueryClient, QueryClientProvider } from "@tanstack/solid-query"
+import App from "./App"
 
 const queryClient = new QueryClient()
 
@@ -77,13 +82,14 @@ render(
       <App />
     </QueryClientProvider>
   ),
-  document.getElementById('root')!
+  document.getElementById("root")!,
 )
 ```
 
 ### SolidStart
 
 1. Create a new SolidStart project:
+
 ```bash
 npm create solid@latest my-app -- --template solid-start
 cd my-app
@@ -91,21 +97,12 @@ npm install @effectify/solid-query @tanstack/solid-query effect
 ```
 
 2. Create `src/root.tsx`:
+
 ```tsx
 // @refresh reload
-import { Suspense } from 'solid-js'
-import {
-  Body,
-  ErrorBoundary,
-  FileRoutes,
-  Head,
-  Html,
-  Meta,
-  Routes,
-  Scripts,
-  Title,
-} from 'solid-start'
-import { QueryClient, QueryClientProvider } from '@tanstack/solid-query'
+import { Suspense } from "solid-js"
+import { Body, ErrorBoundary, FileRoutes, Head, Html, Meta, Routes, Scripts, Title } from "solid-start"
+import { QueryClient, QueryClientProvider } from "@tanstack/solid-query"
 
 const queryClient = new QueryClient()
 
@@ -137,16 +134,18 @@ export default function Root() {
 ### Astro + SolidJS
 
 1. Add SolidJS to your Astro project:
+
 ```bash
 npx astro add solid
 npm install @effectify/solid-query @tanstack/solid-query effect
 ```
 
 2. Create a provider component:
+
 ```tsx
 // src/components/QueryProvider.tsx
-import { QueryClient, QueryClientProvider } from '@tanstack/solid-query'
-import type { ParentComponent } from 'solid-js'
+import { QueryClient, QueryClientProvider } from "@tanstack/solid-query"
+import type { ParentComponent } from "solid-js"
 
 const queryClient = new QueryClient()
 
@@ -160,6 +159,7 @@ export const QueryProvider: ParentComponent = (props) => {
 ```
 
 3. Use in your Astro pages:
+
 ```astro
 ---
 // src/pages/index.astro
@@ -184,18 +184,20 @@ export const QueryProvider: ParentComponent = (props) => {
 If you're using `@effectify/solid-ui`, you'll need to configure Tailwind CSS:
 
 1. Install Tailwind CSS:
+
 ```bash
 npm install -D tailwindcss postcss autoprefixer
 npx tailwindcss init -p
 ```
 
 2. Configure `tailwind.config.js`:
+
 ```js
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
     "./src/**/*.{js,ts,jsx,tsx}",
-    "./node_modules/@effectify/solid-ui/**/*.{js,ts,jsx,tsx}"
+    "./node_modules/@effectify/solid-ui/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
     extend: {},
@@ -205,6 +207,7 @@ module.exports = {
 ```
 
 3. Add Tailwind directives to your CSS:
+
 ```css
 /* src/index.css */
 @tailwind base;
@@ -213,9 +216,10 @@ module.exports = {
 ```
 
 4. Import the CSS in your entry file:
+
 ```tsx
 // src/index.tsx
-import './index.css'
+import "./index.css"
 ```
 
 ## TypeScript Configuration
@@ -253,8 +257,8 @@ For optimal development experience, configure Vite:
 
 ```ts
 // vite.config.ts
-import { defineConfig } from 'vite'
-import solid from 'vite-plugin-solid'
+import { defineConfig } from "vite"
+import solid from "vite-plugin-solid"
 
 export default defineConfig({
   plugins: [solid()],
@@ -262,7 +266,7 @@ export default defineConfig({
     port: 3000,
   },
   build: {
-    target: 'esnext',
+    target: "esnext",
   },
 })
 ```
@@ -275,7 +279,7 @@ Install the SolidJS DevTools browser extension for better debugging:
 
 ```tsx
 // src/App.tsx
-import { DEV } from 'solid-js'
+import { DEV } from "solid-js"
 
 function App() {
   // DevTools will automatically connect in development
@@ -288,7 +292,7 @@ function App() {
 Add query devtools for debugging queries:
 
 ```tsx
-import { SolidQueryDevtools } from '@tanstack/solid-query-devtools'
+import { SolidQueryDevtools } from "@tanstack/solid-query-devtools"
 
 function App() {
   return (
@@ -306,8 +310,8 @@ Create a simple component to verify everything is working:
 
 ```tsx
 // src/components/TestComponent.tsx
-import { createResource } from 'solid-js'
-import { Effect } from 'effect'
+import { createResource } from "solid-js"
+import { Effect } from "effect"
 
 const testEffect = Effect.succeed("Effectify with SolidJS is working!")
 
@@ -322,7 +326,7 @@ Add it to your App:
 
 ```tsx
 // src/App.tsx
-import { TestComponent } from './components/TestComponent'
+import { TestComponent } from "./components/TestComponent"
 
 function App() {
   return (
@@ -353,9 +357,9 @@ export default defineConfig({
       external: (id) => {
         // Externalize large dependencies if needed
         return false
-      }
-    }
-  }
+      },
+    },
+  },
 })
 ```
 
@@ -364,9 +368,9 @@ export default defineConfig({
 Use dynamic imports for large Effect modules:
 
 ```tsx
-import { lazy } from 'solid-js'
+import { lazy } from "solid-js"
 
-const HeavyComponent = lazy(() => import('./HeavyComponent'))
+const HeavyComponent = lazy(() => import("./HeavyComponent"))
 
 function App() {
   return (

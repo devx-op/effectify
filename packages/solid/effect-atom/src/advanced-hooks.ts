@@ -2,11 +2,11 @@
  * @since 1.0.0
  */
 
-import type * as Atom from '@effect-atom/atom/Atom'
-import type * as Result from '@effect-atom/atom/Result'
-import * as Cause from 'effect/Cause'
-import { type Accessor, createEffect, createMemo, createResource, createSignal, onCleanup } from 'solid-js'
-import { useRegistry } from './context.js'
+import type * as Atom from "@effect-atom/atom/Atom"
+import type * as Result from "@effect-atom/atom/Result"
+import * as Cause from "effect/Cause"
+import { type Accessor, createEffect, createMemo, createResource, createSignal, onCleanup } from "solid-js"
+import { useRegistry } from "./context.js"
 
 /**
  * @since 1.0.0
@@ -33,10 +33,10 @@ export const useAtomSuspense = <A, E, const IncludeFailure extends boolean = fal
       const current = registry.get(atom)
 
       // If should suspend on waiting and is waiting, wait for resolution
-      if (current._tag === 'Initial' || (suspendOnWaiting && current.waiting)) {
+      if (current._tag === "Initial" || (suspendOnWaiting && current.waiting)) {
         return new Promise<Result.Result<A, E>>((resolve) => {
           const unsubscribe = registry.subscribe(atom, (result) => {
-            if (result._tag !== 'Initial' && !(suspendOnWaiting && result.waiting)) {
+            if (result._tag !== "Initial" && !(suspendOnWaiting && result.waiting)) {
               unsubscribe()
               resolve(result)
             }
@@ -61,7 +61,7 @@ export const useAtomSuspense = <A, E, const IncludeFailure extends boolean = fal
       return current as any
     }
 
-    if (result._tag === 'Failure' && !options?.includeFailure) {
+    if (result._tag === "Failure" && !options?.includeFailure) {
       throw Cause.squash(result.cause)
     }
 
@@ -102,11 +102,11 @@ export const useAtomSuspenseResult = <A, E>(
   return createMemo(() => {
     const current = value()
     switch (current._tag) {
-      case 'Initial':
+      case "Initial":
         return { loading: true, data: null, error: null }
-      case 'Success':
+      case "Success":
         return { loading: current.waiting, data: current.value, error: null }
-      case 'Failure':
+      case "Failure":
         return { loading: current.waiting, data: null, error: current.cause }
       default:
         return { loading: true, data: null, error: null }
@@ -135,7 +135,7 @@ export const useAtomError = <A, E>(
 
   return createMemo(() => {
     const current = value()
-    return current._tag === 'Failure' ? current.cause : null
+    return current._tag === "Failure" ? current.cause : null
   })
 }
 
@@ -158,6 +158,6 @@ export const useAtomLoading = <A, E>(atomFactory: () => Atom.Atom<Result.Result<
 
   return createMemo(() => {
     const current = value()
-    return current._tag === 'Initial' || current.waiting
+    return current._tag === "Initial" || current.waiting
   })
 }

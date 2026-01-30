@@ -1,10 +1,10 @@
-import * as Effect from 'effect/Effect'
-import * as Fiber from 'effect/Fiber'
-import type * as ManagedRuntime from 'effect/ManagedRuntime'
-import * as Stream from 'effect/Stream'
-import * as SubscriptionRef from 'effect/SubscriptionRef'
-import { type Context, useContext, useEffect, useRef, useState } from 'react'
-import type { Subscribable, SubscriptionOptions } from '../types.js'
+import * as Effect from "effect/Effect"
+import * as Fiber from "effect/Fiber"
+import type * as ManagedRuntime from "effect/ManagedRuntime"
+import * as Stream from "effect/Stream"
+import * as SubscriptionRef from "effect/SubscriptionRef"
+import { type Context, useContext, useEffect, useRef, useState } from "react"
+import type { Subscribable, SubscriptionOptions } from "../types.js"
 
 export const makeUseRxSubscriptionRef =
   <R, E>(RuntimeContext: Context<ManagedRuntime.ManagedRuntime<R, E> | null>) =>
@@ -21,15 +21,16 @@ export const makeUseRxSubscriptionRef =
     }
     const runtime = useContext(RuntimeContext)
     if (!runtime) {
-      throw new Error('Runtime context not found. Make sure to wrap your app with RuntimeProvider')
+      throw new Error("Runtime context not found. Make sure to wrap your app with RuntimeProvider")
     }
 
     const setInitialValue = () => {
-      const initialValue = Effect.gen(function* () {
+      const initialValue = Effect.gen(function*() {
         const resolved = Effect.isEffect(subscribable) ? yield* subscribable : subscribable
 
-        const resolvedValue =
-          SubscriptionRef.SubscriptionRefTypeId in resolved ? yield* SubscriptionRef.get(resolved) : resolved.get()
+        const resolvedValue = SubscriptionRef.SubscriptionRefTypeId in resolved
+          ? yield* SubscriptionRef.get(resolved)
+          : resolved.get()
 
         if (!options?.skipInitial) {
           onNext(resolvedValue)
@@ -44,16 +45,15 @@ export const makeUseRxSubscriptionRef =
     const fiberRef = useRef<Fiber.RuntimeFiber<never, E2> | null>(null)
 
     useEffect(() => {
-      const fiber = Effect.gen(function* () {
+      const fiber = Effect.gen(function*() {
         const resolved = Effect.isEffect(subscribable) ? yield* subscribable : subscribable
 
-        const adaptedSubscribable: Subscribable<A, E2> =
-          SubscriptionRef.SubscriptionRefTypeId in resolved
-            ? {
-                changes: resolved.changes,
-                get: () => runtime.runSync(SubscriptionRef.get(resolved)),
-              }
-            : resolved
+        const adaptedSubscribable: Subscribable<A, E2> = SubscriptionRef.SubscriptionRefTypeId in resolved
+          ? {
+            changes: resolved.changes,
+            get: () => runtime.runSync(SubscriptionRef.get(resolved)),
+          }
+          : resolved
 
         const currentValue = adaptedSubscribable.get()
         setValue(currentValue)
@@ -68,7 +68,7 @@ export const makeUseRxSubscriptionRef =
                 return
               }
               onNext(val)
-            }),
+            })
           ),
           Stream.runDrain,
           Effect.forever,

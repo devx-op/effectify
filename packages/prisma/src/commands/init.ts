@@ -1,29 +1,29 @@
-import * as Command from '@effect/cli/Command'
-import * as Options from '@effect/cli/Options'
-import * as FileSystem from '@effect/platform/FileSystem'
-import * as NodeFileSystem from '@effect/platform-node/NodeFileSystem'
-import * as NodePath from '@effect/platform-node/NodePath'
-import * as Console from 'effect/Console'
-import * as Effect from 'effect/Effect'
-import * as Match from 'effect/Match'
+import * as Command from "@effect/cli/Command"
+import * as Options from "@effect/cli/Options"
+import * as NodeFileSystem from "@effect/platform-node/NodeFileSystem"
+import * as NodePath from "@effect/platform-node/NodePath"
+import * as FileSystem from "@effect/platform/FileSystem"
+import * as Console from "effect/Console"
+import * as Effect from "effect/Effect"
+import * as Match from "effect/Match"
 
 // Options for the init command
-const outputOption = Options.text('output').pipe(
-  Options.withAlias('o'),
-  Options.withDescription('Output directory path for generated files'),
-  Options.withDefault('src'),
+const outputOption = Options.text("output").pipe(
+  Options.withAlias("o"),
+  Options.withDescription("Output directory path for generated files"),
+  Options.withDefault("src")
 )
 
 // Check if file exists
 const fileExists = (path: string) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const fs = yield* FileSystem.FileSystem
     return yield* fs.exists(path)
   })
 
 // Read file content
 const readFileContent = (path: string) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const fs = yield* FileSystem.FileSystem
     const content = yield* fs.readFileString(path)
     return content
@@ -31,85 +31,84 @@ const readFileContent = (path: string) =>
 
 // Write file content
 const writeFileContent = (path: string, content: string) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const fs = yield* FileSystem.FileSystem
     yield* fs.writeFileString(path, content)
   })
 
 // Detect package manager using pattern matching
 const detectPackageManager = () =>
-  Effect.gen(function* () {
-    const pnpmExists = yield* fileExists('pnpm-lock.yaml')
-    const bunExists = yield* fileExists('bun.lockb')
-    const npmExists = yield* fileExists('package-lock.json')
+  Effect.gen(function*() {
+    const pnpmExists = yield* fileExists("pnpm-lock.yaml")
+    const bunExists = yield* fileExists("bun.lockb")
+    const npmExists = yield* fileExists("package-lock.json")
 
     // Create a tuple to match against
     const lockFiles = [pnpmExists, bunExists, npmExists] as const
 
     return Match.value(lockFiles).pipe(
-      Match.when([true, false, false], () => 'pnpm' as const),
-      Match.when([false, true, false], () => 'bun' as const),
-      Match.when([false, false, true], () => 'npm' as const),
-      Match.orElse(() => 'npm' as const), // default fallback
+      Match.when([true, false, false], () => "pnpm" as const),
+      Match.when([false, true, false], () => "bun" as const),
+      Match.when([false, false, true], () => "npm" as const),
+      Match.orElse(() => "npm" as const) // default fallback
     )
   })
 
 // Check if Prisma is already initialized
 const checkPrismaSetup = () =>
-  Effect.gen(function* () {
-    const schemaExists = yield* fileExists('prisma/schema.prisma')
+  Effect.gen(function*() {
+    const schemaExists = yield* fileExists("prisma/schema.prisma")
 
     if (!schemaExists) {
       const packageManager = yield* detectPackageManager()
 
-      yield* Console.log('❌ Prisma is not initialized in this project.')
-      yield* Console.log('')
-      yield* Console.log('Please run the following command first:')
+      yield* Console.log("❌ Prisma is not initialized in this project.")
+      yield* Console.log("")
+      yield* Console.log("Please run the following command first:")
 
       const initCommand = Match.value(packageManager).pipe(
-        Match.when('pnpm', () => 'pnpm dlx prisma init'),
-        Match.when('bun', () => 'bunx prisma init'),
-        Match.when('npm', () => 'npx prisma init'),
-        Match.exhaustive,
+        Match.when("pnpm", () => "pnpm dlx prisma init"),
+        Match.when("bun", () => "bunx prisma init"),
+        Match.when("npm", () => "npx prisma init"),
+        Match.exhaustive
       )
 
       yield* Console.log(`  ${initCommand}`)
 
-      yield* Console.log('')
-      yield* Console.log('For more information, visit:')
+      yield* Console.log("")
+      yield* Console.log("For more information, visit:")
       yield* Console.log(
-        '  https://www.prisma.io/docs/getting-started/setup-prisma/start-from-scratch/relational-databases-typescript-prismaPostgres',
+        "  https://www.prisma.io/docs/getting-started/setup-prisma/start-from-scratch/relational-databases-typescript-prismaPostgres"
       )
-      yield* Effect.fail(new Error('Prisma not initialized'))
+      yield* Effect.fail(new Error("Prisma not initialized"))
     }
   })
 
 // Initialize Prisma schema logic
 const initializePrismaSchema = (options: { output: string }) =>
-  Effect.gen(function* () {
-    yield* Console.log('🔧 Configuring Prisma schema with Effect generators...')
+  Effect.gen(function*() {
+    yield* Console.log("🔧 Configuring Prisma schema with Effect generators...")
     yield* Console.log(`📁 Output path: ${options.output}`)
 
     // Check if Prisma is already set up
     yield* checkPrismaSetup()
 
-    const schemaPath = 'prisma/schema.prisma'
+    const schemaPath = "prisma/schema.prisma"
 
-    yield* Console.log('📄 Schema file already exists.')
+    yield* Console.log("📄 Schema file already exists.")
 
     // Read existing content and check if it has our generators
     const existingContent = yield* readFileContent(schemaPath)
 
-    if (existingContent.includes('@effectify/prisma prisma generate-effect')) {
-      yield* Console.log('✅ Effect generators already configured!')
+    if (existingContent.includes("@effectify/prisma prisma generate-effect")) {
+      yield* Console.log("✅ Effect generators already configured!")
       return
     }
 
     // Add our generators to existing schema
-    yield* Console.log('🔧 Adding Effect generators to existing schema...')
+    yield* Console.log("🔧 Adding Effect generators to existing schema...")
 
-    const updatedContent =
-      existingContent +
+    const updatedContent = existingContent +
       `
 
 // Effect generators added by @effectify/prisma
@@ -130,24 +129,24 @@ generator sqlSchema {
 `
 
     yield* writeFileContent(schemaPath, updatedContent)
-    yield* Console.log('✅ Effect generators added to existing schema!')
+    yield* Console.log("✅ Effect generators added to existing schema!")
 
-    yield* Console.log('🎉 Prisma schema initialization completed!')
-    yield* Console.log('💡 Next steps:')
-    yield* Console.log('   1. Set your DATABASE_URL environment variable')
-    yield* Console.log('   2. Run: @effectify/prisma prisma generate-effect')
-    yield* Console.log('   3. Run: @effectify/prisma prisma generate-sql-schema')
+    yield* Console.log("🎉 Prisma schema initialization completed!")
+    yield* Console.log("💡 Next steps:")
+    yield* Console.log("   1. Set your DATABASE_URL environment variable")
+    yield* Console.log("   2. Run: @effectify/prisma prisma generate-effect")
+    yield* Console.log("   3. Run: @effectify/prisma prisma generate-sql-schema")
 
     yield* Effect.sync(() => process.exit(0))
   })
 
 export const initCommand = Command.make(
-  'init',
+  "init",
   {
-    output: outputOption,
+    output: outputOption
   },
   ({ output }) =>
     initializePrismaSchema({
-      output,
-    }).pipe(Effect.provide(NodeFileSystem.layer), Effect.provide(NodePath.layer)),
+      output
+    }).pipe(Effect.provide(NodeFileSystem.layer), Effect.provide(NodePath.layer))
 )

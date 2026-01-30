@@ -1,6 +1,6 @@
-import { existsSync } from 'node:fs'
-import { mkdir, writeFile } from 'node:fs/promises'
-import { resolve } from 'node:path'
+import { existsSync } from "node:fs"
+import { mkdir, writeFile } from "node:fs/promises"
+import { resolve } from "node:path"
 
 // Configuration
 const testFileCount = Number.parseInt(process.argv[2], 10) || 5
@@ -36,7 +36,7 @@ const test${testIndex + 1}Effect = Effect.gen(function* () {
 }).pipe(Effect.provide(PrismaService.Default)).pipe(Effect.provide(TestPrismaLayer))
 
 it.scoped("${testName}", () => test${testIndex + 1}Effect)`
-  }).join('\n\n')
+  }).join("\n\n")
 
   return `import { expect, it } from "@effect/vitest"
 import { Effect } from "effect"
@@ -67,7 +67,7 @@ ${testCases}
 }
 
 async function generateTestFiles() {
-  const testsDir = resolve('src/generated/tests')
+  const testsDir = resolve("src/generated/tests")
 
   // Create the tests directory if it doesn't exist
   if (!existsSync(testsDir)) {
@@ -77,17 +77,17 @@ async function generateTestFiles() {
   // Generate test files
   const filePromises: Promise<void>[] = []
   for (let i = 1; i <= testFileCount; i++) {
-    const fileName = `stress-test-${i.toString().padStart(3, '0')}.test.ts`
+    const fileName = `stress-test-${i.toString().padStart(3, "0")}.test.ts`
     const filePath = resolve(testsDir, fileName)
     const fileContent = generateTestFile(i, testsPerFileCount)
 
-    filePromises.push(writeFile(filePath, fileContent, 'utf-8'))
+    filePromises.push(writeFile(filePath, fileContent, "utf-8"))
   }
 
   await Promise.all(filePromises)
 }
 
 generateTestFiles().catch((error) => {
-  console.error('Failed to generate test files:', error)
+  console.error("Failed to generate test files:", error)
   process.exit(1)
 })

@@ -1,5 +1,5 @@
-import { NavLink } from 'react-router'
-import { authClient } from './lib/auth-client.js'
+import { NavLink } from "react-router"
+import { authClient } from "./lib/auth-client.js"
 
 export function AppNav() {
   return (

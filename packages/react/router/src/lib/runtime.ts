@@ -1,12 +1,12 @@
-import * as Effect from 'effect/Effect'
-import * as Exit from 'effect/Exit'
-import { pipe } from 'effect/Function'
-import type * as Layer from 'effect/Layer'
-import * as Logger from 'effect/Logger'
-import * as ManagedRuntime from 'effect/ManagedRuntime'
-import { type ActionFunctionArgs, data, type LoaderFunctionArgs, redirect } from 'react-router'
-import { ActionArgsContext, LoaderArgsContext } from '../lib/context.js'
-import { type HttpResponse, matchHttpResponse } from '../lib/http-response.js'
+import * as Effect from "effect/Effect"
+import * as Exit from "effect/Exit"
+import { pipe } from "effect/Function"
+import type * as Layer from "effect/Layer"
+import * as Logger from "effect/Logger"
+import * as ManagedRuntime from "effect/ManagedRuntime"
+import { type ActionFunctionArgs, data, type LoaderFunctionArgs, redirect } from "react-router"
+import { ActionArgsContext, LoaderArgsContext } from "../lib/context.js"
+import { type HttpResponse, matchHttpResponse } from "../lib/http-response.js"
 
 export const make = <R, E>(layer: Layer.Layer<R, E, never>) => {
   const runtime = ManagedRuntime.make(layer)
@@ -18,12 +18,12 @@ export const make = <R, E>(layer: Layer.Layer<R, E, never>) => {
         self,
         Effect.provide(Logger.pretty),
         Effect.provideService(LoaderArgsContext, args),
-        Effect.tapError((cause) => Effect.logError('Loader effect failed', cause)),
+        Effect.tapError((cause) => Effect.logError("Loader effect failed", cause)),
       )
       return runtime.runPromiseExit(runnable).then(
         Exit.match({
           onFailure: (cause) => {
-            if (cause._tag === 'Fail') {
+            if (cause._tag === "Fail") {
               // Preserve the original error for ErrorBoundary
               const error = cause.error
               if (error instanceof Response) {
@@ -36,15 +36,15 @@ export const make = <R, E>(layer: Layer.Layer<R, E, never>) => {
               const errorData = { ok: false as const, errors: [String(error)] }
               throw new Response(JSON.stringify(errorData), {
                 status: 500,
-                headers: { 'Content-Type': 'application/json' },
+                headers: { "Content-Type": "application/json" },
               })
             }
             // Handle other types of failures (interrupts, defects, etc.)
-            console.error('Runtime execution failed with defect:', JSON.stringify(cause, null, 2))
-            const errorData = { ok: false as const, errors: ['Internal server error'] }
+            console.error("Runtime execution failed with defect:", JSON.stringify(cause, null, 2))
+            const errorData = { ok: false as const, errors: ["Internal server error"] }
             throw new Response(JSON.stringify(errorData), {
               status: 500,
-              headers: { 'Content-Type': 'application/json' },
+              headers: { "Content-Type": "application/json" },
             })
           },
           onSuccess: (result) => {
@@ -58,16 +58,16 @@ export const make = <R, E>(layer: Layer.Layer<R, E, never>) => {
               HttpResponseSuccess: ({ data: response }) => ({ ok: true as const, data: response }),
               HttpResponseFailure: ({ cause }) => {
                 // Convert HttpResponseFailure to Response for ErrorBoundary with ok: false
-                const errorMessage = typeof cause === 'string' ? cause : String(cause)
+                const errorMessage = typeof cause === "string" ? cause : String(cause)
                 const errorData = { ok: false as const, errors: [errorMessage] }
                 throw new Response(JSON.stringify(errorData), {
                   status: 500,
-                  headers: { 'Content-Type': 'application/json' },
+                  headers: { "Content-Type": "application/json" },
                 })
               },
               HttpResponseRedirect: ({ to, init = {} }) => {
                 redirect(to, init)
-                return { ok: false as const, errors: ['Redirecting...'] }
+                return { ok: false as const, errors: ["Redirecting..."] }
               },
             })(result)
           },
@@ -77,7 +77,7 @@ export const make = <R, E>(layer: Layer.Layer<R, E, never>) => {
 
   // Don't throw the Error requests, handle them in the normal UI. No ErrorBoundary
   const withActionEffect =
-    <A, B, R0 extends R | ActionArgsContext>(self: Effect.Effect<HttpResponse<A> | Response, B, R0>) => 
+    <A, B, R0 extends R | ActionArgsContext>(self: Effect.Effect<HttpResponse<A> | Response, B, R0>) =>
     (args: ActionFunctionArgs) => {
       const runnable = pipe(
         self,
@@ -86,7 +86,7 @@ export const make = <R, E>(layer: Layer.Layer<R, E, never>) => {
         Effect.tapError((cause) => {
           // Don't log if it's a Response - that's expected behavior
           if (!(cause instanceof Response)) {
-            return Effect.logError('Action effect failed', cause)
+            return Effect.logError("Action effect failed", cause)
           }
           return Effect.void
         }),
@@ -94,7 +94,7 @@ export const make = <R, E>(layer: Layer.Layer<R, E, never>) => {
       return runtime.runPromiseExit(runnable).then(
         Exit.match({
           onFailure: (cause) => {
-            if (cause._tag === 'Fail') {
+            if (cause._tag === "Fail") {
               const error = cause.error
               // If the error is a Response, throw it directly to preserve headers
               if (error instanceof Response) {
@@ -103,7 +103,7 @@ export const make = <R, E>(layer: Layer.Layer<R, E, never>) => {
               return data({ ok: false as const, errors: [String(error)] }, { status: 400 })
             }
             // Handle other types of failures
-            return data({ ok: false as const, errors: ['Internal server error'] }, { status: 400 })
+            return data({ ok: false as const, errors: ["Internal server error"] }, { status: 400 })
           },
           onSuccess: (result) => {
             // If the result is a Response, throw it directly to preserve headers (including Set-Cookie)

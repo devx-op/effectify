@@ -1,9 +1,9 @@
-import type * as Message from '@effectify/chat-domain/message.ts'
+import type * as Message from "@effectify/chat-domain/message.ts"
 
-import { VStack } from '@effectify/solid-ui/components/primitives/stack'
-import type { Component } from 'solid-js'
-import { MessagesOperations } from './../../services/message-namespace.js'
-import { MessageBubble } from './message-bubble.jsx'
+import { VStack } from "@effectify/solid-ui/components/primitives/stack"
+import type { Component } from "solid-js"
+import { MessagesOperations } from "./../../services/message-namespace.js"
+import { MessageBubble } from "./message-bubble.jsx"
 
 type Props = {
   messages: Message.Message[]
@@ -15,7 +15,6 @@ export const MessageList: Component<Props> = ({ messages }) => {
   return (
     <VStack class="p-4" gap="4">
       {messages.map((message) => (
-        
         <MessageBubble
           data-message-id={message.id}
           message={message}

@@ -1,9 +1,9 @@
-import { cn } from '@effectify/solid-ui/lib/utils'
-import type { PolymorphicProps } from '@kobalte/core/polymorphic'
-import type { PopoverContentProps, PopoverRootProps } from '@kobalte/core/popover'
-import { Popover as PopoverPrimitive } from '@kobalte/core/popover'
-import type { ParentProps, ValidComponent } from 'solid-js'
-import { mergeProps, splitProps } from 'solid-js'
+import { cn } from "@effectify/solid-ui/lib/utils"
+import type { PolymorphicProps } from "@kobalte/core/polymorphic"
+import type { PopoverContentProps, PopoverRootProps } from "@kobalte/core/popover"
+import { Popover as PopoverPrimitive } from "@kobalte/core/popover"
+import type { ParentProps, ValidComponent } from "solid-js"
+import { mergeProps, splitProps } from "solid-js"
 
 export const Trigger = PopoverPrimitive.Trigger
 export const Title = PopoverPrimitive.Title
@@ -21,21 +21,21 @@ export const Root = (props: PopoverRootProps) => {
   return <PopoverPrimitive {...merge} />
 }
 
-type popoverContentProps<T extends ValidComponent = 'div'> = ParentProps<
+type popoverContentProps<T extends ValidComponent = "div"> = ParentProps<
   PopoverContentProps<T> & {
     class?: string
     showClose?: boolean
   }
 >
 
-export const Body = <T extends ValidComponent = 'div'>(props: PolymorphicProps<T, popoverContentProps<T>>) => {
-  const [local, rest] = splitProps(props as popoverContentProps, ['class', 'children', 'showClose'])
+export const Body = <T extends ValidComponent = "div">(props: PolymorphicProps<T, popoverContentProps<T>>) => {
+  const [local, rest] = splitProps(props as popoverContentProps, ["class", "children", "showClose"])
 
   return (
     <PopoverPrimitive.Portal>
       <PopoverPrimitive.Content
         class={cn(
-          'data-[expanded]:(animate-in fade-in-0 zoom-in-95) data-[closed]:(animate-out fade-out-0 zoom-out-95) z-50 w-72 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-none',
+          "data-[expanded]:(animate-in fade-in-0 zoom-in-95) data-[closed]:(animate-out fade-out-0 zoom-out-95) z-50 w-72 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-none",
           local.class,
         )}
         {...rest}

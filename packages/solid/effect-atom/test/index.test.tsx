@@ -1,12 +1,10 @@
-
-
-import * as Atom from '@effect-atom/atom/Atom'
-import * as Registry from '@effect-atom/atom/Registry'
-import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library'
-import { Schema } from 'effect'
-import * as Effect from 'effect/Effect'
-import { createResource, ErrorBoundary, Suspense } from 'solid-js'
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import * as Atom from "@effect-atom/atom/Atom"
+import * as Registry from "@effect-atom/atom/Registry"
+import { fireEvent, render, screen, waitFor } from "@solidjs/testing-library"
+import { Schema } from "effect"
+import * as Effect from "effect/Effect"
+import { createResource, ErrorBoundary, Suspense } from "solid-js"
+import { beforeEach, describe, expect, test, vi } from "vitest"
 import {
   Hydration,
   HydrationBoundary,
@@ -18,17 +16,17 @@ import {
   useAtomSuspense,
   useAtomSuspenseResult,
   useAtomValue,
-} from '../src/index.js'
+} from "../src/index.js"
 
-describe('atom-solid', () => {
+describe("atom-solid", () => {
   let registry: Registry.Registry
 
   beforeEach(() => {
     registry = Registry.make()
   })
 
-  describe('useAtomValue', () => {
-    test('should read value from simple Atom', () => {
+  describe("useAtomValue", () => {
+    test("should read value from simple Atom", () => {
       const atom = Atom.make(42)
 
       function TestComponent() {
@@ -38,10 +36,10 @@ describe('atom-solid', () => {
 
       render(() => <TestComponent />)
 
-      expect(screen.getByTestId('value')).toHaveTextContent('42')
+      expect(screen.getByTestId("value")).toHaveTextContent("42")
     })
 
-    test('should read value with transform function', () => {
+    test("should read value with transform function", () => {
       const atom = Atom.make(42)
 
       function TestComponent() {
@@ -54,11 +52,11 @@ describe('atom-solid', () => {
 
       render(() => <TestComponent />)
 
-      expect(screen.getByTestId('value')).toHaveTextContent('84')
+      expect(screen.getByTestId("value")).toHaveTextContent("84")
     })
 
-    test('should update when Atom value changes', async () => {
-      const atom = Atom.make('initial')
+    test("should update when Atom value changes", async () => {
+      const atom = Atom.make("initial")
 
       function TestComponent() {
         const value = useAtomValue(() => atom)
@@ -71,16 +69,16 @@ describe('atom-solid', () => {
         </RegistryProvider>
       ))
 
-      expect(screen.getByTestId('value')).toHaveTextContent('initial')
+      expect(screen.getByTestId("value")).toHaveTextContent("initial")
 
-      registry.set(atom, 'updated')
+      registry.set(atom, "updated")
 
       await waitFor(() => {
-        expect(screen.getByTestId('value')).toHaveTextContent('updated')
+        expect(screen.getByTestId("value")).toHaveTextContent("updated")
       })
     })
 
-    test('should work like Counter example - with useAtom and useAtomValue', async () => {
+    test("should work like Counter example - with useAtom and useAtomValue", async () => {
       const baseAtom = Atom.make(5)
       const doubledAtom = Atom.make((get) => get(baseAtom) * 2)
 
@@ -104,18 +102,18 @@ describe('atom-solid', () => {
         </RegistryProvider>
       ))
 
-      expect(screen.getByTestId('count')).toHaveTextContent('5')
-      expect(screen.getByTestId('doubled')).toHaveTextContent('10')
+      expect(screen.getByTestId("count")).toHaveTextContent("5")
+      expect(screen.getByTestId("doubled")).toHaveTextContent("10")
 
-      fireEvent.click(screen.getByTestId('increment'))
+      fireEvent.click(screen.getByTestId("increment"))
 
       await waitFor(() => {
-        expect(screen.getByTestId('count')).toHaveTextContent('6')
-        expect(screen.getByTestId('doubled')).toHaveTextContent('12')
+        expect(screen.getByTestId("count")).toHaveTextContent("6")
+        expect(screen.getByTestId("doubled")).toHaveTextContent("12")
       })
     })
 
-    test('should work with computed Atom', () => {
+    test("should work with computed Atom", () => {
       const baseAtom = Atom.make(10)
       const computedAtom = Atom.make((get) => get(baseAtom) * 2)
 
@@ -126,12 +124,12 @@ describe('atom-solid', () => {
 
       render(() => <TestComponent />)
 
-      expect(screen.getByTestId('value')).toHaveTextContent('20')
+      expect(screen.getByTestId("value")).toHaveTextContent("20")
     })
   })
 
-  describe('useAtom', () => {
-    test('should provide both value and setter', async () => {
+  describe("useAtom", () => {
+    test("should provide both value and setter", async () => {
       const atom = Atom.make(0)
 
       function TestComponent() {
@@ -149,16 +147,16 @@ describe('atom-solid', () => {
 
       render(() => <TestComponent />)
 
-      expect(screen.getByTestId('value')).toHaveTextContent('0')
+      expect(screen.getByTestId("value")).toHaveTextContent("0")
 
-      fireEvent.click(screen.getByTestId('increment'))
+      fireEvent.click(screen.getByTestId("increment"))
 
       await waitFor(() => {
-        expect(screen.getByTestId('value')).toHaveTextContent('1')
+        expect(screen.getByTestId("value")).toHaveTextContent("1")
       })
     })
 
-    test('should work with function updater', async () => {
+    test("should work with function updater", async () => {
       const atom = Atom.make(5)
 
       function TestComponent() {
@@ -176,18 +174,18 @@ describe('atom-solid', () => {
 
       render(() => <TestComponent />)
 
-      expect(screen.getByTestId('value')).toHaveTextContent('5')
+      expect(screen.getByTestId("value")).toHaveTextContent("5")
 
-      fireEvent.click(screen.getByTestId('double'))
+      fireEvent.click(screen.getByTestId("double"))
 
       await waitFor(() => {
-        expect(screen.getByTestId('value')).toHaveTextContent('10')
+        expect(screen.getByTestId("value")).toHaveTextContent("10")
       })
     })
   })
 
-  describe('useAtomSet', () => {
-    test('should provide only setter function', async () => {
+  describe("useAtomSet", () => {
+    test("should provide only setter function", async () => {
       const atom = Atom.make(0)
 
       function TestComponent() {
@@ -206,19 +204,19 @@ describe('atom-solid', () => {
 
       render(() => <TestComponent />)
 
-      expect(screen.getByTestId('value')).toHaveTextContent('0')
+      expect(screen.getByTestId("value")).toHaveTextContent("0")
 
-      fireEvent.click(screen.getByTestId('set'))
+      fireEvent.click(screen.getByTestId("set"))
 
       await waitFor(() => {
-        expect(screen.getByTestId('value')).toHaveTextContent('42')
+        expect(screen.getByTestId("value")).toHaveTextContent("42")
       })
     })
   })
 
-  describe('useAtomSubscribe', () => {
-    test('should subscribe to atom changes', async () => {
-      const atom = Atom.make('initial')
+  describe("useAtomSubscribe", () => {
+    test("should subscribe to atom changes", async () => {
+      const atom = Atom.make("initial")
       const callback = vi.fn()
 
       function TestComponent() {
@@ -226,7 +224,7 @@ describe('atom-solid', () => {
         const setValue = useAtomSet(() => atom)
 
         return (
-          <button data-testid="update" onClick={() => setValue('updated')}>
+          <button data-testid="update" onClick={() => setValue("updated")}>
             Update
           </button>
         )
@@ -234,18 +232,18 @@ describe('atom-solid', () => {
 
       render(() => <TestComponent />)
 
-      fireEvent.click(screen.getByTestId('update'))
+      fireEvent.click(screen.getByTestId("update"))
 
       await waitFor(() => {
-        expect(callback).toHaveBeenCalledWith('updated')
+        expect(callback).toHaveBeenCalledWith("updated")
       })
     })
   })
 
-  describe('RegistryProvider', () => {
-    test('should provide registry to children', () => {
+  describe("RegistryProvider", () => {
+    test("should provide registry to children", () => {
       const customRegistry = Registry.make()
-      const atom = Atom.make('from-custom-registry')
+      const atom = Atom.make("from-custom-registry")
 
       function TestComponent() {
         const value = useAtomValue(() => atom)
@@ -258,11 +256,11 @@ describe('atom-solid', () => {
         </RegistryProvider>
       ))
 
-      expect(screen.getByTestId('value')).toHaveTextContent('from-custom-registry')
+      expect(screen.getByTestId("value")).toHaveTextContent("from-custom-registry")
     })
 
-    test('should work without explicit registry', () => {
-      const atom = Atom.make('default-registry')
+    test("should work without explicit registry", () => {
+      const atom = Atom.make("default-registry")
 
       function TestComponent() {
         const value = useAtomValue(() => atom)
@@ -275,12 +273,12 @@ describe('atom-solid', () => {
         </RegistryProvider>
       ))
 
-      expect(screen.getByTestId('value')).toHaveTextContent('default-registry')
+      expect(screen.getByTestId("value")).toHaveTextContent("default-registry")
     })
   })
 
-  describe('useAtomSuspenseResult', () => {
-    test('should handle loading state', () => {
+  describe("useAtomSuspenseResult", () => {
+    test("should handle loading state", () => {
       const atom = Atom.make(Effect.never)
 
       function TestComponent() {
@@ -296,11 +294,11 @@ describe('atom-solid', () => {
 
       render(() => <TestComponent />)
 
-      expect(screen.getByTestId('loading')).toBeInTheDocument()
+      expect(screen.getByTestId("loading")).toBeInTheDocument()
     })
 
-    test('should handle success state', async () => {
-      const atom = Atom.make(Effect.succeed('success'))
+    test("should handle success state", async () => {
+      const atom = Atom.make(Effect.succeed("success"))
 
       function TestComponent() {
         const result = useAtomSuspenseResult(() => atom)
@@ -320,12 +318,12 @@ describe('atom-solid', () => {
       render(() => <TestComponent />)
 
       await waitFor(() => {
-        expect(screen.getByTestId('value')).toHaveTextContent('success')
+        expect(screen.getByTestId("value")).toHaveTextContent("success")
       })
     })
 
-    test('should handle error state', async () => {
-      const atom = Atom.make(Effect.fail('test error'))
+    test("should handle error state", async () => {
+      const atom = Atom.make(Effect.fail("test error"))
 
       function TestComponent() {
         const result = useAtomSuspenseResult(() => atom)
@@ -345,17 +343,17 @@ describe('atom-solid', () => {
       render(() => <TestComponent />)
 
       await waitFor(() => {
-        expect(screen.getByTestId('error')).toBeInTheDocument()
+        expect(screen.getByTestId("error")).toBeInTheDocument()
       })
     })
   })
 
-  describe('useAtomSuspense', () => {
-    test('basic createResource suspense test', async () => {
+  describe("useAtomSuspense", () => {
+    test("basic createResource suspense test", async () => {
       // First, let's test that basic SolidJS suspense works in our test environment
       const [resource] = createResource(async () => {
         await new Promise((resolve) => setTimeout(resolve, 50))
-        return 'loaded'
+        return "loaded"
       })
 
       function TestComponent() {
@@ -369,19 +367,19 @@ describe('atom-solid', () => {
       ))
 
       // Initially should show loading
-      expect(screen.getByTestId('loading')).toBeInTheDocument()
+      expect(screen.getByTestId("loading")).toBeInTheDocument()
 
       // After resource resolves, should show value
       await waitFor(
         () => {
-          expect(screen.getByTestId('value')).toHaveTextContent('loaded')
+          expect(screen.getByTestId("value")).toHaveTextContent("loaded")
         },
         { timeout: 1000 },
       )
     })
 
-    test('useAtomSuspense with resolved atom', async () => {
-      const atom = Atom.make(Effect.succeed('test-value'))
+    test("useAtomSuspense with resolved atom", async () => {
+      const atom = Atom.make(Effect.succeed("test-value"))
 
       function TestComponent() {
         const value = useAtomSuspense(() => atom)
@@ -396,12 +394,12 @@ describe('atom-solid', () => {
 
       // Should show the value immediately since atom is already resolved
       await waitFor(() => {
-        expect(screen.getByTestId('value')).toHaveTextContent('test-value')
+        expect(screen.getByTestId("value")).toHaveTextContent("test-value")
       })
     })
 
-    test('useAtomSuspense with async atom', async () => {
-      const atom = Atom.make(Effect.sleep(50).pipe(Effect.map(() => 'async-value')))
+    test("useAtomSuspense with async atom", async () => {
+      const atom = Atom.make(Effect.sleep(50).pipe(Effect.map(() => "async-value")))
 
       function TestComponent() {
         const value = useAtomSuspense(() => atom)
@@ -415,19 +413,19 @@ describe('atom-solid', () => {
       ))
 
       // Initially should show loading
-      expect(screen.getByTestId('loading')).toBeInTheDocument()
+      expect(screen.getByTestId("loading")).toBeInTheDocument()
 
       // After effect resolves, should show value
       await waitFor(
         () => {
-          expect(screen.getByTestId('value')).toHaveTextContent('async-value')
+          expect(screen.getByTestId("value")).toHaveTextContent("async-value")
         },
         { timeout: 1000 },
       )
     })
 
-    test('useAtomSuspense with error', async () => {
-      const atom = Atom.make(Effect.fail(new Error('test-error')))
+    test("useAtomSuspense with error", async () => {
+      const atom = Atom.make(Effect.fail(new Error("test-error")))
 
       function TestComponent() {
         const value = useAtomSuspense(() => atom)
@@ -449,23 +447,23 @@ describe('atom-solid', () => {
       // Wait for the error to be thrown and caught
       await waitFor(
         () => {
-          expect(screen.getByTestId('error')).toBeInTheDocument()
+          expect(screen.getByTestId("error")).toBeInTheDocument()
         },
         { timeout: 1000 },
       )
     })
 
-    test('useAtomSuspense is exported and callable', () => {
+    test("useAtomSuspense is exported and callable", () => {
       // Basic test to ensure the hook is exported and can be called
-      expect(typeof useAtomSuspense).toBe('function')
+      expect(typeof useAtomSuspense).toBe("function")
     })
   })
 
-  describe('Hydration', () => {
-    test('basic hydration with multiple atom types', () => {
+  describe("Hydration", () => {
+    test("basic hydration with multiple atom types", () => {
       const atomBasic = Atom.make(0).pipe(
         Atom.serializable({
-          key: 'basic',
+          key: "basic",
           schema: Schema.Number,
         }),
       )
@@ -482,20 +480,20 @@ describe('atom-solid', () => {
           }),
         )
 
-      const atomResult1 = makeAtomResult('success')
-      const atomResult2 = makeAtomResult('errored')
-      const atomResult3 = makeAtomResult('pending')
+      const atomResult1 = makeAtomResult("success")
+      const atomResult2 = makeAtomResult("errored")
+      const atomResult3 = makeAtomResult("pending")
 
       const dehydratedState: Array<Hydration.DehydratedAtom> = [
         {
-          key: 'basic',
+          key: "basic",
           value: 1,
           dehydratedAt: Date.now(),
         },
         {
-          key: 'success',
+          key: "success",
           value: {
-            _tag: 'Success',
+            _tag: "Success",
             value: 123,
             waiting: false,
             timestamp: Date.now(),
@@ -503,24 +501,24 @@ describe('atom-solid', () => {
           dehydratedAt: Date.now(),
         },
         {
-          key: 'errored',
+          key: "errored",
           value: {
-            _tag: 'Failure',
+            _tag: "Failure",
             cause: {
-              _tag: 'Fail',
-              error: 'error',
+              _tag: "Fail",
+              error: "error",
             },
             previousSuccess: {
-              _tag: 'None',
+              _tag: "None",
             },
             waiting: false,
           },
           dehydratedAt: Date.now(),
         },
         {
-          key: 'pending',
+          key: "pending",
           value: {
-            _tag: 'Initial',
+            _tag: "Initial",
             waiting: true,
           },
           dehydratedAt: Date.now(),
@@ -568,18 +566,18 @@ describe('atom-solid', () => {
         </HydrationBoundary>
       ))
 
-      expect(screen.getByTestId('value')).toHaveTextContent('1')
-      expect(screen.getByTestId('value-1')).toHaveTextContent('123')
-      expect(screen.getByTestId('error-2')).toBeInTheDocument()
-      expect(screen.getByTestId('loading-3')).toBeInTheDocument()
+      expect(screen.getByTestId("value")).toHaveTextContent("1")
+      expect(screen.getByTestId("value-1")).toHaveTextContent("123")
+      expect(screen.getByTestId("error-2")).toBeInTheDocument()
+      expect(screen.getByTestId("loading-3")).toBeInTheDocument()
     })
 
-    test('hydration streaming', async () => {
+    test("hydration streaming", async () => {
       const latch = Effect.runSync(Effect.makeLatch())
       let start = 0
       let stop = 0
       const atom = Atom.make(
-        Effect.gen(function* () {
+        Effect.gen(function*() {
           start = start + 1
           yield* latch.await
           stop = stop + 1
@@ -587,7 +585,7 @@ describe('atom-solid', () => {
         }),
       ).pipe(
         Atom.serializable({
-          key: 'test',
+          key: "test",
           schema: Result.Schema({
             success: Schema.Number,
           }),
@@ -600,7 +598,7 @@ describe('atom-solid', () => {
       expect(stop).toBe(0)
 
       const dehydratedState = Hydration.dehydrate(registry, {
-        encodeInitialAs: 'promise',
+        encodeInitialAs: "promise",
       })
 
       function TestComponent() {
@@ -617,34 +615,34 @@ describe('atom-solid', () => {
         </RegistryProvider>
       ))
 
-      expect(screen.getByTestId('value')).toHaveTextContent('Initial')
+      expect(screen.getByTestId("value")).toHaveTextContent("Initial")
 
       Effect.runSync(latch.open)
       await Effect.runPromise(latch.await)
 
       const test = registry.get(atom)
-      expect(test._tag).toBe('Success')
-      if (test._tag === 'Success') {
+      expect(test._tag).toBe("Success")
+      if (test._tag === "Success") {
         expect(test.value).toBe(1)
       }
 
       await waitFor(() => {
-        expect(screen.getByTestId('value')).toHaveTextContent('Success')
+        expect(screen.getByTestId("value")).toHaveTextContent("Success")
       })
 
       expect(start).toBe(1)
       expect(stop).toBe(1)
     })
 
-    test('HydrationBoundary component exists', () => {
+    test("HydrationBoundary component exists", () => {
       // Basic test to ensure HydrationBoundary is exported and can be used
-      expect(typeof HydrationBoundary).toBe('function')
+      expect(typeof HydrationBoundary).toBe("function")
     })
 
-    test('Hydration module is available', () => {
+    test("Hydration module is available", () => {
       // Test that Hydration utilities are available
-      expect(typeof Hydration.dehydrate).toBe('function')
-      expect(typeof Hydration.hydrate).toBe('function')
+      expect(typeof Hydration.dehydrate).toBe("function")
+      expect(typeof Hydration.hydrate).toBe("function")
     })
   })
 })
