@@ -227,7 +227,7 @@ export const extractCriticalAtoms = (registry: Registry.Registry, criticalKeys: 
 export const serializeState = (dehydratedState: Hydration.DehydratedAtom[]): string => {
   try {
     return JSON.stringify(dehydratedState)
-  } catch (_error) {
+  } catch {
     return "[]"
   }
 }
@@ -241,7 +241,7 @@ export const serializeState = (dehydratedState: Hydration.DehydratedAtom[]): str
 export const deserializeState = (serializedState: string): Hydration.DehydratedAtom[] => {
   try {
     return JSON.parse(serializedState)
-  } catch (_error) {
+  } catch {
     return []
   }
 }

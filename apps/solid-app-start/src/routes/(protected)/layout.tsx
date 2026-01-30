@@ -17,7 +17,7 @@ function RouteComponent() {
       await authClient.signOut()
       // Forzar navegación inmediata
       window.location.href = "/login"
-    } catch (_error) {
+    } catch {
       window.location.href = "/login"
     }
   }

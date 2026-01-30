@@ -9,17 +9,15 @@
     "build:affected": "pnpm nx affected --target=build",
     "test:affected": "pnpm nx affected --target=test",
     "typecheck:affected": "pnpm nx affected --target=typecheck",
+    "lint": "pnpm exec oxlint --fix && pnpm exec dprint check",
     "lint:affected": "pnpm nx affected --target=lint",
-    "lint:many": "pnpm nx run-many --target=lint",
+    "lint:many": "pnpm nx run-many --target=lint && pnpm exec dprint check",
     "publish:affected": "pnpm nx publish-affected",
     "release:affected": "pnpm nx release-affected",
     "release:affected:dry-run": "pnpm nx release-affected-dry-run"
   },
   "lint-staged": {
-    "*.{js,jsx,ts,tsx,json,jsonc,css,scss,md,mdx}": [
-      "pnpm oxlint --fix",
-      "pnpm exec dprint fmt"
-    ]
+    "*.{js,jsx,ts,tsx,json,jsonc,css,scss,md,mdx}": "pnpm lint"
   },
   "devDependencies": {
     "@effect/language-service": "catalog:",
