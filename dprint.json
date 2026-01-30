@@ -37,7 +37,8 @@
     "**/pnpm-lock.yaml",
     "**/tsconfig.tsbuildinfo",
     "**/sqlite.db",
-    "**/docker-compose.yml"
+    "**/docker-compose.yml",
+    "**/routeTree.gen.ts"
   ],
   "plugins": [
     "https://plugins.dprint.dev/typescript-0.93.4.wasm",
