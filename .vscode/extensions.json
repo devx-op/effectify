@@ -2,7 +2,7 @@
   "recommendations": [
     "nrwl.angular-console",
     "effectful-tech.effect-vscode",
-    "biomejs.biome",
-    "esbenp.prettier-vscode"
+    "oxc.oxc-vscode",
+    "dprint.dprint"
   ]
 }

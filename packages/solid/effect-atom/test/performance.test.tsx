@@ -1,9 +1,6 @@
 /**
  * Performance tests for atom-solid optimizations
  */
-/** biome-ignore-all lint/suspicious/noExplicitAny: <lib> */
-/** biome-ignore-all lint/nursery/noShadow: <todo fix this> */
-/** biome-ignore-all lint/nursery/noAwaitInLoop: <todo fix this> */
 
 import * as Atom from '@effect-atom/atom/Atom'
 import * as Registry from '@effect-atom/atom/Registry'

@@ -15,7 +15,7 @@ export const MessageList: Component<Props> = ({ messages }) => {
   return (
     <VStack class="p-4" gap="4">
       {messages.map((message) => (
-        // biome-ignore lint/correctness/useJsxKeyInIterable: <is solid todo: suppress rule for solid>
+        
         <MessageBubble
           data-message-id={message.id}
           message={message}

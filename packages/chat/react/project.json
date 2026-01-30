@@ -3,5 +3,14 @@
   "name": "@effectify/chat-react",
   "sourceRoot": "packages/chat/react/src",
   "projectType": "library",
-  "tags": ["react"]
+  "tags": ["react"],
+  "targets": {
+    "lint": {
+      "executor": "nx-oxlint:lint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["packages/chat/react/**/*.{ts,tsx,js,jsx}"]
+      }
+    }
+  }
 }

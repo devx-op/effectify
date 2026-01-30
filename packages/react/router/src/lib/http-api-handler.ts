@@ -1,4 +1,4 @@
-/** biome-ignore-all lint/suspicious/noConsole: <debug> */
+
 import type * as HttpApi from '@effect/platform/HttpApi'
 import * as HttpApiBuilder from '@effect/platform/HttpApiBuilder'
 import * as HttpApiScalar from '@effect/platform/HttpApiScalar'

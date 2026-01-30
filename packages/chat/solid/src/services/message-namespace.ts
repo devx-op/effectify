@@ -79,7 +79,7 @@ export namespace MessagesOperations {
           return
         }
 
-        // biome-ignore lint/complexity/noForEach: <same as above>
+        
         unreadMessages().forEach((message) => {
           const element = document.querySelector(`[data-message-id="${message.id}"]`)
           if (element === null) {
@@ -104,7 +104,7 @@ export namespace MessagesOperations {
     let observer: IntersectionObserver | null = null
     createEffect(() => {
       observer = new IntersectionObserver(
-        // biome-ignore lint/complexity/noForEach: <same as above>
+        
         Array.forEach((entry) => {
           if (!(entry.isIntersecting && document.hasFocus())) {
             return

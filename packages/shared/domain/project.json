@@ -3,5 +3,14 @@
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "packages/shared/domain/src",
   "projectType": "library",
-  "tags": ["domain"]
+  "tags": ["domain"],
+  "targets": {
+    "lint": {
+      "executor": "nx-oxlint:lint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["packages/shared/domain/**/*.{ts,tsx,js,jsx}"]
+      }
+    }
+  }
 }

@@ -3,5 +3,14 @@
   "name": "@effectify/react-ui",
   "sourceRoot": "packages/react/ui/src",
   "projectType": "library",
-  "tags": ["react"]
+  "tags": ["react"],
+  "targets": {
+    "lint": {
+      "executor": "nx-oxlint:lint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["packages/react/ui/**/*.{ts,tsx,js,jsx}"]
+      }
+    }
+  }
 }

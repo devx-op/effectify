@@ -21,6 +21,13 @@
         "development": {},
         "production": {}
       }
+    },
+    "lint": {
+      "executor": "nx-oxlint:lint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["packages/react/router/**/*.{ts,tsx,js,jsx}"]
+      }
     }
   },
   "tags": ["node", "react", "react-router"]

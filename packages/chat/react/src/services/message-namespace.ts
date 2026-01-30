@@ -82,7 +82,7 @@ export namespace MessagesOperations {
           return
         }
 
-        // biome-ignore lint/complexity/noForEach: using forEach for side effects on DOM elements
+        
         unreadMessages.forEach((message) => {
           const element = document.querySelector(`[data-message-id="${message.id}"]`)
           if (element === null) {
@@ -107,7 +107,7 @@ export namespace MessagesOperations {
 
     useEffect(() => {
       observerRef.current = new IntersectionObserver(
-        // biome-ignore lint/complexity/noForEach: using forEach for side effects on intersection entries
+        
         Array.forEach((entry) => {
           if (!(entry.isIntersecting && document.hasFocus())) {
             return

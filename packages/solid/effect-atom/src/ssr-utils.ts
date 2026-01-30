@@ -1,7 +1,7 @@
 /**
  * @since 1.0.0
  */
-/** biome-ignore-all lint/suspicious/noExplicitAny: SSR utils need generic types */
+
 import * as Atom from '@effect-atom/atom/Atom'
 import * as Hydration from '@effect-atom/atom/Hydration'
 import * as Registry from '@effect-atom/atom/Registry'

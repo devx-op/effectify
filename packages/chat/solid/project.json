@@ -3,5 +3,14 @@
   "name": "@effectify/chat-solid",
   "sourceRoot": "packages/chat/solid/src",
   "projectType": "library",
-  "tags": ["chat"]
+  "tags": ["chat"],
+  "targets": {
+    "lint": {
+      "executor": "nx-oxlint:lint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["packages/chat/solid/**/*.{ts,tsx,js,jsx}"]
+      }
+    }
+  }
 }

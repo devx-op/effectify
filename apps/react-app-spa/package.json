@@ -8,10 +8,7 @@
     "start": "vite --port 3000",
     "build": "vite build && tsc",
     "serve": "vite preview",
-    "test": "vitest run",
-    "format": "biome format",
-    "lint": "biome lint",
-    "check": "biome check"
+    "test": "vitest run"
   },
   "dependencies": {
     "@effectify/react-ui": "workspace:*",
@@ -31,7 +28,6 @@
     "web-vitals": "catalog:"
   },
   "devDependencies": {
-    "@biomejs/biome": "catalog:",
     "@testing-library/dom": "catalog:",
     "@testing-library/react": "catalog:",
     "@types/react": "catalog:",

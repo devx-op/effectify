@@ -2,30 +2,30 @@
   "nxConsole.generateAiAgentRules": true,
   "typescript.tsdk": "node_modules/typescript/lib",
   "[javascript]": {
-    "editor.defaultFormatter": "biomejs.biome"
+    "editor.defaultFormatter": "dprint.dprint"
   },
   "[typescript]": {
-    "editor.defaultFormatter": "biomejs.biome"
+    "editor.defaultFormatter": "dprint.dprint"
   },
   "[json]": {
-    "editor.defaultFormatter": "biomejs.biome"
+    "editor.defaultFormatter": "dprint.dprint"
   },
   "[jsonc]": {
-    "editor.defaultFormatter": "biomejs.biome"
+    "editor.defaultFormatter": "dprint.dprint"
   },
   "editor.codeActionsOnSave": {
-    "quickfix.biome": "explicit",
-    "source.organizeImports.biome": "explicit",
-    "source.fixAll.biome": "explicit"
+    "quickfix.oxc": "explicit",
+    "source.organizeImports.oxc": "explicit",
+    "source.fixAll.oxc": "explicit"
   },
   "[javascriptreact]": {
-    "editor.defaultFormatter": "biomejs.biome"
+    "editor.defaultFormatter": "dprint.dprint"
   },
   "[typescriptreact]": {
-    "editor.defaultFormatter": "biomejs.biome"
+    "editor.defaultFormatter": "dprint.dprint"
   },
   "[css]": {
-    "editor.defaultFormatter": "biomejs.biome"
+    "editor.defaultFormatter": "dprint.dprint"
   },
   "editor.formatOnSave": true,
   "files.exclude": {
@@ -56,7 +56,7 @@
   },
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "[javascript][typescript][javascriptreact][typescriptreact][json][jsonc][css][graphql]": {
-    "editor.defaultFormatter": "biomejs.biome"
+    "editor.defaultFormatter": "dprint.dprint"
   },
   "editor.formatOnPaste": true,
   "emmet.showExpandedAbbreviation": "never"

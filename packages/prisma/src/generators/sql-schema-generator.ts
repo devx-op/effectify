@@ -1,5 +1,4 @@
 #!/usr/bin/env tsx
-// biome-ignore-all lint: Generated code
 
 import { execSync } from 'node:child_process'
 import fs from 'node:fs/promises'

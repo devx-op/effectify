@@ -3,5 +3,14 @@
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "packages/chat/domain/src",
   "projectType": "library",
-  "tags": ["chat"]
+  "tags": ["chat"],
+  "targets": {
+    "lint": {
+      "executor": "nx-oxlint:lint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["packages/chat/domain/**/*.{ts,tsx,js,jsx}"]
+      }
+    }
+  }
 }

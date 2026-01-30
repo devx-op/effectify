@@ -34,10 +34,11 @@
       }
     },
     "lint": {
-      "executor": "nx:run-commands",
+      "executor": "nx-oxlint:lint",
       "options": {
-        "command": "pnpm lint",
-        "cwd": "apps/react-app-router-rsc"
+        "lintFilePatterns": [
+          "apps/react-app-router-rsc/**/*.{ts,tsx,js,jsx}"
+        ]
       }
     }
   },

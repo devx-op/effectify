@@ -1,7 +1,5 @@
-/** biome-ignore-all lint/suspicious/noExplicitAny: test file */
-/** biome-ignore-all lint/style/useShorthandAssign: test file */
-/** biome-ignore-all lint/nursery/noShadow: test file */
-/** biome-ignore-all lint/style/useConsistentArrayType: test file */
+
+
 import * as Atom from '@effect-atom/atom/Atom'
 import * as Registry from '@effect-atom/atom/Registry'
 import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library'

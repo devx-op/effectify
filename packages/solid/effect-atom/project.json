@@ -29,6 +29,13 @@
           "minify": true
         }
       }
+    },
+    "lint": {
+      "executor": "nx-oxlint:lint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["packages/solid/effect-atom/**/*.{ts,tsx,js,jsx}"]
+      }
     }
   }
 }

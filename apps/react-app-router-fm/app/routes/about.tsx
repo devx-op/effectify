@@ -73,7 +73,6 @@ export const loader = Effect.gen(function* () {
   withLoaderEffect
 )
 
-
 export default function AboutComponent({
   loaderData,
 }: Route.ComponentProps) {

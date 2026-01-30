@@ -1,9 +1,6 @@
 /**
  * SSR tests for @effect-atom/atom-solid
  */
-/** biome-ignore-all lint/performance/noDelete: <lib> */
-/** biome-ignore-all lint/suspicious/noExplicitAny: <lib> */
-/** biome-ignore-all lint/style/useConsistentArrayType: <lib> */
 
 import * as Atom from '@effect-atom/atom/Atom'
 import * as Hydration from '@effect-atom/atom/Hydration'
