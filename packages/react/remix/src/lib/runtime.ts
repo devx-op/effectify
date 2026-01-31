@@ -1,5 +1,12 @@
 import { Response } from "@effect/platform-node/Undici"
 import { type ActionFunctionArgs, json, type LoaderFunctionArgs, redirect } from "@remix-run/node"
+
+// Safe type for redirect init parameter to avoid undici/undici-types conflicts
+type SafeRedirectInit = {
+  status?: number
+  statusText?: string
+  headers?: Record<string, string> | Headers
+}
 import * as Effect from "effect/Effect"
 import * as Exit from "effect/Exit"
 import { pipe } from "effect/Function"
@@ -65,7 +72,7 @@ export const make = <R, E>(layer: Layer.Layer<R, E, never>) => {
                 })
               },
               HttpResponseRedirect: ({ to, init = {} }) => {
-                redirect(to, init)
+                redirect(to, init as SafeRedirectInit)
                 return { ok: false as const, errors: ["Redirecting..."] }
               },
             })(result)
@@ -113,7 +120,7 @@ export const make = <R, E>(layer: Layer.Layer<R, E, never>) => {
               HttpResponseSuccess: ({ data: response }) => ({ ok: true as const, response }),
               HttpResponseFailure: ({ cause }) =>
                 json({ ok: false as const, errors: [String(cause)] }, { status: 400 }),
-              HttpResponseRedirect: ({ to, init = {} }) => redirect(to, init),
+              HttpResponseRedirect: ({ to, init = {} }) => redirect(to, init as SafeRedirectInit),
             })(result)
           },
         }),
