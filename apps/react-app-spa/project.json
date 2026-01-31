@@ -23,9 +23,7 @@
         "cwd": "apps/react-app-spa",
         "parallel": true
       }
-    }
-  },
-  "targets": {
+    },
     "lint": {
       "executor": "nx-oxlint:lint",
       "options": {

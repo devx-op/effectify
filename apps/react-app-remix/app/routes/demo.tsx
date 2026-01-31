@@ -35,7 +35,7 @@ export const action = withActionEffect(
 
     // Get form data
     const formData = yield* Effect.tryPromise(() => request.formData())
-    const actionType = formData.get("actionType") as string
+    const actionType = formData instanceof FormData ? formData.get("actionType") as string : ""
 
     yield* Effect.log("Demo action called with type:", actionType)
 

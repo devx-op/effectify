@@ -19,7 +19,7 @@ export const action = withActionEffect(
 
     // Get form data
     const formData = yield* Effect.tryPromise(() => request.formData())
-    const inputValue = formData.get("inputValue") as string
+    const inputValue = formData instanceof FormData ? formData.get("inputValue") as string : ""
 
     yield* Effect.log("Form value received:", inputValue)
 
