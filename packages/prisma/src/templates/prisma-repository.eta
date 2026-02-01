@@ -139,7 +139,8 @@ export type PrismaUpdateManyError =
 // Create, Upsert
 export const mapCreateError = (error: unknown, operation: string, model: string): PrismaCreateError => {
   if (error instanceof PrismaNamespace.PrismaClientKnownRequestError) {
-    switch (error instanceof PrismaNamespace.PrismaClientKnownRequestError) {
+    const prismaError = error as PrismaNamespace.PrismaClientKnownRequestError;
+    switch (prismaError.code) {
       case 'P2000':
         return new PrismaValueTooLongError({ cause: error, operation, model })
       case 'P2002':
@@ -172,7 +173,8 @@ export const mapCreateError = (error: unknown, operation: string, model: string)
 // Update
 export const mapUpdateError = (error: unknown, operation: string, model: string): PrismaUpdateError => {
   if (error instanceof PrismaNamespace.PrismaClientKnownRequestError) {
-    switch (error instanceof PrismaNamespace.PrismaClientKnownRequestError) {
+    const prismaError = error as PrismaNamespace.PrismaClientKnownRequestError;
+    switch (prismaError.code) {
       case "P2000":
         return new PrismaValueTooLongError({ cause: error, operation, model });
       case "P2002":
@@ -209,7 +211,8 @@ export const mapUpdateError = (error: unknown, operation: string, model: string)
 // Delete
 export const mapDeleteError = (error: unknown, operation: string, model: string): PrismaDeleteError => {
   if (error instanceof PrismaNamespace.PrismaClientKnownRequestError) {
-    switch (error instanceof PrismaNamespace.PrismaClientKnownRequestError) {
+    const prismaError = error as PrismaNamespace.PrismaClientKnownRequestError;
+    switch (prismaError.code) {
       case "P2003":
         return new PrismaForeignKeyConstraintError({ cause: error, operation, model });
       case "P2014":
@@ -228,7 +231,8 @@ export const mapDeleteError = (error: unknown, operation: string, model: string)
 // FindOrThrow
 export const mapFindOrThrowError = (error: unknown, operation: string, model: string): PrismaFindOrThrowError => {
   if (error instanceof PrismaNamespace.PrismaClientKnownRequestError) {
-    switch (error instanceof PrismaNamespace.PrismaClientKnownRequestError) {
+    const prismaError = error as PrismaNamespace.PrismaClientKnownRequestError;
+    switch (prismaError.code) {
       case "P2024":
         return new PrismaConnectionError({ cause: error, operation, model });
       case "P2025":
@@ -241,7 +245,8 @@ export const mapFindOrThrowError = (error: unknown, operation: string, model: st
 // Find
 export const mapFindError = (error: unknown, operation: string, model: string): PrismaFindError => {
   if (error instanceof PrismaNamespace.PrismaClientKnownRequestError) {
-    switch (error instanceof PrismaNamespace.PrismaClientKnownRequestError) {
+    const prismaError = error as PrismaNamespace.PrismaClientKnownRequestError;
+    switch (prismaError.code) {
       case "P2024":
         return new PrismaConnectionError({ cause: error, operation, model });
     }
@@ -252,7 +257,8 @@ export const mapFindError = (error: unknown, operation: string, model: string): 
 // DeleteMany
 export const mapDeleteManyError = (error: unknown, operation: string, model: string): PrismaDeleteManyError => {
   if (error instanceof PrismaNamespace.PrismaClientKnownRequestError) {
-    switch (error instanceof PrismaNamespace.PrismaClientKnownRequestError) {
+    const prismaError = error as PrismaNamespace.PrismaClientKnownRequestError;
+    switch (prismaError.code) {
       case "P2003":
         return new PrismaForeignKeyConstraintError({ cause: error, operation, model });
       case "P2014":
@@ -269,7 +275,8 @@ export const mapDeleteManyError = (error: unknown, operation: string, model: str
 // UpdateMany
 export const mapUpdateManyError = (error: unknown, operation: string, model: string): PrismaUpdateManyError => {
   if (error instanceof PrismaNamespace.PrismaClientKnownRequestError) {
-    switch (error instanceof PrismaNamespace.PrismaClientKnownRequestError) {
+    const prismaError = error as PrismaNamespace.PrismaClientKnownRequestError;
+    switch (prismaError.code) {
       case "P2000":
         return new PrismaValueTooLongError({ cause: error, operation, model });
       case "P2002":

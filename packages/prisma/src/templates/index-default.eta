@@ -201,7 +201,8 @@ export type PrismaError =
 // Generic mapper for raw operations and fallback
 const mapError = (error: unknown, operation: string, model: string): PrismaError => {
   if (error instanceof PrismaNamespace.PrismaClientKnownRequestError) {
-    switch (error instanceof PrismaNamespace.PrismaClientKnownRequestError) {
+    const prismaError = error as PrismaNamespace.PrismaClientKnownRequestError;
+    switch (prismaError.code) {
       case "P2000":
         return new PrismaValueTooLongError({ cause: error, operation, model });
       case "P2002":
