@@ -71,6 +71,7 @@
   },
   "packageManager": "pnpm@10.14.0",
   "dependencies": {
+    "@effect/experimental": "catalog:",
     "@react-router/node": "catalog:",
     "@react-router/serve": "catalog:",
     "isbot": "catalog:",

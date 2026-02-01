@@ -13,10 +13,7 @@
     "rootDirs": [".", "./.react-router/types"],
     "types": ["node", "vite/client", "@react-router/node", "vitest/globals", "react", "react-dom"],
     "baseUrl": ".",
-    "paths": {
-      "@prisma/effect": ["./prisma/generated/effect/index.ts"],
-      "@prisma/effect/*": ["./prisma/generated/effect/*"]
-    }
+    "paths": {}
   },
   "files": [],
   "include": [],
