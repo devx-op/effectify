@@ -1,0 +1,47 @@
+{
+  "include": [
+    "packages/shared/ui/src/stories/**/*",
+    "**/*",
+    "**/.server/**/*",
+    "**/.client/**/*",
+    ".react-router/types/**/*"
+  ],
+  "compilerOptions": {
+    "composite": true,
+    "lib": ["DOM", "DOM.Iterable", "ES2022"],
+    "types": ["node"],
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "rootDirs": [".", "./.react-router/types"],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./apps/web/app/*"]
+    },
+    "esModuleInterop": true,
+    "verbatimModuleSyntax": true,
+    "noEmit": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noUncheckedIndexedAccess": true,
+    "plugins": [
+      {
+        "plugins": [
+          {
+            "name": "@effect/language-service",
+            "transform": "@effect/language-service/transform",
+            "namespaceImportPackages": ["effect", "@effect/*"],
+            "diagnosticSeverity": {
+              "globalErrorInEffectFailure": "off" // TODO: Check if we should fix the warnings this reports
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "references": []
+}
