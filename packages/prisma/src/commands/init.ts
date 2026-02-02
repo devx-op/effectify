@@ -100,7 +100,7 @@ const initializePrismaSchema = (options: { output: string }) =>
     // Read existing content and check if it has our generators
     const existingContent = yield* readFileContent(schemaPath)
 
-    if (existingContent.includes("@effectify/prisma prisma generate-effect")) {
+    if (existingContent.includes("provider = \"effect-prisma\"")) {
       yield* Console.log("✅ Effect generators already configured!")
       return
     }
@@ -112,19 +112,9 @@ const initializePrismaSchema = (options: { output: string }) =>
       `
 
 // Effect generators added by @effectify/prisma
-generator effectServices {
-  provider = "@effectify/prisma generate-effect"
-  output   = "../${options.output}/generated/effect-prisma"
-}
-
 generator effect {
-  provider = "prisma-effect-kysely"
-  output   = "../${options.output}/generated/effect-prisma"
-}
-
-generator sqlSchema {
-  provider = "@effectify/prisma generate-sql-schema"
-  output   = "../${options.output}/generated"
+  provider = "effect-prisma"
+  output   = "../${options.output}/generated/effect"
 }
 `
 
@@ -134,8 +124,7 @@ generator sqlSchema {
     yield* Console.log("🎉 Prisma schema initialization completed!")
     yield* Console.log("💡 Next steps:")
     yield* Console.log("   1. Set your DATABASE_URL environment variable")
-    yield* Console.log("   2. Run: @effectify/prisma prisma generate-effect")
-    yield* Console.log("   3. Run: @effectify/prisma prisma generate-sql-schema")
+    yield* Console.log("   2. Run: npx prisma generate")
 
     yield* Effect.sync(() => process.exit(0))
   })

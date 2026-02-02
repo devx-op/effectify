@@ -7,9 +7,6 @@
       "path": "./packages/solid/query"
     },
     {
-      "path": "./apps/solid-app-spa"
-    },
-    {
       "path": "./packages/node/better-auth"
     },
     {

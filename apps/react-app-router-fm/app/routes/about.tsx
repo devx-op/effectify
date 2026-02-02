@@ -6,7 +6,8 @@ import { randomUUID } from "node:crypto"
 // import { withBetterAuthGuard } from "@effectify/react-router-better-auth"
 // import { AuthService } from "@effectify/node-better-auth"
 import * as PrismaRepository from "@prisma/effect/prisma-repository.js"
-import { TodoModel } from "@prisma/effect/models/Todo.js"
+import { TodoId, TodoModel } from "@prisma/effect/models/Todo.js"
+import { TodoStatus } from "@prisma/enums.js"
 
 export const loader = Effect.gen(function*() {
   // const { user } = yield* AuthService.AuthContext
@@ -19,27 +20,30 @@ export const loader = Effect.gen(function*() {
   yield* todoRepo.deleteMany({})
   const todoCreated = yield* todoRepo.create({
     data: {
-      id: randomUUID(),
+      id: TodoId.make(randomUUID()),
       title: "Test Todo",
       content: "Test Content",
       published: false,
       authorId: 1,
+      status: TodoStatus.PENDING,
     },
   })
 
   const todosCreated = yield* todoRepo.createManyAndReturn({
     data: [{
-      id: randomUUID(),
+      id: TodoId.make(randomUUID()),
       title: "Test Todo",
       content: "Test Content",
       published: false,
       authorId: 1,
+      status: TodoStatus.PENDING,
     }, {
-      id: randomUUID(),
+      id: TodoId.make(randomUUID()),
       title: "Test Todo 2",
       content: "Test Content 2",
       published: false,
       authorId: 1,
+      status: TodoStatus.CANCELLED,
     }],
   })
 

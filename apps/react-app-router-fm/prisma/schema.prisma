@@ -9,11 +9,6 @@ generator client {
   output   = "./generated"
 }
 
-generator effect_schemas {
-  provider = "pnpm exec prisma-effect-kysely"
-  output   = "./generated/effect/schemas"
-}
-
 generator effect {
   provider         = "pnpm exec effect-prisma"
   output           = "./generated/effect" // relative to the schema.prisma file, e.g. prisma/generated/effect

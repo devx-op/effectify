@@ -33,7 +33,6 @@
     "isbot": "catalog:",
     "kysely": "catalog:",
     "pg": "catalog:",
-    "prisma-effect-kysely": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
     "react-router": "catalog:"
