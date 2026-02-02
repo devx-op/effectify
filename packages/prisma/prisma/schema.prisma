@@ -6,11 +6,6 @@ generator client {
   output   = "./generated"
 }
 
-generator effect_schemas {
-  provider = "prisma-effect-kysely"
-  output   = "./generated/effect/schemas"
-}
-
 generator effect {
   provider = "tsx ./src/cli.ts"
   output   = "./generated/effect"

@@ -10,6 +10,8 @@ catalog:
   '@astrojs/starlight-tailwind': 4.0.2
   '@better-auth/cli': 1.4.10
   '@corvu/drawer': 0.2.4
+  '@dprint/formatter': ^0.5.1
+  '@dprint/typescript': ^0.95.15
   '@effect-atom/atom': 0.4.3
   '@effect/build-utils': 0.8.9
   '@effect/cli': 0.73.0
@@ -108,7 +110,6 @@ catalog:
   postcss: 8.5.6
   prettier: 2.8.8
   prisma: 7.3.0
-  prisma-effect-kysely: 5.2.0
   react: 19.2.0
   react-dom: 19.2.0
   react-router: 7.9.6

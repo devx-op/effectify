@@ -7,6 +7,8 @@ import * as Layer from "effect/Layer"
 import { GeneratorContext } from "./generator-context.js"
 import { RenderService } from "./render-service.js"
 
+import { generateSchemas } from "../schema-generator/index.js"
+
 export class GeneratorService extends Context.Tag("GeneratorService")<
   GeneratorService,
   {
@@ -164,6 +166,10 @@ export class GeneratorService extends Context.Tag("GeneratorService")<
         const { clientImportPath, customError } = getGeneratorConfig(options, schemaDir)
 
         yield* fs.makeDirectory(outputDir, { recursive: true })
+
+        // Generate Effect/Kysely Schemas (enums.ts, types.ts, schemas/index.ts)
+        const schemasDir = path.join(outputDir, "schemas")
+        yield* Effect.promise(() => generateSchemas(options.dmmf, schemasDir))
 
         yield* generatePrismaSchema(outputDir)
         yield* generatePrismaRepository(outputDir, clientImportPath)

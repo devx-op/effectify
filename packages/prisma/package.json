@@ -9,8 +9,9 @@
     "effect-prisma": "./dist/src/cli.js"
   },
   "exports": {
-    ".": "./dist/src/cli.js",
-    "./prisma": "./dist/prisma/index.js"
+    ".": "./dist/src/runtime/index.js",
+    "./prisma": "./dist/prisma/index.js",
+    "./cli": "./dist/src/cli.js"
   },
   "files": [
     "dist"
@@ -28,6 +29,8 @@
   "author": "",
   "packageManager": "pnpm@10.14.0",
   "dependencies": {
+    "@dprint/formatter": "catalog:",
+    "@dprint/typescript": "catalog:",
     "@effect/cli": "catalog:",
     "@prisma/adapter-better-sqlite3": "catalog:",
     "@prisma/generator": "catalog:",
@@ -39,11 +42,10 @@
   "peerDependencies": {
     "@effect/platform": "catalog:",
     "@effect/platform-node": "catalog:",
-    "effect": "catalog:",
-    "@prisma/client": "catalog:"
+    "@prisma/client": "catalog:",
+    "effect": "catalog:"
   },
   "devDependencies": {
-    "prisma-effect-kysely": "catalog:",
     "@effect/build-utils": "catalog:",
     "@effect/experimental": "catalog:",
     "@effect/language-service": "catalog:",

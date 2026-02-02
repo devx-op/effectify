@@ -12,8 +12,9 @@
     "skipLibCheck": true,
     "rootDirs": [".", "./.react-router/types"],
     "types": ["node", "vite/client", "@react-router/node", "vitest/globals", "react", "react-dom"],
-    "baseUrl": ".",
-    "paths": {}
+    "paths": {
+      "@prisma/*": ["./prisma/generated/*"]
+    }
   },
   "files": [],
   "include": [],
