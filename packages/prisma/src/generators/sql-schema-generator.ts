@@ -51,15 +51,15 @@ gh.generatorHandler({
     return {
       defaultOutput: "../generated",
       prettyName: "SQL Schema Generator",
-      requiresEngines: []
+      requiresEngines: [],
     }
   },
 
   async onGenerate(options) {
     await generateSqlSchema({
       generator: {
-        output: options?.generator?.output ? { value: options.generator.output.value || "" } : undefined
-      }
+        output: options?.generator?.output ? { value: options.generator.output.value || "" } : undefined,
+      },
     })
-  }
+  },
 })

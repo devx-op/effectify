@@ -61,20 +61,20 @@ const program = Effect.gen(function*() {
   // Create a repository for the User model
   const userRepo = yield* PrismaRepository.make(UserModel, {
     modelName: "user",
-    spanPrefix: "User"
+    spanPrefix: "User",
   })
 
   // Create a new user
   const newUser = yield* userRepo.create({
     data: {
       email: "hello@effect.website",
-      name: "Effect User"
-    }
+      name: "Effect User",
+    },
   })
 
   // Find the user
   const user = yield* userRepo.findUnique({
-    where: { id: newUser.id }
+    where: { id: newUser.id },
   })
 
   return user
@@ -83,7 +83,7 @@ const program = Effect.gen(function*() {
 // Provide the Prisma layer
 const MainLayer = Prisma.layer({
   // Prisma Client options
-  log: ["query", "info", "warn", "error"]
+  log: ["query", "info", "warn", "error"],
 })
 
 // Run the program
@@ -104,16 +104,16 @@ it.effect("should create a user", () =>
   Effect.gen(function*() {
     const userRepo = yield* PrismaRepository.make(UserModel, {
       modelName: "user",
-      spanPrefix: "User"
+      spanPrefix: "User",
     })
 
     const user = yield* userRepo.create({
-      data: { email: "test@example.com" }
+      data: { email: "test@example.com" },
     })
 
     expect(user.email).toBe("test@example.com")
   }).pipe(
-    Effect.provide(Prisma.layer()) // In tests, you might want to use a specific test DB url
+    Effect.provide(Prisma.layer()), // In tests, you might want to use a specific test DB url
   ))
 ```
 
@@ -130,17 +130,17 @@ const createUser = (email: string) =>
   Effect.gen(function*() {
     const userRepo = yield* PrismaRepository.make(UserModel, {
       modelName: "user",
-      spanPrefix: "User"
+      spanPrefix: "User",
     })
 
     return yield* userRepo.create({
-      data: { email }
+      data: { email },
     })
   }).pipe(
     Effect.catchTag(
       "PrismaUniqueConstraintError",
-      (error) => Effect.logError(`User with email ${email} already exists`)
-    )
+      (error) => Effect.logError(`User with email ${email} already exists`),
+    ),
   )
 ```
 

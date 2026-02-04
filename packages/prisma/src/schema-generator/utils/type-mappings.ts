@@ -19,42 +19,42 @@
  * Schema.Date would encode to string, requiring ISO string conversions.
  */
 export const PRISMA_TO_EFFECT_SCHEMA = {
-  String: 'Schema.String',
-  Int: 'Schema.Number',
-  Float: 'Schema.Number',
-  BigInt: 'Schema.BigInt',
-  Decimal: 'Schema.String', // For precision
-  Boolean: 'Schema.Boolean',
-  DateTime: 'Schema.DateFromSelf', // Native Date type for Kysely compatibility
-  Json: 'Schema.Unknown', // Safe unknown type
-  Bytes: 'Schema.Uint8Array',
-} as const;
+  String: "Schema.String",
+  Int: "Schema.Number",
+  Float: "Schema.Number",
+  BigInt: "Schema.BigInt",
+  Decimal: "Schema.String", // For precision
+  Boolean: "Schema.Boolean",
+  DateTime: "Schema.DateFromSelf", // Native Date type for Kysely compatibility
+  Json: "Schema.Unknown", // Safe unknown type
+  Bytes: "Schema.Uint8Array",
+} as const
 
 /**
  * Prisma scalar type mapping to TypeScript types (for Kysely interfaces)
  */
 export const PRISMA_TO_TYPESCRIPT = {
-  String: 'string',
-  Int: 'number',
-  Float: 'number',
-  Boolean: 'boolean',
-  DateTime: 'Date',
-  Json: 'unknown',
-  Bytes: 'Buffer',
-  Decimal: 'string',
-  BigInt: 'string', // Kysely convention
-} as const;
+  String: "string",
+  Int: "number",
+  Float: "number",
+  Boolean: "boolean",
+  DateTime: "Date",
+  Json: "unknown",
+  Bytes: "Buffer",
+  Decimal: "string",
+  BigInt: "string", // Kysely convention
+} as const
 
 /**
  * Type-safe key type for Prisma scalar types
  */
-export type PrismaScalarType = keyof typeof PRISMA_TO_EFFECT_SCHEMA;
+export type PrismaScalarType = keyof typeof PRISMA_TO_EFFECT_SCHEMA
 
 /**
  * Type guard to check if a string is a valid Prisma scalar type
  */
 export function isPrismaScalarType(type: string): type is PrismaScalarType {
-  return type in PRISMA_TO_EFFECT_SCHEMA;
+  return type in PRISMA_TO_EFFECT_SCHEMA
 }
 
 /**
@@ -63,9 +63,9 @@ export function isPrismaScalarType(type: string): type is PrismaScalarType {
  */
 export function getEffectSchemaType(type: string) {
   if (isPrismaScalarType(type)) {
-    return PRISMA_TO_EFFECT_SCHEMA[type];
+    return PRISMA_TO_EFFECT_SCHEMA[type]
   }
-  return undefined;
+  return undefined
 }
 
 /**
@@ -74,7 +74,7 @@ export function getEffectSchemaType(type: string) {
  */
 export function getTypeScriptType(type: string) {
   if (isPrismaScalarType(type)) {
-    return PRISMA_TO_TYPESCRIPT[type];
+    return PRISMA_TO_TYPESCRIPT[type]
   }
-  return type;
+  return type
 }
