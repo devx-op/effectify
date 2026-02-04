@@ -10,7 +10,7 @@ generator client {
 }
 
 generator effect {
-  provider         = "effect-prisma"
+  provider         = "node ../../packages/prisma/dist/src/cli.js"
   output           = "./generated/effect" // relative to the schema.prisma file, e.g. prisma/generated/effect
   clientImport     = "../client/index.js"
   clientImportPath = "../client.js" // relative to the output path ^here (defaults to "@prisma/client")
