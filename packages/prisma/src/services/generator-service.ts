@@ -6,6 +6,7 @@ import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import { GeneratorContext } from "./generator-context.js"
 import { RenderService } from "./render-service.js"
+import { FormatterService } from "./formatter-service.js"
 
 import { generateSchemas } from "../schema-generator/index.js"
 
@@ -20,10 +21,13 @@ export class GeneratorService extends Context.Tag("GeneratorService")<
     Effect.gen(function*() {
       const fs = yield* FileSystem.FileSystem
       const path = yield* Path.Path
-      const { render } = yield* RenderService
+      const renderService = yield* RenderService
+      const formatterService = yield* FormatterService
+      const { render } = renderService
+      const { format } = formatterService
 
       const parseErrorImportPath = (
-        errorImportPath: string | undefined
+        errorImportPath: string | undefined,
       ): { path: string; className: string } | null => {
         if (!errorImportPath) {
           return null
@@ -31,7 +35,7 @@ export class GeneratorService extends Context.Tag("GeneratorService")<
         const [modulePath, className] = errorImportPath.split("#")
         if (!(modulePath && className)) {
           throw new Error(
-            `Invalid errorImportPath format: "${errorImportPath}". Expected "path/to/module#ErrorClassName"`
+            `Invalid errorImportPath format: "${errorImportPath}". Expected "path/to/module#ErrorClassName"`,
           )
         }
         return { path: modulePath, className }
@@ -62,7 +66,7 @@ export class GeneratorService extends Context.Tag("GeneratorService")<
       const getCustomError = (
         config: GeneratorOptions["generator"]["config"],
         options: GeneratorOptions,
-        schemaDir: string
+        schemaDir: string,
       ) => {
         const errorImportPathRaw = getErrorImportPath(config)
         const importFileExtension = getImportFileExtension(config)
@@ -93,13 +97,15 @@ export class GeneratorService extends Context.Tag("GeneratorService")<
       const generatePrismaSchema = (outputDir: string) =>
         Effect.gen(function*() {
           const content = yield* render("prisma-schema", {})
-          yield* fs.writeFileString(path.join(outputDir, "prisma-schema.ts"), content)
+          const formatted = yield* format(content)
+          yield* fs.writeFileString(path.join(outputDir, "prisma-schema.ts"), formatted)
         })
 
       const generatePrismaRepository = (outputDir: string, clientImportPath: string) =>
         Effect.gen(function*() {
           const content = yield* render("prisma-repository", { clientImportPath })
-          yield* fs.writeFileString(path.join(outputDir, "prisma-repository.ts"), content)
+          const formatted = yield* format(content)
+          yield* fs.writeFileString(path.join(outputDir, "prisma-repository.ts"), formatted)
         })
 
       const generateModels = (outputDir: string, models: readonly DMMF.Model[]) =>
@@ -107,7 +113,8 @@ export class GeneratorService extends Context.Tag("GeneratorService")<
           yield* fs.makeDirectory(path.join(outputDir, "models"), { recursive: true })
           for (const model of models) {
             const content = yield* render("model", { model })
-            yield* fs.writeFileString(path.join(outputDir, "models", `${model.name}.ts`), content)
+            const formatted = yield* format(content)
+            yield* fs.writeFileString(path.join(outputDir, "models", `${model.name}.ts`), formatted)
           }
         })
 
@@ -115,7 +122,7 @@ export class GeneratorService extends Context.Tag("GeneratorService")<
         outputDir: string,
         models: readonly DMMF.Model[],
         clientImportPath: string,
-        customError: { path: string; className: string } | null
+        customError: { path: string; className: string } | null,
       ) =>
         Effect.gen(function*() {
           const errorType = customError ? customError.className : "PrismaError"
@@ -127,10 +134,11 @@ export class GeneratorService extends Context.Tag("GeneratorService")<
             clientImportPath,
             customError,
             rawSqlOperations,
-            modelExports
+            modelExports,
           })
 
-          yield* fs.writeFileString(path.join(outputDir, "index.ts"), content)
+          const formatted = yield* format(content)
+          yield* fs.writeFileString(path.join(outputDir, "index.ts"), formatted)
         })
 
       const generate = Effect.gen(function*() {
@@ -151,7 +159,9 @@ export class GeneratorService extends Context.Tag("GeneratorService")<
         const schemasDir = path.join(outputDir, "schemas")
         yield* generateSchemas(options.dmmf, schemasDir).pipe(
           Effect.provideService(FileSystem.FileSystem, fs),
-          Effect.provideService(Path.Path, path)
+          Effect.provideService(Path.Path, path),
+          Effect.provideService(RenderService, renderService),
+          Effect.provideService(FormatterService, formatterService),
         )
 
         yield* generatePrismaSchema(outputDir)
@@ -161,6 +171,6 @@ export class GeneratorService extends Context.Tag("GeneratorService")<
       })
 
       return { generate }
-    })
+    }),
   )
 }

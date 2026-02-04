@@ -1,0 +1,7 @@
+<%~ it.header %>
+
+import { Schema } from "effect";
+import { columnType, generated } from "@effectify/prisma";
+<% if (it.enumImports) { %>
+import { <%~ it.enumImports %> } from "./enums.js";
+<% } %>

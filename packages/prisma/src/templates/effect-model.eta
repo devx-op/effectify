@@ -1,0 +1,6 @@
+export const <%= it.name %> = Schema.Struct({
+<% it.fields.forEach(function(field) { %>
+  <%= field.name %>: <%~ field.type %>,
+<% }) %>
+});
+export type <%= it.name %> = typeof <%= it.name %>;

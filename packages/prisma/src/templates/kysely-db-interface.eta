@@ -1,0 +1,6 @@
+// Kysely Database Interface
+export interface DB {
+<% it.models.forEach(function(model) { %>
+  <%= model.tableName %>: Schema.Schema.Type<typeof <%= model.typeName %>>;
+<% }) %>
+}
