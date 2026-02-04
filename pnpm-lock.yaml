@@ -198,9 +198,6 @@ catalogs:
     effect:
       specifier: 3.19.13
       version: 3.19.13
-    effect-prisma-generator:
-      specifier: ^0.4.0
-      version: 0.4.0
     eta:
       specifier: ^4.5.0
       version: 4.5.0
@@ -635,6 +632,9 @@ importers:
       '@effectify/node-better-auth':
         specifier: workspace:*
         version: link:../../packages/node/better-auth
+      '@effectify/prisma':
+        specifier: workspace:*
+        version: link:../../packages/prisma
       '@effectify/react-router':
         specifier: workspace:*
         version: link:../../packages/react/router
@@ -696,9 +696,6 @@ importers:
       '@effect/vitest':
         specifier: 'catalog:'
         version: 0.27.0(effect@3.19.13)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@20.19.25)(@vitest/ui@4.0.13(vitest@3.2.4))(jiti@2.6.1)(jsdom@27.2.0)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
-      '@effectify/prisma':
-        specifier: workspace:*
-        version: link:../../packages/prisma
       '@prisma/generator':
         specifier: 'catalog:'
         version: 7.3.0
@@ -723,9 +720,6 @@ importers:
       '@types/react-dom':
         specifier: 19.1.9
         version: 19.1.9(@types/react@19.1.13)
-      effect-prisma-generator:
-        specifier: 'catalog:'
-        version: 0.4.0
       prisma:
         specifier: 'catalog:'
         version: 7.3.0(@types/react@19.1.13)(better-sqlite3@12.4.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3)
@@ -4140,9 +4134,6 @@ packages:
   '@prisma/config@7.3.0':
     resolution: {integrity: sha512-QyMV67+eXF7uMtKxTEeQqNu/Be7iH+3iDZOQZW5ttfbSwBamCSdwPszA0dum+Wx27I7anYTPLmRmMORKViSW1A==}
 
-  '@prisma/debug@6.19.2':
-    resolution: {integrity: sha512-lFnEZsLdFLmEVCVNdskLDCL8Uup41GDfU0LUfquw+ercJC8ODTuL0WNKgOKmYxCJVvFwf0OuZBzW99DuWmoH2A==}
-
   '@prisma/debug@7.2.0':
     resolution: {integrity: sha512-YSGTiSlBAVJPzX4ONZmMotL+ozJwQjRmZweQNIq/ER0tQJKJynNkRB3kyvt37eOfsbMCXk3gnLF6J9OJ4QWftw==}
 
@@ -4151,9 +4142,6 @@ packages:
 
   '@prisma/dev@0.20.0':
     resolution: {integrity: sha512-ovlBYwWor0OzG+yH4J3Ot+AneD818BttLA+Ii7wjbcLHUrnC4tbUPVGyNd3c/+71KETPKZfjhkTSpdS15dmXNQ==}
-
-  '@prisma/dmmf@6.19.2':
-    resolution: {integrity: sha512-ZHGDQlnrWKwFPAOvJ8hVbmIqNPdE0XXptTeYqmUGhYMDySSts60O8g3KNY1uAqr3nHiyDcpaGIpO1MBYoDW6gQ==}
 
   '@prisma/dmmf@7.3.0':
     resolution: {integrity: sha512-LkalLBNFCmxpmnIuWI63363fWZqCS0oQa0+Zjv+xUaJjBKvRDgrU6MgTbkMib7XNekilhPHTUl2qSBOWnPK5vA==}
@@ -4170,14 +4158,8 @@ packages:
   '@prisma/fetch-engine@7.3.0':
     resolution: {integrity: sha512-Mm0F84JMqM9Vxk70pzfNpGJ1lE4hYjOeLMu7nOOD1i83nvp8MSAcFYBnHqLvEZiA6onUR+m8iYogtOY4oPO5lQ==}
 
-  '@prisma/generator-helper@6.19.2':
-    resolution: {integrity: sha512-vSjDbHhtKjRDgywTDYyAJLEe+kMxq4DNLNiurk/tGca8W/H7duX4Z4UdvYXcv3kWmmgJJmdndh41dgIsrewa3w==}
-
   '@prisma/generator-helper@7.3.0':
     resolution: {integrity: sha512-zqo63nu3ptu2CzAFjg6LXm4VQlB/XXaEFRUK3TjGViNosKr7izz6U/v2yVMXqEOL5tz2bUsSg2JxfcmNPl0IJw==}
-
-  '@prisma/generator@6.19.2':
-    resolution: {integrity: sha512-2xDQQUJh2s6Ty9I9CIGRz7Z8pEGxKxjU/lkFyLI5f83fDoISUaGhWQZGW35xMqKVDoNRM93w1ghm+1ScRy0mAA==}
 
   '@prisma/generator@7.3.0':
     resolution: {integrity: sha512-PRjhVXu+oNLY2PDahZRRmOgctT17rtKCp9+2odfw2GIqHhdOTeGhX9scGNPsZujiGRz6txJwvor24FdxZfEWLw==}
@@ -7276,10 +7258,6 @@ packages:
 
   ee-first@1.1.1:
     resolution: {integrity: sha512-WMwm9LhRUo+WUaRN+vRuETqG89IgZphVSNkdFgeb6sS/E4OrDIN7t48CAewSHXc6C8lefD8KKfr5vY61brQlow==}
-
-  effect-prisma-generator@0.4.0:
-    resolution: {integrity: sha512-Rf/4g4ylf+20/2gWG3pSBF9p69HPv45/+Ir2DqcdvIQEohEk2wKJl2hD693P8t5RyunT2hvG8kAs9BmdBzDz8w==}
-    hasBin: true
 
   effect@3.18.4:
     resolution: {integrity: sha512-b1LXQJLe9D11wfnOKAk3PKxuqYshQ0Heez+y5pnkd3jLj1yx9QhM72zZ9uUrOQyNvrs2GZZd/3maL0ZV18YuDA==}
@@ -16051,8 +16029,6 @@ snapshots:
     transitivePeerDependencies:
       - magicast
 
-  '@prisma/debug@6.19.2': {}
-
   '@prisma/debug@7.2.0': {}
 
   '@prisma/debug@7.3.0': {}
@@ -16079,8 +16055,6 @@ snapshots:
     transitivePeerDependencies:
       - typescript
 
-  '@prisma/dmmf@6.19.2': {}
-
   '@prisma/dmmf@7.3.0': {}
 
   '@prisma/driver-adapter-utils@7.3.0':
@@ -16102,19 +16076,11 @@ snapshots:
       '@prisma/engines-version': 7.3.0-16.9d6ad21cbbceab97458517b147a6a09ff43aa735
       '@prisma/get-platform': 7.3.0
 
-  '@prisma/generator-helper@6.19.2':
-    dependencies:
-      '@prisma/debug': 6.19.2
-      '@prisma/dmmf': 6.19.2
-      '@prisma/generator': 6.19.2
-
   '@prisma/generator-helper@7.3.0':
     dependencies:
       '@prisma/debug': 7.3.0
       '@prisma/dmmf': 7.3.0
       '@prisma/generator': 7.3.0
-
-  '@prisma/generator@6.19.2': {}
 
   '@prisma/generator@7.3.0': {}
 
@@ -19820,11 +19786,6 @@ snapshots:
       safe-buffer: 5.2.1
 
   ee-first@1.1.1: {}
-
-  effect-prisma-generator@0.4.0:
-    dependencies:
-      '@prisma/generator-helper': 6.19.2
-      typescript: 5.9.3
 
   effect@3.18.4:
     dependencies:
