@@ -193,3 +193,6 @@ jobs:
             echo "### ❌ Linting Issues" >> $GITHUB_STEP_SUMMARY
             echo "Please run 'pnpm exec dprint fmt' to fix formatting issues" >> $GITHUB_STEP_SUMMARY
           fi
+            # NEW: Add this step at the end of your job
+      - run: npx nx fix-ci
+        if: always() # IMPORTANT: Always run
