@@ -1,0 +1,8 @@
+// <%= it.tableName %> Join Table Schema (Prisma implicit many-to-many)
+// Database columns: A (<%= it.modelA %>), B (<%= it.modelB %>)
+// TypeScript fields: <%= it.columnAFieldName %>, <%= it.columnBFieldName %>
+export const <%= it.name %> = Schema.Struct({
+<%~ it.columnAField %>,
+<%~ it.columnBField %>,
+});
+export type <%= it.name %> = typeof <%= it.name %>;

@@ -1,77 +1,100 @@
 import * as FileSystem from "@effect/platform/FileSystem"
 import * as Path from "@effect/platform/Path"
-import type { DMMF } from '@prisma/generator-helper';
+import type { DMMF } from "@prisma/generator-helper"
 import * as Effect from "effect/Effect"
-import * as EffectGenerator from './effect/generator.js';
-import * as KyselyGenerator from './kysely/generator.js';
-import * as PrismaGenerator from './prisma/generator.js';
-import { formatCode } from './utils/templates.js';
+import { RenderService } from "../services/render-service.js"
+import { FormatterService } from "../services/formatter-service.js"
+import * as EnumGenerator from "./effect/enum.js"
+import * as EffectGenerator from "./effect/generator.js"
+import * as JoinTableGenerator from "./effect/join-table.js"
+import * as KyselyGenerator from "./kysely/generator.js"
+import * as PrismaGenerator from "./prisma/generator.js"
 
 /**
  * Generate Effect schemas (enums, types, index)
- * Replicates legacy generator logic using Effect patterns
+ * Replicates legacy generator logic using Effect patterns and Eta templates
  */
 export const generateSchemas = (dmmf: DMMF.Document, outputDir: string) =>
   Effect.gen(function*() {
     const fs = yield* FileSystem.FileSystem
     const path = yield* Path.Path
+    const { render } = yield* RenderService
+    const { format } = yield* FormatterService
 
     yield* fs.makeDirectory(outputDir, { recursive: true })
 
     const writeFile = (filename: string, content: string) =>
       Effect.gen(function*() {
-        const formatted = yield* Effect.promise(() => formatCode(content))
+        const formatted = yield* format(content)
         const filePath = path.join(outputDir, filename)
         yield* fs.writeFileString(filePath, formatted)
       })
 
     // Generate Enums
-    const enums = PrismaGenerator.getEnums(dmmf);
-    const enumsContent = EffectGenerator.generateEnums(enums);
-    if (enumsContent !== null) {
-      yield* writeFile('enums.ts', enumsContent);
+    const enums = PrismaGenerator.getEnums(dmmf)
+    const enumsData = EnumGenerator.prepareEnumsData(enums)
+    if (enumsData) {
+      const content = yield* render("effect-enums", enumsData)
+      yield* writeFile("enums.ts", content)
     }
 
     // Generate Types
-    const models = PrismaGenerator.getModels(dmmf);
-    const joinTables = PrismaGenerator.getManyToManyJoinTables(dmmf);
-    const hasEnums = enums.length > 0;
+    const models = PrismaGenerator.getModels(dmmf)
+    const joinTables = PrismaGenerator.getManyToManyJoinTables(dmmf)
+    const hasEnums = enums.length > 0
 
-    const header = EffectGenerator.generateTypesHeader(dmmf, hasEnums);
+    // Header
+    const headerData = EffectGenerator.prepareTypesHeaderData(dmmf, hasEnums)
+    let content = yield* render("effect-types-header", headerData)
 
-    const allBrandedIdSchemas = models
+    // Branded IDs
+    const brandedIdsData = models
       .map((model) => {
-        const fields = PrismaGenerator.getModelFields(model);
-        return EffectGenerator.generateBrandedIdSchema(model, fields);
+        const fields = PrismaGenerator.getModelFields(model)
+        return EffectGenerator.prepareBrandedIdSchemaData(model, fields)
       })
-      .filter((schema): schema is string => schema !== null)
-      .join('\n\n');
+      .filter((data): data is NonNullable<typeof data> => data !== null)
 
-    const modelSchemas = models
-      .map((model) => {
-        const fields = PrismaGenerator.getModelFields(model);
-        return EffectGenerator.generateModelSchema(dmmf, model, fields);
-      })
-      .join('\n\n');
-
-    const joinTableSchemas =
-      joinTables.length > 0 ? EffectGenerator.generateJoinTableSchemas(dmmf, joinTables) : '';
-
-    const dbInterface = KyselyGenerator.generateDBInterface(models, joinTables);
-
-    let content = `${header}`;
-    if (allBrandedIdSchemas) {
-      content += `\n\n// ===== Branded ID Schemas =====\n${allBrandedIdSchemas}`;
+    if (brandedIdsData.length > 0) {
+      content += `\n\n// ===== Branded ID Schemas =====`
+      for (const data of brandedIdsData) {
+        const idContent = yield* render("effect-branded-id", data)
+        content += `\n\n${idContent}`
+      }
     }
-    content += `\n\n// ===== Model Schemas =====\n${modelSchemas}`;
-    if (joinTableSchemas) {
-      content += `\n\n${joinTableSchemas}`;
+
+    // Models
+    const modelsData = models.map((model) => {
+      const fields = PrismaGenerator.getModelFields(model)
+      return EffectGenerator.prepareModelSchemaData(dmmf, model, fields)
+    })
+
+    if (modelsData.length > 0) {
+      content += `\n\n// ===== Model Schemas =====`
+      for (const data of modelsData) {
+        const modelContent = yield* render("effect-model", data)
+        content += `\n\n${modelContent}`
+      }
     }
-    content += `\n\n${dbInterface}`;
 
-    yield* writeFile('types.ts', content);
+    // Join Tables
+    const joinTablesData = joinTables.map((jt) => JoinTableGenerator.prepareJoinTableData(jt, dmmf))
+    if (joinTablesData.length > 0) {
+      for (const data of joinTablesData) {
+        const jtContent = yield* render("effect-join-table", data)
+        content += `\n\n${jtContent}`
+      }
+    }
 
-    // Generate Index
-    const indexContent = KyselyGenerator.generateIndexFile(hasEnums);
-    yield* writeFile('index.ts', indexContent);
+    // DB Interface
+    const dbInterfaceData = KyselyGenerator.prepareDBInterfaceData(models, joinTables)
+    const dbInterfaceContent = yield* render("kysely-db-interface", dbInterfaceData)
+    content += `\n\n${dbInterfaceContent}`
+
+    yield* writeFile("types.ts", content)
+
+    // Index
+    const indexData = KyselyGenerator.prepareIndexData(hasEnums)
+    const indexContent = yield* render("effect-index", indexData)
+    yield* writeFile("index.ts", indexContent)
   })

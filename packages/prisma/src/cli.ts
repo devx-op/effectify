@@ -9,14 +9,19 @@ import { initCommand } from "./commands/init.js"
 import { prismaCommand } from "./commands/prisma.js"
 import { GeneratorService } from "./services/generator-service.js"
 import { RenderService } from "./services/render-service.js"
+import { FormatterService } from "./services/formatter-service.js"
 
 const cli = Command.run(prismaCommand.pipe(Command.withSubcommands([initCommand])), {
   name: "@effectify/prisma CLI",
-  version: "0.1.0"
+  version: "0.1.0",
 })
 
-const GeneratorLayer = GeneratorService.Live.pipe(Layer.provide(RenderService.Live), Layer.provide(NodeContext.layer))
+const GeneratorLayer = GeneratorService.Live.pipe(
+  Layer.provide(RenderService.Live),
+  Layer.provide(FormatterService.Live),
+  Layer.provide(NodeContext.layer),
+)
 
-const MainLayer = Layer.mergeAll(GeneratorLayer, RenderService.Live, NodeContext.layer)
+const MainLayer = Layer.mergeAll(GeneratorLayer, RenderService.Live, FormatterService.Live, NodeContext.layer)
 
 cli(process.argv).pipe(Effect.provide(MainLayer), NodeRuntime.runMain)
