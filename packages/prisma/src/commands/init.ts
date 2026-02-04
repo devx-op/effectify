@@ -11,7 +11,7 @@ import * as Match from "effect/Match"
 const outputOption = Options.text("output").pipe(
   Options.withAlias("o"),
   Options.withDescription("Output directory path for generated files"),
-  Options.withDefault("src")
+  Options.withDefault("src"),
 )
 
 // Check if file exists
@@ -50,7 +50,7 @@ const detectPackageManager = () =>
       Match.when([true, false, false], () => "pnpm" as const),
       Match.when([false, true, false], () => "bun" as const),
       Match.when([false, false, true], () => "npm" as const),
-      Match.orElse(() => "npm" as const) // default fallback
+      Match.orElse(() => "npm" as const), // default fallback
     )
   })
 
@@ -70,7 +70,7 @@ const checkPrismaSetup = () =>
         Match.when("pnpm", () => "pnpm dlx prisma init"),
         Match.when("bun", () => "bunx prisma init"),
         Match.when("npm", () => "npx prisma init"),
-        Match.exhaustive
+        Match.exhaustive,
       )
 
       yield* Console.log(`  ${initCommand}`)
@@ -78,7 +78,7 @@ const checkPrismaSetup = () =>
       yield* Console.log("")
       yield* Console.log("For more information, visit:")
       yield* Console.log(
-        "  https://www.prisma.io/docs/getting-started/setup-prisma/start-from-scratch/relational-databases-typescript-prismaPostgres"
+        "  https://www.prisma.io/docs/getting-started/setup-prisma/start-from-scratch/relational-databases-typescript-prismaPostgres",
       )
       yield* Effect.fail(new Error("Prisma not initialized"))
     }
@@ -100,7 +100,7 @@ const initializePrismaSchema = (options: { output: string }) =>
     // Read existing content and check if it has our generators
     const existingContent = yield* readFileContent(schemaPath)
 
-    if (existingContent.includes("provider = \"effect-prisma\"")) {
+    if (existingContent.includes('provider = "effect-prisma"')) {
       yield* Console.log("✅ Effect generators already configured!")
       return
     }
@@ -132,10 +132,10 @@ generator effect {
 export const initCommand = Command.make(
   "init",
   {
-    output: outputOption
+    output: outputOption,
   },
   ({ output }) =>
     initializePrismaSchema({
-      output
-    }).pipe(Effect.provide(NodeFileSystem.layer), Effect.provide(NodePath.layer))
+      output,
+    }).pipe(Effect.provide(NodeFileSystem.layer), Effect.provide(NodePath.layer)),
 )

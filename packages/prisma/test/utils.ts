@@ -4,7 +4,7 @@ import path from "node:path"
 
 const dbPath = path.join(__dirname, "../prisma/dev.db")
 const adapter = new PrismaBetterSqlite3({
-  url: `file:${dbPath}`
+  url: `file:${dbPath}`,
 })
 
 export const prisma = new PrismaClient({ adapter })

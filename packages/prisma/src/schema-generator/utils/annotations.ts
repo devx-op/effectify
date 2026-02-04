@@ -1,4 +1,4 @@
-import type { DMMF } from '@prisma/generator-helper';
+import type { DMMF } from "@prisma/generator-helper"
 
 /**
  * @customType Annotation Parser
@@ -24,38 +24,38 @@ import type { DMMF } from '@prisma/generator-helper';
  * @returns Extracted type string or null if no annotation found
  */
 export function extractEffectTypeOverride(field: DMMF.Field) {
-  if (!field.documentation) return null;
+  if (!field.documentation) return null
 
   // Match @customType annotation - handle balanced parentheses
-  const annotationMatch = field.documentation.match(/@customType\s*\(/);
-  if (!annotationMatch) return null;
+  const annotationMatch = field.documentation.match(/@customType\s*\(/)
+  if (!annotationMatch) return null
 
   // Find the matching closing parenthesis
-  const startIdx = field.documentation.indexOf('@customType(') + '@customType('.length;
-  let parenCount = 1;
-  let endIdx = startIdx;
+  const startIdx = field.documentation.indexOf("@customType(") + "@customType(".length
+  let parenCount = 1
+  let endIdx = startIdx
 
   for (let i = startIdx; i < field.documentation.length && parenCount > 0; i++) {
-    if (field.documentation[i] === '(') parenCount++;
-    if (field.documentation[i] === ')') parenCount--;
+    if (field.documentation[i] === "(") parenCount++
+    if (field.documentation[i] === ")") parenCount--
     if (parenCount === 0) {
-      endIdx = i;
-      break;
+      endIdx = i
+      break
     }
   }
 
   if (parenCount !== 0) {
-    return null;
+    return null
   }
 
-  const typeStr = field.documentation.substring(startIdx, endIdx).trim();
+  const typeStr = field.documentation.substring(startIdx, endIdx).trim()
 
   // Validate it's either a custom type or starts with Schema.
-  if (!(typeStr.startsWith('Schema.') || isCustomType(typeStr))) {
-    return null;
+  if (!(typeStr.startsWith("Schema.") || isCustomType(typeStr))) {
+    return null
   }
 
-  return typeStr;
+  return typeStr
 }
 
 /**
@@ -69,7 +69,7 @@ export function extractEffectTypeOverride(field: DMMF.Field) {
  * @returns true if it's a custom type reference
  */
 function isCustomType(typeStr: string) {
-  return /^[A-Z][A-Za-z0-9]*$/.test(typeStr);
+  return /^[A-Z][A-Za-z0-9]*$/.test(typeStr)
 }
 
 /**
@@ -80,7 +80,7 @@ function isCustomType(typeStr: string) {
  */
 export function hasCustomTypeAnnotations(fields: readonly DMMF.Field[]) {
   return fields.some((field) => {
-    const override = extractEffectTypeOverride(field);
-    return override && isCustomType(override);
-  });
+    const override = extractEffectTypeOverride(field)
+    return override && isCustomType(override)
+  })
 }

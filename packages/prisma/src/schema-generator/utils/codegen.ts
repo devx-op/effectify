@@ -11,5 +11,5 @@ export function generateFileHeader(timestamp: Date = new Date()) {
   return `/**
  * Generated: ${timestamp.toISOString()}
  * DO NOT EDIT MANUALLY
- */`;
+ */`
 }

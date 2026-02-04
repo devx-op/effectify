@@ -17,34 +17,34 @@
  */
 export function toPascalCase(str: string, suffix?: string) {
   // Handle empty string
-  if (!str) return str;
+  if (!str) return str
 
   // Split on underscores, dashes, or spaces
-  const words = str.split(/[_-\s]+/);
+  const words = str.split(/[_-\s]+/)
 
-  let pascalCase: string;
+  let pascalCase: string
 
   // If no delimiters found, check if already camelCase/PascalCase
   if (words.length === 1) {
     // Split camelCase/PascalCase by capital letters
-    const camelWords = str.split(/(?=[A-Z])/);
+    const camelWords = str.split(/(?=[A-Z])/)
     if (camelWords.length > 1) {
       pascalCase = camelWords
         .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-        .join('');
+        .join("")
     } else {
       // Single word - just capitalize first letter
-      pascalCase = str.charAt(0).toUpperCase() + str.slice(1);
+      pascalCase = str.charAt(0).toUpperCase() + str.slice(1)
     }
   } else {
     // Convert each word to PascalCase
     pascalCase = words
       .filter((word) => word.length > 0) // Remove empty strings
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join('');
+      .join("")
   }
 
-  return suffix ? `${pascalCase}${suffix}` : pascalCase;
+  return suffix ? `${pascalCase}${suffix}` : pascalCase
 }
 
 /**
@@ -59,15 +59,15 @@ export function toPascalCase(str: string, suffix?: string) {
  * toSnakeCase('ProductStatus') // 'product_status'
  */
 export function toSnakeCase(str: string) {
-  if (!str) return str;
+  if (!str) return str
 
   return (
     str
       // Insert underscore before uppercase letters (except at start)
-      .replace(/([A-Z])/g, '_$1')
+      .replace(/([A-Z])/g, "_$1")
       // Remove leading underscore if present
-      .replace(/^_/, '')
+      .replace(/^_/, "")
       // Convert to lowercase
       .toLowerCase()
-  );
+  )
 }

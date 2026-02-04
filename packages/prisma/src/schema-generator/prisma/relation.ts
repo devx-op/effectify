@@ -1,26 +1,26 @@
-import type { DMMF } from '@prisma/generator-helper';
-import { isUuidField } from './type.js';
+import type { DMMF } from "@prisma/generator-helper"
+import { isUuidField } from "./type.js"
 
 /**
  * Metadata for implicit many-to-many join tables
  */
 export interface JoinTableInfo {
   /** Table name in database (e.g., "_CategoryToPost") */
-  tableName: string;
+  tableName: string
   /** Relation name without underscore (e.g., "CategoryToPost") */
-  relationName: string;
+  relationName: string
   /** First model name (alphabetically) */
-  modelA: string;
+  modelA: string
   /** Second model name (alphabetically) */
-  modelB: string;
+  modelB: string
   /** Type of column A (from modelA's ID field) */
-  columnAType: string;
+  columnAType: string
   /** Type of column B (from modelB's ID field) */
-  columnBType: string;
+  columnBType: string
   /** Whether column A is a UUID */
-  columnAIsUuid: boolean;
+  columnAIsUuid: boolean
   /** Whether column B is a UUID */
-  columnBIsUuid: boolean;
+  columnBIsUuid: boolean
 }
 
 /**
@@ -33,13 +33,13 @@ export interface JoinTableInfo {
  */
 function isImplicitManyToManyField(field: DMMF.Field) {
   return (
-    field.kind === 'object' &&
+    field.kind === "object" &&
     field.isList === true &&
     field.relationFromFields !== undefined &&
     field.relationFromFields.length === 0 &&
     field.relationToFields !== undefined &&
     field.relationToFields.length === 0
-  );
+  )
 }
 
 /**
@@ -48,21 +48,21 @@ function isImplicitManyToManyField(field: DMMF.Field) {
  */
 export function getModelIdField(model: DMMF.Model) {
   // Try to find single @id field
-  const idField = model.fields.find((f) => f.isId === true);
+  const idField = model.fields.find((f) => f.isId === true)
   if (idField) {
-    return idField;
+    return idField
   }
 
   // For composite @@id, get the first field from primaryKey
   if (model.primaryKey && model.primaryKey.fields.length > 0) {
-    const firstIdFieldName = model.primaryKey.fields[0];
-    const field = model.fields.find((f) => f.name === firstIdFieldName);
+    const firstIdFieldName = model.primaryKey.fields[0]
+    const field = model.fields.find((f) => f.name === firstIdFieldName)
     if (field) {
-      return field;
+      return field
     }
   }
 
-  throw new Error(`Model ${model.name} has no ID field (@id or @@id required)`);
+  throw new Error(`Model ${model.name} has no ID field (@id or @@id required)`)
 }
 
 /**
@@ -95,52 +95,51 @@ export function getModelIdField(model: DMMF.Model) {
  * // Returns: Map {} (empty - code is not the ID field)
  */
 export function buildForeignKeyMap(model: DMMF.Model, models?: readonly DMMF.Model[]) {
-  const fkMap = new Map<string, string>();
+  const fkMap = new Map<string, string>()
 
   // Find all relation fields (kind === "object")
-  const relationFields = model.fields.filter((f) => f.kind === 'object');
+  const relationFields = model.fields.filter((f) => f.kind === "object")
 
   for (const relation of relationFields) {
     if (relation.relationFromFields && relation.relationFromFields.length > 0) {
       // Check if this FK references the target model's ID field
-      const targetModel = models?.find((m) => m.name === relation.type);
+      const targetModel = models?.find((m) => m.name === relation.type)
       if (!targetModel) {
         // Can't verify - skip this FK to be safe
-        continue;
+        continue
       }
 
       // Get target model's ID field name
-      let targetIdFieldName: string | undefined;
-      const idField = targetModel.fields.find((f) => f.isId === true);
+      let targetIdFieldName: string | undefined
+      const idField = targetModel.fields.find((f) => f.isId === true)
       if (idField) {
-        targetIdFieldName = idField.name;
+        targetIdFieldName = idField.name
       } else if (targetModel.primaryKey && targetModel.primaryKey.fields.length > 0) {
-        targetIdFieldName = targetModel.primaryKey.fields[0];
+        targetIdFieldName = targetModel.primaryKey.fields[0]
       }
 
       if (!targetIdFieldName) {
         // Target model has no ID field - skip
-        continue;
+        continue
       }
 
       // Check if relationToFields references the ID field
-      const refersToIdField =
-        relation.relationToFields?.length === 1 &&
-        relation.relationToFields[0] === targetIdFieldName;
+      const refersToIdField = relation.relationToFields?.length === 1 &&
+        relation.relationToFields[0] === targetIdFieldName
 
       if (!refersToIdField) {
         // FK points to non-ID field (e.g., enum) - don't use branded ID
-        continue;
+        continue
       }
 
       // Map each FK field to the target model
       for (const fkFieldName of relation.relationFromFields) {
-        fkMap.set(fkFieldName, relation.type); // relation.type is the target model name
+        fkMap.set(fkFieldName, relation.type) // relation.type is the target model name
       }
     }
   }
 
-  return fkMap;
+  return fkMap
 }
 
 /**
@@ -148,60 +147,60 @@ export function buildForeignKeyMap(model: DMMF.Model, models?: readonly DMMF.Mod
  * Returns metadata for generating join table schemas
  */
 export function detectImplicitManyToMany(models: readonly DMMF.Model[]) {
-  const joinTables = new Map<string, JoinTableInfo>();
+  const joinTables = new Map<string, JoinTableInfo>()
 
   for (const model of models) {
-    const validFields = model.fields.filter((field) => shouldProcessField(field, model, models));
+    const validFields = model.fields.filter((field) => shouldProcessField(field, model, models))
 
     for (const field of validFields) {
-      const relatedModel = models.find((m) => m.name === field.type);
+      const relatedModel = models.find((m) => m.name === field.type)
       if (!(relatedModel && isValidImplicitRelation(field, relatedModel))) {
-        continue;
+        continue
       }
 
       if (!field.relationName || joinTables.has(field.relationName)) {
-        continue;
+        continue
       }
 
-      const joinTableInfo = createJoinTableInfo(field, model, relatedModel, models);
+      const joinTableInfo = createJoinTableInfo(field, model, relatedModel, models)
       if (joinTableInfo) {
-        joinTables.set(field.relationName, joinTableInfo);
+        joinTables.set(field.relationName, joinTableInfo)
       }
     }
   }
 
-  return Array.from(joinTables.values());
+  return Array.from(joinTables.values())
 }
 
 function shouldProcessField(field: DMMF.Field, model: DMMF.Model, models: readonly DMMF.Model[]) {
   if (!isImplicitManyToManyField(field)) {
-    return false;
+    return false
   }
 
-  const relatedModel = models.find((m) => m.name === field.type);
-  return !!(relatedModel && model.name !== relatedModel.name);
+  const relatedModel = models.find((m) => m.name === field.type)
+  return !!(relatedModel && model.name !== relatedModel.name)
 }
 
 function createJoinTableInfo(
   field: DMMF.Field,
   model: DMMF.Model,
   relatedModel: DMMF.Model,
-  models: readonly DMMF.Model[]
+  models: readonly DMMF.Model[],
 ) {
-  const modelNames = [model.name, relatedModel.name].sort();
-  const modelA = models.find((m) => m.name === modelNames[0]);
-  const modelB = models.find((m) => m.name === modelNames[1]);
+  const modelNames = [model.name, relatedModel.name].sort()
+  const modelA = models.find((m) => m.name === modelNames[0])
+  const modelB = models.find((m) => m.name === modelNames[1])
 
   if (!(modelA && modelB)) {
-    return null;
+    return null
   }
 
-  const modelAIdField = getModelIdField(modelA);
-  const modelBIdField = getModelIdField(modelB);
-  const relationName = field.relationName;
+  const modelAIdField = getModelIdField(modelA)
+  const modelBIdField = getModelIdField(modelB)
+  const relationName = field.relationName
 
   if (!relationName) {
-    return null;
+    return null
   }
 
   return {
@@ -213,13 +212,13 @@ function createJoinTableInfo(
     columnBType: modelBIdField.type,
     columnAIsUuid: isUuidField(modelAIdField),
     columnBIsUuid: isUuidField(modelBIdField),
-  };
+  }
 }
 
 function isValidImplicitRelation(field: DMMF.Field, relatedModel: DMMF.Model) {
   const relatedField = relatedModel.fields.find(
-    (f) => f.relationName === field.relationName && f.isList === true
-  );
+    (f) => f.relationName === field.relationName && f.isList === true,
+  )
 
-  return !!(relatedField && isImplicitManyToManyField(relatedField));
+  return !!(relatedField && isImplicitManyToManyField(relatedField))
 }

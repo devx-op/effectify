@@ -23,7 +23,7 @@ export const prismaCommand = Command.make("prisma", {}, () =>
           return {
             defaultOutput: "../generated/effect",
             prettyName: "Prisma Effect Generator",
-            requiresEngines: []
+            requiresEngines: [],
           }
         },
         async onGenerate(options) {
@@ -32,11 +32,11 @@ export const prismaCommand = Command.make("prisma", {}, () =>
               const deferred = yield* Deferred.make<void, unknown>()
               yield* Effect.promise(() => emit.single([options, deferred]))
               yield* Deferred.await(deferred)
-            })
+            }),
           )
           // Cerrar el stream después de procesar la generación
           emit.end()
-        }
+        },
       })
     })
 
@@ -44,8 +44,8 @@ export const prismaCommand = Command.make("prisma", {}, () =>
       Stream.runForEach(([options, deferred]) =>
         generator.generate.pipe(
           Effect.provide(Layer.succeed(GeneratorContext, options)),
-          Effect.intoDeferred(deferred)
+          Effect.intoDeferred(deferred),
         )
-      )
+      ),
     )
   }))

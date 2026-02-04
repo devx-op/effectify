@@ -18,15 +18,15 @@ export class RenderService extends Context.Tag("RenderService")<
 
     const eta = new Eta({
       views: templatesDir,
-      autoEscape: false
+      autoEscape: false,
     })
 
     return {
       render: (templateName: string, data: Record<string, unknown>) =>
         Effect.try({
           try: () => eta.render(templateName, data),
-          catch: (error) => new Error(`Failed to render template ${templateName}: ${error}`)
-        })
+          catch: (error) => new Error(`Failed to render template ${templateName}: ${error}`),
+        }),
     }
   })
 }
