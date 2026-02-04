@@ -48,26 +48,6 @@ export class GeneratorService extends Context.Tag("GeneratorService")<
         return `${filePath}.${extension}`
       }
 
-      const fixSchemaImports = (outputDir: string) =>
-        Effect.gen(function*() {
-          const schemasDir = path.join(outputDir, "schemas")
-          const indexFile = path.join(schemasDir, "index.ts")
-
-          const exists = yield* fs.exists(indexFile)
-          if (!exists) {
-            return
-          }
-
-          const content = yield* fs.readFileString(indexFile)
-          const fixedContent = content
-            .replace(/export \* from '\.\/enums'/g, "export * from './enums.js'")
-            .replace(/export \* from '\.\/types'/g, "export * from './types.js'")
-
-          if (content !== fixedContent) {
-            yield* fs.writeFileString(indexFile, fixedContent)
-          }
-        })
-
       const getClientImportPath = (config: GeneratorOptions["generator"]["config"]) =>
         Array.isArray(config.clientImportPath)
           ? config.clientImportPath[0]
@@ -169,13 +149,15 @@ export class GeneratorService extends Context.Tag("GeneratorService")<
 
         // Generate Effect/Kysely Schemas (enums.ts, types.ts, schemas/index.ts)
         const schemasDir = path.join(outputDir, "schemas")
-        yield* Effect.promise(() => generateSchemas(options.dmmf, schemasDir))
+        yield* generateSchemas(options.dmmf, schemasDir).pipe(
+          Effect.provideService(FileSystem.FileSystem, fs),
+          Effect.provideService(Path.Path, path)
+        )
 
         yield* generatePrismaSchema(outputDir)
         yield* generatePrismaRepository(outputDir, clientImportPath)
         yield* generateModels(outputDir, models)
         yield* generateIndex(outputDir, models, clientImportPath, customError)
-        yield* fixSchemaImports(outputDir)
       })
 
       return { generate }
