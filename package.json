@@ -1,6 +1,6 @@
 {
-  "name": "@effectify/source",
-  "version": "0.0.0",
+  "name": "@effectify/repo",
+  "version": "1.0.0",
   "license": "MIT",
   "scripts": {
     "lint-staged": "lint-staged --allow-empty",
@@ -9,7 +9,8 @@
     "build:affected": "pnpm nx affected --target=build",
     "test:affected": "pnpm nx affected --target=test",
     "typecheck:affected": "pnpm nx affected --target=typecheck",
-    "lint": "pnpm exec oxlint --fix && pnpm exec dprint check",
+    "lint": "pnpm exec oxlint && pnpm exec dprint check",
+    "lint:fix": "pnpm exec oxlint --fix && pnpm exec dprint check",
     "lint:affected": "pnpm nx affected --target=lint",
     "lint:many": "pnpm nx run-many --target=lint && pnpm exec dprint check",
     "publish:affected": "pnpm nx publish-affected",
@@ -17,7 +18,7 @@
     "release:affected:dry-run": "pnpm nx release-affected-dry-run"
   },
   "lint-staged": {
-    "*.{js,jsx,ts,tsx,json,jsonc,css,scss,md,mdx}": "pnpm lint"
+    "*.{js,jsx,ts,tsx,json,jsonc,css,scss,md,mdx}": "pnpm lint:fix"
   },
   "devDependencies": {
     "@effect/language-service": "catalog:",

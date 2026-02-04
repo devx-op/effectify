@@ -4,39 +4,31 @@ import { detectImplicitManyToMany } from './relation.js';
 import * as PrismaType from './type.js';
 
 /**
- * Prisma domain generator - orchestrates DMMF parsing and extraction
- * No schema generation here, just native Prisma data extraction
+ * Get all enums from DMMF
  */
-export class PrismaGenerator {
-  constructor(private readonly dmmf: DMMF.Document) {}
+export const getEnums = (dmmf: DMMF.Document) => {
+  return PrismaEnum.extractEnums(dmmf);
+}
 
-  /**
-   * Get all enums from DMMF
-   */
-  getEnums() {
-    return PrismaEnum.extractEnums(this.dmmf);
-  }
+/**
+ * Get all models from DMMF (filtered and sorted)
+ */
+export const getModels = (dmmf: DMMF.Document) => {
+  const filtered = PrismaType.filterInternalModels(dmmf.datamodel.models);
+  return PrismaType.sortModels(filtered);
+}
 
-  /**
-   * Get all models from DMMF (filtered and sorted)
-   */
-  getModels() {
-    const filtered = PrismaType.filterInternalModels(this.dmmf.datamodel.models);
-    return PrismaType.sortModels(filtered);
-  }
+/**
+ * Get schema fields for a model (filtered and sorted)
+ */
+export const getModelFields = (model: DMMF.Model) => {
+  const filtered = PrismaType.filterSchemaFields(model.fields);
+  return PrismaType.sortFields(filtered);
+}
 
-  /**
-   * Get schema fields for a model (filtered and sorted)
-   */
-  getModelFields(model: DMMF.Model) {
-    const filtered = PrismaType.filterSchemaFields(model.fields);
-    return PrismaType.sortFields(filtered);
-  }
-
-  /**
-   * Get implicit many-to-many join tables
-   */
-  getManyToManyJoinTables() {
-    return detectImplicitManyToMany(this.dmmf.datamodel.models);
-  }
+/**
+ * Get implicit many-to-many join tables
+ */
+export const getManyToManyJoinTables = (dmmf: DMMF.Document) => {
+  return detectImplicitManyToMany(dmmf.datamodel.models);
 }
