@@ -19,6 +19,12 @@
       ],
       "outputs": [
         "{projectRoot}/prisma/generated"
+      ],
+      "dependsOn": [
+        {
+          "target": "build",
+          "projects": ["@effectify/prisma"]
+        }
       ]
     },
     "build": {
