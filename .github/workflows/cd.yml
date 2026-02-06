@@ -1,11 +1,8 @@
 name: 🚀 CD
 
 on:
-  workflow_run:
-    workflows: ["🧪 CI"]
+  push:
     branches: [master]
-    types:
-      - completed
 
 permissions:
   contents: write # Needed for creating commits and tags
@@ -15,7 +12,7 @@ jobs:
   release:
     name: 🚀 Release
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' && !contains(github.event.workflow_run.head_commit.message, 'chore(release):') }}
+    if: ${{ !contains(github.event.head_commit.message, 'chore(release):') }}
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4

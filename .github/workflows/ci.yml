@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [master, dev]
   push:
-    branches: [master, dev]
+    branches: [dev]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event.number }}
@@ -40,7 +40,11 @@ jobs:
 
       - name: 🔍 Run oxlint on affected projects
         run: |
-          BASE=$(git merge-base HEAD origin/dev)
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            BASE="origin/${{ github.base_ref }}"
+          else
+            BASE="HEAD~1"
+          fi
           pnpm nx affected --target=lint --base=$BASE --head=HEAD --parallel=3
 
       - name: 🎨 Check code formatting with dprint
@@ -72,7 +76,11 @@ jobs:
 
       - name: 🔍 Type check affected projects
         run: |
-          BASE=$(git merge-base HEAD origin/dev)
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            BASE="origin/${{ github.base_ref }}"
+          else
+            BASE="HEAD~1"
+          fi
           pnpm nx affected --target=typecheck --base=$BASE --head=HEAD --parallel=3 --verbose
 
   # Build affected projects
