@@ -124,8 +124,8 @@ catalogs:
       specifier: 4.1.17
       version: 4.1.17
     '@tanstack/query-core':
-      specifier: 5.90.10
-      version: 5.90.10
+      specifier: 5.90.20
+      version: 5.90.20
     '@tanstack/react-form':
       specifier: 1.25.0
       version: 1.25.0
@@ -139,8 +139,8 @@ catalogs:
       specifier: 1.25.0
       version: 1.25.0
     '@tanstack/solid-query':
-      specifier: 5.90.13
-      version: 5.90.13
+      specifier: 5.90.23
+      version: 5.90.23
     '@tanstack/solid-router':
       specifier: 1.139.3
       version: 1.139.3
@@ -196,8 +196,8 @@ catalogs:
       specifier: 0.51.1
       version: 0.51.1
     effect:
-      specifier: 3.19.15
-      version: 3.19.15
+      specifier: 3.19.16
+      version: 3.19.16
     eta:
       specifier: ^4.5.0
       version: 4.5.0
@@ -256,8 +256,8 @@ catalogs:
       specifier: 0.34.5
       version: 0.34.5
     solid-js:
-      specifier: 1.9.10
-      version: 1.9.10
+      specifier: 1.9.11
+      version: 1.9.11
     starlight-sidebar-topics:
       specifier: 0.6.2
       version: 0.6.2
@@ -323,7 +323,7 @@ importers:
     dependencies:
       '@effect/experimental':
         specifier: 'catalog:'
-        version: 0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15)
+        version: 0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16)
       '@react-router/node':
         specifier: 'catalog:'
         version: 7.9.6(react-router@7.9.6(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(typescript@5.9.3)
@@ -426,7 +426,7 @@ importers:
         version: 5.9.3
       ultracite:
         specifier: 'catalog:'
-        version: 6.3.6(effect@3.19.15)(typescript@5.9.3)(valibot@1.2.0(typescript@5.9.3))
+        version: 6.3.6(effect@3.19.16)(typescript@5.9.3)(valibot@1.2.0(typescript@5.9.3))
       verdaccio:
         specifier: 'catalog:'
         version: 6.2.2(encoding@0.1.13)(typanion@3.14.0)
@@ -441,19 +441,19 @@ importers:
     dependencies:
       '@effect/cli':
         specifier: 'catalog:'
-        version: 0.73.2(@effect/platform@0.94.0(effect@3.19.15))(@effect/printer-ansi@0.47.0(@effect/typeclass@0.38.0(effect@3.19.15))(effect@3.19.15))(@effect/printer@0.47.0(@effect/typeclass@0.38.0(effect@3.19.15))(effect@3.19.15))(effect@3.19.15)
+        version: 0.73.2(@effect/platform@0.94.0(effect@3.19.16))(@effect/printer-ansi@0.47.0(@effect/typeclass@0.38.0(effect@3.19.16))(effect@3.19.16))(@effect/printer@0.47.0(@effect/typeclass@0.38.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16)
       '@effect/platform':
         specifier: 'catalog:'
-        version: 0.94.0(effect@3.19.15)
+        version: 0.94.0(effect@3.19.16)
       '@effect/platform-node':
         specifier: 'catalog:'
-        version: 0.104.0(@effect/cluster@0.56.1(@effect/platform@0.94.0(effect@3.19.15))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/workflow@0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(effect@3.19.15)
+        version: 0.104.0(@effect/cluster@0.56.1(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/workflow@0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16)
       chalk:
         specifier: ^5.3.0
         version: 5.6.2
       effect:
         specifier: 'catalog:'
-        version: 3.19.15
+        version: 3.19.16
       handlebars:
         specifier: ^4.7.8
         version: 4.7.8
@@ -508,22 +508,22 @@ importers:
     dependencies:
       '@effect/platform':
         specifier: 'catalog:'
-        version: 0.94.0(effect@3.19.15)
+        version: 0.94.0(effect@3.19.16)
       '@effect/platform-node':
         specifier: 'catalog:'
-        version: 0.104.0(@effect/cluster@0.56.1(@effect/platform@0.94.0(effect@3.19.15))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/workflow@0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(effect@3.19.15)
+        version: 0.104.0(@effect/cluster@0.56.1(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/workflow@0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16)
       '@effectify/node-better-auth':
         specifier: workspace:*
         version: link:../../packages/node/better-auth
       better-auth:
         specifier: 'catalog:'
-        version: 1.4.10(@prisma/client@7.3.0(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(typescript@5.9.3))(better-sqlite3@12.6.2)(mysql2@3.15.3)(pg@8.18.0)(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(solid-js@1.9.10)(vitest@4.0.18(@types/node@25.1.0)(@vitest/ui@4.0.13(vitest@3.2.4))(jiti@2.6.1)(jsdom@27.2.0)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
+        version: 1.4.10(@prisma/client@7.3.0(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(typescript@5.9.3))(better-sqlite3@12.6.2)(mysql2@3.15.3)(pg@8.18.0)(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(solid-js@1.9.11)(vitest@4.0.18(@types/node@25.1.0)(@vitest/ui@4.0.13(vitest@3.2.4))(jiti@2.6.1)(jsdom@27.2.0)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
       better-sqlite3:
         specifier: 'catalog:'
         version: 12.6.2
       effect:
         specifier: 'catalog:'
-        version: 3.19.15
+        version: 3.19.16
       tslib:
         specifier: 'catalog:'
         version: 2.8.1
@@ -536,10 +536,10 @@ importers:
     dependencies:
       '@effect/platform':
         specifier: 'catalog:'
-        version: 0.94.0(effect@3.19.15)
+        version: 0.94.0(effect@3.19.16)
       '@effect/platform-node':
         specifier: 'catalog:'
-        version: 0.104.0(@effect/cluster@0.56.1(@effect/platform@0.94.0(effect@3.19.15))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/workflow@0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(effect@3.19.15)
+        version: 0.104.0(@effect/cluster@0.56.1(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/workflow@0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16)
       '@effectify/react-remix':
         specifier: workspace:*
         version: link:../../packages/react/remix
@@ -554,7 +554,7 @@ importers:
         version: 2.17.1(typescript@5.9.3)
       effect:
         specifier: 'catalog:'
-        version: 3.19.15
+        version: 3.19.16
       isbot:
         specifier: ^4.4.0
         version: 4.4.0
@@ -591,7 +591,7 @@ importers:
         version: link:../../packages/react/router
       effect:
         specifier: 'catalog:'
-        version: 3.19.15
+        version: 3.19.16
       react:
         specifier: 'catalog:'
         version: 19.2.0
@@ -622,13 +622,13 @@ importers:
     dependencies:
       '@effect/experimental':
         specifier: 'catalog:'
-        version: 0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15)
+        version: 0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16)
       '@effect/platform':
         specifier: 'catalog:'
-        version: 0.94.0(effect@3.19.15)
+        version: 0.94.0(effect@3.19.16)
       '@effect/platform-node':
         specifier: 'catalog:'
-        version: 0.104.0(@effect/cluster@0.56.1(@effect/platform@0.94.0(effect@3.19.15))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/workflow@0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(effect@3.19.15)
+        version: 0.104.0(@effect/cluster@0.56.1(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/workflow@0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16)
       '@effectify/node-better-auth':
         specifier: workspace:*
         version: link:../../packages/node/better-auth
@@ -658,7 +658,7 @@ importers:
         version: 16.3.0(@testing-library/dom@10.4.1)(@types/react-dom@19.1.9(@types/react@19.1.13))(@types/react@19.1.13)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       better-auth:
         specifier: 'catalog:'
-        version: 1.4.10(011274cd97e50d478751fd57d6f59a9b)
+        version: 1.4.10(c44486b87d211e265d31b699648d274c)
       better-sqlite3:
         specifier: 12.4.6
         version: 12.4.6
@@ -667,7 +667,7 @@ importers:
         version: 17.2.3
       effect:
         specifier: 'catalog:'
-        version: 3.19.15
+        version: 3.19.16
       experimental:
         specifier: link:@effect/experimental
         version: link:@effect/experimental
@@ -692,10 +692,10 @@ importers:
     devDependencies:
       '@better-auth/cli':
         specifier: 'catalog:'
-        version: 1.4.10(@better-fetch/fetch@1.1.21)(@electric-sql/pglite@0.3.15)(@types/better-sqlite3@7.6.13)(@types/react@19.1.13)(better-call@1.1.7(zod@4.3.6))(jose@6.1.3)(kysely@0.28.11)(mysql2@3.15.3)(nanostores@1.1.0)(postgres@3.4.7)(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.4.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(solid-js@1.9.10)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@20.19.25)(@vitest/ui@4.0.13(vitest@3.2.4))(jiti@2.6.1)(jsdom@27.2.0)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
+        version: 1.4.10(@better-fetch/fetch@1.1.21)(@electric-sql/pglite@0.3.15)(@types/better-sqlite3@7.6.13)(@types/react@19.1.13)(better-call@1.1.7(zod@4.3.6))(jose@6.1.3)(kysely@0.28.11)(mysql2@3.15.3)(nanostores@1.1.0)(postgres@3.4.7)(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.4.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(solid-js@1.9.11)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@20.19.25)(@vitest/ui@4.0.13(vitest@3.2.4))(jiti@2.6.1)(jsdom@27.2.0)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
       '@effect/vitest':
         specifier: 'catalog:'
-        version: 0.27.0(effect@3.19.15)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@20.19.25)(@vitest/ui@4.0.13(vitest@3.2.4))(jiti@2.6.1)(jsdom@27.2.0)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
+        version: 0.27.0(effect@3.19.16)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@20.19.25)(@vitest/ui@4.0.13(vitest@3.2.4))(jiti@2.6.1)(jsdom@27.2.0)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
       '@prisma/generator':
         specifier: 'catalog:'
         version: 7.3.0
@@ -731,7 +731,7 @@ importers:
     dependencies:
       '@corvu/drawer':
         specifier: 'catalog:'
-        version: 0.2.4(solid-js@1.9.10)
+        version: 0.2.4(solid-js@1.9.11)
       '@effectify/chat-solid':
         specifier: workspace:*
         version: link:../../packages/chat/solid
@@ -743,28 +743,28 @@ importers:
         version: link:../../packages/solid/ui
       '@kobalte/core':
         specifier: ^0.13.10
-        version: 0.13.11(solid-js@1.9.10)
+        version: 0.13.11(solid-js@1.9.11)
       '@tailwindcss/vite':
         specifier: 'catalog:'
         version: 4.1.17(vite@7.2.4(@types/node@25.1.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
       '@tanstack/router-plugin':
         specifier: 'catalog:'
-        version: 1.139.3(vite-plugin-solid@2.11.10(@testing-library/jest-dom@6.9.1)(solid-js@1.9.10)(vite@7.2.4(@types/node@25.1.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(vite@7.2.4(@types/node@25.1.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(webpack@5.104.1(@swc/core@1.15.3(@swc/helpers@0.5.17)))
+        version: 1.139.3(vite-plugin-solid@2.11.10(@testing-library/jest-dom@6.9.1)(solid-js@1.9.11)(vite@7.2.4(@types/node@25.1.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(vite@7.2.4(@types/node@25.1.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(webpack@5.104.1(@swc/core@1.15.3(@swc/helpers@0.5.17)))
       '@tanstack/solid-form':
         specifier: 'catalog:'
-        version: 1.25.0(solid-js@1.9.10)
+        version: 1.25.0(solid-js@1.9.11)
       '@tanstack/solid-router':
         specifier: 'catalog:'
-        version: 1.139.3(solid-js@1.9.10)
+        version: 1.139.3(solid-js@1.9.11)
       '@tanstack/solid-router-devtools':
         specifier: 'catalog:'
-        version: 1.139.3(@tanstack/router-core@1.139.3)(@tanstack/solid-router@1.139.3(solid-js@1.9.10))(@types/node@25.1.0)(csstype@3.2.3)(jiti@2.6.1)(lightningcss@1.30.2)(solid-js@1.9.10)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
+        version: 1.139.3(@tanstack/router-core@1.139.3)(@tanstack/solid-router@1.139.3(solid-js@1.9.11))(@types/node@25.1.0)(csstype@3.2.3)(jiti@2.6.1)(lightningcss@1.30.2)(solid-js@1.9.11)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
       '@tanstack/solid-start':
         specifier: 'catalog:'
-        version: 1.139.3(solid-js@1.9.10)(vite-plugin-solid@2.11.10(@testing-library/jest-dom@6.9.1)(solid-js@1.9.10)(vite@7.2.4(@types/node@25.1.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(vite@7.2.4(@types/node@25.1.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(webpack@5.104.1(@swc/core@1.15.3(@swc/helpers@0.5.17)))
+        version: 1.139.3(solid-js@1.9.11)(vite-plugin-solid@2.11.10(@testing-library/jest-dom@6.9.1)(solid-js@1.9.11)(vite@7.2.4(@types/node@25.1.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(vite@7.2.4(@types/node@25.1.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(webpack@5.104.1(@swc/core@1.15.3(@swc/helpers@0.5.17)))
       better-auth:
         specifier: 'catalog:'
-        version: 1.4.10(@prisma/client@7.3.0(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(typescript@5.9.3))(better-sqlite3@12.6.2)(mysql2@3.15.3)(pg@8.18.0)(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(solid-js@1.9.10)(vitest@4.0.18(@types/node@25.1.0)(@vitest/ui@4.0.13(vitest@3.2.4))(jiti@2.6.1)(jsdom@27.2.0)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
+        version: 1.4.10(@prisma/client@7.3.0(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(typescript@5.9.3))(better-sqlite3@12.6.2)(mysql2@3.15.3)(pg@8.18.0)(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(solid-js@1.9.11)(vitest@4.0.18(@types/node@25.1.0)(@vitest/ui@4.0.13(vitest@3.2.4))(jiti@2.6.1)(jsdom@27.2.0)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
       class-variance-authority:
         specifier: 'catalog:'
         version: 0.7.1
@@ -773,10 +773,10 @@ importers:
         version: 2.1.1
       lucide-solid:
         specifier: 'catalog:'
-        version: 0.554.0(solid-js@1.9.10)
+        version: 0.554.0(solid-js@1.9.11)
       solid-js:
         specifier: 'catalog:'
-        version: 1.9.10
+        version: 1.9.11
       tailwind-merge:
         specifier: 'catalog:'
         version: 3.4.0
@@ -798,7 +798,7 @@ importers:
         version: 7.2.4(@types/node@25.1.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
       vite-plugin-solid:
         specifier: 'catalog:'
-        version: 2.11.10(@testing-library/jest-dom@6.9.1)(solid-js@1.9.10)(vite@7.2.4(@types/node@25.1.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
+        version: 2.11.10(@testing-library/jest-dom@6.9.1)(solid-js@1.9.11)(vite@7.2.4(@types/node@25.1.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
 
   packages/chat/domain:
     dependencies:
@@ -807,7 +807,7 @@ importers:
         version: link:../../shared/domain
       effect:
         specifier: 'catalog:'
-        version: 3.19.15
+        version: 3.19.16
       tslib:
         specifier: 'catalog:'
         version: 2.8.1
@@ -834,7 +834,7 @@ importers:
         version: 5.90.10(react@19.2.0)
       effect:
         specifier: 'catalog:'
-        version: 3.19.15
+        version: 3.19.16
       react:
         specifier: 'catalog:'
         version: 19.2.0
@@ -877,22 +877,22 @@ importers:
         version: link:../../solid/ui
       '@kobalte/core':
         specifier: 'catalog:'
-        version: 0.13.11(solid-js@1.9.10)
+        version: 0.13.11(solid-js@1.9.11)
       '@tanstack/solid-form':
         specifier: 'catalog:'
-        version: 1.25.0(solid-js@1.9.10)
+        version: 1.25.0(solid-js@1.9.11)
       '@tanstack/solid-query':
         specifier: 'catalog:'
-        version: 5.90.13(solid-js@1.9.10)
+        version: 5.90.23(solid-js@1.9.11)
       effect:
         specifier: 'catalog:'
-        version: 3.19.15
+        version: 3.19.16
       lucide-solid:
         specifier: 'catalog:'
-        version: 0.554.0(solid-js@1.9.10)
+        version: 0.554.0(solid-js@1.9.11)
       solid-js:
         specifier: 'catalog:'
-        version: 1.9.10
+        version: 1.9.11
 
   packages/monorepo-tools: {}
 
@@ -900,20 +900,20 @@ importers:
     dependencies:
       '@effect/platform':
         specifier: 'catalog:'
-        version: 0.94.0(effect@3.19.15)
+        version: 0.94.0(effect@3.19.16)
       '@effect/platform-node':
         specifier: 'catalog:'
-        version: 0.104.0(@effect/cluster@0.56.1(@effect/platform@0.94.0(effect@3.19.15))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/workflow@0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(effect@3.19.15)
+        version: 0.104.0(@effect/cluster@0.56.1(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/workflow@0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16)
       better-auth:
         specifier: 'catalog:'
-        version: 1.4.10(@prisma/client@7.3.0(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(typescript@5.9.3))(better-sqlite3@12.6.2)(mysql2@3.15.3)(pg@8.18.0)(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(solid-js@1.9.10)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@20.19.25)(@vitest/ui@4.0.13(vitest@3.2.4))(jiti@2.6.1)(jsdom@27.2.0)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
+        version: 1.4.10(@prisma/client@7.3.0(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(typescript@5.9.3))(better-sqlite3@12.6.2)(mysql2@3.15.3)(pg@8.18.0)(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(solid-js@1.9.11)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@20.19.25)(@vitest/ui@4.0.13(vitest@3.2.4))(jiti@2.6.1)(jsdom@27.2.0)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
       effect:
         specifier: 'catalog:'
-        version: 3.19.15
+        version: 3.19.16
     devDependencies:
       '@effect/vitest':
         specifier: 'catalog:'
-        version: 0.27.0(effect@3.19.15)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@20.19.25)(@vitest/ui@4.0.13(vitest@3.2.4))(jiti@2.6.1)(jsdom@27.2.0)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
+        version: 0.27.0(effect@3.19.16)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@20.19.25)(@vitest/ui@4.0.13(vitest@3.2.4))(jiti@2.6.1)(jsdom@27.2.0)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
       '@types/better-sqlite3':
         specifier: 'catalog:'
         version: 7.6.13
@@ -937,13 +937,13 @@ importers:
         version: 0.95.15
       '@effect/cli':
         specifier: 'catalog:'
-        version: 0.73.2(@effect/platform@0.94.0(effect@3.19.15))(@effect/printer-ansi@0.47.0(@effect/typeclass@0.38.0(effect@3.19.15))(effect@3.19.15))(@effect/printer@0.47.0(@effect/typeclass@0.38.0(effect@3.19.15))(effect@3.19.15))(effect@3.19.15)
+        version: 0.73.2(@effect/platform@0.94.0(effect@3.19.16))(@effect/printer-ansi@0.47.0(@effect/typeclass@0.38.0(effect@3.19.16))(effect@3.19.16))(@effect/printer@0.47.0(@effect/typeclass@0.38.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16)
       '@effect/platform':
         specifier: 'catalog:'
-        version: 0.94.0(effect@3.19.15)
+        version: 0.94.0(effect@3.19.16)
       '@effect/platform-node':
         specifier: 'catalog:'
-        version: 0.104.0(@effect/cluster@0.56.1(@effect/platform@0.94.0(effect@3.19.15))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/workflow@0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(effect@3.19.15)
+        version: 0.104.0(@effect/cluster@0.56.1(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/workflow@0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16)
       '@prisma/client':
         specifier: 'catalog:'
         version: 7.3.0(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(typescript@5.9.3)
@@ -952,7 +952,7 @@ importers:
         version: 7.3.0
       effect:
         specifier: 'catalog:'
-        version: 3.19.15
+        version: 3.19.16
       eta:
         specifier: 'catalog:'
         version: 4.5.0
@@ -965,13 +965,13 @@ importers:
         version: 0.8.9
       '@effect/experimental':
         specifier: 'catalog:'
-        version: 0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15)
+        version: 0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16)
       '@effect/language-service':
         specifier: 'catalog:'
         version: 0.56.0
       '@effect/vitest':
         specifier: 'catalog:'
-        version: 0.27.0(effect@3.19.15)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@20.19.25)(@vitest/ui@4.0.13(vitest@3.2.4))(jiti@2.6.1)(jsdom@27.2.0)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.20.6)(yaml@2.8.2))
+        version: 0.27.0(effect@3.19.16)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@20.19.25)(@vitest/ui@4.0.13(vitest@3.2.4))(jiti@2.6.1)(jsdom@27.2.0)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.20.6)(yaml@2.8.2))
       '@prisma/adapter-better-sqlite3':
         specifier: 'catalog:'
         version: 7.3.0
@@ -1019,13 +1019,13 @@ importers:
     dependencies:
       '@tanstack/query-core':
         specifier: 'catalog:'
-        version: 5.90.10
+        version: 5.90.20
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.90.10(react@19.2.0)
       effect:
         specifier: 'catalog:'
-        version: 3.19.15
+        version: 3.19.16
       react:
         specifier: 'catalog:'
         version: 19.2.0
@@ -1044,10 +1044,10 @@ importers:
     dependencies:
       '@effect/platform':
         specifier: 'catalog:'
-        version: 0.94.0(effect@3.19.15)
+        version: 0.94.0(effect@3.19.16)
       '@effect/platform-node':
         specifier: 'catalog:'
-        version: 0.104.0(@effect/cluster@0.56.1(@effect/platform@0.94.0(effect@3.19.15))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/workflow@0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(effect@3.19.15)
+        version: 0.104.0(@effect/cluster@0.56.1(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/workflow@0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16)
       '@remix-run/node':
         specifier: 'catalog:'
         version: 2.17.2(typescript@5.9.3)
@@ -1056,19 +1056,19 @@ importers:
         version: 2.17.2(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3)
       effect:
         specifier: 'catalog:'
-        version: 3.19.15
+        version: 3.19.16
 
   packages/react/router:
     dependencies:
       '@effect/platform':
         specifier: 'catalog:'
-        version: 0.94.0(effect@3.19.15)
+        version: 0.94.0(effect@3.19.16)
       '@effect/platform-node':
         specifier: 'catalog:'
-        version: 0.104.0(@effect/cluster@0.56.1(@effect/platform@0.94.0(effect@3.19.15))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/workflow@0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(effect@3.19.15)
+        version: 0.104.0(@effect/cluster@0.56.1(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/workflow@0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16)
       effect:
         specifier: 'catalog:'
-        version: 3.19.15
+        version: 3.19.16
       react-router:
         specifier: 'catalog:'
         version: 7.9.6(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
@@ -1083,7 +1083,7 @@ importers:
         version: link:../router
       effect:
         specifier: 'catalog:'
-        version: 3.19.15
+        version: 3.19.16
 
   packages/react/ui:
     dependencies:
@@ -1156,7 +1156,7 @@ importers:
         version: 13.15.10
       effect:
         specifier: 'catalog:'
-        version: 3.19.15
+        version: 3.19.16
       tslib:
         specifier: 'catalog:'
         version: 2.8.1
@@ -1168,11 +1168,11 @@ importers:
     dependencies:
       '@effect-atom/atom':
         specifier: 'catalog:'
-        version: 0.4.3(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(effect@3.19.15)
+        version: 0.4.3(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16)
     devDependencies:
       '@solidjs/testing-library':
         specifier: 'catalog:'
-        version: 0.8.10(solid-js@1.9.10)
+        version: 0.8.10(solid-js@1.9.11)
       '@testing-library/jest-dom':
         specifier: 'catalog:'
         version: 6.9.1
@@ -1181,39 +1181,39 @@ importers:
         version: 20.19.25
       effect:
         specifier: 'catalog:'
-        version: 3.19.15
+        version: 3.19.16
       jsdom:
         specifier: 'catalog:'
         version: 27.2.0
       solid-js:
         specifier: 'catalog:'
-        version: 1.9.10
+        version: 1.9.11
       tsx:
         specifier: 'catalog:'
         version: 4.20.6
       vite-plugin-solid:
         specifier: 'catalog:'
-        version: 2.11.10(@testing-library/jest-dom@6.9.1)(solid-js@1.9.10)(vite@7.3.1(@types/node@20.19.25)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.20.6)(yaml@2.8.2))
+        version: 2.11.10(@testing-library/jest-dom@6.9.1)(solid-js@1.9.11)(vite@7.3.1(@types/node@20.19.25)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.20.6)(yaml@2.8.2))
     publishDirectory: dist
 
   packages/solid/query:
     dependencies:
-      '@tanstack/query-core':
-        specifier: 'catalog:'
-        version: 5.90.10
-      '@tanstack/solid-query':
-        specifier: 'catalog:'
-        version: 5.90.13(solid-js@1.9.10)
-      effect:
-        specifier: 'catalog:'
-        version: 3.19.15
-      solid-js:
-        specifier: 'catalog:'
-        version: 1.9.10
       tslib:
         specifier: 'catalog:'
         version: 2.8.1
     devDependencies:
+      '@tanstack/query-core':
+        specifier: 'catalog:'
+        version: 5.90.20
+      '@tanstack/solid-query':
+        specifier: 'catalog:'
+        version: 5.90.23(solid-js@1.9.11)
+      effect:
+        specifier: 'catalog:'
+        version: 3.19.16
+      solid-js:
+        specifier: 'catalog:'
+        version: 1.9.11
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
@@ -1222,13 +1222,13 @@ importers:
     dependencies:
       '@corvu/drawer':
         specifier: 'catalog:'
-        version: 0.2.4(solid-js@1.9.10)
+        version: 0.2.4(solid-js@1.9.11)
       '@kobalte/core':
         specifier: 'catalog:'
-        version: 0.13.11(solid-js@1.9.10)
+        version: 0.13.11(solid-js@1.9.11)
       '@tanstack/solid-form':
         specifier: 'catalog:'
-        version: 1.25.0(solid-js@1.9.10)
+        version: 1.25.0(solid-js@1.9.11)
       class-variance-authority:
         specifier: 'catalog:'
         version: 0.7.1
@@ -1237,10 +1237,10 @@ importers:
         version: 2.1.1
       lucide-solid:
         specifier: 'catalog:'
-        version: 0.554.0(solid-js@1.9.10)
+        version: 0.554.0(solid-js@1.9.11)
       solid-js:
         specifier: 'catalog:'
-        version: 1.9.10
+        version: 1.9.11
       tailwind-merge:
         specifier: 'catalog:'
         version: 3.4.0
@@ -5358,6 +5358,9 @@ packages:
   '@tanstack/query-core@5.90.10':
     resolution: {integrity: sha512-EhZVFu9rl7GfRNuJLJ3Y7wtbTnENsvzp+YpcAV7kCYiXni1v8qZh++lpw4ch4rrwC0u/EZRnBHIehzCGzwXDSQ==}
 
+  '@tanstack/query-core@5.90.20':
+    resolution: {integrity: sha512-OMD2HLpNouXEfZJWcKeVKUgQ5n+n3A2JFmBaScpNDUqSrQSjiveC7dKMe53uJUg1nDG16ttFPz2xfilz6i2uVg==}
+
   '@tanstack/react-form@1.25.0':
     resolution: {integrity: sha512-SjKpBkjegNVW9WU+qlO8+/+kSbSEwo2zwHnrQz/yOnnJRhtdgubUt50LfeUtdzkMsbbptQ5MSZrXH03kidQjyw==}
     peerDependencies:
@@ -5431,8 +5434,8 @@ packages:
     peerDependencies:
       solid-js: '>=1.9.9'
 
-  '@tanstack/solid-query@5.90.13':
-    resolution: {integrity: sha512-Nl0iXdgmYXnjxO9FT6AcPcUD472r/k0xTFLJmKvP4NUfA8hBP5AxqE7OLUkL/Lzg9Vs1FbnM355b8+IizYilsw==}
+  '@tanstack/solid-query@5.90.23':
+    resolution: {integrity: sha512-pbZc4+Kgm7ktzIuu01R3KOWfazQKgNp4AZvW0RSvv+sNMpYoileUDAkXEcjDJe6RJmb3fVvTR4LlcSL5pxDElQ==}
     peerDependencies:
       solid-js: ^1.6.0
 
@@ -7418,8 +7421,8 @@ packages:
   effect@3.18.4:
     resolution: {integrity: sha512-b1LXQJLe9D11wfnOKAk3PKxuqYshQ0Heez+y5pnkd3jLj1yx9QhM72zZ9uUrOQyNvrs2GZZd/3maL0ZV18YuDA==}
 
-  effect@3.19.15:
-    resolution: {integrity: sha512-vzMmgfZKLcojmUjBdlQx+uaKryO7yULlRxjpDnHdnvcp1NPHxJyoM6IOXBLlzz2I/uPtZpGKavt5hBv7IvGZkA==}
+  effect@3.19.16:
+    resolution: {integrity: sha512-7+XC3vGrbAhCHd8LTFHvnZjRpZKZ8YHRZqJTkpNoxcJ2mCyNs2SwI+6VkV/ij8Y3YW7wfBN4EbU06/F5+m/wkQ==}
 
   ejs@3.1.10:
     resolution: {integrity: sha512-UeJmFfOrAQS8OJWPZ4qtgHyWExa088/MtK5UEyoJGFH67cDEXkZSviOiKRCZ4Xij0zxI3JECgYs3oKx+AizQBA==}
@@ -11087,21 +11090,11 @@ packages:
   serialize-javascript@6.0.2:
     resolution: {integrity: sha512-Saa1xPByTTq2gdeFZYLLo+RFE35NHZkAbqZeWNd3BpzppeVisAqpDjcp8dyf6uIvEqJRd46jemmyA4iFIeVk8g==}
 
-  seroval-plugins@1.3.3:
-    resolution: {integrity: sha512-16OL3NnUBw8JG1jBLUoZJsLnQq0n5Ua6aHalhJK4fMQkz1lqR7Osz1sA30trBtd9VUDc2NgkuRCn8+/pBwqZ+w==}
-    engines: {node: '>=10'}
-    peerDependencies:
-      seroval: ^1.0
-
   seroval-plugins@1.5.0:
     resolution: {integrity: sha512-EAHqADIQondwRZIdeW2I636zgsODzoBDwb3PT/+7TLDWyw1Dy/Xv7iGUIEXXav7usHDE9HVhOU61irI3EnyyHA==}
     engines: {node: '>=10'}
     peerDependencies:
       seroval: ^1.0
-
-  seroval@1.3.2:
-    resolution: {integrity: sha512-RbcPH1n5cfwKrru7v7+zrZvjLurgHhGyso3HTyGtRivGWgYjbOmGuivCQaORNELjNONoK35nj28EoWul9sb1zQ==}
-    engines: {node: '>=10'}
 
   seroval@1.5.0:
     resolution: {integrity: sha512-OE4cvmJ1uSPrKorFIH9/w/Qwuvi/IMcGbv5RKgcJ/zjA/IohDLU6SVaxFN9FwajbP7nsX0dQqMDes1whk3y+yw==}
@@ -11218,8 +11211,8 @@ packages:
     peerDependencies:
       solid-js: ^1.8
 
-  solid-js@1.9.10:
-    resolution: {integrity: sha512-Coz956cos/EPDlhs6+jsdTxKuJDPT7B5SVIWgABwROyxjY7Xbr8wkzD68Et+NxnV7DLJ3nJdAC2r9InuV/4Jew==}
+  solid-js@1.9.11:
+    resolution: {integrity: sha512-WEJtcc5mkh/BnHA6Yrg4whlF8g6QwpmXXRg4P2ztPmcKeHHlH4+djYecBLhSpecZY2RRECXYUwIc/C2r3yzQ4Q==}
 
   solid-presence@0.1.8:
     resolution: {integrity: sha512-pWGtXUFWYYUZNbg5YpG5vkQJyOtzn2KXhxYaMx/4I+lylTLYkITOLevaCwMRN+liCVk0pqB6EayLWojNqBFECA==}
@@ -13756,7 +13749,7 @@ snapshots:
 
   '@bcoe/v8-coverage@0.2.3': {}
 
-  '@better-auth/cli@1.4.10(@better-fetch/fetch@1.1.21)(@electric-sql/pglite@0.3.15)(@types/better-sqlite3@7.6.13)(@types/react@19.1.13)(better-call@1.1.7(zod@4.3.6))(jose@6.1.3)(kysely@0.28.11)(mysql2@3.15.3)(nanostores@1.1.0)(postgres@3.4.7)(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.4.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(solid-js@1.9.10)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@20.19.25)(@vitest/ui@4.0.13(vitest@3.2.4))(jiti@2.6.1)(jsdom@27.2.0)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))':
+  '@better-auth/cli@1.4.10(@better-fetch/fetch@1.1.21)(@electric-sql/pglite@0.3.15)(@types/better-sqlite3@7.6.13)(@types/react@19.1.13)(better-call@1.1.7(zod@4.3.6))(jose@6.1.3)(kysely@0.28.11)(mysql2@3.15.3)(nanostores@1.1.0)(postgres@3.4.7)(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.4.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(solid-js@1.9.11)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@20.19.25)(@vitest/ui@4.0.13(vitest@3.2.4))(jiti@2.6.1)(jsdom@27.2.0)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))':
     dependencies:
       '@babel/core': 7.29.0
       '@babel/preset-react': 7.28.5(@babel/core@7.29.0)
@@ -13768,7 +13761,7 @@ snapshots:
       '@mrleebo/prisma-ast': 0.13.1
       '@prisma/client': 5.22.0(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.4.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))
       '@types/pg': 8.16.0
-      better-auth: 1.4.10(6b499b2ed8f817bd322dea1b461b7a3b)
+      better-auth: 1.4.10(9a27d2862a0c55724d3a2e95a269e52a)
       better-sqlite3: 12.4.6
       c12: 3.3.3
       chalk: 5.6.2
@@ -13877,32 +13870,32 @@ snapshots:
       picocolors: 1.1.1
       sisteransi: 1.0.5
 
-  '@corvu/dialog@0.2.4(solid-js@1.9.10)':
+  '@corvu/dialog@0.2.4(solid-js@1.9.11)':
     dependencies:
-      '@corvu/utils': 0.4.2(solid-js@1.9.10)
-      solid-dismissible: 0.1.1(solid-js@1.9.10)
-      solid-focus-trap: 0.1.9(solid-js@1.9.10)
-      solid-js: 1.9.10
-      solid-presence: 0.2.0(solid-js@1.9.10)
-      solid-prevent-scroll: 0.1.10(solid-js@1.9.10)
+      '@corvu/utils': 0.4.2(solid-js@1.9.11)
+      solid-dismissible: 0.1.1(solid-js@1.9.11)
+      solid-focus-trap: 0.1.9(solid-js@1.9.11)
+      solid-js: 1.9.11
+      solid-presence: 0.2.0(solid-js@1.9.11)
+      solid-prevent-scroll: 0.1.10(solid-js@1.9.11)
 
-  '@corvu/drawer@0.2.4(solid-js@1.9.10)':
+  '@corvu/drawer@0.2.4(solid-js@1.9.11)':
     dependencies:
-      '@corvu/dialog': 0.2.4(solid-js@1.9.10)
-      '@corvu/utils': 0.4.2(solid-js@1.9.10)
-      '@solid-primitives/memo': 1.4.3(solid-js@1.9.10)
-      solid-js: 1.9.10
-      solid-transition-size: 0.1.4(solid-js@1.9.10)
+      '@corvu/dialog': 0.2.4(solid-js@1.9.11)
+      '@corvu/utils': 0.4.2(solid-js@1.9.11)
+      '@solid-primitives/memo': 1.4.3(solid-js@1.9.11)
+      solid-js: 1.9.11
+      solid-transition-size: 0.1.4(solid-js@1.9.11)
 
-  '@corvu/utils@0.3.2(solid-js@1.9.10)':
+  '@corvu/utils@0.3.2(solid-js@1.9.11)':
     dependencies:
       '@floating-ui/dom': 1.7.5
-      solid-js: 1.9.10
+      solid-js: 1.9.11
 
-  '@corvu/utils@0.4.2(solid-js@1.9.10)':
+  '@corvu/utils@0.4.2(solid-js@1.9.11)':
     dependencies:
       '@floating-ui/dom': 1.7.5
-      solid-js: 1.9.10
+      solid-js: 1.9.11
 
   '@cspotcode/source-map-support@0.8.1':
     dependencies:
@@ -13991,67 +13984,67 @@ snapshots:
   '@dprint/win32-x64@0.51.1':
     optional: true
 
-  '@effect-atom/atom@0.4.3(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(effect@3.19.15)':
+  '@effect-atom/atom@0.4.3(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16)':
     dependencies:
-      '@effect/experimental': 0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15)
-      '@effect/platform': 0.94.0(effect@3.19.15)
-      '@effect/rpc': 0.73.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15)
-      effect: 3.19.15
+      '@effect/experimental': 0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16)
+      '@effect/platform': 0.94.0(effect@3.19.16)
+      '@effect/rpc': 0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16)
+      effect: 3.19.16
 
   '@effect/build-utils@0.8.9':
     dependencies:
       micromatch: 4.0.8
       pkg-entry-points: 1.1.1
 
-  '@effect/cli@0.73.2(@effect/platform@0.94.0(effect@3.19.15))(@effect/printer-ansi@0.47.0(@effect/typeclass@0.38.0(effect@3.19.15))(effect@3.19.15))(@effect/printer@0.47.0(@effect/typeclass@0.38.0(effect@3.19.15))(effect@3.19.15))(effect@3.19.15)':
+  '@effect/cli@0.73.2(@effect/platform@0.94.0(effect@3.19.16))(@effect/printer-ansi@0.47.0(@effect/typeclass@0.38.0(effect@3.19.16))(effect@3.19.16))(@effect/printer@0.47.0(@effect/typeclass@0.38.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16)':
     dependencies:
-      '@effect/platform': 0.94.0(effect@3.19.15)
-      '@effect/printer': 0.47.0(@effect/typeclass@0.38.0(effect@3.19.15))(effect@3.19.15)
-      '@effect/printer-ansi': 0.47.0(@effect/typeclass@0.38.0(effect@3.19.15))(effect@3.19.15)
-      effect: 3.19.15
+      '@effect/platform': 0.94.0(effect@3.19.16)
+      '@effect/printer': 0.47.0(@effect/typeclass@0.38.0(effect@3.19.16))(effect@3.19.16)
+      '@effect/printer-ansi': 0.47.0(@effect/typeclass@0.38.0(effect@3.19.16))(effect@3.19.16)
+      effect: 3.19.16
       ini: 4.1.3
       toml: 3.0.0
       yaml: 2.8.2
 
-  '@effect/cluster@0.56.1(@effect/platform@0.94.0(effect@3.19.15))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/workflow@0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(effect@3.19.15))(effect@3.19.15)':
+  '@effect/cluster@0.56.1(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/workflow@0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(effect@3.19.16)':
     dependencies:
-      '@effect/platform': 0.94.0(effect@3.19.15)
-      '@effect/rpc': 0.73.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15)
-      '@effect/sql': 0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15)
-      '@effect/workflow': 0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(effect@3.19.15)
-      effect: 3.19.15
+      '@effect/platform': 0.94.0(effect@3.19.16)
+      '@effect/rpc': 0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16)
+      '@effect/sql': 0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16)
+      '@effect/workflow': 0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16)
+      effect: 3.19.16
       kubernetes-types: 1.30.0
 
-  '@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15)':
+  '@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16)':
     dependencies:
-      '@effect/platform': 0.94.0(effect@3.19.15)
-      effect: 3.19.15
+      '@effect/platform': 0.94.0(effect@3.19.16)
+      effect: 3.19.16
       uuid: 11.1.0
 
   '@effect/language-service@0.56.0': {}
 
-  '@effect/platform-node-shared@0.57.1(@effect/cluster@0.56.1(@effect/platform@0.94.0(effect@3.19.15))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/workflow@0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(effect@3.19.15)':
+  '@effect/platform-node-shared@0.57.1(@effect/cluster@0.56.1(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/workflow@0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16)':
     dependencies:
-      '@effect/cluster': 0.56.1(@effect/platform@0.94.0(effect@3.19.15))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/workflow@0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(effect@3.19.15))(effect@3.19.15)
-      '@effect/platform': 0.94.0(effect@3.19.15)
-      '@effect/rpc': 0.73.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15)
-      '@effect/sql': 0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15)
+      '@effect/cluster': 0.56.1(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/workflow@0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(effect@3.19.16)
+      '@effect/platform': 0.94.0(effect@3.19.16)
+      '@effect/rpc': 0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16)
+      '@effect/sql': 0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16)
       '@parcel/watcher': 2.5.6
-      effect: 3.19.15
+      effect: 3.19.16
       multipasta: 0.2.7
       ws: 8.19.0
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
 
-  '@effect/platform-node@0.104.0(@effect/cluster@0.56.1(@effect/platform@0.94.0(effect@3.19.15))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/workflow@0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(effect@3.19.15)':
+  '@effect/platform-node@0.104.0(@effect/cluster@0.56.1(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/workflow@0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16)':
     dependencies:
-      '@effect/cluster': 0.56.1(@effect/platform@0.94.0(effect@3.19.15))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/workflow@0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(effect@3.19.15))(effect@3.19.15)
-      '@effect/platform': 0.94.0(effect@3.19.15)
-      '@effect/platform-node-shared': 0.57.1(@effect/cluster@0.56.1(@effect/platform@0.94.0(effect@3.19.15))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/workflow@0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(effect@3.19.15)
-      '@effect/rpc': 0.73.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15)
-      '@effect/sql': 0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15)
-      effect: 3.19.15
+      '@effect/cluster': 0.56.1(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/workflow@0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(effect@3.19.16)
+      '@effect/platform': 0.94.0(effect@3.19.16)
+      '@effect/platform-node-shared': 0.57.1(@effect/cluster@0.56.1(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/workflow@0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16)
+      '@effect/rpc': 0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16)
+      '@effect/sql': 0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16)
+      effect: 3.19.16
       mime: 3.0.0
       undici: 7.19.2
       ws: 8.19.0
@@ -14059,57 +14052,57 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
-  '@effect/platform@0.94.0(effect@3.19.15)':
+  '@effect/platform@0.94.0(effect@3.19.16)':
     dependencies:
-      effect: 3.19.15
+      effect: 3.19.16
       find-my-way-ts: 0.1.6
       msgpackr: 1.11.8
       multipasta: 0.2.7
 
-  '@effect/printer-ansi@0.47.0(@effect/typeclass@0.38.0(effect@3.19.15))(effect@3.19.15)':
+  '@effect/printer-ansi@0.47.0(@effect/typeclass@0.38.0(effect@3.19.16))(effect@3.19.16)':
     dependencies:
-      '@effect/printer': 0.47.0(@effect/typeclass@0.38.0(effect@3.19.15))(effect@3.19.15)
-      '@effect/typeclass': 0.38.0(effect@3.19.15)
-      effect: 3.19.15
+      '@effect/printer': 0.47.0(@effect/typeclass@0.38.0(effect@3.19.16))(effect@3.19.16)
+      '@effect/typeclass': 0.38.0(effect@3.19.16)
+      effect: 3.19.16
 
-  '@effect/printer@0.47.0(@effect/typeclass@0.38.0(effect@3.19.15))(effect@3.19.15)':
+  '@effect/printer@0.47.0(@effect/typeclass@0.38.0(effect@3.19.16))(effect@3.19.16)':
     dependencies:
-      '@effect/typeclass': 0.38.0(effect@3.19.15)
-      effect: 3.19.15
+      '@effect/typeclass': 0.38.0(effect@3.19.16)
+      effect: 3.19.16
 
-  '@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15)':
+  '@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16)':
     dependencies:
-      '@effect/platform': 0.94.0(effect@3.19.15)
-      effect: 3.19.15
+      '@effect/platform': 0.94.0(effect@3.19.16)
+      effect: 3.19.16
       msgpackr: 1.11.8
 
-  '@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15)':
+  '@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16)':
     dependencies:
-      '@effect/experimental': 0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15)
-      '@effect/platform': 0.94.0(effect@3.19.15)
-      effect: 3.19.15
+      '@effect/experimental': 0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16)
+      '@effect/platform': 0.94.0(effect@3.19.16)
+      effect: 3.19.16
       uuid: 11.1.0
 
-  '@effect/typeclass@0.38.0(effect@3.19.15)':
+  '@effect/typeclass@0.38.0(effect@3.19.16)':
     dependencies:
-      effect: 3.19.15
+      effect: 3.19.16
 
-  '@effect/vitest@0.27.0(effect@3.19.15)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@20.19.25)(@vitest/ui@4.0.13(vitest@3.2.4))(jiti@2.6.1)(jsdom@27.2.0)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.20.6)(yaml@2.8.2))':
+  '@effect/vitest@0.27.0(effect@3.19.16)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@20.19.25)(@vitest/ui@4.0.13(vitest@3.2.4))(jiti@2.6.1)(jsdom@27.2.0)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.20.6)(yaml@2.8.2))':
     dependencies:
-      effect: 3.19.15
+      effect: 3.19.16
       vitest: 3.2.4(@types/debug@4.1.12)(@types/node@20.19.25)(@vitest/ui@4.0.13(vitest@3.2.4))(jiti@2.6.1)(jsdom@27.2.0)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.20.6)(yaml@2.8.2)
 
-  '@effect/vitest@0.27.0(effect@3.19.15)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@20.19.25)(@vitest/ui@4.0.13(vitest@3.2.4))(jiti@2.6.1)(jsdom@27.2.0)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))':
+  '@effect/vitest@0.27.0(effect@3.19.16)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@20.19.25)(@vitest/ui@4.0.13(vitest@3.2.4))(jiti@2.6.1)(jsdom@27.2.0)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))':
     dependencies:
-      effect: 3.19.15
+      effect: 3.19.16
       vitest: 3.2.4(@types/debug@4.1.12)(@types/node@20.19.25)(@vitest/ui@4.0.13(vitest@3.2.4))(jiti@2.6.1)(jsdom@27.2.0)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
 
-  '@effect/workflow@0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.0(effect@3.19.15))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15))(effect@3.19.15)':
+  '@effect/workflow@0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16)':
     dependencies:
-      '@effect/experimental': 0.58.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15)
-      '@effect/platform': 0.94.0(effect@3.19.15)
-      '@effect/rpc': 0.73.0(@effect/platform@0.94.0(effect@3.19.15))(effect@3.19.15)
-      effect: 3.19.15
+      '@effect/experimental': 0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16)
+      '@effect/platform': 0.94.0(effect@3.19.16)
+      '@effect/rpc': 0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16)
+      effect: 3.19.16
 
   '@electric-sql/pglite-socket@0.0.20(@electric-sql/pglite@0.3.15)':
     dependencies:
@@ -14941,28 +14934,28 @@ snapshots:
 
   '@jspm/core@2.1.0': {}
 
-  '@kobalte/core@0.13.11(solid-js@1.9.10)':
+  '@kobalte/core@0.13.11(solid-js@1.9.11)':
     dependencies:
       '@floating-ui/dom': 1.7.5
       '@internationalized/date': 3.10.1
       '@internationalized/number': 3.6.5
-      '@kobalte/utils': 0.9.1(solid-js@1.9.10)
-      '@solid-primitives/props': 3.2.2(solid-js@1.9.10)
-      '@solid-primitives/resize-observer': 2.1.3(solid-js@1.9.10)
-      solid-js: 1.9.10
-      solid-presence: 0.1.8(solid-js@1.9.10)
-      solid-prevent-scroll: 0.1.10(solid-js@1.9.10)
+      '@kobalte/utils': 0.9.1(solid-js@1.9.11)
+      '@solid-primitives/props': 3.2.2(solid-js@1.9.11)
+      '@solid-primitives/resize-observer': 2.1.3(solid-js@1.9.11)
+      solid-js: 1.9.11
+      solid-presence: 0.1.8(solid-js@1.9.11)
+      solid-prevent-scroll: 0.1.10(solid-js@1.9.11)
 
-  '@kobalte/utils@0.9.1(solid-js@1.9.10)':
+  '@kobalte/utils@0.9.1(solid-js@1.9.11)':
     dependencies:
-      '@solid-primitives/event-listener': 2.4.3(solid-js@1.9.10)
-      '@solid-primitives/keyed': 1.5.3(solid-js@1.9.10)
-      '@solid-primitives/map': 0.4.13(solid-js@1.9.10)
-      '@solid-primitives/media': 2.3.3(solid-js@1.9.10)
-      '@solid-primitives/props': 3.2.2(solid-js@1.9.10)
-      '@solid-primitives/refs': 1.1.2(solid-js@1.9.10)
-      '@solid-primitives/utils': 6.3.2(solid-js@1.9.10)
-      solid-js: 1.9.10
+      '@solid-primitives/event-listener': 2.4.3(solid-js@1.9.11)
+      '@solid-primitives/keyed': 1.5.3(solid-js@1.9.11)
+      '@solid-primitives/map': 0.4.13(solid-js@1.9.11)
+      '@solid-primitives/media': 2.3.3(solid-js@1.9.11)
+      '@solid-primitives/props': 3.2.2(solid-js@1.9.11)
+      '@solid-primitives/refs': 1.1.2(solid-js@1.9.11)
+      '@solid-primitives/utils': 6.3.2(solid-js@1.9.11)
+      solid-js: 1.9.11
 
   '@lit-labs/ssr-dom-shim@1.5.1': {}
 
@@ -16938,138 +16931,138 @@ snapshots:
     dependencies:
       '@sinonjs/commons': 3.0.1
 
-  '@solid-devtools/debugger@0.28.1(solid-js@1.9.10)':
+  '@solid-devtools/debugger@0.28.1(solid-js@1.9.11)':
     dependencies:
       '@nothing-but/utils': 0.17.0
-      '@solid-devtools/shared': 0.20.0(solid-js@1.9.10)
-      '@solid-primitives/bounds': 0.1.3(solid-js@1.9.10)
-      '@solid-primitives/event-listener': 2.4.3(solid-js@1.9.10)
-      '@solid-primitives/keyboard': 1.3.3(solid-js@1.9.10)
-      '@solid-primitives/rootless': 1.5.2(solid-js@1.9.10)
-      '@solid-primitives/scheduled': 1.5.2(solid-js@1.9.10)
-      '@solid-primitives/static-store': 0.1.2(solid-js@1.9.10)
-      '@solid-primitives/utils': 6.3.2(solid-js@1.9.10)
-      solid-js: 1.9.10
+      '@solid-devtools/shared': 0.20.0(solid-js@1.9.11)
+      '@solid-primitives/bounds': 0.1.3(solid-js@1.9.11)
+      '@solid-primitives/event-listener': 2.4.3(solid-js@1.9.11)
+      '@solid-primitives/keyboard': 1.3.3(solid-js@1.9.11)
+      '@solid-primitives/rootless': 1.5.2(solid-js@1.9.11)
+      '@solid-primitives/scheduled': 1.5.2(solid-js@1.9.11)
+      '@solid-primitives/static-store': 0.1.2(solid-js@1.9.11)
+      '@solid-primitives/utils': 6.3.2(solid-js@1.9.11)
+      solid-js: 1.9.11
 
-  '@solid-devtools/logger@0.9.11(solid-js@1.9.10)':
+  '@solid-devtools/logger@0.9.11(solid-js@1.9.11)':
     dependencies:
       '@nothing-but/utils': 0.17.0
-      '@solid-devtools/debugger': 0.28.1(solid-js@1.9.10)
-      '@solid-devtools/shared': 0.20.0(solid-js@1.9.10)
-      '@solid-primitives/utils': 6.3.2(solid-js@1.9.10)
-      solid-js: 1.9.10
+      '@solid-devtools/debugger': 0.28.1(solid-js@1.9.11)
+      '@solid-devtools/shared': 0.20.0(solid-js@1.9.11)
+      '@solid-primitives/utils': 6.3.2(solid-js@1.9.11)
+      solid-js: 1.9.11
 
-  '@solid-devtools/shared@0.20.0(solid-js@1.9.10)':
+  '@solid-devtools/shared@0.20.0(solid-js@1.9.11)':
     dependencies:
       '@nothing-but/utils': 0.17.0
-      '@solid-primitives/event-listener': 2.4.3(solid-js@1.9.10)
-      '@solid-primitives/media': 2.3.3(solid-js@1.9.10)
-      '@solid-primitives/refs': 1.1.2(solid-js@1.9.10)
-      '@solid-primitives/rootless': 1.5.2(solid-js@1.9.10)
-      '@solid-primitives/scheduled': 1.5.2(solid-js@1.9.10)
-      '@solid-primitives/static-store': 0.1.2(solid-js@1.9.10)
-      '@solid-primitives/styles': 0.1.2(solid-js@1.9.10)
-      '@solid-primitives/utils': 6.3.2(solid-js@1.9.10)
-      solid-js: 1.9.10
+      '@solid-primitives/event-listener': 2.4.3(solid-js@1.9.11)
+      '@solid-primitives/media': 2.3.3(solid-js@1.9.11)
+      '@solid-primitives/refs': 1.1.2(solid-js@1.9.11)
+      '@solid-primitives/rootless': 1.5.2(solid-js@1.9.11)
+      '@solid-primitives/scheduled': 1.5.2(solid-js@1.9.11)
+      '@solid-primitives/static-store': 0.1.2(solid-js@1.9.11)
+      '@solid-primitives/styles': 0.1.2(solid-js@1.9.11)
+      '@solid-primitives/utils': 6.3.2(solid-js@1.9.11)
+      solid-js: 1.9.11
 
-  '@solid-primitives/bounds@0.1.3(solid-js@1.9.10)':
+  '@solid-primitives/bounds@0.1.3(solid-js@1.9.11)':
     dependencies:
-      '@solid-primitives/event-listener': 2.4.3(solid-js@1.9.10)
-      '@solid-primitives/resize-observer': 2.1.3(solid-js@1.9.10)
-      '@solid-primitives/static-store': 0.1.2(solid-js@1.9.10)
-      '@solid-primitives/utils': 6.3.2(solid-js@1.9.10)
-      solid-js: 1.9.10
+      '@solid-primitives/event-listener': 2.4.3(solid-js@1.9.11)
+      '@solid-primitives/resize-observer': 2.1.3(solid-js@1.9.11)
+      '@solid-primitives/static-store': 0.1.2(solid-js@1.9.11)
+      '@solid-primitives/utils': 6.3.2(solid-js@1.9.11)
+      solid-js: 1.9.11
 
-  '@solid-primitives/event-listener@2.4.3(solid-js@1.9.10)':
+  '@solid-primitives/event-listener@2.4.3(solid-js@1.9.11)':
     dependencies:
-      '@solid-primitives/utils': 6.3.2(solid-js@1.9.10)
-      solid-js: 1.9.10
+      '@solid-primitives/utils': 6.3.2(solid-js@1.9.11)
+      solid-js: 1.9.11
 
-  '@solid-primitives/keyboard@1.3.3(solid-js@1.9.10)':
+  '@solid-primitives/keyboard@1.3.3(solid-js@1.9.11)':
     dependencies:
-      '@solid-primitives/event-listener': 2.4.3(solid-js@1.9.10)
-      '@solid-primitives/rootless': 1.5.2(solid-js@1.9.10)
-      '@solid-primitives/utils': 6.3.2(solid-js@1.9.10)
-      solid-js: 1.9.10
+      '@solid-primitives/event-listener': 2.4.3(solid-js@1.9.11)
+      '@solid-primitives/rootless': 1.5.2(solid-js@1.9.11)
+      '@solid-primitives/utils': 6.3.2(solid-js@1.9.11)
+      solid-js: 1.9.11
 
-  '@solid-primitives/keyed@1.5.3(solid-js@1.9.10)':
+  '@solid-primitives/keyed@1.5.3(solid-js@1.9.11)':
     dependencies:
-      solid-js: 1.9.10
+      solid-js: 1.9.11
 
-  '@solid-primitives/map@0.4.13(solid-js@1.9.10)':
+  '@solid-primitives/map@0.4.13(solid-js@1.9.11)':
     dependencies:
-      '@solid-primitives/trigger': 1.2.2(solid-js@1.9.10)
-      solid-js: 1.9.10
+      '@solid-primitives/trigger': 1.2.2(solid-js@1.9.11)
+      solid-js: 1.9.11
 
-  '@solid-primitives/media@2.3.3(solid-js@1.9.10)':
+  '@solid-primitives/media@2.3.3(solid-js@1.9.11)':
     dependencies:
-      '@solid-primitives/event-listener': 2.4.3(solid-js@1.9.10)
-      '@solid-primitives/rootless': 1.5.2(solid-js@1.9.10)
-      '@solid-primitives/static-store': 0.1.2(solid-js@1.9.10)
-      '@solid-primitives/utils': 6.3.2(solid-js@1.9.10)
-      solid-js: 1.9.10
+      '@solid-primitives/event-listener': 2.4.3(solid-js@1.9.11)
+      '@solid-primitives/rootless': 1.5.2(solid-js@1.9.11)
+      '@solid-primitives/static-store': 0.1.2(solid-js@1.9.11)
+      '@solid-primitives/utils': 6.3.2(solid-js@1.9.11)
+      solid-js: 1.9.11
 
-  '@solid-primitives/memo@1.4.3(solid-js@1.9.10)':
+  '@solid-primitives/memo@1.4.3(solid-js@1.9.11)':
     dependencies:
-      '@solid-primitives/scheduled': 1.5.2(solid-js@1.9.10)
-      '@solid-primitives/utils': 6.3.2(solid-js@1.9.10)
-      solid-js: 1.9.10
+      '@solid-primitives/scheduled': 1.5.2(solid-js@1.9.11)
+      '@solid-primitives/utils': 6.3.2(solid-js@1.9.11)
+      solid-js: 1.9.11
 
-  '@solid-primitives/props@3.2.2(solid-js@1.9.10)':
+  '@solid-primitives/props@3.2.2(solid-js@1.9.11)':
     dependencies:
-      '@solid-primitives/utils': 6.3.2(solid-js@1.9.10)
-      solid-js: 1.9.10
+      '@solid-primitives/utils': 6.3.2(solid-js@1.9.11)
+      solid-js: 1.9.11
 
-  '@solid-primitives/refs@1.1.2(solid-js@1.9.10)':
+  '@solid-primitives/refs@1.1.2(solid-js@1.9.11)':
     dependencies:
-      '@solid-primitives/utils': 6.3.2(solid-js@1.9.10)
-      solid-js: 1.9.10
+      '@solid-primitives/utils': 6.3.2(solid-js@1.9.11)
+      solid-js: 1.9.11
 
-  '@solid-primitives/resize-observer@2.1.3(solid-js@1.9.10)':
+  '@solid-primitives/resize-observer@2.1.3(solid-js@1.9.11)':
     dependencies:
-      '@solid-primitives/event-listener': 2.4.3(solid-js@1.9.10)
-      '@solid-primitives/rootless': 1.5.2(solid-js@1.9.10)
-      '@solid-primitives/static-store': 0.1.2(solid-js@1.9.10)
-      '@solid-primitives/utils': 6.3.2(solid-js@1.9.10)
-      solid-js: 1.9.10
+      '@solid-primitives/event-listener': 2.4.3(solid-js@1.9.11)
+      '@solid-primitives/rootless': 1.5.2(solid-js@1.9.11)
+      '@solid-primitives/static-store': 0.1.2(solid-js@1.9.11)
+      '@solid-primitives/utils': 6.3.2(solid-js@1.9.11)
+      solid-js: 1.9.11
 
-  '@solid-primitives/rootless@1.5.2(solid-js@1.9.10)':
+  '@solid-primitives/rootless@1.5.2(solid-js@1.9.11)':
     dependencies:
-      '@solid-primitives/utils': 6.3.2(solid-js@1.9.10)
-      solid-js: 1.9.10
+      '@solid-primitives/utils': 6.3.2(solid-js@1.9.11)
+      solid-js: 1.9.11
 
-  '@solid-primitives/scheduled@1.5.2(solid-js@1.9.10)':
+  '@solid-primitives/scheduled@1.5.2(solid-js@1.9.11)':
     dependencies:
-      solid-js: 1.9.10
+      solid-js: 1.9.11
 
-  '@solid-primitives/static-store@0.1.2(solid-js@1.9.10)':
+  '@solid-primitives/static-store@0.1.2(solid-js@1.9.11)':
     dependencies:
-      '@solid-primitives/utils': 6.3.2(solid-js@1.9.10)
-      solid-js: 1.9.10
+      '@solid-primitives/utils': 6.3.2(solid-js@1.9.11)
+      solid-js: 1.9.11
 
-  '@solid-primitives/styles@0.1.2(solid-js@1.9.10)':
+  '@solid-primitives/styles@0.1.2(solid-js@1.9.11)':
     dependencies:
-      '@solid-primitives/rootless': 1.5.2(solid-js@1.9.10)
-      '@solid-primitives/utils': 6.3.2(solid-js@1.9.10)
-      solid-js: 1.9.10
+      '@solid-primitives/rootless': 1.5.2(solid-js@1.9.11)
+      '@solid-primitives/utils': 6.3.2(solid-js@1.9.11)
+      solid-js: 1.9.11
 
-  '@solid-primitives/trigger@1.2.2(solid-js@1.9.10)':
+  '@solid-primitives/trigger@1.2.2(solid-js@1.9.11)':
     dependencies:
-      '@solid-primitives/utils': 6.3.2(solid-js@1.9.10)
-      solid-js: 1.9.10
+      '@solid-primitives/utils': 6.3.2(solid-js@1.9.11)
+      solid-js: 1.9.11
 
-  '@solid-primitives/utils@6.3.2(solid-js@1.9.10)':
+  '@solid-primitives/utils@6.3.2(solid-js@1.9.11)':
     dependencies:
-      solid-js: 1.9.10
+      solid-js: 1.9.11
 
-  '@solidjs/meta@0.29.4(solid-js@1.9.10)':
+  '@solidjs/meta@0.29.4(solid-js@1.9.11)':
     dependencies:
-      solid-js: 1.9.10
+      solid-js: 1.9.11
 
-  '@solidjs/testing-library@0.8.10(solid-js@1.9.10)':
+  '@solidjs/testing-library@0.8.10(solid-js@1.9.11)':
     dependencies:
       '@testing-library/dom': 10.4.1
-      solid-js: 1.9.10
+      solid-js: 1.9.11
 
   '@standard-schema/spec@1.1.0': {}
 
@@ -17380,6 +17373,8 @@ snapshots:
 
   '@tanstack/query-core@5.90.10': {}
 
+  '@tanstack/query-core@5.90.20': {}
+
   '@tanstack/react-form@1.25.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
     dependencies:
       '@tanstack/form-core': 1.25.0
@@ -17410,12 +17405,12 @@ snapshots:
       tiny-invariant: 1.3.3
       tiny-warning: 1.0.3
 
-  '@tanstack/router-devtools-core@1.139.3(@tanstack/router-core@1.139.3)(@types/node@25.1.0)(csstype@3.2.3)(jiti@2.6.1)(lightningcss@1.30.2)(solid-js@1.9.10)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)':
+  '@tanstack/router-devtools-core@1.139.3(@tanstack/router-core@1.139.3)(@types/node@25.1.0)(csstype@3.2.3)(jiti@2.6.1)(lightningcss@1.30.2)(solid-js@1.9.11)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)':
     dependencies:
       '@tanstack/router-core': 1.139.3
       clsx: 2.1.1
       goober: 2.1.18(csstype@3.2.3)
-      solid-js: 1.9.10
+      solid-js: 1.9.11
       tiny-invariant: 1.3.3
       vite: 7.2.4(@types/node@25.1.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
     optionalDependencies:
@@ -17446,7 +17441,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@tanstack/router-plugin@1.139.3(vite-plugin-solid@2.11.10(@testing-library/jest-dom@6.9.1)(solid-js@1.9.10)(vite@7.2.4(@types/node@25.1.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(vite@7.2.4(@types/node@25.1.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(webpack@5.104.1(@swc/core@1.15.3(@swc/helpers@0.5.17)))':
+  '@tanstack/router-plugin@1.139.3(vite-plugin-solid@2.11.10(@testing-library/jest-dom@6.9.1)(solid-js@1.9.11)(vite@7.2.4(@types/node@25.1.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(vite@7.2.4(@types/node@25.1.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(webpack@5.104.1(@swc/core@1.15.3(@swc/helpers@0.5.17)))':
     dependencies:
       '@babel/core': 7.29.0
       '@babel/plugin-syntax-jsx': 7.28.6(@babel/core@7.29.0)
@@ -17464,7 +17459,7 @@ snapshots:
       zod: 3.25.76
     optionalDependencies:
       vite: 7.2.4(@types/node@25.1.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
-      vite-plugin-solid: 2.11.10(@testing-library/jest-dom@6.9.1)(solid-js@1.9.10)(vite@7.2.4(@types/node@25.1.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
+      vite-plugin-solid: 2.11.10(@testing-library/jest-dom@6.9.1)(solid-js@1.9.11)(vite@7.2.4(@types/node@25.1.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
       webpack: 5.104.1(@swc/core@1.15.3(@swc/helpers@0.5.17))
     transitivePeerDependencies:
       - supports-color
@@ -17498,22 +17493,22 @@ snapshots:
       - supports-color
       - vite
 
-  '@tanstack/solid-form@1.25.0(solid-js@1.9.10)':
+  '@tanstack/solid-form@1.25.0(solid-js@1.9.11)':
     dependencies:
       '@tanstack/form-core': 1.25.0
-      '@tanstack/solid-store': 0.7.7(solid-js@1.9.10)
-      solid-js: 1.9.10
+      '@tanstack/solid-store': 0.7.7(solid-js@1.9.11)
+      solid-js: 1.9.11
 
-  '@tanstack/solid-query@5.90.13(solid-js@1.9.10)':
+  '@tanstack/solid-query@5.90.23(solid-js@1.9.11)':
     dependencies:
-      '@tanstack/query-core': 5.90.10
-      solid-js: 1.9.10
+      '@tanstack/query-core': 5.90.20
+      solid-js: 1.9.11
 
-  '@tanstack/solid-router-devtools@1.139.3(@tanstack/router-core@1.139.3)(@tanstack/solid-router@1.139.3(solid-js@1.9.10))(@types/node@25.1.0)(csstype@3.2.3)(jiti@2.6.1)(lightningcss@1.30.2)(solid-js@1.9.10)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)':
+  '@tanstack/solid-router-devtools@1.139.3(@tanstack/router-core@1.139.3)(@tanstack/solid-router@1.139.3(solid-js@1.9.11))(@types/node@25.1.0)(csstype@3.2.3)(jiti@2.6.1)(lightningcss@1.30.2)(solid-js@1.9.11)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)':
     dependencies:
-      '@tanstack/router-devtools-core': 1.139.3(@tanstack/router-core@1.139.3)(@types/node@25.1.0)(csstype@3.2.3)(jiti@2.6.1)(lightningcss@1.30.2)(solid-js@1.9.10)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
-      '@tanstack/solid-router': 1.139.3(solid-js@1.9.10)
-      solid-js: 1.9.10
+      '@tanstack/router-devtools-core': 1.139.3(@tanstack/router-core@1.139.3)(@types/node@25.1.0)(csstype@3.2.3)(jiti@2.6.1)(lightningcss@1.30.2)(solid-js@1.9.11)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
+      '@tanstack/solid-router': 1.139.3(solid-js@1.9.11)
+      solid-js: 1.9.11
       vite: 7.2.4(@types/node@25.1.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
     optionalDependencies:
       '@tanstack/router-core': 1.139.3
@@ -17531,50 +17526,50 @@ snapshots:
       - tsx
       - yaml
 
-  '@tanstack/solid-router@1.139.3(solid-js@1.9.10)':
+  '@tanstack/solid-router@1.139.3(solid-js@1.9.11)':
     dependencies:
-      '@solid-devtools/logger': 0.9.11(solid-js@1.9.10)
-      '@solid-primitives/refs': 1.1.2(solid-js@1.9.10)
-      '@solidjs/meta': 0.29.4(solid-js@1.9.10)
+      '@solid-devtools/logger': 0.9.11(solid-js@1.9.11)
+      '@solid-primitives/refs': 1.1.2(solid-js@1.9.11)
+      '@solidjs/meta': 0.29.4(solid-js@1.9.11)
       '@tanstack/history': 1.139.0
       '@tanstack/router-core': 1.139.3
-      '@tanstack/solid-store': 0.8.0(solid-js@1.9.10)
+      '@tanstack/solid-store': 0.8.0(solid-js@1.9.11)
       isbot: 5.1.34
-      solid-js: 1.9.10
+      solid-js: 1.9.11
       tiny-invariant: 1.3.3
       tiny-warning: 1.0.3
 
-  '@tanstack/solid-start-client@1.139.3(solid-js@1.9.10)':
+  '@tanstack/solid-start-client@1.139.3(solid-js@1.9.11)':
     dependencies:
       '@tanstack/router-core': 1.139.3
-      '@tanstack/solid-router': 1.139.3(solid-js@1.9.10)
+      '@tanstack/solid-router': 1.139.3(solid-js@1.9.11)
       '@tanstack/start-client-core': 1.139.3
-      solid-js: 1.9.10
+      solid-js: 1.9.11
       tiny-invariant: 1.3.3
       tiny-warning: 1.0.3
 
-  '@tanstack/solid-start-server@1.139.3(solid-js@1.9.10)':
+  '@tanstack/solid-start-server@1.139.3(solid-js@1.9.11)':
     dependencies:
-      '@solidjs/meta': 0.29.4(solid-js@1.9.10)
+      '@solidjs/meta': 0.29.4(solid-js@1.9.11)
       '@tanstack/history': 1.139.0
       '@tanstack/router-core': 1.139.3
-      '@tanstack/solid-router': 1.139.3(solid-js@1.9.10)
+      '@tanstack/solid-router': 1.139.3(solid-js@1.9.11)
       '@tanstack/start-client-core': 1.139.3
       '@tanstack/start-server-core': 1.139.3
-      solid-js: 1.9.10
+      solid-js: 1.9.11
     transitivePeerDependencies:
       - crossws
 
-  '@tanstack/solid-start@1.139.3(solid-js@1.9.10)(vite-plugin-solid@2.11.10(@testing-library/jest-dom@6.9.1)(solid-js@1.9.10)(vite@7.2.4(@types/node@25.1.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(vite@7.2.4(@types/node@25.1.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(webpack@5.104.1(@swc/core@1.15.3(@swc/helpers@0.5.17)))':
+  '@tanstack/solid-start@1.139.3(solid-js@1.9.11)(vite-plugin-solid@2.11.10(@testing-library/jest-dom@6.9.1)(solid-js@1.9.11)(vite@7.2.4(@types/node@25.1.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(vite@7.2.4(@types/node@25.1.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(webpack@5.104.1(@swc/core@1.15.3(@swc/helpers@0.5.17)))':
     dependencies:
-      '@tanstack/solid-router': 1.139.3(solid-js@1.9.10)
-      '@tanstack/solid-start-client': 1.139.3(solid-js@1.9.10)
-      '@tanstack/solid-start-server': 1.139.3(solid-js@1.9.10)
+      '@tanstack/solid-router': 1.139.3(solid-js@1.9.11)
+      '@tanstack/solid-start-client': 1.139.3(solid-js@1.9.11)
+      '@tanstack/solid-start-server': 1.139.3(solid-js@1.9.11)
       '@tanstack/start-client-core': 1.139.3
-      '@tanstack/start-plugin-core': 1.139.3(vite-plugin-solid@2.11.10(@testing-library/jest-dom@6.9.1)(solid-js@1.9.10)(vite@7.2.4(@types/node@25.1.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(vite@7.2.4(@types/node@25.1.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(webpack@5.104.1(@swc/core@1.15.3(@swc/helpers@0.5.17)))
+      '@tanstack/start-plugin-core': 1.139.3(vite-plugin-solid@2.11.10(@testing-library/jest-dom@6.9.1)(solid-js@1.9.11)(vite@7.2.4(@types/node@25.1.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(vite@7.2.4(@types/node@25.1.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(webpack@5.104.1(@swc/core@1.15.3(@swc/helpers@0.5.17)))
       '@tanstack/start-server-core': 1.139.3
       pathe: 2.0.3
-      solid-js: 1.9.10
+      solid-js: 1.9.11
       vite: 7.2.4(@types/node@25.1.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
     transitivePeerDependencies:
       - '@rsbuild/core'
@@ -17584,15 +17579,15 @@ snapshots:
       - vite-plugin-solid
       - webpack
 
-  '@tanstack/solid-store@0.7.7(solid-js@1.9.10)':
+  '@tanstack/solid-store@0.7.7(solid-js@1.9.11)':
     dependencies:
       '@tanstack/store': 0.7.7
-      solid-js: 1.9.10
+      solid-js: 1.9.11
 
-  '@tanstack/solid-store@0.8.0(solid-js@1.9.10)':
+  '@tanstack/solid-store@0.8.0(solid-js@1.9.11)':
     dependencies:
       '@tanstack/store': 0.8.0
-      solid-js: 1.9.10
+      solid-js: 1.9.11
 
   '@tanstack/start-client-core@1.139.3':
     dependencies:
@@ -17602,7 +17597,7 @@ snapshots:
       tiny-invariant: 1.3.3
       tiny-warning: 1.0.3
 
-  '@tanstack/start-plugin-core@1.139.3(vite-plugin-solid@2.11.10(@testing-library/jest-dom@6.9.1)(solid-js@1.9.10)(vite@7.2.4(@types/node@25.1.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(vite@7.2.4(@types/node@25.1.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(webpack@5.104.1(@swc/core@1.15.3(@swc/helpers@0.5.17)))':
+  '@tanstack/start-plugin-core@1.139.3(vite-plugin-solid@2.11.10(@testing-library/jest-dom@6.9.1)(solid-js@1.9.11)(vite@7.2.4(@types/node@25.1.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(vite@7.2.4(@types/node@25.1.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(webpack@5.104.1(@swc/core@1.15.3(@swc/helpers@0.5.17)))':
     dependencies:
       '@babel/code-frame': 7.26.2
       '@babel/core': 7.29.0
@@ -17610,7 +17605,7 @@ snapshots:
       '@rolldown/pluginutils': 1.0.0-beta.40
       '@tanstack/router-core': 1.139.3
       '@tanstack/router-generator': 1.139.3
-      '@tanstack/router-plugin': 1.139.3(vite-plugin-solid@2.11.10(@testing-library/jest-dom@6.9.1)(solid-js@1.9.10)(vite@7.2.4(@types/node@25.1.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(vite@7.2.4(@types/node@25.1.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(webpack@5.104.1(@swc/core@1.15.3(@swc/helpers@0.5.17)))
+      '@tanstack/router-plugin': 1.139.3(vite-plugin-solid@2.11.10(@testing-library/jest-dom@6.9.1)(solid-js@1.9.11)(vite@7.2.4(@types/node@25.1.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(vite@7.2.4(@types/node@25.1.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(webpack@5.104.1(@swc/core@1.15.3(@swc/helpers@0.5.17)))
       '@tanstack/router-utils': 1.139.0
       '@tanstack/server-functions-plugin': 1.139.0(vite@7.2.4(@types/node@25.1.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
       '@tanstack/start-client-core': 1.139.3
@@ -18831,12 +18826,12 @@ snapshots:
       babel-plugin-jest-hoist: 30.2.0
       babel-preset-current-node-syntax: 1.2.0(@babel/core@7.29.0)
 
-  babel-preset-solid@1.9.10(@babel/core@7.29.0)(solid-js@1.9.10):
+  babel-preset-solid@1.9.10(@babel/core@7.29.0)(solid-js@1.9.11):
     dependencies:
       '@babel/core': 7.29.0
       babel-plugin-jsx-dom-expressions: 0.40.3(@babel/core@7.29.0)
     optionalDependencies:
-      solid-js: 1.9.10
+      solid-js: 1.9.11
 
   bail@2.0.2: {}
 
@@ -18868,33 +18863,7 @@ snapshots:
 
   bcryptjs@2.4.3: {}
 
-  better-auth@1.4.10(011274cd97e50d478751fd57d6f59a9b):
-    dependencies:
-      '@better-auth/core': 1.4.10(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-call@1.1.7(zod@4.3.6))(jose@6.1.3)(kysely@0.28.11)(nanostores@1.1.0)
-      '@better-auth/telemetry': 1.4.10(@better-auth/core@1.4.10(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-call@1.1.7(zod@4.3.6))(jose@6.1.3)(kysely@0.28.11)(nanostores@1.1.0))
-      '@better-auth/utils': 0.3.0
-      '@better-fetch/fetch': 1.1.21
-      '@noble/ciphers': 2.1.1
-      '@noble/hashes': 2.0.1
-      better-call: 1.1.7(zod@4.3.6)
-      defu: 6.1.4
-      jose: 6.1.3
-      kysely: 0.28.11
-      nanostores: 1.1.0
-      zod: 4.3.6
-    optionalDependencies:
-      '@prisma/client': 7.3.0(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.4.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(typescript@5.9.3)
-      better-sqlite3: 12.4.6
-      drizzle-orm: 0.33.0(@electric-sql/pglite@0.3.15)(@prisma/client@7.3.0(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.4.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(typescript@5.9.3))(@types/better-sqlite3@7.6.13)(@types/pg@8.16.0)(@types/react@19.1.13)(better-sqlite3@12.4.6)(kysely@0.28.11)(mysql2@3.15.3)(pg@8.18.0)(postgres@3.4.7)(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.4.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(react@19.2.0)
-      mysql2: 3.15.3
-      pg: 8.18.0
-      prisma: 7.3.0(@types/react@19.1.13)(better-sqlite3@12.4.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3)
-      react: 19.2.0
-      react-dom: 19.2.0(react@19.2.0)
-      solid-js: 1.9.10
-      vitest: 3.2.4(@types/debug@4.1.12)(@types/node@20.19.25)(@vitest/ui@4.0.13(vitest@3.2.4))(jiti@2.6.1)(jsdom@27.2.0)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
-
-  better-auth@1.4.10(6b499b2ed8f817bd322dea1b461b7a3b):
+  better-auth@1.4.10(9a27d2862a0c55724d3a2e95a269e52a):
     dependencies:
       '@better-auth/core': 1.4.10(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-call@1.1.7(zod@4.3.6))(jose@6.1.3)(kysely@0.28.11)(nanostores@1.1.0)
       '@better-auth/telemetry': 1.4.10(@better-auth/core@1.4.10(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-call@1.1.7(zod@4.3.6))(jose@6.1.3)(kysely@0.28.11)(nanostores@1.1.0))
@@ -18917,10 +18886,10 @@ snapshots:
       prisma: 7.3.0(@types/react@19.1.13)(better-sqlite3@12.4.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3)
       react: 19.2.0
       react-dom: 19.2.0(react@19.2.0)
-      solid-js: 1.9.10
+      solid-js: 1.9.11
       vitest: 3.2.4(@types/debug@4.1.12)(@types/node@20.19.25)(@vitest/ui@4.0.13(vitest@3.2.4))(jiti@2.6.1)(jsdom@27.2.0)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
 
-  better-auth@1.4.10(@prisma/client@7.3.0(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(typescript@5.9.3))(better-sqlite3@12.6.2)(mysql2@3.15.3)(pg@8.18.0)(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(solid-js@1.9.10)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@20.19.25)(@vitest/ui@4.0.13(vitest@3.2.4))(jiti@2.6.1)(jsdom@27.2.0)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)):
+  better-auth@1.4.10(@prisma/client@7.3.0(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(typescript@5.9.3))(better-sqlite3@12.6.2)(mysql2@3.15.3)(pg@8.18.0)(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(solid-js@1.9.11)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@20.19.25)(@vitest/ui@4.0.13(vitest@3.2.4))(jiti@2.6.1)(jsdom@27.2.0)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)):
     dependencies:
       '@better-auth/core': 1.4.10(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-call@1.1.7(zod@4.3.6))(jose@6.1.3)(kysely@0.28.11)(nanostores@1.1.0)
       '@better-auth/telemetry': 1.4.10(@better-auth/core@1.4.10(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-call@1.1.7(zod@4.3.6))(jose@6.1.3)(kysely@0.28.11)(nanostores@1.1.0))
@@ -18942,10 +18911,10 @@ snapshots:
       prisma: 7.3.0(@types/react@19.1.13)(better-sqlite3@12.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3)
       react: 19.2.0
       react-dom: 19.2.0(react@19.2.0)
-      solid-js: 1.9.10
+      solid-js: 1.9.11
       vitest: 3.2.4(@types/debug@4.1.12)(@types/node@20.19.25)(@vitest/ui@4.0.13(vitest@3.2.4))(jiti@2.6.1)(jsdom@27.2.0)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
 
-  better-auth@1.4.10(@prisma/client@7.3.0(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(typescript@5.9.3))(better-sqlite3@12.6.2)(mysql2@3.15.3)(pg@8.18.0)(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(solid-js@1.9.10)(vitest@4.0.18(@types/node@25.1.0)(@vitest/ui@4.0.13(vitest@3.2.4))(jiti@2.6.1)(jsdom@27.2.0)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)):
+  better-auth@1.4.10(@prisma/client@7.3.0(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(typescript@5.9.3))(better-sqlite3@12.6.2)(mysql2@3.15.3)(pg@8.18.0)(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(solid-js@1.9.11)(vitest@4.0.18(@types/node@25.1.0)(@vitest/ui@4.0.13(vitest@3.2.4))(jiti@2.6.1)(jsdom@27.2.0)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)):
     dependencies:
       '@better-auth/core': 1.4.10(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-call@1.1.7(zod@4.3.6))(jose@6.1.3)(kysely@0.28.11)(nanostores@1.1.0)
       '@better-auth/telemetry': 1.4.10(@better-auth/core@1.4.10(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-call@1.1.7(zod@4.3.6))(jose@6.1.3)(kysely@0.28.11)(nanostores@1.1.0))
@@ -18967,8 +18936,34 @@ snapshots:
       prisma: 7.3.0(@types/react@19.1.13)(better-sqlite3@12.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3)
       react: 19.2.0
       react-dom: 19.2.0(react@19.2.0)
-      solid-js: 1.9.10
+      solid-js: 1.9.11
       vitest: 4.0.18(@types/node@25.1.0)(@vitest/ui@4.0.13(vitest@3.2.4))(jiti@2.6.1)(jsdom@27.2.0)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
+
+  better-auth@1.4.10(c44486b87d211e265d31b699648d274c):
+    dependencies:
+      '@better-auth/core': 1.4.10(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-call@1.1.7(zod@4.3.6))(jose@6.1.3)(kysely@0.28.11)(nanostores@1.1.0)
+      '@better-auth/telemetry': 1.4.10(@better-auth/core@1.4.10(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-call@1.1.7(zod@4.3.6))(jose@6.1.3)(kysely@0.28.11)(nanostores@1.1.0))
+      '@better-auth/utils': 0.3.0
+      '@better-fetch/fetch': 1.1.21
+      '@noble/ciphers': 2.1.1
+      '@noble/hashes': 2.0.1
+      better-call: 1.1.7(zod@4.3.6)
+      defu: 6.1.4
+      jose: 6.1.3
+      kysely: 0.28.11
+      nanostores: 1.1.0
+      zod: 4.3.6
+    optionalDependencies:
+      '@prisma/client': 7.3.0(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.4.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(typescript@5.9.3)
+      better-sqlite3: 12.4.6
+      drizzle-orm: 0.33.0(@electric-sql/pglite@0.3.15)(@prisma/client@7.3.0(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.4.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(typescript@5.9.3))(@types/better-sqlite3@7.6.13)(@types/pg@8.16.0)(@types/react@19.1.13)(better-sqlite3@12.4.6)(kysely@0.28.11)(mysql2@3.15.3)(pg@8.18.0)(postgres@3.4.7)(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.4.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(react@19.2.0)
+      mysql2: 3.15.3
+      pg: 8.18.0
+      prisma: 7.3.0(@types/react@19.1.13)(better-sqlite3@12.4.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3)
+      react: 19.2.0
+      react-dom: 19.2.0(react@19.2.0)
+      solid-js: 1.9.11
+      vitest: 3.2.4(@types/debug@4.1.12)(@types/node@20.19.25)(@vitest/ui@4.0.13(vitest@3.2.4))(jiti@2.6.1)(jsdom@27.2.0)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
 
   better-call@1.1.7(zod@4.3.6):
     dependencies:
@@ -19885,7 +19880,7 @@ snapshots:
       '@standard-schema/spec': 1.1.0
       fast-check: 3.23.2
 
-  effect@3.19.15:
+  effect@3.19.16:
     dependencies:
       '@standard-schema/spec': 1.1.0
       fast-check: 3.23.2
@@ -22227,9 +22222,9 @@ snapshots:
     dependencies:
       react: 19.2.0
 
-  lucide-solid@0.554.0(solid-js@1.9.10):
+  lucide-solid@0.554.0(solid-js@1.9.11):
     dependencies:
-      solid-js: 1.9.10
+      solid-js: 1.9.11
 
   luxon@3.7.2: {}
 
@@ -24826,15 +24821,9 @@ snapshots:
     dependencies:
       randombytes: 2.1.0
 
-  seroval-plugins@1.3.3(seroval@1.3.2):
-    dependencies:
-      seroval: 1.3.2
-
   seroval-plugins@1.5.0(seroval@1.5.0):
     dependencies:
       seroval: 1.5.0
-
-  seroval@1.3.2: {}
 
   seroval@1.5.0: {}
 
@@ -25005,50 +24994,50 @@ snapshots:
       dot-case: 3.0.4
       tslib: 2.8.1
 
-  solid-dismissible@0.1.1(solid-js@1.9.10):
+  solid-dismissible@0.1.1(solid-js@1.9.11):
     dependencies:
-      '@corvu/utils': 0.4.2(solid-js@1.9.10)
-      solid-js: 1.9.10
+      '@corvu/utils': 0.4.2(solid-js@1.9.11)
+      solid-js: 1.9.11
 
-  solid-focus-trap@0.1.9(solid-js@1.9.10):
+  solid-focus-trap@0.1.9(solid-js@1.9.11):
     dependencies:
-      '@corvu/utils': 0.4.2(solid-js@1.9.10)
-      solid-js: 1.9.10
+      '@corvu/utils': 0.4.2(solid-js@1.9.11)
+      solid-js: 1.9.11
 
-  solid-js@1.9.10:
+  solid-js@1.9.11:
     dependencies:
       csstype: 3.2.3
-      seroval: 1.3.2
-      seroval-plugins: 1.3.3(seroval@1.3.2)
+      seroval: 1.5.0
+      seroval-plugins: 1.5.0(seroval@1.5.0)
 
-  solid-presence@0.1.8(solid-js@1.9.10):
+  solid-presence@0.1.8(solid-js@1.9.11):
     dependencies:
-      '@corvu/utils': 0.4.2(solid-js@1.9.10)
-      solid-js: 1.9.10
+      '@corvu/utils': 0.4.2(solid-js@1.9.11)
+      solid-js: 1.9.11
 
-  solid-presence@0.2.0(solid-js@1.9.10):
+  solid-presence@0.2.0(solid-js@1.9.11):
     dependencies:
-      '@corvu/utils': 0.4.2(solid-js@1.9.10)
-      solid-js: 1.9.10
+      '@corvu/utils': 0.4.2(solid-js@1.9.11)
+      solid-js: 1.9.11
 
-  solid-prevent-scroll@0.1.10(solid-js@1.9.10):
+  solid-prevent-scroll@0.1.10(solid-js@1.9.11):
     dependencies:
-      '@corvu/utils': 0.4.2(solid-js@1.9.10)
-      solid-js: 1.9.10
+      '@corvu/utils': 0.4.2(solid-js@1.9.11)
+      solid-js: 1.9.11
 
-  solid-refresh@0.6.3(solid-js@1.9.10):
+  solid-refresh@0.6.3(solid-js@1.9.11):
     dependencies:
       '@babel/generator': 7.29.0
       '@babel/helper-module-imports': 7.28.6
       '@babel/types': 7.29.0
-      solid-js: 1.9.10
+      solid-js: 1.9.11
     transitivePeerDependencies:
       - supports-color
 
-  solid-transition-size@0.1.4(solid-js@1.9.10):
+  solid-transition-size@0.1.4(solid-js@1.9.11):
     dependencies:
-      '@corvu/utils': 0.3.2(solid-js@1.9.10)
-      solid-js: 1.9.10
+      '@corvu/utils': 0.3.2(solid-js@1.9.11)
+      solid-js: 1.9.11
 
   sonic-boom@3.8.1:
     dependencies:
@@ -25504,12 +25493,12 @@ snapshots:
 
   trough@2.2.0: {}
 
-  trpc-cli@0.12.2(@trpc/server@11.9.0(typescript@5.9.3))(effect@3.19.15)(valibot@1.2.0(typescript@5.9.3))(zod@4.3.6):
+  trpc-cli@0.12.2(@trpc/server@11.9.0(typescript@5.9.3))(effect@3.19.16)(valibot@1.2.0(typescript@5.9.3))(zod@4.3.6):
     dependencies:
       commander: 14.0.3
     optionalDependencies:
       '@trpc/server': 11.9.0(typescript@5.9.3)
-      effect: 3.19.15
+      effect: 3.19.16
       valibot: 1.2.0(typescript@5.9.3)
       zod: 4.3.6
 
@@ -25644,7 +25633,7 @@ snapshots:
   uglify-js@3.19.3:
     optional: true
 
-  ultracite@6.3.6(effect@3.19.15)(typescript@5.9.3)(valibot@1.2.0(typescript@5.9.3)):
+  ultracite@6.3.6(effect@3.19.16)(typescript@5.9.3)(valibot@1.2.0(typescript@5.9.3)):
     dependencies:
       '@clack/prompts': 0.11.0
       '@trpc/server': 11.9.0(typescript@5.9.3)
@@ -25652,7 +25641,7 @@ snapshots:
       glob: 12.0.0
       jsonc-parser: 3.3.1
       nypm: 0.6.4
-      trpc-cli: 0.12.2(@trpc/server@11.9.0(typescript@5.9.3))(effect@3.19.15)(valibot@1.2.0(typescript@5.9.3))(zod@4.3.6)
+      trpc-cli: 0.12.2(@trpc/server@11.9.0(typescript@5.9.3))(effect@3.19.16)(valibot@1.2.0(typescript@5.9.3))(zod@4.3.6)
       zod: 4.3.6
     transitivePeerDependencies:
       - '@orpc/server'
@@ -26107,14 +26096,14 @@ snapshots:
       - tsx
       - yaml
 
-  vite-plugin-solid@2.11.10(@testing-library/jest-dom@6.9.1)(solid-js@1.9.10)(vite@7.2.4(@types/node@25.1.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)):
+  vite-plugin-solid@2.11.10(@testing-library/jest-dom@6.9.1)(solid-js@1.9.11)(vite@7.2.4(@types/node@25.1.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)):
     dependencies:
       '@babel/core': 7.29.0
       '@types/babel__core': 7.20.5
-      babel-preset-solid: 1.9.10(@babel/core@7.29.0)(solid-js@1.9.10)
+      babel-preset-solid: 1.9.10(@babel/core@7.29.0)(solid-js@1.9.11)
       merge-anything: 5.1.7
-      solid-js: 1.9.10
-      solid-refresh: 0.6.3(solid-js@1.9.10)
+      solid-js: 1.9.11
+      solid-refresh: 0.6.3(solid-js@1.9.11)
       vite: 7.2.4(@types/node@25.1.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
       vitefu: 1.1.1(vite@7.2.4(@types/node@25.1.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
     optionalDependencies:
@@ -26122,14 +26111,14 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  vite-plugin-solid@2.11.10(@testing-library/jest-dom@6.9.1)(solid-js@1.9.10)(vite@7.3.1(@types/node@20.19.25)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.20.6)(yaml@2.8.2)):
+  vite-plugin-solid@2.11.10(@testing-library/jest-dom@6.9.1)(solid-js@1.9.11)(vite@7.3.1(@types/node@20.19.25)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.20.6)(yaml@2.8.2)):
     dependencies:
       '@babel/core': 7.29.0
       '@types/babel__core': 7.20.5
-      babel-preset-solid: 1.9.10(@babel/core@7.29.0)(solid-js@1.9.10)
+      babel-preset-solid: 1.9.10(@babel/core@7.29.0)(solid-js@1.9.11)
       merge-anything: 5.1.7
-      solid-js: 1.9.10
-      solid-refresh: 0.6.3(solid-js@1.9.10)
+      solid-js: 1.9.11
+      solid-refresh: 0.6.3(solid-js@1.9.11)
       vite: 7.3.1(@types/node@20.19.25)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.20.6)(yaml@2.8.2)
       vitefu: 1.1.1(vite@7.3.1(@types/node@20.19.25)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.20.6)(yaml@2.8.2))
     optionalDependencies:
