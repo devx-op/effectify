@@ -486,8 +486,7 @@ export default defineConfig({
 })
 
 // For verbose (tree output)
-reporters: ;
-;["tree"] // Use 'tree' for hierarchical output
+reporters: ["tree"] // Use 'tree' for hierarchical output
 ```
 
 **Action Items**:
