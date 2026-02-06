@@ -78,7 +78,8 @@
       "packages/react/router",
       "packages/node/better-auth",
       "packages/solid/query",
-      "packages/react/router-better-auth"
+      "packages/react/router-better-auth",
+      "packages/prisma"
     ],
     "changelog": {
       "automaticFromRef": "HEAD~100",
