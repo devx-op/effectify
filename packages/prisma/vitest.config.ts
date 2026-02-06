@@ -14,6 +14,7 @@ export default defineConfig({
     alias: {
       "@template/basic/test": path.join(__dirname, "test"),
       "@template/basic": path.join(__dirname, "src"),
+      "@prisma/effect/prisma-repository.js": path.join(__dirname, "prisma/generated/effect/prisma-repository.js"),
       "@prisma/effect": path.join(__dirname, "prisma/generated/effect"),
     },
     extensions: [".ts", ".tsx", ".js", ".jsx", ".json"],

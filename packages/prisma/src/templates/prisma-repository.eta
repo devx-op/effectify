@@ -726,7 +726,7 @@ export const make = <S extends Any, M extends keyof BasePrismaClient>(
       createSchema((args as any).data).pipe(
         Effect.catchTag('ParseError', Effect.die),
         Effect.catchTag('NoSuchElementException', Effect.die),
-        Effect.withSpan(`\${options.spanPrefix}.create`, {
+        Effect.withSpan(`${options.spanPrefix}.create`, {
           captureStackTrace: false,
           attributes: { ...(args as any).data },
         }),
@@ -750,7 +750,7 @@ export const make = <S extends Any, M extends keyof BasePrismaClient>(
         Effect.map((res) => res as unknown as PrismaNamespace.BatchPayload),
         Effect.catchTag('ParseError', Effect.die),
         Effect.catchTag('NoSuchElementException', Effect.die),
-        Effect.withSpan(`\${options.spanPrefix}.createMany`, {
+        Effect.withSpan(`${options.spanPrefix}.createMany`, {
           captureStackTrace: false,
           attributes: { ...(args as any).data },
         }),
@@ -774,7 +774,7 @@ export const make = <S extends Any, M extends keyof BasePrismaClient>(
     ): Effect.Effect<Array<S['Type']>, never, S['Context'] | S['createManyAndReturn']['Context']> =>
       createManyAndReturnSchema((args as any).data).pipe(
         Effect.catchTag('ParseError', Effect.die),
-        Effect.withSpan(`\${options.spanPrefix}.createManyAndReturn`, {
+        Effect.withSpan(`${options.spanPrefix}.createManyAndReturn`, {
           captureStackTrace: false,
           attributes: { ...(args as any).data },
         }),
@@ -818,7 +818,7 @@ export const make = <S extends Any, M extends keyof BasePrismaClient>(
       updateSchema(args).pipe(
         Effect.catchTag('ParseError', Effect.die),
         Effect.catchTag('NoSuchElementException', Effect.die),
-        Effect.withSpan(`\${options.spanPrefix}.update`, {
+        Effect.withSpan(`${options.spanPrefix}.update`, {
           captureStackTrace: false,
           attributes: { ...(args as any) },
         }),
@@ -840,7 +840,7 @@ export const make = <S extends Any, M extends keyof BasePrismaClient>(
       deleteSchema(args).pipe(
         Effect.catchTag('ParseError', Effect.die),
         Effect.catchTag('NoSuchElementException', Effect.die),
-        Effect.withSpan(`\${options.spanPrefix}.delete`, {
+        Effect.withSpan(`${options.spanPrefix}.delete`, {
           captureStackTrace: false,
           attributes: { ...(args as any) },
         }),
@@ -862,7 +862,7 @@ export const make = <S extends Any, M extends keyof BasePrismaClient>(
       upsertSchema(args).pipe(
         Effect.catchTag('ParseError', Effect.die),
         Effect.catchTag('NoSuchElementException', Effect.die),
-        Effect.withSpan(`\${options.spanPrefix}.upsert`, {
+        Effect.withSpan(`${options.spanPrefix}.upsert`, {
           captureStackTrace: false,
           attributes: { ...(args as any) },
         }),
@@ -884,7 +884,7 @@ export const make = <S extends Any, M extends keyof BasePrismaClient>(
       aggregateSchema(args).pipe(
         Effect.catchTag('ParseError', Effect.die),
         Effect.catchTag('NoSuchElementException', Effect.die),
-        Effect.withSpan(`\${options.spanPrefix}.aggregate`, {
+        Effect.withSpan(`${options.spanPrefix}.aggregate`, {
           captureStackTrace: false,
           attributes: { ...(args as any) },
         }),
@@ -905,7 +905,7 @@ export const make = <S extends Any, M extends keyof BasePrismaClient>(
     ): Effect.Effect<unknown, never, S['Context']> =>
       groupBySchema(args).pipe(
         Effect.catchTag('ParseError', Effect.die),
-        Effect.withSpan(`\${options.spanPrefix}.groupBy`, {
+        Effect.withSpan(`${options.spanPrefix}.groupBy`, {
           captureStackTrace: false,
           attributes: { ...(args as any) },
         }),
@@ -928,7 +928,7 @@ export const make = <S extends Any, M extends keyof BasePrismaClient>(
         Effect.map((res) => res as unknown as PrismaNamespace.BatchPayload),
         Effect.catchTag('ParseError', Effect.die),
         Effect.catchTag('NoSuchElementException', Effect.die),
-        Effect.withSpan(`\${options.spanPrefix}.updateMany`, {
+        Effect.withSpan(`${options.spanPrefix}.updateMany`, {
           captureStackTrace: false,
           attributes: { ...(args as any) },
         }),
@@ -951,7 +951,7 @@ export const make = <S extends Any, M extends keyof BasePrismaClient>(
         Effect.map((res) => res as unknown as PrismaNamespace.BatchPayload),
         Effect.catchTag('ParseError', Effect.die),
         Effect.catchTag('NoSuchElementException', Effect.die),
-        Effect.withSpan(`\${options.spanPrefix}.deleteMany`, {
+        Effect.withSpan(`${options.spanPrefix}.deleteMany`, {
           captureStackTrace: false,
           attributes: { ...(args as any) },
         }),

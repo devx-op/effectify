@@ -21,6 +21,7 @@
   },
   "scripts": {
     "prisma:generate": "pnpm dlx prisma generate",
+    "build": "effect-build",
     "test": "vitest",
     "dev": "tsx src/messaround.ts",
     "cli": "pnpm dlx tsx src/cli.ts"
