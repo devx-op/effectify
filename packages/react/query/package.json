@@ -23,8 +23,8 @@
   ],
   "dependencies": {
     "tslib": "catalog:",
-    "@tanstack/react-query": "catalog:",
-    "@tanstack/query-core": "catalog:",
+    "@tanstack/react-query": "5.90.10",
+    "@tanstack/query-core": "5.90.10",
     "effect": "catalog:",
     "react": "catalog:"
   },
