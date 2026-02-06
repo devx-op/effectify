@@ -20,7 +20,7 @@ catalog:
   "@effect/platform": 0.94.0
   "@effect/platform-bun": 0.97.1
   "@effect/platform-http": 0.91.1
-  "@effect/platform-node": 0.104.0
+  "@effect/platform-node": 0.104.1
   "@effect/vitest": 0.27.0
   "@kobalte/core": 0.13.11
   "@nx/js": 22.1.1
@@ -40,9 +40,9 @@ catalog:
   "@react-router/dev": 7.9.6
   "@react-router/node": 7.9.6
   "@react-router/serve": 7.9.6
-  "@remix-run/node": 2.17.2
+  "@remix-run/node": 2.17.4
   "@remix-run/node-fetch-server": 0.12.0
-  "@remix-run/react": 2.17.2
+  "@remix-run/react": 2.17.4
   "@remix-run/serve": 2.17.2
   "@solidjs/start": 1.2.0
   "@solidjs/testing-library": 0.8.10

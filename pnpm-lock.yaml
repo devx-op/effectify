@@ -43,8 +43,8 @@ catalogs:
       specifier: 0.94.0
       version: 0.94.0
     '@effect/platform-node':
-      specifier: 0.104.0
-      version: 0.104.0
+      specifier: 0.104.1
+      version: 0.104.1
     '@effect/vitest':
       specifier: 0.27.0
       version: 0.27.0
@@ -103,11 +103,11 @@ catalogs:
       specifier: 7.9.6
       version: 7.9.6
     '@remix-run/node':
-      specifier: 2.17.2
-      version: 2.17.2
+      specifier: 2.17.4
+      version: 2.17.4
     '@remix-run/react':
-      specifier: 2.17.2
-      version: 2.17.2
+      specifier: 2.17.4
+      version: 2.17.4
     '@solidjs/testing-library':
       specifier: 0.8.10
       version: 0.8.10
@@ -447,7 +447,7 @@ importers:
         version: 0.94.0(effect@3.19.16)
       '@effect/platform-node':
         specifier: 'catalog:'
-        version: 0.104.0(@effect/cluster@0.56.1(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/workflow@0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16)
+        version: 0.104.1(@effect/cluster@0.56.1(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/workflow@0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16)
       chalk:
         specifier: ^5.3.0
         version: 5.6.2
@@ -511,7 +511,7 @@ importers:
         version: 0.94.0(effect@3.19.16)
       '@effect/platform-node':
         specifier: 'catalog:'
-        version: 0.104.0(@effect/cluster@0.56.1(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/workflow@0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16)
+        version: 0.104.1(@effect/cluster@0.56.1(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/workflow@0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16)
       '@effectify/node-better-auth':
         specifier: workspace:*
         version: link:../../packages/node/better-auth
@@ -539,7 +539,7 @@ importers:
         version: 0.94.0(effect@3.19.16)
       '@effect/platform-node':
         specifier: 'catalog:'
-        version: 0.104.0(@effect/cluster@0.56.1(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/workflow@0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16)
+        version: 0.104.1(@effect/cluster@0.56.1(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/workflow@0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16)
       '@effectify/react-remix':
         specifier: workspace:*
         version: link:../../packages/react/remix
@@ -628,7 +628,7 @@ importers:
         version: 0.94.0(effect@3.19.16)
       '@effect/platform-node':
         specifier: 'catalog:'
-        version: 0.104.0(@effect/cluster@0.56.1(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/workflow@0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16)
+        version: 0.104.1(@effect/cluster@0.56.1(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/workflow@0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16)
       '@effectify/node-better-auth':
         specifier: workspace:*
         version: link:../../packages/node/better-auth
@@ -903,7 +903,7 @@ importers:
         version: 0.94.0(effect@3.19.16)
       '@effect/platform-node':
         specifier: 'catalog:'
-        version: 0.104.0(@effect/cluster@0.56.1(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/workflow@0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16)
+        version: 0.104.1(@effect/cluster@0.56.1(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/workflow@0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16)
       better-auth:
         specifier: 'catalog:'
         version: 1.4.10(@prisma/client@7.3.0(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(typescript@5.9.3))(better-sqlite3@12.6.2)(mysql2@3.15.3)(pg@8.18.0)(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(solid-js@1.9.11)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@20.19.25)(@vitest/ui@4.0.13(vitest@3.2.4))(jiti@2.6.1)(jsdom@27.2.0)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
@@ -943,7 +943,7 @@ importers:
         version: 0.94.0(effect@3.19.16)
       '@effect/platform-node':
         specifier: 'catalog:'
-        version: 0.104.0(@effect/cluster@0.56.1(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/workflow@0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16)
+        version: 0.104.1(@effect/cluster@0.56.1(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/workflow@0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16)
       '@prisma/client':
         specifier: 'catalog:'
         version: 7.3.0(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(typescript@5.9.3)
@@ -1041,19 +1041,19 @@ importers:
         version: 5.9.3
 
   packages/react/remix:
-    dependencies:
+    devDependencies:
       '@effect/platform':
         specifier: 'catalog:'
         version: 0.94.0(effect@3.19.16)
       '@effect/platform-node':
         specifier: 'catalog:'
-        version: 0.104.0(@effect/cluster@0.56.1(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/workflow@0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16)
+        version: 0.104.1(@effect/cluster@0.56.1(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/workflow@0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16)
       '@remix-run/node':
         specifier: 'catalog:'
-        version: 2.17.2(typescript@5.9.3)
+        version: 2.17.4(typescript@5.9.3)
       '@remix-run/react':
         specifier: 'catalog:'
-        version: 2.17.2(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3)
+        version: 2.17.4(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3)
       effect:
         specifier: 'catalog:'
         version: 3.19.16
@@ -1065,7 +1065,7 @@ importers:
         version: 0.94.0(effect@3.19.16)
       '@effect/platform-node':
         specifier: 'catalog:'
-        version: 0.104.0(@effect/cluster@0.56.1(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/workflow@0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16)
+        version: 0.104.1(@effect/cluster@0.56.1(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/workflow@0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16)
       effect:
         specifier: 'catalog:'
         version: 3.19.16
@@ -2259,14 +2259,14 @@ packages:
       '@effect/sql': ^0.49.0
       effect: ^3.19.15
 
-  '@effect/platform-node@0.104.0':
-    resolution: {integrity: sha512-2ZkUDDTxLD95ARdYIKBx4tdIIgqA3cwb3jlnVVBxmHUf0Pg5N2HdMuD0Q+CXQ7Q94FDwnLW3ZvaSfxDh6FvrNw==}
+  '@effect/platform-node@0.104.1':
+    resolution: {integrity: sha512-jT1a/z98niK6fnEU8pWHPPCdJMVDRCIdB65lolcOjse5rsTwVbczMjvKkhVQpF63mNWoOnol7OTRNkw5L54llg==}
     peerDependencies:
-      '@effect/cluster': ^0.56.0
-      '@effect/platform': ^0.94.0
+      '@effect/cluster': ^0.56.1
+      '@effect/platform': ^0.94.2
       '@effect/rpc': ^0.73.0
       '@effect/sql': ^0.49.0
-      effect: ^3.19.13
+      effect: ^3.19.15
 
   '@effect/platform@0.94.0':
     resolution: {integrity: sha512-oIATd3M+RUe2q+bu0Qpgt4/qSbXBM9OEGBrRW7SvtwXGOWkCYkN+LfOPnmPrbMB7jYjpIb7808T1bONM1Nwgfg==}
@@ -4566,8 +4566,8 @@ packages:
       typescript:
         optional: true
 
-  '@remix-run/node@2.17.2':
-    resolution: {integrity: sha512-NHBIQI1Fap3ZmyHMPVsMcma6mvi2oUunvTzOcuWHHkkx1LrvWRzQTlaWqEnqCp/ff5PfX5r0eBEPrSkC8zrHRQ==}
+  '@remix-run/node@2.17.4':
+    resolution: {integrity: sha512-9A29JaYiGHDEmaiQuD1IlO/TrQxnnkj98GpytihU+Nz6yTt6RwzzyMMqTAoasRd1dPD4OeSaSqbwkcim/eE76Q==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       typescript: ^5.1.0
@@ -4586,8 +4586,8 @@ packages:
       typescript:
         optional: true
 
-  '@remix-run/react@2.17.2':
-    resolution: {integrity: sha512-/s/PYqDjTsQ/2bpsmY3sytdJYXuFHwPX3IRHKcM+UZXFRVGPKF5dgGuvCfb+KW/TmhVKNgpQv0ybCoGpCuF6aA==}
+  '@remix-run/react@2.17.4':
+    resolution: {integrity: sha512-MeXHacIBoohr9jzec5j/Rmk57xk34korkPDDb0OPHgkdvh20lO5fJoSAcnZfjTIOH+Vsq1ZRQlmvG5PRQ/64Sw==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       react: ^18.0.0
@@ -4599,6 +4599,10 @@ packages:
 
   '@remix-run/router@1.23.0':
     resolution: {integrity: sha512-O3rHJzAQKamUz1fvE0Qaw0xSFqsA/yafi2iqeE0pvdFtCO1viYx8QL6f3Ln/aCCTLxs68SLf0KPM9eSeM8yBnA==}
+    engines: {node: '>=14.0.0'}
+
+  '@remix-run/router@1.23.2':
+    resolution: {integrity: sha512-Ic6m2U/rMjTkhERIa/0ZtXJP17QUi2CbWE7cqx4J58M8aA3QTfW+2UlQ4psvTX9IO1RfNVhK3pcpdjej7L+t2w==}
     engines: {node: '>=14.0.0'}
 
   '@remix-run/serve@2.17.1':
@@ -4615,8 +4619,8 @@ packages:
       typescript:
         optional: true
 
-  '@remix-run/server-runtime@2.17.2':
-    resolution: {integrity: sha512-dTrAG1SgOLgz1DFBDsLHN0V34YqLsHEReVHYOI4UV/p+ALbn/BRQMw1MaUuqGXmX21ZTuCzzPegtTLNEOc8ixA==}
+  '@remix-run/server-runtime@2.17.4':
+    resolution: {integrity: sha512-oCsFbPuISgh8KpPKsfBChzjcntvTz5L+ggq9VNYWX8RX3yA7OgQpKspRHOSxb05bw7m0Hx+L1KRHXjf3juKX8w==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       typescript: ^5.1.0
@@ -10718,8 +10722,21 @@ packages:
       react: '>=16.8'
       react-dom: '>=16.8'
 
+  react-router-dom@6.30.3:
+    resolution: {integrity: sha512-pxPcv1AczD4vso7G4Z3TKcvlxK7g7TNt3/FNGMhfqyntocvYKj+GCatfigGDjbLozC4baguJ0ReCigoDJXb0ag==}
+    engines: {node: '>=14.0.0'}
+    peerDependencies:
+      react: '>=16.8'
+      react-dom: '>=16.8'
+
   react-router@6.30.0:
     resolution: {integrity: sha512-D3X8FyH9nBcTSHGdEKurK7r8OYE1kKFn3d/CF+CoxbSHkxU7o37+Uh7eAHRXr6k2tSExXYO++07PeXJtA/dEhQ==}
+    engines: {node: '>=14.0.0'}
+    peerDependencies:
+      react: '>=16.8'
+
+  react-router@6.30.3:
+    resolution: {integrity: sha512-XRnlbKMTmktBkjCLE8/XcZFlnHvr2Ltdr1eJX4idL55/9BbORzyZEaIkBFDhFGCEWBBItsVrDxwx3gnisMitdw==}
     engines: {node: '>=14.0.0'}
     peerDependencies:
       react: '>=16.8'
@@ -14037,7 +14054,7 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
-  '@effect/platform-node@0.104.0(@effect/cluster@0.56.1(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/workflow@0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16)':
+  '@effect/platform-node@0.104.1(@effect/cluster@0.56.1(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/workflow@0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16)':
     dependencies:
       '@effect/cluster': 0.56.1(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/workflow@0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16))(effect@3.19.16)
       '@effect/platform': 0.94.0(effect@3.19.16)
@@ -16567,9 +16584,9 @@ snapshots:
     optionalDependencies:
       typescript: 5.9.3
 
-  '@remix-run/node@2.17.2(typescript@5.9.3)':
+  '@remix-run/node@2.17.4(typescript@5.9.3)':
     dependencies:
-      '@remix-run/server-runtime': 2.17.2(typescript@5.9.3)
+      '@remix-run/server-runtime': 2.17.4(typescript@5.9.3)
       '@remix-run/web-fetch': 4.4.2
       '@web3-storage/multipart-parser': 1.0.0
       cookie-signature: 1.2.2
@@ -16591,19 +16608,21 @@ snapshots:
     optionalDependencies:
       typescript: 5.9.3
 
-  '@remix-run/react@2.17.2(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3)':
+  '@remix-run/react@2.17.4(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3)':
     dependencies:
-      '@remix-run/router': 1.23.0
-      '@remix-run/server-runtime': 2.17.2(typescript@5.9.3)
+      '@remix-run/router': 1.23.2
+      '@remix-run/server-runtime': 2.17.4(typescript@5.9.3)
       react: 19.2.0
       react-dom: 19.2.0(react@19.2.0)
-      react-router: 6.30.0(react@19.2.0)
-      react-router-dom: 6.30.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+      react-router: 6.30.3(react@19.2.0)
+      react-router-dom: 6.30.3(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       turbo-stream: 2.4.1
     optionalDependencies:
       typescript: 5.9.3
 
   '@remix-run/router@1.23.0': {}
+
+  '@remix-run/router@1.23.2': {}
 
   '@remix-run/serve@2.17.1(typescript@5.9.3)':
     dependencies:
@@ -16631,9 +16650,9 @@ snapshots:
     optionalDependencies:
       typescript: 5.9.3
 
-  '@remix-run/server-runtime@2.17.2(typescript@5.9.3)':
+  '@remix-run/server-runtime@2.17.4(typescript@5.9.3)':
     dependencies:
-      '@remix-run/router': 1.23.0
+      '@remix-run/router': 1.23.2
       '@types/cookie': 0.6.0
       '@web3-storage/multipart-parser': 1.0.0
       cookie: 0.7.2
@@ -24276,21 +24295,21 @@ snapshots:
       react-dom: 18.2.0(react@18.2.0)
       react-router: 6.30.0(react@18.2.0)
 
-  react-router-dom@6.30.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0):
+  react-router-dom@6.30.3(react-dom@19.2.0(react@19.2.0))(react@19.2.0):
     dependencies:
-      '@remix-run/router': 1.23.0
+      '@remix-run/router': 1.23.2
       react: 19.2.0
       react-dom: 19.2.0(react@19.2.0)
-      react-router: 6.30.0(react@19.2.0)
+      react-router: 6.30.3(react@19.2.0)
 
   react-router@6.30.0(react@18.2.0):
     dependencies:
       '@remix-run/router': 1.23.0
       react: 18.2.0
 
-  react-router@6.30.0(react@19.2.0):
+  react-router@6.30.3(react@19.2.0):
     dependencies:
-      '@remix-run/router': 1.23.0
+      '@remix-run/router': 1.23.2
       react: 19.2.0
 
   react-router@7.9.6(react-dom@19.2.0(react@19.2.0))(react@19.2.0):
