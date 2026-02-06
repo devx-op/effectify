@@ -132,7 +132,8 @@ jobs:
             apps/*/dist/
             apps/*/build/
           retention-days: 7
-
+      - run: pmpm nx fix-ci
+        if: always() # IMPORTANT: Always run
   # Test affected projects
   test:
     name: 🧪 Test
@@ -168,8 +169,6 @@ jobs:
         run: |
           BASE=$(git merge-base HEAD origin/dev)
           pnpm nx affected --target=test --base=$BASE --head=HEAD --parallel=3 --verbose --passWithNoTests
-      - run: pmpm nx fix-ci
-        if: always() # IMPORTANT: Always run
   # Summary job
   ci-summary:
     name: 📊 CI Summary
