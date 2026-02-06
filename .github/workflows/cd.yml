@@ -1,9 +1,11 @@
 name: 🚀 CD
 
 on:
-  push:
-    branches:
-      - master
+  workflow_run:
+    workflows: ["🧪 CI"]
+    branches: [master]
+    types:
+      - completed
 
 permissions:
   contents: write # Needed for creating commits and tags
@@ -13,7 +15,7 @@ jobs:
   release:
     name: 🚀 Release
     runs-on: ubuntu-latest
-    if: "!contains(github.event.head_commit.message, 'chore(release):')" # Avoid infinite loops
+    if: ${{ github.event.workflow_run.conclusion == 'success' && !contains(github.event.workflow_run.head_commit.message, 'chore(release):') }}
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
@@ -29,8 +31,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          registry-url: 'https://registry.npmjs.org'
-          cache: 'pnpm'
+          registry-url: "https://registry.npmjs.org"
+          cache: "pnpm"
 
       - name: 📦 Install dependencies
         run: pnpm install --frozen-lockfile
