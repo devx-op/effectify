@@ -132,7 +132,7 @@ jobs:
             apps/*/dist/
             apps/*/build/
           retention-days: 7
-      - run: pmpm nx fix-ci
+      - run: pnpm nx fix-ci
         if: always() # IMPORTANT: Always run
   # Test affected projects
   test:
