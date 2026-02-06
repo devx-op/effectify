@@ -41,7 +41,6 @@
       ],
       "options": {
         "buildTargetName": "build",
-        "testTargetName": "test",
         "serveTargetName": "serve",
         "devTargetName": "dev",
         "previewTargetName": "preview",
@@ -67,6 +66,16 @@
       "options": {
         "lintTargetName": "lint"
       }
+    },
+    {
+      "plugin": "@nx/vitest",
+      "options": {
+        "testTargetName": "test"
+      },
+      "exclude": [
+        "apps/solid-app-start/**/*",
+        "apps/react-app-remix/**/*"
+      ]
     }
   ],
   "release": {

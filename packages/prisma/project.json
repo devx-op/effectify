@@ -53,7 +53,7 @@
     "test": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "vitest",
+        "command": "vitest run",
         "cwd": "packages/prisma"
       },
       "dependsOn": [
