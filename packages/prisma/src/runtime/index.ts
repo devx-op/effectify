@@ -684,20 +684,18 @@ export function Updateable<Type, Encoded>(schema: Schema.Schema<Type, Encoded>) 
  *
  * @example type UserSelect = Selectable<User>;
  */
-export type Selectable<T extends Schema.Schema.All> = StripKyselyWrappersFromObject<
-  Schema.Schema.Type<T>
->
+export type Selectable<T> = StripKyselyWrappersFromObject<T>
 
 /**
  * Extract INSERT type from schema.
  * Omits fields with `never` insert type (read-only IDs, generated fields).
  * @example type UserInsert = Insertable<User>;
  */
-export type Insertable<T extends Schema.Schema.All> = CustomInsertable<Schema.Schema.Type<T>>
+export type Insertable<T> = CustomInsertable<T>
 
 /**
  * Extract UPDATE type from schema.
  * Omits fields with `never` update type, makes all fields optional.
  * @example type UserUpdate = Updateable<User>;
  */
-export type Updateable<T extends Schema.Schema.All> = CustomUpdateable<Schema.Schema.Type<T>>
+export type Updateable<T> = CustomUpdateable<T>
