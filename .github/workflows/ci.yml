@@ -168,6 +168,8 @@ jobs:
         run: |
           BASE=$(git merge-base HEAD origin/dev)
           pnpm nx affected --target=test --base=$BASE --head=HEAD --parallel=3 --verbose --passWithNoTests
+      - run: pmpm nx fix-ci
+        if: always() # IMPORTANT: Always run
   # Summary job
   ci-summary:
     name: 📊 CI Summary
@@ -197,5 +199,3 @@ jobs:
             echo "Please run 'pnpm exec dprint fmt' to fix formatting issues" >> $GITHUB_STEP_SUMMARY
           fi
             # NEW: Add this step at the end of your job
-      - run: npx nx fix-ci
-        if: always() # IMPORTANT: Always run
