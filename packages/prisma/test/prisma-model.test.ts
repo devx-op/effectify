@@ -103,7 +103,7 @@ layer(PrismaLayer)("Prisma Model Repository", (it) => {
       }
 
       const notFound = yield* todoRepo.findUnique({
-        where: { id: TodoId.make("550e8400-e29b-41d4-a716-4466554409923") },
+        where: { id: TodoId.make("550e8400-e29b-41d4-a716-446655449999") },
       })
       expect(Option.isNone(notFound)).toBe(true)
     }))
