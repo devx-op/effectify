@@ -127,12 +127,13 @@ export const preloadAtoms = (
     yield* Effect.all(preloadEffects, { concurrency: "unbounded" })
 
     // Dehydrate the registry state
-    const dehydratedState = Array.from(Hydration.dehydrate(registry))
+    const dehydratedStateRaw = Array.from(Hydration.dehydrate(registry))
+    const dehydratedStateValues = Hydration.toValues(dehydratedStateRaw)
 
     // Filter out errors if not including them
     const finalDehydratedState = includeErrors
-      ? dehydratedState
-      : dehydratedState.filter((atom) => !errors.some((error) => error.atomKey === atom.key))
+      ? dehydratedStateValues
+      : dehydratedStateValues.filter((atom) => !errors.some((error) => error.atomKey === atom.key))
 
     return {
       dehydratedState: finalDehydratedState,
@@ -183,7 +184,7 @@ export const createServerRegistry = (
       key,
       value,
       dehydratedAt: Date.now(),
-    }))
+    })) as unknown as Array<Hydration.DehydratedAtom>
 
     Hydration.hydrate(registry, dehydratedAtoms)
   }
