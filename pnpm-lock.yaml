@@ -124,8 +124,8 @@ catalogs:
       specifier: 4.1.17
       version: 4.1.17
     '@tanstack/query-core':
-      specifier: 5.90.20
-      version: 5.90.20
+      specifier: 5.90.10
+      version: 5.90.10
     '@tanstack/react-form':
       specifier: 1.25.0
       version: 1.25.0
@@ -139,8 +139,8 @@ catalogs:
       specifier: 1.25.0
       version: 1.25.0
     '@tanstack/solid-query':
-      specifier: 5.90.23
-      version: 5.90.23
+      specifier: 5.90.13
+      version: 5.90.13
     '@tanstack/solid-router':
       specifier: 1.139.3
       version: 1.139.3
@@ -883,7 +883,7 @@ importers:
         version: 1.25.0(solid-js@1.9.11)
       '@tanstack/solid-query':
         specifier: 'catalog:'
-        version: 5.90.23(solid-js@1.9.11)
+        version: 5.90.13(solid-js@1.9.11)
       effect:
         specifier: 'catalog:'
         version: 3.19.16
@@ -1019,7 +1019,7 @@ importers:
     dependencies:
       '@tanstack/query-core':
         specifier: 'catalog:'
-        version: 5.90.20
+        version: 5.90.10
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.90.10(react@19.2.0)
@@ -1203,10 +1203,10 @@ importers:
         version: 2.8.1
     devDependencies:
       '@tanstack/query-core':
-        specifier: 'catalog:'
+        specifier: 5.90.20
         version: 5.90.20
       '@tanstack/solid-query':
-        specifier: 'catalog:'
+        specifier: 5.90.23
         version: 5.90.23(solid-js@1.9.11)
       effect:
         specifier: 'catalog:'
@@ -5433,6 +5433,11 @@ packages:
     resolution: {integrity: sha512-NT64/YvEzYsEltMd+UDBPHNoy+OfTOY/RVgEivVnWmct9/KkhZ2HOzwiR+0eGDpj8yUHRTdTqQhTV5Emx7Cpfg==}
     peerDependencies:
       solid-js: '>=1.9.9'
+
+  '@tanstack/solid-query@5.90.13':
+    resolution: {integrity: sha512-Nl0iXdgmYXnjxO9FT6AcPcUD472r/k0xTFLJmKvP4NUfA8hBP5AxqE7OLUkL/Lzg9Vs1FbnM355b8+IizYilsw==}
+    peerDependencies:
+      solid-js: ^1.6.0
 
   '@tanstack/solid-query@5.90.23':
     resolution: {integrity: sha512-pbZc4+Kgm7ktzIuu01R3KOWfazQKgNp4AZvW0RSvv+sNMpYoileUDAkXEcjDJe6RJmb3fVvTR4LlcSL5pxDElQ==}
@@ -17497,6 +17502,11 @@ snapshots:
     dependencies:
       '@tanstack/form-core': 1.25.0
       '@tanstack/solid-store': 0.7.7(solid-js@1.9.11)
+      solid-js: 1.9.11
+
+  '@tanstack/solid-query@5.90.13(solid-js@1.9.11)':
+    dependencies:
+      '@tanstack/query-core': 5.90.10
       solid-js: 1.9.11
 
   '@tanstack/solid-query@5.90.23(solid-js@1.9.11)':
