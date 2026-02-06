@@ -50,6 +50,16 @@
         "cwd": "packages/prisma"
       }
     },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "vitest",
+        "cwd": "packages/prisma"
+      },
+      "dependsOn": [
+        "prisma:generate"
+      ]
+    },
     "lint": {
       "executor": "nx-oxlint:lint",
       "outputs": ["{options.outputFile}"],
