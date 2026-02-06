@@ -22,7 +22,7 @@
     "!**/*.tsbuildinfo"
   ],
   "scripts": {
-    "test": "vitest"
+    "test": "vitest run"
   },
   "peerDependencies": {
     "@effect/platform": "catalog:",
