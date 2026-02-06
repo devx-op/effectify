@@ -35,6 +35,10 @@ pnpm nx affected -t build
 pnpm clean
 ```
 
+### Release Management
+
+To skip a release for documentation updates or other non-release changes, include `[skip release]` in your commit message.
+
 ## Credits & Inspiration
 
 This project was inspired by the excellent educational content from [Lucas Barake](https://www.youtube.com/@lucas-barake), particularly his [video on Effect and TanStack Query](https://www.youtube.com/watch?v=zl4w3BQAoJM&t=1011s) which provides great insights into these technologies.
