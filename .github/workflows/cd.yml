@@ -44,7 +44,11 @@ jobs:
 
       - name: 🔖 Version & Changelog
         # Calculates versions, updates changelogs, creates commit and tag
-        run: pnpm nx release version --git-push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          pnpm nx release version --git-push
+        # git push --follow-tags origin HEAD
 
       - name: 🏗️ Build
         # Builds projects with the updated version before publishing
