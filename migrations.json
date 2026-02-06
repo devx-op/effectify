@@ -1,26 +1,21 @@
 {
   "migrations": [
     {
-      "cli": "nx",
-      "version": "22.1.0-beta.5",
-      "description": "Updates the nx wrapper.",
-      "implementation": "./src/migrations/update-22-1-0/update-nx-wrapper",
-      "package": "nx",
-      "name": "22-1-0-update-nx-wrapper"
+      "version": "22.2.0-beta.1",
+      "requires": {
+        "vitest": ">=4.0.0"
+      },
+      "description": "Create AI Instructions to help migrate users workspaces past breaking changes for Vitest 4.",
+      "implementation": "./src/migrations/update-22-2-0/create-ai-instructions-for-vitest-4",
+      "package": "@nx/vite",
+      "name": "update-22-2-0"
     },
     {
-      "version": "22.1.0-rc.1",
-      "description": "Removes redundant TypeScript project references from project's tsconfig.json files when runtime tsconfig files (e.g., tsconfig.lib.json, tsconfig.app.json) exist.",
-      "factory": "./src/migrations/update-22-1-0/remove-redundant-ts-project-references",
-      "package": "@nx/js",
-      "name": "remove-redundant-ts-project-references"
+      "version": "22.2.0-beta.2",
+      "description": "Migrate Vitest usage from @nx/vite to @nx/vitest package.",
+      "implementation": "./src/migrations/update-22-2-0/migrate-vitest-to-vitest-package",
+      "package": "@nx/vite",
+      "name": "migrate-vitest-to-vitest-package"
     }
-  ],
-  "nx-console": {
-    "initialGitRef": {
-      "ref": "ee034fad35176adcdace059954f4428abf7c9bcf",
-      "subject": "better dx for api handler"
-    },
-    "targetVersion": "latest"
-  }
+  ]
 }
