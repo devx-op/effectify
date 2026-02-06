@@ -45,8 +45,8 @@
     "vite-plugin-solid": "catalog:"
   },
   "peerDependencies": {
-    "effect": "catalog:",
-    "solid-js": "catalog:"
+    "effect": "^3.19.16",
+    "solid-js": "^1.9.11"
   },
   "dependencies": {
     "@effect-atom/atom": "catalog:"
