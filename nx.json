@@ -83,6 +83,7 @@
     "changelog": {
       "automaticFromRef": "HEAD~100",
       "projectChangelogs": {
+        "createRelease": "github",
         "renderOptions": {
           "authors": true,
           "commitReferences": false,
