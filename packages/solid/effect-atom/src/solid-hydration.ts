@@ -13,7 +13,7 @@ import { useRegistry } from "./context.js"
  * @since 1.0.0
  * @category utils
  */
-function isHydrationDataNewer(existingNode: any, dehydratedAtom: Hydration.DehydratedAtom): boolean {
+function isHydrationDataNewer(existingNode: any, dehydratedAtom: Hydration.DehydratedAtomValue): boolean {
   try {
     const currentValue = existingNode.value()
 
@@ -74,7 +74,7 @@ export function HydrationBoundary(props: HydrationBoundaryProps) {
   const hydrationQueue = createMemo(() => {
     const state = props.state
     if (state) {
-      const dehydratedAtoms = Array.from(state)
+      const dehydratedAtoms = Hydration.toValues(Array.from(state))
       const nodes = registry.getNodes()
 
       const newDehydratedAtoms: Array<Hydration.DehydratedAtom> = []
