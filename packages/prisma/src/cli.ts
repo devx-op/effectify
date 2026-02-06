@@ -1,4 +1,4 @@
-#!/usr/bin/env -S pnpm dlx tsx
+#!/usr/bin/env node
 
 import * as Command from "@effect/cli/Command"
 import * as NodeContext from "@effect/platform-node/NodeContext"
