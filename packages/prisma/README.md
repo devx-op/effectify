@@ -9,6 +9,7 @@ A powerful Prisma generator that creates **Effect** services and layers from you
 - **Type-Safe Error Handling**: All Prisma errors are mapped to typed Effect errors (e.g., `PrismaUniqueConstraintError`).
 - **Transaction Support**: Native Effect integration for Prisma transactions.
 - **Schema Validation**: Integration with `@effect/schema` for runtime validation.
+- **Automated Releases**: Fully automated CI/CD pipeline for versioning and publishing.
 
 ## 📦 Installation
 
