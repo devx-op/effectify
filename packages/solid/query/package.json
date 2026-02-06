@@ -31,8 +31,8 @@
     "solid-js": "^1.9.11"
   },
   "devDependencies": {
-    "@tanstack/query-core": "5.90.20",
-    "@tanstack/solid-query": "5.90.23",
+    "@tanstack/query-core": "catalog:",
+    "@tanstack/solid-query": "catalog:",
     "effect": "catalog:",
     "solid-js": "catalog:",
     "typescript": "catalog:"

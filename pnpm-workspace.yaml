@@ -52,7 +52,7 @@ catalog:
   "@tailwindcss/postcss": 4.1.17
   "@tailwindcss/typography": 0.5.19
   "@tailwindcss/vite": 4.1.17
-  "@tanstack/query-core": 5.90.10
+  "@tanstack/query-core": 5.90.20
   "@tanstack/react-form": 1.25.0
   "@tanstack/react-query": 5.90.10
   "@tanstack/react-query-devtools": 5.91.0
@@ -60,7 +60,7 @@ catalog:
   "@tanstack/react-router-devtools": 1.139.3
   "@tanstack/router-plugin": 1.139.3
   "@tanstack/solid-form": 1.25.0
-  "@tanstack/solid-query": 5.90.13
+  "@tanstack/solid-query": 5.90.23
   "@tanstack/solid-query-devtools": 5.91.0
   "@tanstack/solid-router": 1.139.3
   "@tanstack/solid-router-devtools": 1.139.3
