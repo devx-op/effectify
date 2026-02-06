@@ -44,7 +44,7 @@ jobs:
 
       - name: 🔖 Version & Changelog
         # Calculates versions, updates changelogs, creates commit and tag
-        run: pnpm nx release version --yes
+        run: pnpm nx release version
 
       - name: 🏗️ Build
         # Builds projects with the updated version before publishing
@@ -56,4 +56,4 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed for creating GitHub Releases
         # Publishes packages to npm and creates GitHub Releases
-        run: pnpm nx release publish --yes
+        run: pnpm nx release publish
