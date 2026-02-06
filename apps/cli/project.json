@@ -31,13 +31,6 @@
         "buildTarget": "cli:build"
       }
     },
-    "test": {
-      "executor": "@nx/jest:jest",
-      "outputs": ["{workspaceRoot}/coverage/apps/cli"],
-      "options": {
-        "jestConfig": "apps/cli/jest.config.js"
-      }
-    },
     "lint": {
       "executor": "nx-oxlint:lint",
       "outputs": ["{options.outputFile}"],
