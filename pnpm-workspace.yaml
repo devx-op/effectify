@@ -12,7 +12,7 @@ catalog:
   "@corvu/drawer": 0.2.4
   "@dprint/formatter": ^0.5.1
   "@dprint/typescript": ^0.95.15
-  "@effect-atom/atom": 0.4.3
+  "@effect-atom/atom": 0.5.0
   "@effect/build-utils": 0.8.9
   "@effect/cli": 0.73.2
   "@effect/experimental": 0.58.0
