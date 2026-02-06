@@ -77,7 +77,8 @@
       "packages/node/better-auth",
       "packages/solid/query",
       "packages/react/router-better-auth",
-      "packages/prisma"
+      "packages/prisma",
+      "packages/solid/effect-atom"
     ],
     "changelog": {
       "automaticFromRef": "HEAD~100",
