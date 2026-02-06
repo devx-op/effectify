@@ -47,8 +47,27 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          pnpm nx release version --git-push
-          git push --follow-tags origin HEAD
+          # Ensure git user is configured
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Run versioning (Nx modifies files locally)
+          pnpm nx release version
+
+          # Manual Safety Net: Commit and Push
+          # 1. If Nx made a commit but didn't push -> We push.
+          # 2. If Nx modified files but didn't commit -> We commit and push.
+
+          if [[ -n $(git status -s) ]]; then
+            echo "📝 Changes detected (Nx didn't commit). Committing manually..."
+            git add .
+            git commit -m "chore(release): publish [skip ci]"
+          else
+            echo "✅ No uncommitted changes found (Nx likely committed)."
+          fi
+
+          echo "🚀 Pushing changes and tags to remote..."
+          git push origin HEAD --follow-tags
 
       - name: 🏗️ Build
         # Builds projects with the updated version before publishing
