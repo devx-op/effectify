@@ -97,10 +97,6 @@
       "conventionalCommits": true,
       "fallbackCurrentVersionResolver": "disk"
     },
-    "git": {
-      "commit": true,
-      "tag": true
-    },
     "releaseTag": {
       "pattern": "{projectName}@{version}"
     }
