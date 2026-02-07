@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { authClient } from "./../lib/auth-client.js"
-import { useNavigate } from "react-router"
+import { Link, useNavigate } from "react-router"
 
 export default function SignUp() {
   const [name, setName] = useState("")
@@ -24,7 +24,6 @@ export default function SignUp() {
           navigate("/")
         },
         onError: (ctx) => {
-          console.error("[SignUp] Sign up error:", ctx.error)
           setError(ctx.error.message)
         },
       },
@@ -75,11 +74,13 @@ export default function SignUp() {
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
-          {error && <small style={{ color: "var(--pico-color-red-500)" }}>{error}</small>}
+          {error && (
+            <small role="alert" aria-live="polite" style={{ color: "var(--pico-color-red-500)" }}>{error}</small>
+          )}
           <button type="submit">Sign up</button>
         </form>
         <p>
-          Already have an account? <a href="/login">Sign in</a>
+          Already have an account? <Link to="/login">Sign in</Link>
         </p>
       </article>
     </main>

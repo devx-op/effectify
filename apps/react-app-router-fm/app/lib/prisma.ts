@@ -3,7 +3,10 @@ import { PrismaPg } from "@prisma/adapter-pg"
 import { Pool } from "pg"
 import { PrismaClient } from "../../prisma/generated/client.js"
 
-const connectionString = `${process.env.DATABASE_URL}`
+const connectionString = process.env.DATABASE_URL
+if (!connectionString || connectionString.trim().length === 0) {
+  throw new Error("Missing DATABASE_URL environment variable")
+}
 
 export const pool = new Pool({ connectionString })
 const adapter = new PrismaPg({ connectionString })

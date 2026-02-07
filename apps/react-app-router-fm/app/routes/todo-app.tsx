@@ -10,6 +10,7 @@ import { TodoStatus } from "@prisma/enums.js"
 import { Form, useActionData, useSubmit } from "react-router"
 import { useState } from "react"
 import { withBetterAuthGuard, withBetterAuthGuardAction } from "@effectify/react-router-better-auth"
+import { AuthService } from "@effectify/node-better-auth"
 
 export const loader = Effect.gen(function*() {
   const todoRepo = yield* PrismaRepository.make(TodoModel, {
@@ -17,7 +18,12 @@ export const loader = Effect.gen(function*() {
     spanPrefix: "todo",
   })
 
-  const todos = yield* todoRepo.findMany({})
+  const { user } = yield* AuthService.AuthContext
+  const currentUserId = Number(user.id)
+  if (!Number.isInteger(currentUserId)) {
+    return yield* httpSuccess({ todos: [] })
+  }
+  const todos = yield* todoRepo.findMany({ where: { authorId: currentUserId } })
   return yield* httpSuccess({
     todos,
   })
@@ -38,12 +44,18 @@ export const action = Effect.gen(function*() {
     spanPrefix: "todo",
   })
 
+  const { user } = yield* AuthService.AuthContext
+  const currentUserId = Number(user.id)
+  if (!Number.isInteger(currentUserId)) {
+    return yield* httpFailure("Invalid user id")
+  }
+
   if (intent === "delete") {
     if (!id) {
       return yield* httpFailure("Missing id")
     }
-    yield* todoRepo.delete({
-      where: { id: TodoId.make(id) },
+    yield* todoRepo.deleteMany({
+      where: { id: TodoId.make(id), authorId: currentUserId },
     })
     return yield* httpRedirect("/todo-app")
   }
@@ -55,8 +67,8 @@ export const action = Effect.gen(function*() {
     if (!title.trim()) {
       return yield* httpFailure("Title is required")
     }
-    yield* todoRepo.update({
-      where: { id: TodoId.make(id) },
+    yield* todoRepo.updateMany({
+      where: { id: TodoId.make(id), authorId: currentUserId },
       data: { title, content },
     })
     return yield* httpRedirect("/todo-app")
@@ -68,8 +80,8 @@ export const action = Effect.gen(function*() {
     }
     const statusStr = String(formData.get("status") ?? "")
     const status = statusStr === "COMPLETED" ? TodoStatus.COMPLETED : TodoStatus.PENDING
-    yield* todoRepo.update({
-      where: { id: TodoId.make(id) },
+    yield* todoRepo.updateMany({
+      where: { id: TodoId.make(id), authorId: currentUserId },
       data: { status },
     })
     return yield* httpRedirect("/todo-app")
@@ -85,7 +97,7 @@ export const action = Effect.gen(function*() {
       title,
       content,
       published: false,
-      authorId: 1,
+      authorId: currentUserId,
       status: TodoStatus.PENDING,
     },
   })
@@ -116,7 +128,11 @@ export default function TodoApp({
             </fieldset>
             <input type="hidden" name="intent" value="create" />
             {actionData && actionData.ok === false && actionData.errors?.length ?
-              <small style={{ color: "var(--pico-color-red-500)" }}>{String(actionData.errors[0])}</small> :
+              (
+                <small role="alert" aria-live="assertive" style={{ color: "var(--pico-color-red-500)" }}>
+                  {String(actionData.errors[0])}
+                </small>
+              ) :
               null}
             <button type="submit">Add</button>
           </Form>

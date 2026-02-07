@@ -4,9 +4,7 @@
 import { betterAuth } from "better-auth"
 import { openAPI } from "better-auth/plugins"
 import type { BetterAuthOptions } from "better-auth/types"
-import { Pool } from "pg"
-
-const pool = new Pool({ connectionString: `${process.env.DATABASE_URL}` })
+import { pool } from "./prisma.js"
 
 // const __filename = fileURLToPath(import.meta.url)
 // const __dirname = dirname(__filename)
