@@ -1,0 +1,119 @@
+---
+title: Paquetes Universales
+description: Paquetes y conceptos compartidos que funcionan en todas las plataformas
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+# Paquetes Universales
+
+Los paquetes universales de Effectify proporcionan funcionalidad compartida, tipos y lógica de dominio que funcionan en React, SolidJS y Node.js. Encarnan los principios de Effect y habilitan comportamiento consistente en todo tu stack.
+
+## Paquetes disponibles
+
+<CardGrid stagger>
+  <Card title="@effectify/chat-domain" icon="comment">
+    Lógica de dominio y reglas de negocio para chat. Operaciones puras y agnósticas al framework construidas con Effect.
+    
+    [Más información →](packages/chat-domain/)
+  </Card>
+  
+  <Card title="@effectify/shared-types" icon="document">
+    Tipos e interfaces comunes de TypeScript compartidos por todos los paquetes. Asegura consistencia de tipos en tu aplicación.
+    
+    [Más información →](packages/shared-types/)
+  </Card>
+</CardGrid>
+
+## Primeros pasos
+
+<Card title="Inicio rápido" icon="rocket">
+  Aprende los conceptos y patrones usados en todos los paquetes de Effectify.
+  
+  [Empezar →](getting-started/)
+</Card>
+
+## Principios clave
+
+### 1. Agnóstico al framework
+
+```typescript
+import { ChatDomain } from '@effectify/chat-domain'
+import { Effect } from 'effect'
+
+const sendMessage = (roomId: string, content: string, userId: string) =>
+  Effect.gen(function* () {
+    const message = yield* ChatDomain.createMessage({ roomId, content, userId, timestamp: new Date() })
+    const validation = yield* ChatDomain.validateMessage(message)
+    return validation
+  })
+```
+
+### 2. Diseño centrado en Effect
+
+- Componible
+- Seguro por tipos
+- Testeable
+- Confiable
+
+### 3. Diseño dirigido por dominio
+
+```typescript
+interface User {
+  readonly id: UserId
+  readonly email: Email
+  readonly name: UserName
+  readonly createdAt: Date
+}
+
+const UserDomain = {
+  create: (data: CreateUserData) => Effect<User, ValidationError>,
+  validate: (user: User) => Effect<User, ValidationError>,
+  updateProfile: (user: User, updates: UserUpdates) => Effect<User, ValidationError>
+}
+
+class UserCreatedEvent {
+  readonly _tag = 'UserCreatedEvent'
+  constructor(readonly user: User, readonly timestamp: Date) {}
+}
+```
+
+## Patrones de arquitectura
+
+### Arquitectura por capas
+
+```
+┌─────────────────────────────────────┐
+│           Capa de Presentación      │
+│     (React, SolidJS, Express)       │
+├─────────────────────────────────────┤
+│          Capa de Aplicación         │
+│        (Casos de uso, Servicios)    │
+├─────────────────────────────────────┤
+│            Capa de Dominio          │
+│      (Paquetes Universales)         │
+├─────────────────────────────────────┤
+│         Capa de Infraestructura     │
+│    (DB, APIs externas)              │
+└─────────────────────────────────────┘
+```
+
+### Inversión de dependencias
+
+```typescript
+export interface MessageRepository {
+  readonly save: (message: Message) => Effect<Message, RepositoryError>
+  readonly findById: (id: MessageId) => Effect<Message | null, RepositoryError>
+  readonly findByRoom: (roomId: RoomId) => Effect<Message[], RepositoryError>
+}
+```
+
+## Seguridad de tipos
+
+### Tipos con marca
+
+```typescript
+export type UserId = string & { readonly _brand: 'UserId' }
+export type RoomId = string & { readonly _brand: 'RoomId' }
+export type MessageId = string & { readonly _brand: 'MessageId' }
+```

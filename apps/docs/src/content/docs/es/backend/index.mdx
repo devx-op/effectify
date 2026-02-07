@@ -1,0 +1,220 @@
+---
+title: Integración de Backend
+description: Paquetes de integración de Effect para aplicaciones backend en Node.js
+---
+
+import { Card, CardGrid } from "@astrojs/starlight/components";
+
+# Integración de Backend
+
+Effectify ofrece integraciones potentes para backend en Node.js que combinan la robustez y componibilidad de Effect con frameworks y librerías populares. Nuestros paquetes de backend te permiten construir servicios escalables y mantenibles con excelente manejo de errores y tipado seguro.
+
+## Paquetes disponibles
+
+<CardGrid stagger>
+  <Card title="@effectify/node-better-auth" icon="bars">
+    Integración de Effect con better-auth para aplicaciones Node.js. Proporciona autenticación con tipos seguros y manejo de errores con Effect.
+    [Más información →](packages/node-better-auth/)
+  </Card>
+
+  <Card title="@effectify/node-auth-app" icon="server">
+    Aplicación de servidor de autenticación completa construida con Effect, better-auth y patrones modernos de Node.js. Lista para desplegar.
+    [Más información →](packages/node-auth-app/)
+  </Card>
+</CardGrid>
+
+## Primeros pasos
+
+¿Listo para construir servicios backend con Effectify? Consulta nuestra guía de inicio para configurar tu primer proyecto Node.js con Effect.
+
+<Card title="Inicio rápido" icon="rocket">
+  Ponte en marcha en minutos con Effectify en tu aplicación backend de Node.js. [Empezar →](getting-started/)
+</Card>
+
+## Características clave
+
+- **Tipos seguros**: Soporte completo de TypeScript con el potente sistema de tipos de Effect
+- **Manejo de errores**: Gestión robusta de errores con las utilidades de Effect
+- **Componibilidad**: Construye servicios complejos a partir de piezas simples y componibles
+- **Rendimiento**: Optimizado para el rendimiento y la escalabilidad en Node.js
+- **Observabilidad**: Soporte integrado de logs, métricas y trazas
+- **Testing**: Excelente capacidad de pruebas con utilidades de Effect
+
+## Visión de arquitectura
+
+Los paquetes de backend de Effectify siguen un patrón de arquitectura por capas:
+
+```typescript
+// Capa de Dominio - Lógica de negocio pura
+const authenticateUser = (credentials: LoginCredentials) =>
+  Effect.gen(function* () {
+    const user = yield* UserRepository.findByEmail(credentials.email)
+    const isValid = yield* PasswordService.verify(
+      credentials.password,
+      user.hashedPassword,
+    )
+
+    if (!isValid) {
+      yield* Effect.fail(new AuthenticationError("Invalid credentials"))
+    }
+
+    return user
+  })
+
+// Capa de Servicio - Servicios de aplicación
+const AuthService = {
+  login: (credentials: LoginCredentials) =>
+    Effect.gen(function* () {
+      const user = yield* authenticateUser(credentials)
+      const token = yield* TokenService.generate(user.id)
+      const session = yield* SessionService.create(user.id, token)
+
+      return { user, token, session }
+    }),
+}
+
+// Capa de Infraestructura - Integraciones externas
+const UserRepository = {
+  findByEmail: (email: string) =>
+    Effect.tryPromise({
+      try: () => db.user.findUnique({ where: { email } }),
+      catch: (error) =>
+        new DatabaseError("Failed to find user", { cause: error }),
+    }),
+}
+
+// Capa HTTP - Endpoints de API
+app.post("/auth/login", (req, res) => {
+  Effect.runPromise(
+    AuthService.login(req.body).pipe(
+      Effect.map((result) => res.json(result)),
+      Effect.catchAll((error) =>
+        Effect.sync(() => res.status(400).json({ error: error.message })),
+      ),
+    ),
+  )
+})
+```
+
+## Principios de diseño
+
+### 1. Arquitectura Effect‑First
+
+Toda la lógica de negocio se construye usando Effect, proporcionando:
+
+- Manejo de errores componible
+- Operaciones asíncronas con tipos seguros
+- Mecanismos integrados de reintento y timeout
+- Excelente capacidad de pruebas
+
+### 2. Arquitectura por capas
+
+- **Dominio**: Lógica de negocio pura con Effect
+- **Servicios**: Casos de uso y servicios de aplicación
+- **Infraestructura**: Integraciones con sistemas externos
+- **HTTP**: Endpoints y middleware
+
+### 3. Inversión de dependencias
+
+Uso del sistema de contextos de Effect para una gestión limpia de dependencias:
+
+```typescript
+// Servicios como contextos de Effect
+class DatabaseService extends Context.Tag("DatabaseService")<
+  DatabaseService,
+  {
+    readonly query: (sql: string) => Effect.Effect<any[], DatabaseError>
+  }
+>() {}
+
+// Uso en lógica de negocio
+const getUser = (id: string) =>
+  Effect.gen(function* () {
+    const db = yield* DatabaseService
+    const result = yield* db.query(`SELECT * FROM users WHERE id = ?`, [id])
+    return result[0]
+  })
+```
+
+## Patrones comunes
+
+### Manejo de errores
+
+```typescript
+// Errores de dominio
+class UserNotFoundError extends Data.TaggedError("UserNotFoundError")<{
+  readonly userId: string
+}> {}
+
+class ValidationError extends Data.TaggedError("ValidationError")<{
+  readonly errors: Record<string, string>
+}> {}
+
+// Uso en servicios
+const updateUser = (id: string, data: UserUpdateData) =>
+  Effect.gen(function* () {
+    const validation = yield* validateUserData(data)
+    const user = yield* UserRepository.findById(id)
+
+    if (!user) {
+      yield* Effect.fail(new UserNotFoundError({ userId: id }))
+    }
+
+    return yield* UserRepository.update(id, validation)
+  })
+```
+
+### Gestión de configuración
+
+```typescript
+// Esquema de configuración
+class AppConfig extends Context.Tag("AppConfig")<
+  AppConfig,
+  {
+    readonly port: number
+    readonly database: {
+      readonly url: string
+      readonly maxConnections: number
+    }
+    readonly auth: {
+      readonly jwtSecret: string
+      readonly sessionTimeout: number
+    }
+  }
+>() {}
+
+// Carga con validación
+const loadConfig = Effect.gen(function* () {
+  const port = yield* Effect.fromNullable(process.env.PORT).pipe(
+    Effect.map(Number),
+    Effect.orElse(() => Effect.succeed(3000)),
+  )
+
+  const databaseUrl = yield* Effect.fromNullable(process.env.DATABASE_URL).pipe(
+    Effect.orElseFail(() => new ConfigError("DATABASE_URL is required")),
+  )
+
+  return {
+    port,
+    database: { url: databaseUrl, maxConnections: 10 },
+    auth: { jwtSecret: process.env.JWT_SECRET!, sessionTimeout: 3600 },
+  }
+})
+```
+
+### Middleware HTTP
+
+```typescript
+// Middleware basado en Effect
+const authMiddleware = (req: Request) =>
+  Effect.gen(function* () {
+    const token = yield* Effect.fromNullable(req.headers.authorization).pipe(
+      Effect.orElseFail(
+        () => new UnauthorizedError("Missing authorization header"),
+      ),
+    )
+
+    const user = yield* TokenService.verify(token.replace("Bearer ", ""))
+    return { ...req, user }
+  })
+```
