@@ -573,10 +573,10 @@ testRoutes.get("/db-test", (req, res) => {
 
 ## Next Steps
 
-- [Getting Started Guide](backend/getting-started/) - Learn the basics
-- [Node Better Auth](backend/packages/node-better-auth/) - Explore authentication
-- [Node Auth App](backend/packages/node-auth-app/) - Complete auth service
-- [Backend Reference](backend/reference/) - API documentation
+- [Getting Started Guide](getting-started/) - Learn the basics
+- [Node Better Auth](packages/node-better-auth/) - Explore authentication
+- [Node Auth App](packages/node-auth-app/) - Complete auth service
+- [Backend Reference](reference/) - API documentation
 
 ## Troubleshooting
 
