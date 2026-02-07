@@ -32,52 +32,56 @@ export default function SignUp() {
   }
 
   return (
-    <article>
-      <h2>Create an account</h2>
-      <form onSubmit={handleSignUp}>
-        <fieldset>
-          <label htmlFor="name">Full Name</label>
-          <input
-            id="name"
-            name="name"
-            type="text"
-            autoComplete="name"
-            required
-            placeholder="Full Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-          <label htmlFor="email-address">Email address</label>
-          <input
-            id="email-address"
-            name="email"
-            type="email"
-            autoComplete="email"
-            required
-            placeholder="Email address"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          <label htmlFor="password">Password</label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            autoComplete="new-password"
-            required
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </fieldset>
-        {error && <small style={{ color: "var(--pico-color-red-500)" }}>{error}</small>}
-        <button type="submit">Sign up</button>
-      </form>
-      <footer>
-        <small>
+    <main className="container">
+      <article>
+        <h2>Create an account</h2>
+        <form onSubmit={handleSignUp}>
+          <div>
+            <label htmlFor="name">Full Name</label>
+            <input
+              id="name"
+              name="name"
+              type="text"
+              autoComplete="name"
+              required
+              placeholder="Full Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </div>
+          <div>
+            <label htmlFor="email-address">Email address</label>
+            <input
+              id="email-address"
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              placeholder="Email address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+          <div>
+            <label htmlFor="password">Password</label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              autoComplete="new-password"
+              required
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+          {error && <small style={{ color: "var(--pico-color-red-500)" }}>{error}</small>}
+          <button type="submit">Sign up</button>
+        </form>
+        <p>
           Already have an account? <a href="/login">Sign in</a>
-        </small>
-      </footer>
-    </article>
+        </p>
+      </article>
+    </main>
   )
 }
