@@ -4,7 +4,6 @@
 import { betterAuth } from "better-auth"
 import { openAPI } from "better-auth/plugins"
 import type { BetterAuthOptions } from "better-auth/types"
-// import Database from 'better-sqlite3'
 import { pool } from "./prisma.js"
 
 // const __filename = fileURLToPath(import.meta.url)
@@ -16,7 +15,6 @@ export const authOptions = {
   emailAndPassword: {
     enabled: true,
   },
-  // database: new Database(join(__dirname, '../sqlite.db')),
   database: pool,
 
   advanced: {
