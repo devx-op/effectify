@@ -49,8 +49,13 @@ jobs:
           if [ -z "${BASE}" ] || [ "${BASE}" = "0000000000000000000000000000000000000000" ]; then
             BASE="$(git rev-parse HEAD^ || echo "")"
           fi
-          echo "Running nx affected build for @effectify/docs between ${BASE}..${HEAD}"
-          pnpm nx affected -t build --base="${BASE}" --head="${HEAD}" --projects="@effectify/docs" || true
+          if [ -z "${BASE}" ]; then
+            echo "No valid BASE commit found, building unconditionally"
+            pnpm nx build `@effectify/docs`
+          else
+            echo "Running nx affected build for `@effectify/docs` between ${BASE}..${HEAD}"
+            pnpm nx affected -t build --base="${BASE}" --head="${HEAD}" --projects="@effectify/docs"
+          fi
           if [ -d apps/docs/dist ]; then
             echo "should_deploy=true" >> "$GITHUB_OUTPUT"
           else
