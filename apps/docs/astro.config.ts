@@ -17,7 +17,7 @@ export default defineConfig({
           {
             label: "ReactJs",
             icon: "seti:react",
-            link: "/react/",
+            link: "react/",
             id: "react",
             items: [
               {
@@ -39,7 +39,7 @@ export default defineConfig({
           {
             label: "SolidJs",
             icon: "seti:sublime",
-            link: "/solid/",
+            link: "solid/",
             id: "solid",
             items: [
               {
@@ -61,7 +61,7 @@ export default defineConfig({
           {
             label: "Backend",
             icon: "bars",
-            link: "/backend/",
+            link: "backend/",
             id: "backend",
             items: [
               {
@@ -83,7 +83,7 @@ export default defineConfig({
           {
             label: "Universal",
             icon: "puzzle",
-            link: "/universal/",
+            link: "universal/",
             id: "universal",
             items: [
               {
