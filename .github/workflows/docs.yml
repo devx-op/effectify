@@ -74,4 +74,5 @@ jobs:
 
       - name: ⏭️ Skip deploy (docs not affected)
         if: steps.affected_build.outputs.should_deploy != 'true'
-        run: echo "Skipping deploy: @effectify/docs is not affected in this push."
+        run: |
+          echo "Skipping deploy - `@effectify/docs` is not affected in this push."
