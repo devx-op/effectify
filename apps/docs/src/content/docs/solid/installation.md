@@ -383,10 +383,10 @@ function App() {
 
 ## Next Steps
 
-- [Getting Started Guide](/solid/getting-started/) - Learn the basics
-- [Solid Query Package](/solid/packages/solid-query/) - Explore data fetching patterns
-- [UI Components](/solid/packages/solid-ui/) - Browse available components
-- [Chat Components](/solid/packages/chat-solid/) - Add real-time features
+- [Getting Started Guide](solid/getting-started/) - Learn the basics
+- [Solid Query Package](solid/packages/solid-query/) - Explore data fetching patterns
+- [UI Components](solid/packages/solid-ui/) - Browse available components
+- [Chat Components](solid/packages/chat-solid/) - Add real-time features
 
 ## Troubleshooting
 
