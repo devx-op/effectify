@@ -102,7 +102,11 @@ interface UserProfileProps {
 }
 
 export function UserProfile({ userId }: UserProfileProps) {
-  const { data: user, isLoading, error } = useQuery({
+  const {
+    data: user,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["user", userId],
     queryFn: () => Effect.runPromise(fetchUser(userId)),
   })
@@ -124,9 +128,9 @@ export function UserProfile({ userId }: UserProfileProps) {
 
 Now that you have the basics set up, explore the specific packages:
 
-- [React Query Integration](react/packages/react-query/) - Learn advanced patterns for data fetching
-- [UI Components](react/packages/react-ui/) - Explore the component library
-- [Chat Components](react/packages/chat-react/) - Add real-time features
+- [React Query Integration](packages/react-query/) - Learn advanced patterns for data fetching
+- [UI Components](packages/react-ui/) - Explore the component library
+- [Chat Components](packages/chat-react/) - Add real-time features
 
 ## Common Patterns
 
@@ -148,10 +152,7 @@ You can compose multiple Effects together:
 
 ```tsx
 const fetchUserWithPosts = (id: number) =>
-  Effect.all([
-    fetchUser(id),
-    fetchUserPosts(id),
-  ]).pipe(
+  Effect.all([fetchUser(id), fetchUserPosts(id)]).pipe(
     Effect.map(([user, posts]) => ({ user, posts })),
   )
 ```

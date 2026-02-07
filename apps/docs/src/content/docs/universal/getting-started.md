@@ -527,9 +527,9 @@ app.post("/users", (req, res) => {
 
 Now that you understand the core concepts, explore the specific universal packages:
 
-- [Chat Domain](universal/packages/chat-domain/) - Learn chat domain logic
-- [Shared Types](universal/packages/shared-types/) - Explore common types
-- [Universal Concepts](universal/concepts/) - Dive deeper into patterns
+- [Chat Domain](packages/chat-domain/) - Learn chat domain logic
+- [Shared Types](packages/shared-types/) - Explore common types
+- [Universal Concepts](concepts/) - Dive deeper into patterns
 
 ## Best Practices
 

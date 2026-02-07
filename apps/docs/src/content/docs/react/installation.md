@@ -125,11 +125,7 @@ import { useState } from "react"
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient())
 
-  return (
-    <QueryClientProvider client={queryClient}>
-      {children}
-    </QueryClientProvider>
-  )
+  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
 }
 ```
 
@@ -210,9 +206,7 @@ Ensure your `tsconfig.json` includes proper configuration:
     "noEmit": true,
     "jsx": "react-jsx"
   },
-  "include": [
-    "src"
-  ]
+  "include": ["src"]
 }
 ```
 
@@ -241,6 +235,6 @@ If you see "Effectify is working!" rendered, your installation is successful!
 
 ## Next Steps
 
-- [Getting Started Guide](react/getting-started/) - Learn the basics
-- [React Query Package](react/packages/react-query/) - Explore data fetching patterns
-- [UI Components](react/packages/react-ui/) - Browse available components
+- [Getting Started Guide](getting-started/) - Learn the basics
+- [React Query Package](packages/react-query/) - Explore data fetching patterns
+- [UI Components](packages/react-ui/) - Browse available components
