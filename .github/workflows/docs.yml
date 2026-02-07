@@ -53,8 +53,13 @@ jobs:
             echo "No valid BASE commit found, building unconditionally"
             pnpm nx build "@effectify/docs"
           else
-            echo "Running nx affected build for `@effectify/docs` between ${BASE}..${HEAD}"
-            pnpm nx affected -t build --base="${BASE}" --head="${HEAD}" --projects="@effectify/docs"
+            echo "Checking if `@effectify/docs` is affected between ${BASE}..${HEAD}"
+            if pnpm nx show projects --affected --base="${BASE}" --head="${HEAD}" | grep -q "@effectify/docs"; then
+              echo "@effectify/docs is affected. Building only docs..."
+              pnpm nx build "@effectify/docs"
+            else
+              echo "@effectify/docs not affected. Skipping build."
+            fi
           fi
           if [ -d apps/docs/dist ]; then
             echo "should_deploy=true" >> "$GITHUB_OUTPUT"
