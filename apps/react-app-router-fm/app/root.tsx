@@ -17,6 +17,12 @@ export const links: LinksFunction = () => [
   },
   {
     rel: "stylesheet",
+    href: "https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.classless.min.css",
+    integrity: "sha384-NZhm4G1I7BpEGdjDKnzEfy3d78xvy7ECKUwwnKTYi036z42IyF056PbHfpQLIYgL",
+    crossOrigin: "anonymous",
+  },
+  {
+    rel: "stylesheet",
     href:
       "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
   },
