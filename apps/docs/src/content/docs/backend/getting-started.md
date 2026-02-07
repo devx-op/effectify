@@ -514,9 +514,9 @@ You should see:
 
 Now that you have the basics set up, explore the specific packages:
 
-- [Node Better Auth](/backend/packages/node-better-auth/) - Learn authentication patterns
-- [Node Auth App](/backend/packages/node-auth-app/) - Explore the complete auth service
-- [Backend Reference](/backend/reference/) - Dive into the API documentation
+- [Node Better Auth](backend/packages/node-better-auth/) - Learn authentication patterns
+- [Node Auth App](backend/packages/node-auth-app/) - Explore the complete auth service
+- [Backend Reference](backend/reference/) - Dive into the API documentation
 
 ## Common Patterns
 
