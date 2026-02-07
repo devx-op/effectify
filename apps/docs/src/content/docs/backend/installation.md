@@ -181,9 +181,7 @@ export class UsersController {
 
   @Get(":id")
   async getUser(@Param("id") id: string) {
-    return this.effectService.runEffect(
-      UserService.getById(id),
-    )
+    return this.effectService.runEffect(UserService.getById(id))
   }
 }
 ```
@@ -206,7 +204,10 @@ import { Context, Effect, Layer } from "effect"
 export class DatabaseService extends Context.Tag("DatabaseService")<
   DatabaseService,
   {
-    readonly query: <T>(sql: string, params?: any[]) => Effect.Effect<T[], DatabaseError>
+    readonly query: <T>(
+      sql: string,
+      params?: any[],
+    ) => Effect.Effect<T[], DatabaseError>
   }
 >() {}
 
@@ -224,7 +225,10 @@ const makeDatabaseService = Effect.gen(function*() {
   }
 })
 
-export const DatabaseServiceLive = Layer.effect(DatabaseService, makeDatabaseService)
+export const DatabaseServiceLive = Layer.effect(
+  DatabaseService,
+  makeDatabaseService,
+)
 ```
 
 ### SQLite with better-sqlite3
@@ -243,8 +247,14 @@ import { Context, Effect, Layer } from "effect"
 export class SqliteService extends Context.Tag("SqliteService")<
   SqliteService,
   {
-    readonly query: <T>(sql: string, params?: any[]) => Effect.Effect<T[], DatabaseError>
-    readonly run: (sql: string, params?: any[]) => Effect.Effect<void, DatabaseError>
+    readonly query: <T>(
+      sql: string,
+      params?: any[],
+    ) => Effect.Effect<T[], DatabaseError>
+    readonly run: (
+      sql: string,
+      params?: any[],
+    ) => Effect.Effect<void, DatabaseError>
   }
 >() {}
 
@@ -420,16 +430,14 @@ export class EnvService extends Context.Tag("EnvService")<
 >() {}
 
 export const loadEnvConfig = Effect.gen(function*() {
-  const requiredEnvVars = [
-    "DATABASE_URL",
-    "BETTER_AUTH_SECRET",
-    "JWT_SECRET",
-  ]
+  const requiredEnvVars = ["DATABASE_URL", "BETTER_AUTH_SECRET", "JWT_SECRET"]
 
   // Validate required environment variables
   for (const envVar of requiredEnvVars) {
     if (!process.env[envVar]) {
-      yield* Effect.fail(new Error(`Missing required environment variable: ${envVar}`))
+      yield* Effect.fail(
+        new Error(`Missing required environment variable: ${envVar}`),
+      )
     }
   }
 
@@ -565,10 +573,10 @@ testRoutes.get("/db-test", (req, res) => {
 
 ## Next Steps
 
-- [Getting Started Guide](/backend/getting-started/) - Learn the basics
-- [Node Better Auth](/backend/packages/node-better-auth/) - Explore authentication
-- [Node Auth App](/backend/packages/node-auth-app/) - Complete auth service
-- [Backend Reference](/backend/reference/) - API documentation
+- [Getting Started Guide](backend/getting-started/) - Learn the basics
+- [Node Better Auth](backend/packages/node-better-auth/) - Explore authentication
+- [Node Auth App](backend/packages/node-auth-app/) - Complete auth service
+- [Backend Reference](backend/reference/) - API documentation
 
 ## Troubleshooting
 

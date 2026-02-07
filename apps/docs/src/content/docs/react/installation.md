@@ -241,6 +241,6 @@ If you see "Effectify is working!" rendered, your installation is successful!
 
 ## Next Steps
 
-- [Getting Started Guide](/react/getting-started/) - Learn the basics
-- [React Query Package](/react/packages/react-query/) - Explore data fetching patterns
-- [UI Components](/react/packages/react-ui/) - Browse available components
+- [Getting Started Guide](react/getting-started/) - Learn the basics
+- [React Query Package](react/packages/react-query/) - Explore data fetching patterns
+- [UI Components](react/packages/react-ui/) - Browse available components

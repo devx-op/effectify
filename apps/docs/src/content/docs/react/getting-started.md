@@ -124,9 +124,9 @@ export function UserProfile({ userId }: UserProfileProps) {
 
 Now that you have the basics set up, explore the specific packages:
 
-- [React Query Integration](/react/packages/react-query/) - Learn advanced patterns for data fetching
-- [UI Components](/react/packages/react-ui/) - Explore the component library
-- [Chat Components](/react/packages/chat-react/) - Add real-time features
+- [React Query Integration](react/packages/react-query/) - Learn advanced patterns for data fetching
+- [UI Components](react/packages/react-ui/) - Explore the component library
+- [Chat Components](react/packages/chat-react/) - Add real-time features
 
 ## Common Patterns
 
