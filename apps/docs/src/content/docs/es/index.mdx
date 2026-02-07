@@ -1,0 +1,145 @@
+---
+title: Bienvenido a Effectify
+description: Aplicaciones componibles y con tipos seguros usando Effect en React, SolidJS y Node.js
+template: splash
+hero:
+  title: |
+    Bienvenido a
+    <span
+      class="font-black text-transparent
+        bg-clip-text bg-gradient-to-b
+        from-accent-700 to-accent-400
+        dark:from-accent-500 dark:to-accent-200"
+    >
+      Effectify
+    </span>
+  tagline: Crea aplicaciones robustas y con tipos seguros usando Effect en React, SolidJS y Node.js
+  image:
+    file: ../../../assets/houston.webp
+  actions:
+    - text: Empezar
+      link: es/react/getting-started/
+      icon: right-arrow
+    - text: Ver en GitHub
+      link: https://github.com/devx-op/effectify
+      icon: external
+      variant: minimal
+banner:
+  content: |
+    Effectify está en desarrollo activo. Danos una estrella en
+    <a href="https://github.com/devx-op/effectify">GitHub</a>
+    para seguir el avance.
+---
+
+import { Card, CardGrid } from "@astrojs/starlight/components";
+
+## ¿Qué es Effectify?
+
+Effectify es un conjunto integral de paquetes que lleva el poder de [Effect](https://effect.website/) al desarrollo web moderno. Proporciona soluciones componibles y con tipos seguros para aplicaciones en React, SolidJS y Node.js, permitiéndote construir software robusto con excelente manejo de errores y experiencia de desarrollo.
+
+## Plataformas
+
+<CardGrid stagger>
+	<Card title="React" icon="react">
+		Integración con TanStack Query, biblioteca de UI y funcionalidades de chat en tiempo real para aplicaciones React.
+
+    	[Explorar paquetes de React →](es/react/)
+    </Card>
+    <Card title="SolidJS" icon="seti:sublime">
+    	Integración reactiva de Effect optimizada para el sistema de reactividad de SolidJS, con componentes de UI y chat.
+
+    	[Explorar paquetes de SolidJS →](es/solid/)
+    </Card>
+    <Card title="Backend en Node.js" icon="bars">
+    	Servicios de autenticación, integración con better-auth y soluciones completas de backend construidas con Effect.
+
+    	[Explorar paquetes de Backend →](es/backend/)
+    </Card>
+    <Card title="Universal" icon="puzzle">
+    	Lógica de dominio, tipos y reglas de negocio compartidas que funcionan en todas las plataformas y frameworks.
+
+    	[Explorar paquetes Universales →](es/universal/)
+    </Card>
+
+</CardGrid>
+
+## Características clave
+
+### Tipos seguros primero
+
+Cada paquete está construido con TypeScript y el potente sistema de tipos de Effect, ofreciendo garantías en tiempo de compilación y excelente soporte en el IDE.
+
+### Arquitectura componible
+
+Construye aplicaciones complejas a partir de piezas simples y componibles usando los patrones funcionales de Effect.
+
+### Manejo de errores
+
+Manejo robusto de errores con el sistema de gestión de errores de Effect, haciendo tus aplicaciones más confiables y fáciles de depurar.
+
+### Consistencia multiplataforma
+
+Comparte lógica de negocio y tipos entre aplicaciones de React, SolidJS y Node.js para un comportamiento consistente.
+
+## Inicio rápido
+
+Elige tu plataforma para comenzar:
+
+<CardGrid>
+	<Card title="Aplicación React" icon="react">
+		```bash
+		npm install @effectify/react-query @tanstack/react-query effect
+		```
+
+    	[Inicio rápido React →](es/react/getting-started/)
+    </Card>
+    <Card title="Aplicación SolidJS" icon="seti:sublime">
+    	```bash
+    	npm install @effectify/solid-query @tanstack/solid-query effect
+    	```
+
+    	[Inicio rápido SolidJS →](es/solid/getting-started/)
+    </Card>
+    <Card title="Backend en Node.js" icon="bars">
+    	```bash
+    	npm install @effectify/node-better-auth better-auth effect
+    	```
+
+    	[Inicio rápido Backend →](es/backend/getting-started/)
+    </Card>
+
+</CardGrid>
+
+## Aplicaciones de ejemplo
+
+Explora aplicaciones completas construidas con Effectify:
+
+- **[React SPA](https://github.com/devx-op/effectify/tree/main/apps/react-app-spa)** - Aplicación de una sola página con autenticación y chat
+- **[SolidJS SPA](https://github.com/devx-op/effectify/tree/main/apps/solid-app-spa)** - Aplicación SolidJS con chat reactivo
+- **[SolidJS Start](https://github.com/devx-op/effectify/tree/main/apps/solid-app-start)** - Aplicación full‑stack con SolidStart
+- **[Servicio de Auth en Node.js](https://github.com/devx-op/effectify/tree/main/apps/node-auth-app)** - Microservicio de autenticación completo
+
+## Comunidad y soporte
+
+<CardGrid>
+	<Card title="GitHub" icon="github">
+		Consulta el código fuente, reporta issues y contribuye al proyecto.
+
+    	[Visitar GitHub →](https://github.com/devx-op/effectify)
+    </Card>
+    <Card title="Discusiones" icon="comment">
+    	Únete a las discusiones de la comunidad, haz preguntas y comparte tus proyectos.
+
+    	[Unirse a Discussions →](https://github.com/devx-op/effectify/discussions)
+    </Card>
+    <Card title="Effect Discord" icon="discord">
+    	Conéctate con la comunidad de Effect para soporte y colaboración.
+
+    	[Unirse a Discord →](https://discord.gg/effect-ts)
+    </Card>
+
+</CardGrid>
+
+## Verificación de despliegue
+
+Esta actualización verifica el despliegue en GitHub Pages desencadenado por cambios afectados en el proyecto de documentación con Nx.
