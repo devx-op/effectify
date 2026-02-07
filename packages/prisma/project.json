@@ -1,6 +1,6 @@
 {
   "name": "@effectify/prisma",
-  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "packages/prisma/src",
   "projectType": "library",
   "targets": {

@@ -1,0 +1,93 @@
+---
+title: Integración con SolidJS
+description: Paquetes de integración de Effect para aplicaciones SolidJS
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+# Integración con SolidJS
+
+Effectify ofrece integraciones potentes para SolidJS que combinan la naturaleza reactiva de SolidJS con el tipado seguro y la componibilidad de Effect. Nuestros paquetes permiten construir aplicaciones de alto rendimiento y mantenibles con excelente experiencia de desarrollo.
+
+## Paquetes disponibles
+
+<CardGrid stagger>
+  <Card title="@effectify/solid-query" icon="seti:sublime">
+    Integración de Effect con TanStack Query para SolidJS. Proporciona obtención de datos con tipos seguros y manejo de errores con Effect y reactividad de SolidJS.
+    
+    [Más información →](packages/solid-query/)
+  </Card>
+  
+  <Card title="@effectify/solid-ui" icon="puzzle">
+    Biblioteca de componentes de UI construida con SolidJS, Kobalte y Tailwind CSS. Incluye formularios, layouts y componentes interactivos optimizados para SolidJS.
+    
+    [Más información →](packages/solid-ui/)
+  </Card>
+  
+  <Card title="@effectify/chat-solid" icon="comment">
+    Componentes y servicios de chat en tiempo real para SolidJS. Construidos con Effect para estado robusto y SolidJS para actualizaciones reactivas.
+    
+    [Más información →](packages/chat-solid/)
+  </Card>
+</CardGrid>
+
+## Primeros pasos
+
+<Card title="Inicio rápido" icon="rocket">
+  Ponte en marcha con Effectify en tu aplicación SolidJS en minutos.
+  
+  [Empezar →](getting-started/)
+</Card>
+
+## Características clave
+
+- Reactivo por diseño: Aprovecha la reactividad granular de SolidJS
+- Tipos seguros: Soporte completo de TypeScript con Effect
+- Manejo de errores: Gestión robusta de errores con Effect
+- Rendimiento: Optimizado para compilación y runtime de SolidJS
+- Componibilidad: Construye aplicaciones complejas desde piezas componibles
+- Experiencia de desarrollo: Herramientas y depuración de primer nivel
+
+## ¿Por qué SolidJS + Effect?
+
+- Reactividad granular: Primitivas de SolidJS funcionan con el flujo de datos de Effect
+- Optimizaciones de compilación: Ambas optimizan en tiempo de compilación
+- Programación funcional: Comparten principios funcionales
+- Seguridad de tipos: Fuerte soporte de TypeScript
+- Bundle pequeño: Prioridad a bajo overhead de runtime
+
+## Arquitectura
+
+```tsx
+const fetchUser = (id: number) =>
+  Effect.tryPromise({
+    try: () => fetch(`/api/users/${id}`).then(res => res.json()),
+    catch: (error) => new Error(`Failed to fetch user: ${error}`)
+  })
+
+function UserProfile(props: { userId: number }) {
+  const [user] = createResource(
+    () => props.userId,
+    (id) => Effect.runPromise(fetchUser(id))
+  )
+
+  return (
+    <Show when={user()} fallback={<div>Cargando...</div>}>
+      <h1>{user()?.name}</h1>
+    </Show>
+  )
+}
+```
+
+## Comunidad y soporte
+
+- [Repositorio en GitHub](https://github.com/devx-op/effectify)
+- [Issues y bugs](https://github.com/devx-op/effectify/issues)
+- [Discusiones](https://github.com/devx-op/effectify/discussions)
+- [SolidJS Discord](https://discord.com/invite/solidjs)
+- [Effect Discord](https://discord.gg/effect-ts)
+
+## Ejemplos
+
+- SolidJS SPA: apps/solid-app-spa
+- SolidJS Start: apps/solid-app-start
