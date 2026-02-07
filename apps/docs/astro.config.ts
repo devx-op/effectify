@@ -8,6 +8,8 @@ import startlightThemeNova from "starlight-theme-nova"
 
 // https://astro.build/config
 export default defineConfig({
+  site: "https://devx-op.github.io/effectify/",
+  base: "/effectify/",
   integrations: [
     starlight({
       plugins: [
