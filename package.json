@@ -64,14 +64,21 @@
     },
     "onlyBuiltDependencies": [
       "@parcel/watcher",
+      "@prisma/client",
+      "@prisma/engines",
       "@swc/core",
       "@tailwindcss/oxide",
       "better-sqlite3",
       "core-js",
+      "dprint",
       "esbuild",
       "msgpackr-extract",
       "nx",
-      "sharp"
+      "prisma",
+      "unrs-resolver"
+    ],
+    "ignoredBuiltDependencies": [
+      "bun"
     ]
   },
   "packageManager": "pnpm@10.14.0",

@@ -5,14 +5,14 @@ import { fileURLToPath } from "node:url"
 import { nxCopyAssetsPlugin } from "@nx/vite/plugins/nx-copy-assets.plugin"
 import { nxViteTsPaths } from "@nx/vite/plugins/nx-tsconfig-paths.plugin"
 import { reactRouter } from "@react-router/dev/vite"
-import { defineConfig } from "vite"
+import { defineConfig, Plugin } from "vite"
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
 const plugins = [
   ...(process.env.VITEST ? [] : [reactRouter()]),
-  nxViteTsPaths(),
+  nxViteTsPaths() as Plugin,
   nxCopyAssetsPlugin([
     {
       // Copy all markdown files from the root of the project
@@ -34,7 +34,6 @@ export default defineConfig({
     port: 3000,
     host: "localhost",
   },
-  // @ts-expect-error - Multiple Vite versions causing type incompatibility
   plugins,
   // Uncomment this if you are using workers.
   // worker: {

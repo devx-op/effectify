@@ -8,11 +8,6 @@
     "dev": "react-router dev"
   },
   "sideEffects": false,
-  "pnpm": {
-    "overrides": {
-      "vite": "7.1.7"
-    }
-  },
   "dependencies": {
     "@effect/experimental": "catalog:",
     "@effect/platform": "catalog:",

@@ -1,13 +1,10 @@
 import { Link } from "@tanstack/solid-router"
 
 import { createSignal } from "solid-js"
-import { ChevronDown, ChevronRight, Globe, Home, House, Layers, Menu, X } from "lucide-solid"
+import { Globe, Home, Menu, X } from "lucide-solid"
 
 export default function Header() {
   const [isOpen, setIsOpen] = createSignal(false)
-  const [groupedExpanded, setGroupedExpanded] = createSignal<
-    Record<string, boolean>
-  >({})
 
   return (
     <>

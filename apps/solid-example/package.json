@@ -1,25 +1,23 @@
 {
   "name": "@effectify/solid-example",
-  "private": true,
   "type": "module",
   "dependencies": {
-    "@tailwindcss/vite": "^4.0.6",
-    "@tanstack/router-plugin": "^1.133.21",
-    "@tanstack/solid-router": "^1.133.20",
-    "@tanstack/solid-router-devtools": "^1.133.20",
-    "@tanstack/solid-router-ssr-query": "^1.132.25",
-    "@tanstack/solid-start": "^1.132.25",
-    "lucide-solid": "^0.544.0",
-    "solid-js": "^1.9.9",
-    "tailwindcss": "^4.0.6",
-    "vite-plugin-lucide-preprocess": "^1.4.6",
-    "vite-tsconfig-paths": "^5.1.4"
+    "@tailwindcss/vite": "catalog:",
+    "@tanstack/router-plugin": "catalog:",
+    "@tanstack/solid-router": "catalog:",
+    "@tanstack/solid-router-devtools": "catalog:",
+    "@tanstack/solid-router-ssr-query": "catalog:",
+    "@tanstack/solid-start": "catalog:",
+    "lucide-solid": "catalog:",
+    "solid-js": "catalog:",
+    "tailwindcss": "catalog:",
+    "vite-plugin-lucide-preprocess": "catalog:"
   },
   "devDependencies": {
     "@nx/vite": "catalog:",
-    "@tanstack/devtools-vite": "^0.3.11",
-    "typescript": "^5.7.2",
-    "vite": "7.3.1",
-    "vite-plugin-solid": "^2.11.10"
+    "@tanstack/devtools-vite": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vite-plugin-solid": "catalog:"
   }
 }
