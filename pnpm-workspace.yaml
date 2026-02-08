@@ -80,7 +80,7 @@ catalog:
   "@vitejs/plugin-react": "5.1.1"
   "@vitejs/plugin-rsc": "0.5.1"
   "@vitest/ui": "4.0.9"
-  astro: "5.16.0"
+  astro: "5.17.1"
   autoprefixer: "10.4.22"
   better-auth: "1.4.10"
   better-sqlite3: "12.6.2"
@@ -137,6 +137,7 @@ catalog:
   vite-tsconfig-paths: "5.1.4"
   vitest: "4.0.9"
   web-vitals: "5.1.0"
+  "zod": "^3.23.8"
 catalogMode: "prefer"
 cleanupUnusedCatalogs: true
 onlyBuiltDependencies:
