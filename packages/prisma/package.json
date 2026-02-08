@@ -49,6 +49,7 @@
     "@effect/language-service": "catalog:",
     "@effect/vitest": "catalog:",
     "@prisma/adapter-better-sqlite3": "catalog:",
+    "@prisma/client-runtime-utils": "7.3.0",
     "@prisma/generator": "catalog:",
     "@prisma/internals": "catalog:",
     "@types/better-sqlite3": "catalog:",

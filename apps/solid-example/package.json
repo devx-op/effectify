@@ -19,5 +19,8 @@
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plugin-solid": "catalog:"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.app.json --noEmit"
   }
 }
