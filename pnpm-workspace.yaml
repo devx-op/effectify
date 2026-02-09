@@ -137,7 +137,7 @@ catalog:
   vite-tsconfig-paths: "5.1.4"
   vitest: "4.0.9"
   web-vitals: "5.1.0"
-  "zod": "^3.23.8"
+  zod: "4.3.6"
 catalogMode: "prefer"
 cleanupUnusedCatalogs: true
 onlyBuiltDependencies:
