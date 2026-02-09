@@ -10,7 +10,7 @@
     "**/.client/**/*.ts",
     "**/.client/**/*.tsx",
     ".react-router/types/**/*",
-    "prisma/generated/effect/**/*"
+    "prisma/generated/**/*"
   ],
   "exclude": [
     "tests/**/*.spec.ts",
@@ -25,6 +25,7 @@
   "compilerOptions": {
     "composite": true,
     "baseUrl": ".",
+    "outDir": "dist/out-tsc",
     "paths": {
       "@prisma/*": [
         "./prisma/generated/*"
