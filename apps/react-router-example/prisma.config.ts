@@ -9,6 +9,8 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: env("DATABASE_URL"),
+    // Provide a default value for CI/CD environments where the database URL is not set
+    // This allows prisma generate to run without connecting to the database
+    url: env("DATABASE_URL") ?? "postgresql://postgres:postgres@localhost:5432/effectify",
   },
 })
