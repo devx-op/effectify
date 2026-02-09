@@ -2,6 +2,9 @@
   "name": "@effectify/solid-example",
   "type": "module",
   "dependencies": {
+    "@effectify/solid-effect-atom": "workspace:*",
+    "@effect-atom/atom": "catalog:",
+    "effect": "catalog:",
     "@tailwindcss/vite": "catalog:",
     "@tanstack/router-plugin": "catalog:",
     "@tanstack/solid-router": "catalog:",

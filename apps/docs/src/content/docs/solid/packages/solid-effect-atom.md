@@ -1,6 +1,10 @@
-# @effectify/solid-effect-atom
-
-[Documentation](https://devx-op.github.io/effectify/solid/packages/solid-effect-atom/)
+---
+title: "@effectify/solid-effect-atom"
+description: Reactive toolkit for Effect with SolidJS
+sidebar:
+  label: "@effectify/solid-effect-atom"
+  order: 1
+---
 
 SolidJS bindings for Effect's `Atom` primitive. This library allows you to use Effect's reactive state (`Atom`) within SolidJS components efficiently and safely.
 

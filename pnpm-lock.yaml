@@ -712,6 +712,12 @@ importers:
 
   apps/solid-example:
     dependencies:
+      '@effect-atom/atom':
+        specifier: 'catalog:'
+        version: 0.5.0(@effect/experimental@0.58.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(@effect/platform@0.94.0(effect@3.19.16))(@effect/rpc@0.73.0(@effect/platform@0.94.0(effect@3.19.16))(effect@3.19.16))(effect@3.19.16)
+      '@effectify/solid-effect-atom':
+        specifier: workspace:*
+        version: link:../../packages/solid/effect-atom/dist
       '@tailwindcss/vite':
         specifier: 'catalog:'
         version: 4.1.18(vite@7.3.1(@types/node@25.2.2)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
@@ -730,6 +736,9 @@ importers:
       '@tanstack/solid-start':
         specifier: 'catalog:'
         version: 1.159.3(solid-js@1.9.11)(vite-plugin-solid@2.11.10(@testing-library/jest-dom@6.9.1)(solid-js@1.9.11)(vite@7.3.1(@types/node@25.2.2)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(vite@7.3.1(@types/node@25.2.2)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(webpack@5.105.0(@swc/core@1.15.3(@swc/helpers@0.5.18)))
+      effect:
+        specifier: 'catalog:'
+        version: 3.19.16
       lucide-solid:
         specifier: 'catalog:'
         version: 0.554.0(solid-js@1.9.11)

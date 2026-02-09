@@ -9,9 +9,15 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as AtomDemoRouteImport } from './routes/atom-demo'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DemoStartServerFuncsRouteImport } from './routes/demo.start.server-funcs'
 
+const AtomDemoRoute = AtomDemoRouteImport.update({
+  id: '/atom-demo',
+  path: '/atom-demo',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -25,32 +31,43 @@ const DemoStartServerFuncsRoute = DemoStartServerFuncsRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/atom-demo': typeof AtomDemoRoute
   '/demo/start/server-funcs': typeof DemoStartServerFuncsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/atom-demo': typeof AtomDemoRoute
   '/demo/start/server-funcs': typeof DemoStartServerFuncsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/atom-demo': typeof AtomDemoRoute
   '/demo/start/server-funcs': typeof DemoStartServerFuncsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/demo/start/server-funcs'
+  fullPaths: '/' | '/atom-demo' | '/demo/start/server-funcs'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/demo/start/server-funcs'
-  id: '__root__' | '/' | '/demo/start/server-funcs'
+  to: '/' | '/atom-demo' | '/demo/start/server-funcs'
+  id: '__root__' | '/' | '/atom-demo' | '/demo/start/server-funcs'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AtomDemoRoute: typeof AtomDemoRoute
   DemoStartServerFuncsRoute: typeof DemoStartServerFuncsRoute
 }
 
 declare module '@tanstack/solid-router' {
   interface FileRoutesByPath {
+    '/atom-demo': {
+      id: '/atom-demo'
+      path: '/atom-demo'
+      fullPath: '/atom-demo'
+      preLoaderRoute: typeof AtomDemoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -70,6 +87,7 @@ declare module '@tanstack/solid-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AtomDemoRoute: AtomDemoRoute,
   DemoStartServerFuncsRoute: DemoStartServerFuncsRoute,
 }
 export const routeTree = rootRouteImport

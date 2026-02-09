@@ -70,7 +70,21 @@ export default function Header() {
             <span class="font-medium">Start - Server Functions</span>
           </Link>
 
-          {/* Demo Links End */}
+          {/* Demo Atom Start */}
+
+          <Link
+            to="/atom-demo"
+            onClick={() => setIsOpen(false)}
+            class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 transition-colors mb-2"
+            activeProps={{
+              class: "flex items-center gap-3 p-3 rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors mb-2",
+            }}
+          >
+            <Globe size={20} />
+            <span class="font-medium">Start - @effecitfy/solid-effect-atom Atom Demo</span>
+          </Link>
+
+          {/* Demo Atom End */}
         </nav>
       </aside>
     </>
