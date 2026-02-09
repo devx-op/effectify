@@ -16,8 +16,9 @@
       "@prisma/*": ["./prisma/generated/*"]
     }
   },
-  "files": [],
-  "include": [],
+  "include": [
+    "prisma/generated/**/*"
+  ],
   "references": [
     {
       "path": "./tsconfig.app.json"

@@ -18,7 +18,15 @@
     "tests/**/*.spec.js",
     "tests/**/*.test.js",
     "tests/**/*.spec.jsx",
-    "tests/**/*.test.jsx",
-    "prisma/generated/**/*"
-  ]
+    "tests/**/*.test.jsx"
+  ],
+  "compilerOptions": {
+    "composite": true,
+    "baseUrl": ".",
+    "paths": {
+      "@prisma/*": [
+        "./prisma/generated/*"
+      ]
+    }
+  }
 }
