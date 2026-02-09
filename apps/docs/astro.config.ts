@@ -48,7 +48,7 @@ export default defineConfig({
               },
               {
                 label: "Packages",
-                items: ["solid/packages/solid-query", "solid/packages/solid-ui", "solid/packages/chat-solid"],
+                items: ["solid/packages/solid-effect-atom", "solid/packages/solid-query", "solid/packages/solid-ui"],
               },
               {
                 label: "Reference",

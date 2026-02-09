@@ -16,7 +16,6 @@
       "@prisma/*": ["./prisma/generated/*"]
     }
   },
-  "files": [],
   "include": [],
   "references": [
     {
