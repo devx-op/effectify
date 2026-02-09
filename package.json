@@ -20,7 +20,7 @@
   "lint-staged": {
     "*.{js,jsx,ts,tsx,json,jsonc,css,scss,md,mdx}": [
       "pnpm exec oxlint --fix",
-      "pnpm exec dprint fmt"
+      "pnpm exec dprint fmt --allow-no-files"
     ]
   },
   "devDependencies": {
