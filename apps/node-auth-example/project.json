@@ -1,0 +1,58 @@
+{
+  "name": "@effectify/node-auth-example",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/node-auth-example/src",
+  "projectType": "application",
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "defaultConfiguration": "production",
+      "options": {
+        "outputPath": "apps/node-auth-example/dist",
+        "main": "apps/node-auth-example/src/main.ts",
+        "tsConfig": "apps/node-auth-example/tsconfig.app.json",
+        "format": ["esm"],
+        "generatePackageJson": false,
+        "updateBuildableProjectDepsInPackageJson": false,
+        "additionalEntryPoints": [],
+        "assets": [
+          "apps/node-auth-example/src/assets",
+          {
+            "input": "node_modules/better-sqlite3/build/Release",
+            "glob": "better_sqlite3.node",
+            "output": "./"
+          },
+          {
+            "input": "apps/node-auth-example",
+            "glob": "sqlite.db",
+            "output": "./"
+          }
+        ]
+      },
+      "configurations": {
+        "development": {},
+        "production": {}
+      }
+    },
+    "serve": {
+      "executor": "@nx/js:node",
+      "defaultConfiguration": "development",
+      "dependsOn": ["build"],
+      "options": {
+        "buildTarget": "@effectify/node-auth-example:build",
+        "runBuildTargetDependencies": true,
+        "runtimeArgs": ["--experimental-specifier-resolution=node"]
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "@effectify/node-auth-example:build:development"
+        },
+        "production": {
+          "buildTarget": "@effectify/node-auth-example:build:production"
+        }
+      }
+    }
+  },
+  "tags": ["node"]
+}

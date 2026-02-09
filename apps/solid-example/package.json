@@ -1,0 +1,26 @@
+{
+  "name": "@effectify/solid-example",
+  "type": "module",
+  "dependencies": {
+    "@tailwindcss/vite": "catalog:",
+    "@tanstack/router-plugin": "catalog:",
+    "@tanstack/solid-router": "catalog:",
+    "@tanstack/solid-router-devtools": "catalog:",
+    "@tanstack/solid-router-ssr-query": "catalog:",
+    "@tanstack/solid-start": "catalog:",
+    "lucide-solid": "catalog:",
+    "solid-js": "catalog:",
+    "tailwindcss": "catalog:",
+    "vite-plugin-lucide-preprocess": "catalog:"
+  },
+  "devDependencies": {
+    "@nx/vite": "catalog:",
+    "@tanstack/devtools-vite": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vite-plugin-solid": "catalog:"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.app.json --noEmit"
+  }
+}
