@@ -13,6 +13,10 @@
     "skipLibCheck": true,
     "strict": true,
     "target": "es2022",
+    "baseUrl": ".",
+    "paths": {
+      "@effectify/solid-effect-atom": ["packages/solid/effect-atom/src/index.ts"]
+    },
     "customConditions": ["@effectify/source"],
     "plugins": [
       {

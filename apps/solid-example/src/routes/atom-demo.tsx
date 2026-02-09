@@ -34,7 +34,7 @@ function Counter() {
       <div class="flex gap-4">
         <button
           class="px-4 py-2 bg-cyan-500 hover:bg-cyan-600 text-white font-semibold rounded-lg transition-colors"
-          onClick={() => setCount((c) => c + 1)}
+          onClick={() => setCount((c: number) => c + 1)}
         >
           Increment
         </button>
@@ -50,7 +50,7 @@ function Counter() {
 }
 
 function DoubledCounter() {
-  const doubled = useAtomValue(counterAtom, (n) => n * 2)
+  const doubled = useAtomValue(counterAtom, (n: number) => n * 2)
   return (
     <div class="p-6 bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl">
       <h3 class="text-xl font-semibold text-white mb-4">Doubled (useAtomValue)</h3>
@@ -119,7 +119,7 @@ function SetOnlyDemo() {
       <p class="text-3xl font-bold text-teal-400 mb-6">{count()}</p>
       <button
         class="px-4 py-2 bg-teal-500 hover:bg-teal-600 text-white font-semibold rounded-lg transition-colors"
-        onClick={() => setCount((c) => c + 10)}
+        onClick={() => setCount((c: number) => c + 10)}
       >
         Add 10
       </button>
@@ -130,7 +130,7 @@ function SetOnlyDemo() {
 function SubscribeDemo() {
   const [logs, setLogs] = createSignal<string[]>([])
 
-  useAtomSubscribe(subscribeAtom, (val) => {
+  useAtomSubscribe(subscribeAtom, (val: number) => {
     setLogs((prev) => [`Value changed to: ${val}`, ...prev].slice(0, 3))
   })
 
@@ -141,7 +141,7 @@ function SubscribeDemo() {
       <h3 class="text-xl font-semibold text-white mb-4">Subscribe (useAtomSubscribe)</h3>
       <button
         class="mb-4 px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white font-semibold rounded-lg transition-colors"
-        onClick={() => setCount((c) => c + 1)}
+        onClick={() => setCount((c: number) => c + 1)}
       >
         Trigger Change
       </button>
@@ -154,8 +154,6 @@ function SubscribeDemo() {
 }
 
 function MountDemo() {
-  const [mounted, setMounted] = createSignal(false)
-
   // This atom will log when mounted/unmounted if we added effects to it
   // For this demo, we just show that useAtomMount can be called
   useAtomMount(mountAtom)

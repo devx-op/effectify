@@ -1,275 +1,184 @@
 # @effectify/solid-effect-atom
 
-**Reactive state management for SolidJS applications using Effect atoms**
+[Documentation](https://devx-op.github.io/effectify/solid/packages/solid-effect-atom/)
 
-`@effectify/solid-effect-atom` provides seamless integration between [Effect](https://effect.website) atoms and [SolidJS](https://solidjs.com) applications, leveraging SolidJS's fine-grained reactivity system for optimal performance.
-
-## Features
-
-- 🚀 **Fine-grained Reactivity**: Leverages SolidJS's reactive system for optimal performance
-- ⚡ **Zero Re-renders**: Updates only the specific DOM nodes that need to change
-- 🔄 **Async Support**: Built-in support for async atoms with loading states
-- 🎯 **TypeScript**: Full TypeScript support with excellent type inference
-- 🧪 **Well Tested**: Comprehensive test suite with 100% coverage
-- 📦 **Lightweight**: Minimal bundle size impact
+SolidJS bindings for Effect's `Atom` primitive. This library allows you to use Effect's reactive state (`Atom`) within SolidJS components efficiently and safely.
 
 ## Installation
 
 ```bash
-npm install @effectify/solid-effect-atom
-# or
-pnpm add @effectify/solid-effect-atom
-# or
-yarn add @effectify/solid-effect-atom
+npm install @effectify/solid-effect-atom @effect-atom/atom effect solid-js
 ```
 
-## Quick Start
+## Configuration
+
+To use atoms, you must wrap your application (or the part using them) with `RegistryProvider`. This provides the necessary context for atom registration.
 
 ```tsx
-import { Atom } from "@effect-atom/atom"
-import { RegistryProvider, useAtom, useAtomValue } from "@effectify/solid-effect-atom"
-
-// Create an atom
-const countAtom = Atom.make(0)
-
-function Counter() {
-  const [count, setCount] = useAtom(() => countAtom)
-
-  return (
-    <div>
-      <p>Count: {count()}</p>
-      <button onClick={() => setCount(count() + 1)}>
-        Increment
-      </button>
-    </div>
-  )
-}
+import { RegistryProvider } from "@effectify/solid-effect-atom"
 
 function App() {
   return (
     <RegistryProvider>
-      <Counter />
+      <YourApp />
     </RegistryProvider>
   )
 }
 ```
 
-## Core Hooks
+## Basic Usage
 
-### useAtomValue
+### Create an Atom
 
-Read the current value of an atom and subscribe to changes.
+Use `Atom.make` from the `@effect-atom/atom` package.
 
-```tsx
-const name = useAtomValue(() => nameAtom)
-return <p>Hello, {name()}!</p>
+```ts
+import * as Atom from "@effect-atom/atom/Atom"
+
+const counterAtom = Atom.make(0)
 ```
 
 ### useAtom
 
-Get both the current value and a setter function for an atom.
+Hook to read and write an atom. Similar to Solid's `createSignal`.
 
 ```tsx
-const [count, setCount] = useAtom(() => countAtom)
+import { useAtom } from "@effectify/solid-effect-atom"
+
+function Counter() {
+  const [count, setCount] = useAtom(counterAtom)
+
+  return <button onClick={() => setCount((c) => c + 1)}>Count: {count()}</button>
+}
 ```
 
-### useAtomSet
+### useAtomValue
 
-Get only the setter function for an atom.
-
-```tsx
-const setCount = useAtomSet(() => countAtom)
-```
-
-## Advanced Features
-
-### Async Atoms
-
-Handle async operations with built-in loading states:
+Hook to only read an atom's value. You can pass a selector function to transform the value (computed).
 
 ```tsx
-import { Effect } from "effect"
-import { useAtomSuspenseResult } from "@effectify/solid-effect-atom"
+import { useAtomValue } from "@effectify/solid-effect-atom"
 
-const dataAtom = Atom.fn(() =>
-  Effect.gen(function*() {
-    const response = yield* Effect.promise(() => fetch("/api/data"))
-    return yield* Effect.promise(() => response.json())
-  })
-)
-
-function AsyncData() {
-  const result = useAtomSuspenseResult(() => dataAtom)
+function Display() {
+  const count = useAtomValue(counterAtom)
+  const doubled = useAtomValue(counterAtom, (n) => n * 2)
 
   return (
     <div>
-      {result.loading && <p>Loading...</p>}
-      {result.error && <p>Error: {result.error.message}</p>}
-      {result.data && <p>Data: {JSON.stringify(result.data)}</p>}
+      <p>Count: {count()}</p>
+      <p>Doubled: {doubled()}</p>
     </div>
   )
 }
 ```
 
-### Computed Atoms
+## Advanced Usage
 
-Create derived state that automatically updates:
+### useAtomSet
+
+Useful when you only need to update the atom without subscribing to its changes.
 
 ```tsx
-const firstNameAtom = Atom.make("John")
-const lastNameAtom = Atom.make("Doe")
-const fullNameAtom = Atom.make((get) => `${get(firstNameAtom)} ${get(lastNameAtom)}`)
+import { useAtomSet } from "@effectify/solid-effect-atom"
 
-function FullName() {
-  const fullName = useAtomValue(() => fullNameAtom)
-  return <p>{fullName()}</p>
+function ResetButton() {
+  const setCount = useAtomSet(counterAtom)
+  return <button onClick={() => setCount(0)}>Reset</button>
 }
 ```
 
-## Performance Benefits
+### useAtomSubscribe
 
-SolidJS's fine-grained reactivity system means that atom-solid can update only the specific parts of your UI that depend on changed atoms, without re-rendering entire components.
-
-### Benchmark Results
-
-Based on our performance benchmarks:
-
-- **Atom Creation**: ~2M ops/sec
-- **Registry Get**: ~6M ops/sec
-- **Registry Set**: ~4M ops/sec
-- **Computed Atoms**: ~454K ops/sec
-- **Subscriptions**: ~1M ops/sec
-- **Memory Usage**: ~5KB per 1000 atoms
-
-Run benchmarks yourself: `pnpm benchmark`
-
-### Comparison with React
-
-| Feature        | atom-react             | atom-solid           |
-| -------------- | ---------------------- | -------------------- |
-| Re-renders     | Component re-renders   | Fine-grained updates |
-| Performance    | Good                   | Excellent            |
-| Bundle size    | ~15kb                  | ~12kb                |
-| Learning curve | Familiar to React devs | SolidJS concepts     |
-
-## Migration from atom-react
-
-### Key Differences
-
-#### 1. **Hook Signatures**
+Subscribes to atom changes manually. Useful for side effects (logging, analytics, etc.).
 
 ```tsx
-// atom-react
-const value = useAtomValue(myAtom)
+import { useAtomSubscribe } from "@effectify/solid-effect-atom"
 
-// atom-solid
-const value = useAtomValue(() => myAtom)
+function Logger() {
+  useAtomSubscribe(counterAtom, (val) => {
+    console.log("Counter changed:", val)
+  })
+  return null
+}
 ```
 
-#### 2. **Return Values**
+### useAtomMount
+
+Manually mounts an atom. Useful if you want to keep an atom alive in the registry without rendering its value.
 
 ```tsx
-// atom-react - Direct values
-const count = useAtomValue(countAtom)
-return <div>{count}</div>
+import { useAtomMount } from "@effectify/solid-effect-atom"
 
-// atom-solid - Signal accessors
-const count = useAtomValue(() => countAtom)
-return <div>{count()}</div>
+function Keeper() {
+  useAtomMount(counterAtom)
+  return null
+}
 ```
 
-#### 3. **Suspense Implementation**
+### useAtomInitialValues
+
+Useful for SSR or initializing state from props.
 
 ```tsx
-// atom-react - Direct Promise throwing
-const result = useAtomSuspense(asyncAtom)
+import { useAtomInitialValues } from "@effectify/solid-effect-atom"
 
-// atom-solid - createResource integration
-const result = useAtomSuspense(() => asyncAtom)
+function Initializer() {
+  useAtomInitialValues([[counterAtom, 100]])
+  return null
+}
 ```
 
-#### 4. **Performance Characteristics**
+### useAtomRefresh
 
-- **atom-react**: React reconciliation, component re-renders
-- **atom-solid**: Fine-grained updates, no virtual DOM
+Forces an atom to re-evaluate or reset.
 
-### Migration Steps
+```tsx
+import { useAtomRefresh } from "@effectify/solid-effect-atom"
 
-1. **Update hook calls**: Add factory functions
-2. **Update JSX**: Add `()` to access signal values
-3. **Update Suspense**: Wrap with SolidJS Suspense components
-4. **Test thoroughly**: Different reactivity model may expose edge cases
+function Refresher() {
+  const refresh = useAtomRefresh(counterAtom)
+  return <button onClick={refresh}>Reset Atom</button>
+}
+```
 
-## Examples
+### useAtomRef
 
-Check out the [sample application](../../sample/solid) for complete examples including:
+For working with mutable references (`AtomRef`).
 
-- Counter with computed values
-- Async data fetching
-- Todo list management
-- Shared state between components
+```tsx
+import * as AtomRef from "@effect-atom/atom/AtomRef"
+import { useAtomRef } from "@effectify/solid-effect-atom"
+
+const configRef = AtomRef.make({ theme: "dark" })
+
+function Config() {
+  const config = useAtomRef(configRef)
+
+  return (
+    <button onClick={() => configRef.set({ theme: "light" })}>
+      Theme: {config().theme}
+    </button>
+  )
+}
+```
 
 ## API Reference
 
-### Core Hooks
+### Hooks
 
-- `useAtomValue` - Read atom values
-- `useAtom` - Read and write atom values
-- `useAtomSet` - Write-only atom access
+- **`useAtom(atom)`**: Returns `[accessor, setter]`.
+- **`useAtomValue(atom, selector?)`**: Returns `accessor`.
+- **`useAtomSet(atom)`**: Returns only the `setter`.
+- **`useAtomSubscribe(atom, callback)`**: Subscribes to changes.
+- **`useAtomMount(atom)`**: Mounts the atom in the registry.
+- **`useAtomInitialValues(values)`**: Initializes atoms in the current registry.
+- **`useAtomRefresh(atom)`**: Returns a function to refresh the atom.
+- **`useAtomRef(ref)`**: Subscribes to an `AtomRef`.
 
-### Advanced Hooks
+### Components
 
-- `useAtomSuspenseResult` - Handle async atoms with loading states
-- `useAtomSubscribe` - Subscribe to atom changes for side effects
-- `useAtomMount` - Ensure atoms are mounted and active
+- **`RegistryProvider`**: Context provider for atom registry.
 
-### Context
+---
 
-- `RegistryProvider` - Provide atom registry to component tree
-- `useRegistry` - Access the current registry
-
-## Best Practices
-
-1. **Use atom factories**: Always pass a function that returns the atom
-   ```tsx
-   // ✅ Good
-   const value = useAtomValue(() => myAtom)
-
-   // ❌ Bad
-   const value = useAtomValue(myAtom)
-   ```
-
-2. **Prefer computed atoms**: Use computed atoms for derived state
-   ```tsx
-   // ✅ Good
-   const doubledAtom = Atom.make((get) => get(countAtom) * 2)
-
-   // ❌ Bad
-   const doubled = useAtomValue(() => countAtom, (count) => count * 2)
-   ```
-
-3. **Use useAtomSet for write-only operations**: When you only need to update
-   ```tsx
-   // ✅ Good
-   const setCount = useAtomSet(() => countAtom)
-
-   // ❌ Bad
-   const [, setCount] = useAtom(() => countAtom)
-   ```
-
-## Documentation
-
-Full documentation: [https://github.com/devx-op/effectify/tree/master/packages/solid/effect-atom/docs](https://github.com/devx-op/effectify/tree/master/packages/solid/effect-atom/docs)
-
-## License
-
-MIT
-
-## Links
-
-- [Effect Website](https://effect.website)
-- [SolidJS Website](https://solidjs.com)
-- [GitHub Repository](https://github.com/devx-op/effectify)
-
-```
-```
+> **Note**: This library is designed to work with Effect v3 and `@effect-atom/atom`.
