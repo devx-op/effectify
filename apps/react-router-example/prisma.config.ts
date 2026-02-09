@@ -11,6 +11,6 @@ export default defineConfig({
   datasource: {
     // Provide a default value for CI/CD environments where the database URL is not set
     // This allows prisma generate to run without connecting to the database
-    url: env("DATABASE_URL") ?? "postgresql://postgres:postgres@localhost:5432/effectify",
+    url: process.env.DATABASE_URL ?? "postgresql://postgres:postgres@localhost:5432/effectify",
   },
 })
