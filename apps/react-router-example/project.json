@@ -1,0 +1,71 @@
+{
+  "name": "@effectify/react-router-example",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/react-router-example/src",
+  "projectType": "application",
+  "tags": [],
+  "// targets": "to see all targets run: nx show project react-router-example --web",
+  "targets": {
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc",
+        "cwd": "apps/react-router-example"
+      },
+      "dependsOn": [
+        "typegen"
+      ]
+    },
+    "typegen": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "react-router typegen",
+        "cwd": "apps/react-router-example"
+      },
+      "dependsOn": [
+        "prisma-generate"
+      ]
+    },
+    "prisma-generate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "prisma generate",
+        "cwd": "apps/react-router-example"
+      },
+      "cache": true,
+      "inputs": [
+        "{projectRoot}/prisma/schema.prisma",
+        "{projectRoot}/prisma.config.ts"
+      ],
+      "outputs": [
+        "{projectRoot}/prisma/generated"
+      ],
+      "dependsOn": [
+        {
+          "target": "build",
+          "projects": ["@effectify/prisma"]
+        }
+      ]
+    },
+    "build": {
+      "executor": "@nx/vite:build",
+      "outputs": ["{options.outputPath}"],
+      "defaultConfiguration": "production",
+      "options": {
+        "outputPath": "dist/apps/react-router-example"
+      },
+      "configurations": {
+        "development": {
+          "mode": "development"
+        },
+        "production": {
+          "mode": "production"
+        }
+      },
+      "dependsOn": [
+        "prisma-generate",
+        "typegen"
+      ]
+    }
+  }
+}
