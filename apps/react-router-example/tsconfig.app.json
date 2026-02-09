@@ -10,7 +10,7 @@
     "**/.client/**/*.ts",
     "**/.client/**/*.tsx",
     ".react-router/types/**/*",
-    "prisma/generated/**/*"
+    "prisma/generated/effect/**/*"
   ],
   "exclude": [
     "tests/**/*.spec.ts",
