@@ -8,7 +8,9 @@
     "**/.server/**/*.ts",
     "**/.server/**/*.tsx",
     "**/.client/**/*.ts",
-    "**/.client/**/*.tsx"
+    "**/.client/**/*.tsx",
+    ".react-router/types/**/*",
+    "prisma/generated/**/*"
   ],
   "exclude": [
     "tests/**/*.spec.ts",
