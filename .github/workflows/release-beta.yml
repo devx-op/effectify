@@ -53,59 +53,10 @@ jobs:
 
       - name: 🔧 Configure Git for Nx
         run: |
-          git fetch origin dev:dev
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: 🔍 Lint affected projects
-        run: pnpm nx affected -t lint --parallel=3 --base=origin/dev~1
-
-      - name: 🔍 Type check affected projects
-        run: pnpm nx affected -t typecheck --parallel=3 --base=origin/dev~1
-
-      - name: 🏗️ Build affected projects
-        run: pnpm nx affected -t build --parallel=3 --base=origin/dev~1
-
-      - name: 🧪 Test affected projects
-        run: pnpm nx affected -t test --parallel=3 --base=origin/dev~1 --passWithNoTests
-
-  # Release beta packages
-  release:
-    name: 🚀 Release Beta
-    needs: test
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/dev'
-    permissions:
-      contents: write
-      id-token: write
-      packages: write
-    steps:
-      - name: 📥 Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: 📦 Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.14.0
-
-      - name: 🏗️ Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "pnpm"
-          registry-url: "https://registry.npmjs.org"
-
-      - name: 📦 Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: 🔧 Configure Git
-        run: |
-          git fetch origin dev:dev
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Ensure we can access origin/dev for nx affected
+          git fetch --depth=1 origin dev
 
       - name: 🏗️ Build affected projects
         run: pnpm nx affected -t build --parallel=3 --base=origin/dev~1
