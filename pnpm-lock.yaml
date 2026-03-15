@@ -586,12 +586,21 @@ importers:
       '@effect/platform-node':
         specifier: 'catalog:'
         version: 0.73.7(@effect/platform@0.94.5(effect@4.0.0-beta.31))(effect@3.19.19)
+      '@effectify/chat-domain':
+        specifier: workspace:*
+        version: link:../../packages/chat/domain
+      '@effectify/chat-react':
+        specifier: workspace:*
+        version: link:../../packages/chat/react
       '@effectify/node-better-auth':
         specifier: workspace:*
         version: link:../../packages/node/better-auth
       '@effectify/prisma':
         specifier: workspace:*
         version: link:../../packages/prisma
+      '@effectify/react-query':
+        specifier: workspace:*
+        version: link:../../packages/react/query
       '@effectify/react-router':
         specifier: workspace:*
         version: link:../../packages/react/router
@@ -610,6 +619,9 @@ importers:
       '@react-router/serve':
         specifier: 'catalog:'
         version: 7.12.0(react-router@7.12.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(typescript@5.9.3)
+      '@tanstack/react-query':
+        specifier: 'catalog:'
+        version: 5.90.10(react@19.2.0)
       '@testing-library/react':
         specifier: 'catalog:'
         version: 16.3.0(@testing-library/dom@10.4.1)(@types/react-dom@19.1.9(@types/react@19.1.13))(@types/react@19.1.13)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
