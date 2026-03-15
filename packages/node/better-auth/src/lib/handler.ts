@@ -1,10 +1,8 @@
-import * as HttpServerRequest from "@effect/platform/HttpServerRequest"
-import * as HttpServerResponse from "@effect/platform/HttpServerResponse"
-import * as NodeHttpServerRequest from "@effect/platform-node/NodeHttpServerRequest"
+import * as Http from "effect/unstable/http"
 import type { Auth } from "better-auth"
 import { toNodeHandler } from "better-auth/node"
 import * as Config from "effect/Config"
-import type { ConfigError } from "effect/ConfigError"
+import type * as ConfigError from "effect/ConfigError"
 import * as Effect from "effect/Effect"
 import { BetterAuthApiError } from "./better-auth-error.js"
 
@@ -31,15 +29,27 @@ export const toEffectHandler: (
     yield* Effect.log(`toEffectHandler: BETTER_AUTH_URL=${String(appUrl)}`)
 
     const normalizeUrl = (url: URL) =>
-      url.toString().replace(TRAILING_SLASH_REGEX, "").replace(PROTOCOL_REGEX, "http://")
+      url
+        .toString()
+        .replace(TRAILING_SLASH_REGEX, "")
+        .replace(PROTOCOL_REGEX, "http://")
 
     const allowedOrigins = [normalizeUrl(appUrl)]
     const origin = nodeRequest.headers.origin ? normalizeUrl(appUrl) : ""
 
     if (allowedOrigins.includes(origin)) {
-      nodeResponse.setHeader("Access-Control-Allow-Origin", nodeRequest.headers.origin || "")
-      nodeResponse.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-      nodeResponse.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization")
+      nodeResponse.setHeader(
+        "Access-Control-Allow-Origin",
+        nodeRequest.headers.origin || "",
+      )
+      nodeResponse.setHeader(
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, OPTIONS",
+      )
+      nodeResponse.setHeader(
+        "Access-Control-Allow-Headers",
+        "Content-Type, Authorization",
+      )
       nodeResponse.setHeader("Access-Control-Max-Age", "600")
       nodeResponse.setHeader("Access-Control-Allow-Credentials", "true")
     }
@@ -52,7 +62,13 @@ export const toEffectHandler: (
     }
 
     // Log incoming request for debugging
-    yield* Effect.log(`toEffectHandler: incoming ${nodeRequest.method} ${String(nodeRequest.url)}`)
+    yield* Effect.log(
+      `toEffectHandler: incoming ${nodeRequest.method} ${
+        String(
+          nodeRequest.url,
+        )
+      }`,
+    )
 
     try {
       yield* Effect.tryPromise({
@@ -65,12 +81,20 @@ export const toEffectHandler: (
 
       // Log the response status after the handler completes
       yield* Effect.log(
-        `toEffectHandler: completed ${nodeRequest.method} ${String(nodeRequest.url)} -> ${nodeResponse.statusCode}`,
+        `toEffectHandler: completed ${nodeRequest.method} ${
+          String(
+            nodeRequest.url,
+          )
+        } -> ${nodeResponse.statusCode}`,
       )
     } catch (err) {
       // Ensure we log errors from the underlying handler for debugging
       yield* Effect.log(
-        `toEffectHandler: error handling ${nodeRequest.method} ${String(nodeRequest.url)}: ${String(err)}`,
+        `toEffectHandler: error handling ${nodeRequest.method} ${
+          String(
+            nodeRequest.url,
+          )
+        }: ${String(err)}`,
       )
 
       try {
@@ -81,11 +105,15 @@ export const toEffectHandler: (
         nodeResponse.end(payload)
       } catch (writeErr) {
         // If writing the error response fails, log that too
-        yield* Effect.log(`toEffectHandler: failed to write error response: ${String(writeErr)}`)
+        yield* Effect.log(
+          `toEffectHandler: failed to write error response: ${String(writeErr)}`,
+        )
       }
 
       return HttpServerResponse.empty({ status: 500 })
     }
 
-    return HttpServerResponse.empty({ status: nodeResponse.writableFinished ? nodeResponse.statusCode : 499 })
+    return HttpServerResponse.empty({
+      status: nodeResponse.writableFinished ? nodeResponse.statusCode : 499,
+    })
   })

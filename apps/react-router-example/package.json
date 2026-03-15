@@ -9,7 +9,6 @@
   "sideEffects": false,
   "dependencies": {
     "@effect/experimental": "catalog:",
-    "@effect/platform": "catalog:",
     "@effect/platform-node": "catalog:",
     "@effectify/node-better-auth": "workspace:*",
     "@effectify/react-router": "workspace:*",

@@ -33,5 +33,7 @@
     "@types/react": "catalog:"
   },
   "optionalDependencies": {},
-  "peerDependencies": {}
+  "peerDependencies": {
+    "effect": "^3.19.16 || ^4.0.0-beta"
+  }
 }

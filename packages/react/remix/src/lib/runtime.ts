@@ -1,5 +1,13 @@
 import { Response } from "@effect/platform-node/Undici"
 import { type ActionFunctionArgs, json, type LoaderFunctionArgs, redirect } from "@remix-run/node"
+import * as Effect from "effect/Effect"
+import * as Exit from "effect/Exit"
+import { pipe } from "effect/Function"
+import * as Layer from "effect/Layer"
+import * as Logger from "effect/Logger"
+import * as ManagedRuntime from "effect/ManagedRuntime"
+import { ActionArgsContext, LoaderArgsContext } from "./context.js"
+import { type HttpResponse, matchHttpResponse } from "./http-response.js"
 
 // Safe type for redirect init parameter to avoid undici/undici-types conflicts
 type SafeRedirectInit = {
@@ -7,14 +15,6 @@ type SafeRedirectInit = {
   statusText?: string
   headers?: Record<string, string> | Headers
 }
-import * as Effect from "effect/Effect"
-import * as Exit from "effect/Exit"
-import { pipe } from "effect/Function"
-import type * as Layer from "effect/Layer"
-import * as Logger from "effect/Logger"
-import * as ManagedRuntime from "effect/ManagedRuntime"
-import { ActionArgsContext, LoaderArgsContext } from "./context.js"
-import { type HttpResponse, matchHttpResponse } from "./http-response.js"
 
 export const make = <R, E>(layer: Layer.Layer<R, E, never>) => {
   const runtime = ManagedRuntime.make(layer)
@@ -23,10 +23,12 @@ export const make = <R, E>(layer: Layer.Layer<R, E, never>) => {
     self: Effect.Effect<HttpResponse<A> | Response, B, R0>,
   ) =>
   (args: LoaderFunctionArgs) => {
+    // v4 pattern: Use Layer.succeed to provide context values
+    const argsLayer = Layer.succeed(LoaderArgsContext, args)
     const runnable = pipe(
       self,
       Effect.provide(Logger.pretty),
-      Effect.provideService(LoaderArgsContext, args),
+      Effect.provide(argsLayer),
       Effect.tapError((cause) => Effect.logError("Loader effect failed", cause)),
     )
     return runtime.runPromiseExit(runnable).then(
@@ -97,10 +99,12 @@ export const make = <R, E>(layer: Layer.Layer<R, E, never>) => {
     self: Effect.Effect<HttpResponse<A> | Response, B, R0>,
   ) =>
   (args: ActionFunctionArgs) => {
+    // v4 pattern: Use Layer.succeed to provide context values
+    const argsLayer = Layer.succeed(ActionArgsContext, args)
     const runnable = pipe(
       self,
       Effect.provide(Logger.pretty),
-      Effect.provideService(ActionArgsContext, args),
+      Effect.provide(argsLayer),
       Effect.tapError((cause) => {
         if (!(cause instanceof Response)) {
           return Effect.logError("Action effect failed", cause)

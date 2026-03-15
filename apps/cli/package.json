@@ -12,8 +12,6 @@
     "registry"
   ],
   "dependencies": {
-    "@effect/cli": "catalog:",
-    "@effect/platform": "catalog:",
     "@effect/platform-node": "catalog:",
     "effect": "catalog:",
     "handlebars": "^4.7.8",

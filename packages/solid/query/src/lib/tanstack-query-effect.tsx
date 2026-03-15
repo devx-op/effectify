@@ -1,6 +1,6 @@
 import { type QueryClient, QueryClientProvider } from "@tanstack/solid-query"
 import * as Effect from "effect/Effect"
-import type * as Layer from "effect/Layer"
+import * as Layer from "effect/Layer"
 import * as ManagedRuntime from "effect/ManagedRuntime"
 import { type Component, createContext, createMemo, type JSX, onCleanup, useContext } from "solid-js"
 import { makeUseEffectMutation } from "./internal/make-use-effect-mutation.js"
@@ -16,18 +16,27 @@ export const tanstackQueryEffect = <R, E>({
   layer: Layer.Layer<R, E, never>
   queryClient: QueryClient
 }) => {
-  const RuntimeContext = createContext<ManagedRuntime.ManagedRuntime<R, E> | null>(null)
+  const RuntimeContext = createContext<
+    ManagedRuntime.ManagedRuntime<
+      R,
+      E
+    > | null
+  >(null)
+
   const useRunner = () => {
     const runtime = useContext(RuntimeContext)
     if (!runtime) {
-      throw new Error("Runtime context not found. Make sure to wrap your app with RuntimeProvider")
+      throw new Error(
+        "Runtime context not found. Make sure to wrap your app with RuntimeProvider",
+      )
     }
 
     return createMemo(
       () => <A, E2>(span: string) => (effect: Effect.Effect<A, E2, R>): Promise<A> =>
-        effect.pipe(Effect.withSpan(span), Effect.tapErrorCause(Effect.logError), runtime.runPromise),
+        runtime.runPromise(effect.pipe(Effect.withSpan(span))),
     )
   }
+
   const RuntimeProvider: Component<{ children: JSX.Element }> = (props) => {
     const runtime = ManagedRuntime.make(layer)
     onCleanup(() => {
@@ -36,7 +45,9 @@ export const tanstackQueryEffect = <R, E>({
 
     return (
       <RuntimeContext.Provider value={runtime}>
-        <QueryClientProvider client={queryClient}>{props.children}</QueryClientProvider>
+        <QueryClientProvider client={queryClient}>
+          {props.children}
+        </QueryClientProvider>
       </RuntimeContext.Provider>
     )
   }
@@ -44,7 +55,9 @@ export const tanstackQueryEffect = <R, E>({
   const useRuntime = () => {
     const runtime = useContext(RuntimeContext)
     if (!runtime) {
-      throw new Error("Runtime context not found. Make sure to wrap your app with RuntimeProvider")
+      throw new Error(
+        "Runtime context not found. Make sure to wrap your app with RuntimeProvider",
+      )
     }
     return runtime
   }

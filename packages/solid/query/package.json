@@ -27,7 +27,7 @@
   "peerDependencies": {
     "@tanstack/query-core": "^5.90.20",
     "@tanstack/solid-query": "^5.90.23",
-    "effect": "^3.19.16",
+    "effect": "^3.19.16 || ^4.0.0-beta",
     "solid-js": "^1.9.11"
   },
   "devDependencies": {

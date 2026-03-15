@@ -29,7 +29,11 @@ export const make =
       ),
       Option.getOrElse(() => Layer.empty),
       (ApiDocsLive) => {
-        const EnvLive = Layer.mergeAll(options.apiLive, ApiDocsLive, HttpServer.layerContext)
+        const EnvLive = Layer.mergeAll(
+          options.apiLive,
+          ApiDocsLive,
+          HttpServer.layerContext,
+        )
         const { handler } = HttpApiBuilder.toWebHandler(EnvLive)
         return handler(request)
       },

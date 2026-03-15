@@ -32,13 +32,11 @@
   "dependencies": {
     "@dprint/formatter": "catalog:",
     "@dprint/typescript": "catalog:",
-    "@effect/cli": "catalog:",
     "@prisma/generator-helper": "catalog:",
     "eta": "catalog:",
     "kysely": "catalog:"
   },
   "peerDependencies": {
-    "@effect/platform": "catalog:",
     "@effect/platform-node": "catalog:",
     "@prisma/client": "catalog:",
     "effect": "catalog:"

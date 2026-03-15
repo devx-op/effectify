@@ -20,10 +20,19 @@ const verifySessionWithContext = (context: typeof LoaderArgsContext) =>
     })
 
     if (!session) {
-      return yield* Effect.fail(new AuthService.Unauthorized({ details: "Missing or invalid authentication" }))
+      return yield* Effect.fail(
+        new AuthService.Unauthorized({
+          details: "Missing or invalid authentication",
+        }),
+      )
     }
 
-    return yield* Effect.succeed({ user: session.user, session: session.session } as const)
+    return yield* Effect.succeed(
+      {
+        user: session.user,
+        session: session.session,
+      } as const,
+    )
   })
 
 const verifySessionWithActionContext = (context: typeof ActionArgsContext) =>
@@ -41,10 +50,19 @@ const verifySessionWithActionContext = (context: typeof ActionArgsContext) =>
     })
 
     if (!session) {
-      return yield* Effect.fail(new AuthService.Unauthorized({ details: "Missing or invalid authentication" }))
+      return yield* Effect.fail(
+        new AuthService.Unauthorized({
+          details: "Missing or invalid authentication",
+        }),
+      )
     }
 
-    return yield* Effect.succeed({ user: session.user, session: session.session } as const)
+    return yield* Effect.succeed(
+      {
+        user: session.user,
+        session: session.session,
+      } as const,
+    )
   })
 
 const verifySession = () => verifySessionWithContext(LoaderArgsContext)
@@ -57,12 +75,12 @@ export type AuthGuardOptions = {
 
 type WithBetterAuthGuard = {
   // Use generic R and Exclude<R, AuthService.AuthContext>
-  <A, E, R>(
-    eff: Effect.Effect<A, E, R>,
-  ): Effect.Effect<
+  <A, E, R>(eff: Effect.Effect<A, E, R>): Effect.Effect<
     A,
     E | AuthService.Unauthorized,
-    Exclude<R, AuthService.AuthContext> | AuthService.AuthServiceContext | LoaderArgsContext
+    | Exclude<R, AuthService.AuthContext>
+    | AuthService.AuthServiceContext
+    | LoaderArgsContext
   >
   with: (
     options: AuthGuardOptions,
@@ -71,7 +89,9 @@ type WithBetterAuthGuard = {
   ) => Effect.Effect<
     HttpResponse<A> | Response,
     E,
-    Exclude<R, AuthService.AuthContext> | AuthService.AuthServiceContext | LoaderArgsContext
+    | Exclude<R, AuthService.AuthContext>
+    | AuthService.AuthServiceContext
+    | LoaderArgsContext
   >
 }
 
@@ -81,11 +101,17 @@ export const withBetterAuthGuard: WithBetterAuthGuard = Object.assign(
   ): Effect.Effect<
     A,
     E | AuthService.Unauthorized,
-    Exclude<R, AuthService.AuthContext> | AuthService.AuthServiceContext | LoaderArgsContext
+    | Exclude<R, AuthService.AuthContext>
+    | AuthService.AuthServiceContext
+    | LoaderArgsContext
   > =>
     Effect.gen(function*() {
       const authResult = yield* verifySession()
-      return yield* Effect.provideService(eff, AuthService.AuthContext, authResult)
+      return yield* Effect.provideService(
+        eff,
+        AuthService.AuthContext,
+        authResult,
+      )
     }),
   {
     with: (opts: AuthGuardOptions) =>
@@ -94,7 +120,9 @@ export const withBetterAuthGuard: WithBetterAuthGuard = Object.assign(
     ): Effect.Effect<
       HttpResponse<A> | Response,
       E,
-      Exclude<R, AuthService.AuthContext> | AuthService.AuthServiceContext | LoaderArgsContext
+      | Exclude<R, AuthService.AuthContext>
+      | AuthService.AuthServiceContext
+      | LoaderArgsContext
     > =>
       Effect.gen(function*() {
         return yield* verifySession().pipe(
@@ -107,12 +135,12 @@ export const withBetterAuthGuard: WithBetterAuthGuard = Object.assign(
 
 type WithBetterAuthGuardAction = {
   // Use generic R and Exclude<R, AuthService.AuthContext>
-  <A, E, R>(
-    eff: Effect.Effect<A, E, R>,
-  ): Effect.Effect<
+  <A, E, R>(eff: Effect.Effect<A, E, R>): Effect.Effect<
     A,
     E | AuthService.Unauthorized,
-    Exclude<R, AuthService.AuthContext> | AuthService.AuthServiceContext | ActionArgsContext
+    | Exclude<R, AuthService.AuthContext>
+    | AuthService.AuthServiceContext
+    | ActionArgsContext
   >
 
   with: (
@@ -122,7 +150,9 @@ type WithBetterAuthGuardAction = {
   ) => Effect.Effect<
     HttpResponse<A> | Response,
     E,
-    Exclude<R, AuthService.AuthContext> | AuthService.AuthServiceContext | ActionArgsContext
+    | Exclude<R, AuthService.AuthContext>
+    | AuthService.AuthServiceContext
+    | ActionArgsContext
   >
 }
 
@@ -132,11 +162,17 @@ export const withBetterAuthGuardAction: WithBetterAuthGuardAction = Object.assig
   ): Effect.Effect<
     A,
     E | AuthService.Unauthorized,
-    Exclude<R, AuthService.AuthContext> | AuthService.AuthServiceContext | ActionArgsContext
+    | Exclude<R, AuthService.AuthContext>
+    | AuthService.AuthServiceContext
+    | ActionArgsContext
   > =>
     Effect.gen(function*() {
       const authResult = yield* verifySessionFromAction()
-      return yield* Effect.provideService(eff, AuthService.AuthContext, authResult)
+      return yield* Effect.provideService(
+        eff,
+        AuthService.AuthContext,
+        authResult,
+      )
     }),
   {
     with: (opts: AuthGuardOptions) =>
@@ -145,7 +181,9 @@ export const withBetterAuthGuardAction: WithBetterAuthGuardAction = Object.assig
     ): Effect.Effect<
       HttpResponse<A> | Response,
       E,
-      Exclude<R, AuthService.AuthContext> | AuthService.AuthServiceContext | ActionArgsContext
+      | Exclude<R, AuthService.AuthContext>
+      | AuthService.AuthServiceContext
+      | ActionArgsContext
     > =>
       Effect.gen(function*() {
         return yield* verifySessionFromAction().pipe(

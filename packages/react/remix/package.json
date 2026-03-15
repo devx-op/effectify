@@ -23,15 +23,11 @@
   ],
   "dependencies": {},
   "peerDependencies": {
-    "@effect/platform": "^0.94.0",
-    "@effect/platform-node": "^0.104.1",
-    "@remix-run/node": "^2.17.4",
-    "@remix-run/react": "^2.17.4",
-    "effect": "^3.19.16"
+    "@remix-run/node": "catalog:",
+    "@remix-run/react": "catalog:",
+    "effect": "catalog:"
   },
   "devDependencies": {
-    "@effect/platform": "catalog:",
-    "@effect/platform-node": "catalog:",
     "@remix-run/node": "catalog:",
     "@remix-run/react": "catalog:",
     "effect": "catalog:"

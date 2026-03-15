@@ -25,13 +25,12 @@
     "test": "vitest run"
   },
   "peerDependencies": {
-    "@effect/platform": "catalog:",
-    "@effect/platform-node": "catalog:",
     "better-auth": "catalog:",
     "effect": "catalog:"
   },
   "devDependencies": {
     "@effect/vitest": "catalog:",
+    "effect": "catalog:",
     "vitest": "catalog:",
     "better-sqlite3": "catalog:",
     "@types/better-sqlite3": "catalog:",

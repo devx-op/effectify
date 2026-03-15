@@ -14,6 +14,12 @@ const withAuthHandler = <E, R>(requestEffect: Effect.Effect<Request, E, R>) =>
     ),
   )
 
-export const betterAuthLoader = LoaderArgsContext.pipe(getRequest, withAuthHandler)
+export const betterAuthLoader = LoaderArgsContext.pipe(
+  getRequest,
+  withAuthHandler,
+)
 
-export const betterAuthAction = ActionArgsContext.pipe(getRequestFromAction, withAuthHandler)
+export const betterAuthAction = ActionArgsContext.pipe(
+  getRequestFromAction,
+  withAuthHandler,
+)

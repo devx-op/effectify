@@ -13,14 +13,7 @@ catalog:
   "@dprint/typescript": "^0.95.15"
   "@effect-atom/atom": "0.5.0"
   "@effect/build-utils": "0.8.9"
-  "@effect/cli": "0.73.2"
-  "@effect/experimental": "0.58.0"
   "@effect/language-service": "0.56.0"
-  "@effect/platform": "0.94.0"
-  "@effect/platform-bun": "0.97.1"
-  "@effect/platform-http": "0.91.1"
-  "@effect/platform-node": "0.104.1"
-  "@effect/vitest": "0.27.0"
   "@kobalte/core": "0.13.11"
   "@nx/js": "22.5.4"
   "@nx/node": "22.5.4"
@@ -90,7 +83,6 @@ catalog:
   cross-env: "10.1.0"
   dotenv: "^17.2.3"
   dprint: "0.51.1"
-  effect: "3.19.16"
   effect-prisma-generator: "^0.4.0"
   eta: "^4.5.0"
   express: "5.1.0"
@@ -138,6 +130,12 @@ catalog:
   vitest: "4.0.9"
   web-vitals: "5.1.0"
   zod: "4.3.6"
+  # Effect v4 Beta - Core package only
+  # Note: @effect/platform, @effect/cli, etc. are now in effect/unstable/*
+  effect: "4.0.0-beta.31"
+  "@effect/experimental": "0.58.0"
+  "@effect/platform-node": "4.0.0-beta.31"
+  "@effect/vitest": "0.27.0"
 catalogMode: "prefer"
 cleanupUnusedCatalogs: true
 onlyBuiltDependencies:

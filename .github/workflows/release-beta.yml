@@ -1,0 +1,169 @@
+name: 🚀 Release Beta
+
+on:
+  push:
+    branches: [dev]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/effectify"
+
+jobs:
+  # Run tests before releasing
+  test:
+    name: 🧪 Test & Build
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: effectify
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 📦 Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+
+      - name: 🏗️ Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: 📦 Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: 🔍 Lint affected projects
+        run: pnpm nx affected -t lint --parallel=3
+
+      - name: 🔍 Type check affected projects
+        run: pnpm nx affected -t typecheck --parallel=3
+
+      - name: 🏗️ Build affected projects
+        run: pnpm nx affected -t build --parallel=3
+
+      - name: 🧪 Test affected projects
+        run: pnpm nx affected -t test --parallel=3 --passWithNoTests
+
+  # Release beta packages
+  release:
+    name: 🚀 Release Beta
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/dev'
+    permissions:
+      contents: write
+      id-token: write
+      packages: write
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 📦 Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+
+      - name: 🏗️ Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: 📦 Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: 🏗️ Build affected projects
+        run: pnpm nx affected -t build --parallel=3
+
+      - name: 🔧 Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: 📊 Determine Changed Projects
+        id: changed-projects
+        run: |
+          # Get affected release projects
+          RELEASE_PROJECTS=$(jq -r '.release.projects[]' nx.json | xargs -I {} pnpm nx show project {} --json 2>/dev/null | jq -r '.name' 2>/dev/null | grep -v "^null$")
+          AFFECTED_PROJECTS=$(pnpm nx show projects --affected --base=origin/master --head=HEAD --json 2>/dev/null | jq -r '.[]' 2>/dev/null)
+
+          # Filter to only release projects
+          FILTERED=""
+          for proj in $AFFECTED_PROJECTS; do
+            if echo "$RELEASE_PROJECTS" | grep -q "^${proj}$"; then
+              FILTERED="${FILTERED},${proj}"
+            fi
+          done
+
+          # Remove leading comma
+          FILTERED=$(echo "$FILTERED" | sed 's/^,//')
+
+          if [ -z "$FILTERED" ]; then
+            echo "No release projects affected"
+            echo "projects=" >> $GITHUB_OUTPUT
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "projects=$FILTERED" >> $GITHUB_OUTPUT
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "Affected projects: $FILTERED"
+          fi
+
+      - name: 🚀 Release Beta Packages
+        if: steps.changed-projects.outputs.has_changes == 'true'
+        run: |
+          PROJECTS="${{ steps.changed-projects.outputs.projects }}"
+
+          # Single command: version + changelog + publish with beta preid and tag
+          # This creates versions like 1.2.3-beta.0 and publishes with @beta dist-tag
+          pnpm exec nx release --projects="$PROJECTS" --preid=beta --tag=beta --yes
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: true
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 📊 Release Summary
+        if: always()
+        run: |
+          echo "## 🚀 Beta Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.changed-projects.outputs.has_changes }}" == "true" ]; then
+            echo "✅ **Release Completed**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Projects:** ${{ steps.changed-projects.outputs.projects }}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⏭️ **No Changes** - No release projects were affected" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Step | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Tests | ✅ Required |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | ✅ Required |" >> $GITHUB_STEP_SUMMARY
+          echo "| Version Bump | ✅ With --preid=beta |" >> $GITHUB_STEP_SUMMARY
+          echo "| Changelog | ✅ Generated |" >> $GITHUB_STEP_SUMMARY
+          echo "| NPM Tag | beta |" >> $GITHUB_STEP_SUMMARY
+          echo "| Provenance | ✅ Enabled |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📦 Packages published with \"@beta\" dist-tag." >> $GITHUB_STEP_SUMMARY
