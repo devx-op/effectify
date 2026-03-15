@@ -13,10 +13,12 @@ env:
   DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/effectify"
 
 jobs:
-  # Run tests before releasing
-  test:
-    name: 🧪 Test & Build
+  release-beta:
+    name: 🚀 Release Beta
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # Needed for git operations
+      id-token: write # Needed for npm provenance
     services:
       postgres:
         image: postgres:16-alpine
@@ -32,10 +34,12 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
+      # Setup
       - name: 📥 Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 0 # Full history needed for nx affected
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 📦 Install pnpm
         uses: pnpm/action-setup@v4
@@ -47,6 +51,7 @@ jobs:
         with:
           node-version: "20"
           cache: "pnpm"
+          registry-url: "https://registry.npmjs.org/"
 
       - name: 📦 Install dependencies
         run: pnpm install --frozen-lockfile
@@ -56,49 +61,94 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: 🏗️ Build release projects
+      # Detect affected projects (exit early if none)
+      - name: 🔍 Detect Affected Release Projects
+        id: affected
         run: |
-          # Build only the packages we want to publish (ignore errors from other packages)
-          pnpm nx run-many -t build -p @effectify/react-query @effectify/solid-query --parallel=3 || true
-          # Verify the builds succeeded
-          ls -la packages/react/query/dist/ || exit 1
-          ls -la packages/solid/query/dist/ || exit 1
+          # Get all release projects from nx.json
+          RELEASE_PROJECTS=$(jq -r '.release.projects[]' nx.json | sort | uniq)
+          echo "📋 Release projects:"
+          echo "$RELEASE_PROJECTS"
+          echo ""
 
-      - name: 🧪 Test release projects
-        run: |
-          # Run tests for our packages (ignore failures)
-          pnpm nx run-many -t test -p @effectify/react-query @effectify/solid-query --parallel=3 --passWithNoTests || true
+          # Get affected projects since last push to dev
+          AFFECTED_RAW=$(pnpm nx show projects --affected --base=origin/dev~1 --head=HEAD --json 2>/dev/null || echo "[]")
+          echo "🔍 All affected projects:"
+          echo "$AFFECTED_RAW" | jq -r '.[]' 2>/dev/null || echo "(none)"
+          echo ""
 
-      - name: 🚀 Version & Publish Beta Packages
+          # Filter affected projects that are in release list
+          AFFECTED_RELEASE_PROJECTS=$(echo "$AFFECTED_RAW" | jq -r --argjson release "$RELEASE_PROJECTS" '[.[] | select(. as $p | $release | index($p))] | join(",")' 2>/dev/null || echo "")
+
+          if [ -z "$AFFECTED_RELEASE_PROJECTS" ] || [ "$AFFECTED_RELEASE_PROJECTS" = "null" ]; then
+            echo "⚠️ No affected release projects found - skipping release"
+            echo "has_projects=false" >> $GITHUB_OUTPUT
+            echo "projects=" >> $GITHUB_OUTPUT
+            exit 0
+          else
+            echo "✅ Affected release projects: $AFFECTED_RELEASE_PROJECTS"
+            echo "has_projects=true" >> $GITHUB_OUTPUT
+            echo "projects=$AFFECTED_RELEASE_PROJECTS" >> $GITHUB_OUTPUT
+          fi
+
+      # Build affected projects (skipped if no affected projects)
+      - name: 🏗️ Build Affected Projects
+        if: ${{ steps.affected.outputs.has_projects == 'true' }}
         run: |
-          # Configure npm auth
-          echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > ~/.npmrc
-          # Version without git operations (skip git push/tag)
-          pnpm exec nx release version --projects=@effectify/react-query,@effectify/solid-query --git-push=false --git-tag=false || true
-          # Publish with beta tag
-          cd packages/react/query
-          pnpm publish --tag beta --no-git-checks --access public || echo "react-query may already exist"
-          cd ../../solid/query
-          pnpm publish --tag beta --no-git-checks --access public || echo "solid-query may already exist"
+          echo "Building: ${{ steps.affected.outputs.projects }}"
+          pnpm nx run-many -t build --projects=${{ steps.affected.outputs.projects }} --parallel=3
+
+      # Optional: Test affected projects
+      - name: 🧪 Test Affected Projects
+        if: ${{ steps.affected.outputs.has_projects == 'true' }}
+        continue-on-error: true
+        run: |
+          echo "Testing: ${{ steps.affected.outputs.projects }}"
+          pnpm nx run-many -t test --projects=${{ steps.affected.outputs.projects }} --parallel=3 --passWithNoTests || true
+
+      # Release: version bump + publish (skipped if no affected projects)
+      - name: 🚀 Version & Publish Beta
+        if: ${{ steps.affected.outputs.has_projects == 'true' }}
+        run: |
+          PROJECTS="${{ steps.affected.outputs.projects }}"
+          echo "Releasing: $PROJECTS"
+
+          # Version bump with preid=beta → creates versions like 0.0.5-beta.0
+          pnpm nx release version --projects=$PROJECTS --preid=beta
+
+          # Rebuild with new versions (version bump updates package.json)
+          pnpm nx run-many -t build --projects=$PROJECTS --parallel=3
+
+          # Publish to npm with beta tag
+          pnpm nx release publish --projects=$PROJECTS --tag=beta
+
+          # Push git tags and version commits
+          git push origin HEAD --follow-tags
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_CONFIG_PROVENANCE: true
 
+      # Summary
       - name: 📊 Release Summary
         if: always()
         run: |
           echo "## 🚀 Beta Release Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ **Release Completed**" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Projects:** @effectify/react-query, @effectify/solid-query" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Step | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Build | ✅ |" >> $GITHUB_STEP_SUMMARY
-          echo "| Test | ✅ |" >> $GITHUB_STEP_SUMMARY
-          echo "| Version Bump | ✅ With --preid=beta |" >> $GITHUB_STEP_SUMMARY
-          echo "| NPM Tag | beta |" >> $GITHUB_STEP_SUMMARY
-          echo "| Provenance | ✅ Enabled |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "📦 Packages published with \"@beta\" dist-tag." >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.affected.outputs.has_projects }}" = "true" ]; then
+            echo "✅ **Release Completed**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Projects:** ${{ steps.affected.outputs.projects }}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Step | Status |" >> $GITHUB_STEP_SUMMARY
+            echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
+            echo "| Detect Affected | ✅ |" >> $GITHUB_STEP_SUMMARY
+            echo "| Build | ✅ |" >> $GITHUB_STEP_SUMMARY
+            echo "| Version Bump | ✅ With preid=beta |" >> $GITHUB_STEP_SUMMARY
+            echo "| NPM Tag | beta |" >> $GITHUB_STEP_SUMMARY
+            echo "| Provenance | ✅ Enabled |" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "📦 Packages published with \"@beta\" dist-tag and semver prerelease versions (x.x.x-beta.x)." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⏭️ **Skipped - No affected projects**" >> $GITHUB_STEP_SUMMARY
+          fi
