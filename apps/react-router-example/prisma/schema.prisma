@@ -18,7 +18,7 @@ generator effect {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
 }
 
 enum TodoStatus {

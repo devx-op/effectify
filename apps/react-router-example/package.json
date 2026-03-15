@@ -4,7 +4,6 @@
   "type": "module",
   "scripts": {
     "typecheck": "react-router typegen && tsc",
-    "db:migrate": "better-auth migrate --config ./app/lib/better-auth-options.server.ts",
     "dev": "react-router dev"
   },
   "sideEffects": false,
@@ -16,7 +15,7 @@
     "@effectify/react-router": "workspace:*",
     "@effectify/react-router-better-auth": "workspace:*",
     "@effectify/prisma": "workspace:*",
-    "@prisma/adapter-pg": "catalog:",
+    "@prisma/adapter-better-sqlite3": "catalog:",
     "@prisma/client": "catalog:",
     "@react-router/node": "catalog:",
     "@react-router/serve": "catalog:",
@@ -28,7 +27,6 @@
     "experimental": "link:@effect/experimental",
     "isbot": "catalog:",
     "kysely": "catalog:",
-    "pg": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
     "react-router": "catalog:"
@@ -41,7 +39,6 @@
     "@react-router/dev": "catalog:",
     "@types/better-sqlite3": "7.6.13",
     "@types/node": "catalog:",
-    "@types/pg": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "prisma": "catalog:",
