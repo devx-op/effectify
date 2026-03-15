@@ -1,5 +1,6 @@
 // Effect v4 Beta - React Query Integration
-// @beta
+// @beta - v4.0.0-beta.31
+// Release: 2026-03-15
 export * from "./lib/internal/query-data-helpers.js"
 export * from "./lib/tanstack-query-effect.jsx"
 export * from "./lib/types.js"

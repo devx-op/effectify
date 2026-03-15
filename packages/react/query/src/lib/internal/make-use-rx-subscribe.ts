@@ -1,4 +1,5 @@
 import * as Effect from "effect/Effect"
+import * as Exit from "effect/Exit"
 import * as Fiber from "effect/Fiber"
 import type * as ManagedRuntime from "effect/ManagedRuntime"
 import * as Stream from "effect/Stream"
@@ -29,14 +30,14 @@ export const makeUseRxSubscribe = <R, E>(
       : stream
 
     useEffect(() => {
-      const subscriptionEffect = finalStream.pipe(
+      const subscription = finalStream.pipe(
         Stream.tap((a) =>
           Effect.sync(() => {
             setValue(a)
             onNext(a)
           })
         ),
-        Stream.catchAll((e: E2) =>
+        Stream.catch((e: E2) =>
           Stream.fromEffect(
             Effect.sync(() => {
               onError?.(e)
@@ -46,17 +47,20 @@ export const makeUseRxSubscribe = <R, E>(
         ),
         Stream.runDrain,
         Effect.forever,
+        Effect.forkDetach,
       )
 
-      runtime.runPromise(subscriptionEffect).then((fiber) => {
-        if (fiber) {
-          fiberRef.current = fiber as unknown as Fiber.Fiber<never, never>
-        }
+      runtime.runCallback(subscription, {
+        onExit: (exit) => {
+          if (Exit.isSuccess(exit)) {
+            fiberRef.current = exit.value
+          }
+        },
       })
 
       return () => {
         if (fiberRef.current !== null) {
-          runtime.runPromise(Fiber.interrupt(fiberRef.current))
+          runtime.runCallback(Fiber.interrupt(fiberRef.current))
         }
       }
     }, [finalStream, runtime, onNext, onError])
