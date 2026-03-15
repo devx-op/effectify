@@ -6,3 +6,4 @@ public/build
 
 /generated/prisma
 data
+*.db

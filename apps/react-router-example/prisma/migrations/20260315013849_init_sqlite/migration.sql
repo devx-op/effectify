@@ -1,10 +1,9 @@
 -- CreateTable
 CREATE TABLE "Todo" (
-    "id" SERIAL NOT NULL,
+    "id" TEXT NOT NULL PRIMARY KEY,
     "title" TEXT NOT NULL,
     "content" TEXT,
     "published" BOOLEAN NOT NULL DEFAULT false,
-    "authorId" INTEGER NOT NULL,
-
-    CONSTRAINT "Todo_pkey" PRIMARY KEY ("id")
+    "status" TEXT NOT NULL DEFAULT 'PENDING',
+    "authorId" INTEGER NOT NULL
 );
