@@ -59,14 +59,14 @@ jobs:
           git fetch --depth=1 origin dev
 
       - name: 🏗️ Build affected projects
-        run: pnpm nx affected -t build --parallel=3 --base=origin/dev~1
+        run: pnpm nx affected -t build --parallel=3 --base=HEAD~1
 
       - name: 📊 Determine Changed Projects
         id: changed-projects
         run: |
           # Get affected release projects
           RELEASE_PROJECTS=$(jq -r '.release.projects[]' nx.json | xargs -I {} pnpm nx show project {} --json 2>/dev/null | jq -r '.name' 2>/dev/null | grep -v "^null$")
-          AFFECTED_PROJECTS=$(pnpm nx show projects --affected --base=origin/dev~1 --head=HEAD --json 2>/dev/null | jq -r '.[]' 2>/dev/null)
+          AFFECTED_PROJECTS=$(pnpm nx show projects --affected --base=HEAD~1 --head=HEAD --json 2>/dev/null | jq -r '.[]' 2>/dev/null)
 
           # Filter to only release projects
           FILTERED=""
