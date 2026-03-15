@@ -65,9 +65,22 @@ jobs:
       - name: 🔍 Detect Affected Release Projects
         id: affected
         run: |
-          # Get all release projects from nx.json
-          RELEASE_PROJECTS=$(jq -r '.release.projects[]' nx.json | sort | uniq)
-          echo "📋 Release projects:"
+          # Get all release projects from nx.json (these are paths like "packages/solid/query")
+          RELEASE_PATHS=$(jq -r '.release.projects[]' nx.json | sort | uniq)
+          echo "📋 Release project paths:"
+          echo "$RELEASE_PATHS"
+          echo ""
+
+          # Convert paths to project names
+          RELEASE_PROJECTS=""
+          for path in $RELEASE_PATHS; do
+            PROJECT_NAME=$(pnpm nx show project "$path" --json 2>/dev/null | jq -r '.name' 2>/dev/null)
+            if [ -n "$PROJECT_NAME" ] && [ "$PROJECT_NAME" != "null" ]; then
+              RELEASE_PROJECTS="$RELEASE_PROJECTS $PROJECT_NAME"
+            fi
+          done
+          RELEASE_PROJECTS=$(echo "$RELEASE_PROJECTS" | tr ' ' '\n' | sort | uniq)
+          echo "📋 Release project names:"
           echo "$RELEASE_PROJECTS"
           echo ""
 
@@ -78,7 +91,7 @@ jobs:
           echo ""
 
           # Filter affected projects that are in release list
-          AFFECTED_RELEASE_PROJECTS=$(echo "$AFFECTED_RAW" | jq -r --argjson release "$RELEASE_PROJECTS" '[.[] | select(. as $p | $release | index($p))] | join(",")' 2>/dev/null || echo "")
+          AFFECTED_RELEASE_PROJECTS=$(echo "$AFFECTED_RAW" | jq -r --arg release "$RELEASE_PROJECTS" '[.[] | select(. as $p | $release | contains($p))] | join(",")' 2>/dev/null || echo "")
 
           if [ -z "$AFFECTED_RELEASE_PROJECTS" ] || [ "$AFFECTED_RELEASE_PROJECTS" = "null" ]; then
             echo "⚠️ No affected release projects found - skipping release"
