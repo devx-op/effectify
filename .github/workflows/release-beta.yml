@@ -66,8 +66,8 @@ jobs:
 
       - name: 🚀 Version Beta Packages
         run: |
-          # Create beta version
-          pnpm exec nx release version --projects=@effectify/react-query,@effectify/solid-query --preid=beta --yes
+          # Create beta version (without --yes, uses default non-interactive behavior)
+          pnpm exec nx release version --projects=@effectify/react-query,@effectify/solid-query --preid=beta
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
