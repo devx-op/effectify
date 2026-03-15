@@ -11,7 +11,7 @@
   "dependencies": {
     "@effectify/shared-domain": "workspace:*",
     "tslib": "catalog:",
-    "effect": "catalog:effect-beta"
+    "effect": "catalog:"
   },
   "devDependencies": {},
   "peerDependencies": {},
