@@ -2,6 +2,10 @@
   "name": "@effectify/solid-query",
   "version": "0.5.12",
   "description": "Integration of Effect with TanStack Query for Solid.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/devx-op/effectify"
+  },
   "type": "module",
   "main": "./dist/src/index.js",
   "module": "./dist/src/index.js",

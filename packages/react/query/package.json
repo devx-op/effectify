@@ -2,6 +2,10 @@
   "name": "@effectify/react-query",
   "version": "0.0.4",
   "description": "Integration of Effect with TanStack Query for React",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/devx-op/effectify"
+  },
   "type": "module",
   "main": "./dist/src/index.js",
   "module": "./dist/src/index.js",
