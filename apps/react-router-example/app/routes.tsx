@@ -7,4 +7,5 @@ export default [
   route("todo-app", "./routes/todo-app.tsx"),
   route("login", "./routes/login.tsx"),
   route("signup", "./routes/signup.tsx"),
+  route("chat", "./routes/chat.tsx"),
 ] satisfies RouteConfig

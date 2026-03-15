@@ -6,7 +6,12 @@ export function AppNav() {
   return (
     <nav
       className="container-fluid"
-      style={{ position: "sticky", top: 0, zIndex: 10, backdropFilter: "saturate(180%) blur(6px)" }}
+      style={{
+        position: "sticky",
+        top: 0,
+        zIndex: 10,
+        backdropFilter: "saturate(180%) blur(6px)",
+      }}
     >
       <ul>
         <li>
@@ -24,6 +29,11 @@ export function AppNav() {
         <li>
           <NavLink end to="/todo-app">
             Todo App
+          </NavLink>
+        </li>
+        <li>
+          <NavLink end to="/chat">
+            Chat
           </NavLink>
         </li>
         <li>
