@@ -64,10 +64,17 @@ jobs:
         run: |
           pnpm nx run-many -t test -p @effectify/react-query @effectify/solid-query --parallel=3 --passWithNoTests || true
 
-      - name: 🚀 Release Beta Packages
+      - name: 🚀 Version Beta Packages
         run: |
-          # Release specific projects with beta tag
-          pnpm exec nx release --projects=@effectify/react-query,@effectify/solid-query --preid=beta --tag=beta --yes
+          # Create beta version
+          pnpm exec nx release version --projects=@effectify/react-query,@effectify/solid-query --preid=beta --yes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 📦 Publish Beta Packages
+        run: |
+          # Publish with beta tag
+          pnpm exec nx release publish --projects=@effectify/react-query,@effectify/solid-query --tag=beta --yes
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: true
