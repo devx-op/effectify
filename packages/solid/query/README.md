@@ -2,6 +2,8 @@
 
 Integration of [Effect](https://effect.website/) with [TanStack Query](https://tanstack.com/query/latest) for [Solid.js](https://www.solidjs.com/).
 
+> **Beta Version**: This package now supports Effect v4 beta. Install with `@beta` tag for latest v4 compatibility.
+
 ## Installation
 
 ```bash
@@ -26,7 +28,9 @@ import * as Effect from "effect/Effect"
 import { tanstackQueryEffect } from "@effectify/solid-query"
 
 // Create an Effect layer
-const AppLayer = Layer.succeed("AppConfig", { apiUrl: "https://api.example.com" })
+const AppLayer = Layer.succeed("AppConfig", {
+  apiUrl: "https://api.example.com",
+})
 
 // Initialize the TanStack Query integration
 const {
