@@ -51,17 +51,24 @@ jobs:
       - name: 📦 Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: 🔧 Configure Git for Nx
+        run: |
+          git fetch origin master:master
+          git fetch origin dev:dev
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
       - name: 🔍 Lint affected projects
-        run: pnpm nx affected -t lint --parallel=3
+        run: pnpm nx affected -t lint --parallel=3 --base=origin/master
 
       - name: 🔍 Type check affected projects
-        run: pnpm nx affected -t typecheck --parallel=3
+        run: pnpm nx affected -t typecheck --parallel=3 --base=origin/master
 
       - name: 🏗️ Build affected projects
-        run: pnpm nx affected -t build --parallel=3
+        run: pnpm nx affected -t build --parallel=3 --base=origin/master
 
       - name: 🧪 Test affected projects
-        run: pnpm nx affected -t test --parallel=3 --passWithNoTests
+        run: pnpm nx affected -t test --parallel=3 --base=origin/master --passWithNoTests
 
   # Release beta packages
   release:
@@ -95,13 +102,15 @@ jobs:
       - name: 📦 Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: 🏗️ Build affected projects
-        run: pnpm nx affected -t build --parallel=3
-
       - name: 🔧 Configure Git
         run: |
+          git fetch origin master:master
+          git fetch origin dev:dev
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: 🏗️ Build affected projects
+        run: pnpm nx affected -t build --parallel=3 --base=origin/master
 
       - name: 📊 Determine Changed Projects
         id: changed-projects
