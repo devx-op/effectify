@@ -73,9 +73,9 @@ jobs:
         run: |
           # Configure npm auth
           echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > ~/.npmrc
-          # Version and publish in one command
-          pnpm exec nx release --projects=@effectify/react-query,@effectify/solid-query --skip-publish
-          # Now publish with beta tag
+          # Version without git operations (skip git push/tag)
+          pnpm exec nx release version --projects=@effectify/react-query,@effectify/solid-query --git-push=false --git-tag=false || true
+          # Publish with beta tag
           cd packages/react/query
           pnpm publish --tag beta --no-git-checks --access public || echo "react-query may already exist"
           cd ../../solid/query
