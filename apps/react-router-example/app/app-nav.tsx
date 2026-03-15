@@ -1,8 +1,6 @@
-import { NavLink, useNavigate } from "react-router"
-import { authClient } from "./lib/auth-client.js"
+import { NavLink } from "react-router"
 
 export function AppNav() {
-  const navigate = useNavigate()
   return (
     <nav
       className="container-fluid"
@@ -27,29 +25,9 @@ export function AppNav() {
           </NavLink>
         </li>
         <li>
-          <NavLink end to="/todo-app">
-            Todo App
-          </NavLink>
-        </li>
-        <li>
           <NavLink end to="/chat">
-            Chat
+            Chat Demo
           </NavLink>
-        </li>
-        <li>
-          <button
-            type="button"
-            onClick={async () => {
-              try {
-                await authClient.signOut()
-                navigate("/login")
-              } catch {
-                navigate("/login")
-              }
-            }}
-          >
-            Sign Out
-          </button>
         </li>
       </ul>
     </nav>
