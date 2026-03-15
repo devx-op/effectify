@@ -25,7 +25,7 @@
     "tslib": "catalog:",
     "@tanstack/react-query": "5.90.10",
     "@tanstack/query-core": "5.90.10",
-    "effect": "catalog:",
+    "effect": "catalog:effect-beta",
     "react": "catalog:"
   },
   "devDependencies": {

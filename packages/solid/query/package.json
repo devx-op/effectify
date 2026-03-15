@@ -33,7 +33,7 @@
   "devDependencies": {
     "@tanstack/query-core": "catalog:",
     "@tanstack/solid-query": "catalog:",
-    "effect": "catalog:",
+    "effect": "catalog:effect-beta",
     "solid-js": "catalog:",
     "typescript": "catalog:"
   }
