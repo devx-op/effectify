@@ -3,6 +3,7 @@ import type { UseMutationOptions, UseQueryOptions } from "@tanstack/solid-query"
 import type * as Effect from "effect/Effect"
 import type { Accessor } from "solid-js"
 
+// Beta release trigger - v4 compatibility
 export type QueryKey = readonly [string, Record<string, unknown>?]
 export type EffectfulError = { _tag: string }
 export type Runner<R> = () => Accessor<
