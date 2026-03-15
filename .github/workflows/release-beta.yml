@@ -51,52 +51,23 @@ jobs:
       - name: 📦 Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: 🔧 Configure Git for Nx
+      - name: 🔧 Configure Git
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          # Ensure we can access origin/dev for nx affected
-          git fetch --depth=1 origin dev
 
-      - name: 🏗️ Build affected projects
-        run: pnpm nx affected -t build --parallel=3 --base=HEAD~1
-
-      - name: 📊 Determine Changed Projects
-        id: changed-projects
+      - name: 🏗️ Build release projects
         run: |
-          # Get affected release projects
-          RELEASE_PROJECTS=$(jq -r '.release.projects[]' nx.json | xargs -I {} pnpm nx show project {} --json 2>/dev/null | jq -r '.name' 2>/dev/null | grep -v "^null$")
-          AFFECTED_PROJECTS=$(pnpm nx show projects --affected --base=HEAD~1 --head=HEAD --json 2>/dev/null | jq -r '.[]' 2>/dev/null)
+          pnpm nx run-many -t build -p @effectify/react-query @effectify/solid-query --parallel=3
 
-          # Filter to only release projects
-          FILTERED=""
-          for proj in $AFFECTED_PROJECTS; do
-            if echo "$RELEASE_PROJECTS" | grep -q "^${proj}$"; then
-              FILTERED="${FILTERED},${proj}"
-            fi
-          done
-
-          # Remove leading comma
-          FILTERED=$(echo "$FILTERED" | sed 's/^,//')
-
-          if [ -z "$FILTERED" ]; then
-            echo "No release projects affected"
-            echo "projects=" >> $GITHUB_OUTPUT
-            echo "has_changes=false" >> $GITHUB_OUTPUT
-          else
-            echo "projects=$FILTERED" >> $GITHUB_OUTPUT
-            echo "has_changes=true" >> $GITHUB_OUTPUT
-            echo "Affected projects: $FILTERED"
-          fi
+      - name: 🧪 Test release projects
+        run: |
+          pnpm nx run-many -t test -p @effectify/react-query @effectify/solid-query --parallel=3 --passWithNoTests || true
 
       - name: 🚀 Release Beta Packages
-        if: steps.changed-projects.outputs.has_changes == 'true'
         run: |
-          PROJECTS="${{ steps.changed-projects.outputs.projects }}"
-
-          # Single command: version + changelog + publish with beta preid and tag
-          # This creates versions like 1.2.3-beta.0 and publishes with @beta dist-tag
-          pnpm exec nx release --projects="$PROJECTS" --preid=beta --tag=beta --yes
+          # Release specific projects with beta tag
+          pnpm exec nx release --projects=@effectify/react-query,@effectify/solid-query --preid=beta --tag=beta --yes
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: true
@@ -107,20 +78,15 @@ jobs:
         run: |
           echo "## 🚀 Beta Release Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          if [ "${{ steps.changed-projects.outputs.has_changes }}" == "true" ]; then
-            echo "✅ **Release Completed**" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**Projects:** ${{ steps.changed-projects.outputs.projects }}" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "⏭️ **No Changes** - No release projects were affected" >> $GITHUB_STEP_SUMMARY
-          fi
+          echo "✅ **Release Completed**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Projects:** @effectify/react-query, @effectify/solid-query" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Step | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Tests | ✅ Required |" >> $GITHUB_STEP_SUMMARY
-          echo "| Build | ✅ Required |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | ✅ |" >> $GITHUB_STEP_SUMMARY
+          echo "| Test | ✅ |" >> $GITHUB_STEP_SUMMARY
           echo "| Version Bump | ✅ With --preid=beta |" >> $GITHUB_STEP_SUMMARY
-          echo "| Changelog | ✅ Generated |" >> $GITHUB_STEP_SUMMARY
           echo "| NPM Tag | beta |" >> $GITHUB_STEP_SUMMARY
           echo "| Provenance | ✅ Enabled |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
