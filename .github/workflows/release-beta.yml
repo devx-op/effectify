@@ -73,14 +73,15 @@ jobs:
 
       - name: 📦 Publish Beta Packages
         run: |
-          # Get the new versions from version step
+          # Configure npm auth
+          echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > ~/.npmrc
+          # Publish with beta tag
           cd packages/react/query
           pnpm publish --tag beta --no-git-checks --access public
           cd ../../solid/query
           pnpm publish --tag beta --no-git-checks --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NPM_CONFIG_PROVENANCE: true
 
       - name: 📊 Release Summary
         if: always()
