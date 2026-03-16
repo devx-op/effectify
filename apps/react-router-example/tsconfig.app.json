@@ -9,8 +9,7 @@
     "**/.server/**/*.tsx",
     "**/.client/**/*.ts",
     "**/.client/**/*.tsx",
-    ".react-router/types/**/*",
-    "prisma/generated/**/*"
+    ".react-router/types/**/*"
   ],
   "exclude": [
     "tests/**/*.spec.ts",
@@ -27,9 +26,7 @@
     "baseUrl": ".",
     "outDir": "dist/out-tsc",
     "paths": {
-      "@prisma/*": [
-        "./prisma/generated/*"
-      ]
+      "@prisma/client": ["./prisma/generated/index.js"]
     }
   }
 }

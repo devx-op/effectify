@@ -11,7 +11,6 @@
   "dependencies": {
     "@effectify/chat-domain": "workspace:*",
     "effect": "catalog:",
-    "@effectify/solid-ui": "workspace:*",
     "@effectify/solid-query": "workspace:*",
     "@kobalte/core": "catalog:",
     "solid-js": "catalog:",

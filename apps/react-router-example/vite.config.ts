@@ -35,6 +35,14 @@ export default defineConfig({
     host: "localhost",
   },
   plugins,
+  ssr: {
+    external: [
+      "better-sqlite3",
+      "better-auth",
+      "@prisma/client",
+      "@prisma/adapter-better-sqlite3",
+    ],
+  },
   // Uncomment this if you are using workers.
   // worker: {
   //  plugins: [ nxViteTsPaths() ],

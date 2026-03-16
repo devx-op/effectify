@@ -1,5 +1,6 @@
-// Stubbed for v4 compatibility
-export const authClient = {
-  signOut: async () => ({ success: true }),
-  signIn: async () => ({ success: true }),
-}
+import { createAuthClient } from "better-auth/react" // make sure to import from better-auth/react
+
+export const authClient = createAuthClient({
+  // you can pass client configuration here
+  baseURL: "http://localhost:3000",
+})

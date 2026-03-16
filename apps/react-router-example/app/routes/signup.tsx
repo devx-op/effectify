@@ -2,24 +2,25 @@ import { useState } from "react"
 import { authClient } from "./../lib/auth-client.js"
 import { Link, useNavigate } from "react-router"
 
-export default function Login() {
+export default function SignUp() {
+  const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
   const navigate = useNavigate()
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
-    await authClient.signIn.email(
+    console.log("[SignUp] Attempting to sign up with email:", email)
+    await authClient.signUp.email(
       {
         email,
         password,
+        name,
       },
       {
-        onSuccess: (ctx) => {
-          console.log("Login successful")
-          console.dir(ctx, { depth: null })
+        onSuccess: () => {
           navigate("/")
         },
         onError: (ctx) => {
@@ -32,8 +33,21 @@ export default function Login() {
   return (
     <main className="container">
       <article>
-        <h2>Sign in to your account</h2>
-        <form onSubmit={handleLogin}>
+        <h2>Create an account</h2>
+        <form onSubmit={handleSignUp}>
+          <div>
+            <label htmlFor="name">Full Name</label>
+            <input
+              id="name"
+              name="name"
+              type="text"
+              autoComplete="name"
+              required
+              placeholder="Full Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </div>
           <div>
             <label htmlFor="email-address">Email address</label>
             <input
@@ -53,7 +67,7 @@ export default function Login() {
               id="password"
               name="password"
               type="password"
-              autoComplete="current-password"
+              autoComplete="new-password"
               required
               placeholder="Password"
               value={password}
@@ -63,10 +77,10 @@ export default function Login() {
           {error && (
             <small role="alert" aria-live="polite" style={{ color: "var(--pico-color-red-500)" }}>{error}</small>
           )}
-          <button type="submit">Sign in</button>
+          <button type="submit">Sign up</button>
         </form>
         <p>
-          Don't have an account? <Link to="/signup">Sign up</Link>
+          Already have an account? <Link to="/login">Sign in</Link>
         </p>
       </article>
     </main>
