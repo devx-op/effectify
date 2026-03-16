@@ -18,14 +18,27 @@
     "effect": "catalog:",
     "@effect/platform-node": "catalog:",
     "@effectify/react-remix": "workspace:*",
+    "@effectify/react-router-better-auth": "workspace:*",
+    "@effectify/node-better-auth": "workspace:*",
     "@remix-run/node": "2.17.1",
     "@remix-run/react": "2.17.1",
     "@remix-run/serve": "2.17.1",
     "isbot": "^4.4.0",
     "react": "18.2.0",
-    "react-dom": "18.2.0"
+    "react-dom": "18.2.0",
+    "@prisma/client": "catalog:",
+    "@prisma/client-runtime-utils": "catalog:",
+
+    "better-auth": "catalog:",
+    "better-sqlite3": "12.4.6",
+    "dotenv": "catalog:",
+    "kysely": "catalog:"
   },
   "devDependencies": {
+    "@prisma/generator": "catalog:",
+    "@react-router/dev": "catalog:",
+    "@types/better-sqlite3": "7.6.13",
+    "prisma": "catalog:",
     "@remix-run/dev": "2.17.1",
     "@types/react": "^18.2.20",
     "@types/react-dom": "^18.2.7",

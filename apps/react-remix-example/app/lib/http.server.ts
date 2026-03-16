@@ -1,4 +1,4 @@
-import { HttpApi, HttpApiBuilder, HttpApiEndpoint, HttpApiGroup, OpenApi } from "@effect/platform"
+/*import { HttpApi, HttpApiBuilder, HttpApiEndpoint, HttpApiGroup, OpenApi } from "@effect/platform"
 import { Effect, Layer, Schema } from "effect"
 
 class ApiGroup extends HttpApiGroup.make("api")
@@ -23,7 +23,7 @@ export class Api extends HttpApi.make("Api")
   .annotate(
     OpenApi.Description,
     `
-An example API built with Confect and powered by [Scalar](https://github.com/scalar/scalar). 
+An example API built with Confect and powered by [Scalar](https://github.com/scalar/scalar).
 
 # Learn More
 
@@ -50,3 +50,4 @@ const ApiGroupLive = HttpApiBuilder.group(
 )
 
 export const ApiLive = HttpApiBuilder.api(Api).pipe(Layer.provide(ApiGroupLive))
+*/

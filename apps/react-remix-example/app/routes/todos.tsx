@@ -5,64 +5,65 @@ import { useState } from "react"
 import { createTodo, deleteTodo, getTodos, type Todo, toggleTodo, updateTodo } from "~/lib/mockStore.js"
 import { withActionEffect, withLoaderEffect } from "~/lib/runtime.server.js"
 
-export const loader = withLoaderEffect(
-  Effect.gen(function*() {
-    const todos = getTodos()
-    return yield* httpSuccess({ todos })
-  }),
-)
+import { withBetterAuthGuard, withBetterAuthGuardAction } from "@effectify/react-router-better-auth"
 
-export const action = withActionEffect(
-  Effect.gen(function*() {
-    const { request } = yield* ActionArgsContext
-    const formData = yield* Effect.tryPromise(() => request.formData())
+export const loader = Effect.gen(function*() {
+  const todos = getTodos()
+  return yield* httpSuccess({ todos })
+}).pipe(withBetterAuthGuard.with({ redirectOnFail: "/login" }))
+  .pipe(withLoaderEffect)
 
-    const intent = String(formData.get("intent") ?? "create")
-    const id = String(formData.get("id") ?? "")
-    const title = String(formData.get("title") ?? "")
-    const content = String(formData.get("content") ?? "")
+export const action = Effect.gen(function*() {
+  const { request } = yield* ActionArgsContext
+  const formData = yield* Effect.tryPromise(() => request.formData())
 
-    if (intent === "delete") {
-      if (!id) {
-        return yield* httpFailure("Missing todo ID")
-      }
-      deleteTodo(id)
-      return yield* httpRedirect("/todos")
+  const intent = String(formData.get("intent") ?? "create")
+  const id = String(formData.get("id") ?? "")
+  const title = String(formData.get("title") ?? "")
+  const content = String(formData.get("content") ?? "")
+
+  if (intent === "delete") {
+    if (!id) {
+      return yield* httpFailure("Missing todo ID")
     }
+    deleteTodo(id)
+    return yield* httpRedirect("/todos")
+  }
 
-    if (intent === "update") {
-      if (!id) {
-        return yield* httpFailure("Missing todo ID")
-      }
-      if (!title.trim()) {
-        return yield* httpFailure("Title is required")
-      }
-      updateTodo(id, { title, content })
-      return yield* httpRedirect("/todos")
+  if (intent === "update") {
+    if (!id) {
+      return yield* httpFailure("Missing todo ID")
     }
-
-    if (intent === "toggle") {
-      if (!id) {
-        return yield* httpFailure("Missing todo ID")
-      }
-      toggleTodo(id)
-      return yield* httpRedirect("/todos")
-    }
-
-    // Create intent (default)
     if (!title.trim()) {
       return yield* httpFailure("Title is required")
     }
-
-    createTodo({
-      title,
-      content,
-      status: "PENDING",
-    })
-
+    updateTodo(id, { title, content })
     return yield* httpRedirect("/todos")
-  }),
-)
+  }
+
+  if (intent === "toggle") {
+    if (!id) {
+      return yield* httpFailure("Missing todo ID")
+    }
+    toggleTodo(id)
+    return yield* httpRedirect("/todos")
+  }
+
+  // Create intent (default)
+  if (!title.trim()) {
+    return yield* httpFailure("Title is required")
+  }
+
+  createTodo({
+    title,
+    content,
+    status: "PENDING",
+  })
+
+  return yield* httpRedirect("/todos")
+})
+  .pipe(withBetterAuthGuardAction.with({ redirectOnFail: "/login" }))
+  .pipe(withActionEffect)
 
 export default function TodosRoute() {
   const loaderData = useLoaderData<typeof loader>()
