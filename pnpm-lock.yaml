@@ -36,12 +36,6 @@ catalogs:
     '@effect/vitest':
       specifier: 0.27.0
       version: 0.27.0
-    '@effectify/node-better-auth':
-      specifier: ^0.5.11
-      version: 0.5.11
-    '@effectify/react-router-better-auth':
-      specifier: ^0.5.11
-      version: 0.5.11
     '@kobalte/core':
       specifier: 0.13.11
       version: 0.13.11
@@ -571,8 +565,8 @@ importers:
   apps/react-router-example:
     dependencies:
       '@effectify/node-better-auth':
-        specifier: 'catalog:'
-        version: 0.5.11(@effect/platform-node@4.0.0-beta.31(effect@4.0.0-beta.31)(ioredis@5.10.0))(@effect/platform@0.94.5(effect@4.0.0-beta.31))(better-auth@1.4.10(@prisma/client@7.3.0(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.4.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(typescript@5.9.3))(better-sqlite3@12.4.6)(mysql2@3.15.3)(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.4.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(solid-js@1.9.11)(vitest@4.0.9))(effect@4.0.0-beta.31)
+        specifier: workspace:*
+        version: link:../../packages/node/better-auth
       '@effectify/react-query':
         specifier: workspace:*
         version: link:../../packages/react/query
@@ -580,8 +574,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/react/router
       '@effectify/react-router-better-auth':
-        specifier: 'catalog:'
-        version: 0.5.11(@effectify/node-better-auth@0.5.11(@effect/platform-node@4.0.0-beta.31(effect@4.0.0-beta.31)(ioredis@5.10.0))(@effect/platform@0.94.5(effect@4.0.0-beta.31))(better-auth@1.4.10(@prisma/client@7.3.0(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.4.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(typescript@5.9.3))(better-sqlite3@12.4.6)(mysql2@3.15.3)(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.4.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(solid-js@1.9.11)(vitest@4.0.9))(effect@4.0.0-beta.31))(@effectify/react-router@packages+react+router)(effect@4.0.0-beta.31)
+        specifier: workspace:*
+        version: link:../../packages/react/router-better-auth
       '@prisma/adapter-better-sqlite3':
         specifier: 'catalog:'
         version: 7.3.0
@@ -2059,21 +2053,6 @@ packages:
     peerDependencies:
       effect: ^3.19.0
       vitest: ^3.2.0
-
-  '@effectify/node-better-auth@0.5.11':
-    resolution: {integrity: sha512-AYIDtXiz4tGu8h8H5GipPDcw1EJ4rs+4NUT+nnMTKqcBboBfBcLb+gCc07qZsJGVSozTwOhSAgZzI/Fr835Lfw==}
-    peerDependencies:
-      '@effect/platform': 0.94.0
-      '@effect/platform-node': 0.104.1
-      better-auth: 1.4.10
-      effect: 3.19.16
-
-  '@effectify/react-router-better-auth@0.5.11':
-    resolution: {integrity: sha512-Yblj0Co6rRC+gfKriqi1e3Wc4hw12mvKVsqQykXAo5YF4Ee9KKYeScqzrOVSGnPN5M6HXhXdjJSET4rW/al+7g==}
-    peerDependencies:
-      '@effectify/node-better-auth': 0.5.11
-      '@effectify/react-router': 0.5.10
-      effect: 3.19.16
 
   '@electric-sql/pglite-socket@0.0.20':
     resolution: {integrity: sha512-J5nLGsicnD9wJHnno9r+DGxfcZWh+YJMCe0q/aCgtG6XOm9Z7fKeite8IZSNXgZeGltSigM9U/vAWZQWdgcSFg==}
@@ -10386,15 +10365,15 @@ packages:
   tldts-core@6.1.86:
     resolution: {integrity: sha512-Je6p7pkk+KMzMv2XXKmAE3McmolOQFdxkKw0R8EYNr7sELW46JqnNeTX8ybPiQgvg1ymCoF8LXs5fzFaZvJPTA==}
 
-  tldts-core@7.0.25:
-    resolution: {integrity: sha512-ZjCZK0rppSBu7rjHYDYsEaMOIbbT+nWF57hKkv4IUmZWBNrBWBOjIElc0mKRgLM8bm7x/BBlof6t2gi/Oq/Asw==}
+  tldts-core@7.0.26:
+    resolution: {integrity: sha512-5WJ2SqFsv4G2Dwi7ZFVRnz6b2H1od39QME1lc2y5Ew3eWiZMAeqOAfWpRP9jHvhUl881406QtZTODvjttJs+ew==}
 
   tldts@6.1.86:
     resolution: {integrity: sha512-WMi/OQ2axVTf/ykqCQgXiIct+mSQDFdH2fkwhPwgEwvJ1kSzZRiinb0zF2Xb8u4+OqPChmyI6MEu4EezNJz+FQ==}
     hasBin: true
 
-  tldts@7.0.25:
-    resolution: {integrity: sha512-keinCnPbwXEUG3ilrWQZU+CqcTTzHq9m2HhoUP2l7Xmi8l1LuijAXLpAJ5zRW+ifKTNscs4NdCkfkDCBYm352w==}
+  tldts@7.0.26:
+    resolution: {integrity: sha512-WiGwQjr0qYdNNG8KpMKlSvpxz652lqa3Rd+/hSaDcY4Uo6SKWZq2LAF+hsAhUewTtYhXlorBKgNF3Kk8hnjGoQ==}
     hasBin: true
 
   tmp@0.2.5:
@@ -10591,8 +10570,8 @@ packages:
     resolution: {integrity: sha512-sC+b0tB1whOCzbtlx20fx3WgCXwkW627p4EA9uM+/tNNPkSS+eSEld6pAs9nDv7WbY1UUljBMYPtu9BCOrCWKA==}
     engines: {node: '>=18.17'}
 
-  undici@7.24.3:
-    resolution: {integrity: sha512-eJdUmK/Wrx2d+mnWWmwwLRyA7OQCkLap60sk3dOK4ViZR7DKwwptwuIvFBg2HaiP9ESaEdhtpSymQPvytpmkCA==}
+  undici@7.24.4:
+    resolution: {integrity: sha512-BM/JzwwaRXxrLdElV2Uo6cTLEjhSb3WXboncJamZ15NgUURmvlXvxa6xkwIOILIjPNo9i8ku136ZvWV0Uly8+w==}
     engines: {node: '>=20.18.1'}
 
   unicode-canonical-property-names-ecmascript@2.0.1:
@@ -12599,7 +12578,7 @@ snapshots:
       effect: 4.0.0-beta.31
       ioredis: 5.10.0
       mime: 4.1.0
-      undici: 7.24.3
+      undici: 7.24.4
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
@@ -12621,20 +12600,6 @@ snapshots:
     dependencies:
       effect: 4.0.0-beta.31
       vitest: 4.0.9(@types/debug@4.1.12)(@types/node@20.19.25)(@vitest/ui@4.0.9)(jiti@2.6.1)(jsdom@27.2.0)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
-
-  '@effectify/node-better-auth@0.5.11(@effect/platform-node@4.0.0-beta.31(effect@4.0.0-beta.31)(ioredis@5.10.0))(@effect/platform@0.94.5(effect@4.0.0-beta.31))(better-auth@1.4.10(@prisma/client@7.3.0(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.4.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(typescript@5.9.3))(better-sqlite3@12.4.6)(mysql2@3.15.3)(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.4.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(solid-js@1.9.11)(vitest@4.0.9))(effect@4.0.0-beta.31)':
-    dependencies:
-      '@effect/platform': 0.94.5(effect@4.0.0-beta.31)
-      '@effect/platform-node': 4.0.0-beta.31(effect@4.0.0-beta.31)(ioredis@5.10.0)
-      better-auth: 1.4.10(@prisma/client@7.3.0(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.4.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(typescript@5.9.3))(better-sqlite3@12.4.6)(mysql2@3.15.3)(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.4.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(solid-js@1.9.11)(vitest@4.0.9)
-      effect: 4.0.0-beta.31
-      zod: 4.3.6
-
-  '@effectify/react-router-better-auth@0.5.11(@effectify/node-better-auth@0.5.11(@effect/platform-node@4.0.0-beta.31(effect@4.0.0-beta.31)(ioredis@5.10.0))(@effect/platform@0.94.5(effect@4.0.0-beta.31))(better-auth@1.4.10(@prisma/client@7.3.0(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.4.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(typescript@5.9.3))(better-sqlite3@12.4.6)(mysql2@3.15.3)(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.4.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(solid-js@1.9.11)(vitest@4.0.9))(effect@4.0.0-beta.31))(@effectify/react-router@packages+react+router)(effect@4.0.0-beta.31)':
-    dependencies:
-      '@effectify/node-better-auth': 0.5.11(@effect/platform-node@4.0.0-beta.31(effect@4.0.0-beta.31)(ioredis@5.10.0))(@effect/platform@0.94.5(effect@4.0.0-beta.31))(better-auth@1.4.10(@prisma/client@7.3.0(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.4.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(typescript@5.9.3))(better-sqlite3@12.4.6)(mysql2@3.15.3)(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.4.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(solid-js@1.9.11)(vitest@4.0.9))(effect@4.0.0-beta.31)
-      '@effectify/react-router': link:packages/react/router
-      effect: 4.0.0-beta.31
 
   '@electric-sql/pglite-socket@0.0.20(@electric-sql/pglite@0.3.15)':
     dependencies:
@@ -17374,7 +17339,7 @@ snapshots:
       parse5: 7.3.0
       parse5-htmlparser2-tree-adapter: 7.1.0
       parse5-parser-stream: 7.1.2
-      undici: 7.24.3
+      undici: 7.24.4
       whatwg-mimetype: 4.0.0
 
   chevrotain@10.5.0:
@@ -22951,15 +22916,15 @@ snapshots:
 
   tldts-core@6.1.86: {}
 
-  tldts-core@7.0.25: {}
+  tldts-core@7.0.26: {}
 
   tldts@6.1.86:
     dependencies:
       tldts-core: 6.1.86
 
-  tldts@7.0.25:
+  tldts@7.0.26:
     dependencies:
-      tldts-core: 7.0.25
+      tldts-core: 7.0.26
 
   tmp@0.2.5: {}
 
@@ -22981,7 +22946,7 @@ snapshots:
 
   tough-cookie@6.0.1:
     dependencies:
-      tldts: 7.0.25
+      tldts: 7.0.26
 
   tr46@0.0.3: {}
 
@@ -23122,7 +23087,7 @@ snapshots:
 
   undici@6.24.1: {}
 
-  undici@7.24.3: {}
+  undici@7.24.4: {}
 
   unicode-canonical-property-names-ecmascript@2.0.1: {}
 

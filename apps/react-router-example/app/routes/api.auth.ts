@@ -1,10 +1,5 @@
-import { auth } from "../lib/better-auth-options.server.js" // Adjust the path as necessary
-import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router"
+import { withActionEffect, withLoaderEffect } from "../lib/runtime.server.js"
+import { betterAuthAction, betterAuthLoader } from "@effectify/react-router-better-auth"
 
-export async function loader({ request }: LoaderFunctionArgs) {
-  return auth.handler(request)
-}
-
-export async function action({ request }: ActionFunctionArgs) {
-  return auth.handler(request)
-}
+export const loader = betterAuthLoader.pipe(withLoaderEffect)
+export const action = betterAuthAction.pipe(withActionEffect)

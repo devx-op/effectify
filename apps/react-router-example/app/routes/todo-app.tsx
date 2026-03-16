@@ -5,6 +5,7 @@ import { withActionEffect, withLoaderEffect } from "../lib/runtime.server.js"
 import { randomUUID } from "node:crypto"
 import { Form, useActionData, useSubmit } from "react-router"
 import { useState } from "react"
+import { withBetterAuthGuard } from "@effectify/react-router-better-auth"
 
 let todos = [
   {
@@ -17,7 +18,9 @@ let todos = [
 
 export const loader = Effect.gen(function*() {
   return yield* httpSuccess({ todos: todos })
-}).pipe(withLoaderEffect)
+})
+  .pipe(withBetterAuthGuard.with({ redirectOnFail: "/login" }))
+  .pipe(withLoaderEffect)
 
 export const action = Effect.gen(function*() {
   const { request } = yield* ActionArgsContext
@@ -70,6 +73,7 @@ export const action = Effect.gen(function*() {
 
   return yield* httpRedirect("/todo-app")
 })
+  .pipe(withBetterAuthGuard.with({ redirectOnFail: "/login" }))
   .pipe(withActionEffect)
 
 export default function TodoApp({

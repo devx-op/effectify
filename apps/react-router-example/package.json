@@ -8,10 +8,10 @@
   },
   "sideEffects": false,
   "dependencies": {
-    "@effectify/node-better-auth": "catalog:",
+    "@effectify/node-better-auth": "workspace:*",
     "@effectify/react-query": "workspace:*",
     "@effectify/react-router": "workspace:*",
-    "@effectify/react-router-better-auth": "catalog:",
+    "@effectify/react-router-better-auth": "workspace:*",
     "@prisma/adapter-better-sqlite3": "catalog:",
     "@prisma/client": "catalog:",
     "@prisma/client-runtime-utils": "catalog:",

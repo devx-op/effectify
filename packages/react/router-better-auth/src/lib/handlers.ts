@@ -1,30 +1,30 @@
 import { AuthService } from "@effectify/node-better-auth"
 import { ActionArgsContext, LoaderArgsContext } from "@effectify/react-router"
 import * as Effect from "effect/Effect"
+import { pipe } from "effect/Function"
 
-// v4 Pattern: Use yield* ServiceClass directly to access context values
-const getRequest = Effect.gen(function*() {
-  const args = yield* LoaderArgsContext
-  return args.request
+const withAuthHandler = (request: Request) =>
+  Effect.gen(function*() {
+    const auth = yield* AuthService.AuthServiceContext
+    return yield* Effect.promise(() => auth.auth.handler(request))
+  })
+
+const getLoaderRequest = Effect.gen(function*() {
+  const ctx = yield* LoaderArgsContext
+  return (ctx as any).request
 })
 
-const getRequestFromAction = Effect.gen(function*() {
-  const args = yield* ActionArgsContext
-  return args.request
+const getActionRequest = Effect.gen(function*() {
+  const ctx = yield* ActionArgsContext
+  return (ctx as any).request
 })
 
-const withAuthHandler = Effect.gen(function*() {
-  const request = yield* getRequest
-  const auth = yield* AuthService.AuthServiceContext
-  return yield* Effect.promise(() => auth.auth.handler(request))
-})
+export const betterAuthLoader = pipe(
+  getLoaderRequest,
+  Effect.flatMap(withAuthHandler),
+)
 
-const withAuthHandlerFromAction = Effect.gen(function*() {
-  const request = yield* getRequestFromAction
-  const auth = yield* AuthService.AuthServiceContext
-  return yield* Effect.promise(() => auth.auth.handler(request))
-})
-
-// Export Effects that can be used with react-router's runtime
-export const betterAuthLoader = withAuthHandler
-export const betterAuthAction = withAuthHandlerFromAction
+export const betterAuthAction = pipe(
+  getActionRequest,
+  Effect.flatMap(withAuthHandler),
+)
