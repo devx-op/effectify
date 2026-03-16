@@ -10,6 +10,7 @@
   "dependencies": {
     "@effectify/node-better-auth": "catalog:",
     "@effectify/react-query": "workspace:*",
+    "@effectify/react-router": "workspace:*",
     "@effectify/react-router-better-auth": "catalog:",
     "@prisma/adapter-better-sqlite3": "catalog:",
     "@prisma/client": "catalog:",

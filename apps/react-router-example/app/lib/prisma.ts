@@ -1,5 +1,5 @@
 import "dotenv/config"
-import Database from "better-sqlite3"
+import Database, { Database as DatabaseType } from "better-sqlite3"
 
 const connectionString = process.env.DATABASE_URL
 if (!connectionString || connectionString.trim().length === 0) {
@@ -7,4 +7,4 @@ if (!connectionString || connectionString.trim().length === 0) {
 }
 
 const dbPath = connectionString.replace("file:", "")
-export const database = new Database(dbPath)
+export const database = new Database(dbPath) as DatabaseType

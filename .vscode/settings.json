@@ -1,5 +1,9 @@
 {
   "nxConsole.generateAiAgentRules": true,
+  "terminal.integrated.env.linux": {
+    "PATH": "/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:${env:PATH}"
+  },
+  // Para que la extensión Nx encuentre pnpm: abre Cursor desde una terminal donde pnpm esté en PATH, p. ej. `cursor .`
   "typescript.tsdk": "node_modules/typescript/lib",
   "[javascript]": {
     "editor.defaultFormatter": "dprint.dprint"

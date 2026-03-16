@@ -27,6 +27,11 @@ export function AppNav() {
           </NavLink>
         </li>
         <li>
+          <NavLink end to="/todo-app">
+            Todo App
+          </NavLink>
+        </li>
+        <li>
           <NavLink end to="/chat">
             Chat Demo
           </NavLink>

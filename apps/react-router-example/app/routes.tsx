@@ -6,4 +6,5 @@ export default [
   route("api/auth/*", "./routes/api.auth.ts"),
   route("login", "./routes/login.tsx"),
   route("signup", "./routes/signup.tsx"),
+  route("todo-app", "./routes/todo-app.tsx"),
 ] satisfies RouteConfig

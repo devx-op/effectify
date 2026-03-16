@@ -572,13 +572,16 @@ importers:
     dependencies:
       '@effectify/node-better-auth':
         specifier: 'catalog:'
-        version: 0.5.11(@effect/platform-node@4.0.0-beta.31(effect@4.0.0-beta.31)(ioredis@5.10.0))(@effect/platform@0.94.0(effect@4.0.0-beta.31))(better-auth@1.4.10(@prisma/client@7.3.0(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.4.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(typescript@5.9.3))(better-sqlite3@12.4.6)(mysql2@3.15.3)(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.4.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(solid-js@1.9.11)(vitest@4.0.9))(effect@4.0.0-beta.31)
+        version: 0.5.11(@effect/platform-node@4.0.0-beta.31(effect@4.0.0-beta.31)(ioredis@5.10.0))(@effect/platform@0.94.5(effect@4.0.0-beta.31))(better-auth@1.4.10(@prisma/client@7.3.0(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.4.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(typescript@5.9.3))(better-sqlite3@12.4.6)(mysql2@3.15.3)(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.4.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(solid-js@1.9.11)(vitest@4.0.9))(effect@4.0.0-beta.31)
       '@effectify/react-query':
         specifier: workspace:*
         version: link:../../packages/react/query
+      '@effectify/react-router':
+        specifier: workspace:*
+        version: link:../../packages/react/router
       '@effectify/react-router-better-auth':
         specifier: 'catalog:'
-        version: 0.5.11(@effectify/node-better-auth@0.5.11(@effect/platform-node@4.0.0-beta.31(effect@4.0.0-beta.31)(ioredis@5.10.0))(@effect/platform@0.94.0(effect@4.0.0-beta.31))(better-auth@1.4.10(@prisma/client@7.3.0(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.4.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(typescript@5.9.3))(better-sqlite3@12.4.6)(mysql2@3.15.3)(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.4.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(solid-js@1.9.11)(vitest@4.0.9))(effect@4.0.0-beta.31))(@effectify/react-router@0.5.9(@effect/platform-node@4.0.0-beta.31(effect@4.0.0-beta.31)(ioredis@5.10.0))(@effect/platform@0.94.0(effect@4.0.0-beta.31))(effect@4.0.0-beta.31)(react-router@7.12.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)))(effect@4.0.0-beta.31)
+        version: 0.5.11(@effectify/node-better-auth@0.5.11(@effect/platform-node@4.0.0-beta.31(effect@4.0.0-beta.31)(ioredis@5.10.0))(@effect/platform@0.94.5(effect@4.0.0-beta.31))(better-auth@1.4.10(@prisma/client@7.3.0(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.4.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(typescript@5.9.3))(better-sqlite3@12.4.6)(mysql2@3.15.3)(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.4.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(solid-js@1.9.11)(vitest@4.0.9))(effect@4.0.0-beta.31))(@effectify/react-router@packages+react+router)(effect@4.0.0-beta.31)
       '@prisma/adapter-better-sqlite3':
         specifier: 'catalog:'
         version: 7.3.0
@@ -2040,11 +2043,6 @@ packages:
       effect: ^4.0.0-beta.31
       ioredis: ^5.7.0
 
-  '@effect/platform@0.94.0':
-    resolution: {integrity: sha512-oIATd3M+RUe2q+bu0Qpgt4/qSbXBM9OEGBrRW7SvtwXGOWkCYkN+LfOPnmPrbMB7jYjpIb7808T1bONM1Nwgfg==}
-    peerDependencies:
-      effect: ^3.19.13
-
   '@effect/platform@0.94.5':
     resolution: {integrity: sha512-z05APUiDDPbodhTkH/RJqOLoCU11bU2IZLfcwLFrld03+ob1VeqRnELQlmueLIYm6NZifHAtjl32V+GRt34y4A==}
     peerDependencies:
@@ -2076,14 +2074,6 @@ packages:
       '@effectify/node-better-auth': 0.5.11
       '@effectify/react-router': 0.5.10
       effect: 3.19.16
-
-  '@effectify/react-router@0.5.9':
-    resolution: {integrity: sha512-4QKGeBKnEUcU6EZrzpP+Xew9Lp2huyY9jZlpvGVh4Y5Fu+VE0Nw5lzlqlM0iS0zp05gnnv3/928qE+ZqY4fpzw==}
-    peerDependencies:
-      '@effect/platform': 0.94.0
-      '@effect/platform-node': 0.104.1
-      effect: 3.19.16
-      react-router: 7.12.0
 
   '@electric-sql/pglite-socket@0.0.20':
     resolution: {integrity: sha512-J5nLGsicnD9wJHnno9r+DGxfcZWh+YJMCe0q/aCgtG6XOm9Z7fKeite8IZSNXgZeGltSigM9U/vAWZQWdgcSFg==}
@@ -12614,13 +12604,6 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
-  '@effect/platform@0.94.0(effect@4.0.0-beta.31)':
-    dependencies:
-      effect: 4.0.0-beta.31
-      find-my-way-ts: 0.1.6
-      msgpackr: 1.11.9
-      multipasta: 0.2.7
-
   '@effect/platform@0.94.5(effect@4.0.0-beta.31)':
     dependencies:
       effect: 4.0.0-beta.31
@@ -12639,26 +12622,19 @@ snapshots:
       effect: 4.0.0-beta.31
       vitest: 4.0.9(@types/debug@4.1.12)(@types/node@20.19.25)(@vitest/ui@4.0.9)(jiti@2.6.1)(jsdom@27.2.0)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
 
-  '@effectify/node-better-auth@0.5.11(@effect/platform-node@4.0.0-beta.31(effect@4.0.0-beta.31)(ioredis@5.10.0))(@effect/platform@0.94.0(effect@4.0.0-beta.31))(better-auth@1.4.10(@prisma/client@7.3.0(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.4.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(typescript@5.9.3))(better-sqlite3@12.4.6)(mysql2@3.15.3)(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.4.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(solid-js@1.9.11)(vitest@4.0.9))(effect@4.0.0-beta.31)':
+  '@effectify/node-better-auth@0.5.11(@effect/platform-node@4.0.0-beta.31(effect@4.0.0-beta.31)(ioredis@5.10.0))(@effect/platform@0.94.5(effect@4.0.0-beta.31))(better-auth@1.4.10(@prisma/client@7.3.0(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.4.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(typescript@5.9.3))(better-sqlite3@12.4.6)(mysql2@3.15.3)(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.4.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(solid-js@1.9.11)(vitest@4.0.9))(effect@4.0.0-beta.31)':
     dependencies:
-      '@effect/platform': 0.94.0(effect@4.0.0-beta.31)
+      '@effect/platform': 0.94.5(effect@4.0.0-beta.31)
       '@effect/platform-node': 4.0.0-beta.31(effect@4.0.0-beta.31)(ioredis@5.10.0)
       better-auth: 1.4.10(@prisma/client@7.3.0(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.4.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(typescript@5.9.3))(better-sqlite3@12.4.6)(mysql2@3.15.3)(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.4.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(solid-js@1.9.11)(vitest@4.0.9)
       effect: 4.0.0-beta.31
       zod: 4.3.6
 
-  '@effectify/react-router-better-auth@0.5.11(@effectify/node-better-auth@0.5.11(@effect/platform-node@4.0.0-beta.31(effect@4.0.0-beta.31)(ioredis@5.10.0))(@effect/platform@0.94.0(effect@4.0.0-beta.31))(better-auth@1.4.10(@prisma/client@7.3.0(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.4.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(typescript@5.9.3))(better-sqlite3@12.4.6)(mysql2@3.15.3)(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.4.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(solid-js@1.9.11)(vitest@4.0.9))(effect@4.0.0-beta.31))(@effectify/react-router@0.5.9(@effect/platform-node@4.0.0-beta.31(effect@4.0.0-beta.31)(ioredis@5.10.0))(@effect/platform@0.94.0(effect@4.0.0-beta.31))(effect@4.0.0-beta.31)(react-router@7.12.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)))(effect@4.0.0-beta.31)':
+  '@effectify/react-router-better-auth@0.5.11(@effectify/node-better-auth@0.5.11(@effect/platform-node@4.0.0-beta.31(effect@4.0.0-beta.31)(ioredis@5.10.0))(@effect/platform@0.94.5(effect@4.0.0-beta.31))(better-auth@1.4.10(@prisma/client@7.3.0(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.4.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(typescript@5.9.3))(better-sqlite3@12.4.6)(mysql2@3.15.3)(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.4.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(solid-js@1.9.11)(vitest@4.0.9))(effect@4.0.0-beta.31))(@effectify/react-router@packages+react+router)(effect@4.0.0-beta.31)':
     dependencies:
-      '@effectify/node-better-auth': 0.5.11(@effect/platform-node@4.0.0-beta.31(effect@4.0.0-beta.31)(ioredis@5.10.0))(@effect/platform@0.94.0(effect@4.0.0-beta.31))(better-auth@1.4.10(@prisma/client@7.3.0(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.4.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(typescript@5.9.3))(better-sqlite3@12.4.6)(mysql2@3.15.3)(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.4.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(solid-js@1.9.11)(vitest@4.0.9))(effect@4.0.0-beta.31)
-      '@effectify/react-router': 0.5.9(@effect/platform-node@4.0.0-beta.31(effect@4.0.0-beta.31)(ioredis@5.10.0))(@effect/platform@0.94.0(effect@4.0.0-beta.31))(effect@4.0.0-beta.31)(react-router@7.12.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0))
+      '@effectify/node-better-auth': 0.5.11(@effect/platform-node@4.0.0-beta.31(effect@4.0.0-beta.31)(ioredis@5.10.0))(@effect/platform@0.94.5(effect@4.0.0-beta.31))(better-auth@1.4.10(@prisma/client@7.3.0(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.4.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(typescript@5.9.3))(better-sqlite3@12.4.6)(mysql2@3.15.3)(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.4.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(solid-js@1.9.11)(vitest@4.0.9))(effect@4.0.0-beta.31)
+      '@effectify/react-router': link:packages/react/router
       effect: 4.0.0-beta.31
-
-  '@effectify/react-router@0.5.9(@effect/platform-node@4.0.0-beta.31(effect@4.0.0-beta.31)(ioredis@5.10.0))(@effect/platform@0.94.0(effect@4.0.0-beta.31))(effect@4.0.0-beta.31)(react-router@7.12.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0))':
-    dependencies:
-      '@effect/platform': 0.94.0(effect@4.0.0-beta.31)
-      '@effect/platform-node': 4.0.0-beta.31(effect@4.0.0-beta.31)(ioredis@5.10.0)
-      effect: 4.0.0-beta.31
-      react-router: 7.12.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
 
   '@electric-sql/pglite-socket@0.0.20(@electric-sql/pglite@0.3.15)':
     dependencies:
