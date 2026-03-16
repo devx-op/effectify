@@ -12,40 +12,14 @@
         "command": "tsc",
         "cwd": "apps/react-router-example"
       },
-      "dependsOn": [
-        "typegen"
-      ]
+      "dependsOn": ["typegen"]
     },
     "typegen": {
       "executor": "nx:run-commands",
       "options": {
         "command": "react-router typegen",
         "cwd": "apps/react-router-example"
-      },
-      "dependsOn": [
-        "prisma-generate"
-      ]
-    },
-    "prisma-generate": {
-      "executor": "nx:run-commands",
-      "options": {
-        "command": "prisma generate",
-        "cwd": "apps/react-router-example"
-      },
-      "cache": true,
-      "inputs": [
-        "{projectRoot}/prisma/schema.prisma",
-        "{projectRoot}/prisma.config.ts"
-      ],
-      "outputs": [
-        "{projectRoot}/prisma/generated"
-      ],
-      "dependsOn": [
-        {
-          "target": "build",
-          "projects": ["@effectify/prisma"]
-        }
-      ]
+      }
     },
     "build": {
       "executor": "@nx/vite:build",
@@ -62,10 +36,7 @@
           "mode": "production"
         }
       },
-      "dependsOn": [
-        "prisma-generate",
-        "typegen"
-      ]
+      "dependsOn": ["typegen"]
     }
   }
 }

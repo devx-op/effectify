@@ -1,40 +1,14 @@
-import type * as HttpApi from "@effect/platform/HttpApi"
-import * as HttpApiBuilder from "@effect/platform/HttpApiBuilder"
-import * as HttpApiScalar from "@effect/platform/HttpApiScalar"
-import * as HttpServer from "@effect/platform/HttpServer"
-import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node"
-import { Option } from "effect"
-import { pipe } from "effect/Function"
+// DEPRECATED: HttpApi functionality removed for v4 compatibility
+// TODO: Reimplement when @effect/platform v4 APIs stabilize
+
 import * as Layer from "effect/Layer"
 
 export type HttpApiOptions = {
-  apiLive: Layer.Layer<HttpApi.Api, never, never>
-  scalar?: HttpApiScalar.ScalarConfig
+  apiLive: any
+  scalar?: any
 }
 
 export type RoutePath = "/" | `/${string}/`
 
-export const make =
-  (options: HttpApiOptions & { pathPrefix?: RoutePath }) => ({ request }: ActionFunctionArgs | LoaderFunctionArgs) =>
-    pipe(
-      Option.fromNullable(options.scalar),
-      Option.map((scalar) =>
-        HttpApiScalar.layer({
-          path: `${options.pathPrefix || "/api/"}docs`,
-          scalar: {
-            ...scalar,
-            baseServerURL: new URL(request.url).origin,
-          },
-        }).pipe(Layer.provide(options.apiLive))
-      ),
-      Option.getOrElse(() => Layer.empty),
-      (ApiDocsLive) => {
-        const EnvLive = Layer.mergeAll(
-          options.apiLive,
-          ApiDocsLive,
-          HttpServer.layerContext,
-        )
-        const { handler } = HttpApiBuilder.toWebHandler(EnvLive)
-        return handler(request)
-      },
-    )
+// Stub implementation that does nothing
+export const make = (_options: HttpApiOptions & { pathPrefix?: RoutePath }) => () => Layer.empty

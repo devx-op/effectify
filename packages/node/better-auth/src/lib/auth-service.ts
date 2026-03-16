@@ -4,7 +4,6 @@ import * as ServiceMap from "effect/ServiceMap"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import * as Data from "effect/Data"
-
 export namespace AuthService {
   export type AuthInstance = ReturnType<typeof betterAuth>
 
@@ -17,15 +16,7 @@ export namespace AuthService {
   export class AuthServiceContext extends ServiceMap.Service<AuthServiceContext>()(
     "AuthServiceContext",
     {
-      make: Effect.gen(function*() {
-        // This is a placeholder - the actual implementation is provided via Layer
-        return { auth: {} as AuthInstance }
-      }),
-    },
-  ) {
-    static layer(options: BetterAuthOptions) {
-      return Layer.effect(
-        this,
+      make: (options: BetterAuthOptions) =>
         Effect.gen(function*() {
           // Try to extract database path from Database instance for logging
           const dbPathForLog = options.database &&
@@ -53,8 +44,10 @@ export namespace AuthService {
 
           return { auth: betterAuth(options) }
         }),
-      )
-    }
+    },
+  ) {
+    // Build the layer yourself from the make effect
+    static readonly layer = (options: BetterAuthOptions) => Layer.effect(this, this.make(options))
   }
 
   /**
@@ -62,14 +55,10 @@ export namespace AuthService {
    *
    * This is request-scoped context provided at runtime during request handling.
    */
-  export class AuthContext extends ServiceMap.Service<AuthContext>()(
-    "AuthContext",
-    {
-      make: Effect.succeed(
-        {} as { readonly user: User; readonly session: Session },
-      ),
-    },
-  ) {}
+  export class AuthContext extends ServiceMap.Service<
+    AuthContext,
+    { readonly user: User; readonly session: Session }
+  >()("AuthContext") {}
 
   // In v4, use Data.TaggedError instead of Schema.TaggedError for simple errors
   export class Unauthorized extends Data.TaggedError("Unauthorized")<{

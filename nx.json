@@ -31,7 +31,10 @@
     },
     {
       "plugin": "@nx/vite/plugin",
-      "exclude": ["apps/solid-app-start/**/*", "apps/react-app-remix/**/*"],
+      "exclude": [
+        "apps/solid-app-start/**/*",
+        "apps/react-app-remix/**/*"
+      ],
       "options": {
         "buildTargetName": "build",
         "serveTargetName": "serve",
@@ -65,7 +68,11 @@
       "options": {
         "testTargetName": "test"
       },
-      "exclude": ["apps/solid-app-start/**/*", "apps/react-app-remix/**/*"]
+      "exclude": [
+        "apps/solid-app-start/**/*",
+        "apps/react-app-remix/**/*",
+        "apps/minimal-example/**/*"
+      ]
     }
   ],
   "release": {

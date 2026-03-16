@@ -1,6 +1,5 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router"
 import * as ServiceMap from "effect/ServiceMap"
-import * as Effect from "effect/Effect"
 
 /**
  * ActionArgsContext provides access to React Router action arguments.
@@ -10,20 +9,16 @@ import * as Effect from "effect/Effect"
  * For request-scoped contexts that are provided at runtime, we use
  * ServiceMap.Service with a minimal make constructor.
  */
-export class ActionArgsContext extends ServiceMap.Service<ActionArgsContext>()(
-  "ActionArgsContext",
-  {
-    make: Effect.succeed({} as ActionFunctionArgs),
-  },
-) {}
+export class ActionArgsContext extends ServiceMap.Service<
+  ActionArgsContext,
+  ActionFunctionArgs
+>()("ActionArgsContext") {}
 
 /**
  * LoaderArgsContext provides access to React Router loader arguments.
  * Used in Effect handlers to access request data during route loading.
  */
-export class LoaderArgsContext extends ServiceMap.Service<LoaderArgsContext>()(
-  "LoaderArgsContext",
-  {
-    make: Effect.succeed({} as LoaderFunctionArgs),
-  },
-) {}
+export class LoaderArgsContext extends ServiceMap.Service<
+  LoaderArgsContext,
+  LoaderFunctionArgs
+>()("LoaderArgsContext") {}

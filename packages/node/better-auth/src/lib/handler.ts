@@ -1,10 +1,12 @@
-import * as Http from "effect/unstable/http"
 import type { Auth } from "better-auth"
 import { toNodeHandler } from "better-auth/node"
 import * as Config from "effect/Config"
-import type * as ConfigError from "effect/ConfigError"
 import * as Effect from "effect/Effect"
 import { BetterAuthApiError } from "./better-auth-error.js"
+import type { ConfigError } from "effect/Config"
+import * as HttpServerResponse from "effect/unstable/http/HttpServerResponse"
+import * as HttpServerRequest from "effect/unstable/http/HttpServerRequest"
+import * as NodeHttpServerRequest from "@effect/platform-node/NodeHttpServerRequest"
 
 const TRAILING_SLASH_REGEX = /\/+$/
 const PROTOCOL_REGEX = /(https?:\/\/)+/

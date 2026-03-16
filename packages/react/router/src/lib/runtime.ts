@@ -2,7 +2,6 @@ import * as Effect from "effect/Effect"
 import * as Exit from "effect/Exit"
 import { pipe } from "effect/Function"
 import * as Layer from "effect/Layer"
-import * as Logger from "effect/Logger"
 import * as ManagedRuntime from "effect/ManagedRuntime"
 import { type ActionFunctionArgs, data, type LoaderFunctionArgs, redirect } from "react-router"
 import { ActionArgsContext, LoaderArgsContext } from "./context.js"
@@ -19,16 +18,15 @@ export const make = <R, E>(layer: Layer.Layer<R, E, never>) => {
     const argsLayer = Layer.succeed(LoaderArgsContext, args)
     const runnable = pipe(
       self,
-      Effect.provide(Logger.pretty),
       Effect.provide(argsLayer),
       Effect.tapError((cause) => Effect.logError("Loader effect failed", cause)),
     )
     return runtime.runPromiseExit(runnable).then(
       Exit.match({
         onFailure: (cause) => {
-          if (cause._tag === "Fail") {
+          if (cause.reasons[0]._tag === "Fail") {
             // Preserve the original error for ErrorBoundary
-            const error = cause.error
+            const error = cause.reasons[0].error
             if (error instanceof Response) {
               throw error
             }
@@ -99,7 +97,6 @@ export const make = <R, E>(layer: Layer.Layer<R, E, never>) => {
     const argsLayer = Layer.succeed(ActionArgsContext, args)
     const runnable = pipe(
       self,
-      Effect.provide(Logger.pretty),
       Effect.provide(argsLayer),
       Effect.tapError((cause) => {
         // Don't log if it's a Response - that's expected behavior
@@ -112,8 +109,8 @@ export const make = <R, E>(layer: Layer.Layer<R, E, never>) => {
     return runtime.runPromiseExit(runnable).then(
       Exit.match({
         onFailure: (cause) => {
-          if (cause._tag === "Fail") {
-            const error = cause.error
+          if (cause.reasons[0]._tag === "Fail") {
+            const error = cause.reasons[0].error
             // If the error is a Response, throw it directly to preserve headers
             if (error instanceof Response) {
               throw error

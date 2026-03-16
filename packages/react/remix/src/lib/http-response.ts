@@ -1,7 +1,8 @@
-import type { ResponseInit } from "@effect/platform-node/Undici"
 import * as Data from "effect/Data"
 import * as Effect from "effect/Effect"
 import * as Match from "effect/Match"
+
+// Use standard ResponseInit from lib.dom.d.ts instead of @effect/platform-node/Undici
 
 export class HttpResponseSuccess<T> extends Data.TaggedClass(
   "HttpResponseSuccess",
