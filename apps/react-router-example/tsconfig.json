@@ -17,12 +17,8 @@
       "@react-router/node",
       "vitest/globals",
       "react",
-      "react-dom",
-      "@prisma/client"
-    ],
-    "paths": {
-      "@prisma/*": ["./prisma/generated/*"]
-    }
+      "react-dom"
+    ]
   },
   "include": [],
   "references": [

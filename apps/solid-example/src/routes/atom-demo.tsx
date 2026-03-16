@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/solid-router"
-import * as Atom from "@effect-atom/atom/Atom"
-import * as AtomRef from "@effect-atom/atom/AtomRef"
+import * as Atom from "effect/unstable/reactivity/Atom"
+import * as AtomRef from "effect/unstable/reactivity/AtomRef"
 import {
   RegistryProvider,
   useAtom,
@@ -11,7 +11,7 @@ import {
   useAtomSet,
   useAtomSubscribe,
   useAtomValue,
-} from "@effectify/solid-effect-atom"
+} from "@effect/atom-solid"
 import { createSignal } from "solid-js"
 
 export const Route = createFileRoute("/atom-demo")({

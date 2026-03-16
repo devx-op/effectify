@@ -24,9 +24,6 @@
   "compilerOptions": {
     "composite": true,
     "baseUrl": ".",
-    "outDir": "dist/out-tsc",
-    "paths": {
-      "@prisma/client": ["./prisma/generated/index.js"]
-    }
+    "outDir": "dist/out-tsc"
   }
 }

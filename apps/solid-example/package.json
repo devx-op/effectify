@@ -10,6 +10,7 @@
     "@tanstack/solid-router-devtools": "catalog:",
     "@tanstack/solid-router-ssr-query": "catalog:",
     "@tanstack/solid-start": "catalog:",
+    "@effect/atom-solid": "catalog:",
     "lucide-solid": "catalog:",
     "solid-js": "catalog:",
     "tailwindcss": "catalog:",

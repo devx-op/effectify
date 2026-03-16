@@ -21,6 +21,9 @@ catalogs:
     '@effect-atom/atom':
       specifier: 0.5.0
       version: 0.5.0
+    '@effect/atom-solid':
+      specifier: 4.0.0-beta.33
+      version: 4.0.0-beta.33
     '@effect/build-utils':
       specifier: 0.8.9
       version: 0.8.9
@@ -31,8 +34,8 @@ catalogs:
       specifier: 0.56.0
       version: 0.56.0
     '@effect/platform-node':
-      specifier: 4.0.0-beta.31
-      version: 4.0.0-beta.31
+      specifier: 4.0.0-beta.33
+      version: 4.0.0-beta.33
     '@effect/vitest':
       specifier: 0.27.0
       version: 0.27.0
@@ -178,8 +181,8 @@ catalogs:
       specifier: 0.51.1
       version: 0.51.1
     effect:
-      specifier: 4.0.0-beta.31
-      version: 4.0.0-beta.31
+      specifier: 4.0.0-beta.33
+      version: 4.0.0-beta.33
     eta:
       specifier: ^4.5.0
       version: 4.5.1
@@ -310,7 +313,7 @@ importers:
     dependencies:
       '@effect/experimental':
         specifier: 'catalog:'
-        version: 0.58.0(@effect/platform@0.94.5(effect@4.0.0-beta.31))(effect@4.0.0-beta.31)(ioredis@5.10.0)
+        version: 0.58.0(@effect/platform@0.94.5(effect@4.0.0-beta.33))(effect@4.0.0-beta.33)(ioredis@5.10.0)
       '@react-router/node':
         specifier: 'catalog:'
         version: 7.12.0(react-router@7.12.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(typescript@5.9.3)
@@ -416,7 +419,7 @@ importers:
         version: 5.9.3
       ultracite:
         specifier: 'catalog:'
-        version: 6.3.6(effect@4.0.0-beta.31)(typescript@5.9.3)(valibot@1.2.0(typescript@5.9.3))
+        version: 6.3.6(effect@4.0.0-beta.33)(typescript@5.9.3)(valibot@1.2.0(typescript@5.9.3))
       verdaccio:
         specifier: 'catalog:'
         version: 6.2.2(encoding@0.1.13)(typanion@3.14.0)
@@ -426,37 +429,6 @@ importers:
       vitest:
         specifier: 'catalog:'
         version: 4.0.9(@types/debug@4.1.12)(@types/node@20.19.25)(@vitest/ui@4.0.9)(jiti@2.6.1)(jsdom@27.2.0)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
-
-  apps/cli:
-    dependencies:
-      '@effect/platform-node':
-        specifier: 'catalog:'
-        version: 4.0.0-beta.31(effect@4.0.0-beta.31)(ioredis@5.10.0)
-      chalk:
-        specifier: ^5.3.0
-        version: 5.6.2
-      effect:
-        specifier: 'catalog:'
-        version: 4.0.0-beta.31
-      handlebars:
-        specifier: ^4.7.8
-        version: 4.7.8
-      tar:
-        specifier: ^7.4.3
-        version: 7.5.11
-    devDependencies:
-      '@types/handlebars':
-        specifier: ^4.1.0
-        version: 4.1.0
-      '@types/node':
-        specifier: 'catalog:'
-        version: 20.19.25
-      '@types/tar':
-        specifier: ^6.1.13
-        version: 6.1.13
-      typescript:
-        specifier: 'catalog:'
-        version: 5.9.3
 
   apps/docs:
     dependencies:
@@ -492,7 +464,7 @@ importers:
     dependencies:
       '@effect/platform-node':
         specifier: 'catalog:'
-        version: 4.0.0-beta.31(effect@4.0.0-beta.31)(ioredis@5.10.0)
+        version: 4.0.0-beta.33(effect@4.0.0-beta.33)(ioredis@5.10.0)
       '@effectify/node-better-auth':
         specifier: workspace:*
         version: link:../../packages/node/better-auth
@@ -504,7 +476,7 @@ importers:
         version: 12.6.2
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.31
+        version: 4.0.0-beta.33
       tslib:
         specifier: 'catalog:'
         version: 2.8.1
@@ -517,7 +489,7 @@ importers:
     dependencies:
       '@effect/platform-node':
         specifier: 'catalog:'
-        version: 4.0.0-beta.31(effect@4.0.0-beta.31)(ioredis@5.10.0)
+        version: 4.0.0-beta.33(effect@4.0.0-beta.33)(ioredis@5.10.0)
       '@effectify/node-better-auth':
         specifier: workspace:*
         version: link:../../packages/node/better-auth
@@ -553,7 +525,7 @@ importers:
         version: 17.3.1
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.31
+        version: 4.0.0-beta.33
       isbot:
         specifier: ^4.4.0
         version: 4.4.0
@@ -641,7 +613,7 @@ importers:
         version: 17.3.1
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.31
+        version: 4.0.0-beta.33
       kysely:
         specifier: 'catalog:'
         version: 0.28.11
@@ -678,7 +650,10 @@ importers:
     dependencies:
       '@effect-atom/atom':
         specifier: 'catalog:'
-        version: 0.5.0(@effect/experimental@0.58.0(@effect/platform@0.94.5(effect@4.0.0-beta.31))(effect@4.0.0-beta.31)(ioredis@5.10.0))(@effect/platform@0.94.5(effect@4.0.0-beta.31))(@effect/rpc@0.73.2(@effect/platform@0.94.5(effect@4.0.0-beta.31))(effect@4.0.0-beta.31))(effect@4.0.0-beta.31)
+        version: 0.5.0(@effect/experimental@0.58.0(@effect/platform@0.94.5(effect@4.0.0-beta.33))(effect@4.0.0-beta.33)(ioredis@5.10.0))(@effect/platform@0.94.5(effect@4.0.0-beta.33))(@effect/rpc@0.73.2(@effect/platform@0.94.5(effect@4.0.0-beta.33))(effect@4.0.0-beta.33))(effect@4.0.0-beta.33)
+      '@effect/atom-solid':
+        specifier: 'catalog:'
+        version: 4.0.0-beta.33(effect@4.0.0-beta.33)(solid-js@1.9.11)
       '@tailwindcss/vite':
         specifier: 'catalog:'
         version: 4.1.18(vite@7.3.1(@types/node@25.5.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
@@ -699,7 +674,7 @@ importers:
         version: 1.166.14(solid-js@1.9.11)(vite-plugin-solid@2.11.11(solid-js@1.9.11)(vite@7.3.1(@types/node@25.5.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(vite@7.3.1(@types/node@25.5.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(webpack@5.105.4(@swc/core@1.15.8(@swc/helpers@0.5.19)))
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.31
+        version: 4.0.0-beta.33
       lucide-solid:
         specifier: 'catalog:'
         version: 0.554.0(solid-js@1.9.11)
@@ -736,7 +711,7 @@ importers:
         version: link:../../shared/domain
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.31
+        version: 4.0.0-beta.33
       tslib:
         specifier: 'catalog:'
         version: 2.8.1
@@ -763,7 +738,7 @@ importers:
         version: 5.90.10(react@19.2.0)
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.31
+        version: 4.0.0-beta.33
       react:
         specifier: 'catalog:'
         version: 19.2.0
@@ -812,7 +787,7 @@ importers:
         version: 5.90.23(solid-js@1.9.11)
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.31
+        version: 4.0.0-beta.33
       lucide-solid:
         specifier: 'catalog:'
         version: 0.554.0(solid-js@1.9.11)
@@ -833,10 +808,10 @@ importers:
     devDependencies:
       '@effect/platform-node':
         specifier: 'catalog:'
-        version: 4.0.0-beta.31(effect@4.0.0-beta.31)(ioredis@5.10.0)
+        version: 4.0.0-beta.33(effect@4.0.0-beta.33)(ioredis@5.10.0)
       '@effect/vitest':
         specifier: 'catalog:'
-        version: 0.27.0(effect@4.0.0-beta.31)(vitest@4.0.9)
+        version: 0.27.0(effect@4.0.0-beta.33)(vitest@4.0.9)
       '@types/better-sqlite3':
         specifier: 'catalog:'
         version: 7.6.13
@@ -848,7 +823,7 @@ importers:
         version: 12.6.2
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.31
+        version: 4.0.0-beta.33
       vitest:
         specifier: 'catalog:'
         version: 4.0.9(@types/debug@4.1.12)(@types/node@20.19.25)(@vitest/ui@4.0.9)(jiti@2.6.1)(jsdom@27.2.0)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
@@ -863,7 +838,7 @@ importers:
         version: 0.95.15
       '@effect/platform-node':
         specifier: 'catalog:'
-        version: 4.0.0-beta.31(effect@4.0.0-beta.31)(ioredis@5.10.0)
+        version: 4.0.0-beta.33(effect@4.0.0-beta.33)(ioredis@5.10.0)
       '@prisma/client':
         specifier: 'catalog:'
         version: 7.3.0(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(typescript@5.9.3)
@@ -872,7 +847,7 @@ importers:
         version: 7.3.0
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.31
+        version: 4.0.0-beta.33
       eta:
         specifier: 'catalog:'
         version: 4.5.1
@@ -885,13 +860,13 @@ importers:
         version: 0.8.9
       '@effect/experimental':
         specifier: 'catalog:'
-        version: 0.58.0(@effect/platform@0.94.5(effect@4.0.0-beta.31))(effect@4.0.0-beta.31)(ioredis@5.10.0)
+        version: 0.58.0(@effect/platform@0.94.5(effect@4.0.0-beta.33))(effect@4.0.0-beta.33)(ioredis@5.10.0)
       '@effect/language-service':
         specifier: 'catalog:'
         version: 0.56.0
       '@effect/vitest':
         specifier: 'catalog:'
-        version: 0.27.0(effect@4.0.0-beta.31)(vitest@4.0.9)
+        version: 0.27.0(effect@4.0.0-beta.33)(vitest@4.0.9)
       '@prisma/adapter-better-sqlite3':
         specifier: 'catalog:'
         version: 7.3.0
@@ -948,7 +923,7 @@ importers:
         version: 5.90.10(react@19.2.0)
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.31
+        version: 4.0.0-beta.33
       react:
         specifier: 'catalog:'
         version: 19.2.0
@@ -973,13 +948,13 @@ importers:
         version: 2.17.4(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3)
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.31
+        version: 4.0.0-beta.33
 
   packages/react/router:
     dependencies:
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.31
+        version: 4.0.0-beta.33
       react-router:
         specifier: 'catalog:'
         version: 7.12.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
@@ -994,7 +969,7 @@ importers:
         version: link:../router
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.31
+        version: 4.0.0-beta.33
 
   packages/react/ui:
     dependencies:
@@ -1067,7 +1042,7 @@ importers:
         version: 13.15.10
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.31
+        version: 4.0.0-beta.33
       tslib:
         specifier: 'catalog:'
         version: 2.8.1
@@ -1089,7 +1064,7 @@ importers:
         version: 5.90.23(solid-js@1.9.11)
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.31
+        version: 4.0.0-beta.33
       solid-js:
         specifier: 'catalog:'
         version: 1.9.11
@@ -2038,6 +2013,12 @@ packages:
       '@effect/rpc': ^0.73.0
       effect: ^3.19.15
 
+  '@effect/atom-solid@4.0.0-beta.33':
+    resolution: {integrity: sha512-odqtmEhL/Lar9wJXNkgVxGzPyOir8R2S7uGWO42ngjus6CQxCcikFQmBoLBGOy8amFSA8sv2wIV3ukkCz5FL8g==}
+    peerDependencies:
+      effect: ^4.0.0-beta.33
+      solid-js: '>=1 <2'
+
   '@effect/build-utils@0.8.9':
     resolution: {integrity: sha512-wzunjr8pyNjghLueo5ePQD7vaM3qeO2H/jF57hNYbQM/rxfipBWYKukoqWyp04qGZ+V86FyOHb8zD5+PMZvH2A==}
     engines: {node: '>=16.17.1'}
@@ -2066,11 +2047,11 @@ packages:
     peerDependencies:
       effect: ^4.0.0-beta.33
 
-  '@effect/platform-node@4.0.0-beta.31':
-    resolution: {integrity: sha512-KmVZwGsQRBMZZYPJwpL2vj6sxjBzfXhyA8RgsH5/cmckDTsZpVTyqODQ/FFzmCnMWuYjZoJGPghTDrVVDn/6ZA==}
+  '@effect/platform-node@4.0.0-beta.33':
+    resolution: {integrity: sha512-mw/zCuq4bSRP5nm3hPlfjX+veKlG6kC3NleuMhRuVSa8NzlHF08rXptd6S9ks9JuDz5F6dgzIf/beaGAYF8TmA==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
-      effect: ^4.0.0-beta.31
+      effect: ^4.0.0-beta.33
       ioredis: ^5.7.0
 
   '@effect/platform@0.94.5':
@@ -2909,10 +2890,6 @@ packages:
   '@isaacs/cliui@9.0.0':
     resolution: {integrity: sha512-AokJm4tuBHillT+FpMtxQ60n8ObyXBatq7jD2/JA9dxbDDokKQm8KMht5ibGzLVU9IJDIKK4TPKgMHEYMn3lMg==}
     engines: {node: '>=18'}
-
-  '@isaacs/fs-minipass@4.0.1':
-    resolution: {integrity: sha512-wgm9Ehl2jpeqP3zw/7mo3kRHFp5MEDhqAdwy1fTGkHAwnkGOVsgpvQhL8B5n1qlb01jV3n/bI0ZfZp5lWA1k4w==}
-    engines: {node: '>=18.0.0'}
 
   '@istanbuljs/load-nyc-config@1.1.0':
     resolution: {integrity: sha512-VjeHSlIzpv/NyD3N0YuHfXOPDIixcA1q2ZV98wsMqcYlPmv2n3Yb2lYP9XMElnaFVXg5A7YLTeLu6V84uQDjmQ==}
@@ -5050,10 +5027,6 @@ packages:
   '@types/estree@1.0.8':
     resolution: {integrity: sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w==}
 
-  '@types/handlebars@4.1.0':
-    resolution: {integrity: sha512-gq9YweFKNNB1uFK71eRqsd4niVkXrxHugqWFQkeLRJvGjnxsLr16bYtcsG4tOFwmYi0Bax+wCkbf1reUfdl4kA==}
-    deprecated: This is a stub types definition. handlebars provides its own type definitions, so you do not need this installed.
-
   '@types/hast@2.3.10':
     resolution: {integrity: sha512-McWspRw8xx8J9HurkVBfYj0xKoE25tOFlHGdx4MJ5xORQrMGZNqJhVQWaIbm6Oyla5kYOXtDiopzKRJzEOkwJw==}
 
@@ -5127,9 +5100,6 @@ packages:
 
   '@types/stack-utils@2.0.3':
     resolution: {integrity: sha512-9aEbYZ3TbYMznPdcdr3SmIrLXwC/AKZXQeCf9Pgao5CKb8CyHuEX5jzWPTkvregvhRJHcpRO6BFoGW9ycaOkYw==}
-
-  '@types/tar@6.1.13':
-    resolution: {integrity: sha512-IznnlmU5f4WcGTh2ltRu/Ijpmk8wiWXfF0VA4s+HPjHZgvFggk1YaIkbo5krX/zUCzWF8N/l4+W/LNxnvAJ8nw==}
 
   '@types/unist@2.0.11':
     resolution: {integrity: sha512-CmBKiL6NNo/OqgmMn95Fk9Whlp2mtvIv+KNpQKN2F4SjvrEesubTRWGYSg+BnWZOnlCaSTU1sMpsBOzgbYhnsA==}
@@ -6081,10 +6051,6 @@ packages:
     resolution: {integrity: sha512-bIomtDF5KGpdogkLd9VspvFzk9KfpyyGlS8YFVZl7TGPBHL5snIOnxeshwVgPteQ9b4Eydl+pVbIyE1DcvCWgQ==}
     engines: {node: '>=10'}
 
-  chownr@3.0.0:
-    resolution: {integrity: sha512-+IxzY9BZOQd/XuYPRmrvEVjF/nqj5kgT4kEq7VofrDoM1MxoRjEWkrCC3EtLi59TVawxTAn+orJwFQcrqEN1+g==}
-    engines: {node: '>=18'}
-
   chrome-trace-event@1.0.4:
     resolution: {integrity: sha512-rNjApaLzuwaOTjCiT8lSDdGN1APCiqkChLMJxJPWLunPAt5fy8xgU9/jNOchV84wfIxrA0lRQB7oCT8jrn/wrQ==}
     engines: {node: '>=6.0'}
@@ -6600,8 +6566,8 @@ packages:
   effect@3.18.4:
     resolution: {integrity: sha512-b1LXQJLe9D11wfnOKAk3PKxuqYshQ0Heez+y5pnkd3jLj1yx9QhM72zZ9uUrOQyNvrs2GZZd/3maL0ZV18YuDA==}
 
-  effect@4.0.0-beta.31:
-    resolution: {integrity: sha512-w3QwJnlaLtWWiUSzhCXUTIisnULPsxLzpO6uqaBFjXybKx6FvCqsLJT6v4dV7G9eA9jeTtG6Gv7kF+jGe3HxzA==}
+  effect@4.0.0-beta.33:
+    resolution: {integrity: sha512-ln9emWPd1SemokSdOV43r2CbH1j8GTe9qbPvttmh9/j2OR0WNmj7UpjbN34llQgF9QV4IdcN6QdV2w8G7B7RyQ==}
 
   ejs@3.1.10:
     resolution: {integrity: sha512-UeJmFfOrAQS8OJWPZ4qtgHyWExa088/MtK5UEyoJGFH67cDEXkZSviOiKRCZ4Xij0zxI3JECgYs3oKx+AizQBA==}
@@ -8756,10 +8722,6 @@ packages:
     resolution: {integrity: sha512-DxiNidxSEK+tHG6zOIklvNOwm3hvCrbUrdtzY74U6HKTJxvIDfOUL5W5P2Ghd3DTkhhKPYGqeNUIh5qcM4YBfw==}
     engines: {node: '>=8'}
 
-  minipass@4.2.8:
-    resolution: {integrity: sha512-fNzuVyifolSLFL4NzpF+wEF4qrgqaaKX0haXPQEdQ7NKAN+WecoKMHV09YcuL/DHxrUsYQOK3MiuDf7Ip2OXfQ==}
-    engines: {node: '>=8'}
-
   minipass@5.0.0:
     resolution: {integrity: sha512-3FnjYuehv9k6ovOEbyOswadCDPX1piCfhV8ncmYtHOjuPwylVWsghTLo7rabjC3Rx5xD4HDx8Wm1xnMF7S5qFQ==}
     engines: {node: '>=8'}
@@ -8771,10 +8733,6 @@ packages:
   minizlib@2.1.2:
     resolution: {integrity: sha512-bAxsR8BVfj60DWXHE3u30oHzfl4G7khkSuPW+qvpd7jFRHm7dLxOjUk1EHACJ/hxLY8phGJ0YhYHZo7jil7Qdg==}
     engines: {node: '>= 8'}
-
-  minizlib@3.1.0:
-    resolution: {integrity: sha512-KZxYo1BUkWD2TVFLr0MQoM8vUUigWD3LlD83a/75BqC+4qE0Hb1Vo5v1FgcfaNXvfXzr+5EhQ6ing/CaBijTlw==}
-    engines: {node: '>= 18'}
 
   mkdirp-classic@0.5.3:
     resolution: {integrity: sha512-gKLcREMhtuZRwRAfqP3RFW+TK4JqApVBtOIftVgjuABpAtpxhPGaDcfvbhNvD0B8iD1oUr/txX35NjcaY6Ns/A==}
@@ -10324,10 +10282,6 @@ packages:
     engines: {node: '>=10'}
     deprecated: Old versions of tar are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
 
-  tar@7.5.11:
-    resolution: {integrity: sha512-ChjMH33/KetonMTAtpYdgUFr0tbz69Fp2v7zWxQfYZX4g5ZN2nOBXm1R2xyA+lMIKrLKIoKAwFj93jE/avX9cQ==}
-    engines: {node: '>=18'}
-
   tcp-port-used@1.0.2:
     resolution: {integrity: sha512-l7ar8lLUD3XS1V2lfoJlCBaeoaWo/2xfYt81hM7VlvR4RrMVFqfmzfhLVk40hAb368uitje5gPtBRL1m/DGvLA==}
 
@@ -11284,10 +11238,6 @@ packages:
 
   yallist@4.0.0:
     resolution: {integrity: sha512-3wdGidZyq5PB084XLES5TpOSRA3wjXAlIWMhum2kRcv/41Sn2emQ0dycQW4uZXLejwKvg6EsvbdlVL+FYEct7A==}
-
-  yallist@5.0.0:
-    resolution: {integrity: sha512-YgvUTfwqyc7UXVMrB+SImsVYSmTS8X/tSrtdNZMImM+n7+QTriRXyXim0mBrTXNeqzVF0KWGgHPeiyViFFrNDw==}
-    engines: {node: '>=18'}
 
   yaml@1.10.2:
     resolution: {integrity: sha512-r3vXyErRCYJ7wg28yvBY5VSoAF8ZvlcW9/BwUzEtUsjvX/DKs24dIkuwjtuprwJJHsbyUbLApepYTR1BN4uHrg==}
@@ -12577,41 +12527,46 @@ snapshots:
   '@dprint/win32-x64@0.51.1':
     optional: true
 
-  '@effect-atom/atom@0.5.0(@effect/experimental@0.58.0(@effect/platform@0.94.5(effect@4.0.0-beta.31))(effect@4.0.0-beta.31)(ioredis@5.10.0))(@effect/platform@0.94.5(effect@4.0.0-beta.31))(@effect/rpc@0.73.2(@effect/platform@0.94.5(effect@4.0.0-beta.31))(effect@4.0.0-beta.31))(effect@4.0.0-beta.31)':
+  '@effect-atom/atom@0.5.0(@effect/experimental@0.58.0(@effect/platform@0.94.5(effect@4.0.0-beta.33))(effect@4.0.0-beta.33)(ioredis@5.10.0))(@effect/platform@0.94.5(effect@4.0.0-beta.33))(@effect/rpc@0.73.2(@effect/platform@0.94.5(effect@4.0.0-beta.33))(effect@4.0.0-beta.33))(effect@4.0.0-beta.33)':
     dependencies:
-      '@effect/experimental': 0.58.0(@effect/platform@0.94.5(effect@4.0.0-beta.31))(effect@4.0.0-beta.31)(ioredis@5.10.0)
-      '@effect/platform': 0.94.5(effect@4.0.0-beta.31)
-      '@effect/rpc': 0.73.2(@effect/platform@0.94.5(effect@4.0.0-beta.31))(effect@4.0.0-beta.31)
-      effect: 4.0.0-beta.31
+      '@effect/experimental': 0.58.0(@effect/platform@0.94.5(effect@4.0.0-beta.33))(effect@4.0.0-beta.33)(ioredis@5.10.0)
+      '@effect/platform': 0.94.5(effect@4.0.0-beta.33)
+      '@effect/rpc': 0.73.2(@effect/platform@0.94.5(effect@4.0.0-beta.33))(effect@4.0.0-beta.33)
+      effect: 4.0.0-beta.33
+
+  '@effect/atom-solid@4.0.0-beta.33(effect@4.0.0-beta.33)(solid-js@1.9.11)':
+    dependencies:
+      effect: 4.0.0-beta.33
+      solid-js: 1.9.11
 
   '@effect/build-utils@0.8.9':
     dependencies:
       micromatch: 4.0.8
       pkg-entry-points: 1.1.1
 
-  '@effect/experimental@0.58.0(@effect/platform@0.94.5(effect@4.0.0-beta.31))(effect@4.0.0-beta.31)(ioredis@5.10.0)':
+  '@effect/experimental@0.58.0(@effect/platform@0.94.5(effect@4.0.0-beta.33))(effect@4.0.0-beta.33)(ioredis@5.10.0)':
     dependencies:
-      '@effect/platform': 0.94.5(effect@4.0.0-beta.31)
-      effect: 4.0.0-beta.31
+      '@effect/platform': 0.94.5(effect@4.0.0-beta.33)
+      effect: 4.0.0-beta.33
       uuid: 11.1.0
     optionalDependencies:
       ioredis: 5.10.0
 
   '@effect/language-service@0.56.0': {}
 
-  '@effect/platform-node-shared@4.0.0-beta.33(effect@4.0.0-beta.31)':
+  '@effect/platform-node-shared@4.0.0-beta.33(effect@4.0.0-beta.33)':
     dependencies:
       '@types/ws': 8.18.1
-      effect: 4.0.0-beta.31
+      effect: 4.0.0-beta.33
       ws: 8.19.0
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
 
-  '@effect/platform-node@4.0.0-beta.31(effect@4.0.0-beta.31)(ioredis@5.10.0)':
+  '@effect/platform-node@4.0.0-beta.33(effect@4.0.0-beta.33)(ioredis@5.10.0)':
     dependencies:
-      '@effect/platform-node-shared': 4.0.0-beta.33(effect@4.0.0-beta.31)
-      effect: 4.0.0-beta.31
+      '@effect/platform-node-shared': 4.0.0-beta.33(effect@4.0.0-beta.33)
+      effect: 4.0.0-beta.33
       ioredis: 5.10.0
       mime: 4.1.0
       undici: 7.24.4
@@ -12619,22 +12574,22 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
-  '@effect/platform@0.94.5(effect@4.0.0-beta.31)':
+  '@effect/platform@0.94.5(effect@4.0.0-beta.33)':
     dependencies:
-      effect: 4.0.0-beta.31
+      effect: 4.0.0-beta.33
       find-my-way-ts: 0.1.6
       msgpackr: 1.11.9
       multipasta: 0.2.7
 
-  '@effect/rpc@0.73.2(@effect/platform@0.94.5(effect@4.0.0-beta.31))(effect@4.0.0-beta.31)':
+  '@effect/rpc@0.73.2(@effect/platform@0.94.5(effect@4.0.0-beta.33))(effect@4.0.0-beta.33)':
     dependencies:
-      '@effect/platform': 0.94.5(effect@4.0.0-beta.31)
-      effect: 4.0.0-beta.31
+      '@effect/platform': 0.94.5(effect@4.0.0-beta.33)
+      effect: 4.0.0-beta.33
       msgpackr: 1.11.9
 
-  '@effect/vitest@0.27.0(effect@4.0.0-beta.31)(vitest@4.0.9)':
+  '@effect/vitest@0.27.0(effect@4.0.0-beta.33)(vitest@4.0.9)':
     dependencies:
-      effect: 4.0.0-beta.31
+      effect: 4.0.0-beta.33
       vitest: 4.0.9(@types/debug@4.1.12)(@types/node@20.19.25)(@vitest/ui@4.0.9)(jiti@2.6.1)(jsdom@27.2.0)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
 
   '@electric-sql/pglite-socket@0.0.20(@electric-sql/pglite@0.3.15)':
@@ -13144,10 +13099,6 @@ snapshots:
       wrap-ansi-cjs: wrap-ansi@7.0.0
 
   '@isaacs/cliui@9.0.0': {}
-
-  '@isaacs/fs-minipass@4.0.1':
-    dependencies:
-      minipass: 7.1.3
 
   '@istanbuljs/load-nyc-config@1.1.0':
     dependencies:
@@ -16140,10 +16091,6 @@ snapshots:
 
   '@types/estree@1.0.8': {}
 
-  '@types/handlebars@4.1.0':
-    dependencies:
-      handlebars: 4.7.8
-
   '@types/hast@2.3.10':
     dependencies:
       '@types/unist': 2.0.11
@@ -16222,11 +16169,6 @@ snapshots:
 
   '@types/stack-utils@2.0.3': {}
 
-  '@types/tar@6.1.13':
-    dependencies:
-      '@types/node': 20.19.25
-      minipass: 4.2.8
-
   '@types/unist@2.0.11': {}
 
   '@types/unist@3.0.3': {}
@@ -16235,7 +16177,7 @@ snapshots:
 
   '@types/ws@8.18.1':
     dependencies:
-      '@types/node': 20.19.25
+      '@types/node': 25.5.0
 
   '@types/yargs-parser@21.0.3': {}
 
@@ -17530,8 +17472,6 @@ snapshots:
 
   chownr@2.0.0: {}
 
-  chownr@3.0.0: {}
-
   chrome-trace-event@1.0.4: {}
 
   ci-info@4.4.0: {}
@@ -17973,7 +17913,7 @@ snapshots:
       '@standard-schema/spec': 1.1.0
       fast-check: 3.23.2
 
-  effect@4.0.0-beta.31:
+  effect@4.0.0-beta.33:
     dependencies:
       '@standard-schema/spec': 1.1.0
       fast-check: 4.6.0
@@ -21100,8 +21040,6 @@ snapshots:
     dependencies:
       yallist: 4.0.0
 
-  minipass@4.2.8: {}
-
   minipass@5.0.0: {}
 
   minipass@7.1.3: {}
@@ -21110,10 +21048,6 @@ snapshots:
     dependencies:
       minipass: 3.3.6
       yallist: 4.0.0
-
-  minizlib@3.1.0:
-    dependencies:
-      minipass: 7.1.3
 
   mkdirp-classic@0.5.3: {}
 
@@ -23018,14 +22952,6 @@ snapshots:
       mkdirp: 1.0.4
       yallist: 4.0.0
 
-  tar@7.5.11:
-    dependencies:
-      '@isaacs/fs-minipass': 4.0.1
-      chownr: 3.0.0
-      minipass: 7.1.3
-      minizlib: 3.1.0
-      yallist: 5.0.0
-
   tcp-port-used@1.0.2:
     dependencies:
       debug: 4.3.1
@@ -23140,12 +23066,12 @@ snapshots:
 
   trough@2.2.0: {}
 
-  trpc-cli@0.12.4(@trpc/server@11.13.4(typescript@5.9.3))(effect@4.0.0-beta.31)(valibot@1.2.0(typescript@5.9.3))(zod@4.3.6):
+  trpc-cli@0.12.4(@trpc/server@11.13.4(typescript@5.9.3))(effect@4.0.0-beta.33)(valibot@1.2.0(typescript@5.9.3))(zod@4.3.6):
     dependencies:
       commander: 14.0.3
     optionalDependencies:
       '@trpc/server': 11.13.4(typescript@5.9.3)
-      effect: 4.0.0-beta.31
+      effect: 4.0.0-beta.33
       valibot: 1.2.0(typescript@5.9.3)
       zod: 4.3.6
 
@@ -23238,7 +23164,7 @@ snapshots:
   uglify-js@3.19.3:
     optional: true
 
-  ultracite@6.3.6(effect@4.0.0-beta.31)(typescript@5.9.3)(valibot@1.2.0(typescript@5.9.3)):
+  ultracite@6.3.6(effect@4.0.0-beta.33)(typescript@5.9.3)(valibot@1.2.0(typescript@5.9.3)):
     dependencies:
       '@clack/prompts': 0.11.0
       '@trpc/server': 11.13.4(typescript@5.9.3)
@@ -23246,7 +23172,7 @@ snapshots:
       glob: 12.0.0
       jsonc-parser: 3.3.1
       nypm: 0.6.5
-      trpc-cli: 0.12.4(@trpc/server@11.13.4(typescript@5.9.3))(effect@4.0.0-beta.31)(valibot@1.2.0(typescript@5.9.3))(zod@4.3.6)
+      trpc-cli: 0.12.4(@trpc/server@11.13.4(typescript@5.9.3))(effect@4.0.0-beta.33)(valibot@1.2.0(typescript@5.9.3))(zod@4.3.6)
       zod: 4.3.6
     transitivePeerDependencies:
       - '@orpc/server'
@@ -24093,8 +24019,6 @@ snapshots:
   yallist@3.1.1: {}
 
   yallist@4.0.0: {}
-
-  yallist@5.0.0: {}
 
   yaml@1.10.2: {}
 
