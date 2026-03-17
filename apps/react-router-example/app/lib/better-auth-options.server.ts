@@ -5,7 +5,7 @@ import type Database from "better-sqlite3"
 import { database } from "./prisma.js"
 
 export const authOptions = {
-  baseURL: "http://localhost:3000",
+  baseURL: "http://localhost:3001", // Point to the actual auth server
   secret: "hola",
   emailAndPassword: {
     enabled: true,

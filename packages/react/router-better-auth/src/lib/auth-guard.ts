@@ -3,65 +3,109 @@ import { ActionArgsContext, type HttpResponse, LoaderArgsContext } from "@effect
 import * as Effect from "effect/Effect"
 import { redirect } from "react-router"
 
-const mapHeaders = (args: { request: Request }) => args.request.headers
+const mapHeaders = (args: { request: Request }) => {
+  const headers = new Headers(args.request.headers)
+  if (!headers.has("origin")) {
+    headers.set("origin", "http://localhost:3000")
+  }
+  return headers
+}
+
+// Default auth server URL - can be overridden with BETTER_AUTH_URL env var
+const getAuthServerOrigin = () =>
+  process.env.BETTER_AUTH_URL?.replace(/\/api\/auth\/?$/, "") ||
+  "http://localhost:3001"
 
 const verifySessionWithContext = (context: typeof LoaderArgsContext) =>
   Effect.gen(function*() {
     const args = yield* context
-    const { auth } = yield* AuthService.AuthServiceContext
     const forwardedHeaders = mapHeaders(args)
+    const cookieValue = forwardedHeaders.get("cookie") || ""
+    const authOrigin = getAuthServerOrigin()
 
-    const session = yield* Effect.tryPromise({
-      try: () => auth.api.getSession({ headers: forwardedHeaders }),
-      catch: (cause) => {
-        const errorMessage = cause instanceof Error ? cause.message : String(cause)
-        return new AuthService.Unauthorized({ details: errorMessage })
-      },
+    // Make direct fetch call to auth server
+    const response = yield* Effect.tryPromise({
+      try: () =>
+        fetch(`${authOrigin}/api/auth/get-session`, {
+          headers: {
+            cookie: cookieValue,
+            "Content-Type": "application/json",
+            origin: "http://localhost:3000",
+          },
+        }),
+      catch: () => null as any,
     })
 
-    if (!session) {
+    if (!response) {
       return yield* Effect.fail(
-        new AuthService.Unauthorized({
-          details: "Missing or invalid authentication",
-        }),
+        new AuthService.Unauthorized({ details: "Auth server unreachable" }),
       )
     }
 
-    return yield* Effect.succeed(
-      {
-        user: session.user,
-        session: session.session,
-      } as const,
+    const fetchResult = yield* Effect.tryPromise({
+      try: () => response.json(),
+      catch: () => ({ session: null }),
+    })
+
+    if (fetchResult?.session) {
+      return yield* Effect.succeed(
+        {
+          user: fetchResult.user,
+          session: fetchResult.session,
+        } as const,
+      )
+    }
+
+    return yield* Effect.fail(
+      new AuthService.Unauthorized({
+        details: "Missing or invalid authentication",
+      }),
     )
   })
 
 const verifySessionWithActionContext = (context: typeof ActionArgsContext) =>
   Effect.gen(function*() {
     const args = yield* context
-    const { auth } = yield* AuthService.AuthServiceContext
     const forwardedHeaders = mapHeaders(args)
+    const cookieValue = forwardedHeaders.get("cookie") || ""
+    const authOrigin = getAuthServerOrigin()
 
-    const session = yield* Effect.tryPromise({
-      try: () => auth.api.getSession({ headers: forwardedHeaders }),
-      catch: (cause) => {
-        const errorMessage = cause instanceof Error ? cause.message : String(cause)
-        return new AuthService.Unauthorized({ details: errorMessage })
-      },
+    const response = yield* Effect.tryPromise({
+      try: () =>
+        fetch(`${authOrigin}/api/auth/get-session`, {
+          headers: {
+            cookie: cookieValue,
+            "Content-Type": "application/json",
+            origin: "http://localhost:3000",
+          },
+        }),
+      catch: () => null as any,
     })
 
-    if (!session) {
+    if (!response) {
       return yield* Effect.fail(
-        new AuthService.Unauthorized({
-          details: "Missing or invalid authentication",
-        }),
+        new AuthService.Unauthorized({ details: "Auth server unreachable" }),
       )
     }
 
-    return yield* Effect.succeed(
-      {
-        user: session.user,
-        session: session.session,
-      } as const,
+    const fetchResult = yield* Effect.tryPromise({
+      try: () => response.json(),
+      catch: () => ({ session: null }),
+    })
+
+    if (fetchResult?.session) {
+      return yield* Effect.succeed(
+        {
+          user: fetchResult.user,
+          session: fetchResult.session,
+        } as const,
+      )
+    }
+
+    return yield* Effect.fail(
+      new AuthService.Unauthorized({
+        details: "Missing or invalid authentication",
+      }),
     )
   })
 
@@ -74,7 +118,6 @@ export type AuthGuardOptions = {
 }
 
 type WithBetterAuthGuard = {
-  // Use generic R and Exclude<R, AuthService.AuthContext>
   <A, E, R>(eff: Effect.Effect<A, E, R>): Effect.Effect<
     A,
     E | AuthService.Unauthorized,
@@ -134,7 +177,6 @@ export const withBetterAuthGuard: WithBetterAuthGuard = Object.assign(
 )
 
 type WithBetterAuthGuardAction = {
-  // Use generic R and Exclude<R, AuthService.AuthContext>
   <A, E, R>(eff: Effect.Effect<A, E, R>): Effect.Effect<
     A,
     E | AuthService.Unauthorized,
@@ -142,7 +184,6 @@ type WithBetterAuthGuardAction = {
     | AuthService.AuthServiceContext
     | ActionArgsContext
   >
-
   with: (
     options: AuthGuardOptions,
   ) => <A, E, R>(

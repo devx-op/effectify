@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { authClient } from "./../lib/auth-client.js"
+import { handleSignUp } from "./../lib/auth-client.js"
 import { Link, useNavigate } from "react-router"
 
 export default function SignUp() {
@@ -9,32 +9,23 @@ export default function SignUp() {
   const [error, setError] = useState<string | null>(null)
   const navigate = useNavigate()
 
-  const handleSignUp = async (e: React.FormEvent) => {
+  const handleSignUpSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
     console.log("[SignUp] Attempting to sign up with email:", email)
-    await authClient.signUp.email(
-      {
-        email,
-        password,
-        name,
-      },
-      {
-        onSuccess: () => {
-          navigate("/")
-        },
-        onError: (ctx) => {
-          setError(ctx.error.message)
-        },
-      },
-    )
+    try {
+      await handleSignUp(email, password, name)
+      navigate("/")
+    } catch (err: any) {
+      setError(err?.message || "Signup failed")
+    }
   }
 
   return (
     <main className="container">
       <article>
         <h2>Create an account</h2>
-        <form onSubmit={handleSignUp}>
+        <form onSubmit={handleSignUpSubmit}>
           <div>
             <label htmlFor="name">Full Name</label>
             <input
@@ -75,7 +66,13 @@ export default function SignUp() {
             />
           </div>
           {error && (
-            <small role="alert" aria-live="polite" style={{ color: "var(--pico-color-red-500)" }}>{error}</small>
+            <small
+              role="alert"
+              aria-live="polite"
+              style={{ color: "var(--pico-color-red-500)" }}
+            >
+              {error}
+            </small>
           )}
           <button type="submit">Sign up</button>
         </form>

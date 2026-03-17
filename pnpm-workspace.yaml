@@ -13,13 +13,13 @@ catalog:
   '@dprint/formatter': ^0.5.1
   '@dprint/typescript': ^0.95.15
   '@effect-atom/atom': 0.5.0
+  '@effect/atom-solid': 4.0.0-beta.33
   '@effect/build-utils': 0.8.9
   '@effect/cli': ^0.56.0
   '@effect/experimental': 0.58.0
   '@effect/language-service': 0.56.0
   '@effect/platform': 4.0.0-beta.33
   '@effect/platform-node': 4.0.0-beta.33
-  '@effect/atom-solid': 4.0.0-beta.33
   '@effect/vitest': 0.27.0
   '@kobalte/core': 0.13.11
   '@nx/js': 22.5.4

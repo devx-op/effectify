@@ -64,13 +64,25 @@ export const toEffectHandler: (
     }
 
     // Log incoming request for debugging
+    const authHeader = nodeRequest.headers.authorization
     yield* Effect.log(
       `toEffectHandler: incoming ${nodeRequest.method} ${
         String(
           nodeRequest.url,
         )
+      } headers: cookie=${nodeRequest.headers.cookie?.substring(0, 50) || "none"}, auth=${
+        authHeader?.substring(0, 30) || "none"
       }`,
     )
+
+    // If no cookie but has Authorization header (bearer token), set it as cookie for better-auth
+    if (!nodeRequest.headers.cookie && authHeader?.startsWith("Bearer ")) {
+      const token = authHeader.slice(7) // Remove "Bearer " prefix
+      nodeRequest.headers.cookie = `better-auth.session_token=${token}`
+      yield* Effect.log(
+        `toEffectHandler: using token from Authorization header as cookie`,
+      )
+    }
 
     try {
       yield* Effect.tryPromise({

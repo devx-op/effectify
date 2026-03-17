@@ -29,6 +29,20 @@ export default defineConfig({
   server: {
     port: 3000,
     host: "localhost",
+    proxy: {
+      "/api/auth": {
+        target: "http://localhost:3001",
+        changeOrigin: true,
+        configure: (proxy, options) => {
+          proxy.on("proxyReq", (proxyReq, req) => {
+            // Pass cookies from the original request
+            if (req.headers.cookie) {
+              proxyReq.setHeader("cookie", req.headers.cookie)
+            }
+          })
+        },
+      },
+    },
   },
   preview: {
     port: 3000,
