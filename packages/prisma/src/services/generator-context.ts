@@ -1,4 +1,9 @@
 import type { GeneratorOptions } from "@prisma/generator-helper"
-import * as Context from "effect/Context"
+import * as ServiceMap from "effect/ServiceMap"
 
-export class GeneratorContext extends Context.Tag("GeneratorContext")<GeneratorContext, GeneratorOptions>() {}
+
+
+export class GeneratorContext extends ServiceMap.Service<
+    GeneratorContext, 
+    GeneratorOptions
+>()("GeneratorContext") {}

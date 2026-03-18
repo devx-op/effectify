@@ -1,7 +1,6 @@
-import * as FileSystem from "@effect/platform/FileSystem"
-import * as Path from "@effect/platform/Path"
+import * as FileSystem from "effect/FileSystem"
+import * as Path from "effect/Path"
 import type { DMMF, GeneratorOptions } from "@prisma/generator-helper"
-import * as Context from "effect/Context"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import { GeneratorContext } from "./generator-context.js"
@@ -9,16 +8,13 @@ import { RenderService } from "./render-service.js"
 import { FormatterService } from "./formatter-service.js"
 
 import { generateSchemas } from "../schema-generator/index.js"
+import * as ServiceMap from "effect/ServiceMap"
 
-export class GeneratorService extends Context.Tag("GeneratorService")<
-  GeneratorService,
-  {
-    readonly generate: Effect.Effect<void, Error, GeneratorContext>
-  }
->() {
-  static Live = Layer.effect(
-    GeneratorService,
-    Effect.gen(function*() {
+
+export class GeneratorService extends ServiceMap.Service<GeneratorService, {
+    readonly generate: Effect.Effect<undefined, unknown, GeneratorContext>
+  }>()("GeneratorService", {
+    make: Effect.gen(function*() {
       const fs = yield* FileSystem.FileSystem
       const path = yield* Path.Path
       const renderService = yield* RenderService
@@ -172,5 +168,11 @@ export class GeneratorService extends Context.Tag("GeneratorService")<
 
       return { generate }
     }),
+  }) {
+
+  static readonly layer = Layer.effect(GeneratorService, this.make).pipe(
+    Layer.provide(RenderService.layer),
+    Layer.provide(FormatterService.layer),
   )
+
 }

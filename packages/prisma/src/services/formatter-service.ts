@@ -1,17 +1,15 @@
-import * as Context from "effect/Context"
+import * as ServiceMap from "effect/ServiceMap"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import { createFromBuffer } from "@dprint/formatter"
 import { getPath } from "@dprint/typescript"
 import * as fs from "node:fs"
 
-export class FormatterService extends Context.Tag("FormatterService")<
-  FormatterService,
-  {
-    readonly format: (code: string) => Effect.Effect<string, Error>
-  }
->() {
-  static Live = Layer.sync(FormatterService, () => {
+
+export class FormatterService extends ServiceMap.Service<FormatterService, {
+  readonly format: (code: string) => Effect.Effect<string, Error>
+}>()("FormatterService", {
+  make: Effect.gen(function*() {
     const buffer = fs.readFileSync(getPath())
     const formatter = createFromBuffer(buffer)
 
@@ -22,5 +20,7 @@ export class FormatterService extends Context.Tag("FormatterService")<
           catch: (error) => new Error(`Failed to format code: ${error}`),
         }),
     }
-  })
+  }),
+}) {
+  static readonly layer = Layer.effect(FormatterService, this.make)
 }

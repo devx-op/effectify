@@ -1,11 +1,10 @@
-import * as Command from "@effect/cli/Command"
-import type * as NodeContext from "@effect/platform-node/NodeContext"
+import * as Command from "effect/unstable/cli/Command"
+import type * as NodeServices from "@effect/platform-node/NodeServices"
 import type { GeneratorOptions } from "@prisma/generator-helper"
 import generatorHelper from "@prisma/generator-helper"
 import * as Deferred from "effect/Deferred"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
-import * as Runtime from "effect/Runtime"
 import * as Stream from "effect/Stream"
 import { GeneratorContext } from "../services/generator-context.js"
 import { GeneratorService } from "../services/generator-service.js"
@@ -14,10 +13,10 @@ import type { RenderService } from "../services/render-service.js"
 export const prismaCommand = Command.make("prisma", {}, () =>
   Effect.gen(function*() {
     const generator = yield* GeneratorService
-    const runtime = yield* Effect.runtime<GeneratorService | RenderService | NodeContext.NodeContext>()
-    const run = Runtime.runPromise(runtime)
+    const runtime = yield* Effect.services<GeneratorService | RenderService | NodeServices.NodeServices>()
+    const run = Effect.runForkWith(runtime)
 
-    const events = Stream.async<[GeneratorOptions, Deferred.Deferred<void, unknown>]>((emit) => {
+    const events = Stream.callback<[GeneratorOptions, Deferred.Deferred<void, unknown>]>(Effect.fnUntraced(function*(emit) {
       generatorHelper.generatorHandler({
         onManifest() {
           return {
@@ -35,16 +34,15 @@ export const prismaCommand = Command.make("prisma", {}, () =>
             }),
           )
           // Cerrar el stream después de procesar la generación
-          emit.end()
+          yield* emit.
         },
       })
-    })
+    }))
 
     yield* events.pipe(
-      Stream.runForEach(([options, deferred]) =>
+      Stream.runForEach(([options]) =>
         generator.generate.pipe(
-          Effect.provide(Layer.succeed(GeneratorContext, options)),
-          Effect.intoDeferred(deferred),
+          Effect.provide(Layer.succeed(GeneratorContext, options))
         )
       ),
     )

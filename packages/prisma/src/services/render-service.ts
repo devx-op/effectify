@@ -1,17 +1,15 @@
-import * as Context from "effect/Context"
+import * as ServiceMap from "effect/ServiceMap"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import { Eta } from "eta"
 import * as path from "node:path"
 import { fileURLToPath } from "node:url"
 
-export class RenderService extends Context.Tag("RenderService")<
-  RenderService,
-  {
-    readonly render: (templateName: string, data: Record<string, unknown>) => Effect.Effect<string, Error>
-  }
->() {
-  static Live = Layer.sync(RenderService, () => {
+
+export class RenderService extends ServiceMap.Service<RenderService, {
+  readonly render: (templateName: string, data: Record<string, unknown>) => Effect.Effect<string, Error>
+}>()("RenderService", {
+  make: Effect.gen(function*() {
     const __filename = fileURLToPath(import.meta.url)
     const __dirname = path.dirname(__filename)
     const templatesDir = path.resolve(__dirname, "../templates")
@@ -28,5 +26,7 @@ export class RenderService extends Context.Tag("RenderService")<
           catch: (error) => new Error(`Failed to render template ${templateName}: ${error}`),
         }),
     }
-  })
+  }),
+}) {
+  static readonly layer = Layer.effect(RenderService, this.make)
 }

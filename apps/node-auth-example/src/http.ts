@@ -8,5 +8,5 @@ import { pipe } from "effect/Function"
 
 export const Live = pipe(
   HttpServer.serve(toEffectHandler(Auth.auth)),
-  Layer.provide(NodeHttpServer.layer(() => createServer(), { port: 3001 })),
+  Layer.provide(NodeHttpServer.layer(createServer, { port: 3001 })),
 )
