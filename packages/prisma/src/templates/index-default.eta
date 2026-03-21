@@ -33,8 +33,7 @@ export class PrismaClient extends ServiceMap.Service<
 >()("PrismaClient") {
   static layer = (
     ...args: ConstructorParameters<typeof BasePrismaClient>
-  ) => Layer.scoped(
-    PrismaClient,
+  ) => Layer.effect(PrismaClient)(
     Effect.gen(function* () {
       const prisma = new BasePrismaClient(...args)
       yield* Effect.addFinalizer(() => Effect.promise(() => prisma.$disconnect()))
@@ -44,8 +43,7 @@ export class PrismaClient extends ServiceMap.Service<
 
   static layerEffect = <R, E>(
     optionsEffect: Effect.Effect<ConstructorParameters<typeof BasePrismaClient>[0], E, R>
-  ) => Layer.scoped(
-    PrismaClient,
+  ) => Layer.effect(PrismaClient)(
     Effect.gen(function* () {
       const options = yield* optionsEffect
       const prisma = new BasePrismaClient(options)
@@ -248,7 +246,7 @@ const $begin = (
     isolationLevel?: PrismaNamespace.TransactionIsolationLevel
   }
 ): Effect.Effect<FlatTransactionClient, PrismaError> =>
-  Effect.async<FlatTransactionClient, PrismaError>((resume) => {
+  Effect.callback<FlatTransactionClient, PrismaError>((resume) => {
     let setTxClient: (txClient: PrismaNamespace.TransactionClient) => void
     let commit: () => void
     let rollback: () => void

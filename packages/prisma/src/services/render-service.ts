@@ -5,10 +5,15 @@ import { Eta } from "eta"
 import * as path from "node:path"
 import { fileURLToPath } from "node:url"
 
-
-export class RenderService extends ServiceMap.Service<RenderService, {
-  readonly render: (templateName: string, data: Record<string, unknown>) => Effect.Effect<string, Error>
-}>()("RenderService", {
+export class RenderService extends ServiceMap.Service<
+  RenderService,
+  {
+    readonly render: (
+      templateName: string,
+      data: Record<string, unknown>,
+    ) => Effect.Effect<string, Error>
+  }
+>()("RenderService", {
   make: Effect.gen(function*() {
     const __filename = fileURLToPath(import.meta.url)
     const __dirname = path.dirname(__filename)
@@ -20,11 +25,18 @@ export class RenderService extends ServiceMap.Service<RenderService, {
     })
 
     return {
-      render: (templateName: string, data: Record<string, unknown>) =>
-        Effect.try({
-          try: () => eta.render(templateName, data),
-          catch: (error) => new Error(`Failed to render template ${templateName}: ${error}`),
-        }),
+      render: (
+        templateName: string,
+        data: Record<string, unknown>,
+      ): Effect.Effect<string, Error> => {
+        try {
+          return Effect.succeed(eta.render(templateName, data))
+        } catch (error) {
+          return Effect.fail(
+            new Error(`Failed to render template ${templateName}: ${error}`),
+          )
+        }
+      },
     }
   }),
 }) {

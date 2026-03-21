@@ -18,8 +18,8 @@ export const findAll = <IR, II, IA, AR, AI, A, R, E>(options: {
   readonly Result: Schema.Schema<A, AI, AR>
   readonly execute: (request: II) => Effect.Effect<ReadonlyArray<unknown>, E, R>
 }) => {
-  const encodeRequest = Schema.encode(options.Request)
-  const decode = Schema.decodeUnknown(Schema.Array(options.Result))
+  const encodeRequest = Schema.encodeEffect(options.Request)
+  const decode = Schema.decodeUnknownEffect(Schema.Array(options.Result))
   return (request: IA): Effect.Effect<ReadonlyArray<A>, E | ParseError, R | IR | AR> =>
     Effect.flatMap(Effect.flatMap(encodeRequest(request), options.execute), decode)
 }
@@ -28,7 +28,7 @@ const void_ = <IR, II, IA, R, E>(options: {
   readonly Request: Schema.Schema<IA, II, IR>
   readonly execute: (request: II) => Effect.Effect<unknown, E, R>
 }) => {
-  const encode = Schema.encode(options.Request)
+  const encode = Schema.encodeEffect(options.Request)
   return (request: IA): Effect.Effect<void, E | ParseError, R | IR> =>
     Effect.asVoid(Effect.flatMap(encode(request), options.execute))
 }
@@ -53,8 +53,8 @@ export const findOne = <IR, II, IA, AR, AI, A, R, E>(options: {
   readonly Result: Schema.Schema<A, AI, AR>
   readonly execute: (request: II) => Effect.Effect<ReadonlyArray<unknown>, E, R>
 }) => {
-  const encodeRequest = Schema.encode(options.Request)
-  const decode = Schema.decodeUnknown(options.Result)
+  const encodeRequest = Schema.encodeEffect(options.Request)
+  const decode = Schema.decodeUnknownEffect(options.Result)
   return (request: IA): Effect.Effect<Option.Option<A>, E | ParseError, R | IR | AR> =>
     Effect.flatMap(Effect.flatMap(encodeRequest(request), options.execute), (arr) =>
       Array.isArray(arr) && arr.length > 0 ? Effect.asSome(decode(arr[0])) : Effect.succeedNone,
@@ -72,8 +72,8 @@ export const single = <IR, II, IA, AR, AI, A, R, E>(options: {
   readonly Result: Schema.Schema<A, AI, AR>
   readonly execute: (request: II) => Effect.Effect<ReadonlyArray<unknown>, E, R>
 }) => {
-  const encodeRequest = Schema.encode(options.Request)
-  const decode = Schema.decodeUnknown(options.Result)
+  const encodeRequest = Schema.encodeEffect(options.Request)
+  const decode = Schema.decodeUnknownEffect(options.Result)
   return (request: IA): Effect.Effect<A, E | ParseError | Cause.NoSuchElementException, R | IR | AR> =>
     Effect.flatMap(
       Effect.flatMap(encodeRequest(request), options.execute),
@@ -87,8 +87,8 @@ export const many = <IR, II, IA, AR, AI, A, R, E>(options: {
   readonly Result: Schema.Schema<A, AI, AR>
   readonly execute: (request: II) => Effect.Effect<Array<unknown>, E, R>
 }) => {
-  const encodeRequest = Schema.encode(options.Request)
-  const decode = Schema.decodeUnknown(Schema.Array(options.Result))
+  const encodeRequest = Schema.encodeEffect(options.Request)
+  const decode = Schema.decodeUnknownEffect(Schema.Array(options.Result))
   return (request: IA): Effect.Effect<Array<A>, E | ParseError, R | IR | AR> =>
     Effect.map(Effect.flatMap(Effect.flatMap(encodeRequest(request), options.execute), decode), (arr) => [...arr])
 }

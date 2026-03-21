@@ -6,7 +6,6 @@ import * as Layer from "effect/Layer"
 import { GeneratorContext } from "./generator-context.js"
 import { RenderService } from "./render-service.js"
 import { FormatterService } from "./formatter-service.js"
-
 import { generateSchemas } from "../schema-generator/index.js"
 import * as ServiceMap from "effect/ServiceMap"
 

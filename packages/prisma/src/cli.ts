@@ -11,9 +11,12 @@ import { GeneratorService } from "./services/generator-service.js"
 import { RenderService } from "./services/render-service.js"
 import { FormatterService } from "./services/formatter-service.js"
 
-const cli = Command.run(prismaCommand.pipe(Command.withSubcommands([initCommand])), {
-  version: "0.1.0",
-})
+const cli = Command.run(
+  prismaCommand.pipe(Command.withSubcommands([initCommand])),
+  {
+    version: "0.1.0",
+  },
+)
 
 const GeneratorLayer = GeneratorService.layer.pipe(
   Layer.provide(RenderService.layer),
@@ -21,6 +24,11 @@ const GeneratorLayer = GeneratorService.layer.pipe(
   Layer.provide(NodeServices.layer),
 )
 
-const MainLayer = Layer.mergeAll(GeneratorLayer, RenderService.layer, FormatterService.layer, NodeServices.layer)
+const MainLayer = Layer.mergeAll(
+  GeneratorLayer,
+  RenderService.layer,
+  FormatterService.layer,
+  NodeServices.layer,
+)
 
 cli.pipe(Effect.provide(MainLayer), NodeRuntime.runMain)

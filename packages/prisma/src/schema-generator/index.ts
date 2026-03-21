@@ -23,10 +23,14 @@ export const generateSchemas = (dmmf: DMMF.Document, outputDir: string) =>
 
     yield* fs.makeDirectory(outputDir, { recursive: true })
 
-    const writeFile = (filename: string, content: string) =>
+    // Write schemas/ files into a "schemas" subdirectory for proper module resolution
+    const schemasDir = path.join(outputDir, "schemas")
+    yield* fs.makeDirectory(schemasDir, { recursive: true })
+
+    const writeSchemaFile = (filename: string, content: string) =>
       Effect.gen(function*() {
         const formatted = yield* format(content)
-        const filePath = path.join(outputDir, filename)
+        const filePath = path.join(schemasDir, filename)
         yield* fs.writeFileString(filePath, formatted)
       })
 
@@ -35,7 +39,7 @@ export const generateSchemas = (dmmf: DMMF.Document, outputDir: string) =>
     const enumsData = EnumGenerator.prepareEnumsData(enums)
     if (enumsData) {
       const content = yield* render("effect-enums", enumsData)
-      yield* writeFile("enums.ts", content)
+      yield* writeSchemaFile("enums.ts", content)
     }
 
     // Generate Types
@@ -97,10 +101,10 @@ export const generateSchemas = (dmmf: DMMF.Document, outputDir: string) =>
     )
     content += `\n\n${dbInterfaceContent}`
 
-    yield* writeFile("types.ts", content)
+    yield* writeSchemaFile("types.ts", content)
 
     // Index
     const indexData = KyselyGenerator.prepareIndexData(hasEnums)
     const indexContent = yield* render("effect-index", indexData)
-    yield* writeFile("index.ts", indexContent)
+    yield* writeSchemaFile("index.ts", indexContent)
   })

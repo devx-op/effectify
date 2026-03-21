@@ -6,7 +6,10 @@ import { generateFileHeader } from "../utils/codegen.js"
 import { toPascalCase } from "../utils/naming.js"
 import { buildFieldType } from "./type.js"
 
-export const prepareBrandedIdSchemaData = (model: DMMF.Model, fields: readonly DMMF.Field[]) => {
+export const prepareBrandedIdSchemaData = (
+  model: DMMF.Model,
+  fields: readonly DMMF.Field[],
+) => {
   const idField = fields.find((f) => f.isId)
   if (!idField) {
     return null
@@ -17,7 +20,8 @@ export const prepareBrandedIdSchemaData = (model: DMMF.Model, fields: readonly D
 
   let baseType: string
   if (isUuid) {
-    baseType = "Schema.UUID"
+    // Prisma validates UUIDs at the database level, so we use Schema.String directly
+    baseType = "Schema.String"
   } else if (idField.type === "Int") {
     baseType = "Schema.Number.pipe(Schema.positive())"
   } else {
@@ -27,7 +31,11 @@ export const prepareBrandedIdSchemaData = (model: DMMF.Model, fields: readonly D
   return { name, baseType }
 }
 
-export const prepareModelSchemaData = (dmmf: DMMF.Document, model: DMMF.Model, fields: readonly DMMF.Field[]) => {
+export const prepareModelSchemaData = (
+  dmmf: DMMF.Document,
+  model: DMMF.Model,
+  fields: readonly DMMF.Field[],
+) => {
   const fkMap = buildForeignKeyMap(model, dmmf.datamodel.models)
   const name = toPascalCase(model.name)
 
@@ -40,7 +48,10 @@ export const prepareModelSchemaData = (dmmf: DMMF.Document, model: DMMF.Model, f
   return { name, fields: fieldDefinitions }
 }
 
-export const prepareTypesHeaderData = (dmmf: DMMF.Document, hasEnums: boolean) => {
+export const prepareTypesHeaderData = (
+  dmmf: DMMF.Document,
+  hasEnums: boolean,
+) => {
   const header = generateFileHeader()
   const enumImports = hasEnums
     ? dmmf.datamodel.enums.map((e) => toPascalCase(e.name)).join(", ")

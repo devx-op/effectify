@@ -300,6 +300,31 @@ export type Insertable<T> = CustomInsertable<T>
 export type Updateable<T> = CustomUpdateable<T>
 
 // ============================================================================
+// Runtime Schema Helpers
+// ============================================================================
+
+/**
+ * Mark a schema field as database-generated.
+ *
+ * At runtime, this function returns the schema unchanged.
+ * The Generated<T> type information is used by Kysely for INSERT/UPDATE type inference.
+ *
+ * For full Effect Schema v4 integration, consider using:
+ * import { Model } from "effect/unstable/schema"
+ * Model.Generated
+ *
+ * @example
+ * export const Todo = Schema.Struct({
+ *   id: generated(TodoId),  // Auto-generated ID
+ *   published: generated(Schema.Boolean),  // Default value
+ * });
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function generated<S extends { [key: string]: any }>(schema: S): S {
+  return schema
+}
+
+// ============================================================================
 // Schema Helpers for v4
 // ============================================================================
 // Note: The runtime schema manipulation functions have been removed.
