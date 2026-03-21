@@ -1,5 +1,5 @@
-import * as FileSystem from "@effect/platform/FileSystem"
-import * as Path from "@effect/platform/Path"
+import * as FileSystem from "effect/FileSystem"
+import * as Path from "effect/Path"
 import type { DMMF } from "@prisma/generator-helper"
 import * as Effect from "effect/Effect"
 import { RenderService } from "../services/render-service.js"
@@ -87,8 +87,14 @@ export const generateSchemas = (dmmf: DMMF.Document, outputDir: string) =>
     }
 
     // DB Interface
-    const dbInterfaceData = KyselyGenerator.prepareDBInterfaceData(models, joinTables)
-    const dbInterfaceContent = yield* render("kysely-db-interface", dbInterfaceData)
+    const dbInterfaceData = KyselyGenerator.prepareDBInterfaceData(
+      models,
+      joinTables,
+    )
+    const dbInterfaceContent = yield* render(
+      "kysely-db-interface",
+      dbInterfaceData,
+    )
     content += `\n\n${dbInterfaceContent}`
 
     yield* writeFile("types.ts", content)

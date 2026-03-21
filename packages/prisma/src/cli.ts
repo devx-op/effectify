@@ -15,12 +15,12 @@ const cli = Command.run(prismaCommand.pipe(Command.withSubcommands([initCommand]
   version: "0.1.0",
 })
 
-const GeneratorLayer = GeneratorService.Live.pipe(
-  Layer.provide(RenderService.Live),
-  Layer.provide(FormatterService.Live),
+const GeneratorLayer = GeneratorService.layer.pipe(
+  Layer.provide(RenderService.layer),
+  Layer.provide(FormatterService.layer),
   Layer.provide(NodeServices.layer),
 )
 
-const MainLayer = Layer.mergeAll(GeneratorLayer, RenderService.Live, FormatterService.Live, NodeServices.layer)
+const MainLayer = Layer.mergeAll(GeneratorLayer, RenderService.layer, FormatterService.layer, NodeServices.layer)
 
 cli.pipe(Effect.provide(MainLayer), NodeRuntime.runMain)

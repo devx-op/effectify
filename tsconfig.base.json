@@ -1,4 +1,5 @@
 {
+  "exclude": ["./.effect-reference"],
   "compilerOptions": {
     "importHelpers": true,
     "isolatedModules": true,
