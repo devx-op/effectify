@@ -1,4 +1,4 @@
-name: 🚀 Release Beta
+name: 🚀 Release Alpha
 
 on:
   push:
@@ -13,8 +13,8 @@ env:
   DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/effectify"
 
 jobs:
-  release-beta:
-    name: 🚀 Release Beta
+  release-alpha:
+    name: 🚀 Release Alpha
     runs-on: ubuntu-latest
     permissions:
       contents: write # Needed for git operations
@@ -120,20 +120,20 @@ jobs:
           pnpm nx run-many -t test --projects=${{ steps.affected.outputs.projects }} --parallel=3 --passWithNoTests || true
 
       # Release: version bump + publish (skipped if no affected projects)
-      - name: 🚀 Version & Publish Beta
+      - name: 🚀 Version & Publish Alpha
         if: ${{ steps.affected.outputs.has_projects == 'true' }}
         run: |
           PROJECTS="${{ steps.affected.outputs.projects }}"
           echo "Releasing: $PROJECTS"
 
-          # Version bump with preid=beta → creates versions like 0.0.5-beta.0
-          pnpm nx release version --projects=$PROJECTS --preid=beta
+          # Version bump with preid=alpha → creates versions like 0.0.5-alpha.0
+          pnpm nx release version --projects=$PROJECTS --preid=alpha
 
           # Rebuild with new versions (version bump updates package.json)
           pnpm nx run-many -t build --projects=$PROJECTS --parallel=3
 
-          # Publish to npm with beta tag
-          pnpm nx release publish --projects=$PROJECTS --tag=beta
+          # Publish to npm with alpha tag
+          pnpm nx release publish --projects=$PROJECTS --tag=alpha
 
           # Push git tags and version commits
           git push origin HEAD --follow-tags
@@ -146,7 +146,7 @@ jobs:
       - name: 📊 Release Summary
         if: always()
         run: |
-          echo "## 🚀 Beta Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "## 🚀 Alpha Release Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           if [ "${{ steps.affected.outputs.has_projects }}" = "true" ]; then
             echo "✅ **Release Completed**" >> $GITHUB_STEP_SUMMARY
@@ -157,11 +157,11 @@ jobs:
             echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
             echo "| Detect Affected | ✅ |" >> $GITHUB_STEP_SUMMARY
             echo "| Build | ✅ |" >> $GITHUB_STEP_SUMMARY
-            echo "| Version Bump | ✅ With preid=beta |" >> $GITHUB_STEP_SUMMARY
-            echo "| NPM Tag | beta |" >> $GITHUB_STEP_SUMMARY
+            echo "| Version Bump | ✅ With preid=alpha |" >> $GITHUB_STEP_SUMMARY
+            echo "| NPM Tag | alpha |" >> $GITHUB_STEP_SUMMARY
             echo "| Provenance | ✅ Enabled |" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "📦 Packages published with \"@beta\" dist-tag and semver prerelease versions (x.x.x-beta.x)." >> $GITHUB_STEP_SUMMARY
+            echo "📦 Packages published with \"@alpha\" dist-tag and semver prerelease versions (x.x.x-alpha.x)." >> $GITHUB_STEP_SUMMARY
           else
             echo "⏭️ **Skipped - No affected projects**" >> $GITHUB_STEP_SUMMARY
           fi
