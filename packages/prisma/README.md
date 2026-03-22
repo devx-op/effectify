@@ -53,7 +53,8 @@ pnpm prisma generate
 The generator creates a `Prisma` service for transactions and raw queries, and Model classes that you can use to create repositories.
 
 ```typescript
-import { Effect, Layer } from "effect"
+import * as Effect from "effect/Effect"
+import * as Layer from "effect/Layer"
 import { Prisma, UserModel } from "./generated/effect/index.js"
 import * as PrismaRepository from "./generated/effect/prisma-repository.js"
 
@@ -97,7 +98,7 @@ The generated layers make testing easy by allowing you to provide alternative im
 
 ```typescript
 import { it } from "@effect/vitest"
-import { Effect } from "effect"
+import * as Effect from "effect/Effect"
 import { Prisma, UserModel } from "./generated/effect/index.js"
 import * as PrismaRepository from "./generated/effect/prisma-repository.js"
 
@@ -123,7 +124,7 @@ it.effect("should create a user", () =>
 All Prisma errors are mapped to specific tagged errors in Effect, allowing you to handle them precisely.
 
 ```typescript
-import { Effect } from "effect"
+import * as Effect from "effect/Effect"
 import { Prisma, UserModel } from "./generated/effect/index.js"
 import * as PrismaRepository from "./generated/effect/prisma-repository.js"
 

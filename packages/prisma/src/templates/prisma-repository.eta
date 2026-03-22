@@ -304,7 +304,7 @@ export const mapUpdateManyError = (error: unknown, operation: string, model: str
   throw error;
 }
 
-const { Class, Field, FieldExcept, FieldOnly, Struct, Union, extract, fieldEvolve, fieldFromKey } = VariantSchema.make({
+const { Class, Field, FieldExcept, FieldOnly, Struct, Union, extract, fieldEvolve } = VariantSchema.make({
   variants: [
     'findUnique',
     'findUniqueOrThrow',
@@ -326,40 +326,40 @@ const { Class, Field, FieldExcept, FieldOnly, Struct, Union, extract, fieldEvolv
  * @since 1.0.0
  * @category models
  */
-export type Any = Schema.Schema.Any & {
+export type Any = Schema.Top & {
   readonly fields: Schema.Struct.Fields
-  readonly findUnique: Schema.Schema.Any
-  readonly findUniqueOrThrow: Schema.Schema.Any
-  readonly findFirst: Schema.Schema.Any
-  readonly findFirstOrThrow: Schema.Schema.Any
-  readonly findMany: Schema.Schema.Any
-  readonly create: Schema.Schema.Any
-  readonly createMany: Schema.Schema.Any
-  readonly createManyAndReturn: Schema.Schema.Any
-  readonly update: Schema.Schema.Any
-  readonly json: Schema.Schema.Any
-  readonly jsonCreate: Schema.Schema.Any
-  readonly jsonUpdate: Schema.Schema.Any
+  readonly findUnique: Schema.Top
+  readonly findUniqueOrThrow: Schema.Top
+  readonly findFirst: Schema.Top
+  readonly findFirstOrThrow: Schema.Top
+  readonly findMany: Schema.Top
+  readonly create: Schema.Top
+  readonly createMany: Schema.Top
+  readonly createManyAndReturn: Schema.Top
+  readonly update: Schema.Top
+  readonly json: Schema.Top
+  readonly jsonCreate: Schema.Top
+  readonly jsonUpdate: Schema.Top
 }
 
 /**
  * @since 1.0.0
  * @category models
  */
-export type AnyNoContext = Schema.Schema.AnyNoContext & {
+export type AnyNoContext = Schema.Top & {
   readonly fields: Schema.Struct.Fields
-  readonly findUnique: Schema.Schema.AnyNoContext
-  readonly findUniqueOrThrow: Schema.Schema.AnyNoContext
-  readonly findFirst: Schema.Schema.AnyNoContext
-  readonly findFirstOrThrow: Schema.Schema.AnyNoContext
-  readonly findMany: Schema.Schema.AnyNoContext
-  readonly create: Schema.Schema.AnyNoContext
-  readonly createMany: Schema.Schema.AnyNoContext
-  readonly createManyAndReturn: Schema.Schema.AnyNoContext
-  readonly update: Schema.Schema.AnyNoContext
-  readonly json: Schema.Schema.AnyNoContext
-  readonly jsonCreate: Schema.Schema.AnyNoContext
-  readonly jsonUpdate: Schema.Schema.AnyNoContext
+  readonly findUnique: Schema.Top
+  readonly findUniqueOrThrow: Schema.Top
+  readonly findFirst: Schema.Top
+  readonly findFirstOrThrow: Schema.Top
+  readonly findMany: Schema.Top
+  readonly create: Schema.Top
+  readonly createMany: Schema.Top
+  readonly createManyAndReturn: Schema.Top
+  readonly update: Schema.Top
+  readonly json: Schema.Top
+  readonly jsonCreate: Schema.Top
+  readonly jsonUpdate: Schema.Top
 }
 
 /**
@@ -413,7 +413,7 @@ export {
    * @category constructors
    * @example
    * \`\`\`ts
-   * import { Schema } from "effect"
+   * import * as Schema from "effect/Schema"
    * import { Model } from "@effect/sql"
    *
    * export const GroupId = Schema.Number.pipe(Schema.brand("GroupId"))
@@ -472,11 +472,6 @@ export {
    * @since 1.0.0
    * @category fields
    */
-  fieldFromKey,
-  /**
-   * @since 1.0.0
-   * @category fields
-   */
   FieldOnly,
   /**
    * @since 1.0.0
@@ -507,67 +502,67 @@ export const make = <S extends Any, M extends keyof BasePrismaClient>(
   {
     readonly findUnique: <A extends PrismaNamespace.Args<BasePrismaClient[M], 'findUnique'>>(
       args: PrismaNamespace.Exact<A, PrismaNamespace.Args<BasePrismaClient[M], 'findUnique'>>,
-    ) => Effect.Effect<Option.Option<S['Type']>, PrismaFindError, S['Context'] | S['findUnique']['Context']>
+    ) => Effect.Effect<Option.Option<S['Type']>, PrismaFindError, never>
 
     readonly findUniqueOrThrow: <A extends PrismaNamespace.Args<BasePrismaClient[M], 'findUnique'>>(
       args: PrismaNamespace.Exact<A, PrismaNamespace.Args<BasePrismaClient[M], 'findUnique'>>,
-    ) => Effect.Effect<S['Type'], PrismaFindOrThrowError, S['Context'] | S['findUniqueOrThrow']['Context']>
+    ) => Effect.Effect<S['Type'], PrismaFindOrThrowError, never>
 
     readonly findFirst: <A extends PrismaNamespace.Args<BasePrismaClient[M], 'findFirst'>>(
       args?: PrismaNamespace.Exact<A, PrismaNamespace.Args<BasePrismaClient[M], 'findFirst'>>
-    ) => Effect.Effect<Option.Option<S['Type']>, PrismaFindError, S['Context'] | S['findFirst']['Context']>
+    ) => Effect.Effect<Option.Option<S['Type']>, PrismaFindError, never>
 
     readonly findFirstOrThrow: <A extends PrismaNamespace.Args<BasePrismaClient[M], 'findFirstOrThrow'>>(
       args?: PrismaNamespace.Exact<A, PrismaNamespace.Args<BasePrismaClient[M], 'findFirstOrThrow'>>
-    ) => Effect.Effect<S['Type'], PrismaFindOrThrowError, S['Context'] | S['findFirstOrThrow']['Context']>
+    ) => Effect.Effect<S['Type'], PrismaFindOrThrowError, never>
 
     readonly findMany: <A extends PrismaNamespace.Args<BasePrismaClient[M], 'findMany'>>(
       args?: PrismaNamespace.Exact<A, PrismaNamespace.Args<BasePrismaClient[M], 'findMany'>>
-    ) => Effect.Effect<Array<S['Type']>, PrismaFindError, S['Context'] | S['findMany']['Context']>
+    ) => Effect.Effect<Array<S['Type']>, PrismaFindError, never>
 
     readonly create: <A extends PrismaNamespace.Args<BasePrismaClient[M], 'create'>>(
       args: PrismaNamespace.Exact<A, PrismaNamespace.Args<BasePrismaClient[M], 'create'>> & { data: Insertable<S['Type']> },
-    ) => Effect.Effect<S['Type'], PrismaCreateError, S['Context'] | S['create']['Context']>
+    ) => Effect.Effect<S['Type'], PrismaCreateError, never>
 
     readonly createMany: <A extends PrismaNamespace.Args<BasePrismaClient[M], 'createMany'>>(
       args: PrismaNamespace.Exact<A, PrismaNamespace.Args<BasePrismaClient[M], 'createMany'>> & { data: ReadonlyArray<Insertable<S['Type']>> | Insertable<S['Type']> },
-    ) => Effect.Effect<PrismaNamespace.BatchPayload, PrismaCreateError, S['Context'] | S['createMany']['Context']>
+    ) => Effect.Effect<PrismaNamespace.BatchPayload, PrismaCreateError, never>
 
     readonly createManyAndReturn: <A extends PrismaNamespace.Args<BasePrismaClient[M], 'createManyAndReturn'>>(
       args: PrismaNamespace.Exact<A, PrismaNamespace.Args<BasePrismaClient[M], 'createManyAndReturn'>> & { data: ReadonlyArray<Insertable<S['Type']>> | Insertable<S['Type']> },
-    ) => Effect.Effect<Array<S['Type']>, PrismaCreateError, S['Context'] | S['createManyAndReturn']['Context']>
+    ) => Effect.Effect<Array<S['Type']>, PrismaCreateError, never>
 
     readonly update: <A extends PrismaNamespace.Args<BasePrismaClient[M], 'update'>>(
       args: PrismaNamespace.Exact<A, PrismaNamespace.Args<BasePrismaClient[M], 'update'>> & { data: Updateable<S['Type']> }
-    ) => Effect.Effect<S['Type'], PrismaUpdateError, S['Context'] | S['update']['Context']>
+    ) => Effect.Effect<S['Type'], PrismaUpdateError, never>
 
     readonly updateMany: <A extends PrismaNamespace.Args<BasePrismaClient[M], 'updateMany'>>(
       args: PrismaNamespace.Exact<A, PrismaNamespace.Args<BasePrismaClient[M], 'updateMany'>> & { data: Updateable<S['Type']> }
-    ) => Effect.Effect<PrismaNamespace.BatchPayload, PrismaUpdateManyError, S['Context'] | S['update']['Context']>
+    ) => Effect.Effect<PrismaNamespace.BatchPayload, PrismaUpdateManyError, never>
 
     readonly delete: <A extends PrismaNamespace.Args<BasePrismaClient[M], 'delete'>>(
       args: PrismaNamespace.Exact<A, PrismaNamespace.Args<BasePrismaClient[M], 'delete'>>
-    ) => Effect.Effect<S['Type'], PrismaDeleteError, S['Context']>
+    ) => Effect.Effect<S['Type'], PrismaDeleteError, never>
 
     readonly deleteMany: <A extends PrismaNamespace.Args<BasePrismaClient[M], 'deleteMany'>>(
       args?: PrismaNamespace.Exact<A, PrismaNamespace.Args<BasePrismaClient[M], 'deleteMany'>>
-    ) => Effect.Effect<PrismaNamespace.BatchPayload, PrismaDeleteManyError, S['Context']>
+    ) => Effect.Effect<PrismaNamespace.BatchPayload, PrismaDeleteManyError, never>
 
     readonly upsert: <A extends PrismaNamespace.Args<BasePrismaClient[M], 'upsert'>>(
       args: PrismaNamespace.Exact<A, PrismaNamespace.Args<BasePrismaClient[M], 'upsert'>> & { create: Insertable<S['Type']>; update: Updateable<S['Type']> }
-    ) => Effect.Effect<S['Type'], PrismaCreateError, S['Context']>
+    ) => Effect.Effect<S['Type'], PrismaCreateError, never>
 
     readonly count: <A extends PrismaNamespace.Args<BasePrismaClient[M], 'count'>>(
       args?: PrismaNamespace.Exact<A, PrismaNamespace.Args<BasePrismaClient[M], 'count'>>
-    ) => Effect.Effect<unknown, PrismaFindError, S['Context']>
+    ) => Effect.Effect<unknown, PrismaFindError, never>
 
     readonly aggregate: <A extends PrismaNamespace.Args<BasePrismaClient[M], 'aggregate'>>(
       args: PrismaNamespace.Exact<A, PrismaNamespace.Args<BasePrismaClient[M], 'aggregate'>>
-    ) => Effect.Effect<unknown, PrismaFindError, S['Context']>
+    ) => Effect.Effect<unknown, PrismaFindError, never>
 
     readonly groupBy: <A extends PrismaNamespace.Args<BasePrismaClient[M], 'groupBy'>>(
       args: PrismaNamespace.Exact<A, PrismaNamespace.Args<BasePrismaClient[M], 'groupBy'>>
-    ) => Effect.Effect<unknown, PrismaFindError, S['Context']>
+    ) => Effect.Effect<unknown, PrismaFindError, never>
   },
   never,
   PrismaClient
@@ -576,10 +571,10 @@ export const make = <S extends Any, M extends keyof BasePrismaClient>(
     const prisma = yield* PrismaClient
 
     // Construye el schema del where para findUnique usando uniqueKey en modo builder
-    let findUniqueRequestSchema: Schema.Schema<any, any, any> = Schema.Unknown
+    let findUniqueRequestSchema: Schema.Schema<any> = Schema.Unknown
     if (options.uniqueKey) {
       const keys = Array.isArray(options.uniqueKey) ? options.uniqueKey : [options.uniqueKey]
-      const shape: Record<string, Schema.Schema.Any> = {}
+      const shape: Record<string, Schema.Top> = {}
       let valid = true
       for (const key of keys) {
         const field = (Model as any).fields?.[key]
@@ -607,11 +602,10 @@ export const make = <S extends Any, M extends keyof BasePrismaClient>(
 
     const findUnique = <A extends PrismaNamespace.Args<BasePrismaClient[M], 'findUnique'>>(
       args: PrismaNamespace.Exact<A, PrismaNamespace.Args<BasePrismaClient[M], 'findUnique'>>,
-    ): Effect.Effect<Option.Option<S['Type']>, never, S['Context'] | S['findUnique']['Context']> =>
+    ): Effect.Effect<Option.Option<S['Type']>, never, never> =>
       findUniqueSchema((args as any).where).pipe(
-        Effect.catchTag('ParseError', Effect.die),
+        Effect.catchTag('SchemaError', Effect.die),
         Effect.withSpan(`\${options.spanPrefix}.findUnique`, {
-          captureStackTrace: false,
           attributes: { ...(args as any).where },
         }),
       ) as any
@@ -631,13 +625,12 @@ export const make = <S extends Any, M extends keyof BasePrismaClient>(
 
     const findUniqueOrThrow = <A extends PrismaNamespace.Args<BasePrismaClient[M], 'findUnique'>>(
       args: PrismaNamespace.Exact<A, PrismaNamespace.Args<BasePrismaClient[M], 'findUnique'>>,
-    ): Effect.Effect<S['Type'], never, S['Context'] | S['findUniqueOrThrow']['Context']> =>
+    ): Effect.Effect<S['Type'], never, never> =>
       findUniqueOrThrowSchema((args as any).where).pipe(
         Effect.map((result) => result as S['Type']),
-        Effect.catchTag('ParseError', Effect.die),
-        Effect.catchTag('NoSuchElementException', Effect.die),
+        Effect.catchTag('SchemaError', Effect.die),
+        Effect.catchTag('NoSuchElementError', Effect.die),
         Effect.withSpan(`\${options.spanPrefix}.findUniqueOrThrow`, {
-          captureStackTrace: false,
           attributes: { ...(args as any).where },
         }),
       ) as any
@@ -655,11 +648,10 @@ export const make = <S extends Any, M extends keyof BasePrismaClient>(
 
     const findFirst = <A extends PrismaNamespace.Args<BasePrismaClient[M], 'findFirst'>>(
       args?: PrismaNamespace.Exact<A, PrismaNamespace.Args<BasePrismaClient[M], 'findFirst'>>
-    ): Effect.Effect<Option.Option<S['Type']>, never, S['Context'] | S['findFirst']['Context']> =>
+    ): Effect.Effect<Option.Option<S['Type']>, never, never> =>
       findFirstSchema(args).pipe(
-        Effect.catchTag('ParseError', Effect.die),
+        Effect.catchTag('SchemaError', Effect.die),
         Effect.withSpan(`\${options.spanPrefix}.findFirst`, {
-          captureStackTrace: false,
           attributes: { ...(args as any) },
         }),
       ) as any
@@ -677,13 +669,12 @@ export const make = <S extends Any, M extends keyof BasePrismaClient>(
 
     const findFirstOrThrow = <A extends PrismaNamespace.Args<BasePrismaClient[M], 'findFirstOrThrow'>>(
       args?: PrismaNamespace.Exact<A, PrismaNamespace.Args<BasePrismaClient[M], 'findFirstOrThrow'>>
-    ): Effect.Effect<S['Type'], never, S['Context'] | S['findFirstOrThrow']['Context']> =>
+    ): Effect.Effect<S['Type'], never, never> =>
       findFirstOrThrowSchema(args).pipe(
         Effect.map((result) => result as S['Type']),
-        Effect.catchTag('ParseError', Effect.die),
-        Effect.catchTag('NoSuchElementException', Effect.die),
+        Effect.catchTag('SchemaError', Effect.die),
+        Effect.catchTag('NoSuchElementError', Effect.die),
         Effect.withSpan(`\${options.spanPrefix}.findFirstOrThrow`, {
-          captureStackTrace: false,
           attributes: { ...(args as any) },
         }),
       ) as any
@@ -701,11 +692,10 @@ export const make = <S extends Any, M extends keyof BasePrismaClient>(
 
     const findMany = <A extends PrismaNamespace.Args<BasePrismaClient[M], 'findMany'>>(
       args?: PrismaNamespace.Exact<A, PrismaNamespace.Args<BasePrismaClient[M], 'findMany'>>
-    ): Effect.Effect<Array<S['Type']>, never, S['Context'] | S['findMany']['Context']> =>
+    ): Effect.Effect<Array<S['Type']>, never, never> =>
       findManySchema(args).pipe(
-        Effect.catchTag('ParseError', Effect.die),
+        Effect.catchTag('SchemaError', Effect.die),
         Effect.withSpan(`\${options.spanPrefix}.findMany`, {
-          captureStackTrace: false,
           attributes: { ...(args as any) },
         }),
       ) as any
@@ -722,12 +712,11 @@ export const make = <S extends Any, M extends keyof BasePrismaClient>(
 
     const create = <A extends PrismaNamespace.Args<BasePrismaClient[M], 'create'>>(
       args: PrismaNamespace.Exact<A, PrismaNamespace.Args<BasePrismaClient[M], 'create'>> & { data: Insertable<S['Type']> },
-    ): Effect.Effect<S['Type'], never, S['Context'] | S['create']['Context']> =>
+    ): Effect.Effect<S['Type'], never, never> =>
       createSchema((args as any).data).pipe(
-        Effect.catchTag('ParseError', Effect.die),
-        Effect.catchTag('NoSuchElementException', Effect.die),
+        Effect.catchTag('SchemaError', Effect.die),
+        Effect.catchTag('NoSuchElementError', Effect.die),
         Effect.withSpan(`${options.spanPrefix}.create`, {
-          captureStackTrace: false,
           attributes: { ...(args as any).data },
         }),
       ) as any
@@ -745,13 +734,12 @@ export const make = <S extends Any, M extends keyof BasePrismaClient>(
 
     const createMany = <A extends PrismaNamespace.Args<BasePrismaClient[M], 'createMany'>>(
       args: PrismaNamespace.Exact<A, PrismaNamespace.Args<BasePrismaClient[M], 'createMany'>> & { data: ReadonlyArray<Insertable<S['Type']>> | Insertable<S['Type']> },
-    ): Effect.Effect<PrismaNamespace.BatchPayload, never, S['Context'] | S['createMany']['Context']> =>
+    ): Effect.Effect<PrismaNamespace.BatchPayload, never, never> =>
       createManySchema((args as any).data).pipe(
         Effect.map((res) => res as unknown as PrismaNamespace.BatchPayload),
-        Effect.catchTag('ParseError', Effect.die),
-        Effect.catchTag('NoSuchElementException', Effect.die),
+        Effect.catchTag('SchemaError', Effect.die),
+        Effect.catchTag('NoSuchElementError', Effect.die),
         Effect.withSpan(`${options.spanPrefix}.createMany`, {
-          captureStackTrace: false,
           attributes: { ...(args as any).data },
         }),
       ) as any
@@ -771,11 +759,10 @@ export const make = <S extends Any, M extends keyof BasePrismaClient>(
 
     const createManyAndReturn = <A extends PrismaNamespace.Args<BasePrismaClient[M], 'createManyAndReturn'>>(
       args: PrismaNamespace.Exact<A, PrismaNamespace.Args<BasePrismaClient[M], 'createManyAndReturn'>> & { data: ReadonlyArray<Insertable<S['Type']>> | Insertable<S['Type']> },
-    ): Effect.Effect<Array<S['Type']>, never, S['Context'] | S['createManyAndReturn']['Context']> =>
+    ): Effect.Effect<Array<S['Type']>, never, never> =>
       createManyAndReturnSchema((args as any).data).pipe(
-        Effect.catchTag('ParseError', Effect.die),
+        Effect.catchTag('SchemaError', Effect.die),
         Effect.withSpan(`${options.spanPrefix}.createManyAndReturn`, {
-          captureStackTrace: false,
           attributes: { ...(args as any).data },
         }),
       ) as any
@@ -792,12 +779,11 @@ export const make = <S extends Any, M extends keyof BasePrismaClient>(
 
     const count = <A extends PrismaNamespace.Args<BasePrismaClient[M], 'count'>>(
       args?: PrismaNamespace.Exact<A, PrismaNamespace.Args<BasePrismaClient[M], 'count'>>
-    ): Effect.Effect<unknown, never, S['Context']> =>
+    ): Effect.Effect<unknown, never, never> =>
       countSchema(args).pipe(
-        Effect.catchTag('ParseError', Effect.die),
-        Effect.catchTag('NoSuchElementException', Effect.die),
+        Effect.catchTag('SchemaError', Effect.die),
+        Effect.catchTag('NoSuchElementError', Effect.die),
         Effect.withSpan(`\${options.spanPrefix}.count`, {
-          captureStackTrace: false,
           attributes: { ...(args as any) },
         }),
       ) as any
@@ -814,12 +800,11 @@ export const make = <S extends Any, M extends keyof BasePrismaClient>(
 
     const update = <A extends PrismaNamespace.Args<BasePrismaClient[M], 'update'>>(
       args: PrismaNamespace.Exact<A, PrismaNamespace.Args<BasePrismaClient[M], 'update'>> & { data: Updateable<S['Type']> }
-    ): Effect.Effect<S['Type'], never, S['Context'] | S['update']['Context']> =>
+    ): Effect.Effect<S['Type'], never, never> =>
       updateSchema(args).pipe(
-        Effect.catchTag('ParseError', Effect.die),
-        Effect.catchTag('NoSuchElementException', Effect.die),
+        Effect.catchTag('SchemaError', Effect.die),
+        Effect.catchTag('NoSuchElementError', Effect.die),
         Effect.withSpan(`${options.spanPrefix}.update`, {
-          captureStackTrace: false,
           attributes: { ...(args as any) },
         }),
       ) as any
@@ -836,12 +821,11 @@ export const make = <S extends Any, M extends keyof BasePrismaClient>(
 
     const delete_ = <A extends PrismaNamespace.Args<BasePrismaClient[M], 'delete'>>(
       args: PrismaNamespace.Exact<A, PrismaNamespace.Args<BasePrismaClient[M], 'delete'>>
-    ): Effect.Effect<S['Type'], never, S['Context']> =>
+    ): Effect.Effect<S['Type'], never, never> =>
       deleteSchema(args).pipe(
-        Effect.catchTag('ParseError', Effect.die),
-        Effect.catchTag('NoSuchElementException', Effect.die),
+        Effect.catchTag('SchemaError', Effect.die),
+        Effect.catchTag('NoSuchElementError', Effect.die),
         Effect.withSpan(`${options.spanPrefix}.delete`, {
-          captureStackTrace: false,
           attributes: { ...(args as any) },
         }),
       ) as any
@@ -858,12 +842,11 @@ export const make = <S extends Any, M extends keyof BasePrismaClient>(
 
     const upsert = <A extends PrismaNamespace.Args<BasePrismaClient[M], 'upsert'>>(
       args: PrismaNamespace.Exact<A, PrismaNamespace.Args<BasePrismaClient[M], 'upsert'>> & { create: Insertable<S['Type']>; update: Updateable<S['Type']> }
-    ): Effect.Effect<S['Type'], never, S['Context']> =>
+    ): Effect.Effect<S['Type'], never, never> =>
       upsertSchema(args).pipe(
-        Effect.catchTag('ParseError', Effect.die),
-        Effect.catchTag('NoSuchElementException', Effect.die),
+        Effect.catchTag('SchemaError', Effect.die),
+        Effect.catchTag('NoSuchElementError', Effect.die),
         Effect.withSpan(`${options.spanPrefix}.upsert`, {
-          captureStackTrace: false,
           attributes: { ...(args as any) },
         }),
       ) as any
@@ -880,12 +863,11 @@ export const make = <S extends Any, M extends keyof BasePrismaClient>(
 
     const aggregate = <A extends PrismaNamespace.Args<BasePrismaClient[M], 'aggregate'>>(
       args: PrismaNamespace.Exact<A, PrismaNamespace.Args<BasePrismaClient[M], 'aggregate'>>
-    ): Effect.Effect<unknown, never, S['Context']> =>
+    ): Effect.Effect<unknown, never, never> =>
       aggregateSchema(args).pipe(
-        Effect.catchTag('ParseError', Effect.die),
-        Effect.catchTag('NoSuchElementException', Effect.die),
+        Effect.catchTag('SchemaError', Effect.die),
+        Effect.catchTag('NoSuchElementError', Effect.die),
         Effect.withSpan(`${options.spanPrefix}.aggregate`, {
-          captureStackTrace: false,
           attributes: { ...(args as any) },
         }),
       ) as any
@@ -902,11 +884,10 @@ export const make = <S extends Any, M extends keyof BasePrismaClient>(
 
     const groupBy = <A extends PrismaNamespace.Args<BasePrismaClient[M], 'groupBy'>>(
       args: PrismaNamespace.Exact<A, PrismaNamespace.Args<BasePrismaClient[M], 'groupBy'>>
-    ): Effect.Effect<unknown, never, S['Context']> =>
+    ): Effect.Effect<unknown, never, never> =>
       groupBySchema(args).pipe(
-        Effect.catchTag('ParseError', Effect.die),
+        Effect.catchTag('SchemaError', Effect.die),
         Effect.withSpan(`${options.spanPrefix}.groupBy`, {
-          captureStackTrace: false,
           attributes: { ...(args as any) },
         }),
       ) as any
@@ -923,13 +904,12 @@ export const make = <S extends Any, M extends keyof BasePrismaClient>(
 
     const updateMany = <A extends PrismaNamespace.Args<BasePrismaClient[M], 'updateMany'>>(
       args: PrismaNamespace.Exact<A, PrismaNamespace.Args<BasePrismaClient[M], 'updateMany'>> & { data: Updateable<S['Type']> }
-    ): Effect.Effect<PrismaNamespace.BatchPayload, never, S['Context'] | S['update']['Context']> =>
+    ): Effect.Effect<PrismaNamespace.BatchPayload, never, never> =>
       updateManySchema(args).pipe(
         Effect.map((res) => res as unknown as PrismaNamespace.BatchPayload),
-        Effect.catchTag('ParseError', Effect.die),
-        Effect.catchTag('NoSuchElementException', Effect.die),
+        Effect.catchTag('SchemaError', Effect.die),
+        Effect.catchTag('NoSuchElementError', Effect.die),
         Effect.withSpan(`${options.spanPrefix}.updateMany`, {
-          captureStackTrace: false,
           attributes: { ...(args as any) },
         }),
       ) as any
@@ -946,13 +926,12 @@ export const make = <S extends Any, M extends keyof BasePrismaClient>(
 
     const deleteMany = <A extends PrismaNamespace.Args<BasePrismaClient[M], 'deleteMany'>>(
       args?: PrismaNamespace.Exact<A, PrismaNamespace.Args<BasePrismaClient[M], 'deleteMany'>>
-    ): Effect.Effect<PrismaNamespace.BatchPayload, never, S['Context']> =>
+    ): Effect.Effect<PrismaNamespace.BatchPayload, never, never> =>
       deleteManySchema(args).pipe(
         Effect.map((res) => res as unknown as PrismaNamespace.BatchPayload),
-        Effect.catchTag('ParseError', Effect.die),
-        Effect.catchTag('NoSuchElementException', Effect.die),
+        Effect.catchTag('SchemaError', Effect.die),
+        Effect.catchTag('NoSuchElementError', Effect.die),
         Effect.withSpan(`${options.spanPrefix}.deleteMany`, {
-          captureStackTrace: false,
           attributes: { ...(args as any) },
         }),
       ) as any

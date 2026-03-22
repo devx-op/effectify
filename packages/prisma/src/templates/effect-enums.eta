@@ -1,6 +1,6 @@
 <%~ it.header %>
 
-import { Schema } from "effect";
+import * as Schema from "effect/Schema";
 
 <% it.enums.forEach(function(enumItem) { %>
 export const <%= enumItem.name %> = Schema.Literal(<%~ enumItem.values %>);

@@ -23,7 +23,7 @@ export const prepareBrandedIdSchemaData = (
     // Prisma validates UUIDs at the database level, so we use Schema.String directly
     baseType = "Schema.String"
   } else if (idField.type === "Int") {
-    baseType = "Schema.Number.pipe(Schema.positive())"
+    baseType = "Schema.Number.check(Schema.isBetween({ minimum: 1 }))"
   } else {
     baseType = "Schema.String"
   }
