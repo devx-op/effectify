@@ -6,17 +6,16 @@ import { randomUUID } from "node:crypto"
 import { Form, useActionData, useSubmit } from "react-router"
 import { useState } from "react"
 import { withBetterAuthGuard } from "@effectify/react-router-better-auth"
-
-let todos = [
-  {
-    id: "1",
-    title: "Todo 1",
-    content: "Content 1",
-    status: "PENDING",
-  },
-]
+import * as PrismaRepository from "./../../prisma/generated/effect/prisma-repository.js"
+import { TodoId, TodoModel } from "./../../prisma/generated/effect/index.js"
 
 export const loader = Effect.gen(function*() {
+  const TodoRepo = yield* PrismaRepository.make(TodoModel, {
+    modelName: "todo",
+    spanPrefix: "Todo",
+  })
+
+  const todos = yield* TodoRepo.findMany()
   return yield* httpSuccess({ todos: todos })
 })
   .pipe(withBetterAuthGuard.with({ redirectOnFail: "/login" }))
@@ -30,11 +29,16 @@ export const action = Effect.gen(function*() {
   const title = String(formData.get("title") ?? "")
   const content = String(formData.get("content") ?? "")
 
+  const TodoRepo = yield* PrismaRepository.make(TodoModel, {
+    modelName: "todo",
+    spanPrefix: "Todo",
+  })
+
   if (intent === "delete") {
     if (!id) {
       return yield* httpFailure("Missing id")
     }
-    todos = todos.filter((todo) => todo.id !== id)
+    yield* TodoRepo.delete({ where: { id } })
     return yield* httpRedirect("/todo-app")
   }
 
@@ -46,7 +50,7 @@ export const action = Effect.gen(function*() {
       return yield* httpFailure("Title is required")
     }
 
-    todos = todos.map((todo) => todo.id === id ? { ...todo, title, content } : todo)
+    yield* TodoRepo.update({ where: { id }, data: { title, content } })
     return yield* httpRedirect("/todo-app")
   }
 
@@ -55,8 +59,8 @@ export const action = Effect.gen(function*() {
       return yield* httpFailure("Missing id")
     }
     const statusStr = String(formData.get("status") ?? "")
-    const status = statusStr === "COMPLETED" ? "COMPLETED" : "PENDING"
-    todos = todos.map((todo) => todo.id === id ? { ...todo, status } : todo)
+    const status = statusStr === "COMPLETED" ? "COMPLETED" : "PENDING" as const
+    yield* TodoRepo.update({ where: { id }, data: { status } })
     return yield* httpRedirect("/todo-app")
   }
 
@@ -64,13 +68,16 @@ export const action = Effect.gen(function*() {
     return yield* httpFailure("Title is required")
   }
 
-  todos.push({
-    id: randomUUID(),
-    title,
-    content,
-    status: "PENDING",
+  yield* TodoRepo.create({
+    data: {
+      id: TodoId.makeUnsafe(randomUUID()),
+      title,
+      content,
+      status: "PENDING",
+      authorId: 1,
+      published: false,
+    },
   })
-
   return yield* httpRedirect("/todo-app")
 })
   .pipe(withBetterAuthGuard.with({ redirectOnFail: "/login" }))

@@ -3,7 +3,7 @@
 import * as Schema from "effect/Schema";
 
 <% it.enums.forEach(function(enumItem) { %>
-export const <%= enumItem.name %> = Schema.Literal(<%~ enumItem.values %>);
+export const <%= enumItem.name %> = Schema.Literals([<%~ enumItem.values %>]);
 export type <%= enumItem.name %> = typeof <%= enumItem.name %>.Type;
 
 <% }) %>

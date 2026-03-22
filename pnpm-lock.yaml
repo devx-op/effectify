@@ -584,6 +584,9 @@ importers:
       '@effectify/node-better-auth':
         specifier: workspace:*
         version: link:../../packages/node/better-auth
+      '@effectify/prisma':
+        specifier: workspace:*
+        version: link:../../packages/prisma
       '@effectify/react-query':
         specifier: workspace:*
         version: link:../../packages/react/query
