@@ -115,7 +115,7 @@ export const make = <R, E>(layer: Layer.Layer<R, E, never>) => {
                 { status: 400 },
               )
             }
-            // Handle other types of failures
+            // Handle other types of failures (interrupts, defects, etc.)
             return data(
               { ok: false as const, errors: ["Internal server error"] },
               { status: 400 },
