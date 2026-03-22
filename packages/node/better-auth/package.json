@@ -29,17 +29,16 @@
     "effect": "catalog:"
   },
   "devDependencies": {
-    "@effect/vitest": "catalog:",
-    "effect": "catalog:",
     "@effect/platform-node": "catalog:",
-    "vitest": "catalog:",
-    "better-sqlite3": "catalog:",
+    "@effect/vitest": "catalog:",
     "@types/better-sqlite3": "catalog:",
-    "@types/node": "catalog:"
+    "@types/node": "catalog:",
+    "better-sqlite3": "catalog:",
+    "effect": "catalog:",
+    "vitest": "catalog:"
   },
   "dependenciesMeta": {},
   "dependencies": {
     "zod": "catalog:"
-  },
-  "optionalDependencies": {}
+  }
 }
