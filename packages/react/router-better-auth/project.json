@@ -5,28 +5,19 @@
   "projectType": "library",
   "targets": {
     "build": {
-      "executor": "@nx/js:tsc",
-      "outputs": ["{options.outputPath}"],
-      "defaultConfiguration": "production",
+      "executor": "nx:run-commands",
       "options": {
-        "outputPath": "packages/react/router-better-auth/dist",
-        "main": "packages/react/router-better-auth/src/index.ts",
-        "tsConfig": "packages/react/router-better-auth/tsconfig.lib.json",
-        "format": ["esm"],
-        "generatePackageJson": false,
-        "updateBuildableProjectDepsInPackageJson": false,
-        "additionalEntryPoints": []
-      },
-      "configurations": {
-        "development": {},
-        "production": {}
+        "command": "tsgo --build tsconfig.lib.json",
+        "cwd": "packages/react/router-better-auth"
       }
     },
     "lint": {
       "executor": "nx-oxlint:lint",
       "outputs": ["{options.outputFile}"],
       "options": {
-        "lintFilePatterns": ["packages/react/router-better-auth/**/*.{ts,tsx,js,jsx}"]
+        "lintFilePatterns": [
+          "packages/react/router-better-auth/**/*.{ts,tsx,js,jsx}"
+        ]
       }
     }
   },
