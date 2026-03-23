@@ -21,13 +21,6 @@
         "cwd": "apps/react-router-example"
       }
     },
-    "prisma:generate": {
-      "executor": "nx:run-commands",
-      "options": {
-        "command": "pnpm run prisma:generate",
-        "cwd": "apps/react-router-example"
-      }
-    },
     "build": {
       "executor": "@nx/vite:build",
       "outputs": ["{options.outputPath}"],
