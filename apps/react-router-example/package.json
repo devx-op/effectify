@@ -4,8 +4,7 @@
   "type": "module",
   "scripts": {
     "typecheck": "react-router typegen && tsc",
-    "dev": "react-router dev",
-    "prisma:generate": "prisma generate"
+    "dev": "react-router dev"
   },
   "sideEffects": false,
   "dependencies": {
