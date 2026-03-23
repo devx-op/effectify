@@ -9,7 +9,7 @@ generator client {
 }
 
 generator effect {
-  provider = "pnpm exec @effectify/prisma"
+  provider = "pnpm exec effect-prisma"
   output   = "./generated/effect"
 }
 
