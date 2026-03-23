@@ -217,7 +217,7 @@ export const MessageSchema = Schema.struct({
   userId: Schema.string,
   roomId: Schema.string,
   timestamp: Schema.Date,
-  type: Schema.literal('text', 'image', 'file')
+  type: Schema.literals(['text', 'image', 'file'])
 })
 
 // Use for validation

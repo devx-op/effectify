@@ -1,0 +1,1 @@
+{"root":["./src/index.ts","./src/types.d.ts","./src/lib/types.ts","./src/lib/internal/make-use-effect-mutation.ts","./src/lib/internal/make-use-effect-query.ts","./src/lib/internal/make-use-rx-subsciption-ref.ts","./src/lib/internal/make-use-rx-subscribe.ts","./src/lib/internal/query-data-helpers.ts","./src/lib/tanstack-query-effect.tsx"],"version":"5.9.3"}

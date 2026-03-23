@@ -39,7 +39,7 @@ it.scoped("${testName}", () => test${testIndex + 1}Effect)`
   }).join("\n\n")
 
   return `import { expect, it } from "@effect/vitest"
-import { Effect } from "effect"
+import * as Effect from "effect/Effect"
 import type { Todo, User } from "../../generated/prisma/index.js"
 import { PrismaService } from "../../generated/effect-prisma/index.js"
 import { TestPrismaLayer } from "../../services/prisma.service.js"

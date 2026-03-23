@@ -5,6 +5,7 @@
     "app/**/*.tsx",
     "app/**/*.js",
     "app/**/*.jsx",
+    "prisma/generated/**/*.ts",
     "**/.server/**/*.ts",
     "**/.server/**/*.tsx",
     "**/.client/**/*.ts",
@@ -23,7 +24,6 @@
   ],
   "compilerOptions": {
     "composite": true,
-    "baseUrl": ".",
-    "outDir": "dist/out-tsc"
+    "outDir": "./dist/out-tsc"
   }
 }

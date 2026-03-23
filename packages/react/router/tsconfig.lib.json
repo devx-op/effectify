@@ -1,10 +1,11 @@
 {
   "extends": "../../../tsconfig.base.json",
   "compilerOptions": {
+    "rootDir": "src",
     "composite": true,
-    "baseUrl": ".",
     "outDir": "dist",
     "target": "es2022",
+    "lib": ["DOM", "DOM.Iterable", "es2022"],
     "module": "esnext",
     "moduleResolution": "bundler",
     "jsx": "react-jsx"

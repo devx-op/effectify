@@ -7,8 +7,7 @@
     "noImplicitOverride": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
-    "noPropertyAccessFromIndexSignature": true,
-    "baseUrl": "./"
+    "noPropertyAccessFromIndexSignature": true
   },
   "files": [],
   "include": [],

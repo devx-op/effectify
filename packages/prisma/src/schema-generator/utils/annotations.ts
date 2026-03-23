@@ -13,7 +13,7 @@ import type { DMMF } from "@prisma/generator-helper"
  *   email String
  *
  *   // Positive number constraint for Int field
- *   /// @customType(Schema.Number.pipe(Schema.positive()))
+ *   /// @customType(Schema.Number.check(Schema.isBetween({ minimum: 1 })))
  *   age Int
  *
  *   // Custom branded type
@@ -35,7 +35,11 @@ export function extractEffectTypeOverride(field: DMMF.Field) {
   let parenCount = 1
   let endIdx = startIdx
 
-  for (let i = startIdx; i < field.documentation.length && parenCount > 0; i++) {
+  for (
+    let i = startIdx;
+    i < field.documentation.length && parenCount > 0;
+    i++
+  ) {
     if (field.documentation[i] === "(") parenCount++
     if (field.documentation[i] === ")") parenCount--
     if (parenCount === 0) {

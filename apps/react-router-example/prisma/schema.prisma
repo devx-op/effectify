@@ -8,6 +8,11 @@ generator client {
   provider = "prisma-client-js"
 }
 
+generator effect {
+  provider = "node ../../packages/prisma/dist/src/cli.js"
+  output   = "./generated/effect"
+}
+
 datasource db {
   provider = "sqlite"
 }

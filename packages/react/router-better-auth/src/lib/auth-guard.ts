@@ -33,34 +33,30 @@ const verifySessionWithContext = (context: typeof LoaderArgsContext) =>
             origin: "http://localhost:3000",
           },
         }),
-      catch: () => null as any,
+      catch: (cause) =>
+        new AuthService.Unauthorized({
+          details: `Auth server unreachable: ${String(cause)}`,
+        }),
     })
-
-    if (!response) {
-      return yield* Effect.fail(
-        new AuthService.Unauthorized({ details: "Auth server unreachable" }),
-      )
-    }
 
     const fetchResult = yield* Effect.tryPromise({
       try: () => response.json(),
-      catch: () => ({ session: null }),
+      catch: (cause) =>
+        new AuthService.Unauthorized({
+          details: `Failed to parse session: ${String(cause)}`,
+        }),
     })
 
     if (fetchResult?.session) {
-      return yield* Effect.succeed(
-        {
-          user: fetchResult.user,
-          session: fetchResult.session,
-        } as const,
-      )
+      return {
+        user: fetchResult.user,
+        session: fetchResult.session,
+      } as const
     }
 
-    return yield* Effect.fail(
-      new AuthService.Unauthorized({
-        details: "Missing or invalid authentication",
-      }),
-    )
+    throw new AuthService.Unauthorized({
+      details: "Missing or invalid authentication",
+    })
   })
 
 const verifySessionWithActionContext = (context: typeof ActionArgsContext) =>
@@ -79,34 +75,30 @@ const verifySessionWithActionContext = (context: typeof ActionArgsContext) =>
             origin: "http://localhost:3000",
           },
         }),
-      catch: () => null as any,
+      catch: (cause) =>
+        new AuthService.Unauthorized({
+          details: `Auth server unreachable: ${String(cause)}`,
+        }),
     })
-
-    if (!response) {
-      return yield* Effect.fail(
-        new AuthService.Unauthorized({ details: "Auth server unreachable" }),
-      )
-    }
 
     const fetchResult = yield* Effect.tryPromise({
       try: () => response.json(),
-      catch: () => ({ session: null }),
+      catch: (cause) =>
+        new AuthService.Unauthorized({
+          details: `Failed to parse session: ${String(cause)}`,
+        }),
     })
 
     if (fetchResult?.session) {
-      return yield* Effect.succeed(
-        {
-          user: fetchResult.user,
-          session: fetchResult.session,
-        } as const,
-      )
+      return {
+        user: fetchResult.user,
+        session: fetchResult.session,
+      } as const
     }
 
-    return yield* Effect.fail(
-      new AuthService.Unauthorized({
-        details: "Missing or invalid authentication",
-      }),
-    )
+    throw new AuthService.Unauthorized({
+      details: "Missing or invalid authentication",
+    })
   })
 
 const verifySession = () => verifySessionWithContext(LoaderArgsContext)
@@ -167,12 +159,10 @@ export const withBetterAuthGuard: WithBetterAuthGuard = Object.assign(
       | AuthService.AuthServiceContext
       | LoaderArgsContext
     > =>
-      Effect.gen(function*() {
-        return yield* verifySession().pipe(
-          Effect.flatMap((authResult) => Effect.provideService(eff, AuthService.AuthContext, authResult)),
-          Effect.catchTag("Unauthorized", () => Effect.sync(() => redirect(opts.redirectOnFail!, opts.redirectInit))),
-        )
-      }),
+      verifySession().pipe(
+        Effect.flatMap((authResult) => Effect.provideService(eff, AuthService.AuthContext, authResult)),
+        Effect.catchTag("Unauthorized", () => Effect.sync(() => redirect(opts.redirectOnFail!, opts.redirectInit))),
+      ),
   },
 )
 
@@ -226,11 +216,9 @@ export const withBetterAuthGuardAction: WithBetterAuthGuardAction = Object.assig
       | AuthService.AuthServiceContext
       | ActionArgsContext
     > =>
-      Effect.gen(function*() {
-        return yield* verifySessionFromAction().pipe(
-          Effect.flatMap((authResult) => Effect.provideService(eff, AuthService.AuthContext, authResult)),
-          Effect.catchTag("Unauthorized", () => Effect.sync(() => redirect(opts.redirectOnFail!, opts.redirectInit))),
-        )
-      }),
+      verifySessionFromAction().pipe(
+        Effect.flatMap((authResult) => Effect.provideService(eff, AuthService.AuthContext, authResult)),
+        Effect.catchTag("Unauthorized", () => Effect.sync(() => redirect(opts.redirectOnFail!, opts.redirectInit))),
+      ),
   },
 )

@@ -1,17 +1,17 @@
-import * as Command from "@effect/cli/Command"
-import * as Options from "@effect/cli/Options"
+import * as Command from "effect/unstable/cli/Command"
+import * as Flag from "effect/unstable/cli/Flag"
 import * as NodeFileSystem from "@effect/platform-node/NodeFileSystem"
 import * as NodePath from "@effect/platform-node/NodePath"
-import * as FileSystem from "@effect/platform/FileSystem"
+import * as FileSystem from "effect/FileSystem"
 import * as Console from "effect/Console"
 import * as Effect from "effect/Effect"
 import * as Match from "effect/Match"
 
-// Options for the init command
-const outputOption = Options.text("output").pipe(
-  Options.withAlias("o"),
-  Options.withDescription("Output directory path for generated files"),
-  Options.withDefault("src"),
+// Flag for the init command
+const outputOption = Flag.string("output").pipe(
+  Flag.withAlias("o"),
+  Flag.withDescription("Output directory path for generated files"),
+  Flag.withDefault("src"),
 )
 
 // Check if file exists

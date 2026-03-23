@@ -4,13 +4,13 @@
 
 import type * as Message from "@effectify/chat-domain/message.js"
 import { createQueryKey } from "@effectify/react-query"
-import { createQueryDataHelpers, useEffectQuery } from "./tanstack-query.js"
+import { useEffectQuery } from "./tanstack-query.js"
+import * as Effect from "effect/Effect"
 
 export namespace MessagesOperations {
   const messagesQueryKey = createQueryKey(
     "MessagesOperations.useMessagesQuery",
   )
-  const messagesQueryData = createQueryDataHelpers<Message.Message[]>(messagesQueryKey)
 
   export const useMessagesQuery = () => {
     return useEffectQuery({
@@ -20,7 +20,7 @@ export namespace MessagesOperations {
         console.warn(
           "MessagesOperations.useMessagesQuery - stub implementation",
         )
-        return Promise.resolve([] as Message.Message[])
+        return Effect.succeed([] as Message.Message[])
       },
       staleTime: 6500, // 6.5 seconds in millis
     })

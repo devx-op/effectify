@@ -20,3 +20,13 @@ If the user wants help with fixing an error in their CI pipeline, use the follow
 - Make sure that the problem is fixed by running the task that you passed into the `nx_cloud_fix_cipe_failure` tool
 
 <!-- nx configuration end-->
+
+## Effect-TS Pattern Discovery
+
+This project uses effect-smol as the canonical source for Effect patterns.
+
+| Skill                      | Description                         | Location                                                                                  |
+| -------------------------- | ----------------------------------- | ----------------------------------------------------------------------------------------- |
+| `effect-pattern-discovery` | Effect-TS patterns from effect-smol | [.agent/skills/effect-pattern-discovery](.agent/skills/effect-pattern-discovery/SKILL.md) |
+
+**Reference Directory**: `.effect-reference/` contains the effect-smol source code mounted as a git worktree.

@@ -5,7 +5,7 @@
   "scripts": {
     "lint-staged": "lint-staged --allow-empty",
     "clean": "rm -rf node_modules dist pnpm-lock.yaml && pnpm store prune & find . -type d \\( -name 'node_modules' -o -name 'dist' -o -name '.output' -o -name '.vinxi' -o -name '.cache' -o -name '.expo' -o -name '.nx' \\) -prune -exec rm -rf {} + & wait",
-    "prepare": "husky && ts-patch install -s",
+    "prepare": "husky && ts-patch install -s && effect-tsgo patch",
     "build:affected": "pnpm nx affected --target=build",
     "test:affected": "pnpm nx affected --target=test",
     "typecheck:affected": "pnpm nx affected --target=typecheck",
@@ -25,6 +25,7 @@
   },
   "devDependencies": {
     "@effect/language-service": "catalog:",
+    "@effect/tsgo": "catalog:",
     "@nx/js": "catalog:",
     "@nx/node": "catalog:",
     "@nx/react": "catalog:",
@@ -38,6 +39,7 @@
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
+    "@typescript/native-preview": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "@vitest/ui": "catalog:",
     "dprint": "catalog:",

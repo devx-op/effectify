@@ -1,5 +1,5 @@
-import * as FileSystem from "@effect/platform/FileSystem"
-import * as Path from "@effect/platform/Path"
+import * as FileSystem from "effect/FileSystem"
+import * as Path from "effect/Path"
 import type { DMMF } from "@prisma/generator-helper"
 import * as Effect from "effect/Effect"
 import { RenderService } from "../services/render-service.js"
@@ -23,10 +23,14 @@ export const generateSchemas = (dmmf: DMMF.Document, outputDir: string) =>
 
     yield* fs.makeDirectory(outputDir, { recursive: true })
 
-    const writeFile = (filename: string, content: string) =>
+    // Write schemas/ files into a "schemas" subdirectory for proper module resolution
+    const schemasDir = path.join(outputDir, "schemas")
+    yield* fs.makeDirectory(schemasDir, { recursive: true })
+
+    const writeSchemaFile = (filename: string, content: string) =>
       Effect.gen(function*() {
         const formatted = yield* format(content)
-        const filePath = path.join(outputDir, filename)
+        const filePath = path.join(schemasDir, filename)
         yield* fs.writeFileString(filePath, formatted)
       })
 
@@ -35,7 +39,7 @@ export const generateSchemas = (dmmf: DMMF.Document, outputDir: string) =>
     const enumsData = EnumGenerator.prepareEnumsData(enums)
     if (enumsData) {
       const content = yield* render("effect-enums", enumsData)
-      yield* writeFile("enums.ts", content)
+      yield* writeSchemaFile("enums.ts", content)
     }
 
     // Generate Types
@@ -87,14 +91,20 @@ export const generateSchemas = (dmmf: DMMF.Document, outputDir: string) =>
     }
 
     // DB Interface
-    const dbInterfaceData = KyselyGenerator.prepareDBInterfaceData(models, joinTables)
-    const dbInterfaceContent = yield* render("kysely-db-interface", dbInterfaceData)
+    const dbInterfaceData = KyselyGenerator.prepareDBInterfaceData(
+      models,
+      joinTables,
+    )
+    const dbInterfaceContent = yield* render(
+      "kysely-db-interface",
+      dbInterfaceData,
+    )
     content += `\n\n${dbInterfaceContent}`
 
-    yield* writeFile("types.ts", content)
+    yield* writeSchemaFile("types.ts", content)
 
     // Index
     const indexData = KyselyGenerator.prepareIndexData(hasEnums)
     const indexContent = yield* render("effect-index", indexData)
-    yield* writeFile("index.ts", indexContent)
+    yield* writeSchemaFile("index.ts", indexContent)
   })

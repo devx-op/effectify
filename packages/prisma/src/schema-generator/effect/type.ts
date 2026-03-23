@@ -7,7 +7,7 @@ import { toPascalCase } from "../utils/naming.js"
  * Prisma scalar type mapping to Effect Schema types
  * Uses const assertion to avoid type guards
  *
- * Note: DateTime uses Schema.DateFromSelf (not Schema.Date) so that:
+ * Note: DateTime uses Schema.DateTimeUtc (not Schema.Date) so that:
  * - Type = Date (runtime)
  * - Encoded = Date (database)
  * This allows Kysely to work with native Date objects directly.
@@ -20,7 +20,7 @@ const PRISMA_SCALAR_MAP = {
   BigInt: "Schema.BigInt",
   Decimal: "Schema.String", // For precision
   Boolean: "Schema.Boolean",
-  DateTime: "Schema.DateFromSelf", // Native Date type for Kysely compatibility
+  DateTime: "Schema.DateTimeUtc", // Native Date type for Kysely compatibility
   Json: "Schema.Unknown", // Safe unknown type
   Bytes: "Schema.Uint8Array",
 } as const
@@ -52,8 +52,9 @@ export function mapFieldToEffectType(
   }
 
   // PRIORITY 3: Handle String type with UUID detection (non-FK UUIDs)
+  // Prisma validates UUIDs at the database level, so we use Schema.String directly
   if (field.type === "String" && isUuidField(field)) {
-    return "Schema.UUID"
+    return "Schema.String"
   }
 
   // PRIORITY 4: Handle scalar types with const assertion lookup

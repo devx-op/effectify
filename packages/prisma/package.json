@@ -20,6 +20,8 @@
     "access": "public"
   },
   "scripts": {
+    "postinstall": "test -f ./dist/src/cli.js && chmod +x ./dist/src/cli.js || true",
+    "prepare": "test -f ./dist/src/cli.js && chmod +x ./dist/src/cli.js || true",
     "prisma:generate": "pnpm dlx prisma generate",
     "build": "effect-build",
     "test": "vitest",
@@ -52,6 +54,7 @@
     "@prisma/internals": "catalog:",
     "@types/better-sqlite3": "catalog:",
     "@types/node": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
     "better-sqlite3": "catalog:",
     "bun": "1.3.0",
     "dprint": "catalog:",
