@@ -14,12 +14,9 @@ export const loader = Effect.gen(function*() {
     modelName: "todo",
     spanPrefix: "Todo",
   })
-
   const todos = yield* TodoRepo.findMany()
   return yield* httpSuccess({ todos: todos })
-})
-  .pipe(withBetterAuthGuard.with({ redirectOnFail: "/login" }))
-  .pipe(withLoaderEffect)
+}).pipe(withBetterAuthGuard.with({ redirectOnFail: "/login" }), withLoaderEffect)
 
 export const action = Effect.gen(function*() {
   const { request } = yield* ActionArgsContext
@@ -79,9 +76,7 @@ export const action = Effect.gen(function*() {
     },
   })
   return yield* httpRedirect("/todo-app")
-})
-  .pipe(withBetterAuthGuardAction.with({ redirectOnFail: "/login" }))
-  .pipe(withActionEffect)
+}).pipe(withBetterAuthGuardAction.with({ redirectOnFail: "/login" }), withActionEffect)
 
 export default function TodoApp({ loaderData }: Route.ComponentProps) {
   const actionData = useActionData<typeof action>()

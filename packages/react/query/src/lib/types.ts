@@ -60,6 +60,7 @@ export type EffectfulQueryOptions<
 export interface Subscribable<A, E = never> {
   readonly changes: unknown
   readonly get: () => A
+  readonly _errorType?: E
 }
 
 export interface SubscriptionOptions {

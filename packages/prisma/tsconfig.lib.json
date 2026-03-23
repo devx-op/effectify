@@ -2,7 +2,6 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "composite": true,
-    "baseUrl": ".",
     "rootDir": "src",
     "outDir": "dist",
     "target": "es2022",
@@ -13,7 +12,7 @@
     "types": ["node"],
     "paths": {
       "@/*": ["./src/*"],
-      "@prisma/client": ["node_modules/@prisma/client"],
+      "@prisma/client": ["./node_modules/@prisma/client"],
       "@prisma/effect": ["./prisma/generated/effect/index.ts"],
       "@prisma/effect/*": ["./prisma/generated/effect/*"],
       "@prisma/*": ["./prisma/generated/*"]

@@ -18,6 +18,7 @@
     {
       "plugin": "@nx/js/typescript",
       "options": {
+        "compiler": "tsgo",
         "typecheck": {
           "targetName": "typecheck"
         },
@@ -31,10 +32,7 @@
     },
     {
       "plugin": "@nx/vite/plugin",
-      "exclude": [
-        "apps/solid-app-start/**/*",
-        "apps/react-app-remix/**/*"
-      ],
+      "exclude": ["apps/solid-app-start/**/*", "apps/react-app-remix/**/*"],
       "options": {
         "buildTargetName": "build",
         "serveTargetName": "serve",

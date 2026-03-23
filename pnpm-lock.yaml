@@ -36,6 +36,9 @@ catalogs:
     '@effect/platform-node':
       specifier: 4.0.0-beta.33
       version: 4.0.0-beta.33
+    '@effect/tsgo':
+      specifier: 0.0.17
+      version: 0.0.17
     '@effect/vitest':
       specifier: 4.0.0-beta.33
       version: 4.0.0-beta.33
@@ -153,6 +156,9 @@ catalogs:
     '@types/validator':
       specifier: 13.15.10
       version: 13.15.10
+    '@typescript/native-preview':
+      specifier: 7.0.0-dev.20260322.1
+      version: 7.0.0-dev.20260322.1
     '@vitejs/plugin-react':
       specifier: 5.1.1
       version: 5.1.1
@@ -345,6 +351,9 @@ importers:
       '@effect/language-service':
         specifier: 'catalog:'
         version: 0.56.0
+      '@effect/tsgo':
+        specifier: 'catalog:'
+        version: 0.0.17
       '@nx/js':
         specifier: 'catalog:'
         version: 22.5.4(@babel/traverse@7.29.0)(@swc-node/register@1.11.1(@swc/core@1.15.8(@swc/helpers@0.5.19))(@swc/types@0.1.25)(typescript@5.9.3))(@swc/core@1.15.8(@swc/helpers@0.5.19))(nx@22.5.4(@swc-node/register@1.11.1(@swc/core@1.15.8(@swc/helpers@0.5.19))(@swc/types@0.1.25)(typescript@5.9.3))(@swc/core@1.15.8(@swc/helpers@0.5.19)))(verdaccio@6.2.2(encoding@0.1.13)(typanion@3.14.0))
@@ -384,6 +393,9 @@ importers:
       '@types/react-dom':
         specifier: 19.1.9
         version: 19.1.9(@types/react@19.1.13)
+      '@typescript/native-preview':
+        specifier: 'catalog:'
+        version: 7.0.0-dev.20260322.1
       '@vitejs/plugin-react':
         specifier: 'catalog:'
         version: 5.1.1(vite@7.3.1(@types/node@20.19.25)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.2))
@@ -2083,6 +2095,45 @@ packages:
     peerDependencies:
       '@effect/platform': ^0.94.5
       effect: ^3.19.18
+
+  '@effect/tsgo-darwin-arm64@0.0.17':
+    resolution: {integrity: sha512-mdHPrEwUq0/b+byBmVlOVXGaIT0M4OWaeUj2Fu4xJILD6XOll6nSlNhznbloPiRv92On/yQTLkGheo6fk6Cqsw==}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@effect/tsgo-darwin-x64@0.0.17':
+    resolution: {integrity: sha512-U97UFOyRJ9QuuNOXaD8pLikaC4cIWwzGE80l+ZAcplSUKxNeXrE8wlk+4FhWN7SDAufcoXzXJl+MKMrNmt0vhQ==}
+    cpu: [x64]
+    os: [darwin]
+
+  '@effect/tsgo-linux-arm64@0.0.17':
+    resolution: {integrity: sha512-jw5/+LwETt8AYE3uEKnTJy+adm8Q58M5zsnQrgXer27DieHh8LudEF7S2pRjN5RRv24wwwkwQEbjCWBjQbE5+w==}
+    cpu: [arm64]
+    os: [linux]
+
+  '@effect/tsgo-linux-arm@0.0.17':
+    resolution: {integrity: sha512-ruMktzvFJyxAE/dabaL3VO3PS0QUJ3sLcvmB0Ez4Fv2679LM/+pS51EXLVnwEArRi1fdXNlaGAaPDEvHFm+6lA==}
+    cpu: [arm]
+    os: [linux]
+
+  '@effect/tsgo-linux-x64@0.0.17':
+    resolution: {integrity: sha512-57aa9KuO+tuRUHiRCYkZJHb2JOkaRBGFamre0iFk1x2iuiMg39qcOesUnvQhpIrX02v9AFzV1qaEuXJDory4Lg==}
+    cpu: [x64]
+    os: [linux]
+
+  '@effect/tsgo-win32-arm64@0.0.17':
+    resolution: {integrity: sha512-dP7Mte0QBn7YlfM9uSC/me7GAge56vFQLXtizN8SuOPXcuX6XOn70kxTNfYZMb0IvN4I+qcwpgQ2bZoz9GQw4A==}
+    cpu: [arm64]
+    os: [win32]
+
+  '@effect/tsgo-win32-x64@0.0.17':
+    resolution: {integrity: sha512-LNp4zPGK18JfvYW0U7xXkWDcDZleo4JIxFTmfod9YviyUmLO/IxEvFYHO3kVI4i6WVZHMKmeMLgzfFpSIRmlnQ==}
+    cpu: [x64]
+    os: [win32]
+
+  '@effect/tsgo@0.0.17':
+    resolution: {integrity: sha512-lolef3DCZq9fSMXZQjHOFBfiR67oGtdvWX4umb11SsHRJDIYleizAMZRiGI9T9Tp6jRTqsiqa8XFO5MANnoC0g==}
+    hasBin: true
 
   '@effect/vitest@4.0.0-beta.33':
     resolution: {integrity: sha512-atoJmncSbrKm8Fb1W+09mju6LwWRdhfvBicHpChwoPWCiij5fFrwRD7EBgIAmYUjycikR2/RYsPpeKXi8L26kw==}
@@ -5136,6 +5187,45 @@ packages:
 
   '@types/yargs@17.0.35':
     resolution: {integrity: sha512-qUHkeCyQFxMXg79wQfTtfndEC+N9ZZg76HJftDJp+qH2tV7Gj4OJi7l+PiWwJ+pWtW8GwSmqsDj/oymhrTWXjg==}
+
+  '@typescript/native-preview-darwin-arm64@7.0.0-dev.20260322.1':
+    resolution: {integrity: sha512-5wSilxwLGX5fMKJgsUkCBwOfW9GMG3WF5j77CVBOdFI7miFaR3JQaPzTA+uyHDMNIIeSDo1KtV77GT48Y/d0Xg==}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@typescript/native-preview-darwin-x64@7.0.0-dev.20260322.1':
+    resolution: {integrity: sha512-G806SrfxkYNAgZ9Xk53+OvbmIg9iD5hjaiD2QhDQL2aZjzy10D4MhcdaZEOoMfw0OI/PoJPYOiPD+9/x2kw3Lg==}
+    cpu: [x64]
+    os: [darwin]
+
+  '@typescript/native-preview-linux-arm64@7.0.0-dev.20260322.1':
+    resolution: {integrity: sha512-+FyomEEt3K8TBO//n3Ijr61SDM2F7cxZCVqGt+Wk3rLcOCQ2i+8+p64gdsZCmImy3CyP0hBnxPydEbyNkZLtvg==}
+    cpu: [arm64]
+    os: [linux]
+
+  '@typescript/native-preview-linux-arm@7.0.0-dev.20260322.1':
+    resolution: {integrity: sha512-0a12pp19ELiNHMqTglfQQQNMsxvtzpjAa4qf12oMJoGyy+UnguKEmaaaCHdp75KvBXGDzlssfDAdiy+NirN19A==}
+    cpu: [arm]
+    os: [linux]
+
+  '@typescript/native-preview-linux-x64@7.0.0-dev.20260322.1':
+    resolution: {integrity: sha512-MviQe5x4WqQGv/Vhu4hcv2A0qTW/BTaZPbOLYCtvhuovNFO6D++ZmJAbHvA0h/bJEaNTgxKZdZPHMpCfSEKfjA==}
+    cpu: [x64]
+    os: [linux]
+
+  '@typescript/native-preview-win32-arm64@7.0.0-dev.20260322.1':
+    resolution: {integrity: sha512-ibnMaXDJPSgMXKC61NHiFlww/xjAEINgc1mcn2ntTfuGHwduU4P9Bi038TxXg95Wmu3v6xIPIorXXsBOdE+p3Q==}
+    cpu: [arm64]
+    os: [win32]
+
+  '@typescript/native-preview-win32-x64@7.0.0-dev.20260322.1':
+    resolution: {integrity: sha512-O+r1RToWBbGkK7NXC7DpraLObSWyxvSqRiSfr/BlZ351Cdq1q3121zCGzVtqERGeRtVoEMRrzS5ITOd6On/pCw==}
+    cpu: [x64]
+    os: [win32]
+
+  '@typescript/native-preview@7.0.0-dev.20260322.1':
+    resolution: {integrity: sha512-CmzQTKvesYHmz3g92G+XPDis25ocvHqa/gK8m98w+bML99KJLEWQKVlvkLrYA85JiJEK+XBIiz+6lCgUqRkWXA==}
+    hasBin: true
 
   '@typescript/vfs@1.6.4':
     resolution: {integrity: sha512-PJFXFS4ZJKiJ9Qiuix6Dz/OwEIqHD7Dme1UwZhTK11vR+5dqW2ACbdndWQexBzCx+CPuMe5WBYQWCsFyGlQLlQ==}
@@ -12637,6 +12727,37 @@ snapshots:
       effect: 4.0.0-beta.33
       msgpackr: 1.11.9
 
+  '@effect/tsgo-darwin-arm64@0.0.17':
+    optional: true
+
+  '@effect/tsgo-darwin-x64@0.0.17':
+    optional: true
+
+  '@effect/tsgo-linux-arm64@0.0.17':
+    optional: true
+
+  '@effect/tsgo-linux-arm@0.0.17':
+    optional: true
+
+  '@effect/tsgo-linux-x64@0.0.17':
+    optional: true
+
+  '@effect/tsgo-win32-arm64@0.0.17':
+    optional: true
+
+  '@effect/tsgo-win32-x64@0.0.17':
+    optional: true
+
+  '@effect/tsgo@0.0.17':
+    optionalDependencies:
+      '@effect/tsgo-darwin-arm64': 0.0.17
+      '@effect/tsgo-darwin-x64': 0.0.17
+      '@effect/tsgo-linux-arm': 0.0.17
+      '@effect/tsgo-linux-arm64': 0.0.17
+      '@effect/tsgo-linux-x64': 0.0.17
+      '@effect/tsgo-win32-arm64': 0.0.17
+      '@effect/tsgo-win32-x64': 0.0.17
+
   '@effect/vitest@4.0.0-beta.33(effect@4.0.0-beta.33)(vitest@4.1.0)':
     dependencies:
       effect: 4.0.0-beta.33
@@ -16233,6 +16354,37 @@ snapshots:
     dependencies:
       '@types/yargs-parser': 21.0.3
 
+  '@typescript/native-preview-darwin-arm64@7.0.0-dev.20260322.1':
+    optional: true
+
+  '@typescript/native-preview-darwin-x64@7.0.0-dev.20260322.1':
+    optional: true
+
+  '@typescript/native-preview-linux-arm64@7.0.0-dev.20260322.1':
+    optional: true
+
+  '@typescript/native-preview-linux-arm@7.0.0-dev.20260322.1':
+    optional: true
+
+  '@typescript/native-preview-linux-x64@7.0.0-dev.20260322.1':
+    optional: true
+
+  '@typescript/native-preview-win32-arm64@7.0.0-dev.20260322.1':
+    optional: true
+
+  '@typescript/native-preview-win32-x64@7.0.0-dev.20260322.1':
+    optional: true
+
+  '@typescript/native-preview@7.0.0-dev.20260322.1':
+    optionalDependencies:
+      '@typescript/native-preview-darwin-arm64': 7.0.0-dev.20260322.1
+      '@typescript/native-preview-darwin-x64': 7.0.0-dev.20260322.1
+      '@typescript/native-preview-linux-arm': 7.0.0-dev.20260322.1
+      '@typescript/native-preview-linux-arm64': 7.0.0-dev.20260322.1
+      '@typescript/native-preview-linux-x64': 7.0.0-dev.20260322.1
+      '@typescript/native-preview-win32-arm64': 7.0.0-dev.20260322.1
+      '@typescript/native-preview-win32-x64': 7.0.0-dev.20260322.1
+
   '@typescript/vfs@1.6.4(typescript@5.9.3)':
     dependencies:
       debug: 4.4.3
@@ -16608,7 +16760,7 @@ snapshots:
       sirv: 3.0.2
       tinyglobby: 0.2.15
       tinyrainbow: 3.1.0
-      vitest: 4.1.0(@types/node@25.5.0)(@vitest/ui@4.1.0)(jsdom@27.2.0)(vite@7.3.1(@types/node@25.5.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.2))
+      vitest: 4.1.0(@types/node@20.19.25)(@vitest/ui@4.1.0)(jsdom@27.2.0)(vite@7.3.1(@types/node@20.19.25)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.2))
 
   '@vitest/utils@4.1.0':
     dependencies:
@@ -17241,7 +17393,7 @@ snapshots:
       react: 19.2.0
       react-dom: 19.2.0(react@19.2.0)
       solid-js: 1.9.11
-      vitest: 4.1.0(@types/node@25.5.0)(@vitest/ui@4.1.0)(jsdom@27.2.0)(vite@7.3.1(@types/node@25.5.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.2))
+      vitest: 4.1.0(@types/node@20.19.25)(@vitest/ui@4.1.0)(jsdom@27.2.0)(vite@7.3.1(@types/node@20.19.25)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.2))
 
   better-call@1.1.7(zod@4.3.6):
     dependencies:

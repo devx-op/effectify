@@ -14,15 +14,14 @@
     "skipLibCheck": true,
     "strict": true,
     "target": "es2022",
-    "baseUrl": ".",
     "paths": {
-      "@effectify/solid-effect-atom": ["packages/solid/effect-atom/src/index.ts"]
+      "@effectify/solid-effect-atom": [
+        "./packages/solid/effect-atom/src/index.ts"
+      ]
     },
-    "customConditions": ["@effectify/source"],
     "plugins": [
       {
         "name": "@effect/language-service",
-        "transform": "@effect/language-service/transform",
         "namespaceImportPackages": [
           "effect",
           "@effect/platform",
@@ -30,9 +29,15 @@
           "@effectify/cli"
         ],
         "diagnosticSeverity": {
-          "importFromBarrel": "error"
+          "anyUnknownInErrorContext": "error",
+          "duplicatePackage": "error",
+          "unnecessaryEffectGen": "warning",
+          "unnecessaryFailYieldableError": "warning",
+          "unnecessaryPipe": "warning",
+          "unnecessaryPipeChain": "warning"
         }
       }
     ]
-  }
+  },
+  "$schema": "https://raw.githubusercontent.com/Effect-TS/tsgo/refs/heads/main/schema.json"
 }

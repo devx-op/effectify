@@ -6,7 +6,7 @@ import * as Duration from "effect/Duration"
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: Duration.toMillis("1 minute"),
+      staleTime: Duration.toMillis(Duration.minutes(1)),
       retry: false,
       refetchOnWindowFocus: false,
     },
