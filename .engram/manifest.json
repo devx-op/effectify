@@ -32,6 +32,14 @@
       "sessions": 29,
       "memories": 20,
       "prompts": 0
+    },
+    {
+      "id": "93217d1a",
+      "created_by": "andres",
+      "created_at": "2026-03-23T07:27:14Z",
+      "sessions": 15,
+      "memories": 15,
+      "prompts": 0
     }
   ]
 }
