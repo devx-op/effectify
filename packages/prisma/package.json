@@ -20,7 +20,7 @@
     "access": "public"
   },
   "scripts": {
-    "postinstall": "chmod +x ./dist/src/cli.js",
+    "postinstall": "test -f ./dist/src/cli.js && chmod +x ./dist/src/cli.js || true",
     "prisma:generate": "pnpm dlx prisma generate",
     "build": "effect-build",
     "test": "vitest",
