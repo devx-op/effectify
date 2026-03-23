@@ -2,6 +2,11 @@
   "name": "@effectify/react-router-better-auth",
   "version": "0.5.10",
   "description": "Integration of React Router + better-auth with Effect for React applications",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/devx-op/effectify",
+    "directory": "packages/react/router-better-auth"
+  },
   "type": "module",
   "main": "./dist/src/index.js",
   "module": "./dist/src/index.js",

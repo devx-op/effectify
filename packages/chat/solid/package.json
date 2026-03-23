@@ -2,6 +2,11 @@
   "name": "@effectify/chat-solid",
   "version": "0.0.0",
   "description": "",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/devx-op/effectify",
+    "directory": "packages/chat/solid"
+  },
   "type": "module",
   "license": "MIT",
   "exports": {

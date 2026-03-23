@@ -2,6 +2,11 @@
   "name": "@effectify/react-router",
   "version": "0.5.9",
   "description": "Integration of React Router with Effect for React applications",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/devx-op/effectify",
+    "directory": "packages/react/router"
+  },
   "type": "module",
   "main": "./dist/src/index.js",
   "module": "./dist/src/index.js",

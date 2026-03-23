@@ -1,7 +1,12 @@
 {
   "name": "@effectify/prisma",
   "version": "1.1.11",
-  "description": "",
+  "description": "Prisma generator and runtime utilities for Effect",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/devx-op/effectify",
+    "directory": "packages/prisma"
+  },
   "main": "./dist/src/cli.js",
   "type": "module",
   "license": "MIT",
@@ -20,8 +25,7 @@
     "access": "public"
   },
   "scripts": {
-    "postinstall": "test -f ./dist/src/cli.js && chmod +x ./dist/src/cli.js || true",
-    "prepare": "test -f ./dist/src/cli.js && chmod +x ./dist/src/cli.js || true",
+    "postinstall": "sh -c 'test -f ./dist/src/cli.js && chmod +x ./dist/src/cli.js || true' 2>/dev/null",
     "prisma:generate": "pnpm dlx prisma generate",
     "build": "effect-build",
     "test": "vitest",

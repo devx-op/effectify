@@ -2,6 +2,11 @@
   "name": "@effectify/react-remix",
   "version": "0.5.10",
   "description": "Integration of Remix with Effect for React applications",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/devx-op/effectify",
+    "directory": "packages/react/remix"
+  },
   "type": "module",
   "main": "./dist/src/index.js",
   "module": "./dist/src/index.js",
