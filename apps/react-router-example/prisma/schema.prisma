@@ -9,7 +9,7 @@ generator client {
 }
 
 generator effect {
-  provider = "pnpm exec effect-prisma"
+  provider = "node ../../packages/prisma/dist/src/cli.js"
   output   = "./generated/effect"
 }
 
