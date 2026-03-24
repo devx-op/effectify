@@ -135,6 +135,66 @@ jobs:
           # Publish to npm with alpha tag
           pnpm nx release publish --projects=$PROJECTS --tag=alpha
 
+          # Generate changelog and create GitHub Releases
+          pnpm nx release changelog --projects=$PROJECTS --git-commit
+
+          # Ensure each package has a CHANGELOG.md (create if missing)
+          for PROJECT in $(echo "$PROJECTS" | tr ',' '\n'); do
+            PKG_NAME=$(echo "$PROJECT" | sed 's/^@effectify\///')
+            CHANGELOG_PATH="packages/$PKG_NAME/CHANGELOG.md"
+            VERSION=$(pnpm nx show project "$PROJECT" --json 2>/dev/null | jq -r '.data.nx?.targetOutputs?.version // .data.version // "0.0.0"' || echo "0.0.0")
+
+            if [ ! -f "$CHANGELOG_PATH" ]; then
+              echo "# Changelog" > "$CHANGELOG_PATH"
+              echo "" >> "$CHANGELOG_PATH"
+              echo "## $VERSION" >> "$CHANGELOG_PATH"
+              echo "" >> "$CHANGELOG_PATH"
+              echo "### ❤️ Thank You" >> "$CHANGELOG_PATH"
+              echo "" >> "$CHANGELOG_PATH"
+              echo "- Initial release" >> "$CHANGELOG_PATH"
+              echo "" >> "$CHANGELOG_PATH"
+              echo "Generated changelog for $PROJECT" >> "$CHANGELOG_PATH"
+              echo "Created initial CHANGELOG.md for $PROJECT"
+            fi
+          done
+
+          # Generate workspace-level CHANGELOG.md aggregating all package changelogs
+          {
+            echo "# Changelog"
+            echo ""
+            echo "All notable changes to this project will be documented in this file."
+            echo ""
+            echo "This changelog summarizes releases for the following packages:"
+            echo ""
+            for PROJECT in $(echo "$PROJECTS" | tr ',' '\n'); do
+              echo "- @$PROJECT"
+            done
+            echo ""
+          } > CHANGELOG.md
+
+          for PROJECT in $(echo "$PROJECTS" | tr ',' '\n'); do
+            # Extract package name without scope (e.g., @effectify/react-query -> react-query)
+            PKG_NAME=$(echo "$PROJECT" | sed 's/^@effectify\///')
+            CHANGELOG_PATH="packages/$PKG_NAME/CHANGELOG.md"
+
+            if [ -f "$CHANGELOG_PATH" ]; then
+              # Extract first version entry from package changelog
+              FIRST_ENTRY=$(awk '/^## [0-9]/ && !first {first=1; print} first && /^## [0-9]/ {exit}' "$CHANGELOG_PATH" 2>/dev/null || echo "")
+              if [ -n "$FIRST_ENTRY" ]; then
+                echo "## @$PROJECT" >> CHANGELOG.md
+                echo "" >> CHANGELOG.md
+                echo "$FIRST_ENTRY" >> CHANGELOG.md
+                echo "" >> CHANGELOG.md
+              fi
+            fi
+          done
+
+          # Commit workspace changelog if it has content
+          if [ -s CHANGELOG.md ] && [ "$(wc -l < CHANGELOG.md)" -gt 10 ]; then
+            git add CHANGELOG.md
+            git commit -m "chore: update workspace changelog" || echo "No changes to workspace changelog"
+          fi
+
           # Push git tags and version commits
           git push origin HEAD --follow-tags
         env:
@@ -159,6 +219,8 @@ jobs:
             echo "| Build | ✅ |" >> $GITHUB_STEP_SUMMARY
             echo "| Version Bump | ✅ With preid=alpha |" >> $GITHUB_STEP_SUMMARY
             echo "| NPM Tag | alpha |" >> $GITHUB_STEP_SUMMARY
+            echo "| Changelog | ✅ Package + Workspace |" >> $GITHUB_STEP_SUMMARY
+            echo "| GitHub Release | ✅ Created |" >> $GITHUB_STEP_SUMMARY
             echo "| Provenance | ✅ Enabled |" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "📦 Packages published with \"@alpha\" dist-tag and semver prerelease versions (x.x.x-alpha.x)." >> $GITHUB_STEP_SUMMARY
