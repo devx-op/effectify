@@ -135,10 +135,13 @@ jobs:
           # Publish to npm with alpha tag
           pnpm nx release publish --projects=$PROJECTS --tag=alpha
 
+          # Get the new version that was just set by the version bump
+          NEW_VERSION=$(pnpm nx show project "$PROJECTS" --json | jq -r '.data.version')
+
           # Generate changelog, create GitHub Releases and tags
           # --git-tag is required to create the git tags
           # --git-push pushes tags to remote
-          pnpm nx release changelog --projects=$PROJECTS --git-tag --git-push
+          pnpm nx release changelog --projects=$PROJECTS --version=$NEW_VERSION --git-tag --git-push
 
           # Generate workspace-level CHANGELOG.md aggregating all package changelogs
           # nx release changelog already creates packages/*/CHANGELOG.md and GitHub releases
