@@ -2,8 +2,18 @@ import * as ServiceMap from "effect/ServiceMap"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import { Eta } from "eta"
-import * as path from "node:path"
 import { fileURLToPath } from "node:url"
+import * as Path from "effect/Path"
+import * as Data from "effect/Data"
+
+class RenderError extends Data.TaggedError("RenderError")<{
+  templateName: string
+  error: unknown
+}> {
+  override get message(): string {
+    return `Failed to render template ${this.templateName}: ${this.error}`
+  }
+}
 
 export class RenderService extends ServiceMap.Service<
   RenderService,
@@ -11,10 +21,11 @@ export class RenderService extends ServiceMap.Service<
     readonly render: (
       templateName: string,
       data: Record<string, unknown>,
-    ) => Effect.Effect<string, Error>
+    ) => Effect.Effect<string, RenderError>
   }
 >()("RenderService", {
   make: Effect.gen(function*() {
+    const path = yield* Path.Path
     const __filename = fileURLToPath(import.meta.url)
     const __dirname = path.dirname(__filename)
     const templatesDir = path.resolve(__dirname, "../templates")
@@ -24,19 +35,13 @@ export class RenderService extends ServiceMap.Service<
       autoEscape: false,
     })
 
+    const render = (templateName: string, data: Record<string, unknown>) =>
+      Effect.try({
+        try: () => eta.render(templateName, data),
+        catch: (error) => new RenderError({ templateName, error }),
+      })
     return {
-      render: (
-        templateName: string,
-        data: Record<string, unknown>,
-      ): Effect.Effect<string, Error> => {
-        try {
-          return Effect.succeed(eta.render(templateName, data))
-        } catch (error) {
-          return Effect.fail(
-            new Error(`Failed to render template ${templateName}: ${error}`),
-          )
-        }
-      },
+      render,
     }
   }),
 }) {

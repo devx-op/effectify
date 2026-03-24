@@ -27,6 +27,7 @@ This project uses effect-smol as the canonical source for Effect patterns.
 
 | Skill                      | Description                         | Location                                                                                  |
 | -------------------------- | ----------------------------------- | ----------------------------------------------------------------------------------------- |
+| `effect-context-manager`   | Setup & sync Effect v4 reference    | [.agent/skills/effect-context-manager](.agent/skills/effect-context-manager/SKILL.md)     |
 | `effect-pattern-discovery` | Effect-TS patterns from effect-smol | [.agent/skills/effect-pattern-discovery](.agent/skills/effect-pattern-discovery/SKILL.md) |
 
 **Reference Directory**: `.effect-reference/` contains the effect-smol source code mounted as a git worktree.
