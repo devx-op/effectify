@@ -135,8 +135,10 @@ jobs:
           # Publish to npm with alpha tag
           pnpm nx release publish --projects=$PROJECTS --tag=alpha
 
-          # Get the new version that was just set by the version bump
-          NEW_VERSION=$(pnpm nx show project "$PROJECTS" --json | jq -r '.data.version')
+          # Get the new version from package.json (set by version bump)
+          # Parse project path to get the correct package.json location
+          PROJ_PATH=$(pnpm nx show project "$PROJECTS" --json | jq -r '.data.root')
+          NEW_VERSION=$(cat "$PROJ_PATH/package.json" | jq -r '.version')
 
           # Generate changelog, create GitHub Releases and tags
           # --git-tag is required to create the git tags
