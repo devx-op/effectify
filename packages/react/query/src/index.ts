@@ -9,3 +9,4 @@ export * from "./lib/types.js"
 // test change for release workflow
 // release test v2
 // test multi-package release
+// test v3
