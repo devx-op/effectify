@@ -140,7 +140,7 @@ jobs:
           # iterate over each project and pass its specific version
           for PROJECT in $(echo "$PROJECTS" | tr ',' '\n'); do
             # Get project root path and version from package.json
-            PROJ_PATH=$(pnpm nx show project "$PROJECT" --json | jq -r '.data.root')
+            PROJ_PATH=$(pnpm nx show project "$PROJECT" --json | jq -r '.root')
             VERSION=$(cat "$PROJ_PATH/package.json" | jq -r '.version')
             
             echo "Generating changelog for $PROJECT@$VERSION"
