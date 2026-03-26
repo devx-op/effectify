@@ -5,7 +5,7 @@ import { withActionEffect, withLoaderEffect } from "../lib/runtime.server.js"
 import { randomUUID } from "node:crypto"
 import { Form, useActionData, useSubmit } from "react-router"
 import { useState } from "react"
-import { withBetterAuthGuard, withBetterAuthGuardAction } from "@effectify/react-router-better-auth"
+import { AuthService, withBetterAuthGuard, withBetterAuthGuardAction } from "@effectify/react-router-better-auth"
 import * as PrismaRepository from "./../../prisma/generated/effect/prisma-repository.js"
 import { TodoId, TodoModel } from "./../../prisma/generated/effect/index.js"
 
@@ -16,7 +16,10 @@ export const loader = Effect.gen(function*() {
   })
   const todos = yield* TodoRepo.findMany()
   return yield* httpSuccess({ todos: todos })
-}).pipe(withBetterAuthGuard.with({ redirectOnFail: "/login" }), withLoaderEffect)
+}).pipe(
+  withBetterAuthGuard.with({ redirectOnFail: "/login" }),
+  withLoaderEffect,
+)
 
 export const action = Effect.gen(function*() {
   const { request } = yield* ActionArgsContext
@@ -25,6 +28,10 @@ export const action = Effect.gen(function*() {
   const id = String(formData.get("id") ?? "")
   const title = String(formData.get("title") ?? "")
   const content = String(formData.get("content") ?? "")
+
+  // Get authenticated user from auth context
+  const auth = yield* AuthService.AuthContext
+  const userId = auth.user?.id
 
   const TodoRepo = yield* PrismaRepository.make(TodoModel, {
     modelName: "todo",
@@ -65,18 +72,24 @@ export const action = Effect.gen(function*() {
     return yield* httpFailure("Title is required")
   }
 
+  if (!userId) {
+    return yield* httpFailure("Not authenticated")
+  }
+
   yield* TodoRepo.create({
     data: {
       id: TodoId.makeUnsafe(randomUUID()),
       title,
       content,
       status: "PENDING",
-      authorId: 1,
       published: false,
     },
   })
   return yield* httpRedirect("/todo-app")
-}).pipe(withBetterAuthGuardAction.with({ redirectOnFail: "/login" }), withActionEffect)
+}).pipe(
+  withBetterAuthGuardAction.with({ redirectOnFail: "/login" }),
+  withActionEffect,
+)
 
 export default function TodoApp({ loaderData }: Route.ComponentProps) {
   const actionData = useActionData<typeof action>()

@@ -30,5 +30,4 @@ model Todo {
   content   String?
   published Boolean    @default(false)
   status    TodoStatus @default(PENDING)
-  authorId  Int
 }

@@ -3,7 +3,16 @@ import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import { createFromBuffer } from "@dprint/formatter"
 import { getPath } from "@dprint/typescript"
-import * as fs from "node:fs"
+import * as FileSystem from "effect/FileSystem"
+import * as Data from "effect/Data"
+
+export class FormatError extends Data.TaggedError("FormatError")<{
+  error?: unknown
+}> {
+  override get message(): string {
+    return `Format error: ${this.message}`
+  }
+}
 
 export class FormatterService extends ServiceMap.Service<
   FormatterService,
@@ -12,19 +21,16 @@ export class FormatterService extends ServiceMap.Service<
   }
 >()("FormatterService", {
   make: Effect.gen(function*() {
-    const buffer = fs.readFileSync(getPath())
+    const fs = yield* FileSystem.FileSystem
+    const buffer = yield* fs.readFile(getPath())
     const formatter = createFromBuffer(buffer)
 
     return {
-      format: (code: string): Effect.Effect<string, Error> => {
-        try {
-          return Effect.succeed(
-            formatter.formatText({ filePath: "file.ts", fileText: code }),
-          )
-        } catch (error) {
-          return Effect.fail(new Error(`Failed to format code: ${error}`))
-        }
-      },
+      format: (code: string) =>
+        Effect.try({
+          try: () => formatter.formatText({ filePath: "file.ts", fileText: code }),
+          catch: (error) => new FormatError({ error }),
+        }),
     }
   }),
 }) {

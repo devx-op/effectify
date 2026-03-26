@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url"
 import * as Path from "effect/Path"
 import * as Data from "effect/Data"
 
-class RenderError extends Data.TaggedError("RenderError")<{
+export class RenderError extends Data.TaggedError("RenderError")<{
   templateName: string
   error: unknown
 }> {
