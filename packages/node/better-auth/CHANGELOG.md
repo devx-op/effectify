@@ -1,3 +1,29 @@
+## 1.0.0-alpha.0 (2026-03-27)
+
+### 🚀 Features
+
+- **node-auth-example:** set up authentication and database initialization
+- ⚠️ initial Effect v4 beta migration setup
+- add manual publishing scripts with nx affected
+- effect better-auth integration package
+
+### 🩹 Fixes
+
+- update package entry points to match build output structure (dist/src)
+- ensure consistent build output structure (flattened dist)
+- correct package entry points to point to dist instead of dist/src
+- **better-auth:** update to v1.4.10, fix migrations, add tests
+
+### ⚠️ Breaking Changes
+
+- initial Effect v4 beta migration setup
+  Effect dependencies updated to v4 beta
+
+### ❤️ Thank You
+
+- Andres David Jimenez Sulbaran @kattsushi
+- Andres Jimenez @kattsushi
+
 ## 0.4.7 (2026-01-02)
 
 ### 🩹 Fixes
