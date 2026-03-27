@@ -78,14 +78,17 @@
     },
     "onlyBuiltDependencies": [
       "@parcel/watcher",
+      "@prisma/engines",
       "@swc/core",
       "@tailwindcss/oxide",
       "better-sqlite3",
       "core-js",
+      "dprint",
       "esbuild",
       "msgpackr-extract",
       "nx",
-      "sharp"
+      "prisma",
+      "unrs-resolver"
     ],
     "ignoredBuiltDependencies": [
       "bun"
