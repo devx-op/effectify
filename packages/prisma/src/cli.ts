@@ -10,6 +10,7 @@ import { prismaCommand } from "./commands/prisma.js"
 import { GeneratorService } from "./services/generator-service.js"
 import { RenderService } from "./services/render-service.js"
 import { FormatterService } from "./services/formatter-service.js"
+import { GenerateSchemnaService } from "./schema-generator/index.js"
 
 const cli = Command.run(
   prismaCommand.pipe(Command.withSubcommands([initCommand])),
@@ -22,13 +23,14 @@ const GeneratorLayer = GeneratorService.layer.pipe(
   Layer.provide(RenderService.layer),
   Layer.provide(FormatterService.layer),
   Layer.provide(NodeServices.layer),
+  Layer.provide(GenerateSchemnaService.layer),
 )
 
 const MainLayer = Layer.mergeAll(
   GeneratorLayer,
   RenderService.layer,
   FormatterService.layer,
-  NodeServices.layer,
-)
+  GenerateSchemnaService.layer,
+).pipe(Layer.provideMerge(NodeServices.layer))
 
 cli.pipe(Effect.provide(MainLayer), NodeRuntime.runMain)

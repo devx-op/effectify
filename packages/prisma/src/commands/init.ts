@@ -1,11 +1,16 @@
 import * as Command from "effect/unstable/cli/Command"
 import * as Flag from "effect/unstable/cli/Flag"
-import * as NodeFileSystem from "@effect/platform-node/NodeFileSystem"
 import * as NodePath from "@effect/platform-node/NodePath"
 import * as FileSystem from "effect/FileSystem"
 import * as Console from "effect/Console"
 import * as Effect from "effect/Effect"
 import * as Match from "effect/Match"
+import { Data } from "effect"
+
+// Tagged error for Prisma initialization
+class PrismaNotInitialized extends Data.TaggedError("PrismaNotInitialized")<{
+  readonly message: string
+}> {}
 
 // Flag for the init command
 const outputOption = Flag.string("output").pipe(
@@ -80,7 +85,7 @@ const checkPrismaSetup = () =>
       yield* Console.log(
         "  https://www.prisma.io/docs/getting-started/setup-prisma/start-from-scratch/relational-databases-typescript-prismaPostgres",
       )
-      yield* Effect.fail(new Error("Prisma not initialized"))
+      return yield* new PrismaNotInitialized({ message: "Prisma not initialized" })
     }
   })
 
@@ -126,7 +131,7 @@ generator effect {
     yield* Console.log("   1. Set your DATABASE_URL environment variable")
     yield* Console.log("   2. Run: npx prisma generate")
 
-    yield* Effect.sync(() => process.exit(0))
+    return yield* Effect.sync(() => process.exit(0))
   })
 
 export const initCommand = Command.make(
@@ -137,5 +142,5 @@ export const initCommand = Command.make(
   ({ output }) =>
     initializePrismaSchema({
       output,
-    }).pipe(Effect.provide(NodeFileSystem.layer), Effect.provide(NodePath.layer)),
+    }).pipe(Effect.provide(NodePath.layer)),
 )

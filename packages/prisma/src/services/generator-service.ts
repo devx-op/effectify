@@ -6,8 +6,17 @@ import * as Layer from "effect/Layer"
 import { GeneratorContext } from "./generator-context.js"
 import { RenderService } from "./render-service.js"
 import { FormatterService } from "./formatter-service.js"
-import { generateSchemas } from "../schema-generator/index.js"
+import { GenerateSchemnaService } from "../schema-generator/index.js"
 import * as ServiceMap from "effect/ServiceMap"
+import { Data } from "effect"
+
+class GeneratorError extends Data.TaggedError("GeneratorError")<{
+  message: string
+}> {
+  override get message(): string {
+    return `Generator error: ${this.message}`
+  }
+}
 
 export class GeneratorService extends ServiceMap.Service<
   GeneratorService,
@@ -176,6 +185,8 @@ export class GeneratorService extends ServiceMap.Service<
         yield* fs.writeFileString(path.join(outputDir, "index.ts"), formatted)
       })
 
+    const generateSchema = yield* GenerateSchemnaService
+
     const generate = Effect.gen(function*() {
       const options = yield* GeneratorContext
       const models = options.dmmf.datamodel.models
@@ -183,7 +194,7 @@ export class GeneratorService extends ServiceMap.Service<
       const schemaDir = path.dirname(options.schemaPath)
 
       if (!outputDir) {
-        return yield* Effect.fail(new Error("No output directory specified"))
+        return yield* new GeneratorError({ message: "No output directory specified" })
       }
 
       const { clientImportPath, customError } = getGeneratorConfig(
@@ -195,12 +206,19 @@ export class GeneratorService extends ServiceMap.Service<
 
       // Generate Effect/Kysely Schemas (enums.ts, types.ts, schemas/index.ts)
       const schemasDir = path.join(outputDir, "schemas")
-      yield* generateSchemas(options.dmmf, schemasDir).pipe(
-        Effect.provideService(FileSystem.FileSystem, fs),
-        Effect.provideService(Path.Path, path),
-        Effect.provideService(RenderService, renderService),
-        Effect.provideService(FormatterService, formatterService),
-      )
+
+      // yield* generateSchemas(options.dmmf, schemasDir).pipe(
+      //   Effect.provideService(FileSystem.FileSystem, fs),
+      //   Effect.provideService(Path.Path, path),
+      //   Effect.provideService(RenderService, renderService),
+      //   Effect.provideService(FormatterService, formatterService),
+      // )
+
+      yield* generateSchema.generate(options.dmmf, schemasDir)
+        .pipe(
+          Effect.provideService(RenderService, renderService),
+          Effect.provideService(FormatterService, formatterService),
+        )
 
       yield* generatePrismaSchema(outputDir)
       yield* generatePrismaRepository(outputDir, clientImportPath)
