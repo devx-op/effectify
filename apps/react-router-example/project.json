@@ -23,6 +23,7 @@
     },
     "prisma:generate": {
       "executor": "nx:run-commands",
+      "dependsOn": ["^build"],
       "options": {
         "command": "pnpm dlx prisma generate",
         "cwd": "apps/react-router-example"
