@@ -30,7 +30,7 @@
     "@nx/node": "catalog:",
     "@nx/react": "catalog:",
     "@nx/vite": "catalog:",
-    "@nx/vitest": "22.5.4",
+    "@nx/vitest": "22.6.2",
     "@nx/web": "catalog:",
     "@react-router/dev": "catalog:",
     "@swc-node/register": "catalog:",
@@ -47,7 +47,7 @@
     "jiti": "catalog:",
     "jsdom": "catalog:",
     "lint-staged": "catalog:",
-    "nx": "22.5.4",
+    "nx": "22.6.2",
     "nx-oxlint": "catalog:",
     "oxlint": "1.42.0",
     "prettier": "catalog:",
@@ -78,14 +78,17 @@
     },
     "onlyBuiltDependencies": [
       "@parcel/watcher",
+      "@prisma/engines",
       "@swc/core",
       "@tailwindcss/oxide",
       "better-sqlite3",
       "core-js",
+      "dprint",
       "esbuild",
       "msgpackr-extract",
       "nx",
-      "sharp"
+      "prisma",
+      "unrs-resolver"
     ],
     "ignoredBuiltDependencies": [
       "bun"

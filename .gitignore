@@ -70,3 +70,6 @@ count.txt
 .secrets
 generated/
 .wrangler
+
+.claude/worktrees
+.claude/settings.local.json
