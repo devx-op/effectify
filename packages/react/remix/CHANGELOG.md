@@ -1,3 +1,29 @@
+## 1.0.0-alpha.0 (2026-03-27)
+
+### 🚀 Features
+
+- ⚠️ initial Effect v4 beta migration setup
+- improve DX with new HTTP response helpers and better error handling
+- add manual publishing scripts with nx affected
+
+### 🩹 Fixes
+
+- **react-remix:** update dependencies and move to peerDependencies
+- update package entry points to match build output structure (dist/src)
+- ensure consistent build output structure (flattened dist)
+- correct package entry points to point to dist instead of dist/src
+
+### ⚠️ Breaking Changes
+
+- initial Effect v4 beta migration setup
+  Effect dependencies updated to v4 beta
+
+### ❤️ Thank You
+
+- Andres David Jimenez @kattsushi
+- Andres David Jimenez Sulbaran @kattsushi
+- Andres Jimenez @kattsushi
+
 ## 0.4.7 (2026-01-02)
 
 ### 🩹 Fixes
