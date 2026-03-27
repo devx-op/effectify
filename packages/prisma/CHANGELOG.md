@@ -1,3 +1,37 @@
+## 2.0.0-alpha.0 (2026-03-27)
+
+### 🚀 Features
+
+- ⚠️ initial Effect v4 beta migration setup
+- **prisma:** add test executor with prisma:generate dependency
+- **prisma:** integrate schema generation and remove prisma-effect-kysely dependency
+- add @effect/experimental dependency and update Prisma integration
+- major schema change from auto-increment to UUID strings
+- implement complete Prisma CLI with Effect TypeScript integration
+
+### 🩹 Fixes
+
+- **prisma:** migration fix with better api v4 impl
+- **prisma:** update dependencies and optimize package.json
+- **prisma:** update features documentation
+- **prisma:** revert documentation change testing release pipeline
+- **prisma:** update documentation to trigger release pipeline
+- **prisma:** correct type definitions and tsconfig paths for self-referencing imports
+- **auth, prisma, app:** redirect unauthenticated users and fix build config
+- ensure consistent build output structure (flattened dist)
+- **prisma:** resolve type errors in generators and apply biome ignore
+
+### ⚠️ Breaking Changes
+
+- initial Effect v4 beta migration setup
+  Effect dependencies updated to v4 beta
+
+### ❤️ Thank You
+
+- Andres David Jimenez @kattsushi
+- Andres David Jimenez Sulbaran @kattsushi
+- Andres Jimenez @kattsushi
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
