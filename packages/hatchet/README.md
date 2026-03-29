@@ -223,6 +223,19 @@ yield * Effect.fail(new Error("Failed")) // Avoid this
 - Hatchet v1.19.0+
 - TypeScript 5.0+
 
+## Architecture
+
+For detailed architecture decisions and implementation details, see:
+
+- [Specs](./docs/specs/hatchet-spec.md) - Detailed requirement specifications
+- [Design](./docs/design/hatchet-design.md) - Architecture and design decisions
+
+The `effectifier` module (internal) handles the conversion from Effect to Hatchet's Promise-based task functions, providing:
+
+- `effectifyTask` - Core function that wraps an Effect with a ManagedRuntime
+- Context injection - Automatic injection of HatchetStepContext into Effects
+- Error propagation - Proper error mapping for Hatchet's retry mechanism
+
 ## License
 
 MIT

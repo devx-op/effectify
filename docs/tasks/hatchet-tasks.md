@@ -138,7 +138,7 @@ Implement the bridge that converts Effect → Promise for Hatchet task execution
   - **Files**: `packages/hatchet/src/effectifier/index.ts`
   - **Depends on**: TASK-018, TASK-019
 
-- [ ] [TASK-021] Create `packages/hatchet/tests/unit/effectifier.test.ts` — Effectifier tests
+- [x] [TASK-021] Create `packages/hatchet/tests/unit/effectifier.test.ts` — Effectifier tests
   - **Files**: `packages/hatchet/tests/unit/effectifier.test.ts`
   - **Depends on**: TASK-020
   - **Spec ref**: REQ-EFFECT-01, REQ-EFFECT-02, REQ-EFFECT-03, REQ-EFFECT-04, REQ-EFFECT-05, REQ-EFFECT-06, REQ-FACTORY-01, REQ-FACTORY-02, REQ-FACTORY-03, REQ-FACTORY-04
@@ -296,7 +296,7 @@ Create integration tests against real Hatchet engine.
 
 Finalize package for release.
 
-- [ ] [TASK-043] Create `packages/hatchet/README.md` — Package documentation
+- [x] [TASK-043] Create `packages/hatchet/README.md` — Package documentation
 
   - **Files**: `packages/hatchet/README.md`
   - **Depends on**: TASK-036, TASK-038
