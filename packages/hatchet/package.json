@@ -1,0 +1,44 @@
+{
+  "name": "@effectify/hatchet",
+  "version": "0.1.0-alpha.1",
+  "description": "Native Effect v4 integration with Hatchet workflows",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/devx-op/effectify",
+    "directory": "packages/hatchet"
+  },
+  "type": "module",
+  "license": "MIT",
+  "main": "./dist/src/index.js",
+  "exports": {
+    ".": "./dist/src/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "nx build @effectify/hatchet",
+    "test": "vitest",
+    "lint": "nx lint @effectify/hatchet"
+  },
+  "keywords": [],
+  "author": "",
+  "packageManager": "pnpm@10.14.0",
+  "dependencies": {
+    "@hatchet-dev/typescript-sdk": "^1.19.0"
+  },
+  "peerDependencies": {
+    "effect": "catalog:"
+  },
+  "devDependencies": {
+    "@effect/vitest": "catalog:",
+    "@types/node": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "typescript": "catalog:",
+    "vite-tsconfig-paths": "catalog:",
+    "vitest": "catalog:"
+  }
+}

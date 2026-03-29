@@ -3,8 +3,6 @@
   "terminal.integrated.env.linux": {
     "PATH": "/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:${env:PATH}"
   },
-  // Para que la extensión Nx encuentre pnpm: abre Cursor desde una terminal donde pnpm esté en PATH, p. ej. `cursor .`
-  "typescript.tsdk": "node_modules/typescript/lib",
   "[javascript]": {
     "editor.defaultFormatter": "dprint.dprint"
   },
@@ -64,6 +62,6 @@
   },
   "editor.formatOnPaste": true,
   "emmet.showExpandedAbbreviation": "never",
-  "typescript.experimental.useTsgo": true,
-  "typescript.native-preview.tsdk": "node_modules/@typescript/native-preview"
+  "typescript.native-preview.tsdk": "node_modules/@typescript/native-preview",
+  "js/ts.experimental.useTsgo": true
 }

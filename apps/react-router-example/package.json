@@ -9,6 +9,7 @@
   },
   "sideEffects": false,
   "dependencies": {
+    "@effectify/hatchet": "workspace:*",
     "@effectify/node-better-auth": "workspace:*",
     "@effectify/react-query": "workspace:*",
     "@effectify/react-router": "workspace:*",

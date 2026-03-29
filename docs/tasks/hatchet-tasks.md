@@ -12,66 +12,66 @@ This document defines the implementation tasks for `@effectify/hatchet`, an Effe
 
 Set up the Nx package structure following `@effectify/prisma` patterns.
 
-- [ ] [TASK-001] Create `packages/hatchet/` directory structure
+- [x] [TASK-001] Create `packages/hatchet/` directory structure
 
   - **Files**: `packages/hatchet/`
   - **Depends on**: None
   - **Spec ref**: REQ-NX-01, REQ-NX-02
 
-- [ ] [TASK-002] Create `packages/hatchet/project.json` with Nx configuration
+- [x] [TASK-002] Create `packages/hatchet/project.json` with Nx configuration
 
   - **Files**: `packages/hatchet/project.json`
   - **Depends on**: TASK-001
   - **Spec ref**: REQ-NX-01, REQ-NX-02, REQ-NX-03, REQ-NX-04, REQ-NX-05
 
-- [ ] [TASK-003] Create `packages/hatchet/package.json` with dependencies
+- [x] [TASK-003] Create `packages/hatchet/package.json` with dependencies
 
   - **Files**: `packages/hatchet/package.json`
   - **Depends on**: TASK-001
   - **Spec ref**: REQ-PKG-01, REQ-PKG-02, REQ-PKG-03, REQ-PKG-04, REQ-PKG-05, REQ-PKG-06
 
-- [ ] [TASK-004] Create `packages/hatchet/tsconfig.json`
+- [x] [TASK-004] Create `packages/hatchet/tsconfig.json`
 
   - **Files**: `packages/hatchet/tsconfig.json`
   - **Depends on**: TASK-001
   - **Spec ref**: REQ-TS-01, REQ-TS-04
 
-- [ ] [TASK-005] Create `packages/hatchet/tsconfig.lib.json`
+- [x] [TASK-005] Create `packages/hatchet/tsconfig.lib.json`
 
   - **Files**: `packages/hatchet/tsconfig.lib.json`
   - **Depends on**: TASK-001, TASK-004
   - **Spec ref**: REQ-TS-02
 
-- [ ] [TASK-006] Create `packages/hatchet/tsconfig.spec.json`
+- [x] [TASK-006] Create `packages/hatchet/tsconfig.spec.json`
 
   - **Files**: `packages/hatchet/tsconfig.spec.json`
   - **Depends on**: TASK-001, TASK-004
   - **Spec ref**: REQ-TS-03
 
-- [ ] [TASK-007] Create `packages/hatchet/vitest.config.ts`
+- [x] [TASK-007] Create `packages/hatchet/vitest.config.ts`
 
   - **Files**: `packages/hatchet/vitest.config.ts`
   - **Depends on**: TASK-001
   - **Spec ref**: REQ-VITEST-01, REQ-VITEST-02, REQ-VITEST-03, REQ-VITEST-04
 
-- [ ] [TASK-008] Create `packages/hatchet/setup-tests.ts`
+- [x] [TASK-008] Create `packages/hatchet/setup-tests.ts`
 
   - **Files**: `packages/hatchet/setup-tests.ts`
   - **Depends on**: TASK-001
   - **Spec ref**: REQ-VITEST-02
 
-- [ ] [TASK-009] Create `packages/hatchet/src/` directory structure
+- [x] [TASK-009] Create `packages/hatchet/src/` directory structure
 
   - **Files**: `packages/hatchet/src/`
   - **Depends on**: TASK-001
 
-- [ ] [TASK-010] Add `packages/hatchet` to `nx.json` release.projects
+- [x] [TASK-010] Add `packages/hatchet` to `nx.json` release.projects
 
   - **Files**: `nx.json`
   - **Depends on**: TASK-001
   - **Spec ref**: REQ-RELEASE-01, REQ-RELEASE-02
 
-- [ ] [TASK-011] Install dependencies with pnpm
+- [x] [TASK-011] Install dependencies with pnpm
   - **Files**: N/A
   - **Depends on**: TASK-002, TASK-003
   - **Spec ref**: REQ-PKG-02, REQ-PKG-03
@@ -82,31 +82,31 @@ Set up the Nx package structure following `@effectify/prisma` patterns.
 
 Implement the core services: HatchetError, HatchetConfig, HatchetClientService, and HatchetStepContext.
 
-- [ ] [TASK-012] Create `packages/hatchet/src/core/error.ts` — HatchetError
+- [x] [TASK-012] Create `packages/hatchet/src/core/error.ts` — HatchetError
 
   - **Files**: `packages/hatchet/src/core/error.ts`
   - **Depends on**: TASK-009
   - **Spec ref**: REQ-ERROR-01, REQ-ERROR-02, REQ-ERROR-03, REQ-ERROR-04
 
-- [ ] [TASK-013] Create `packages/hatchet/src/core/config.ts` — HatchetConfig
+- [x] [TASK-013] Create `packages/hatchet/src/core/config.ts` — HatchetConfig
 
   - **Files**: `packages/hatchet/src/core/config.ts`
   - **Depends on**: TASK-012
   - **Spec ref**: REQ-CORE-01, REQ-CORE-02, REQ-CORE-03, REQ-CORE-04, REQ-CORE-05, REQ-CORE-06
 
-- [ ] [TASK-014] Create `packages/hatchet/src/core/client.ts` — HatchetClientService
+- [x] [TASK-014] Create `packages/hatchet/src/core/client.ts` — HatchetClientService
 
   - **Files**: `packages/hatchet/src/core/client.ts`
   - **Depends on**: TASK-012, TASK-013
   - **Spec ref**: REQ-CLIENT-01, REQ-CLIENT-02, REQ-CLIENT-03, REQ-CLIENT-04, REQ-CLIENT-05
 
-- [ ] [TASK-015] Create `packages/hatchet/src/core/context.ts` — HatchetStepContext
+- [x] [TASK-015] Create `packages/hatchet/src/core/context.ts` — HatchetStepContext
 
   - **Files**: `packages/hatchet/src/core/context.ts`
   - **Depends on**: TASK-014
   - **Spec ref**: REQ-CONTEXT-01, REQ-CONTEXT-02, REQ-CONTEXT-03, REQ-CONTEXT-04, REQ-CONTEXT-05
 
-- [ ] [TASK-016] Create `packages/hatchet/src/core/index.ts` — Core exports
+- [x] [TASK-016] Create `packages/hatchet/src/core/index.ts` — Core exports
 
   - **Files**: `packages/hatchet/src/core/index.ts`
   - **Depends on**: TASK-012, TASK-013, TASK-014, TASK-015
