@@ -4,6 +4,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 
 const pushEventMock = vi.fn()
 const getEventMock = vi.fn()
+const createScheduleMock = vi.fn()
+const getScheduleMock = vi.fn()
+const listSchedulesMock = vi.fn()
 const listRunsMock = vi.fn()
 const cancelRunMock = vi.fn()
 const runWorkflowMock = vi.fn()
@@ -11,6 +14,9 @@ const runWorkflowMock = vi.fn()
 vi.mock("@effectify/hatchet", () => ({
   pushEvent: (...args: Array<unknown>) => pushEventMock(...args),
   getEvent: (...args: Array<unknown>) => getEventMock(...args),
+  createSchedule: (...args: Array<unknown>) => createScheduleMock(...args),
+  getSchedule: (...args: Array<unknown>) => getScheduleMock(...args),
+  listSchedules: (...args: Array<unknown>) => listSchedulesMock(...args),
   listRuns: (...args: Array<unknown>) => listRunsMock(...args),
   cancelRun: (...args: Array<unknown>) => cancelRunMock(...args),
   runWorkflow: (...args: Array<unknown>) => runWorkflowMock(...args),
@@ -22,7 +28,14 @@ vi.mock("../lib/runtime.server.js", async () => {
 })
 
 import { action, loader } from "./hatchet-demo.js"
-import { buildEventRedirect, parseEventPayload, readSelectedEventId } from "./hatchet-demo.server.js"
+import {
+  buildEventRedirect,
+  buildScheduleRedirect,
+  parseEventPayload,
+  parseTriggerTime,
+  readSelectedEventId,
+  readSelectedScheduleId,
+} from "./hatchet-demo.server.js"
 
 const createRouteArgs = (request: Request) => ({
   request,
@@ -35,6 +48,9 @@ describe("hatchet demo event helpers", () => {
   beforeEach(() => {
     pushEventMock.mockReset()
     getEventMock.mockReset()
+    createScheduleMock.mockReset()
+    getScheduleMock.mockReset()
+    listSchedulesMock.mockReset()
     listRunsMock.mockReset()
     cancelRunMock.mockReset()
     runWorkflowMock.mockReset()
@@ -68,7 +84,28 @@ describe("hatchet demo event helpers", () => {
     )
   })
 
+  it("parseTriggerTime returns ISO dates for schedule actions", () => {
+    expect(parseTriggerTime("2026-04-12T18:45:00.000Z")).toEqual(
+      new Date("2026-04-12T18:45:00.000Z"),
+    )
+  })
+
+  it("parseTriggerTime rejects invalid values and schedule helpers encode ids", () => {
+    expect(() => parseTriggerTime("not-a-date")).toThrowError(
+      "Trigger time must be a valid ISO date",
+    )
+    expect(
+      readSelectedScheduleId(
+        "https://example.com/hatchet-demo?scheduleId=schedule-123",
+      ),
+    ).toBe("schedule-123")
+    expect(buildScheduleRedirect("schedule id/123")).toBe(
+      "/hatchet-demo?scheduleId=schedule%20id%2F123",
+    )
+  })
+
   it("action pushes an event and redirects the loader to the selected event", async () => {
+    listSchedulesMock.mockReturnValue(Effect.succeed([]))
     listRunsMock.mockReturnValue(Effect.succeed([]))
     pushEventMock.mockReturnValue(
       Effect.succeed({
@@ -136,12 +173,107 @@ describe("hatchet demo event helpers", () => {
           payload: { userId: "user-123", source: "demo" },
           scope: "demo",
         },
+        schedule: undefined,
+        schedules: [],
         runs: [],
       },
     })
   })
 
-  it("loader skips event lookup when the URL does not select an event", async () => {
+  it("action creates a schedule and redirects the loader to the selected schedule", async () => {
+    const triggerAt = "2026-04-12T18:45:00.000Z"
+
+    listRunsMock.mockReturnValue(Effect.succeed([]))
+    listSchedulesMock.mockReturnValue(
+      Effect.succeed([
+        {
+          scheduleId: "schedule id/123",
+          workflowName: "users.notify",
+          triggerAt: new Date(triggerAt),
+          input: { userId: "user-123" },
+        },
+      ]),
+    )
+    createScheduleMock.mockReturnValue(
+      Effect.succeed({
+        scheduleId: "schedule id/123",
+        workflowName: "users.notify",
+        triggerAt: new Date(triggerAt),
+        input: { userId: "user-123" },
+      }),
+    )
+    getScheduleMock.mockReturnValue(
+      Effect.succeed({
+        scheduleId: "schedule id/123",
+        workflowName: "users.notify",
+        triggerAt: new Date(triggerAt),
+        input: { userId: "user-123" },
+      }),
+    )
+
+    const formData = new FormData()
+    formData.set("intent", "schedule")
+    formData.set("workflowName", "users.notify")
+    formData.set("triggerAt", triggerAt)
+    formData.set("scheduleInput", '{"userId":"user-123"}')
+
+    const actionResponse = await action(
+      createRouteArgs(
+        new Request("https://example.com/hatchet-demo", {
+          method: "POST",
+          body: formData,
+        }),
+      ),
+    )
+
+    expect(createScheduleMock).toHaveBeenCalledWith("users.notify", {
+      triggerAt: new Date(triggerAt),
+      input: { userId: "user-123" },
+      additionalMetadata: {
+        source: "react-router-example",
+      },
+    })
+    expect(actionResponse).toBeInstanceOf(Response)
+    const redirectResponse = actionResponse as Response
+    expect(redirectResponse.status).toBe(302)
+    expect(redirectResponse.headers.get("Location")).toBe(
+      "/hatchet-demo?scheduleId=schedule%20id%2F123",
+    )
+
+    const loaderResponse = await loader(
+      createRouteArgs(
+        new Request(
+          `https://example.com${redirectResponse.headers.get("Location")}`,
+        ),
+      ),
+    )
+
+    expect(getScheduleMock).toHaveBeenCalledWith("schedule id/123")
+    expect(loaderResponse).toEqual({
+      ok: true,
+      data: {
+        event: undefined,
+        schedule: {
+          scheduleId: "schedule id/123",
+          workflowName: "users.notify",
+          triggerAt: new Date(triggerAt),
+          input: { userId: "user-123" },
+        },
+        schedules: [
+          {
+            scheduleId: "schedule id/123",
+            workflowName: "users.notify",
+            triggerAt: new Date(triggerAt),
+            input: { userId: "user-123" },
+          },
+        ],
+        runs: [],
+      },
+    })
+  })
+
+  it("loader skips selected resource lookups when the URL does not request them", async () => {
+    listSchedulesMock.mockReturnValue(Effect.succeed([]))
     listRunsMock.mockReturnValue(
       Effect.succeed([{ id: "run-1", workflowName: "wf", status: "COMPLETED" }]),
     )
@@ -151,10 +283,13 @@ describe("hatchet demo event helpers", () => {
     )
 
     expect(getEventMock).not.toHaveBeenCalled()
+    expect(getScheduleMock).not.toHaveBeenCalled()
     expect(loaderResponse).toEqual({
       ok: true,
       data: {
         event: undefined,
+        schedule: undefined,
+        schedules: [],
         runs: [{ id: "run-1", workflowName: "wf", status: "COMPLETED" }],
       },
     })

@@ -14,3 +14,23 @@ export const readSelectedEventId = (requestUrl: string): string | undefined => {
 }
 
 export const buildEventRedirect = (eventId: string): string => `/hatchet-demo?eventId=${encodeURIComponent(eventId)}`
+
+export const parseTriggerTime = (input: string): Date => {
+  const parsed = new Date(input)
+
+  if (!input.trim() || Number.isNaN(parsed.getTime())) {
+    throw new Error("Trigger time must be a valid ISO date")
+  }
+
+  return parsed
+}
+
+export const readSelectedScheduleId = (
+  requestUrl: string,
+): string | undefined => {
+  const scheduleId = new URL(requestUrl).searchParams.get("scheduleId")?.trim()
+  return scheduleId ? scheduleId : undefined
+}
+
+export const buildScheduleRedirect = (scheduleId: string): string =>
+  `/hatchet-demo?scheduleId=${encodeURIComponent(scheduleId)}`

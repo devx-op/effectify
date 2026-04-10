@@ -145,3 +145,29 @@ export class HatchetEventError extends Data.TaggedError("HatchetEventError")<{
     return new HatchetEventError({ message, key, eventId, cause })
   }
 }
+
+/**
+ * Error when a schedule operation fails
+ */
+export class HatchetScheduleError extends Data.TaggedError(
+  "HatchetScheduleError",
+)<{
+  readonly message: string
+  readonly scheduleId?: string
+  readonly workflowName?: string
+  readonly cause?: unknown
+}> {
+  static of(
+    message: string,
+    scheduleId?: string,
+    workflowName?: string,
+    cause?: unknown,
+  ): HatchetScheduleError {
+    return new HatchetScheduleError({
+      message,
+      scheduleId,
+      workflowName,
+      cause,
+    })
+  }
+}

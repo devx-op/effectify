@@ -24,6 +24,13 @@ type MockHatchetWorkflowsClient = {
   readonly list: (options?: unknown) => Promise<{ workflows: unknown[] }>
 }
 
+type MockHatchetSchedulesClient = {
+  readonly create: (workflow: string, options: unknown) => Promise<unknown>
+  readonly get: (scheduleId: string) => Promise<unknown>
+  readonly list: (options?: unknown) => Promise<{ rows?: unknown[] }>
+  readonly delete: (scheduleId: string) => Promise<void>
+}
+
 type MockWorkerInstance = {
   readonly registerWorkflows: (workflows?: unknown[]) => Promise<void>
   readonly start: () => Promise<void>
@@ -60,6 +67,7 @@ export type MockHatchetClient = HatchetClientType & {
     ) => Promise<{ data: unknown }>
   }
   readonly runs: MockHatchetRunsClient
+  readonly scheduled: MockHatchetSchedulesClient
   readonly workflows: MockHatchetWorkflowsClient
   readonly worker: (
     name: string,
@@ -74,6 +82,7 @@ export interface MockHatchetClientOverrides {
   readonly events?: Partial<MockHatchetClient["events"]>
   readonly api?: Partial<MockHatchetClient["api"]>
   readonly runs?: Partial<MockHatchetClient["runs"]>
+  readonly scheduled?: Partial<MockHatchetClient["scheduled"]>
   readonly workflows?: Partial<MockHatchetClient["workflows"]>
   readonly worker?: MockHatchetClient["worker"]
 }
@@ -108,6 +117,12 @@ export const createMockHatchetClient = (
         pagination: {} as never,
       })) as MockHatchetClient["runs"]["list"],
     },
+    scheduled: {
+      create: unimplemented("scheduled.create"),
+      get: unimplemented("scheduled.get"),
+      list: async () => ({ rows: [] }),
+      delete: (async () => undefined) as MockHatchetClient["scheduled"]["delete"],
+    },
     workflows: {
       get: unimplemented("workflows.get"),
       list: async () => ({ workflows: [] }),
@@ -135,6 +150,10 @@ export const createMockHatchetClient = (
     runs: {
       ...baseClient.runs,
       ...overrides.runs,
+    },
+    scheduled: {
+      ...baseClient.scheduled,
+      ...overrides.scheduled,
     },
     workflows: {
       ...baseClient.workflows,
