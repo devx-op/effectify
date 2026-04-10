@@ -1,0 +1,48 @@
+# Hatchet Lite - For development and testing
+# Based on official docs: https://docs.hatchet.run/self-hosting/hatchet-lite
+#
+# Usage:
+#   docker-compose -f docker-compose.yml up -d
+#
+# Access UI: http://localhost:8888
+# Access gRPC: localhost:7077
+#
+# Credentials:
+#   Email: admin@example.com
+#   Password: Admin123!!
+
+name: hatchet-lite-react-router
+
+services:
+  hatchet:
+    image: ghcr.io/hatchet-dev/hatchet/hatchet-lite:latest
+    ports:
+      - "7077:7077"
+      - "8888:8888"
+    environment:
+      - DATABASE_URL=postgresql://hatchet:hatchet@db:5432/hatchet?sslmode=disable
+      - SERVER_AUTH_COOKIE_DOMAIN=localhost
+      - SERVER_AUTH_COOKIE_INSECURE=true
+      - SERVER_GRPC_BIND_ADDRESS=0.0.0.0
+      - SERVER_GRPC_INSECURE=true
+      - SERVER_GRPC_BROADCAST_ADDRESS=localhost:7077
+      - SERVER_GRPC_PORT=7077
+      - SERVER_URL=http://localhost:8888
+      - SERVER_AUTH_SET_EMAIL_VERIFIED=true
+      - SERVER_DEFAULT_ENGINE_VERSION=V1
+    depends_on:
+      db:
+        condition: service_healthy
+  db:
+    image: postgres:15.6
+    environment:
+      POSTGRES_USER: hatchet
+      POSTGRES_PASSWORD: hatchet
+      POSTGRES_DB: hatchet
+    ports:
+      - "5440:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hatchet"]
+      interval: 5s
+      timeout: 5s
+      retries: 5

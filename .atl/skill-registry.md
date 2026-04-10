@@ -7,10 +7,24 @@
 
 ## Quick Reference
 
-| Skill           | Trigger                                                  | Location                                           |
-| --------------- | -------------------------------------------------------- | -------------------------------------------------- |
-| `go-testing`    | Writing Go tests, using teatest, or adding test coverage | `~/.config/opencode/skills/go-testing/SKILL.md`    |
-| `skill-creator` | Creating new AI agent skills, adding agent instructions  | `~/.config/opencode/skills/skill-creator/SKILL.md` |
+| Skill                                | Trigger                                                    | Location                                                                |
+| ------------------------------------ | ---------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `go-testing`                         | Writing Go tests, using teatest, or adding test coverage   | `~/.config/opencode/skills/go-testing/SKILL.md`                         |
+| `skill-creator`                      | Creating new AI agent skills, adding agent instructions    | `~/.config/opencode/skills/skill-creator/SKILL.md`                      |
+| `effect-pattern-discovery`           | Implementing Effect, Layer, Schema, Pipe, Context patterns | `.agent/skills/effect-pattern-discovery/SKILL.md`                       |
+| `effect-context-manager`             | Sync Effect v4 reference, setup on new machine             | `.agent/skills/effect-context-manager/SKILL.md`                         |
+| `rvi-vendor-request-wizard-debugger` | Debug RVI vendor request wizard, test UC6 scenarios        | `~/.config/opencode/skills/rvi-vendor-request-wizard-debugger/SKILL.md` |
+| `sync-dev-tiger`                     | Sync dev-tiger branch from main, create PR with auto-merge | `~/.config/opencode/skills/sync-dev-tiger/SKILL.md`                     |
+| `branch-pr`                          | PR creation workflow for Agent Teams Lite                  | `~/.config/opencode/skills/branch-pr/SKILL.md`                          |
+| `issue-creation`                     | Issue creation workflow for Agent Teams Lite               | `~/.config/opencode/skills/issue-creation/SKILL.md`                     |
+| `judgment-day`                       | Parallel adversarial review protocol                       | `~/.config/opencode/skills/judgment-day/SKILL.md`                       |
+| `nx-generate`                        | Generate code using Nx generators                          | `.opencode/skills/nx-generate/SKILL.md`                                 |
+| `nx-import`                          | Import/merge repositories into Nx workspace                | `.opencode/skills/nx-import/SKILL.md`                                   |
+| `nx-plugins`                         | Find and add Nx plugins                                    | `.opencode/skills/nx-plugins/SKILL.md`                                  |
+| `nx-run-tasks`                       | Running tasks in Nx workspace                              | `.opencode/skills/nx-run-tasks/SKILL.md`                                |
+| `nx-workspace`                       | Explore and understand Nx workspaces                       | `.opencode/skills/nx-workspace/SKILL.md`                                |
+| `link-workspace-packages`            | Link workspace packages in monorepos                       | `.opencode/skills/link-workspace-packages/SKILL.md`                     |
+| `monitor-ci`                         | Monitor Nx Cloud CI pipeline and self-healing fixes        | `.opencode/skills/monitor-ci/SKILL.md`                                  |
 
 ---
 
@@ -29,6 +43,7 @@ These skills manage the Spec-Driven Development workflow:
 | `sdd-verify`  | Validate that implementation matches specs, design, and tasks |
 | `sdd-archive` | Sync delta specs to main specs and archive a completed change |
 | `sdd-init`    | Initialize Spec-Driven Development context in a project       |
+| `sdd-onboard` | Guided end-to-end walkthrough of the SDD workflow             |
 
 ---
 
@@ -52,6 +67,51 @@ When fixing CI pipeline errors:
 ---
 
 ## Full Skill Details
+
+### effect-pattern-discovery
+
+```yaml
+name: effect-pattern-discovery
+triggers:
+  - implementing effect
+  - layer composition
+  - schema validation
+  - pipe patterns
+  - context tag
+description: >
+  Effect-TS patterns sourced from effect-smol reference implementation.
+location: .agent/skills/effect-pattern-discovery/SKILL.md
+```
+
+**Critical Patterns**:
+
+- ❌ FORBIDDEN: try-catch in Effect.gen (use Effect.result or Effect.catchTag)
+- ❌ FORBIDDEN: Type assertions (as any, as never)
+- ✅ MANDATORY: return yield\* for terminal effects
+- Service definition with Context.Tag
+- Structured errors with Data.TaggedError or Schema.ErrorClass
+- Effect.fn vs Effect.fnUntraced
+- Dual function pattern
+- Layer composition with provide/merge
+
+### effect-context-manager
+
+```yaml
+name: effect-context-manager
+triggers:
+  - sync effect context
+  - setup new machine
+  - update effect-smol
+description: >
+  Gestiona el entorno de referencia de Effect v4 alojado en el worktree ./effect-reference.
+location: .agent/skills/effect-context-manager/SKILL.md
+```
+
+**Critical Restrictions**:
+
+- **Aislamiento Total**: Never merge between current branch and effect-context
+- **Modo Solo-Lectura**: No code changes inside .effect-reference
+- **Limpieza de Commits**: .effect-reference files never appear in git status of dev/main branches
 
 ### go-testing
 
@@ -113,6 +173,7 @@ location: ~/.config/opencode/skills/skill-creator/SKILL.md
 
 - `~/.claude/skills/`
 - `~/.config/opencode/skills/`
-- Project-level: `.agent/skills/` (none found)
+- `.opencode/skills/`
+- Project-level: `.agent/skills/`
 
-_Last updated: 2026-03-14_
+_Last updated: 2026-04-09_

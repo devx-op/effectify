@@ -10,7 +10,6 @@ import * as Layer from "effect/Layer"
 import type { HatchetClient as HatchetClientType } from "@hatchet-dev/typescript-sdk"
 import { HatchetClient as HatchetClientSDK } from "@hatchet-dev/typescript-sdk"
 import { HatchetConfig } from "./config.js"
-import { HatchetInitError } from "./error.js"
 
 /**
  * ServiceMap.Service for the Hatchet SDK client
@@ -29,20 +28,25 @@ export const HatchetClientLive = Layer.effect(HatchetClientService)(
   Effect.gen(function*() {
     const config = yield* HatchetConfig
 
+    console.log("[Hatchet] Initializing with host:", config.host)
+    console.log("[Hatchet] Token present:", !!config.token)
+
     // Initialize Hatchet client with token and host
     // SDK v1.19.0 API: HatchetClient.init({ token, host_port })
-    const hatchet = HatchetClientSDK.init({
-      token: config.token,
-      host_port: config.host,
+    // This is synchronous, so we use Effect.sync
+    const hatchet = Effect.sync(() => {
+      const client = HatchetClientSDK.init({
+        token: config.token,
+        host_port: config.host,
+      })
+      if (!client) {
+        throw new Error("Hatchet client initialization returned undefined")
+      }
+      console.log("[Hatchet] Client initialized successfully!")
+      return client
     })
 
-    if (!hatchet) {
-      return yield* HatchetInitError.of(
-        "Hatchet client initialization returned undefined",
-      )
-    }
-
-    return hatchet
+    return yield* hatchet
   }),
 )
 

@@ -9,14 +9,12 @@
  */
 
 import * as Effect from "effect/Effect"
-import * as Layer from "effect/Layer"
 import * as Schema from "effect/Schema"
 import {
   getValidatedInput,
-  HatchetClientLive,
-  HatchetConfigLayer,
-  HatchetStepContext,
-  registerWorkflow,
+  // HatchetClientLive,
+  // HatchetConfigLayer,
+  // registerWorkflow,
   task,
   workflow,
 } from "@effectify/hatchet"
@@ -116,24 +114,24 @@ export const exampleWorkflow = workflow({
 // Registration (for running the workflow)
 // ============================================================================
 
-/**
- * Environment configuration for Hatchet
- *
- * Hatchet Lite runs on:
- * - UI: http://localhost:8888
- * - gRPC: localhost:7077
- *
- * IMPORTANT: Use port 7077 for gRPC connections!
- */
-const hatchetConfigLayer = HatchetConfigLayer({
-  token: process.env.HATCHET_TOKEN || "test-token",
-  host: process.env.HATCHET_HOST || "http://localhost:7077",
-})
+// /**
+//  * Environment configuration for Hatchet
+//  *
+//  * Hatchet Lite runs on:
+//  * - UI: http://localhost:8888
+//  * - gRPC: localhost:7077
+//  *
+//  * IMPORTANT: Use port 7077 for gRPC connections!
+//  */
+// const hatchetConfigLayer = HatchetConfigLayer({
+//   token: process.env.HATCHET_TOKEN || "test-token",
+//   host: process.env.HATCHET_HOST || "http://localhost:7077",
+// });
 
-/**
- * Full layer with all dependencies
- */
-const appLayer = Layer.merge(hatchetConfigLayer, HatchetClientLive)
+// /**
+//  * Full layer with all dependencies
+//  */
+// const appLayer = Layer.merge(hatchetConfigLayer, HatchetClientLive);
 
 /**
  * Start the worker and register the workflow
@@ -160,9 +158,10 @@ const appLayer = Layer.merge(hatchetConfigLayer, HatchetClientLive)
  * )
  * ```
  */
-export const startWorker = () => {
-  return registerWorkflow("example-worker", exampleWorkflow, appLayer)
-}
+// TODO: Fix type issue with HatchetStepContext
+// export const startWorker = () => {
+//   return registerWorkflow("example-worker", exampleWorkflow, appLayer);
+// }
 
 // ============================================================================
 // Usage Example (for documentation)
