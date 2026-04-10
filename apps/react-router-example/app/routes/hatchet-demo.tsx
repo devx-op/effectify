@@ -8,18 +8,38 @@ import type { Route } from "./+types/hatchet-demo.js"
 import * as Effect from "effect/Effect"
 import { ActionArgsContext, httpFailure, httpRedirect, httpSuccess, LoaderArgsContext } from "@effectify/react-router"
 import { withActionEffect, withLoaderEffect } from "../lib/runtime.server.js"
-import { cancelRun, getEvent, listRuns, pushEvent, runWorkflow } from "@effectify/hatchet"
+import {
+  cancelRun,
+  createSchedule,
+  getEvent,
+  getSchedule,
+  listRuns,
+  listSchedules,
+  pushEvent,
+  runWorkflow,
+} from "@effectify/hatchet"
 import { Form, useActionData } from "react-router"
-import { buildEventRedirect, parseEventPayload, readSelectedEventId } from "./hatchet-demo.server.js"
+import { HatchetDemoSchedulesSection } from "./hatchet-demo-schedules.js"
+import {
+  buildEventRedirect,
+  buildScheduleRedirect,
+  parseEventPayload,
+  parseTriggerTime,
+  readSelectedEventId,
+  readSelectedScheduleId,
+} from "./hatchet-demo.server.js"
 
 export const loader = Effect.gen(function*() {
   const { request } = yield* LoaderArgsContext
   const eventId = readSelectedEventId(request.url)
+  const scheduleId = readSelectedScheduleId(request.url)
   const runs = yield* listRuns()
+  const schedules = yield* listSchedules()
 
   const event = eventId ? yield* getEvent(eventId) : undefined
+  const schedule = scheduleId ? yield* getSchedule(scheduleId) : undefined
 
-  return yield* httpSuccess({ event, runs })
+  return yield* httpSuccess({ event, schedule, schedules, runs })
 }).pipe(withLoaderEffect)
 
 export const action = Effect.gen(function*() {
@@ -79,6 +99,44 @@ export const action = Effect.gen(function*() {
     return yield* httpRedirect(buildEventRedirect(event.eventId))
   }
 
+  if (intent === "schedule") {
+    const workflowName = String(formData.get("workflowName") ?? "").trim()
+    const triggerAtInput = String(formData.get("triggerAt") ?? "").trim()
+    const scheduleInputStr = String(formData.get("scheduleInput") ?? "{}")
+
+    if (!workflowName) {
+      return yield* httpFailure("Workflow name is required")
+    }
+
+    let triggerAt: Date
+    try {
+      triggerAt = parseTriggerTime(triggerAtInput)
+    } catch (error) {
+      return yield* httpFailure(
+        error instanceof Error ? error.message : "Invalid trigger time",
+      )
+    }
+
+    let scheduleInput: Record<string, unknown>
+    try {
+      scheduleInput = parseEventPayload(scheduleInputStr)
+    } catch (error) {
+      return yield* httpFailure(
+        error instanceof Error ? error.message : "Invalid schedule input",
+      )
+    }
+
+    const schedule = yield* createSchedule(workflowName, {
+      triggerAt,
+      input: scheduleInput,
+      additionalMetadata: {
+        source: "react-router-example",
+      },
+    })
+
+    return yield* httpRedirect(buildScheduleRedirect(schedule.scheduleId))
+  }
+
   if (intent === "cancel") {
     const runId = String(formData.get("runId") ?? "")
 
@@ -98,7 +156,12 @@ export default function HatchetDemo({ loaderData }: Route.ComponentProps) {
 
   if (loaderData.ok) {
     const event = loaderData.data?.event
+    const schedule = loaderData.data?.schedule
+    const schedules = loaderData.data?.schedules ?? []
     const runs = loaderData.data?.runs ?? []
+    const actionError = actionData && actionData.ok === false && actionData.errors?.length
+      ? String(actionData.errors[0])
+      : undefined
 
     return (
       <main className="container">
@@ -205,6 +268,12 @@ export default function HatchetDemo({ loaderData }: Route.ComponentProps) {
               ) :
               <p>Push an event to inspect it here.</p>}
           </section>
+
+          <HatchetDemoSchedulesSection
+            actionError={actionError}
+            schedule={schedule}
+            schedules={schedules}
+          />
 
           {/* List Runs */}
           <section>
