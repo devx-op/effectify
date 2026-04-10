@@ -32,6 +32,15 @@ const toWorkerOptions = (
   opts?: RegisterWorkerOpts,
 ): RegisterWorkerOpts | undefined => opts
 
+type RegisterableWorker = {
+  readonly registerWorkflows: (workflows?: unknown[]) => Promise<void>
+  readonly start: () => Promise<void>
+}
+
+const toWorkerOptions = (opts?: RegisterWorkerOpts) => ({
+  slots: opts?.maxConcurrent,
+})
+
 /**
  * Register a worker with Hatchet
  *
