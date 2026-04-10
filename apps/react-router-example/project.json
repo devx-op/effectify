@@ -13,6 +13,14 @@
         "cwd": "apps/react-router-example"
       }
     },
+    "test:browser": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["typegen", "prisma:generate", "build"],
+      "options": {
+        "command": "node test/browser/run-browser-suite.mjs",
+        "cwd": "apps/react-router-example"
+      }
+    },
     "typecheck": {
       "executor": "nx:run-commands",
       "options": {
@@ -33,6 +41,15 @@
       "dependsOn": ["^build"],
       "options": {
         "command": "pnpm dlx prisma generate",
+        "cwd": "apps/react-router-example"
+      }
+    },
+    "start": {
+      "executor": "nx:run-commands",
+      "continuous": true,
+      "dependsOn": ["build"],
+      "options": {
+        "command": "react-router-serve build/server/index.js",
         "cwd": "apps/react-router-example"
       }
     },

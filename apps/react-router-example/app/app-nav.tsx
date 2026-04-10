@@ -27,6 +27,16 @@ export function AppNav() {
           </NavLink>
         </li>
         <li>
+          <NavLink end to="/login">
+            Login
+          </NavLink>
+        </li>
+        <li>
+          <NavLink end to="/signup">
+            Sign Up
+          </NavLink>
+        </li>
+        <li>
           <NavLink end to="/todo-app">
             Todo App
           </NavLink>

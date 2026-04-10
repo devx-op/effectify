@@ -1,6 +1,10 @@
 {
   "extends": "./tsconfig.app.json",
   "include": [
+    "./vitest.browser.config.ts",
+    "./test/browser/**/*.d.ts",
+    "./test/browser/**/*.ts",
+    "./test/browser/**/*.mts",
     "./tests/**/*.ts",
     "./tests/**/*.tsx",
     "./tests/**/*.js",
@@ -11,6 +15,7 @@
       "node",
       "vite/client",
       "@react-router/node",
+      "@vitest/browser/context",
       "vitest/globals",
       "react",
       "react-dom"

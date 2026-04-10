@@ -82,6 +82,8 @@ catalog:
   "@typescript/native-preview": 7.0.0-dev.20260322.1
   "@vitejs/plugin-react": 5.1.1
   "@vitejs/plugin-rsc": 0.5.1
+  "@vitest/browser": 4.1.2
+  "@vitest/browser-webdriverio": 4.1.2
   "@vitest/coverage-v8": 4.1.2
   "@vitest/ui": ^4.1.0
   astro: 5.17.1
@@ -140,6 +142,7 @@ catalog:
   vite-plugin-solid: 2.11.11
   vite-tsconfig-paths: 6.1.1
   vitest: 4.1.2
+  webdriverio: 9.27.0
   web-vitals: 5.1.0
   zod: 4.3.6
 

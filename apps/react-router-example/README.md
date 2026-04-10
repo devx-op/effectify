@@ -94,6 +94,44 @@ pnpm typecheck
 pnpm build
 ```
 
+## Browser Tests
+
+This app now includes a reusable Vitest Browser Mode harness backed by WebdriverIO and a real system Chrome/Chromium binary.
+
+### Prerequisites
+
+- Arch Linux with `chromium` installed, or another supported Chrome binary available on your `PATH`
+- The normal workspace dependencies installed with `pnpm install`
+
+### Run the browser harness
+
+```bash
+pnpm nx run @effectify/react-router-example:test:browser
+```
+
+The Nx target builds the app, serves `dist/apps/react-router-example` on `http://127.0.0.1:3100`, then runs the smoke browser test in headless Chrome.
+
+### Environment variables
+
+- `CHROME_BIN` — absolute path override for the browser binary, for example `CHROME_BIN=/usr/bin/chromium`
+- `BROWSER_TEST_BASE_URL` — reuse an already-running app instead of spawning `react-router-serve`
+
+Examples:
+
+```bash
+CHROME_BIN=/usr/bin/chromium pnpm nx run @effectify/react-router-example:test:browser
+BROWSER_TEST_BASE_URL=http://127.0.0.1:3200 pnpm nx run @effectify/react-router-example:test:browser
+```
+
+### Troubleshooting
+
+If the harness reports that Chrome cannot be found, set `CHROME_BIN` explicitly or install one of the supported binaries:
+
+- `chromium`
+- `google-chrome-stable`
+
+The resolver checks `CHROME_BIN` first, then searches `PATH` for those binaries in that order.
+
 ## Notes
 
 - SQLite is used for simplicity (no Docker needed)
