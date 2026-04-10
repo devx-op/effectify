@@ -168,6 +168,12 @@ catalogs:
     '@vitejs/plugin-react':
       specifier: 5.1.1
       version: 5.1.1
+    '@vitest/browser':
+      specifier: 4.1.2
+      version: 4.1.2
+    '@vitest/browser-webdriverio':
+      specifier: 4.1.2
+      version: 4.1.2
     '@vitest/coverage-v8':
       specifier: 4.1.2
       version: 4.1.2
@@ -315,6 +321,9 @@ catalogs:
     vitest:
       specifier: 4.1.2
       version: 4.1.2
+    webdriverio:
+      specifier: 9.27.0
+      version: 9.27.0
     zod:
       specifier: 4.3.6
       version: 4.3.6
@@ -19523,6 +19532,8 @@ snapshots:
 
   decamelize@6.0.1:
     optional: true
+
+  decamelize@6.0.1: {}
 
   decimal.js@10.6.0: {}
 
