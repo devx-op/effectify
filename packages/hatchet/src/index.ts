@@ -41,5 +41,8 @@ export * from "./schema/index.js"
 // Testing utilities
 export * from "./testing/index.js"
 
+// Clients - SDK clients for Hatchet API
+export * from "./clients/index.js"
+
 // Internal - not exported publicly (use workflow/task instead)
 // export * from "./effectifier/index.js";

@@ -13,3 +13,11 @@ export {
   testTask,
   testTaskExit,
 } from "./mock-context.js"
+
+export {
+  createMockHatchetClient,
+  createMockHatchetClientLayer,
+  MockHatchetClientLayer,
+  TestHatchetConfigLayer,
+  TestHatchetLayer,
+} from "./mock-client.js"

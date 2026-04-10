@@ -8,6 +8,7 @@ import * as Data from "effect/Data"
 import {
   HatchetContextError,
   HatchetError,
+  HatchetEventError,
   HatchetExecutionError,
   HatchetInitError,
   HatchetWorkerError,
@@ -63,6 +64,35 @@ describe("HatchetContextError", () => {
     })
     expect(error.message).toBe("Context error")
     expect(error._tag).toBe("HatchetContextError")
+  })
+})
+
+describe("HatchetEventError", () => {
+  it("should create event errors with key context", () => {
+    const cause = new Error("publish failed")
+    const error = HatchetEventError.of(
+      'Failed to push event "user.created"',
+      "user.created",
+      undefined,
+      cause,
+    )
+
+    expect(error.message).toBe('Failed to push event "user.created"')
+    expect(error.key).toBe("user.created")
+    expect(error.cause).toBe(cause)
+    expect(error._tag).toBe("HatchetEventError")
+  })
+
+  it("should create event errors with event id context", () => {
+    const error = HatchetEventError.of(
+      'Failed to get event "event-123"',
+      undefined,
+      "event-123",
+    )
+
+    expect(error.message).toContain("event-123")
+    expect(error.eventId).toBe("event-123")
+    expect(error.key).toBeUndefined()
   })
 })
 

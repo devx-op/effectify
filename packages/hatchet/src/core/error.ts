@@ -88,3 +88,60 @@ export class HatchetContextError extends Data.TaggedError(
     return new HatchetContextError({ message, operation, cause })
   }
 }
+
+/**
+ * Error when a workflow run fails
+ */
+export class HatchetRunError extends Data.TaggedError("HatchetRunError")<{
+  readonly message: string
+  readonly workflow?: string
+  readonly runId?: string
+  readonly cause?: unknown
+}> {
+  static of(
+    message: string,
+    workflow?: string,
+    runId?: string,
+    cause?: unknown,
+  ): HatchetRunError {
+    return new HatchetRunError({ message, workflow, runId, cause })
+  }
+}
+
+/**
+ * Error when a workflow operation fails (create, get, list)
+ */
+export class HatchetWorkflowError extends Data.TaggedError(
+  "HatchetWorkflowError",
+)<{
+  readonly message: string
+  readonly workflowName?: string
+  readonly cause?: unknown
+}> {
+  static of(
+    message: string,
+    workflowName?: string,
+    cause?: unknown,
+  ): HatchetWorkflowError {
+    return new HatchetWorkflowError({ message, workflowName, cause })
+  }
+}
+
+/**
+ * Error when an event operation fails
+ */
+export class HatchetEventError extends Data.TaggedError("HatchetEventError")<{
+  readonly message: string
+  readonly key?: string
+  readonly eventId?: string
+  readonly cause?: unknown
+}> {
+  static of(
+    message: string,
+    key?: string,
+    eventId?: string,
+    cause?: unknown,
+  ): HatchetEventError {
+    return new HatchetEventError({ message, key, eventId, cause })
+  }
+}

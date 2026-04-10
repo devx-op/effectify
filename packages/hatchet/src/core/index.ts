@@ -5,9 +5,12 @@
 export {
   HatchetContextError,
   HatchetError,
+  HatchetEventError,
   HatchetExecutionError,
   HatchetInitError,
+  HatchetRunError,
   HatchetWorkerError,
+  HatchetWorkflowError,
 } from "./error.js"
 
 export {

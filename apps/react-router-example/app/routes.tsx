@@ -7,4 +7,5 @@ export default [
   route("login", "./routes/login.tsx"),
   route("signup", "./routes/signup.tsx"),
   route("todo-app", "./routes/todo-app.tsx"),
+  route("hatchet-demo", "./routes/hatchet-demo.tsx"),
 ] satisfies RouteConfig
