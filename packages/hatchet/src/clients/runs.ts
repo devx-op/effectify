@@ -5,14 +5,40 @@
  */
 
 import * as Effect from "effect/Effect"
+import type { ListRunsOpts as SdkListRunsOpts } from "@hatchet-dev/typescript-sdk"
 import type { HatchetClientService } from "../core/client.js"
 import { getHatchetClient } from "../core/client.js"
 import { HatchetRunError, HatchetWorkflowError } from "../core/error.js"
 
 export interface RunOpts {
-  readonly additionalMetadata?: Record<string, unknown>
+  readonly additionalMetadata?: Record<string, string>
   readonly priority?: number
 }
+
+export interface ListRunsOpts {
+  readonly workflowName?: string
+  readonly status?: string
+  readonly limit?: number
+  readonly offset?: number
+}
+
+const toSdkListRunsOpts = (
+  options?: ListRunsOpts,
+): {
+  readonly workflowNames?: string[]
+  readonly statuses?: NonNullable<SdkListRunsOpts["statuses"]>
+  readonly limit?: number
+  readonly offset?: number
+  readonly onlyTasks: false
+} => ({
+  workflowNames: options?.workflowName ? [options.workflowName] : undefined,
+  statuses: options?.status
+    ? [options.status as NonNullable<SdkListRunsOpts["statuses"]>[number]]
+    : undefined,
+  limit: options?.limit,
+  offset: options?.offset,
+  onlyTasks: false,
+})
 
 /**
  * Run a workflow and wait for completion
@@ -30,7 +56,7 @@ export const runWorkflow = <I, O>(
   Effect.gen(function*() {
     const client = yield* getHatchetClient()
     const result = yield* Effect.tryPromise({
-      try: () => (client as any).run(workflow, input, options),
+      try: () => client.run(workflow, input as never, options),
       catch: (error) =>
         HatchetRunError.of(
           `Workflow "${workflow}" failed to run`,
@@ -58,7 +84,7 @@ export const runWorkflowNoWait = <I, O>(
   Effect.gen(function*() {
     const client = yield* getHatchetClient()
     const result = yield* Effect.tryPromise({
-      try: () => (client as any).runs.create(workflow, input, options),
+      try: () => client.runNoWait(workflow, input as never, options ?? {}),
       catch: (error) =>
         HatchetRunError.of(
           `Workflow "${workflow}" failed to start`,
@@ -82,7 +108,7 @@ export const cancelRun = (
   Effect.gen(function*() {
     const client = yield* getHatchetClient()
     yield* Effect.tryPromise({
-      try: () => (client as any).runs.cancel(runId),
+      try: () => client.runs.cancel({ ids: [runId] }),
       catch: (error) =>
         HatchetRunError.of(
           `Failed to cancel run "${runId}"`,
@@ -105,7 +131,7 @@ export const getRun = <O = unknown>(
   Effect.gen(function*() {
     const client = yield* getHatchetClient()
     const result = yield* Effect.tryPromise({
-      try: () => (client as any).runs.get(runId),
+      try: () => client.runs.get(runId),
       catch: (error) =>
         HatchetRunError.of(
           `Failed to get run "${runId}"`,
@@ -129,7 +155,7 @@ export const getRunStatus = (
   Effect.gen(function*() {
     const client = yield* getHatchetClient()
     const result = yield* Effect.tryPromise({
-      try: () => (client as any).runs.get(runId),
+      try: () => client.runs.get_status(runId),
       catch: (error) =>
         HatchetRunError.of(
           `Failed to get status for run "${runId}"`,
@@ -138,15 +164,8 @@ export const getRunStatus = (
           error,
         ),
     })
-    return (result as any).status as string
+    return result as string
   })
-
-export interface ListRunsOpts {
-  readonly workflowName?: string
-  readonly status?: string
-  readonly limit?: number
-  readonly offset?: number
-}
 
 /**
  * List workflow and task runs
@@ -160,8 +179,9 @@ export const listRuns = <O = unknown>(
   Effect.gen(function*() {
     const client = yield* getHatchetClient()
     const result = yield* Effect.tryPromise({
-      try: () => (client as any).runs.list(options),
+      try: () => client.runs.list(toSdkListRunsOpts(options)),
       catch: (error) => HatchetWorkflowError.of("Failed to list runs", undefined, error),
     })
-    return ((result as any).rows || (result as any).runs || []) as O[]
+    const runs = result as unknown as { readonly rows?: O[] }
+    return runs.rows ?? []
   })

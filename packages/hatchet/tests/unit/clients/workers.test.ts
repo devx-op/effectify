@@ -3,8 +3,12 @@
  */
 
 import { describe, expect, it, layer } from "@effect/vitest"
-import { Layer } from "effect"
+import * as Cause from "effect/Cause"
+import * as Effect from "effect/Effect"
+import * as Layer from "effect/Layer"
+import { vi } from "vitest"
 import { registerWorker, type RegisterWorkerOpts } from "../../../src/clients/workers"
+import { HatchetClientService } from "../../../src/core/client"
 import { HatchetWorkerError } from "../../../src/core/error"
 import { MockHatchetClientLayer, TestHatchetConfigLayer } from "../../../src/testing/mock-client"
 
@@ -62,5 +66,71 @@ describe("HatchetWorkerError", () => {
       const error = HatchetWorkerError.of("Worker failed", "my-worker", cause)
       expect(error.cause).toBe(cause)
     })
+  })
+})
+
+describe("Workers Client - SDK compatibility", () => {
+  const provideHatchet = (client: Record<string, unknown>) =>
+    Effect.provide(
+      Layer.mergeAll(
+        TestHatchetConfigLayer,
+        Layer.succeed(HatchetClientService, client as never),
+      ),
+    )
+
+  it("registerWorker creates a worker via client.worker and registers workflows", async () => {
+    const registerWorkflows = vi.fn(async () => undefined)
+    const start = vi.fn(async () => undefined)
+
+    const worker = await registerWorker(
+      "orders-worker",
+      [{ name: "orders.process" }],
+      {
+        maxConcurrent: 5,
+      },
+    ).pipe(
+      provideHatchet({
+        worker: async (name: unknown, options?: unknown) => {
+          expect(name).toBe("orders-worker")
+          expect(options).toEqual({ slots: 5 })
+          return {
+            registerWorkflows,
+            start,
+          }
+        },
+      }),
+      Effect.runPromise,
+    )
+
+    expect(registerWorkflows).toHaveBeenCalledWith([
+      { name: "orders.process" },
+    ])
+    expect(start).toHaveBeenCalled()
+    expect(worker).toMatchObject({ registerWorkflows, start })
+  })
+
+  it("registerWorker wraps SDK worker creation failures with HatchetWorkerError", async () => {
+    const cause = new Error("worker unavailable")
+
+    const exit = await registerWorker("orders-worker", []).pipe(
+      provideHatchet({
+        worker: async () => {
+          throw cause
+        },
+      }),
+      Effect.runPromiseExit,
+    )
+
+    expect(exit._tag).toBe("Failure")
+
+    if (exit._tag === "Failure") {
+      const error = Cause.squash(exit.cause) as HatchetWorkerError
+      expect(error).toBeInstanceOf(HatchetWorkerError)
+      expect(error).toMatchObject({
+        _tag: "HatchetWorkerError",
+        workerName: "orders-worker",
+      })
+      expect(error.cause).toBe(cause)
+    }
   })
 })

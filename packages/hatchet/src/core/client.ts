@@ -7,9 +7,10 @@
 import * as Effect from "effect/Effect"
 import * as ServiceMap from "effect/ServiceMap"
 import * as Layer from "effect/Layer"
-import type { HatchetClient as HatchetClientType } from "@hatchet-dev/typescript-sdk"
-import { HatchetClient as HatchetClientSDK } from "@hatchet-dev/typescript-sdk"
+import { Hatchet as HatchetClientSDK } from "@hatchet-dev/typescript-sdk"
 import { HatchetConfig } from "./config.js"
+
+type HatchetClientType = InstanceType<typeof HatchetClientSDK>
 
 /**
  * ServiceMap.Service for the Hatchet SDK client
@@ -32,7 +33,7 @@ export const HatchetClientLive = Layer.effect(HatchetClientService)(
     console.log("[Hatchet] Token present:", !!config.token)
 
     // Initialize Hatchet client with token and host
-    // SDK v1.19.0 API: HatchetClient.init({ token, host_port })
+    // SDK v1.21.0 API: HatchetClient.init({ token, host_port })
     // This is synchronous, so we use Effect.sync
     const hatchet = Effect.sync(() => {
       const client = HatchetClientSDK.init({

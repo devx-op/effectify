@@ -28,7 +28,7 @@
   "author": "",
   "packageManager": "pnpm@10.14.0",
   "dependencies": {
-    "@hatchet-dev/typescript-sdk": "^1.19.0"
+    "@hatchet-dev/typescript-sdk": "catalog:"
   },
   "peerDependencies": {
     "effect": "catalog:"

@@ -1,6 +1,6 @@
 # @effectify/hatchet Specification
 
-This specification defines the requirements and scenarios for the `@effectify/hatchet` package, which provides a native Effect v4 integration with Hatchet SDK v1.19.0.
+This specification defines the requirements and scenarios for the `@effectify/hatchet` package, which provides a native Effect v4 integration with Hatchet SDK v1.21.0.
 
 ---
 
@@ -131,7 +131,7 @@ The HatchetStepContext module provides the Hatchet step context as an injectable
 - [REQ-CONTEXT-02] HatchetStepContext MUST wrap the Hatchet SDK Context type
 - [REQ-CONTEXT-03] getHatchetInput MUST extract and type the input property from the context
 - [REQ-CONTEXT-04] The context MUST provide access to input, parentOutput, log, and logger properties
-- [REQ-CONTEXT-05] Input access MUST work with the SDK v1.19.0 ctx.input property (not a method)
+- [REQ-CONTEXT-05] Input access MUST work with the SDK v1.21.0 ctx.input property (not a method)
 
 #### Scenarios
 
@@ -544,7 +544,7 @@ The package manifest for @effectify/hatchet.
 
 - [REQ-PKG-01] Package name MUST be @effectify/hatchet
 - [REQ-PKG-02] Effect MUST be a peerDependency using catalog:
-- [REQ-PKG-03] @hatchet-dev/typescript-sdk MUST be a dependency with version ^1.19.0
+- [REQ-PKG-03] @hatchet-dev/typescript-sdk MUST be a dependency with version 1.21.0
 - [REQ-PKG-04] @effect/vitest MUST be a devDependency
 - [REQ-PKG-05] Type MUST be module (ESM)
 - [REQ-PKG-06] Exports MUST include "." for main entry
@@ -716,4 +716,4 @@ Then the runtime is disposed to prevent leaks
 
 ## Summary
 
-This specification defines 68 requirements across 8 major module categories. Each requirement is testable through the defined scenarios. The package uses verified Effect v4 APIs (ServiceMap.Service, ManagedRuntime.make, Effect.withLogger) and Hatchet SDK v1.19.0 APIs (workflow.task(), ctx.input, ctx.parentOutput()).
+This specification defines 68 requirements across 8 major module categories. Each requirement is testable through the defined scenarios. The package uses verified Effect v4 APIs (ServiceMap.Service, ManagedRuntime.make, Effect.withLogger) and Hatchet SDK v1.21.0 APIs (workflow.task(), ctx.input, ctx.parentOutput()).

@@ -15,6 +15,15 @@ export interface RegisterWorkerOpts {
   readonly timeout?: string
 }
 
+type RegisterableWorker = {
+  readonly registerWorkflows: (workflows?: unknown[]) => Promise<void>
+  readonly start: () => Promise<void>
+}
+
+const toWorkerOptions = (opts?: RegisterWorkerOpts) => ({
+  slots: opts?.maxConcurrent,
+})
+
 /**
  * Register a worker with Hatchet
  *
@@ -28,12 +37,37 @@ export const registerWorker = <O = unknown>(
   workflows: any[],
   opts?: RegisterWorkerOpts,
 ): Effect.Effect<O, HatchetWorkerError, HatchetClientService> =>
-  Effect.tryPromise({
-    try: async () => {
-      const client = await getHatchetClient()
-      const workersClient = (client as any).workers
-      const worker = workersClient.register(name, workflows, opts)
-      return worker as O
-    },
-    catch: (error) => HatchetWorkerError.of(`Failed to register worker "${name}"`, name, error),
+  Effect.gen(function*() {
+    const client = yield* getHatchetClient()
+    const worker = (yield* Effect.tryPromise({
+      try: () => client.worker(name, toWorkerOptions(opts)),
+      catch: (error) =>
+        HatchetWorkerError.of(
+          `Failed to register worker "${name}"`,
+          name,
+          error,
+        ),
+    })) as RegisterableWorker
+
+    yield* Effect.tryPromise({
+      try: () => worker.registerWorkflows(workflows),
+      catch: (error) =>
+        HatchetWorkerError.of(
+          `Failed to register worker "${name}"`,
+          name,
+          error,
+        ),
+    })
+
+    yield* Effect.tryPromise({
+      try: () => worker.start(),
+      catch: (error) =>
+        HatchetWorkerError.of(
+          `Failed to register worker "${name}"`,
+          name,
+          error,
+        ),
+    })
+
+    return worker as O
   })

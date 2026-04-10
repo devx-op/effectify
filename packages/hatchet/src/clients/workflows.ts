@@ -23,18 +23,15 @@ export interface CreateWorkflowOpts {
  * @returns Effect that resolves with the created workflow
  */
 export const createWorkflow = <O = unknown>(
-  workflow: any,
+  _workflow: unknown,
   opts?: CreateWorkflowOpts,
 ): Effect.Effect<O, HatchetWorkflowError, HatchetClientService> =>
-  Effect.tryPromise({
-    try: async () => {
-      const client = await getHatchetClient()
-      const workflowsClient = (client as any).workflows
-      const result = await workflowsClient.create(workflow, opts)
-      return result as O
-    },
-    catch: (error) => HatchetWorkflowError.of(`Failed to create workflow`, opts?.name, error),
-  })
+  Effect.fail(
+    HatchetWorkflowError.of(
+      "Workflow creation is not supported by Hatchet SDK 1.21.0 public workflows client",
+      opts?.name,
+    ),
+  )
 
 /**
  * Get a workflow by name
@@ -45,14 +42,19 @@ export const createWorkflow = <O = unknown>(
 export const getWorkflow = <O = unknown>(
   name: string,
 ): Effect.Effect<O, HatchetWorkflowError, HatchetClientService> =>
-  Effect.tryPromise({
-    try: async () => {
-      const client = await getHatchetClient()
-      const workflowsClient = (client as any).workflows
-      const result = await workflowsClient.get(name)
-      return result as O
-    },
-    catch: (error) => HatchetWorkflowError.of(`Failed to get workflow "${name}"`, name, error),
+  Effect.gen(function*() {
+    const client = yield* getHatchetClient()
+    const result = yield* Effect.tryPromise({
+      try: () => client.workflows.get(name),
+      catch: (error) =>
+        HatchetWorkflowError.of(
+          `Failed to get workflow "${name}"`,
+          name,
+          error,
+        ),
+    })
+
+    return result as O
   })
 
 export interface ListWorkflowsOpts {
@@ -69,12 +71,12 @@ export interface ListWorkflowsOpts {
 export const listWorkflows = <O = unknown>(
   options?: ListWorkflowsOpts,
 ): Effect.Effect<O[], HatchetWorkflowError, HatchetClientService> =>
-  Effect.tryPromise({
-    try: async () => {
-      const client = await getHatchetClient()
-      const workflowsClient = (client as any).workflows
-      const result = await workflowsClient.list(options)
-      return result.workflows as O[]
-    },
-    catch: (error) => HatchetWorkflowError.of("Failed to list workflows", undefined, error),
+  Effect.gen(function*() {
+    const client = yield* getHatchetClient()
+    const result = yield* Effect.tryPromise({
+      try: () => client.workflows.list(options),
+      catch: (error) => HatchetWorkflowError.of("Failed to list workflows", undefined, error),
+    })
+
+    return (result as { readonly workflows: O[] }).workflows
   })

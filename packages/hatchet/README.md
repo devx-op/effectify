@@ -220,7 +220,7 @@ yield * Effect.fail(new Error("Failed")) // Avoid this
 ## Requirements
 
 - Effect v4 (v4.0.0 or later)
-- Hatchet v1.19.0+
+- Hatchet v1.21.0+
 - TypeScript 5.0+
 
 ## Architecture

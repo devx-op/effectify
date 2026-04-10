@@ -5,10 +5,29 @@
  */
 
 import * as Layer from "effect/Layer"
-import type { HatchetClient as HatchetClientType } from "@hatchet-dev/typescript-sdk"
+import { Hatchet as HatchetClientSDK } from "@hatchet-dev/typescript-sdk"
 import type { PushEventOptions } from "../clients/events.js"
 import { HatchetClientService } from "../core/client.js"
 import { HatchetConfig } from "../core/config.js"
+
+type HatchetClientType = InstanceType<typeof HatchetClientSDK>
+
+type MockHatchetRunsClient = {
+  readonly cancel: (options: unknown) => Promise<unknown>
+  readonly get: (runId: string) => Promise<unknown>
+  readonly get_status: (runId: string) => Promise<string>
+  readonly list: (options?: unknown) => Promise<{ rows?: unknown[] }>
+}
+
+type MockHatchetWorkflowsClient = {
+  readonly get: (name: string) => Promise<unknown>
+  readonly list: (options?: unknown) => Promise<{ workflows: unknown[] }>
+}
+
+type MockWorkerInstance = {
+  readonly registerWorkflows: (workflows?: unknown[]) => Promise<void>
+  readonly start: () => Promise<void>
+}
 
 /**
  * Mock HatchetClient type for testing
@@ -16,6 +35,16 @@ import { HatchetConfig } from "../core/config.js"
  */
 export type MockHatchetClient = HatchetClientType & {
   readonly tenantId: string
+  readonly run: (
+    workflow: string,
+    input: unknown,
+    options?: unknown,
+  ) => Promise<unknown>
+  readonly runNoWait: (
+    workflow: string,
+    input: unknown,
+    options?: unknown,
+  ) => Promise<unknown>
   readonly events: {
     readonly push: (
       key: string,
@@ -30,12 +59,23 @@ export type MockHatchetClient = HatchetClientType & {
       eventId: string,
     ) => Promise<{ data: unknown }>
   }
+  readonly runs: MockHatchetRunsClient
+  readonly workflows: MockHatchetWorkflowsClient
+  readonly worker: (
+    name: string,
+    options?: unknown,
+  ) => Promise<MockWorkerInstance>
 }
 
 export interface MockHatchetClientOverrides {
   readonly tenantId?: string
+  readonly run?: MockHatchetClient["run"]
+  readonly runNoWait?: MockHatchetClient["runNoWait"]
   readonly events?: Partial<MockHatchetClient["events"]>
   readonly api?: Partial<MockHatchetClient["api"]>
+  readonly runs?: Partial<MockHatchetClient["runs"]>
+  readonly workflows?: Partial<MockHatchetClient["workflows"]>
+  readonly worker?: MockHatchetClient["worker"]
 }
 
 const unimplemented = (method: string) => async () => {
@@ -50,6 +90,8 @@ export const createMockHatchetClient = (
 ): MockHatchetClient => {
   const baseClient = {
     tenantId: "test-tenant-id",
+    run: unimplemented("run"),
+    runNoWait: unimplemented("runNoWait"),
     events: {
       push: unimplemented("events.push"),
       list: async () => ({ rows: [] }),
@@ -57,12 +99,31 @@ export const createMockHatchetClient = (
     api: {
       v1EventGet: unimplemented("api.v1EventGet"),
     },
+    runs: {
+      cancel: unimplemented("runs.cancel"),
+      get: unimplemented("runs.get"),
+      get_status: unimplemented("runs.get_status"),
+      list: (async () => ({
+        rows: [],
+        pagination: {} as never,
+      })) as MockHatchetClient["runs"]["list"],
+    },
+    workflows: {
+      get: unimplemented("workflows.get"),
+      list: async () => ({ workflows: [] }),
+    },
+    worker: (async () => ({
+      registerWorkflows: async () => {},
+      start: async () => {},
+    })) as unknown as MockHatchetClient["worker"],
   } satisfies MockHatchetClientOverrides
 
   return {
     ...baseClient,
     ...overrides,
     tenantId: overrides.tenantId ?? baseClient.tenantId,
+    run: overrides.run ?? baseClient.run,
+    runNoWait: overrides.runNoWait ?? baseClient.runNoWait,
     events: {
       ...baseClient.events,
       ...overrides.events,
@@ -71,6 +132,15 @@ export const createMockHatchetClient = (
       ...baseClient.api,
       ...overrides.api,
     },
+    runs: {
+      ...baseClient.runs,
+      ...overrides.runs,
+    },
+    workflows: {
+      ...baseClient.workflows,
+      ...overrides.workflows,
+    },
+    worker: overrides.worker ?? baseClient.worker,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as MockHatchetClient
 }

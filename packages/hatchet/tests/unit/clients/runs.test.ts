@@ -3,6 +3,7 @@
  */
 
 import { describe, expect, it, layer } from "@effect/vitest"
+import * as Cause from "effect/Cause"
 import { Effect, Layer } from "effect"
 import {
   cancelRun,
@@ -14,6 +15,7 @@ import {
   runWorkflow,
   runWorkflowNoWait,
 } from "../../../src/clients/runs"
+import { HatchetClientService } from "../../../src/core/client"
 import { HatchetRunError, HatchetWorkflowError } from "../../../src/core/error"
 import { MockHatchetClientLayer, TestHatchetConfigLayer } from "../../../src/testing/mock-client"
 
@@ -114,5 +116,129 @@ describe("HatchetWorkflowError", () => {
       expect(error.message).toBe("List failed")
       expect(error.workflowName).toBeUndefined()
     })
+  })
+})
+
+describe("Runs Client - SDK compatibility", () => {
+  const provideHatchet = (client: Record<string, unknown>) =>
+    Effect.provide(
+      Layer.mergeAll(
+        TestHatchetConfigLayer,
+        Layer.succeed(HatchetClientService, client as never),
+      ),
+    )
+
+  it("runWorkflowNoWait uses client.runNoWait from the public SDK surface", async () => {
+    const input = { orderId: "order-1" }
+    const runRef = { workflowRunId: "run-123" }
+
+    const result = await runWorkflowNoWait<typeof input, typeof runRef>(
+      "orders.process",
+      input,
+      { priority: 2 },
+    ).pipe(
+      provideHatchet({
+        runNoWait: async (
+          workflow: string,
+          providedInput: unknown,
+          options?: unknown,
+        ) => {
+          expect(workflow).toBe("orders.process")
+          expect(providedInput).toEqual(input)
+          expect(options).toEqual({ priority: 2 })
+          return runRef
+        },
+      }),
+      Effect.runPromise,
+    )
+
+    expect(result).toEqual(runRef)
+  })
+
+  it("cancelRun forwards the run id through runs.cancel({ ids })", async () => {
+    await cancelRun("run-456").pipe(
+      provideHatchet({
+        runs: {
+          cancel: async (options: unknown) => {
+            expect(options).toEqual({ ids: ["run-456"] })
+            return { data: { cancelled: 1 } }
+          },
+        },
+      }),
+      Effect.runPromise,
+    )
+  })
+
+  it("getRunStatus uses runs.get_status instead of reading status from getRun details", async () => {
+    const status = await getRunStatus("run-789").pipe(
+      provideHatchet({
+        runs: {
+          get_status: async (runId: unknown) => {
+            expect(runId).toBe("run-789")
+            return "COMPLETED"
+          },
+        },
+      }),
+      Effect.runPromise,
+    )
+
+    expect(status).toBe("COMPLETED")
+  })
+
+  it("listRuns maps wrapper filters to the SDK list API and normalizes rows", async () => {
+    const result = await listRuns<{ metadata: { status: string } }>({
+      workflowName: "orders.process",
+      status: "FAILED",
+      limit: 5,
+      offset: 10,
+    }).pipe(
+      provideHatchet({
+        runs: {
+          list: async (options: unknown) => {
+            expect(options).toEqual({
+              workflowNames: ["orders.process"],
+              statuses: ["FAILED"],
+              limit: 5,
+              offset: 10,
+              onlyTasks: false,
+            })
+
+            return {
+              rows: [{ metadata: { status: "FAILED" } }],
+            }
+          },
+        },
+      }),
+      Effect.runPromise,
+    )
+
+    expect(result).toEqual([{ metadata: { status: "FAILED" } }])
+  })
+
+  it("wraps typed SDK run errors with HatchetRunError context", async () => {
+    const cause = new Error("runNoWait unavailable")
+
+    const exit = await runWorkflowNoWait("orders.process", {
+      orderId: "1",
+    }).pipe(
+      provideHatchet({
+        runNoWait: async () => {
+          throw cause
+        },
+      }),
+      Effect.runPromiseExit,
+    )
+
+    expect(exit._tag).toBe("Failure")
+
+    if (exit._tag === "Failure") {
+      const error = Cause.squash(exit.cause) as HatchetRunError
+      expect(error).toBeInstanceOf(HatchetRunError)
+      expect(error).toMatchObject({
+        _tag: "HatchetRunError",
+        workflow: "orders.process",
+      })
+      expect(error.cause).toBe(cause)
+    }
   })
 })
