@@ -45,4 +45,9 @@ export const AppLayer = Layer.merge(
   hatchetServicesLayer,
 )
 
+const AppLayer = Layer.mergeAll(
+  Layer.merge(BaseAppLayer, HatchetConfigLayer),
+  HatchetClientLive,
+) as unknown as Layer.Layer<any, any, never>
+
 export const { withLoaderEffect, withActionEffect } = Runtime.make(AppLayer)

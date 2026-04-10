@@ -11,6 +11,9 @@
     "lib": ["DOM", "DOM.Iterable", "ES2022"],
     "skipLibCheck": true,
     "rootDirs": [".", "./.react-router/types"],
+    "paths": {
+      "@effectify/hatchet": ["../../packages/hatchet/src/index.ts"]
+    },
     "types": [
       "node",
       "vite/client",
