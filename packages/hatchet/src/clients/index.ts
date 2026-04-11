@@ -6,6 +6,8 @@
 
 export * from "./runs.js"
 export * from "./events.js"
+export * from "./logs.js"
+export * from "./metrics.js"
 export * from "./crons.js"
 export * from "./schedules.js"
 export * from "./workflows.js"

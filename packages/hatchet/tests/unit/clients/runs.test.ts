@@ -9,6 +9,7 @@ import {
   cancelRun,
   getRun,
   getRunStatus,
+  getRunTaskId,
   listRuns,
   type ListRunsOpts,
   type RunOpts,
@@ -183,6 +184,22 @@ describe("Runs Client - SDK compatibility", () => {
     )
 
     expect(status).toBe("COMPLETED")
+  })
+
+  it("getRunTaskId resolves task external ids from workflow run ids for task log lookups", async () => {
+    const taskId = await getRunTaskId("run-789").pipe(
+      provideHatchet({
+        runs: {
+          getTaskExternalId: async (runId: unknown) => {
+            expect(runId).toBe("run-789")
+            return "task-789"
+          },
+        },
+      }),
+      Effect.runPromise,
+    )
+
+    expect(taskId).toBe("task-789")
   })
 
   it("listRuns maps wrapper filters to the SDK list API and normalizes rows", async () => {

@@ -11,6 +11,7 @@ import {
   HatchetEventError,
   HatchetExecutionError,
   HatchetInitError,
+  HatchetObservabilityError,
   HatchetWorkerError,
 } from "@effectify/hatchet"
 
@@ -93,6 +94,39 @@ describe("HatchetEventError", () => {
     expect(error.message).toContain("event-123")
     expect(error.eventId).toBe("event-123")
     expect(error.key).toBeUndefined()
+  })
+})
+
+describe("HatchetObservabilityError", () => {
+  it("should create observability errors with endpoint and task context", () => {
+    const cause = new Error("grpc unavailable")
+    const error = HatchetObservabilityError.of({
+      message: 'Failed to list task logs for "task-123"',
+      operation: "logs",
+      endpoint: "api.v1LogLineList",
+      taskId: "task-123",
+      cause,
+    })
+
+    expect(error.message).toContain("task-123")
+    expect(error.operation).toBe("logs")
+    expect(error.endpoint).toBe("api.v1LogLineList")
+    expect(error.taskId).toBe("task-123")
+    expect(error.cause).toBe(cause)
+    expect(error._tag).toBe("HatchetObservabilityError")
+  })
+
+  it("should create observability errors with tenant context", () => {
+    const error = HatchetObservabilityError.of({
+      message: 'Failed to read tenant metrics for "tenant-123"',
+      operation: "metrics",
+      endpoint: "api.tenantGetQueueMetrics",
+      tenantId: "tenant-123",
+    })
+
+    expect(error.operation).toBe("metrics")
+    expect(error.tenantId).toBe("tenant-123")
+    expect(error.taskId).toBeUndefined()
   })
 })
 

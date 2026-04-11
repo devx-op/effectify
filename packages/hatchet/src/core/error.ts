@@ -109,6 +109,31 @@ export class HatchetRunError extends Data.TaggedError("HatchetRunError")<{
 }
 
 /**
+ * Error when an observability operation fails
+ */
+export class HatchetObservabilityError extends Data.TaggedError(
+  "HatchetObservabilityError",
+)<{
+  readonly message: string
+  readonly operation: "logs" | "metrics"
+  readonly endpoint: string
+  readonly taskId?: string
+  readonly tenantId?: string
+  readonly cause?: unknown
+}> {
+  static of(input: {
+    readonly message: string
+    readonly operation: "logs" | "metrics"
+    readonly endpoint: string
+    readonly taskId?: string
+    readonly tenantId?: string
+    readonly cause?: unknown
+  }): HatchetObservabilityError {
+    return new HatchetObservabilityError(input)
+  }
+}
+
+/**
  * Error when a workflow operation fails (create, get, list)
  */
 export class HatchetWorkflowError extends Data.TaggedError(

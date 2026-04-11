@@ -9,6 +9,7 @@ export {
   HatchetEventError,
   HatchetExecutionError,
   HatchetInitError,
+  HatchetObservabilityError,
   HatchetRunError,
   HatchetWorkerError,
   HatchetWorkflowError,

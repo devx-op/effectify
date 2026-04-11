@@ -74,10 +74,15 @@ describe("Hatchet SDK 1.21.0 upgrade contract", () => {
       join(sdkRoot, "clients/event/event-client.d.ts"),
       "utf8",
     )
+    const apiTypes = await readFile(
+      join(sdkRoot, "clients/rest/generated/Api.d.ts"),
+      "utf8",
+    )
 
     expect(clientTypes).toContain("runNoWait<")
     expect(clientTypes).toContain("worker(name: string")
     expect(runsTypes).toContain("get_status")
+    expect(runsTypes).toContain("getTaskExternalId")
     expect(runsTypes).toContain("cancel(opts: CancelRunOpts)")
     expect(workflowsTypes).toContain("delete(workflow")
     expect(workflowsTypes).not.toContain("create(")
@@ -86,6 +91,14 @@ describe("Hatchet SDK 1.21.0 upgrade contract", () => {
       "push<T>(type: string, input: T, options?: PushEventOptions)",
     )
     expect(eventsTypes).not.toContain("get(")
+    expect(apiTypes).toContain("v1LogLineList: (task: string")
+    expect(apiTypes).toContain("v1TenantLogLineList: (tenant: string")
+    expect(apiTypes).toContain("v1TaskListStatusMetrics: (tenant: string")
+    expect(apiTypes).toContain("tenantGetQueueMetrics: (tenant: string")
+    expect(apiTypes).toContain("tenantGetStepRunQueueMetrics: (tenant: string")
+    expect(apiTypes).not.toContain("v1TaskLogsList")
+    expect(apiTypes).not.toContain("v1LogsList")
+    expect(apiTypes).not.toContain("v1TaskMetricsGet")
   })
 
   it("derives run status typing from the runs client declarations instead of a missing root export", async () => {

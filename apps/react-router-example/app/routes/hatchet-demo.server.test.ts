@@ -14,6 +14,15 @@ const deleteCronMock = vi.fn()
 const listRunsMock = vi.fn()
 const cancelRunMock = vi.fn()
 const runWorkflowMock = vi.fn()
+const getRunMock = vi.fn()
+const getRunStatusMock = vi.fn()
+const getRunTaskIdMock = vi.fn()
+const listTaskLogsMock = vi.fn()
+const getTaskMetricsMock = vi.fn()
+const getQueueMetricsMock = vi.fn()
+
+const runMockedHatchetEffect = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
+  Effect.runPromise(effect as Effect.Effect<A, E, never>)
 
 vi.mock("@effectify/hatchet", () => ({
   pushEvent: (...args: Array<unknown>) => pushEventMock(...args),
@@ -28,6 +37,12 @@ vi.mock("@effectify/hatchet", () => ({
   listRuns: (...args: Array<unknown>) => listRunsMock(...args),
   cancelRun: (...args: Array<unknown>) => cancelRunMock(...args),
   runWorkflow: (...args: Array<unknown>) => runWorkflowMock(...args),
+  getRun: (...args: Array<unknown>) => getRunMock(...args),
+  getRunStatus: (...args: Array<unknown>) => getRunStatusMock(...args),
+  getRunTaskId: (...args: Array<unknown>) => getRunTaskIdMock(...args),
+  listTaskLogs: (...args: Array<unknown>) => listTaskLogsMock(...args),
+  getTaskMetrics: (...args: Array<unknown>) => getTaskMetricsMock(...args),
+  getQueueMetrics: (...args: Array<unknown>) => getQueueMetricsMock(...args),
 }))
 
 vi.mock("../lib/runtime.server.js", async () => {
@@ -35,7 +50,7 @@ vi.mock("../lib/runtime.server.js", async () => {
   return Runtime.make(Layer.empty)
 })
 
-import { action, loader } from "./hatchet-demo.js"
+import { handleHatchetDemoAction, loadHatchetDemo } from "./hatchet-demo.js"
 import {
   buildCronRedirect,
   buildEventRedirect,
@@ -44,15 +59,10 @@ import {
   parseTriggerTime,
   readSelectedCronId,
   readSelectedEventId,
+  readSelectedRunId,
   readSelectedScheduleId,
-} from "./hatchet-demo.server.js"
-
-const createRouteArgs = (request: Request) => ({
-  request,
-  params: {},
-  context: {},
-  unstable_pattern: "routes/hatchet-demo",
-})
+  readSelectedTaskId,
+} from "./hatchet-demo.shared.js"
 
 describe("hatchet demo event helpers", () => {
   beforeEach(() => {
@@ -68,7 +78,31 @@ describe("hatchet demo event helpers", () => {
     listRunsMock.mockReset()
     cancelRunMock.mockReset()
     runWorkflowMock.mockReset()
+    getRunMock.mockReset()
+    getRunStatusMock.mockReset()
+    getRunTaskIdMock.mockReset()
+    listTaskLogsMock.mockReset()
+    getTaskMetricsMock.mockReset()
+    getQueueMetricsMock.mockReset()
     listCronsMock.mockReturnValue(Effect.succeed([]))
+    getTaskMetricsMock.mockReturnValue(
+      Effect.succeed({
+        byStatus: {
+          PENDING: 0,
+          RUNNING: 0,
+          COMPLETED: 0,
+          FAILED: 0,
+          CANCELLED: 0,
+        },
+      }),
+    )
+    getQueueMetricsMock.mockReturnValue(
+      Effect.succeed({
+        total: { queued: 0, running: 0, pending: 0 },
+        workflowBreakdown: {},
+        stepRun: {},
+      }),
+    )
   })
 
   it("parseEventPayload returns JSON objects for push-event actions", () => {
@@ -128,6 +162,15 @@ describe("hatchet demo event helpers", () => {
     )
   })
 
+  it("run observability helpers read selected run and task ids", () => {
+    expect(
+      readSelectedRunId("https://example.com/hatchet-demo?runId=run-123"),
+    ).toBe("run-123")
+    expect(
+      readSelectedTaskId("https://example.com/hatchet-demo?taskId=task-123"),
+    ).toBe("task-123")
+  })
+
   it("action pushes an event and redirects the loader to the selected event", async () => {
     listSchedulesMock.mockReturnValue(Effect.succeed([]))
     listRunsMock.mockReturnValue(Effect.succeed([]))
@@ -153,8 +196,8 @@ describe("hatchet demo event helpers", () => {
     formData.set("eventKey", "user.created")
     formData.set("eventPayload", '{"userId":"user-123","source":"demo"}')
 
-    const actionResponse = await action(
-      createRouteArgs(
+    const actionResponse = await runMockedHatchetEffect(
+      handleHatchetDemoAction(
         new Request("https://example.com/hatchet-demo", {
           method: "POST",
           body: formData,
@@ -172,24 +215,20 @@ describe("hatchet demo event helpers", () => {
         scope: "demo",
       },
     )
-    expect(actionResponse).toBeInstanceOf(Response)
-    const redirectResponse = actionResponse as Response
-    expect(redirectResponse.status).toBe(302)
-    expect(redirectResponse.headers.get("Location")).toBe(
-      "/hatchet-demo?eventId=event%20id%2F123",
-    )
+    expect(actionResponse).toMatchObject({
+      _tag: "HttpResponseRedirect",
+      to: "/hatchet-demo?eventId=event%20id%2F123",
+    })
+    const redirectResponse = actionResponse as { to: string }
+    expect(redirectResponse.to).toBe("/hatchet-demo?eventId=event%20id%2F123")
 
-    const loaderResponse = await loader(
-      createRouteArgs(
-        new Request(
-          `https://example.com${redirectResponse.headers.get("Location")}`,
-        ),
-      ),
+    const loaderResponse = await runMockedHatchetEffect(
+      loadHatchetDemo(new Request(`https://example.com${redirectResponse.to}`)),
     )
 
     expect(getEventMock).toHaveBeenCalledWith("event id/123")
-    expect(loaderResponse).toEqual({
-      ok: true,
+    expect(loaderResponse).toMatchObject({
+      _tag: "HttpResponseSuccess",
       data: {
         event: {
           eventId: "event id/123",
@@ -243,8 +282,8 @@ describe("hatchet demo event helpers", () => {
     formData.set("triggerAt", triggerAt)
     formData.set("scheduleInput", '{"userId":"user-123"}')
 
-    const actionResponse = await action(
-      createRouteArgs(
+    const actionResponse = await runMockedHatchetEffect(
+      handleHatchetDemoAction(
         new Request("https://example.com/hatchet-demo", {
           method: "POST",
           body: formData,
@@ -259,24 +298,22 @@ describe("hatchet demo event helpers", () => {
         source: "react-router-example",
       },
     })
-    expect(actionResponse).toBeInstanceOf(Response)
-    const redirectResponse = actionResponse as Response
-    expect(redirectResponse.status).toBe(302)
-    expect(redirectResponse.headers.get("Location")).toBe(
+    expect(actionResponse).toMatchObject({
+      _tag: "HttpResponseRedirect",
+      to: "/hatchet-demo?scheduleId=schedule%20id%2F123",
+    })
+    const redirectResponse = actionResponse as { to: string }
+    expect(redirectResponse.to).toBe(
       "/hatchet-demo?scheduleId=schedule%20id%2F123",
     )
 
-    const loaderResponse = await loader(
-      createRouteArgs(
-        new Request(
-          `https://example.com${redirectResponse.headers.get("Location")}`,
-        ),
-      ),
+    const loaderResponse = await runMockedHatchetEffect(
+      loadHatchetDemo(new Request(`https://example.com${redirectResponse.to}`)),
     )
 
     expect(getScheduleMock).toHaveBeenCalledWith("schedule id/123")
-    expect(loaderResponse).toEqual({
-      ok: true,
+    expect(loaderResponse).toMatchObject({
+      _tag: "HttpResponseSuccess",
       data: {
         event: undefined,
         schedule: {
@@ -346,8 +383,8 @@ describe("hatchet demo event helpers", () => {
     formData.set("cronExpression", "0 0 * * *")
     formData.set("cronInput", '{"userId":"user-123"}')
 
-    const actionResponse = await action(
-      createRouteArgs(
+    const actionResponse = await runMockedHatchetEffect(
+      handleHatchetDemoAction(
         new Request("https://example.com/hatchet-demo", {
           method: "POST",
           body: formData,
@@ -363,24 +400,20 @@ describe("hatchet demo event helpers", () => {
         source: "react-router-example",
       },
     })
-    expect(actionResponse).toBeInstanceOf(Response)
-    const redirectResponse = actionResponse as Response
-    expect(redirectResponse.status).toBe(302)
-    expect(redirectResponse.headers.get("Location")).toBe(
-      "/hatchet-demo?cronId=cron%20id%2F123",
-    )
+    expect(actionResponse).toMatchObject({
+      _tag: "HttpResponseRedirect",
+      to: "/hatchet-demo?cronId=cron%20id%2F123",
+    })
+    const redirectResponse = actionResponse as { to: string }
+    expect(redirectResponse.to).toBe("/hatchet-demo?cronId=cron%20id%2F123")
 
-    const loaderResponse = await loader(
-      createRouteArgs(
-        new Request(
-          `https://example.com${redirectResponse.headers.get("Location")}`,
-        ),
-      ),
+    const loaderResponse = await runMockedHatchetEffect(
+      loadHatchetDemo(new Request(`https://example.com${redirectResponse.to}`)),
     )
 
     expect(getCronMock).toHaveBeenCalledWith("cron id/123")
-    expect(loaderResponse).toEqual({
-      ok: true,
+    expect(loaderResponse).toMatchObject({
+      _tag: "HttpResponseSuccess",
       data: {
         event: undefined,
         schedule: undefined,
@@ -417,8 +450,8 @@ describe("hatchet demo event helpers", () => {
     formData.set("intent", "delete-cron")
     formData.set("cronId", "cron-404")
 
-    const actionResponse = await action(
-      createRouteArgs(
+    const actionResponse = await runMockedHatchetEffect(
+      handleHatchetDemoAction(
         new Request("https://example.com/hatchet-demo?cronId=cron-404", {
           method: "POST",
           body: formData,
@@ -427,10 +460,10 @@ describe("hatchet demo event helpers", () => {
     )
 
     expect(deleteCronMock).toHaveBeenCalledWith("cron-404")
-    expect(actionResponse).toBeInstanceOf(Response)
-    expect((actionResponse as Response).headers.get("Location")).toBe(
-      "/hatchet-demo",
-    )
+    expect(actionResponse).toMatchObject({
+      _tag: "HttpResponseRedirect",
+      to: "/hatchet-demo",
+    })
   })
 
   it("loader skips selected resource lookups when the URL does not request them", async () => {
@@ -442,15 +475,15 @@ describe("hatchet demo event helpers", () => {
       ]),
     )
 
-    const loaderResponse = await loader(
-      createRouteArgs(new Request("https://example.com/hatchet-demo")),
+    const loaderResponse = await runMockedHatchetEffect(
+      loadHatchetDemo(new Request("https://example.com/hatchet-demo")),
     )
 
     expect(getEventMock).not.toHaveBeenCalled()
     expect(getScheduleMock).not.toHaveBeenCalled()
     expect(getCronMock).not.toHaveBeenCalled()
-    expect(loaderResponse).toEqual({
-      ok: true,
+    expect(loaderResponse).toMatchObject({
+      _tag: "HttpResponseSuccess",
       data: {
         event: undefined,
         schedule: undefined,
@@ -458,6 +491,104 @@ describe("hatchet demo event helpers", () => {
         cron: undefined,
         crons: [],
         runs: [{ id: "run-1", workflowName: "wf", status: "COMPLETED" }],
+        observability: {
+          selectedRunId: undefined,
+          selectedTaskId: undefined,
+          taskMetrics: {
+            byStatus: {
+              PENDING: 0,
+              RUNNING: 0,
+              COMPLETED: 0,
+              FAILED: 0,
+              CANCELLED: 0,
+            },
+          },
+          queueMetrics: {
+            total: { queued: 0, running: 0, pending: 0 },
+            workflowBreakdown: {},
+            stepRun: {},
+          },
+        },
+      },
+    })
+  })
+
+  it("loader resolves run observability by fetching run details, status, task id, and logs", async () => {
+    listSchedulesMock.mockReturnValue(Effect.succeed([]))
+    listCronsMock.mockReturnValue(Effect.succeed([]))
+    listRunsMock.mockReturnValue(
+      Effect.succeed([{ id: "run-123", workflowName: "wf" }]),
+    )
+    getRunMock.mockReturnValue(
+      Effect.succeed({ id: "run-123", workflowName: "wf" }),
+    )
+    getRunStatusMock.mockReturnValue(Effect.succeed("RUNNING"))
+    getRunTaskIdMock.mockReturnValue(Effect.succeed("task-123"))
+    listTaskLogsMock.mockReturnValue(
+      Effect.succeed({
+        rows: [
+          {
+            message: "started",
+            level: "INFO",
+            timestamp: "2026-04-11T17:00:00.000Z",
+            taskId: "task-123",
+          },
+        ],
+      }),
+    )
+
+    const loaderResponse = await runMockedHatchetEffect(
+      loadHatchetDemo(
+        new Request("https://example.com/hatchet-demo?runId=run-123"),
+      ),
+    )
+
+    expect(getRunMock).toHaveBeenCalledWith("run-123")
+    expect(getRunStatusMock).toHaveBeenCalledWith("run-123")
+    expect(getRunTaskIdMock).toHaveBeenCalledWith("run-123")
+    expect(listTaskLogsMock).toHaveBeenCalledWith("task-123")
+    expect(loaderResponse).toMatchObject({
+      _tag: "HttpResponseSuccess",
+      data: {
+        observability: {
+          selectedRunId: "run-123",
+          selectedTaskId: "task-123",
+          status: "RUNNING",
+          logs: {
+            rows: [
+              {
+                message: "started",
+                taskId: "task-123",
+              },
+            ],
+          },
+        },
+      },
+    })
+  })
+
+  it("loader preserves the page when observability reads fail", async () => {
+    listSchedulesMock.mockReturnValue(Effect.succeed([]))
+    listCronsMock.mockReturnValue(Effect.succeed([]))
+    listRunsMock.mockReturnValue(Effect.succeed([]))
+    getTaskMetricsMock.mockReturnValue(
+      Effect.fail(new Error("metrics unavailable")),
+    )
+
+    const loaderResponse = await runMockedHatchetEffect(
+      loadHatchetDemo(
+        new Request("https://example.com/hatchet-demo?taskId=task-123"),
+      ),
+    )
+
+    expect(loaderResponse).toMatchObject({
+      _tag: "HttpResponseSuccess",
+      data: {
+        runs: [],
+        observability: {
+          selectedTaskId: "task-123",
+          error: "Observability is temporarily unavailable",
+        },
       },
     })
   })

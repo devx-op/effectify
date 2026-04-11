@@ -16,7 +16,36 @@ type MockHatchetRunsClient = {
   readonly cancel: (options: unknown) => Promise<unknown>
   readonly get: (runId: string) => Promise<unknown>
   readonly get_status: (runId: string) => Promise<string>
+  readonly getTaskExternalId: (runId: string) => Promise<string>
   readonly list: (options?: unknown) => Promise<{ rows?: unknown[] }>
+}
+
+type MockHatchetLogsClient = {
+  readonly listTask: (
+    taskId: string,
+    options?: unknown,
+  ) => Promise<{ rows?: unknown[] }>
+  readonly listTenant: (options?: unknown) => Promise<{ rows?: unknown[] }>
+}
+
+type MockHatchetMetricsClient = {
+  readonly getTaskMetrics: (options?: unknown) => Promise<{
+    byStatus: {
+      PENDING: number
+      RUNNING: number
+      COMPLETED: number
+      FAILED: number
+      CANCELLED: number
+    }
+  }>
+  readonly getQueueMetrics: () => Promise<{
+    total: { queued: number; running: number; pending: number }
+    workflowBreakdown: Record<
+      string,
+      { queued: number; running: number; pending: number }
+    >
+    stepRun: Record<string, number>
+  }>
 }
 
 type MockHatchetWorkflowsClient = {
@@ -72,7 +101,28 @@ export type MockHatchetClient = HatchetClientType & {
       tenantId: string,
       eventId: string,
     ) => Promise<{ data: unknown }>
+    readonly v1LogLineList: (
+      taskId: string,
+      query?: unknown,
+    ) => Promise<{ data: { rows?: unknown[] } }>
+    readonly v1TenantLogLineList: (
+      tenantId: string,
+      query?: unknown,
+    ) => Promise<{ data: { rows?: unknown[] } }>
+    readonly v1TaskListStatusMetrics: (
+      tenantId: string,
+      query: unknown,
+    ) => Promise<{ data: unknown }>
+    readonly tenantGetQueueMetrics: (
+      tenantId: string,
+      query?: unknown,
+    ) => Promise<{ data: unknown }>
+    readonly tenantGetStepRunQueueMetrics: (
+      tenantId: string,
+    ) => Promise<{ data: unknown }>
   }
+  readonly logs: MockHatchetLogsClient
+  readonly metrics: MockHatchetMetricsClient
   readonly runs: MockHatchetRunsClient
   readonly crons: MockHatchetCronsClient
   readonly scheduled: MockHatchetSchedulesClient
@@ -89,6 +139,8 @@ export interface MockHatchetClientOverrides {
   readonly runNoWait?: MockHatchetClient["runNoWait"]
   readonly events?: Partial<MockHatchetClient["events"]>
   readonly api?: Partial<MockHatchetClient["api"]>
+  readonly logs?: Partial<MockHatchetClient["logs"]>
+  readonly metrics?: Partial<MockHatchetClient["metrics"]>
   readonly runs?: Partial<MockHatchetClient["runs"]>
   readonly crons?: Partial<MockHatchetClient["crons"]>
   readonly scheduled?: Partial<MockHatchetClient["scheduled"]>
@@ -99,6 +151,8 @@ export interface MockHatchetClientOverrides {
 const unimplemented = (method: string) => async () => {
   throw new Error(`Mock Hatchet client method not implemented: ${method}`)
 }
+
+const asMockApiMethod = <T>(value: unknown): T => value as T
 
 /**
  * Create a mock HatchetClient for testing
@@ -116,11 +170,49 @@ export const createMockHatchetClient = (
     },
     api: {
       v1EventGet: unimplemented("api.v1EventGet"),
+      v1LogLineList: asMockApiMethod<MockHatchetClient["api"]["v1LogLineList"]>(
+        async () => ({ data: { rows: [] } }),
+      ),
+      v1TenantLogLineList: asMockApiMethod<
+        MockHatchetClient["api"]["v1TenantLogLineList"]
+      >(async () => ({ data: { rows: [] } })),
+      v1TaskListStatusMetrics: asMockApiMethod<
+        MockHatchetClient["api"]["v1TaskListStatusMetrics"]
+      >(async () => ({ data: [] })),
+      tenantGetQueueMetrics: asMockApiMethod<
+        MockHatchetClient["api"]["tenantGetQueueMetrics"]
+      >(async () => ({ data: { total: {}, workflow: {} } })),
+      tenantGetStepRunQueueMetrics: asMockApiMethod<
+        MockHatchetClient["api"]["tenantGetStepRunQueueMetrics"]
+      >(async () => ({ data: { queues: {} } })),
+    },
+    logs: {
+      listTask: async () => ({ rows: [] }),
+      listTenant: async () => ({ rows: [] }),
+    },
+    metrics: {
+      getTaskMetrics: async () => ({
+        byStatus: {
+          PENDING: 0,
+          RUNNING: 0,
+          COMPLETED: 0,
+          FAILED: 0,
+          CANCELLED: 0,
+        },
+      }),
+      getQueueMetrics: async () => ({
+        total: { queued: 0, running: 0, pending: 0 },
+        workflowBreakdown: {},
+        stepRun: {},
+      }),
     },
     runs: {
       cancel: unimplemented("runs.cancel"),
       get: unimplemented("runs.get"),
       get_status: unimplemented("runs.get_status"),
+      getTaskExternalId: unimplemented(
+        "runs.getTaskExternalId",
+      ) as MockHatchetRunsClient["getTaskExternalId"],
       list: (async () => ({
         rows: [],
         pagination: {} as never,
@@ -148,6 +240,16 @@ export const createMockHatchetClient = (
     })) as unknown as MockHatchetClient["worker"],
   } satisfies MockHatchetClientOverrides
 
+  const logs = {
+    ...baseClient.logs,
+    ...overrides.logs,
+  }
+
+  const metrics = {
+    ...baseClient.metrics,
+    ...overrides.metrics,
+  }
+
   return {
     ...baseClient,
     ...overrides,
@@ -160,8 +262,70 @@ export const createMockHatchetClient = (
     },
     api: {
       ...baseClient.api,
+      v1LogLineList: overrides.api?.v1LogLineList ??
+        asMockApiMethod<MockHatchetClient["api"]["v1LogLineList"]>(
+          async (taskId: string, query?: unknown) => ({
+            data: await logs.listTask(taskId, query),
+          }),
+        ),
+      v1TenantLogLineList: overrides.api?.v1TenantLogLineList ??
+        asMockApiMethod<MockHatchetClient["api"]["v1TenantLogLineList"]>(
+          async (tenantId: string, query?: unknown) => {
+            void tenantId
+            return { data: await logs.listTenant(query) }
+          },
+        ),
+      v1TaskListStatusMetrics: overrides.api?.v1TaskListStatusMetrics ??
+        asMockApiMethod<MockHatchetClient["api"]["v1TaskListStatusMetrics"]>(
+          async (tenantId: string, query: unknown) => {
+            void tenantId
+            return { data: await metrics.getTaskMetrics(query) }
+          },
+        ),
+      tenantGetQueueMetrics: overrides.api?.tenantGetQueueMetrics ??
+        asMockApiMethod<MockHatchetClient["api"]["tenantGetQueueMetrics"]>(
+          async (tenantId: string) => {
+            void tenantId
+            const data = await metrics.getQueueMetrics()
+
+            return {
+              data: {
+                total: {
+                  numQueued: data.total.queued,
+                  numRunning: data.total.running,
+                  numPending: data.total.pending,
+                },
+                workflow: Object.entries(data.workflowBreakdown).reduce<
+                  Record<string, unknown>
+                >((acc, [key, value]) => {
+                  const counts = value as {
+                    queued: number
+                    running: number
+                    pending: number
+                  }
+                  acc[key] = {
+                    numQueued: counts.queued,
+                    numRunning: counts.running,
+                    numPending: counts.pending,
+                  }
+                  return acc
+                }, {}),
+              },
+            }
+          },
+        ),
+      tenantGetStepRunQueueMetrics: overrides.api?.tenantGetStepRunQueueMetrics ??
+        asMockApiMethod<
+          MockHatchetClient["api"]["tenantGetStepRunQueueMetrics"]
+        >(async (tenantId: string) => {
+          void tenantId
+          const data = await metrics.getQueueMetrics()
+          return { data: { queues: data.stepRun } }
+        }),
       ...overrides.api,
     },
+    logs,
+    metrics,
     runs: {
       ...baseClient.runs,
       ...overrides.runs,
