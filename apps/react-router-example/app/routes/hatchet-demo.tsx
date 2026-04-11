@@ -5,6 +5,7 @@
  */
 
 import type { Route } from "./+types/hatchet-demo.js"
+import * as Cause from "effect/Cause"
 import * as Effect from "effect/Effect"
 import { ActionArgsContext, httpFailure, httpRedirect, httpSuccess, LoaderArgsContext } from "@effectify/react-router"
 import { withActionEffect, withLoaderEffect } from "../lib/runtime.server.js"
@@ -15,200 +16,346 @@ import {
   deleteCron,
   getCron,
   getEvent,
+  getQueueMetrics,
+  getRun,
+  getRunStatus,
+  getRunTaskId,
   getSchedule,
+  getTaskMetrics,
   listCrons,
   listRuns,
   listSchedules,
+  listTaskLogs,
   pushEvent,
   runWorkflow,
 } from "@effectify/hatchet"
 import { Form, useActionData } from "react-router"
 import { HatchetDemoCronsSection } from "./hatchet-demo-crons.js"
+import { HatchetDemoObservabilitySection } from "./hatchet-demo-observability.js"
 import { HatchetDemoSchedulesSection } from "./hatchet-demo-schedules.js"
 import {
   buildCronRedirect,
   buildEventRedirect,
+  buildRunRedirect,
   buildScheduleRedirect,
   parseEventPayload,
   parseTriggerTime,
   readSelectedCronId,
   readSelectedEventId,
+  readSelectedRunId,
   readSelectedScheduleId,
-} from "./hatchet-demo.server.js"
+  readSelectedTaskId,
+} from "./hatchet-demo.shared.js"
+
+const defaultObservability = (input?: {
+  readonly selectedRunId?: string
+  readonly selectedTaskId?: string
+  readonly error?: string
+}) => ({
+  selectedRunId: input?.selectedRunId,
+  selectedTaskId: input?.selectedTaskId,
+  taskMetrics: {
+    byStatus: {
+      PENDING: 0,
+      RUNNING: 0,
+      COMPLETED: 0,
+      FAILED: 0,
+      CANCELLED: 0,
+    },
+  },
+  queueMetrics: {
+    total: { queued: 0, running: 0, pending: 0 },
+    workflowBreakdown: {},
+    stepRun: {},
+  },
+  error: input?.error,
+})
+
+const loadObservability = (requestUrl: string) =>
+  Effect.gen(function*() {
+    const selectedRunId = readSelectedRunId(requestUrl)
+    const selectedTaskId = readSelectedTaskId(requestUrl)
+
+    const taskMetricsEffect = getTaskMetrics({
+      since: new Date(0).toISOString(),
+    })
+    const queueMetricsEffect = getQueueMetrics()
+
+    if (selectedRunId) {
+      const { run, status, taskId, taskMetrics, queueMetrics } = yield* Effect.all(
+        {
+          run: getRun(selectedRunId),
+          status: getRunStatus(selectedRunId),
+          taskId: getRunTaskId(selectedRunId),
+          taskMetrics: taskMetricsEffect,
+          queueMetrics: queueMetricsEffect,
+        },
+        { concurrency: "unbounded" },
+      )
+
+      const logs = yield* listTaskLogs(taskId)
+
+      return {
+        selectedRunId,
+        selectedTaskId: taskId,
+        run: run as Record<string, unknown>,
+        status,
+        logs,
+        taskMetrics,
+        queueMetrics,
+      }
+    }
+
+    if (selectedTaskId) {
+      const { logs, taskMetrics, queueMetrics } = yield* Effect.all(
+        {
+          logs: listTaskLogs(selectedTaskId),
+          taskMetrics: taskMetricsEffect,
+          queueMetrics: queueMetricsEffect,
+        },
+        { concurrency: "unbounded" },
+      )
+
+      return {
+        selectedRunId,
+        selectedTaskId,
+        logs,
+        taskMetrics,
+        queueMetrics,
+      }
+    }
+
+    const { taskMetrics, queueMetrics } = yield* Effect.all(
+      {
+        taskMetrics: taskMetricsEffect,
+        queueMetrics: queueMetricsEffect,
+      },
+      { concurrency: "unbounded" },
+    )
+
+    return {
+      selectedRunId,
+      selectedTaskId,
+      taskMetrics,
+      queueMetrics,
+    }
+  })
+
+export const loadHatchetDemo = (request: Request) =>
+  Effect.gen(function*() {
+    const eventId = readSelectedEventId(request.url)
+    const scheduleId = readSelectedScheduleId(request.url)
+    const cronId = readSelectedCronId(request.url)
+    const { runs, schedules, crons } = yield* Effect.all(
+      {
+        runs: listRuns(),
+        schedules: listSchedules(),
+        crons: listCrons(),
+      },
+      { concurrency: "unbounded" },
+    )
+
+    const event = eventId ? yield* getEvent(eventId) : undefined
+    const schedule = scheduleId ? yield* getSchedule(scheduleId) : undefined
+    const cron = cronId ? yield* getCron(cronId) : undefined
+    const observabilityResult = yield* Effect.exit(
+      loadObservability(request.url),
+    )
+    const observabilityCause = observabilityResult._tag === "Failure"
+      ? Cause.squash(observabilityResult.cause)
+      : undefined
+    const observability = observabilityResult._tag === "Success"
+      ? observabilityResult.value
+      : defaultObservability({
+        selectedRunId: readSelectedRunId(request.url),
+        selectedTaskId: readSelectedTaskId(request.url),
+        error: observabilityCause instanceof Error
+          ? observabilityCause.message
+          : "Observability is temporarily unavailable",
+      })
+
+    return yield* httpSuccess({
+      event,
+      schedule,
+      schedules,
+      cron,
+      crons,
+      runs,
+      observability,
+    })
+  })
 
 export const loader = Effect.gen(function*() {
   const { request } = yield* LoaderArgsContext
-  const eventId = readSelectedEventId(request.url)
-  const scheduleId = readSelectedScheduleId(request.url)
-  const cronId = readSelectedCronId(request.url)
-  const runs = yield* listRuns()
-  const schedules = yield* listSchedules()
-  const crons = yield* listCrons()
-
-  const event = eventId ? yield* getEvent(eventId) : undefined
-  const schedule = scheduleId ? yield* getSchedule(scheduleId) : undefined
-  const cron = cronId ? yield* getCron(cronId) : undefined
-
-  return yield* httpSuccess({ event, schedule, schedules, cron, crons, runs })
+  return yield* loadHatchetDemo(request)
 }).pipe(withLoaderEffect)
+
+export const handleHatchetDemoAction = (request: Request) =>
+  Effect.gen(function*() {
+    const formData = yield* Effect.tryPromise({
+      try: () => request.formData(),
+      catch: (cause) =>
+        new Error(
+          cause instanceof Error ? cause.message : "Failed to read form data",
+        ),
+    })
+    const intent = String(formData.get("intent") ?? "")
+
+    if (intent === "run") {
+      const workflowName = String(formData.get("workflowName") ?? "")
+      const inputStr = String(formData.get("input") ?? "{}")
+
+      if (!workflowName) {
+        return yield* httpFailure("Workflow name is required")
+      }
+
+      let input: Record<string, unknown>
+      try {
+        input = JSON.parse(inputStr)
+      } catch {
+        return yield* httpFailure("Invalid JSON input")
+      }
+
+      yield* runWorkflow(workflowName, input)
+      return yield* httpRedirect("/hatchet-demo")
+    }
+
+    if (intent === "push") {
+      const eventKey = String(formData.get("eventKey") ?? "").trim()
+      const eventPayloadInput = String(formData.get("eventPayload") ?? "{}")
+
+      if (!eventKey) {
+        return yield* httpFailure("Event key is required")
+      }
+
+      let eventPayload: Record<string, unknown>
+      try {
+        eventPayload = parseEventPayload(eventPayloadInput)
+      } catch (error) {
+        return yield* httpFailure(
+          error instanceof Error ? error.message : "Invalid event payload",
+        )
+      }
+
+      const event = yield* pushEvent(eventKey, eventPayload, {
+        additionalMetadata: {
+          source: "react-router-example",
+        },
+        scope: "demo",
+      })
+
+      return yield* httpRedirect(buildEventRedirect(event.eventId))
+    }
+
+    if (intent === "schedule") {
+      const workflowName = String(formData.get("workflowName") ?? "").trim()
+      const triggerAtInput = String(formData.get("triggerAt") ?? "").trim()
+      const scheduleInputStr = String(formData.get("scheduleInput") ?? "{}")
+
+      if (!workflowName) {
+        return yield* httpFailure("Workflow name is required")
+      }
+
+      let triggerAt: Date
+      try {
+        triggerAt = parseTriggerTime(triggerAtInput)
+      } catch (error) {
+        return yield* httpFailure(
+          error instanceof Error ? error.message : "Invalid trigger time",
+        )
+      }
+
+      let scheduleInput: Record<string, unknown>
+      try {
+        scheduleInput = parseEventPayload(scheduleInputStr)
+      } catch (error) {
+        return yield* httpFailure(
+          error instanceof Error ? error.message : "Invalid schedule input",
+        )
+      }
+
+      const schedule = yield* createSchedule(workflowName, {
+        triggerAt,
+        input: scheduleInput,
+        additionalMetadata: {
+          source: "react-router-example",
+        },
+      })
+
+      return yield* httpRedirect(buildScheduleRedirect(schedule.scheduleId))
+    }
+
+    if (intent === "create-cron") {
+      const workflowName = String(
+        formData.get("cronWorkflowName") ?? "",
+      ).trim()
+      const cronName = String(formData.get("cronName") ?? "").trim()
+      const cronExpression = String(
+        formData.get("cronExpression") ?? "",
+      ).trim()
+      const cronInputStr = String(formData.get("cronInput") ?? "{}")
+
+      if (!workflowName) {
+        return yield* httpFailure("Workflow name is required")
+      }
+
+      if (!cronName) {
+        return yield* httpFailure("Cron name is required")
+      }
+
+      if (!cronExpression) {
+        return yield* httpFailure("Cron expression is required")
+      }
+
+      let cronInput: Record<string, unknown>
+      try {
+        cronInput = parseEventPayload(cronInputStr)
+      } catch (error) {
+        return yield* httpFailure(
+          error instanceof Error ? error.message : "Invalid cron input",
+        )
+      }
+
+      const cron = yield* createCron(workflowName, {
+        name: cronName,
+        expression: cronExpression,
+        input: cronInput,
+        additionalMetadata: {
+          source: "react-router-example",
+        },
+      })
+
+      return yield* httpRedirect(buildCronRedirect(cron.cronId))
+    }
+
+    if (intent === "delete-cron") {
+      const cronId = String(formData.get("cronId") ?? "").trim()
+
+      if (!cronId) {
+        return yield* httpFailure("Cron ID is required")
+      }
+
+      yield* deleteCron(cronId)
+      return yield* httpRedirect("/hatchet-demo")
+    }
+
+    if (intent === "cancel") {
+      const runId = String(formData.get("runId") ?? "")
+
+      if (!runId) {
+        return yield* httpFailure("Run ID is required")
+      }
+
+      yield* cancelRun(runId)
+      return yield* httpRedirect("/hatchet-demo")
+    }
+
+    return yield* httpFailure("Unknown intent")
+  })
 
 export const action = Effect.gen(function*() {
   const { request } = yield* ActionArgsContext
-  const formData = yield* Effect.tryPromise({
-    try: () => request.formData(),
-    catch: (cause) =>
-      new Error(
-        cause instanceof Error ? cause.message : "Failed to read form data",
-      ),
-  })
-  const intent = String(formData.get("intent") ?? "")
-
-  if (intent === "run") {
-    const workflowName = String(formData.get("workflowName") ?? "")
-    const inputStr = String(formData.get("input") ?? "{}")
-
-    if (!workflowName) {
-      return yield* httpFailure("Workflow name is required")
-    }
-
-    let input: Record<string, unknown>
-    try {
-      input = JSON.parse(inputStr)
-    } catch {
-      return yield* httpFailure("Invalid JSON input")
-    }
-
-    yield* runWorkflow(workflowName, input)
-    return yield* httpRedirect("/hatchet-demo")
-  }
-
-  if (intent === "push") {
-    const eventKey = String(formData.get("eventKey") ?? "").trim()
-    const eventPayloadInput = String(formData.get("eventPayload") ?? "{}")
-
-    if (!eventKey) {
-      return yield* httpFailure("Event key is required")
-    }
-
-    let eventPayload: Record<string, unknown>
-    try {
-      eventPayload = parseEventPayload(eventPayloadInput)
-    } catch (error) {
-      return yield* httpFailure(
-        error instanceof Error ? error.message : "Invalid event payload",
-      )
-    }
-
-    const event = yield* pushEvent(eventKey, eventPayload, {
-      additionalMetadata: {
-        source: "react-router-example",
-      },
-      scope: "demo",
-    })
-
-    return yield* httpRedirect(buildEventRedirect(event.eventId))
-  }
-
-  if (intent === "schedule") {
-    const workflowName = String(formData.get("workflowName") ?? "").trim()
-    const triggerAtInput = String(formData.get("triggerAt") ?? "").trim()
-    const scheduleInputStr = String(formData.get("scheduleInput") ?? "{}")
-
-    if (!workflowName) {
-      return yield* httpFailure("Workflow name is required")
-    }
-
-    let triggerAt: Date
-    try {
-      triggerAt = parseTriggerTime(triggerAtInput)
-    } catch (error) {
-      return yield* httpFailure(
-        error instanceof Error ? error.message : "Invalid trigger time",
-      )
-    }
-
-    let scheduleInput: Record<string, unknown>
-    try {
-      scheduleInput = parseEventPayload(scheduleInputStr)
-    } catch (error) {
-      return yield* httpFailure(
-        error instanceof Error ? error.message : "Invalid schedule input",
-      )
-    }
-
-    const schedule = yield* createSchedule(workflowName, {
-      triggerAt,
-      input: scheduleInput,
-      additionalMetadata: {
-        source: "react-router-example",
-      },
-    })
-
-    return yield* httpRedirect(buildScheduleRedirect(schedule.scheduleId))
-  }
-
-  if (intent === "create-cron") {
-    const workflowName = String(formData.get("cronWorkflowName") ?? "").trim()
-    const cronName = String(formData.get("cronName") ?? "").trim()
-    const cronExpression = String(formData.get("cronExpression") ?? "").trim()
-    const cronInputStr = String(formData.get("cronInput") ?? "{}")
-
-    if (!workflowName) {
-      return yield* httpFailure("Workflow name is required")
-    }
-
-    if (!cronName) {
-      return yield* httpFailure("Cron name is required")
-    }
-
-    if (!cronExpression) {
-      return yield* httpFailure("Cron expression is required")
-    }
-
-    let cronInput: Record<string, unknown>
-    try {
-      cronInput = parseEventPayload(cronInputStr)
-    } catch (error) {
-      return yield* httpFailure(
-        error instanceof Error ? error.message : "Invalid cron input",
-      )
-    }
-
-    const cron = yield* createCron(workflowName, {
-      name: cronName,
-      expression: cronExpression,
-      input: cronInput,
-      additionalMetadata: {
-        source: "react-router-example",
-      },
-    })
-
-    return yield* httpRedirect(buildCronRedirect(cron.cronId))
-  }
-
-  if (intent === "delete-cron") {
-    const cronId = String(formData.get("cronId") ?? "").trim()
-
-    if (!cronId) {
-      return yield* httpFailure("Cron ID is required")
-    }
-
-    yield* deleteCron(cronId)
-    return yield* httpRedirect("/hatchet-demo")
-  }
-
-  if (intent === "cancel") {
-    const runId = String(formData.get("runId") ?? "")
-
-    if (!runId) {
-      return yield* httpFailure("Run ID is required")
-    }
-
-    yield* cancelRun(runId)
-    return yield* httpRedirect("/hatchet-demo")
-  }
-
-  return yield* httpFailure("Unknown intent")
+  return yield* handleHatchetDemoAction(request)
 }).pipe(withActionEffect)
 
 export default function HatchetDemo({ loaderData }: Route.ComponentProps) {
@@ -221,6 +368,7 @@ export default function HatchetDemo({ loaderData }: Route.ComponentProps) {
     const cron = loaderData.data?.cron
     const crons = loaderData.data?.crons ?? []
     const runs = loaderData.data?.runs ?? []
+    const observability = loaderData.data?.observability ?? defaultObservability()
     const actionError = actionData && actionData.ok === false && actionData.errors?.length
       ? String(actionData.errors[0])
       : undefined
@@ -361,6 +509,9 @@ export default function HatchetDemo({ loaderData }: Route.ComponentProps) {
                         <strong>{run.workflowName ?? run.id}</strong>
                         <span>—</span>
                         <span>{run.status ?? "unknown"}</span>
+                        <span>
+                          <a href={buildRunRedirect(String(run.id))}>Inspect</a>
+                        </span>
                       </div>
                       {run.status !== "COMPLETED" &&
                           run.status !== "CANCELLED" ?
@@ -387,6 +538,8 @@ export default function HatchetDemo({ loaderData }: Route.ComponentProps) {
               </ul>
             )}
           </section>
+
+          <HatchetDemoObservabilitySection observability={observability} />
         </article>
       </main>
     )
