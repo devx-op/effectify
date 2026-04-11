@@ -102,6 +102,13 @@ type MockHatchetSchedulesClient = {
   readonly delete: (scheduleId: string) => Promise<void>
 }
 
+type MockHatchetCronsClient = {
+  readonly create: (workflow: string, options: unknown) => Promise<unknown>
+  readonly get: (cronId: string) => Promise<unknown>
+  readonly list: (options?: unknown) => Promise<{ rows?: unknown[] }>
+  readonly delete: (cronId: string) => Promise<void>
+}
+
 type MockWorkerInstance = {
   readonly registerWorkflows: (workflows?: unknown[]) => Promise<void>
   readonly start: () => Promise<void>

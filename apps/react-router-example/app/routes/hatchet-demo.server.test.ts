@@ -7,6 +7,10 @@ const getEventMock = vi.fn()
 const createScheduleMock = vi.fn()
 const getScheduleMock = vi.fn()
 const listSchedulesMock = vi.fn()
+const createCronMock = vi.fn()
+const getCronMock = vi.fn()
+const listCronsMock = vi.fn()
+const deleteCronMock = vi.fn()
 const listRunsMock = vi.fn()
 const cancelRunMock = vi.fn()
 const runWorkflowMock = vi.fn()
@@ -17,6 +21,10 @@ vi.mock("@effectify/hatchet", () => ({
   createSchedule: (...args: Array<unknown>) => createScheduleMock(...args),
   getSchedule: (...args: Array<unknown>) => getScheduleMock(...args),
   listSchedules: (...args: Array<unknown>) => listSchedulesMock(...args),
+  createCron: (...args: Array<unknown>) => createCronMock(...args),
+  getCron: (...args: Array<unknown>) => getCronMock(...args),
+  listCrons: (...args: Array<unknown>) => listCronsMock(...args),
+  deleteCron: (...args: Array<unknown>) => deleteCronMock(...args),
   listRuns: (...args: Array<unknown>) => listRunsMock(...args),
   cancelRun: (...args: Array<unknown>) => cancelRunMock(...args),
   runWorkflow: (...args: Array<unknown>) => runWorkflowMock(...args),
@@ -29,10 +37,12 @@ vi.mock("../lib/runtime.server.js", async () => {
 
 import { action, loader } from "./hatchet-demo.js"
 import {
+  buildCronRedirect,
   buildEventRedirect,
   buildScheduleRedirect,
   parseEventPayload,
   parseTriggerTime,
+  readSelectedCronId,
   readSelectedEventId,
   readSelectedScheduleId,
 } from "./hatchet-demo.server.js"
@@ -51,9 +61,14 @@ describe("hatchet demo event helpers", () => {
     createScheduleMock.mockReset()
     getScheduleMock.mockReset()
     listSchedulesMock.mockReset()
+    createCronMock.mockReset()
+    getCronMock.mockReset()
+    listCronsMock.mockReset()
+    deleteCronMock.mockReset()
     listRunsMock.mockReset()
     cancelRunMock.mockReset()
     runWorkflowMock.mockReset()
+    listCronsMock.mockReturnValue(Effect.succeed([]))
   })
 
   it("parseEventPayload returns JSON objects for push-event actions", () => {
@@ -101,6 +116,15 @@ describe("hatchet demo event helpers", () => {
     ).toBe("schedule-123")
     expect(buildScheduleRedirect("schedule id/123")).toBe(
       "/hatchet-demo?scheduleId=schedule%20id%2F123",
+    )
+  })
+
+  it("cron helpers read selected cron ids and encode cron redirects", () => {
+    expect(
+      readSelectedCronId("https://example.com/hatchet-demo?cronId=cron-123"),
+    ).toBe("cron-123")
+    expect(buildCronRedirect("cron id/123")).toBe(
+      "/hatchet-demo?cronId=cron%20id%2F123",
     )
   })
 
@@ -175,6 +199,8 @@ describe("hatchet demo event helpers", () => {
         },
         schedule: undefined,
         schedules: [],
+        cron: undefined,
+        crons: [],
         runs: [],
       },
     })
@@ -267,15 +293,153 @@ describe("hatchet demo event helpers", () => {
             input: { userId: "user-123" },
           },
         ],
+        cron: undefined,
+        crons: [],
         runs: [],
       },
     })
   })
 
+  it("action creates a cron and redirects the loader to the selected cron", async () => {
+    listRunsMock.mockReturnValue(Effect.succeed([]))
+    listSchedulesMock.mockReturnValue(Effect.succeed([]))
+    listCronsMock.mockReturnValue(
+      Effect.succeed([
+        {
+          cronId: "cron id/123",
+          workflowName: "users.notify",
+          cron: "0 0 * * *",
+          name: "nightly-users",
+          input: { userId: "user-123" },
+          enabled: true,
+          method: "API",
+        },
+      ]),
+    )
+    createCronMock.mockReturnValue(
+      Effect.succeed({
+        cronId: "cron id/123",
+        workflowName: "users.notify",
+        cron: "0 0 * * *",
+        name: "nightly-users",
+        input: { userId: "user-123" },
+        enabled: true,
+        method: "API",
+      }),
+    )
+    getCronMock.mockReturnValue(
+      Effect.succeed({
+        cronId: "cron id/123",
+        workflowName: "users.notify",
+        cron: "0 0 * * *",
+        name: "nightly-users",
+        input: { userId: "user-123" },
+        enabled: true,
+        method: "API",
+      }),
+    )
+
+    const formData = new FormData()
+    formData.set("intent", "create-cron")
+    formData.set("cronWorkflowName", "users.notify")
+    formData.set("cronName", "nightly-users")
+    formData.set("cronExpression", "0 0 * * *")
+    formData.set("cronInput", '{"userId":"user-123"}')
+
+    const actionResponse = await action(
+      createRouteArgs(
+        new Request("https://example.com/hatchet-demo", {
+          method: "POST",
+          body: formData,
+        }),
+      ),
+    )
+
+    expect(createCronMock).toHaveBeenCalledWith("users.notify", {
+      name: "nightly-users",
+      expression: "0 0 * * *",
+      input: { userId: "user-123" },
+      additionalMetadata: {
+        source: "react-router-example",
+      },
+    })
+    expect(actionResponse).toBeInstanceOf(Response)
+    const redirectResponse = actionResponse as Response
+    expect(redirectResponse.status).toBe(302)
+    expect(redirectResponse.headers.get("Location")).toBe(
+      "/hatchet-demo?cronId=cron%20id%2F123",
+    )
+
+    const loaderResponse = await loader(
+      createRouteArgs(
+        new Request(
+          `https://example.com${redirectResponse.headers.get("Location")}`,
+        ),
+      ),
+    )
+
+    expect(getCronMock).toHaveBeenCalledWith("cron id/123")
+    expect(loaderResponse).toEqual({
+      ok: true,
+      data: {
+        event: undefined,
+        schedule: undefined,
+        schedules: [],
+        cron: {
+          cronId: "cron id/123",
+          workflowName: "users.notify",
+          cron: "0 0 * * *",
+          name: "nightly-users",
+          input: { userId: "user-123" },
+          enabled: true,
+          method: "API",
+        },
+        crons: [
+          {
+            cronId: "cron id/123",
+            workflowName: "users.notify",
+            cron: "0 0 * * *",
+            name: "nightly-users",
+            input: { userId: "user-123" },
+            enabled: true,
+            method: "API",
+          },
+        ],
+        runs: [],
+      },
+    })
+  })
+
+  it("action deletes a cron and redirects back to the cron list", async () => {
+    deleteCronMock.mockReturnValue(Effect.void)
+
+    const formData = new FormData()
+    formData.set("intent", "delete-cron")
+    formData.set("cronId", "cron-404")
+
+    const actionResponse = await action(
+      createRouteArgs(
+        new Request("https://example.com/hatchet-demo?cronId=cron-404", {
+          method: "POST",
+          body: formData,
+        }),
+      ),
+    )
+
+    expect(deleteCronMock).toHaveBeenCalledWith("cron-404")
+    expect(actionResponse).toBeInstanceOf(Response)
+    expect((actionResponse as Response).headers.get("Location")).toBe(
+      "/hatchet-demo",
+    )
+  })
+
   it("loader skips selected resource lookups when the URL does not request them", async () => {
     listSchedulesMock.mockReturnValue(Effect.succeed([]))
+    listCronsMock.mockReturnValue(Effect.succeed([]))
     listRunsMock.mockReturnValue(
-      Effect.succeed([{ id: "run-1", workflowName: "wf", status: "COMPLETED" }]),
+      Effect.succeed([
+        { id: "run-1", workflowName: "wf", status: "COMPLETED" },
+      ]),
     )
 
     const loaderResponse = await loader(
@@ -284,12 +448,15 @@ describe("hatchet demo event helpers", () => {
 
     expect(getEventMock).not.toHaveBeenCalled()
     expect(getScheduleMock).not.toHaveBeenCalled()
+    expect(getCronMock).not.toHaveBeenCalled()
     expect(loaderResponse).toEqual({
       ok: true,
       data: {
         event: undefined,
         schedule: undefined,
         schedules: [],
+        cron: undefined,
+        crons: [],
         runs: [{ id: "run-1", workflowName: "wf", status: "COMPLETED" }],
       },
     })
