@@ -31,6 +31,13 @@ type MockHatchetSchedulesClient = {
   readonly delete: (scheduleId: string) => Promise<void>
 }
 
+type MockHatchetCronsClient = {
+  readonly create: (workflow: string, options: unknown) => Promise<unknown>
+  readonly get: (cronId: string) => Promise<unknown>
+  readonly list: (options?: unknown) => Promise<{ rows?: unknown[] }>
+  readonly delete: (cronId: string) => Promise<void>
+}
+
 type MockWorkerInstance = {
   readonly registerWorkflows: (workflows?: unknown[]) => Promise<void>
   readonly start: () => Promise<void>
@@ -67,6 +74,7 @@ export type MockHatchetClient = HatchetClientType & {
     ) => Promise<{ data: unknown }>
   }
   readonly runs: MockHatchetRunsClient
+  readonly crons: MockHatchetCronsClient
   readonly scheduled: MockHatchetSchedulesClient
   readonly workflows: MockHatchetWorkflowsClient
   readonly worker: (
@@ -82,6 +90,7 @@ export interface MockHatchetClientOverrides {
   readonly events?: Partial<MockHatchetClient["events"]>
   readonly api?: Partial<MockHatchetClient["api"]>
   readonly runs?: Partial<MockHatchetClient["runs"]>
+  readonly crons?: Partial<MockHatchetClient["crons"]>
   readonly scheduled?: Partial<MockHatchetClient["scheduled"]>
   readonly workflows?: Partial<MockHatchetClient["workflows"]>
   readonly worker?: MockHatchetClient["worker"]
@@ -117,6 +126,12 @@ export const createMockHatchetClient = (
         pagination: {} as never,
       })) as MockHatchetClient["runs"]["list"],
     },
+    crons: {
+      create: unimplemented("crons.create"),
+      get: unimplemented("crons.get"),
+      list: async () => ({ rows: [] }),
+      delete: (async () => undefined) as MockHatchetClient["crons"]["delete"],
+    },
     scheduled: {
       create: unimplemented("scheduled.create"),
       get: unimplemented("scheduled.get"),
@@ -150,6 +165,10 @@ export const createMockHatchetClient = (
     runs: {
       ...baseClient.runs,
       ...overrides.runs,
+    },
+    crons: {
+      ...baseClient.crons,
+      ...overrides.crons,
     },
     scheduled: {
       ...baseClient.scheduled,

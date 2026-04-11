@@ -10,21 +10,28 @@ import { ActionArgsContext, httpFailure, httpRedirect, httpSuccess, LoaderArgsCo
 import { withActionEffect, withLoaderEffect } from "../lib/runtime.server.js"
 import {
   cancelRun,
+  createCron,
   createSchedule,
+  deleteCron,
+  getCron,
   getEvent,
   getSchedule,
+  listCrons,
   listRuns,
   listSchedules,
   pushEvent,
   runWorkflow,
 } from "@effectify/hatchet"
 import { Form, useActionData } from "react-router"
+import { HatchetDemoCronsSection } from "./hatchet-demo-crons.js"
 import { HatchetDemoSchedulesSection } from "./hatchet-demo-schedules.js"
 import {
+  buildCronRedirect,
   buildEventRedirect,
   buildScheduleRedirect,
   parseEventPayload,
   parseTriggerTime,
+  readSelectedCronId,
   readSelectedEventId,
   readSelectedScheduleId,
 } from "./hatchet-demo.server.js"
@@ -33,13 +40,16 @@ export const loader = Effect.gen(function*() {
   const { request } = yield* LoaderArgsContext
   const eventId = readSelectedEventId(request.url)
   const scheduleId = readSelectedScheduleId(request.url)
+  const cronId = readSelectedCronId(request.url)
   const runs = yield* listRuns()
   const schedules = yield* listSchedules()
+  const crons = yield* listCrons()
 
   const event = eventId ? yield* getEvent(eventId) : undefined
   const schedule = scheduleId ? yield* getSchedule(scheduleId) : undefined
+  const cron = cronId ? yield* getCron(cronId) : undefined
 
-  return yield* httpSuccess({ event, schedule, schedules, runs })
+  return yield* httpSuccess({ event, schedule, schedules, cron, crons, runs })
 }).pipe(withLoaderEffect)
 
 export const action = Effect.gen(function*() {
@@ -137,6 +147,56 @@ export const action = Effect.gen(function*() {
     return yield* httpRedirect(buildScheduleRedirect(schedule.scheduleId))
   }
 
+  if (intent === "create-cron") {
+    const workflowName = String(formData.get("cronWorkflowName") ?? "").trim()
+    const cronName = String(formData.get("cronName") ?? "").trim()
+    const cronExpression = String(formData.get("cronExpression") ?? "").trim()
+    const cronInputStr = String(formData.get("cronInput") ?? "{}")
+
+    if (!workflowName) {
+      return yield* httpFailure("Workflow name is required")
+    }
+
+    if (!cronName) {
+      return yield* httpFailure("Cron name is required")
+    }
+
+    if (!cronExpression) {
+      return yield* httpFailure("Cron expression is required")
+    }
+
+    let cronInput: Record<string, unknown>
+    try {
+      cronInput = parseEventPayload(cronInputStr)
+    } catch (error) {
+      return yield* httpFailure(
+        error instanceof Error ? error.message : "Invalid cron input",
+      )
+    }
+
+    const cron = yield* createCron(workflowName, {
+      name: cronName,
+      expression: cronExpression,
+      input: cronInput,
+      additionalMetadata: {
+        source: "react-router-example",
+      },
+    })
+
+    return yield* httpRedirect(buildCronRedirect(cron.cronId))
+  }
+
+  if (intent === "delete-cron") {
+    const cronId = String(formData.get("cronId") ?? "").trim()
+
+    if (!cronId) {
+      return yield* httpFailure("Cron ID is required")
+    }
+
+    yield* deleteCron(cronId)
+    return yield* httpRedirect("/hatchet-demo")
+  }
+
   if (intent === "cancel") {
     const runId = String(formData.get("runId") ?? "")
 
@@ -158,6 +218,8 @@ export default function HatchetDemo({ loaderData }: Route.ComponentProps) {
     const event = loaderData.data?.event
     const schedule = loaderData.data?.schedule
     const schedules = loaderData.data?.schedules ?? []
+    const cron = loaderData.data?.cron
+    const crons = loaderData.data?.crons ?? []
     const runs = loaderData.data?.runs ?? []
     const actionError = actionData && actionData.ok === false && actionData.errors?.length
       ? String(actionData.errors[0])
@@ -273,6 +335,12 @@ export default function HatchetDemo({ loaderData }: Route.ComponentProps) {
             actionError={actionError}
             schedule={schedule}
             schedules={schedules}
+          />
+
+          <HatchetDemoCronsSection
+            actionError={actionError}
+            cron={cron}
+            crons={crons}
           />
 
           {/* List Runs */}

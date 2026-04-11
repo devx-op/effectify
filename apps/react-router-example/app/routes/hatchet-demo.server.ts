@@ -34,3 +34,10 @@ export const readSelectedScheduleId = (
 
 export const buildScheduleRedirect = (scheduleId: string): string =>
   `/hatchet-demo?scheduleId=${encodeURIComponent(scheduleId)}`
+
+export const readSelectedCronId = (requestUrl: string): string | undefined => {
+  const cronId = new URL(requestUrl).searchParams.get("cronId")?.trim()
+  return cronId ? cronId : undefined
+}
+
+export const buildCronRedirect = (cronId: string): string => `/hatchet-demo?cronId=${encodeURIComponent(cronId)}`

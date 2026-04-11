@@ -4,6 +4,7 @@
 
 export {
   HatchetContextError,
+  HatchetCronError,
   HatchetError,
   HatchetEventError,
   HatchetExecutionError,

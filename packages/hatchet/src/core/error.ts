@@ -171,3 +171,27 @@ export class HatchetScheduleError extends Data.TaggedError(
     })
   }
 }
+
+/**
+ * Error when a cron operation fails
+ */
+export class HatchetCronError extends Data.TaggedError("HatchetCronError")<{
+  readonly message: string
+  readonly cronId?: string
+  readonly workflowName?: string
+  readonly cause?: unknown
+}> {
+  static of(
+    message: string,
+    cronId?: string,
+    workflowName?: string,
+    cause?: unknown,
+  ): HatchetCronError {
+    return new HatchetCronError({
+      message,
+      cronId,
+      workflowName,
+      cause,
+    })
+  }
+}
