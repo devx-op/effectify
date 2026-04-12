@@ -41,6 +41,7 @@
     "@types/react-dom": "catalog:",
     "@typescript/native-preview": "catalog:",
     "@vitejs/plugin-react": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
     "@vitest/ui": "catalog:",
     "dprint": "catalog:",
     "husky": "catalog:",

@@ -26,7 +26,7 @@ describe("Hatchet SDK 1.21.0 upgrade contract", () => {
     expect(packageJson.dependencies["@hatchet-dev/typescript-sdk"]).toBe(
       "catalog:",
     )
-    expect(workspaceYaml).toContain('  "@hatchet-dev/typescript-sdk": 1.21.0')
+    expect(workspaceYaml).toContain("  '@hatchet-dev/typescript-sdk': 1.21.0")
   })
 
   it("documents 1.21.0 as the validated SDK target in the public spec", async () => {
