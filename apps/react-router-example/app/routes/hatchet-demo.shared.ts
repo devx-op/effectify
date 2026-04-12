@@ -1,3 +1,10 @@
+import type {
+  HatchetWebhookAuth,
+  HatchetWebhookHmacAlgorithm,
+  HatchetWebhookHmacEncoding,
+  HatchetWebhookSourceName,
+} from "@effectify/hatchet"
+
 export const parseEventPayload = (input: string): Record<string, unknown> => {
   const parsed = JSON.parse(input) as unknown
 
@@ -53,3 +60,143 @@ export const readSelectedTaskId = (requestUrl: string): string | undefined => {
 }
 
 export const buildRunRedirect = (runId: string): string => `/hatchet-demo?runId=${encodeURIComponent(runId)}`
+
+const webhookSourceNames = [
+  "GENERIC",
+  "GITHUB",
+  "STRIPE",
+  "SLACK",
+  "LINEAR",
+  "SVIX",
+] as const
+const webhookAuthTypes = ["BASIC", "API_KEY", "HMAC"] as const
+const webhookHmacAlgorithms = ["SHA1", "SHA256", "SHA512", "MD5"] as const
+const webhookHmacEncodings = ["HEX", "BASE64", "BASE64URL"] as const
+
+type SupportedWebhookAuthType = (typeof webhookAuthTypes)[number]
+
+const assertNonEmpty = (value: string, message: string): string => {
+  const trimmed = value.trim()
+
+  if (!trimmed) {
+    throw new Error(message)
+  }
+
+  return trimmed
+}
+
+export const readSelectedWebhookName = (
+  requestUrl: string,
+): string | undefined => {
+  const webhookName = new URL(requestUrl).searchParams
+    .get("webhookName")
+    ?.trim()
+  return webhookName ? webhookName : undefined
+}
+
+export const buildWebhookRedirect = (webhookName: string): string =>
+  `/hatchet-demo?webhookName=${encodeURIComponent(webhookName)}`
+
+export const parseWebhookStaticPayload = (
+  input: string,
+): Record<string, unknown> | undefined => {
+  if (!input.trim()) {
+    return undefined
+  }
+
+  return parseEventPayload(input)
+}
+
+export const parseWebhookSourceName = (
+  input: string,
+): HatchetWebhookSourceName => {
+  const sourceName = assertNonEmpty(input, "Webhook source is required")
+
+  if (webhookSourceNames.includes(sourceName as HatchetWebhookSourceName)) {
+    return sourceName as HatchetWebhookSourceName
+  }
+
+  throw new Error(`Unsupported webhook source: ${sourceName}`)
+}
+
+export const parseWebhookAuthType = (
+  input: string,
+): SupportedWebhookAuthType => {
+  const authType = assertNonEmpty(
+    input,
+    "Webhook auth type must be BASIC, API_KEY, or HMAC",
+  )
+
+  if (webhookAuthTypes.includes(authType as SupportedWebhookAuthType)) {
+    return authType as SupportedWebhookAuthType
+  }
+
+  throw new Error("Webhook auth type must be BASIC, API_KEY, or HMAC")
+}
+
+export const parseWebhookAuth = (formData: FormData): HatchetWebhookAuth => {
+  const authType = parseWebhookAuthType(
+    String(formData.get("webhookAuthType") ?? ""),
+  )
+
+  if (authType === "BASIC") {
+    return {
+      authType,
+      username: assertNonEmpty(
+        String(formData.get("webhookUsername") ?? ""),
+        "Webhook username is required for BASIC auth",
+      ),
+      password: assertNonEmpty(
+        String(formData.get("webhookPassword") ?? ""),
+        "Webhook password is required for BASIC auth",
+      ),
+    }
+  }
+
+  if (authType === "API_KEY") {
+    return {
+      authType,
+      headerName: assertNonEmpty(
+        String(formData.get("webhookHeaderName") ?? ""),
+        "Webhook header name is required for API_KEY auth",
+      ),
+      apiKey: assertNonEmpty(
+        String(formData.get("webhookApiKey") ?? ""),
+        "Webhook API key is required for API_KEY auth",
+      ),
+    }
+  }
+
+  const algorithm = assertNonEmpty(
+    String(formData.get("webhookHmacAlgorithm") ?? ""),
+    "Webhook HMAC algorithm is required for HMAC auth",
+  )
+  const encoding = assertNonEmpty(
+    String(formData.get("webhookHmacEncoding") ?? ""),
+    "Webhook HMAC encoding is required for HMAC auth",
+  )
+
+  if (
+    !webhookHmacAlgorithms.includes(algorithm as HatchetWebhookHmacAlgorithm)
+  ) {
+    throw new Error(`Unsupported webhook HMAC algorithm: ${algorithm}`)
+  }
+
+  if (!webhookHmacEncodings.includes(encoding as HatchetWebhookHmacEncoding)) {
+    throw new Error(`Unsupported webhook HMAC encoding: ${encoding}`)
+  }
+
+  return {
+    authType,
+    algorithm: algorithm as HatchetWebhookHmacAlgorithm,
+    encoding: encoding as HatchetWebhookHmacEncoding,
+    signatureHeaderName: assertNonEmpty(
+      String(formData.get("webhookSignatureHeaderName") ?? ""),
+      "Webhook signature header is required for HMAC auth",
+    ),
+    signingSecret: assertNonEmpty(
+      String(formData.get("webhookSigningSecret") ?? ""),
+      "Webhook signing secret is required for HMAC auth",
+    ),
+  }
+}

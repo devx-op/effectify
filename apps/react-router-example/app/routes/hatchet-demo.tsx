@@ -13,7 +13,9 @@ import {
   cancelRun,
   createCron,
   createSchedule,
+  createWebhook,
   deleteCron,
+  deleteWebhook,
   getCron,
   getEvent,
   getQueueMetrics,
@@ -22,10 +24,12 @@ import {
   getRunTaskId,
   getSchedule,
   getTaskMetrics,
+  getWebhook,
   listCrons,
   listRuns,
   listSchedules,
   listTaskLogs,
+  listWebhooks,
   pushEvent,
   runWorkflow,
 } from "@effectify/hatchet"
@@ -33,18 +37,24 @@ import { Form, useActionData } from "react-router"
 import { HatchetDemoCronsSection } from "./hatchet-demo-crons.js"
 import { HatchetDemoObservabilitySection } from "./hatchet-demo-observability.js"
 import { HatchetDemoSchedulesSection } from "./hatchet-demo-schedules.js"
+import { HatchetDemoWebhooksSection } from "./hatchet-demo-webhooks.js"
 import {
   buildCronRedirect,
   buildEventRedirect,
   buildRunRedirect,
   buildScheduleRedirect,
+  buildWebhookRedirect,
   parseEventPayload,
   parseTriggerTime,
+  parseWebhookAuth,
+  parseWebhookSourceName,
+  parseWebhookStaticPayload,
   readSelectedCronId,
   readSelectedEventId,
   readSelectedRunId,
   readSelectedScheduleId,
   readSelectedTaskId,
+  readSelectedWebhookName,
 } from "./hatchet-demo.shared.js"
 
 const defaultObservability = (input?: {
@@ -146,11 +156,13 @@ export const loadHatchetDemo = (request: Request) =>
     const eventId = readSelectedEventId(request.url)
     const scheduleId = readSelectedScheduleId(request.url)
     const cronId = readSelectedCronId(request.url)
-    const { runs, schedules, crons } = yield* Effect.all(
+    const webhookName = readSelectedWebhookName(request.url)
+    const { runs, schedules, crons, webhooks } = yield* Effect.all(
       {
         runs: listRuns(),
         schedules: listSchedules(),
         crons: listCrons(),
+        webhooks: listWebhooks(),
       },
       { concurrency: "unbounded" },
     )
@@ -158,6 +170,7 @@ export const loadHatchetDemo = (request: Request) =>
     const event = eventId ? yield* getEvent(eventId) : undefined
     const schedule = scheduleId ? yield* getSchedule(scheduleId) : undefined
     const cron = cronId ? yield* getCron(cronId) : undefined
+    const webhook = webhookName ? yield* getWebhook(webhookName) : undefined
     const observabilityResult = yield* Effect.exit(
       loadObservability(request.url),
     )
@@ -180,6 +193,8 @@ export const loadHatchetDemo = (request: Request) =>
       schedules,
       cron,
       crons,
+      webhook,
+      webhooks,
       runs,
       observability,
     })
@@ -339,6 +354,65 @@ export const handleHatchetDemoAction = (request: Request) =>
       return yield* httpRedirect("/hatchet-demo")
     }
 
+    if (intent === "create-webhook") {
+      const webhookName = String(formData.get("webhookName") ?? "").trim()
+      const eventKeyExpression = String(
+        formData.get("webhookEventKeyExpression") ?? "",
+      ).trim()
+      const scopeExpression = String(
+        formData.get("webhookScopeExpression") ?? "",
+      ).trim()
+      const staticPayloadInput = String(
+        formData.get("webhookStaticPayload") ?? "",
+      )
+
+      if (!webhookName) {
+        return yield* httpFailure("Webhook name is required")
+      }
+
+      if (!eventKeyExpression) {
+        return yield* httpFailure("Webhook event key expression is required")
+      }
+
+      let sourceName: ReturnType<typeof parseWebhookSourceName>
+      let auth: ReturnType<typeof parseWebhookAuth>
+      let staticPayload: ReturnType<typeof parseWebhookStaticPayload>
+
+      try {
+        sourceName = parseWebhookSourceName(
+          String(formData.get("webhookSourceName") ?? ""),
+        )
+        auth = parseWebhookAuth(formData)
+        staticPayload = parseWebhookStaticPayload(staticPayloadInput)
+      } catch (error) {
+        return yield* httpFailure(
+          error instanceof Error ? error.message : "Invalid webhook form",
+        )
+      }
+
+      const webhook = yield* createWebhook({
+        name: webhookName,
+        sourceName,
+        eventKeyExpression,
+        scopeExpression: scopeExpression || undefined,
+        staticPayload,
+        auth,
+      })
+
+      return yield* httpRedirect(buildWebhookRedirect(webhook.name))
+    }
+
+    if (intent === "delete-webhook") {
+      const webhookName = String(formData.get("webhookName") ?? "").trim()
+
+      if (!webhookName) {
+        return yield* httpFailure("Webhook name is required")
+      }
+
+      yield* deleteWebhook(webhookName)
+      return yield* httpRedirect("/hatchet-demo")
+    }
+
     if (intent === "cancel") {
       const runId = String(formData.get("runId") ?? "")
 
@@ -367,6 +441,8 @@ export default function HatchetDemo({ loaderData }: Route.ComponentProps) {
     const schedules = loaderData.data?.schedules ?? []
     const cron = loaderData.data?.cron
     const crons = loaderData.data?.crons ?? []
+    const webhook = loaderData.data?.webhook
+    const webhooks = loaderData.data?.webhooks ?? []
     const runs = loaderData.data?.runs ?? []
     const observability = loaderData.data?.observability ?? defaultObservability()
     const actionError = actionData && actionData.ok === false && actionData.errors?.length
@@ -489,6 +565,12 @@ export default function HatchetDemo({ loaderData }: Route.ComponentProps) {
             actionError={actionError}
             cron={cron}
             crons={crons}
+          />
+
+          <HatchetDemoWebhooksSection
+            actionError={actionError}
+            webhook={webhook}
+            webhooks={webhooks}
           />
 
           {/* List Runs */}

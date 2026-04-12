@@ -109,6 +109,14 @@ type MockHatchetCronsClient = {
   readonly delete: (cronId: string) => Promise<void>
 }
 
+type MockHatchetWebhooksClient = {
+  readonly list: (options?: unknown) => Promise<{ rows?: unknown[] }>
+  readonly get: (webhookName: string) => Promise<unknown>
+  readonly create: (options: unknown) => Promise<unknown>
+  readonly update: (webhookName: string, options?: unknown) => Promise<unknown>
+  readonly delete: (webhookName: string) => Promise<unknown>
+}
+
 type MockWorkerInstance = {
   readonly registerWorkflows: (workflows?: unknown[]) => Promise<void>
   readonly start: () => Promise<void>
