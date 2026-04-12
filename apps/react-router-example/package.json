@@ -32,8 +32,6 @@
     "react-router": "catalog:"
   },
   "devDependencies": {
-    "@vitest/browser": "catalog:",
-    "@vitest/browser-webdriverio": "catalog:",
     "@prisma/generator": "catalog:",
     "@react-router/dev": "catalog:",
     "@types/better-sqlite3": "7.6.13",

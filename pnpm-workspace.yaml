@@ -2,8 +2,8 @@ packages:
   - apps/*
   - packages/*
   - packages/*/*
-  - "!packages/*/dist"
-  - "!packages/*/*/dist"
+  - '!packages/*/dist'
+  - '!packages/*/*/dist'
 
 catalog:
   "@astrojs/starlight": 0.36.3
@@ -144,7 +144,6 @@ catalog:
   vite-plugin-solid: 2.11.11
   vite-tsconfig-paths: 6.1.1
   vitest: 4.1.2
-  webdriverio: 9.27.0
   web-vitals: 5.1.0
   webdriverio: 9.27.0
   zod: 4.3.6
@@ -154,9 +153,9 @@ catalogMode: prefer
 cleanupUnusedCatalogs: true
 
 onlyBuiltDependencies:
-  - "@parcel/watcher"
-  - "@swc/core"
-  - "@tailwindcss/oxide"
+  - '@parcel/watcher'
+  - '@swc/core'
+  - '@tailwindcss/oxide'
   - better-sqlite3
   - core-js
   - esbuild
