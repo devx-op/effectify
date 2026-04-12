@@ -7,7 +7,7 @@
 import * as Effect from "effect/Effect"
 import type { HatchetClient, Worker as SdkWorker } from "@hatchet-dev/typescript-sdk"
 import type { HatchetClientService } from "../core/client.js"
-import { getHatchetClient } from "../core/client.js"
+import { getHastchetClient } from "../core/client.js"
 import { HatchetWorkerError } from "../core/error.js"
 
 /**

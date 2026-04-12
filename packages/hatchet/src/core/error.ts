@@ -90,18 +90,7 @@ export class HatchetObservabilityError extends Data.TaggedError(
   readonly taskId?: string
   readonly tenantId?: string
   readonly cause?: unknown
-}> {
-  static of(input: {
-    readonly message: string
-    readonly operation: "logs" | "metrics"
-    readonly endpoint: string
-    readonly taskId?: string
-    readonly tenantId?: string
-    readonly cause?: unknown
-  }): HatchetObservabilityError {
-    return new HatchetObservabilityError(input)
-  }
-}
+}> {}
 
 /**
  * Error when a workflow operation fails (create, get, list)

@@ -351,12 +351,11 @@ export const getRunTaskId = (
     const result = yield* Effect.tryPromise({
       try: () => client.runs.getTaskExternalId(runId),
       catch: (error) =>
-        HatchetRunError.of(
-          `Failed to resolve task id for run "${runId}"`,
-          undefined,
+        new HatchetRunError({
+          message: `Failed to resolve task id for run "${runId}"`,
           runId,
-          error,
-        ),
+          cause: error,
+        }),
     })
 
     return result as string

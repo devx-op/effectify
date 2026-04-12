@@ -26,31 +26,37 @@ import {
   getTaskMetrics,
   getWebhook,
   listCrons,
+  listRateLimits,
   listRuns,
   listSchedules,
   listTaskLogs,
   listWebhooks,
   pushEvent,
   runWorkflow,
+  upsertRateLimit,
 } from "@effectify/hatchet"
 import { Form, useActionData } from "react-router"
 import { HatchetDemoCronsSection } from "./hatchet-demo-crons.js"
 import { HatchetDemoObservabilitySection } from "./hatchet-demo-observability.js"
+import { HatchetDemoRateLimitsSection } from "./hatchet-demo-ratelimits.js"
 import { HatchetDemoSchedulesSection } from "./hatchet-demo-schedules.js"
 import { HatchetDemoWebhooksSection } from "./hatchet-demo-webhooks.js"
 import {
   buildCronRedirect,
   buildEventRedirect,
+  buildRateLimitRedirect,
   buildRunRedirect,
   buildScheduleRedirect,
   buildWebhookRedirect,
   parseEventPayload,
+  parseRateLimitDuration,
   parseTriggerTime,
   parseWebhookAuth,
   parseWebhookSourceName,
   parseWebhookStaticPayload,
   readSelectedCronId,
   readSelectedEventId,
+  readSelectedRateLimitKey,
   readSelectedRunId,
   readSelectedScheduleId,
   readSelectedTaskId,
@@ -157,12 +163,14 @@ export const loadHatchetDemo = (request: Request) =>
     const scheduleId = readSelectedScheduleId(request.url)
     const cronId = readSelectedCronId(request.url)
     const webhookName = readSelectedWebhookName(request.url)
-    const { runs, schedules, crons, webhooks } = yield* Effect.all(
+    const selectedRateLimitKey = readSelectedRateLimitKey(request.url)
+    const { runs, schedules, crons, webhooks, ratelimits } = yield* Effect.all(
       {
         runs: listRuns(),
         schedules: listSchedules(),
         crons: listCrons(),
         webhooks: listWebhooks(),
+        ratelimits: listRateLimits(),
       },
       { concurrency: "unbounded" },
     )
@@ -195,6 +203,8 @@ export const loadHatchetDemo = (request: Request) =>
       crons,
       webhook,
       webhooks,
+      ratelimits,
+      selectedRateLimitKey,
       runs,
       observability,
     })
@@ -413,6 +423,48 @@ export const handleHatchetDemoAction = (request: Request) =>
       return yield* httpRedirect("/hatchet-demo")
     }
 
+    if (intent === "upsert-ratelimit") {
+      const rateLimitKey = String(formData.get("rateLimitKey") ?? "").trim()
+      const limitInput = String(formData.get("rateLimitLimit") ?? "").trim()
+      const durationInput = String(
+        formData.get("rateLimitDuration") ?? "",
+      ).trim()
+
+      if (!rateLimitKey) {
+        return yield* httpFailure("Rate limit key is required")
+      }
+
+      const limit = Number(limitInput)
+
+      if (!Number.isInteger(limit) || limit < 1) {
+        return yield* httpFailure(
+          "Rate limit limit must be a positive integer",
+        )
+      }
+
+      let duration: ReturnType<typeof parseRateLimitDuration> | undefined
+
+      try {
+        duration = durationInput
+          ? parseRateLimitDuration(durationInput)
+          : undefined
+      } catch (error) {
+        return yield* httpFailure(
+          error instanceof Error
+            ? error.message
+            : "Invalid rate limit duration",
+        )
+      }
+
+      const key = yield* upsertRateLimit({
+        key: rateLimitKey,
+        limit,
+        duration,
+      })
+
+      return yield* httpRedirect(buildRateLimitRedirect(key))
+    }
+
     if (intent === "cancel") {
       const runId = String(formData.get("runId") ?? "")
 
@@ -443,6 +495,8 @@ export default function HatchetDemo({ loaderData }: Route.ComponentProps) {
     const crons = loaderData.data?.crons ?? []
     const webhook = loaderData.data?.webhook
     const webhooks = loaderData.data?.webhooks ?? []
+    const ratelimits = loaderData.data?.ratelimits ?? []
+    const selectedRateLimitKey = loaderData.data?.selectedRateLimitKey
     const runs = loaderData.data?.runs ?? []
     const observability = loaderData.data?.observability ?? defaultObservability()
     const actionError = actionData && actionData.ok === false && actionData.errors?.length
@@ -571,6 +625,12 @@ export default function HatchetDemo({ loaderData }: Route.ComponentProps) {
             actionError={actionError}
             webhook={webhook}
             webhooks={webhooks}
+          />
+
+          <HatchetDemoRateLimitsSection
+            actionError={actionError}
+            selectedRateLimitKey={selectedRateLimitKey}
+            ratelimits={ratelimits}
           />
 
           {/* List Runs */}

@@ -117,6 +117,11 @@ type MockHatchetWebhooksClient = {
   readonly delete: (webhookName: string) => Promise<unknown>
 }
 
+type MockHatchetRateLimitsClient = {
+  readonly list: (options?: unknown) => Promise<{ rows?: unknown[] }>
+  readonly upsert: (options: unknown) => Promise<string>
+}
+
 type MockWorkerInstance = {
   readonly registerWorkflows: (workflows?: unknown[]) => Promise<void>
   readonly start: () => Promise<void>
