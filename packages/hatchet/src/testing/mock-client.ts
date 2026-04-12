@@ -67,6 +67,14 @@ type MockHatchetCronsClient = {
   readonly delete: (cronId: string) => Promise<void>
 }
 
+type MockHatchetWebhooksClient = {
+  readonly list: (options?: unknown) => Promise<{ rows?: unknown[] }>
+  readonly get: (webhookName: string) => Promise<unknown>
+  readonly create: (options: unknown) => Promise<unknown>
+  readonly update: (webhookName: string, options?: unknown) => Promise<unknown>
+  readonly delete: (webhookName: string) => Promise<unknown>
+}
+
 type MockWorkerInstance = {
   readonly registerWorkflows: (workflows?: unknown[]) => Promise<void>
   readonly start: () => Promise<void>
@@ -125,6 +133,7 @@ export type MockHatchetClient = HatchetClientType & {
   readonly metrics: MockHatchetMetricsClient
   readonly runs: MockHatchetRunsClient
   readonly crons: MockHatchetCronsClient
+  readonly webhooks: MockHatchetWebhooksClient
   readonly scheduled: MockHatchetSchedulesClient
   readonly workflows: MockHatchetWorkflowsClient
   readonly worker: (
@@ -143,6 +152,7 @@ export interface MockHatchetClientOverrides {
   readonly metrics?: Partial<MockHatchetClient["metrics"]>
   readonly runs?: Partial<MockHatchetClient["runs"]>
   readonly crons?: Partial<MockHatchetClient["crons"]>
+  readonly webhooks?: Partial<MockHatchetClient["webhooks"]>
   readonly scheduled?: Partial<MockHatchetClient["scheduled"]>
   readonly workflows?: Partial<MockHatchetClient["workflows"]>
   readonly worker?: MockHatchetClient["worker"]
@@ -223,6 +233,17 @@ export const createMockHatchetClient = (
       get: unimplemented("crons.get"),
       list: async () => ({ rows: [] }),
       delete: (async () => undefined) as MockHatchetClient["crons"]["delete"],
+    },
+    webhooks: {
+      list: async () => ({ rows: [] }),
+      get: unimplemented("webhooks.get"),
+      create: unimplemented("webhooks.create"),
+      update: unimplemented(
+        "webhooks.update",
+      ) as MockHatchetClient["webhooks"]["update"],
+      delete: unimplemented(
+        "webhooks.delete",
+      ) as MockHatchetClient["webhooks"]["delete"],
     },
     scheduled: {
       create: unimplemented("scheduled.create"),
@@ -333,6 +354,10 @@ export const createMockHatchetClient = (
     crons: {
       ...baseClient.crons,
       ...overrides.crons,
+    },
+    webhooks: {
+      ...baseClient.webhooks,
+      ...overrides.webhooks,
     },
     scheduled: {
       ...baseClient.scheduled,

@@ -11,6 +11,10 @@ const createCronMock = vi.fn()
 const getCronMock = vi.fn()
 const listCronsMock = vi.fn()
 const deleteCronMock = vi.fn()
+const createWebhookMock = vi.fn()
+const getWebhookMock = vi.fn()
+const listWebhooksMock = vi.fn()
+const deleteWebhookMock = vi.fn()
 const listRunsMock = vi.fn()
 const cancelRunMock = vi.fn()
 const runWorkflowMock = vi.fn()
@@ -34,6 +38,10 @@ vi.mock("@effectify/hatchet", () => ({
   getCron: (...args: Array<unknown>) => getCronMock(...args),
   listCrons: (...args: Array<unknown>) => listCronsMock(...args),
   deleteCron: (...args: Array<unknown>) => deleteCronMock(...args),
+  createWebhook: (...args: Array<unknown>) => createWebhookMock(...args),
+  getWebhook: (...args: Array<unknown>) => getWebhookMock(...args),
+  listWebhooks: (...args: Array<unknown>) => listWebhooksMock(...args),
+  deleteWebhook: (...args: Array<unknown>) => deleteWebhookMock(...args),
   listRuns: (...args: Array<unknown>) => listRunsMock(...args),
   cancelRun: (...args: Array<unknown>) => cancelRunMock(...args),
   runWorkflow: (...args: Array<unknown>) => runWorkflowMock(...args),
@@ -55,13 +63,17 @@ import {
   buildCronRedirect,
   buildEventRedirect,
   buildScheduleRedirect,
+  buildWebhookRedirect,
   parseEventPayload,
   parseTriggerTime,
+  parseWebhookAuthType,
+  parseWebhookStaticPayload,
   readSelectedCronId,
   readSelectedEventId,
   readSelectedRunId,
   readSelectedScheduleId,
   readSelectedTaskId,
+  readSelectedWebhookName,
 } from "./hatchet-demo.shared.js"
 
 describe("hatchet demo event helpers", () => {
@@ -75,6 +87,10 @@ describe("hatchet demo event helpers", () => {
     getCronMock.mockReset()
     listCronsMock.mockReset()
     deleteCronMock.mockReset()
+    createWebhookMock.mockReset()
+    getWebhookMock.mockReset()
+    listWebhooksMock.mockReset()
+    deleteWebhookMock.mockReset()
     listRunsMock.mockReset()
     cancelRunMock.mockReset()
     runWorkflowMock.mockReset()
@@ -85,6 +101,7 @@ describe("hatchet demo event helpers", () => {
     getTaskMetricsMock.mockReset()
     getQueueMetricsMock.mockReset()
     listCronsMock.mockReturnValue(Effect.succeed([]))
+    listWebhooksMock.mockReturnValue(Effect.succeed([]))
     getTaskMetricsMock.mockReturnValue(
       Effect.succeed({
         byStatus: {
@@ -169,6 +186,30 @@ describe("hatchet demo event helpers", () => {
     expect(
       readSelectedTaskId("https://example.com/hatchet-demo?taskId=task-123"),
     ).toBe("task-123")
+  })
+
+  it("webhook helpers read selected names, parse static payloads, and encode redirects", () => {
+    expect(
+      readSelectedWebhookName(
+        "https://example.com/hatchet-demo?webhookName=github-prs",
+      ),
+    ).toBe("github-prs")
+    expect(parseWebhookStaticPayload('{"issue":"opened"}')).toEqual({
+      issue: "opened",
+    })
+    expect(buildWebhookRedirect("github/prs")).toBe(
+      "/hatchet-demo?webhookName=github%2Fprs",
+    )
+  })
+
+  it("parseWebhookAuthType returns supported webhook auth literals", () => {
+    expect(parseWebhookAuthType(" BASIC ")).toBe("BASIC")
+  })
+
+  it("parseWebhookAuthType rejects unsupported webhook auth values", () => {
+    expect(() => parseWebhookAuthType("unsupported")).toThrowError(
+      "Webhook auth type must be BASIC, API_KEY, or HMAC",
+    )
   })
 
   it("action pushes an event and redirects the loader to the selected event", async () => {
@@ -463,6 +504,190 @@ describe("hatchet demo event helpers", () => {
     expect(actionResponse).toMatchObject({
       _tag: "HttpResponseRedirect",
       to: "/hatchet-demo",
+    })
+  })
+
+  it("loader returns webhook list and selected webhook details", async () => {
+    listSchedulesMock.mockReturnValue(Effect.succeed([]))
+    listCronsMock.mockReturnValue(Effect.succeed([]))
+    listRunsMock.mockReturnValue(Effect.succeed([]))
+    listWebhooksMock.mockReturnValue(
+      Effect.succeed([
+        {
+          webhookId: "webhook-123",
+          tenantId: "tenant-1",
+          name: "github-prs",
+          sourceName: "GITHUB",
+          eventKeyExpression: "body.action",
+          authType: "HMAC",
+        },
+      ]),
+    )
+    getWebhookMock.mockReturnValue(
+      Effect.succeed({
+        webhookId: "webhook-123",
+        tenantId: "tenant-1",
+        name: "github-prs",
+        sourceName: "GITHUB",
+        eventKeyExpression: "body.action",
+        scopeExpression: "body.repository.full_name",
+        staticPayload: { issue: "opened" },
+        authType: "HMAC",
+      }),
+    )
+
+    const loaderResponse = await runMockedHatchetEffect(
+      loadHatchetDemo(
+        new Request("https://example.com/hatchet-demo?webhookName=github-prs"),
+      ),
+    )
+
+    expect(getWebhookMock).toHaveBeenCalledWith("github-prs")
+    expect(loaderResponse).toMatchObject({
+      _tag: "HttpResponseSuccess",
+      data: {
+        webhook: {
+          webhookId: "webhook-123",
+          name: "github-prs",
+          sourceName: "GITHUB",
+          authType: "HMAC",
+        },
+        webhooks: [
+          {
+            webhookId: "webhook-123",
+            name: "github-prs",
+          },
+        ],
+      },
+    })
+  })
+
+  it("action creates a webhook and redirects the loader to the selected webhook", async () => {
+    listRunsMock.mockReturnValue(Effect.succeed([]))
+    listSchedulesMock.mockReturnValue(Effect.succeed([]))
+    listCronsMock.mockReturnValue(Effect.succeed([]))
+    listWebhooksMock.mockReturnValue(
+      Effect.succeed([
+        {
+          webhookId: "webhook-123",
+          tenantId: "tenant-1",
+          name: "github-prs",
+          sourceName: "GITHUB",
+          eventKeyExpression: "body.action",
+          authType: "HMAC",
+        },
+      ]),
+    )
+    createWebhookMock.mockReturnValue(
+      Effect.succeed({
+        webhookId: "webhook-123",
+        tenantId: "tenant-1",
+        name: "github-prs",
+        sourceName: "GITHUB",
+        eventKeyExpression: "body.action",
+        scopeExpression: "body.repository.full_name",
+        staticPayload: { issue: "opened" },
+        authType: "HMAC",
+      }),
+    )
+    getWebhookMock.mockReturnValue(
+      Effect.succeed({
+        webhookId: "webhook-123",
+        tenantId: "tenant-1",
+        name: "github-prs",
+        sourceName: "GITHUB",
+        eventKeyExpression: "body.action",
+        scopeExpression: "body.repository.full_name",
+        staticPayload: { issue: "opened" },
+        authType: "HMAC",
+      }),
+    )
+
+    const formData = new FormData()
+    formData.set("intent", "create-webhook")
+    formData.set("webhookName", "github-prs")
+    formData.set("webhookSourceName", "GITHUB")
+    formData.set("webhookEventKeyExpression", "body.action")
+    formData.set("webhookScopeExpression", "body.repository.full_name")
+    formData.set("webhookStaticPayload", '{"issue":"opened"}')
+    formData.set("webhookAuthType", "HMAC")
+    formData.set("webhookHmacAlgorithm", "SHA256")
+    formData.set("webhookHmacEncoding", "HEX")
+    formData.set("webhookSignatureHeaderName", "x-hub-signature-256")
+    formData.set("webhookSigningSecret", "secret-123")
+
+    const actionResponse = await runMockedHatchetEffect(
+      handleHatchetDemoAction(
+        new Request("https://example.com/hatchet-demo", {
+          method: "POST",
+          body: formData,
+        }),
+      ),
+    )
+
+    expect(createWebhookMock).toHaveBeenCalledWith({
+      name: "github-prs",
+      sourceName: "GITHUB",
+      eventKeyExpression: "body.action",
+      scopeExpression: "body.repository.full_name",
+      staticPayload: { issue: "opened" },
+      auth: {
+        authType: "HMAC",
+        algorithm: "SHA256",
+        encoding: "HEX",
+        signatureHeaderName: "x-hub-signature-256",
+        signingSecret: "secret-123",
+      },
+    })
+    expect(actionResponse).toMatchObject({
+      _tag: "HttpResponseRedirect",
+      to: "/hatchet-demo?webhookName=github-prs",
+    })
+  })
+
+  it("action deletes a webhook and redirects back to the list", async () => {
+    deleteWebhookMock.mockReturnValue(Effect.void)
+
+    const formData = new FormData()
+    formData.set("intent", "delete-webhook")
+    formData.set("webhookName", "github-prs")
+
+    const actionResponse = await runMockedHatchetEffect(
+      handleHatchetDemoAction(
+        new Request("https://example.com/hatchet-demo?webhookName=github-prs", {
+          method: "POST",
+          body: formData,
+        }),
+      ),
+    )
+
+    expect(deleteWebhookMock).toHaveBeenCalledWith("github-prs")
+    expect(actionResponse).toMatchObject({
+      _tag: "HttpResponseRedirect",
+      to: "/hatchet-demo",
+    })
+  })
+
+  it("action rejects malformed webhook auth forms", async () => {
+    const formData = new FormData()
+    formData.set("intent", "create-webhook")
+    formData.set("webhookName", "github-prs")
+    formData.set("webhookSourceName", "GITHUB")
+    formData.set("webhookEventKeyExpression", "body.action")
+    formData.set("webhookAuthType", "UNSUPPORTED")
+
+    const actionResponse = await runMockedHatchetEffect(
+      handleHatchetDemoAction(
+        new Request("https://example.com/hatchet-demo", {
+          method: "POST",
+          body: formData,
+        }),
+      ),
+    )
+
+    expect(actionResponse).toMatchObject({
+      _tag: "HttpResponseFailure",
+      cause: "Webhook auth type must be BASIC, API_KEY, or HMAC",
     })
   })
 

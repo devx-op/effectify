@@ -220,3 +220,24 @@ export class HatchetCronError extends Data.TaggedError("HatchetCronError")<{
     })
   }
 }
+
+/**
+ * Error when a webhook operation fails
+ */
+export class HatchetWebhookError extends Data.TaggedError(
+  "HatchetWebhookError",
+)<{
+  readonly message: string
+  readonly operation: "list" | "get" | "create" | "update" | "delete"
+  readonly webhookName?: string
+  readonly cause?: unknown
+}> {
+  static of(input: {
+    readonly message: string
+    readonly operation: "list" | "get" | "create" | "update" | "delete"
+    readonly webhookName?: string
+    readonly cause?: unknown
+  }): HatchetWebhookError {
+    return new HatchetWebhookError(input)
+  }
+}

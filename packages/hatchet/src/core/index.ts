@@ -11,6 +11,7 @@ export {
   HatchetInitError,
   HatchetObservabilityError,
   HatchetRunError,
+  HatchetWebhookError,
   HatchetWorkerError,
   HatchetWorkflowError,
 } from "./error.js"
