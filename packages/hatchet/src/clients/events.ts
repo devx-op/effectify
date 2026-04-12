@@ -122,12 +122,11 @@ export const pushEvent = <TPayload extends Record<string, unknown>>(
     const event = yield* Effect.tryPromise({
       try: () => client.events.push(key, payload, options),
       catch: (error) =>
-        HatchetEventError.of(
-          `Failed to push event "${key}"`,
+        new HatchetEventError({
+          message: `Failed to push event "${key}"`,
           key,
-          undefined,
-          error,
-        ),
+          cause: error,
+        }),
     })
 
     return normalizePushedEvent(key, payload, event as HatchetSdkEvent)
@@ -145,20 +144,18 @@ export const getEvent = <TPayload = Record<string, unknown>>(
     const response = yield* Effect.tryPromise({
       try: () => client.api.v1EventGet(client.tenantId, eventId),
       catch: (error) =>
-        HatchetEventError.of(
-          `Failed to get event "${eventId}"`,
-          undefined,
+        new HatchetEventError({
+          message: `Failed to get event "${eventId}"`,
           eventId,
-          error,
-        ),
+          cause: error,
+        }),
     })
 
     if (!response.data) {
-      return yield* HatchetEventError.of(
-        `Event "${eventId}" was not found`,
-        undefined,
+      return yield* new HatchetEventError({
+        message: `Event "${eventId}" was not found`,
         eventId,
-      )
+      })
     }
 
     return normalizeFetchedEvent<TPayload>(

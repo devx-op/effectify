@@ -77,25 +77,30 @@ describe("Runs Client - Type Exports", () => {
 describe("HatchetRunError", () => {
   layer(Layer.mergeAll(TestHatchetConfigLayer, MockHatchetClientLayer))(() => {
     it("should create error with workflow", () => {
-      const error = HatchetRunError.of("Workflow failed", "my-workflow")
+      const error = new HatchetRunError({
+        message: "Workflow failed",
+        workflow: "my-workflow",
+      })
       expect(error.message).toBe("Workflow failed")
       expect(error.workflow).toBe("my-workflow")
     })
 
     it("should create error with runId", () => {
-      const error = HatchetRunError.of("Run failed", undefined, "run-123")
+      const error = new HatchetRunError({
+        message: "Run failed",
+        runId: "run-123",
+      })
       expect(error.message).toBe("Run failed")
       expect(error.runId).toBe("run-123")
     })
 
     it("should create error with cause", () => {
       const cause = new Error("Original error")
-      const error = HatchetRunError.of(
-        "Workflow failed",
-        "my-workflow",
-        undefined,
+      const error = new HatchetRunError({
+        message: "Workflow failed",
+        workflow: "my-workflow",
         cause,
-      )
+      })
       expect(error.cause).toBe(cause)
     })
   })
@@ -104,16 +109,16 @@ describe("HatchetRunError", () => {
 describe("HatchetWorkflowError", () => {
   layer(Layer.mergeAll(TestHatchetConfigLayer, MockHatchetClientLayer))(() => {
     it("should create error with workflow name", () => {
-      const error = HatchetWorkflowError.of(
-        "Workflow operation failed",
-        "my-workflow",
-      )
+      const error = new HatchetWorkflowError({
+        message: "Workflow operation failed",
+        workflowName: "my-workflow",
+      })
       expect(error.message).toBe("Workflow operation failed")
       expect(error.workflowName).toBe("my-workflow")
     })
 
     it("should create error without workflow name", () => {
-      const error = HatchetWorkflowError.of("List failed")
+      const error = new HatchetWorkflowError({ message: "List failed" })
       expect(error.message).toBe("List failed")
       expect(error.workflowName).toBeUndefined()
     })

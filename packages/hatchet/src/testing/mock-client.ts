@@ -75,6 +75,11 @@ type MockHatchetWebhooksClient = {
   readonly delete: (webhookName: string) => Promise<unknown>
 }
 
+type MockHatchetRateLimitsClient = {
+  readonly list: (options?: unknown) => Promise<{ rows?: unknown[] }>
+  readonly upsert: (options: unknown) => Promise<string>
+}
+
 type MockWorkerInstance = {
   readonly registerWorkflows: (workflows?: unknown[]) => Promise<void>
   readonly start: () => Promise<void>
@@ -133,6 +138,7 @@ export type MockHatchetClient = HatchetClientType & {
   readonly metrics: MockHatchetMetricsClient
   readonly runs: MockHatchetRunsClient
   readonly crons: MockHatchetCronsClient
+  readonly ratelimits: MockHatchetRateLimitsClient
   readonly webhooks: MockHatchetWebhooksClient
   readonly scheduled: MockHatchetSchedulesClient
   readonly workflows: MockHatchetWorkflowsClient
@@ -152,6 +158,7 @@ export interface MockHatchetClientOverrides {
   readonly metrics?: Partial<MockHatchetClient["metrics"]>
   readonly runs?: Partial<MockHatchetClient["runs"]>
   readonly crons?: Partial<MockHatchetClient["crons"]>
+  readonly ratelimits?: Partial<MockHatchetClient["ratelimits"]>
   readonly webhooks?: Partial<MockHatchetClient["webhooks"]>
   readonly scheduled?: Partial<MockHatchetClient["scheduled"]>
   readonly workflows?: Partial<MockHatchetClient["workflows"]>
@@ -233,6 +240,12 @@ export const createMockHatchetClient = (
       get: unimplemented("crons.get"),
       list: async () => ({ rows: [] }),
       delete: (async () => undefined) as MockHatchetClient["crons"]["delete"],
+    },
+    ratelimits: {
+      list: async () => ({ rows: [] }),
+      upsert: unimplemented(
+        "ratelimits.upsert",
+      ) as MockHatchetClient["ratelimits"]["upsert"],
     },
     webhooks: {
       list: async () => ({ rows: [] }),
@@ -354,6 +367,10 @@ export const createMockHatchetClient = (
     crons: {
       ...baseClient.crons,
       ...overrides.crons,
+    },
+    ratelimits: {
+      ...baseClient.ratelimits,
+      ...overrides.ratelimits,
     },
     webhooks: {
       ...baseClient.webhooks,

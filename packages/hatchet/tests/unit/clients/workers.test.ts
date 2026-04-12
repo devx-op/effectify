@@ -53,17 +53,21 @@ describe("Workers Client - Function Signatures", () => {
 describe("HatchetWorkerError", () => {
   layer(Layer.mergeAll(TestHatchetConfigLayer, MockHatchetClientLayer))(() => {
     it("should create error with worker name", () => {
-      const error = HatchetWorkerError.of(
-        "Worker registration failed",
-        "my-worker",
-      )
+      const error = new HatchetWorkerError({
+        message: "Worker registration failed",
+        workerName: "my-worker",
+      })
       expect(error.message).toBe("Worker registration failed")
       expect(error.workerName).toBe("my-worker")
     })
 
     it("should create error with cause", () => {
       const cause = new Error("Original error")
-      const error = HatchetWorkerError.of("Worker failed", "my-worker", cause)
+      const error = new HatchetWorkerError({
+        message: "Worker failed",
+        workerName: "my-worker",
+        cause,
+      })
       expect(error.cause).toBe(cause)
     })
   })

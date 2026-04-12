@@ -58,12 +58,11 @@ export const runWorkflow = <I, O>(
     const result = yield* Effect.tryPromise({
       try: () => client.run(workflow, input as never, options),
       catch: (error) =>
-        HatchetRunError.of(
-          `Workflow "${workflow}" failed to run`,
+        new HatchetRunError({
+          message: `Workflow "${workflow}" failed to run`,
           workflow,
-          undefined,
-          error,
-        ),
+          cause: error,
+        }),
     })
     return result as O
   })
@@ -86,12 +85,11 @@ export const runWorkflowNoWait = <I, O>(
     const result = yield* Effect.tryPromise({
       try: () => client.runNoWait(workflow, input as never, options ?? {}),
       catch: (error) =>
-        HatchetRunError.of(
-          `Workflow "${workflow}" failed to start`,
+        new HatchetRunError({
+          message: `Workflow "${workflow}" failed to start`,
           workflow,
-          undefined,
-          error,
-        ),
+          cause: error,
+        }),
     })
     return result as O
   })
@@ -110,12 +108,11 @@ export const cancelRun = (
     yield* Effect.tryPromise({
       try: () => client.runs.cancel({ ids: [runId] }),
       catch: (error) =>
-        HatchetRunError.of(
-          `Failed to cancel run "${runId}"`,
-          undefined,
+        new HatchetRunError({
+          message: `Failed to cancel run "${runId}"`,
           runId,
-          error,
-        ),
+          cause: error,
+        }),
     })
   })
 
@@ -133,12 +130,11 @@ export const getRun = <O = unknown>(
     const result = yield* Effect.tryPromise({
       try: () => client.runs.get(runId),
       catch: (error) =>
-        HatchetRunError.of(
-          `Failed to get run "${runId}"`,
-          undefined,
+        new HatchetRunError({
+          message: `Failed to get run "${runId}"`,
           runId,
-          error,
-        ),
+          cause: error,
+        }),
     })
     return result as O
   })
@@ -157,12 +153,11 @@ export const getRunStatus = (
     const result = yield* Effect.tryPromise({
       try: () => client.runs.get_status(runId),
       catch: (error) =>
-        HatchetRunError.of(
-          `Failed to get status for run "${runId}"`,
-          undefined,
+        new HatchetRunError({
+          message: `Failed to get status for run "${runId}"`,
           runId,
-          error,
-        ),
+          cause: error,
+        }),
     })
     return result as string
   })
@@ -178,12 +173,11 @@ export const getRunTaskId = (
     const result = yield* Effect.tryPromise({
       try: () => client.runs.getTaskExternalId(runId),
       catch: (error) =>
-        HatchetRunError.of(
-          `Failed to resolve task id for run "${runId}"`,
-          undefined,
+        new HatchetRunError({
+          message: `Failed to resolve task id for run "${runId}"`,
           runId,
-          error,
-        ),
+          cause: error,
+        }),
     })
 
     return result as string
@@ -202,7 +196,11 @@ export const listRuns = <O = unknown>(
     const client = yield* getHatchetClient()
     const result = yield* Effect.tryPromise({
       try: () => client.runs.list(toSdkListRunsOpts(options)),
-      catch: (error) => HatchetWorkflowError.of("Failed to list runs", undefined, error),
+      catch: (error) =>
+        new HatchetWorkflowError({
+          message: "Failed to list runs",
+          cause: error,
+        }),
     })
     const runs = result as unknown as { readonly rows?: O[] }
     return runs.rows ?? []

@@ -68,13 +68,12 @@ const normalizeCron = <TInput = Record<string, unknown>>(
 
     if (!cronId) {
       return yield* Effect.fail(
-        HatchetCronError.of(
-          `Cron workflow response did not include an id for workflow "${
+        new HatchetCronError({
+          message: `Cron workflow response did not include an id for workflow "${
             context.workflowName ?? cron.workflowName ?? "unknown"
           }"`,
-          undefined,
-          context.workflowName ?? cron.workflowName,
-        ),
+          workflowName: context.workflowName ?? cron.workflowName,
+        }),
       )
     }
 
@@ -82,40 +81,40 @@ const normalizeCron = <TInput = Record<string, unknown>>(
 
     if (!workflowName) {
       return yield* Effect.fail(
-        HatchetCronError.of(
-          `Cron workflow "${cronId}" did not include a workflow name`,
+        new HatchetCronError({
+          message: `Cron workflow "${cronId}" did not include a workflow name`,
           cronId,
-        ),
+        }),
       )
     }
 
     if (!cron.cron) {
       return yield* Effect.fail(
-        HatchetCronError.of(
-          `Cron workflow "${cronId}" did not include a cron expression`,
+        new HatchetCronError({
+          message: `Cron workflow "${cronId}" did not include a cron expression`,
           cronId,
           workflowName,
-        ),
+        }),
       )
     }
 
     if (typeof cron.enabled !== "boolean") {
       return yield* Effect.fail(
-        HatchetCronError.of(
-          `Cron workflow "${cronId}" did not include enabled status`,
+        new HatchetCronError({
+          message: `Cron workflow "${cronId}" did not include enabled status`,
           cronId,
           workflowName,
-        ),
+        }),
       )
     }
 
     if (cron.method !== "DEFAULT" && cron.method !== "API") {
       return yield* Effect.fail(
-        HatchetCronError.of(
-          `Cron workflow "${cronId}" did not include a supported method`,
+        new HatchetCronError({
+          message: `Cron workflow "${cronId}" did not include a supported method`,
           cronId,
           workflowName,
-        ),
+        }),
       )
     }
 
@@ -147,12 +146,11 @@ export const createCron = <TInput = Record<string, unknown>>(
     const cron = yield* Effect.tryPromise({
       try: () => client.crons.create(workflowName, options),
       catch: (error) =>
-        HatchetCronError.of(
-          `Failed to create cron for workflow "${workflowName}"`,
-          undefined,
+        new HatchetCronError({
+          message: `Failed to create cron for workflow "${workflowName}"`,
           workflowName,
-          error,
-        ),
+          cause: error,
+        }),
     })
 
     return yield* normalizeCron<TInput>(cron as HatchetCronWorkflow, {
@@ -172,12 +170,11 @@ export const getCron = <TInput = Record<string, unknown>>(
     const cron = yield* Effect.tryPromise({
       try: () => client.crons.get(cronId),
       catch: (error) =>
-        HatchetCronError.of(
-          `Failed to get cron "${cronId}"`,
+        new HatchetCronError({
+          message: `Failed to get cron "${cronId}"`,
           cronId,
-          undefined,
-          error,
-        ),
+          cause: error,
+        }),
     })
 
     return yield* normalizeCron<TInput>(cron as HatchetCronWorkflow, {
@@ -210,14 +207,13 @@ export const listCrons = <TInput = Record<string, unknown>>(
     const response = yield* Effect.tryPromise({
       try: () => client.crons.list(query),
       catch: (error) =>
-        HatchetCronError.of(
-          workflowName
+        new HatchetCronError({
+          message: workflowName
             ? `Failed to list crons for workflow "${workflowName}"`
             : "Failed to list crons",
-          undefined,
           workflowName,
-          error,
-        ),
+          cause: error,
+        }),
     })
 
     const rows = (response as HatchetCronWorkflowList).rows ?? []
@@ -233,11 +229,10 @@ export const deleteCron = (
     yield* Effect.tryPromise({
       try: () => client.crons.delete(cronId),
       catch: (error) =>
-        HatchetCronError.of(
-          `Failed to delete cron "${cronId}"`,
+        new HatchetCronError({
+          message: `Failed to delete cron "${cronId}"`,
           cronId,
-          undefined,
-          error,
-        ),
+          cause: error,
+        }),
     })
   })

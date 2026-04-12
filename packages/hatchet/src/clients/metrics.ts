@@ -193,7 +193,7 @@ export const getTaskMetrics = (
           toTaskMetricsQuery(options),
         ),
       catch: (cause) =>
-        HatchetObservabilityError.of({
+        new HatchetObservabilityError({
           message: `Failed to read task metrics for "${client.tenantId}"`,
           operation: "metrics",
           endpoint: "api.v1TaskListStatusMetrics",
@@ -218,7 +218,7 @@ export const getQueueMetrics = (): Effect.Effect<
         Effect.tryPromise({
           try: () => client.api.tenantGetQueueMetrics(client.tenantId),
           catch: (cause) =>
-            HatchetObservabilityError.of({
+            new HatchetObservabilityError({
               message: `Failed to read queue metrics for "${client.tenantId}"`,
               operation: "metrics",
               endpoint: "api.tenantGetQueueMetrics",
@@ -229,7 +229,7 @@ export const getQueueMetrics = (): Effect.Effect<
         Effect.tryPromise({
           try: () => client.api.tenantGetStepRunQueueMetrics(client.tenantId),
           catch: (cause) =>
-            HatchetObservabilityError.of({
+            new HatchetObservabilityError({
               message: `Failed to read step run queue metrics for "${client.tenantId}"`,
               operation: "metrics",
               endpoint: "api.tenantGetStepRunQueueMetrics",

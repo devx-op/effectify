@@ -2,6 +2,15 @@ import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
+const mockedRateLimitDuration = vi.hoisted(
+  () =>
+    ({
+      SECOND: 0,
+      MINUTE: 1,
+      HOUR: 2,
+    }) as const,
+)
+
 const pushEventMock = vi.fn()
 const getEventMock = vi.fn()
 const createScheduleMock = vi.fn()
@@ -15,6 +24,8 @@ const createWebhookMock = vi.fn()
 const getWebhookMock = vi.fn()
 const listWebhooksMock = vi.fn()
 const deleteWebhookMock = vi.fn()
+const listRateLimitsMock = vi.fn()
+const upsertRateLimitMock = vi.fn()
 const listRunsMock = vi.fn()
 const cancelRunMock = vi.fn()
 const runWorkflowMock = vi.fn()
@@ -42,6 +53,9 @@ vi.mock("@effectify/hatchet", () => ({
   getWebhook: (...args: Array<unknown>) => getWebhookMock(...args),
   listWebhooks: (...args: Array<unknown>) => listWebhooksMock(...args),
   deleteWebhook: (...args: Array<unknown>) => deleteWebhookMock(...args),
+  listRateLimits: (...args: Array<unknown>) => listRateLimitsMock(...args),
+  RateLimitDuration: mockedRateLimitDuration,
+  upsertRateLimit: (...args: Array<unknown>) => upsertRateLimitMock(...args),
   listRuns: (...args: Array<unknown>) => listRunsMock(...args),
   cancelRun: (...args: Array<unknown>) => cancelRunMock(...args),
   runWorkflow: (...args: Array<unknown>) => runWorkflowMock(...args),
@@ -62,14 +76,17 @@ import { handleHatchetDemoAction, loadHatchetDemo } from "./hatchet-demo.js"
 import {
   buildCronRedirect,
   buildEventRedirect,
+  buildRateLimitRedirect,
   buildScheduleRedirect,
   buildWebhookRedirect,
   parseEventPayload,
+  parseRateLimitDuration,
   parseTriggerTime,
   parseWebhookAuthType,
   parseWebhookStaticPayload,
   readSelectedCronId,
   readSelectedEventId,
+  readSelectedRateLimitKey,
   readSelectedRunId,
   readSelectedScheduleId,
   readSelectedTaskId,
@@ -91,6 +108,8 @@ describe("hatchet demo event helpers", () => {
     getWebhookMock.mockReset()
     listWebhooksMock.mockReset()
     deleteWebhookMock.mockReset()
+    listRateLimitsMock.mockReset()
+    upsertRateLimitMock.mockReset()
     listRunsMock.mockReset()
     cancelRunMock.mockReset()
     runWorkflowMock.mockReset()
@@ -102,6 +121,7 @@ describe("hatchet demo event helpers", () => {
     getQueueMetricsMock.mockReset()
     listCronsMock.mockReturnValue(Effect.succeed([]))
     listWebhooksMock.mockReturnValue(Effect.succeed([]))
+    listRateLimitsMock.mockReturnValue(Effect.succeed([]))
     getTaskMetricsMock.mockReturnValue(
       Effect.succeed({
         byStatus: {
@@ -210,6 +230,154 @@ describe("hatchet demo event helpers", () => {
     expect(() => parseWebhookAuthType("unsupported")).toThrowError(
       "Webhook auth type must be BASIC, API_KEY, or HMAC",
     )
+  })
+
+  it("rate-limit helpers read selected keys, parse durations, and encode redirects", () => {
+    expect(
+      readSelectedRateLimitKey(
+        "https://example.com/hatchet-demo?rateLimitKey=email%3Asend",
+      ),
+    ).toBe("email:send")
+    expect(parseRateLimitDuration(" minute ")).toBe("1 minute")
+    expect(parseRateLimitDuration(String(mockedRateLimitDuration.MINUTE))).toBe(
+      "1 minute",
+    )
+    expect(buildRateLimitRedirect("email/send")).toBe(
+      "/hatchet-demo?rateLimitKey=email%2Fsend",
+    )
+  })
+
+  it("parseRateLimitDuration rejects unsupported values", () => {
+    expect(() => parseRateLimitDuration("weekly")).toThrowError(
+      "Rate limit duration must be SECOND, MINUTE, or HOUR",
+    )
+  })
+
+  it("loader includes rate limits and selected rate-limit details", async () => {
+    listSchedulesMock.mockReturnValue(Effect.succeed([]))
+    listRunsMock.mockReturnValue(Effect.succeed([]))
+    listRateLimitsMock.mockReturnValue(
+      Effect.succeed([
+        {
+          key: "email:send",
+          tenantId: "tenant-1",
+          limitValue: 15,
+          value: 3,
+          window: "1m",
+          lastRefill: "2026-04-12T18:45:00.000Z",
+        },
+      ]),
+    )
+
+    const loaderResponse = await runMockedHatchetEffect(
+      loadHatchetDemo(
+        new Request(
+          "https://example.com/hatchet-demo?rateLimitKey=email%3Asend",
+        ),
+      ),
+    )
+
+    expect(listRateLimitsMock).toHaveBeenCalledTimes(1)
+    expect(loaderResponse).toMatchObject({
+      _tag: "HttpResponseSuccess",
+      data: {
+        ratelimits: [
+          {
+            key: "email:send",
+            tenantId: "tenant-1",
+            limitValue: 15,
+            value: 3,
+            window: "1m",
+            lastRefill: "2026-04-12T18:45:00.000Z",
+          },
+        ],
+        selectedRateLimitKey: "email:send",
+      },
+    })
+  })
+
+  it("action upserts a rate limit and redirects the loader to the selected key", async () => {
+    listSchedulesMock.mockReturnValue(Effect.succeed([]))
+    listRunsMock.mockReturnValue(Effect.succeed([]))
+    listRateLimitsMock.mockReturnValue(
+      Effect.succeed([
+        {
+          key: "email:send",
+          tenantId: "tenant-1",
+          limitValue: 30,
+          value: 7,
+          window: "1m",
+          lastRefill: "2026-04-12T18:45:00.000Z",
+        },
+      ]),
+    )
+    upsertRateLimitMock.mockReturnValue(Effect.succeed("email:send"))
+
+    const formData = new FormData()
+    formData.set("intent", "upsert-ratelimit")
+    formData.set("rateLimitKey", "email:send")
+    formData.set("rateLimitLimit", "30")
+    formData.set("rateLimitDuration", "1 minute")
+
+    const actionResponse = await runMockedHatchetEffect(
+      handleHatchetDemoAction(
+        new Request("https://example.com/hatchet-demo", {
+          method: "POST",
+          body: formData,
+        }),
+      ),
+    )
+
+    expect(upsertRateLimitMock).toHaveBeenCalledWith({
+      key: "email:send",
+      limit: 30,
+      duration: "1 minute",
+    })
+    expect(actionResponse).toMatchObject({
+      _tag: "HttpResponseRedirect",
+      to: "/hatchet-demo?rateLimitKey=email%3Asend",
+    })
+
+    const redirectResponse = actionResponse as { to: string }
+    const loaderResponse = await runMockedHatchetEffect(
+      loadHatchetDemo(new Request(`https://example.com${redirectResponse.to}`)),
+    )
+
+    expect(loaderResponse).toMatchObject({
+      _tag: "HttpResponseSuccess",
+      data: {
+        selectedRateLimitKey: "email:send",
+        ratelimits: [
+          {
+            key: "email:send",
+            limitValue: 30,
+            value: 7,
+          },
+        ],
+      },
+    })
+  })
+
+  it("action rejects invalid rate-limit submissions before calling the client", async () => {
+    const formData = new FormData()
+    formData.set("intent", "upsert-ratelimit")
+    formData.set("rateLimitKey", "")
+    formData.set("rateLimitLimit", "0")
+
+    const response = await runMockedHatchetEffect(
+      handleHatchetDemoAction(
+        new Request("https://example.com/hatchet-demo", {
+          method: "POST",
+          body: formData,
+        }),
+      ),
+    )
+
+    expect(upsertRateLimitMock).not.toHaveBeenCalled()
+    expect(response).toMatchObject({
+      _tag: "HttpResponseFailure",
+      cause: "Rate limit key is required",
+    })
   })
 
   it("action pushes an event and redirects the loader to the selected event", async () => {

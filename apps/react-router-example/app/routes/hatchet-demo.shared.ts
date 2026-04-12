@@ -1,9 +1,13 @@
+import * as Duration from "effect/Duration"
 import type {
   HatchetWebhookAuth,
   HatchetWebhookHmacAlgorithm,
   HatchetWebhookHmacEncoding,
   HatchetWebhookSourceName,
 } from "@effectify/hatchet"
+import { RateLimitDuration } from "@effectify/hatchet"
+
+const RATE_LIMIT_DURATION_ERROR = "Rate limit duration must be SECOND, MINUTE, or HOUR"
 
 export const parseEventPayload = (input: string): Record<string, unknown> => {
   const parsed = JSON.parse(input) as unknown
@@ -60,6 +64,56 @@ export const readSelectedTaskId = (requestUrl: string): string | undefined => {
 }
 
 export const buildRunRedirect = (runId: string): string => `/hatchet-demo?runId=${encodeURIComponent(runId)}`
+
+export const rateLimitDurationOptions = [
+  {
+    label: "SECOND",
+    value: "1 second",
+  },
+  {
+    label: "MINUTE",
+    value: "1 minute",
+  },
+  {
+    label: "HOUR",
+    value: "1 hour",
+  },
+] as const
+
+export const readSelectedRateLimitKey = (
+  requestUrl: string,
+): string | undefined => {
+  const rateLimitKey = new URL(requestUrl).searchParams
+    .get("rateLimitKey")
+    ?.trim()
+  return rateLimitKey ? rateLimitKey : undefined
+}
+
+export const buildRateLimitRedirect = (rateLimitKey: string): string =>
+  `/hatchet-demo?rateLimitKey=${encodeURIComponent(rateLimitKey)}`
+
+export const parseRateLimitDuration = (input: string): Duration.Input => {
+  const normalized = assertNonEmpty(input, RATE_LIMIT_DURATION_ERROR)
+    .toUpperCase()
+    .trim()
+
+  switch (normalized) {
+    case "SECOND":
+    case "1 SECOND":
+    case `${RateLimitDuration.SECOND}`:
+      return "1 second"
+    case "MINUTE":
+    case "1 MINUTE":
+    case `${RateLimitDuration.MINUTE}`:
+      return "1 minute"
+    case "HOUR":
+    case "1 HOUR":
+    case `${RateLimitDuration.HOUR}`:
+      return "1 hour"
+  }
+
+  throw new Error(RATE_LIMIT_DURATION_ERROR)
+}
 
 const webhookSourceNames = [
   "GENERIC",

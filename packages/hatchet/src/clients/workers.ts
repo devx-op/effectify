@@ -42,31 +42,31 @@ export const registerWorker = <O = unknown>(
     const worker = (yield* Effect.tryPromise({
       try: () => client.worker(name, toWorkerOptions(opts)),
       catch: (error) =>
-        HatchetWorkerError.of(
-          `Failed to register worker "${name}"`,
-          name,
-          error,
-        ),
+        new HatchetWorkerError({
+          message: `Failed to register worker "${name}"`,
+          workerName: name,
+          cause: error,
+        }),
     })) as RegisterableWorker
 
     yield* Effect.tryPromise({
       try: () => worker.registerWorkflows(workflows),
       catch: (error) =>
-        HatchetWorkerError.of(
-          `Failed to register worker "${name}"`,
-          name,
-          error,
-        ),
+        new HatchetWorkerError({
+          message: `Failed to register worker "${name}"`,
+          workerName: name,
+          cause: error,
+        }),
     })
 
     yield* Effect.tryPromise({
       try: () => worker.start(),
       catch: (error) =>
-        HatchetWorkerError.of(
-          `Failed to register worker "${name}"`,
-          name,
-          error,
-        ),
+        new HatchetWorkerError({
+          message: `Failed to register worker "${name}"`,
+          workerName: name,
+          cause: error,
+        }),
     })
 
     return worker as O

@@ -32,3 +32,11 @@ This project uses effect-smol as the canonical source for Effect patterns.
 | `effect-pattern-discovery` | Effect-TS patterns from effect-smol | [.agent/skills/effect-pattern-discovery](.agent/skills/effect-pattern-discovery/SKILL.md) |
 
 **Reference Directory**: `.effect-reference/` contains the effect-smol source code mounted as a git worktree.
+
+## Hatchet + Effect Conventions
+
+- Treat `packages/hatchet` as an **Effect-first** boundary over the upstream Hatchet SDK.
+- For **time-based inputs that represent durations or windows**, prefer `effect/Duration` / `Duration.Input` at our package boundary and translate internally to the exact Hatchet SDK contract.
+- Do **not** invent shadow enums or string unions in the example app when the package can expose a correct Effect-friendly API.
+- Use upstream Hatchet SDK types and runtime values where they are the real contract, but adapt them behind our boundary instead of leaking awkward SDK-only ergonomics.
+- `Data.TaggedError` classes should follow the Effect reference style: instantiate directly with `new MyTaggedError({...})`; do **not** add redundant `static of(...)` factory helpers.

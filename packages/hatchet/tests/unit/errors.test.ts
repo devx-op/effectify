@@ -71,12 +71,11 @@ describe("HatchetContextError", () => {
 describe("HatchetEventError", () => {
   it("should create event errors with key context", () => {
     const cause = new Error("publish failed")
-    const error = HatchetEventError.of(
-      'Failed to push event "user.created"',
-      "user.created",
-      undefined,
+    const error = new HatchetEventError({
+      message: 'Failed to push event "user.created"',
+      key: "user.created",
       cause,
-    )
+    })
 
     expect(error.message).toBe('Failed to push event "user.created"')
     expect(error.key).toBe("user.created")
@@ -85,11 +84,10 @@ describe("HatchetEventError", () => {
   })
 
   it("should create event errors with event id context", () => {
-    const error = HatchetEventError.of(
-      'Failed to get event "event-123"',
-      undefined,
-      "event-123",
-    )
+    const error = new HatchetEventError({
+      message: 'Failed to get event "event-123"',
+      eventId: "event-123",
+    })
 
     expect(error.message).toContain("event-123")
     expect(error.eventId).toBe("event-123")
@@ -100,7 +98,7 @@ describe("HatchetEventError", () => {
 describe("HatchetObservabilityError", () => {
   it("should create observability errors with endpoint and task context", () => {
     const cause = new Error("grpc unavailable")
-    const error = HatchetObservabilityError.of({
+    const error = new HatchetObservabilityError({
       message: 'Failed to list task logs for "task-123"',
       operation: "logs",
       endpoint: "api.v1LogLineList",
@@ -117,7 +115,7 @@ describe("HatchetObservabilityError", () => {
   })
 
   it("should create observability errors with tenant context", () => {
-    const error = HatchetObservabilityError.of({
+    const error = new HatchetObservabilityError({
       message: 'Failed to read tenant metrics for "tenant-123"',
       operation: "metrics",
       endpoint: "api.tenantGetQueueMetrics",

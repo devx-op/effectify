@@ -27,10 +27,10 @@ export const createWorkflow = <O = unknown>(
   opts?: CreateWorkflowOpts,
 ): Effect.Effect<O, HatchetWorkflowError, HatchetClientService> =>
   Effect.fail(
-    HatchetWorkflowError.of(
-      "Workflow creation is not supported by Hatchet SDK 1.21.0 public workflows client",
-      opts?.name,
-    ),
+    new HatchetWorkflowError({
+      message: "Workflow creation is not supported by Hatchet SDK 1.21.0 public workflows client",
+      workflowName: opts?.name,
+    }),
   )
 
 /**
@@ -47,11 +47,11 @@ export const getWorkflow = <O = unknown>(
     const result = yield* Effect.tryPromise({
       try: () => client.workflows.get(name),
       catch: (error) =>
-        HatchetWorkflowError.of(
-          `Failed to get workflow "${name}"`,
-          name,
-          error,
-        ),
+        new HatchetWorkflowError({
+          message: `Failed to get workflow "${name}"`,
+          workflowName: name,
+          cause: error,
+        }),
     })
 
     return result as O
@@ -75,7 +75,11 @@ export const listWorkflows = <O = unknown>(
     const client = yield* getHatchetClient()
     const result = yield* Effect.tryPromise({
       try: () => client.workflows.list(options),
-      catch: (error) => HatchetWorkflowError.of("Failed to list workflows", undefined, error),
+      catch: (error) =>
+        new HatchetWorkflowError({
+          message: "Failed to list workflows",
+          cause: error,
+        }),
     })
 
     return (result as { readonly workflows: O[] }).workflows

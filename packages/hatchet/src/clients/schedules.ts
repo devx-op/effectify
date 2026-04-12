@@ -55,11 +55,11 @@ const parseTriggerAt = (
 ): Effect.Effect<Date, HatchetScheduleError> => {
   if (!triggerAt) {
     return Effect.fail(
-      HatchetScheduleError.of(
-        "Scheduled workflow response did not include triggerAt",
-        context.scheduleId,
-        context.workflowName,
-      ),
+      new HatchetScheduleError({
+        message: "Scheduled workflow response did not include triggerAt",
+        scheduleId: context.scheduleId,
+        workflowName: context.workflowName,
+      }),
     )
   }
 
@@ -67,11 +67,11 @@ const parseTriggerAt = (
 
   if (Number.isNaN(parsed.getTime())) {
     return Effect.fail(
-      HatchetScheduleError.of(
-        `Scheduled workflow response included an invalid triggerAt value: ${triggerAt}`,
-        context.scheduleId,
-        context.workflowName,
-      ),
+      new HatchetScheduleError({
+        message: `Scheduled workflow response included an invalid triggerAt value: ${triggerAt}`,
+        scheduleId: context.scheduleId,
+        workflowName: context.workflowName,
+      }),
     )
   }
 
@@ -87,13 +87,12 @@ const normalizeSchedule = <TInput = Record<string, unknown>>(
 
     if (!scheduleId) {
       return yield* Effect.fail(
-        HatchetScheduleError.of(
-          `Scheduled workflow response did not include an id for workflow "${
+        new HatchetScheduleError({
+          message: `Scheduled workflow response did not include an id for workflow "${
             context.workflowName ?? schedule.workflowName ?? "unknown"
           }"`,
-          undefined,
-          context.workflowName ?? schedule.workflowName,
-        ),
+          workflowName: context.workflowName ?? schedule.workflowName,
+        }),
       )
     }
 
@@ -101,10 +100,10 @@ const normalizeSchedule = <TInput = Record<string, unknown>>(
 
     if (!workflowName) {
       return yield* Effect.fail(
-        HatchetScheduleError.of(
-          `Scheduled workflow "${scheduleId}" did not include a workflow name`,
+        new HatchetScheduleError({
+          message: `Scheduled workflow "${scheduleId}" did not include a workflow name`,
           scheduleId,
-        ),
+        }),
       )
     }
 
@@ -138,12 +137,11 @@ export const createSchedule = <TInput = Record<string, unknown>>(
     const schedule = yield* Effect.tryPromise({
       try: () => client.scheduled.create(workflowName, options),
       catch: (error) =>
-        HatchetScheduleError.of(
-          `Failed to create schedule for workflow "${workflowName}"`,
-          undefined,
+        new HatchetScheduleError({
+          message: `Failed to create schedule for workflow "${workflowName}"`,
           workflowName,
-          error,
-        ),
+          cause: error,
+        }),
     })
 
     return yield* normalizeSchedule<TInput>(
@@ -166,12 +164,11 @@ export const getSchedule = <TInput = Record<string, unknown>>(
     const schedule = yield* Effect.tryPromise({
       try: () => client.scheduled.get(scheduleId),
       catch: (error) =>
-        HatchetScheduleError.of(
-          `Failed to get schedule "${scheduleId}"`,
+        new HatchetScheduleError({
+          message: `Failed to get schedule "${scheduleId}"`,
           scheduleId,
-          undefined,
-          error,
-        ),
+          cause: error,
+        }),
     })
 
     return yield* normalizeSchedule<TInput>(
@@ -195,14 +192,13 @@ export const listSchedules = <TInput = Record<string, unknown>>(
     const response = yield* Effect.tryPromise({
       try: () => client.scheduled.list(workflowName ? { workflow: workflowName } : {}),
       catch: (error) =>
-        HatchetScheduleError.of(
-          workflowName
+        new HatchetScheduleError({
+          message: workflowName
             ? `Failed to list schedules for workflow "${workflowName}"`
             : "Failed to list schedules",
-          undefined,
           workflowName,
-          error,
-        ),
+          cause: error,
+        }),
     })
 
     const rows = (response as HatchetScheduledWorkflowList).rows ?? []
@@ -218,11 +214,10 @@ export const deleteSchedule = (
     yield* Effect.tryPromise({
       try: () => client.scheduled.delete(scheduleId),
       catch: (error) =>
-        HatchetScheduleError.of(
-          `Failed to delete schedule "${scheduleId}"`,
+        new HatchetScheduleError({
+          message: `Failed to delete schedule "${scheduleId}"`,
           scheduleId,
-          undefined,
-          error,
-        ),
+          cause: error,
+        }),
     })
   })

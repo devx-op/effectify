@@ -161,7 +161,7 @@ export const listTaskLogs = (
     const response = yield* Effect.tryPromise({
       try: () => client.api.v1LogLineList(taskId, toTaskLogQuery(options) as never),
       catch: (cause) =>
-        HatchetObservabilityError.of({
+        new HatchetObservabilityError({
           message: `Failed to list task logs for "${taskId}"`,
           operation: "logs",
           endpoint: "api.v1LogLineList",
@@ -185,7 +185,7 @@ export const listTenantLogs = (
           toTenantLogQuery(options) as never,
         ),
       catch: (cause) =>
-        HatchetObservabilityError.of({
+        new HatchetObservabilityError({
           message: `Failed to list tenant logs for "${client.tenantId}"`,
           operation: "logs",
           endpoint: "api.v1TenantLogLineList",

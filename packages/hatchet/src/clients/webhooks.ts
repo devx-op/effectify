@@ -106,7 +106,7 @@ const failMissingField = (
     readonly webhookName?: string
   },
 ) =>
-  HatchetWebhookError.of({
+  new HatchetWebhookError({
     message: `Webhook response did not include ${field}`,
     operation: context.operation,
     webhookName: context.webhookName,
@@ -232,7 +232,7 @@ export const listWebhooks = (
     const response = yield* Effect.tryPromise({
       try: () => client.webhooks.list(query),
       catch: (cause) =>
-        HatchetWebhookError.of({
+        new HatchetWebhookError({
           message: "Failed to list webhooks",
           operation: "list",
           cause,
@@ -261,7 +261,7 @@ export const getWebhook = (
     const webhook = yield* Effect.tryPromise({
       try: () => client.webhooks.get(webhookName),
       catch: (cause) =>
-        HatchetWebhookError.of({
+        new HatchetWebhookError({
           message: `Failed to get webhook "${webhookName}"`,
           operation: "get",
           webhookName,
@@ -290,7 +290,7 @@ export const createWebhook = (
     const webhook = yield* Effect.tryPromise({
       try: () => client.webhooks.create(request),
       catch: (cause) =>
-        HatchetWebhookError.of({
+        new HatchetWebhookError({
           message: `Failed to create webhook "${options.name}"`,
           operation: "create",
           webhookName: options.name,
@@ -317,7 +317,7 @@ export const updateWebhook = (
     const webhook = yield* Effect.tryPromise({
       try: () => client.webhooks.update(webhookName, options),
       catch: (cause) =>
-        HatchetWebhookError.of({
+        new HatchetWebhookError({
           message: `Failed to update webhook "${webhookName}"`,
           operation: "update",
           webhookName,
@@ -339,7 +339,7 @@ export const deleteWebhook = (
     yield* Effect.tryPromise({
       try: () => client.webhooks.delete(webhookName),
       catch: (cause) =>
-        HatchetWebhookError.of({
+        new HatchetWebhookError({
           message: `Failed to delete webhook "${webhookName}"`,
           operation: "delete",
           webhookName,

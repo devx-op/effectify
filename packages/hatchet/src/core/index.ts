@@ -10,6 +10,7 @@ export {
   HatchetExecutionError,
   HatchetInitError,
   HatchetObservabilityError,
+  HatchetRateLimitError,
   HatchetRunError,
   HatchetWebhookError,
   HatchetWorkerError,
