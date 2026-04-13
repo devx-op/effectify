@@ -8,6 +8,7 @@
 import * as Effect from "effect/Effect"
 import * as Logger from "effect/Logger"
 import * as Option from "effect/Option"
+import * as ServiceMap from "effect/ServiceMap"
 import { HatchetStepContext } from "../core/context.js"
 
 /**
@@ -16,28 +17,22 @@ import { HatchetStepContext } from "../core/context.js"
  * - Otherwise: behaves as the default console logger
  */
 export const makeHatchetLogger = (): Logger.Logger<unknown, void> =>
-  Logger.make(({ logLevel, message }) => {
+  Logger.make(({ logLevel, message, fiber }) => {
     const msg = typeof message === "string" ? message : String(message)
     const formatted = `[${String(logLevel)}] ${msg}`
 
-    // Try to get HatchetStepContext from current fiber
-    // If we're inside a Hatchet task, this will succeed
-    const hatchetCtx = Effect.serviceOption(HatchetStepContext)
+    const hatchetCtx = ServiceMap.getOption(fiber.services, HatchetStepContext)
 
-    Effect.runPromise(hatchetCtx).then((ctxOpt) => {
-      if (Option.isSome(ctxOpt)) {
-        // We're inside a Hatchet task - send log to Hatchet UI
-        try {
-          ctxOpt.value.log(formatted)
-        } catch {
-          // If ctx.log fails, still output to console
-          console.log(formatted)
-        }
-      } else {
-        // Not inside a Hatchet task, just console
+    if (Option.isSome(hatchetCtx)) {
+      try {
+        hatchetCtx.value.log(formatted)
+      } catch {
         console.log(formatted)
       }
-    })
+      return
+    }
+
+    console.log(formatted)
   })
 
 /**
@@ -83,24 +78,25 @@ export const createHatchetLogger = (
     console: shouldConsole = true,
   } = options
 
-  return Logger.make(({ logLevel, message }) => {
+  return Logger.make(({ logLevel, message, fiber }) => {
     const msg = typeof message === "string" ? message : String(message)
     const formatted = format(String(logLevel), msg)
 
-    const hatchetCtx = Effect.serviceOption(HatchetStepContext)
+    const hatchetCtx = ServiceMap.getOption(fiber.services, HatchetStepContext)
 
-    Effect.runPromise(hatchetCtx).then((ctxOpt) => {
-      if (Option.isSome(ctxOpt)) {
-        try {
-          ctxOpt.value.log(formatted)
-        } catch {
-          // ignore
+    if (Option.isSome(hatchetCtx)) {
+      try {
+        hatchetCtx.value.log(formatted)
+      } catch {
+        if (shouldConsole) {
+          console.log(formatted)
         }
       }
+      return
+    }
 
-      if (shouldConsole) {
-        console.log(formatted)
-      }
-    })
+    if (shouldConsole) {
+      console.log(formatted)
+    }
   })
 }

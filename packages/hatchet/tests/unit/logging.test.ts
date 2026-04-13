@@ -2,12 +2,34 @@
  * @effectify/hatchet - Logging Tests
  */
 
-import { describe, expect, it, vi } from "vitest"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
-import { createHatchetLogger, HatchetLogger, makeHatchetLogger, withHatchetLogger } from "@effectify/hatchet"
-import { createMockContext, testTask } from "@effectify/hatchet"
-import { HatchetStepContext } from "@effectify/hatchet"
+import * as Logger from "effect/Logger"
+import { afterEach, describe, expect, it, vi } from "vitest"
+import {
+  createHatchetLogger,
+  createMockContext,
+  HatchetLogger,
+  HatchetStepContext,
+  makeHatchetLogger,
+  withHatchetLogger,
+} from "@effectify/hatchet"
+
+const runWithLogger = async <A, E, R>(
+  effect: Effect.Effect<A, E, R>,
+  logger: Logger.Logger<unknown, void>,
+  extraLayer: Layer.Layer.Any = Layer.empty,
+) => {
+  const services = await Effect.scoped(
+    Layer.build(Layer.mergeAll(Logger.layer([logger]), extraLayer)),
+  ).pipe(Effect.runPromise)
+
+  return effect.pipe(Effect.provideServices(services), Effect.runPromise)
+}
+
+afterEach(() => {
+  vi.restoreAllMocks()
+})
 
 describe("HatchetLogger", () => {
   it("should be defined", () => {
@@ -19,6 +41,53 @@ describe("makeHatchetLogger", () => {
   it("should create a logger instance", () => {
     const logger = makeHatchetLogger()
     expect(logger).toBeDefined()
+  })
+
+  it("forwards log messages to Hatchet when step context is available", async () => {
+    const ctxLog = vi.fn()
+    const logger = makeHatchetLogger()
+
+    await runWithLogger(
+      Effect.log("sync order"),
+      logger,
+      Layer.succeed(HatchetStepContext, {
+        ...createMockContext(),
+        log: ctxLog,
+      } as never),
+    )
+
+    expect(ctxLog).toHaveBeenCalledWith("[Info] sync order")
+  })
+
+  it("falls back to console when no Hatchet step context exists", async () => {
+    const consoleLogSpy = vi
+      .spyOn(console, "log")
+      .mockImplementation(() => undefined)
+    const logger = makeHatchetLogger()
+
+    await runWithLogger(Effect.log("sync order"), logger)
+
+    expect(consoleLogSpy).toHaveBeenCalledWith("[Info] sync order")
+  })
+
+  it("falls back to console when Hatchet logging throws", async () => {
+    const consoleLogSpy = vi
+      .spyOn(console, "log")
+      .mockImplementation(() => undefined)
+    const logger = makeHatchetLogger()
+
+    await runWithLogger(
+      Effect.log("sync order"),
+      logger,
+      Layer.succeed(HatchetStepContext, {
+        ...createMockContext(),
+        log: () => {
+          throw new Error("Hatchet UI offline")
+        },
+      } as never),
+    )
+
+    expect(consoleLogSpy).toHaveBeenCalledWith("[Info] sync order")
   })
 })
 
@@ -68,5 +137,29 @@ describe("createHatchetLogger", () => {
   it("should create logger without console output", () => {
     const logger = createHatchetLogger({ console: false })
     expect(logger).toBeDefined()
+  })
+
+  it("applies the custom formatter to emitted messages", async () => {
+    const consoleLogSpy = vi
+      .spyOn(console, "log")
+      .mockImplementation(() => undefined)
+    const logger = createHatchetLogger({
+      format: (level, message) => `${level.toUpperCase()} :: ${message}`,
+    })
+
+    await runWithLogger(Effect.log("sync order"), logger)
+
+    expect(consoleLogSpy).toHaveBeenCalledWith("INFO :: sync order")
+  })
+
+  it("silences console output when console=false and no Hatchet context exists", async () => {
+    const consoleLogSpy = vi
+      .spyOn(console, "log")
+      .mockImplementation(() => undefined)
+    const logger = createHatchetLogger({ console: false })
+
+    await runWithLogger(Effect.log("sync order"), logger)
+
+    expect(consoleLogSpy).not.toHaveBeenCalled()
   })
 })
