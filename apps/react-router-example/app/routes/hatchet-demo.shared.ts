@@ -75,6 +75,40 @@ export const readSelectedTaskId = (requestUrl: string): string | undefined => {
 
 export const buildRunRedirect = (runId: string): string => `/hatchet-demo?runId=${encodeURIComponent(runId)}`
 
+export const buildReplayRedirect = (runId: string): string => buildRunRedirect(runId)
+
+export const parseReplayIntent = (
+  formData: FormData,
+): {
+  readonly runId: string
+} => ({
+  runId: assertNonEmpty(
+    String(formData.get("runId") ?? ""),
+    "Run ID is required",
+  ),
+})
+
+export const parseDeleteWorkflowIntent = (
+  formData: FormData,
+): {
+  readonly workflowName: string
+} => {
+  const workflowName = assertNonEmpty(
+    String(formData.get("workflowName") ?? ""),
+    "Workflow name is required",
+  )
+  const confirmation = assertNonEmpty(
+    String(formData.get("confirmWorkflowDelete") ?? ""),
+    "Type DELETE to confirm workflow deletion",
+  )
+
+  if (confirmation !== "DELETE") {
+    throw new Error("Type DELETE to confirm workflow deletion")
+  }
+
+  return { workflowName }
+}
+
 export const rateLimitDurationOptions = [
   {
     label: "SECOND",
