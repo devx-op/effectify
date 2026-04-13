@@ -136,7 +136,7 @@ jobs:
         with:
           name: build-artifacts-${{ github.sha }}
           path: |
-            packages/*/dist/
+            packages/**/dist/
             apps/*/dist/
             apps/*/build/
           retention-days: 7
