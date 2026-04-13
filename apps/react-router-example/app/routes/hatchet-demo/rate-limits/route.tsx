@@ -1,5 +1,11 @@
-import { type HatchetRateLimitRecord } from "@effectify/hatchet"
-import { rateLimitDurationOptions } from "./hatchet-demo.shared.js"
+import * as Effect from "effect/Effect"
+import { ActionArgsContext, httpFailure, httpRedirect, httpSuccess, LoaderArgsContext } from "@effectify/react-router"
+import { type HatchetRateLimitRecord, listRateLimits, upsertRateLimit } from "@effectify/hatchet"
+import { Form, useActionData, useLoaderData } from "react-router"
+import { parseRateLimitDuration, rateLimitDurationOptions, readRequestFormData } from "../../../lib/hatchet/parsers.js"
+import { readSelectedRateLimitKey } from "../../../lib/hatchet/params.js"
+import { buildRateLimitRedirect } from "../../../lib/hatchet/redirects.js"
+import { withActionEffect, withLoaderEffect } from "../../../lib/runtime.server.js"
 
 export interface HatchetDemoRateLimitsSectionProps {
   readonly actionError?: string
@@ -20,7 +26,7 @@ export const HatchetDemoRateLimitsSection = ({
     <>
       <section>
         <h3>Upsert Rate Limit</h3>
-        <form method="post">
+        <Form method="post">
           <fieldset>
             <label htmlFor="rateLimitKey">Rate Limit Key</label>
             <input
@@ -28,7 +34,6 @@ export const HatchetDemoRateLimitsSection = ({
               name="rateLimitKey"
               type="text"
               required
-              placeholder="e.g., email:send"
               defaultValue="email:send"
             />
             <label htmlFor="rateLimitLimit">Limit</label>
@@ -54,19 +59,9 @@ export const HatchetDemoRateLimitsSection = ({
             </select>
           </fieldset>
           <input type="hidden" name="intent" value="upsert-ratelimit" />
-          {actionError ?
-            (
-              <small
-                role="alert"
-                aria-live="assertive"
-                style={{ color: "var(--pico-color-red-500)" }}
-              >
-                {actionError}
-              </small>
-            ) :
-            null}
+          {actionError ? <small role="alert">{actionError}</small> : null}
           <button type="submit">Upsert Rate Limit</button>
-        </form>
+        </Form>
       </section>
 
       <section>
@@ -113,14 +108,14 @@ export const HatchetDemoRateLimitsSection = ({
                       {ratelimit.value} / {ratelimit.limitValue}
                     </span>
                   </div>
-                  <form method="get">
+                  <Form method="get">
                     <input
                       type="hidden"
                       name="rateLimitKey"
                       value={ratelimit.key}
                     />
                     <button type="submit">View</button>
-                  </form>
+                  </Form>
                 </div>
               </li>
             ))}
@@ -128,5 +123,85 @@ export const HatchetDemoRateLimitsSection = ({
         )}
       </section>
     </>
+  )
+}
+
+const getActionError = (actionData: unknown): string | undefined => {
+  if (
+    actionData &&
+    typeof actionData === "object" &&
+    "ok" in actionData &&
+    actionData.ok === false &&
+    "errors" in actionData &&
+    Array.isArray(actionData.errors) &&
+    actionData.errors.length > 0
+  ) {
+    return String(actionData.errors[0])
+  }
+  return undefined
+}
+
+export const loadRateLimits = (request: Request) =>
+  Effect.gen(function*() {
+    const selectedRateLimitKey = readSelectedRateLimitKey(request.url)
+    const ratelimits = yield* listRateLimits()
+    return yield* httpSuccess({ ratelimits, selectedRateLimitKey })
+  })
+
+export const loader = Effect.gen(function*() {
+  const { request } = yield* LoaderArgsContext
+  return yield* loadRateLimits(request)
+}).pipe(withLoaderEffect)
+
+export const handleRateLimitsAction = (request: Request) =>
+  Effect.gen(function*() {
+    const formData = yield* readRequestFormData(request)
+    const intent = String(formData.get("intent") ?? "")
+    if (intent !== "upsert-ratelimit") {
+      return yield* httpFailure("Unknown intent")
+    }
+
+    const rateLimitKey = String(formData.get("rateLimitKey") ?? "").trim()
+    const limitInput = String(formData.get("rateLimitLimit") ?? "").trim()
+    const durationInput = String(
+      formData.get("rateLimitDuration") ?? "",
+    ).trim()
+    if (!rateLimitKey) return yield* httpFailure("Rate limit key is required")
+
+    const limit = Number(limitInput)
+    if (!Number.isInteger(limit) || limit < 1) {
+      return yield* httpFailure("Rate limit limit must be a positive integer")
+    }
+
+    let duration: ReturnType<typeof parseRateLimitDuration> | undefined
+    try {
+      duration = durationInput
+        ? parseRateLimitDuration(durationInput)
+        : undefined
+    } catch (error) {
+      return yield* httpFailure(
+        error instanceof Error ? error.message : "Invalid rate limit duration",
+      )
+    }
+
+    const key = yield* upsertRateLimit({ key: rateLimitKey, limit, duration })
+    return yield* httpRedirect(buildRateLimitRedirect(key))
+  })
+
+export const action = Effect.gen(function*() {
+  const { request } = yield* ActionArgsContext
+  return yield* handleRateLimitsAction(request)
+}).pipe(withActionEffect)
+
+export default function HatchetDemoRateLimitsRoute() {
+  const loaderData = useLoaderData<typeof loader>()
+  const actionData = useActionData<typeof action>()
+  if (!loaderData.ok) return <p>Loading...</p>
+  return (
+    <HatchetDemoRateLimitsSection
+      actionError={getActionError(actionData)}
+      selectedRateLimitKey={loaderData.data.selectedRateLimitKey}
+      ratelimits={loaderData.data.ratelimits}
+    />
   )
 }

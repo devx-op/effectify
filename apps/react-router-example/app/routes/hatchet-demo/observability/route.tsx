@@ -1,9 +1,15 @@
+import * as Effect from "effect/Effect"
+import { httpSuccess, LoaderArgsContext } from "@effectify/react-router"
 import type { LogList, QueueMetrics, TaskMetrics } from "@effectify/hatchet"
+import { useLoaderData } from "react-router"
+import { loadObservabilityWithFallback } from "../../../lib/hatchet/orchestration.js"
+import { withLoaderEffect } from "../../../lib/runtime.server.js"
+import type { HatchetWorkflowRunRecord } from "../../../lib/hatchet/run-models.js"
 
 export interface HatchetDemoObservabilityData {
   readonly selectedRunId?: string
   readonly selectedTaskId?: string
-  readonly run?: Record<string, unknown>
+  readonly run?: HatchetWorkflowRunRecord
   readonly status?: string
   readonly logs?: LogList
   readonly taskMetrics: TaskMetrics
@@ -87,5 +93,26 @@ export const HatchetDemoObservabilitySection = ({
         </ul>
       </div>
     </section>
+  )
+}
+
+export const loadObservabilityRoute = (request: Request) =>
+  Effect.gen(function*() {
+    const observability = yield* loadObservabilityWithFallback(request.url)
+    return yield* httpSuccess({ observability })
+  })
+
+export const loader = Effect.gen(function*() {
+  const { request } = yield* LoaderArgsContext
+  return yield* loadObservabilityRoute(request)
+}).pipe(withLoaderEffect)
+
+export default function HatchetDemoObservabilityRoute() {
+  const loaderData = useLoaderData<typeof loader>()
+  if (!loaderData.ok) return <p>Loading...</p>
+  return (
+    <HatchetDemoObservabilitySection
+      observability={loaderData.data.observability}
+    />
   )
 }

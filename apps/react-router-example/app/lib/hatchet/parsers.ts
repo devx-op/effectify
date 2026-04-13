@@ -1,30 +1,88 @@
 import * as Duration from "effect/Duration"
+import * as Effect from "effect/Effect"
 import type {
   HatchetWebhookAuth,
+  HatchetWebhookAuthType,
   HatchetWebhookHmacAlgorithm,
   HatchetWebhookHmacEncoding,
   HatchetWebhookSourceName,
 } from "@effectify/hatchet"
 import { RateLimitDuration } from "@effectify/hatchet"
 
+const webhookSourceNames = [
+  "GENERIC",
+  "GITHUB",
+  "STRIPE",
+  "SLACK",
+  "LINEAR",
+  "SVIX",
+] as const satisfies readonly HatchetWebhookSourceName[]
+const webhookAuthTypes = [
+  "BASIC",
+  "API_KEY",
+  "HMAC",
+] as const satisfies readonly HatchetWebhookAuthType[]
+const webhookHmacAlgorithms = [
+  "SHA1",
+  "SHA256",
+  "SHA512",
+  "MD5",
+] as const satisfies readonly HatchetWebhookHmacAlgorithm[]
+const webhookHmacEncodings = [
+  "HEX",
+  "BASE64",
+  "BASE64URL",
+] as const satisfies readonly HatchetWebhookHmacEncoding[]
+
 const RATE_LIMIT_DURATION_ERROR = "Rate limit duration must be SECOND, MINUTE, or HOUR"
 
-export const parseEventPayload = (input: string): Record<string, unknown> => {
+export type HatchetJsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | HatchetJsonObject
+  | readonly HatchetJsonValue[]
+
+export interface HatchetJsonObject {
+  readonly [key: string]: HatchetJsonValue
+}
+
+const assertNonEmpty = (value: string, message: string): string => {
+  const trimmed = value.trim()
+
+  if (!trimmed) {
+    throw new Error(message)
+  }
+
+  return trimmed
+}
+
+export const readRequestFormData = (request: Request) =>
+  Effect.tryPromise({
+    try: () => request.formData(),
+    catch: (cause) =>
+      new Error(
+        cause instanceof Error ? cause.message : "Failed to read form data",
+      ),
+  })
+
+const isJsonObject = (value: unknown): value is HatchetJsonObject =>
+  typeof value === "object" && value !== null && !Array.isArray(value)
+
+export const parseEventPayload = <
+  TPayload extends HatchetJsonObject = HatchetJsonObject,
+>(
+  input: string,
+): TPayload => {
   const parsed = JSON.parse(input) as unknown
 
-  if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+  if (!isJsonObject(parsed)) {
     throw new Error("Event payload must be a JSON object")
   }
 
-  return parsed as Record<string, unknown>
+  return parsed as TPayload
 }
-
-export const readSelectedEventId = (requestUrl: string): string | undefined => {
-  const eventId = new URL(requestUrl).searchParams.get("eventId")?.trim()
-  return eventId ? eventId : undefined
-}
-
-export const buildEventRedirect = (eventId: string): string => `/hatchet-demo?eventId=${encodeURIComponent(eventId)}`
 
 export const parseTriggerTime = (input: string): Date => {
   const parsed = new Date(input)
@@ -36,52 +94,9 @@ export const parseTriggerTime = (input: string): Date => {
   return parsed
 }
 
-export const readSelectedScheduleId = (
-  requestUrl: string,
-): string | undefined => {
-  const scheduleId = new URL(requestUrl).searchParams.get("scheduleId")?.trim()
-  return scheduleId ? scheduleId : undefined
-}
-
-export const buildScheduleRedirect = (scheduleId: string): string =>
-  `/hatchet-demo?scheduleId=${encodeURIComponent(scheduleId)}`
-
-export const readSelectedCronId = (requestUrl: string): string | undefined => {
-  const cronId = new URL(requestUrl).searchParams.get("cronId")?.trim()
-  return cronId ? cronId : undefined
-}
-
-export const buildCronRedirect = (cronId: string): string => `/hatchet-demo?cronId=${encodeURIComponent(cronId)}`
-
-export const readSelectedFilterId = (
-  requestUrl: string,
-): string | undefined => {
-  const filterId = new URL(requestUrl).searchParams.get("filterId")?.trim()
-  return filterId ? filterId : undefined
-}
-
-export const buildFilterRedirect = (filterId: string): string =>
-  `/hatchet-demo?filterId=${encodeURIComponent(filterId)}`
-
-export const readSelectedRunId = (requestUrl: string): string | undefined => {
-  const runId = new URL(requestUrl).searchParams.get("runId")?.trim()
-  return runId ? runId : undefined
-}
-
-export const readSelectedTaskId = (requestUrl: string): string | undefined => {
-  const taskId = new URL(requestUrl).searchParams.get("taskId")?.trim()
-  return taskId ? taskId : undefined
-}
-
-export const buildRunRedirect = (runId: string): string => `/hatchet-demo?runId=${encodeURIComponent(runId)}`
-
-export const buildReplayRedirect = (runId: string): string => buildRunRedirect(runId)
-
 export const parseReplayIntent = (
   formData: FormData,
-): {
-  readonly runId: string
-} => ({
+): { readonly runId: string } => ({
   runId: assertNonEmpty(
     String(formData.get("runId") ?? ""),
     "Run ID is required",
@@ -90,9 +105,7 @@ export const parseReplayIntent = (
 
 export const parseDeleteWorkflowIntent = (
   formData: FormData,
-): {
-  readonly workflowName: string
-} => {
+): { readonly workflowName: string } => {
   const workflowName = assertNonEmpty(
     String(formData.get("workflowName") ?? ""),
     "Workflow name is required",
@@ -110,31 +123,10 @@ export const parseDeleteWorkflowIntent = (
 }
 
 export const rateLimitDurationOptions = [
-  {
-    label: "SECOND",
-    value: "1 second",
-  },
-  {
-    label: "MINUTE",
-    value: "1 minute",
-  },
-  {
-    label: "HOUR",
-    value: "1 hour",
-  },
+  { label: "SECOND", value: "1 second" },
+  { label: "MINUTE", value: "1 minute" },
+  { label: "HOUR", value: "1 hour" },
 ] as const
-
-export const readSelectedRateLimitKey = (
-  requestUrl: string,
-): string | undefined => {
-  const rateLimitKey = new URL(requestUrl).searchParams
-    .get("rateLimitKey")
-    ?.trim()
-  return rateLimitKey ? rateLimitKey : undefined
-}
-
-export const buildRateLimitRedirect = (rateLimitKey: string): string =>
-  `/hatchet-demo?rateLimitKey=${encodeURIComponent(rateLimitKey)}`
 
 export const parseRateLimitDuration = (input: string): Duration.Input => {
   const normalized = assertNonEmpty(input, RATE_LIMIT_DURATION_ERROR)
@@ -159,45 +151,9 @@ export const parseRateLimitDuration = (input: string): Duration.Input => {
   throw new Error(RATE_LIMIT_DURATION_ERROR)
 }
 
-const webhookSourceNames = [
-  "GENERIC",
-  "GITHUB",
-  "STRIPE",
-  "SLACK",
-  "LINEAR",
-  "SVIX",
-] as const
-const webhookAuthTypes = ["BASIC", "API_KEY", "HMAC"] as const
-const webhookHmacAlgorithms = ["SHA1", "SHA256", "SHA512", "MD5"] as const
-const webhookHmacEncodings = ["HEX", "BASE64", "BASE64URL"] as const
-
-type SupportedWebhookAuthType = (typeof webhookAuthTypes)[number]
-
-const assertNonEmpty = (value: string, message: string): string => {
-  const trimmed = value.trim()
-
-  if (!trimmed) {
-    throw new Error(message)
-  }
-
-  return trimmed
-}
-
-export const readSelectedWebhookName = (
-  requestUrl: string,
-): string | undefined => {
-  const webhookName = new URL(requestUrl).searchParams
-    .get("webhookName")
-    ?.trim()
-  return webhookName ? webhookName : undefined
-}
-
-export const buildWebhookRedirect = (webhookName: string): string =>
-  `/hatchet-demo?webhookName=${encodeURIComponent(webhookName)}`
-
 export const parseWebhookStaticPayload = (
   input: string,
-): Record<string, unknown> | undefined => {
+): HatchetJsonObject | undefined => {
   if (!input.trim()) {
     return undefined
   }
@@ -217,16 +173,14 @@ export const parseWebhookSourceName = (
   throw new Error(`Unsupported webhook source: ${sourceName}`)
 }
 
-export const parseWebhookAuthType = (
-  input: string,
-): SupportedWebhookAuthType => {
+export const parseWebhookAuthType = (input: string): HatchetWebhookAuthType => {
   const authType = assertNonEmpty(
     input,
     "Webhook auth type must be BASIC, API_KEY, or HMAC",
   )
 
-  if (webhookAuthTypes.includes(authType as SupportedWebhookAuthType)) {
-    return authType as SupportedWebhookAuthType
+  if (webhookAuthTypes.includes(authType as HatchetWebhookAuthType)) {
+    return authType as HatchetWebhookAuthType
   }
 
   throw new Error("Webhook auth type must be BASIC, API_KEY, or HMAC")

@@ -1,7 +1,14 @@
 import React from "react"
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 import { renderToStaticMarkup } from "react-dom/server"
-import { HatchetDemoWebhooksSection } from "./hatchet-demo-webhooks.js"
+
+vi.mock("react-router", () => ({
+  Form: ({ children, ...props }: React.ComponentProps<"form">) => React.createElement("form", props, children),
+  useActionData: () => undefined,
+  useLoaderData: () => undefined,
+}))
+
+import { HatchetDemoWebhooksSection } from "./route.js"
 
 describe("HatchetDemoWebhooksSection", () => {
   it("renders the webhook form, selected webhook details, and webhook list", () => {

@@ -1,4 +1,16 @@
-import { type HatchetWebhookRecord } from "@effectify/hatchet"
+import * as Effect from "effect/Effect"
+import { ActionArgsContext, httpFailure, httpRedirect, httpSuccess, LoaderArgsContext } from "@effectify/react-router"
+import { createWebhook, deleteWebhook, getWebhook, type HatchetWebhookRecord, listWebhooks } from "@effectify/hatchet"
+import { Form, useActionData, useLoaderData } from "react-router"
+import {
+  parseWebhookAuth,
+  parseWebhookSourceName,
+  parseWebhookStaticPayload,
+  readRequestFormData,
+} from "../../../lib/hatchet/parsers.js"
+import { readSelectedWebhookName } from "../../../lib/hatchet/params.js"
+import { buildWebhookRedirect } from "../../../lib/hatchet/redirects.js"
+import { withActionEffect, withLoaderEffect } from "../../../lib/runtime.server.js"
 
 export interface HatchetDemoWebhooksSectionProps {
   readonly actionError?: string
@@ -14,7 +26,7 @@ export const HatchetDemoWebhooksSection = ({
   <>
     <section>
       <h3>Create Webhook</h3>
-      <form method="post">
+      <Form method="post">
         <fieldset>
           <label htmlFor="webhookName">Webhook Name</label>
           <input
@@ -22,7 +34,6 @@ export const HatchetDemoWebhooksSection = ({
             name="webhookName"
             type="text"
             required
-            placeholder="e.g., github-prs"
             defaultValue="github-prs"
           />
           <label htmlFor="webhookSourceName">Source</label>
@@ -46,7 +57,6 @@ export const HatchetDemoWebhooksSection = ({
             name="webhookEventKeyExpression"
             type="text"
             required
-            placeholder="body.action"
             defaultValue="body.action"
           />
           <label htmlFor="webhookScopeExpression">Scope Expression</label>
@@ -54,7 +64,6 @@ export const HatchetDemoWebhooksSection = ({
             id="webhookScopeExpression"
             name="webhookScopeExpression"
             type="text"
-            placeholder="body.repository.full_name"
             defaultValue="body.repository.full_name"
           />
           <label htmlFor="webhookStaticPayload">
@@ -63,9 +72,8 @@ export const HatchetDemoWebhooksSection = ({
           <textarea
             id="webhookStaticPayload"
             name="webhookStaticPayload"
-            placeholder='{"issue": "opened"}'
-            defaultValue='{"issue": "opened"}'
             rows={3}
+            defaultValue='{"issue": "opened"}'
           />
           <label htmlFor="webhookAuthType">Auth Type</label>
           <select
@@ -78,33 +86,13 @@ export const HatchetDemoWebhooksSection = ({
             <option value="HMAC">HMAC</option>
           </select>
           <label htmlFor="webhookUsername">Basic Username</label>
-          <input
-            id="webhookUsername"
-            name="webhookUsername"
-            type="text"
-            placeholder="demo-user"
-          />
+          <input id="webhookUsername" name="webhookUsername" type="text" />
           <label htmlFor="webhookPassword">Basic Password</label>
-          <input
-            id="webhookPassword"
-            name="webhookPassword"
-            type="password"
-            placeholder="demo-pass"
-          />
+          <input id="webhookPassword" name="webhookPassword" type="password" />
           <label htmlFor="webhookHeaderName">API Key Header</label>
-          <input
-            id="webhookHeaderName"
-            name="webhookHeaderName"
-            type="text"
-            placeholder="x-api-key"
-          />
+          <input id="webhookHeaderName" name="webhookHeaderName" type="text" />
           <label htmlFor="webhookApiKey">API Key</label>
-          <input
-            id="webhookApiKey"
-            name="webhookApiKey"
-            type="password"
-            placeholder="key-123"
-          />
+          <input id="webhookApiKey" name="webhookApiKey" type="password" />
           <label htmlFor="webhookHmacAlgorithm">HMAC Algorithm</label>
           <select
             id="webhookHmacAlgorithm"
@@ -131,7 +119,6 @@ export const HatchetDemoWebhooksSection = ({
             id="webhookSignatureHeaderName"
             name="webhookSignatureHeaderName"
             type="text"
-            placeholder="x-hub-signature-256"
             defaultValue="x-hub-signature-256"
           />
           <label htmlFor="webhookSigningSecret">Signing Secret</label>
@@ -139,24 +126,13 @@ export const HatchetDemoWebhooksSection = ({
             id="webhookSigningSecret"
             name="webhookSigningSecret"
             type="password"
-            placeholder="secret-123"
             defaultValue="secret-123"
           />
         </fieldset>
         <input type="hidden" name="intent" value="create-webhook" />
-        {actionError ?
-          (
-            <small
-              role="alert"
-              aria-live="assertive"
-              style={{ color: "var(--pico-color-red-500)" }}
-            >
-              {actionError}
-            </small>
-          ) :
-          null}
+        {actionError ? <small role="alert">{actionError}</small> : null}
         <button type="submit">Create Webhook</button>
-      </form>
+      </Form>
     </section>
 
     <section>
@@ -206,15 +182,15 @@ export const HatchetDemoWebhooksSection = ({
                   <span>—</span>
                   <span>{listedWebhook.sourceName}</span>
                 </div>
-                <form method="get">
+                <Form method="get">
                   <input
                     type="hidden"
                     name="webhookName"
                     value={listedWebhook.name}
                   />
                   <button type="submit">View</button>
-                </form>
-                <form method="post">
+                </Form>
+                <Form method="post">
                   <input type="hidden" name="intent" value="delete-webhook" />
                   <input
                     type="hidden"
@@ -227,7 +203,7 @@ export const HatchetDemoWebhooksSection = ({
                   >
                     Delete
                   </button>
-                </form>
+                </Form>
               </div>
             </li>
           ))}
@@ -236,3 +212,108 @@ export const HatchetDemoWebhooksSection = ({
     </section>
   </>
 )
+
+const getActionError = (actionData: unknown): string | undefined => {
+  if (
+    actionData &&
+    typeof actionData === "object" &&
+    "ok" in actionData &&
+    actionData.ok === false &&
+    "errors" in actionData &&
+    Array.isArray(actionData.errors) &&
+    actionData.errors.length > 0
+  ) {
+    return String(actionData.errors[0])
+  }
+  return undefined
+}
+
+export const loadWebhooks = (request: Request) =>
+  Effect.gen(function*() {
+    const selectedWebhookName = readSelectedWebhookName(request.url)
+    const webhooks = yield* listWebhooks()
+    const webhook = selectedWebhookName
+      ? yield* getWebhook(selectedWebhookName)
+      : undefined
+    return yield* httpSuccess({ webhooks, webhook })
+  })
+
+export const loader = Effect.gen(function*() {
+  const { request } = yield* LoaderArgsContext
+  return yield* loadWebhooks(request)
+}).pipe(withLoaderEffect)
+
+export const handleWebhooksAction = (request: Request) =>
+  Effect.gen(function*() {
+    const formData = yield* readRequestFormData(request)
+    const intent = String(formData.get("intent") ?? "")
+
+    if (intent === "create-webhook") {
+      const webhookName = String(formData.get("webhookName") ?? "").trim()
+      const eventKeyExpression = String(
+        formData.get("webhookEventKeyExpression") ?? "",
+      ).trim()
+      const scopeExpression = String(
+        formData.get("webhookScopeExpression") ?? "",
+      ).trim()
+      const staticPayloadInput = String(
+        formData.get("webhookStaticPayload") ?? "",
+      )
+      if (!webhookName) return yield* httpFailure("Webhook name is required")
+      if (!eventKeyExpression) {
+        return yield* httpFailure("Webhook event key expression is required")
+      }
+
+      let sourceName: ReturnType<typeof parseWebhookSourceName>
+      let auth: ReturnType<typeof parseWebhookAuth>
+      let staticPayload: ReturnType<typeof parseWebhookStaticPayload>
+      try {
+        sourceName = parseWebhookSourceName(
+          String(formData.get("webhookSourceName") ?? ""),
+        )
+        auth = parseWebhookAuth(formData)
+        staticPayload = parseWebhookStaticPayload(staticPayloadInput)
+      } catch (error) {
+        return yield* httpFailure(
+          error instanceof Error ? error.message : "Invalid webhook form",
+        )
+      }
+
+      const webhook = yield* createWebhook({
+        name: webhookName,
+        sourceName,
+        eventKeyExpression,
+        scopeExpression: scopeExpression || undefined,
+        staticPayload,
+        auth,
+      })
+      return yield* httpRedirect(buildWebhookRedirect(webhook.name))
+    }
+
+    if (intent === "delete-webhook") {
+      const webhookName = String(formData.get("webhookName") ?? "").trim()
+      if (!webhookName) return yield* httpFailure("Webhook name is required")
+      yield* deleteWebhook(webhookName)
+      return yield* httpRedirect("/hatchet-demo/webhooks")
+    }
+
+    return yield* httpFailure("Unknown intent")
+  })
+
+export const action = Effect.gen(function*() {
+  const { request } = yield* ActionArgsContext
+  return yield* handleWebhooksAction(request)
+}).pipe(withActionEffect)
+
+export default function HatchetDemoWebhooksRoute() {
+  const loaderData = useLoaderData<typeof loader>()
+  const actionData = useActionData<typeof action>()
+  if (!loaderData.ok) return <p>Loading...</p>
+  return (
+    <HatchetDemoWebhooksSection
+      actionError={getActionError(actionData)}
+      webhook={loaderData.data.webhook}
+      webhooks={loaderData.data.webhooks}
+    />
+  )
+}
