@@ -4,6 +4,11 @@ import { describe, expect, it, vi } from "vitest"
 
 const useActionDataMock = vi.hoisted(() => vi.fn())
 
+vi.mock("../lib/runtime.server.js", () => ({
+  withLoaderEffect: <A>(effect: A) => effect,
+  withActionEffect: <A>(effect: A) => effect,
+}))
+
 vi.mock("react-router", () => ({
   Form: ({ children, ...props }: React.ComponentProps<"form">) => React.createElement("form", props, children),
   useActionData: () => useActionDataMock(),
