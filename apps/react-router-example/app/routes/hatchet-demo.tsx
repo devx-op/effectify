@@ -18,6 +18,7 @@ import {
   deleteCron,
   deleteFilter,
   deleteWebhook,
+  deleteWorkflow,
   getCron,
   getEvent,
   getFilter,
@@ -36,12 +37,14 @@ import {
   listTaskLogs,
   listWebhooks,
   pushEvent,
+  replayRun,
   runWorkflow,
   upsertRateLimit,
 } from "@effectify/hatchet"
 import { Form, useActionData } from "react-router"
 import { HatchetDemoCronsSection } from "./hatchet-demo-crons.js"
 import { HatchetDemoFiltersSection } from "./hatchet-demo-filters.js"
+import { HatchetDemoManagementSection } from "./hatchet-demo-management.js"
 import { HatchetDemoObservabilitySection } from "./hatchet-demo-observability.js"
 import { HatchetDemoRateLimitsSection } from "./hatchet-demo-ratelimits.js"
 import { HatchetDemoSchedulesSection } from "./hatchet-demo-schedules.js"
@@ -51,11 +54,14 @@ import {
   buildEventRedirect,
   buildFilterRedirect,
   buildRateLimitRedirect,
+  buildReplayRedirect,
   buildRunRedirect,
   buildScheduleRedirect,
   buildWebhookRedirect,
+  parseDeleteWorkflowIntent,
   parseEventPayload,
   parseRateLimitDuration,
+  parseReplayIntent,
   parseTriggerTime,
   parseWebhookAuth,
   parseWebhookSourceName,
@@ -528,6 +534,38 @@ export const handleHatchetDemoAction = (request: Request) =>
       return yield* httpRedirect(buildRateLimitRedirect(key))
     }
 
+    if (intent === "replay") {
+      let replayIntent: ReturnType<typeof parseReplayIntent>
+
+      try {
+        replayIntent = parseReplayIntent(formData)
+      } catch (error) {
+        return yield* httpFailure(
+          error instanceof Error ? error.message : "Run ID is required",
+        )
+      }
+
+      yield* replayRun(replayIntent.runId)
+      return yield* httpRedirect(buildReplayRedirect(replayIntent.runId))
+    }
+
+    if (intent === "delete-workflow") {
+      let deleteIntent: ReturnType<typeof parseDeleteWorkflowIntent>
+
+      try {
+        deleteIntent = parseDeleteWorkflowIntent(formData)
+      } catch (error) {
+        return yield* httpFailure(
+          error instanceof Error
+            ? error.message
+            : "Type DELETE to confirm workflow deletion",
+        )
+      }
+
+      yield* deleteWorkflow(deleteIntent.workflowName)
+      return yield* httpRedirect("/hatchet-demo")
+    }
+
     if (intent === "cancel") {
       const runId = String(formData.get("runId") ?? "")
 
@@ -702,6 +740,16 @@ export default function HatchetDemo({ loaderData }: Route.ComponentProps) {
             actionError={actionError}
             selectedRateLimitKey={selectedRateLimitKey}
             ratelimits={ratelimits}
+          />
+
+          <HatchetDemoManagementSection
+            actionError={actionError}
+            selectedRunId={observability.selectedRunId}
+            runs={runs.map((run: any) => ({
+              id: String(run.id),
+              workflowName: run.workflowName,
+              status: run.status,
+            }))}
           />
 
           {/* List Runs */}

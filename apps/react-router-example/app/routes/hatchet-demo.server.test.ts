@@ -39,6 +39,8 @@ const getRunTaskIdMock = vi.fn()
 const listTaskLogsMock = vi.fn()
 const getTaskMetricsMock = vi.fn()
 const getQueueMetricsMock = vi.fn()
+const replayRunMock = vi.fn()
+const deleteWorkflowMock = vi.fn()
 
 const runMockedHatchetEffect = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
   Effect.runPromise(effect as Effect.Effect<A, E, never>)
@@ -65,7 +67,9 @@ vi.mock("@effectify/hatchet", () => ({
   createFilter: (...args: Array<unknown>) => createFilterMock(...args),
   deleteFilter: (...args: Array<unknown>) => deleteFilterMock(...args),
   listRuns: (...args: Array<unknown>) => listRunsMock(...args),
+  replayRun: (...args: Array<unknown>) => replayRunMock(...args),
   cancelRun: (...args: Array<unknown>) => cancelRunMock(...args),
+  deleteWorkflow: (...args: Array<unknown>) => deleteWorkflowMock(...args),
   runWorkflow: (...args: Array<unknown>) => runWorkflowMock(...args),
   getRun: (...args: Array<unknown>) => getRunMock(...args),
   getRunStatus: (...args: Array<unknown>) => getRunStatusMock(...args),
@@ -86,11 +90,14 @@ import {
   buildEventRedirect,
   buildFilterRedirect,
   buildRateLimitRedirect,
+  buildReplayRedirect,
   buildRunRedirect,
   buildScheduleRedirect,
   buildWebhookRedirect,
+  parseDeleteWorkflowIntent,
   parseEventPayload,
   parseRateLimitDuration,
+  parseReplayIntent,
   parseTriggerTime,
   parseWebhookAuth,
   parseWebhookAuthType,
@@ -136,6 +143,8 @@ describe("hatchet demo event helpers", () => {
     listTaskLogsMock.mockReset()
     getTaskMetricsMock.mockReset()
     getQueueMetricsMock.mockReset()
+    replayRunMock.mockReset()
+    deleteWorkflowMock.mockReset()
     listCronsMock.mockReturnValue(Effect.succeed([]))
     listWebhooksMock.mockReturnValue(Effect.succeed([]))
     listRateLimitsMock.mockReturnValue(Effect.succeed([]))
@@ -159,6 +168,8 @@ describe("hatchet demo event helpers", () => {
         stepRun: {},
       }),
     )
+    replayRunMock.mockReturnValue(Effect.succeed({ ids: ["task-1"] }))
+    deleteWorkflowMock.mockReturnValue(Effect.succeed(undefined))
   })
 
   it("parseEventPayload returns JSON objects for push-event actions", () => {
@@ -227,6 +238,42 @@ describe("hatchet demo event helpers", () => {
     ).toBe("task-123")
     expect(buildRunRedirect("run id/123")).toBe(
       "/hatchet-demo?runId=run%20id%2F123",
+    )
+  })
+
+  it("management helpers parse replay intents and encode replay redirects", () => {
+    const formData = new FormData()
+    formData.set("runId", " run-123 ")
+
+    expect(parseReplayIntent(formData)).toEqual({ runId: "run-123" })
+    expect(buildReplayRedirect("run id/123")).toBe(
+      "/hatchet-demo?runId=run%20id%2F123",
+    )
+  })
+
+  it("management helpers parse confirmed workflow deletion requests", () => {
+    const formData = new FormData()
+    formData.set("workflowName", " orders.process ")
+    formData.set("confirmWorkflowDelete", "DELETE")
+
+    expect(parseDeleteWorkflowIntent(formData)).toEqual({
+      workflowName: "orders.process",
+    })
+  })
+
+  it("management helpers reject missing replay ids and unconfirmed workflow deletions", () => {
+    const replayForm = new FormData()
+    replayForm.set("runId", "   ")
+
+    const deleteForm = new FormData()
+    deleteForm.set("workflowName", "orders.process")
+    deleteForm.set("confirmWorkflowDelete", "keep")
+
+    expect(() => parseReplayIntent(replayForm)).toThrowError(
+      "Run ID is required",
+    )
+    expect(() => parseDeleteWorkflowIntent(deleteForm)).toThrowError(
+      "Type DELETE to confirm workflow deletion",
     )
   })
 
@@ -501,6 +548,55 @@ describe("hatchet demo event helpers", () => {
     expect(actionResponse).toMatchObject({
       _tag: "HttpResponseRedirect",
       to: "/hatchet-demo?filterId=filter-123",
+    })
+  })
+
+  it("action replays a selected run and redirects back to the selected run", async () => {
+    listSchedulesMock.mockReturnValue(Effect.succeed([]))
+    listRunsMock.mockReturnValue(Effect.succeed([]))
+
+    const formData = new FormData()
+    formData.set("intent", "replay")
+    formData.set("runId", "run-123")
+
+    const actionResponse = await runMockedHatchetEffect(
+      handleHatchetDemoAction(
+        new Request("https://example.com/hatchet-demo", {
+          method: "POST",
+          body: formData,
+        }),
+      ),
+    )
+
+    expect(replayRunMock).toHaveBeenCalledWith("run-123")
+    expect(actionResponse).toMatchObject({
+      _tag: "HttpResponseRedirect",
+      to: buildReplayRedirect("run-123"),
+    })
+  })
+
+  it("action deletes a workflow after confirmation and redirects back to the demo page", async () => {
+    listSchedulesMock.mockReturnValue(Effect.succeed([]))
+    listRunsMock.mockReturnValue(Effect.succeed([]))
+
+    const formData = new FormData()
+    formData.set("intent", "delete-workflow")
+    formData.set("workflowName", "orders.process")
+    formData.set("confirmWorkflowDelete", "DELETE")
+
+    const actionResponse = await runMockedHatchetEffect(
+      handleHatchetDemoAction(
+        new Request("https://example.com/hatchet-demo", {
+          method: "POST",
+          body: formData,
+        }),
+      ),
+    )
+
+    expect(deleteWorkflowMock).toHaveBeenCalledWith("orders.process")
+    expect(actionResponse).toMatchObject({
+      _tag: "HttpResponseRedirect",
+      to: "/hatchet-demo",
     })
   })
 

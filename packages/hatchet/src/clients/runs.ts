@@ -5,7 +5,12 @@
  */
 
 import * as Effect from "effect/Effect"
-import type { ListRunsOpts as SdkListRunsOpts } from "@hatchet-dev/typescript-sdk"
+import type {
+  APIContracts,
+  ListRunsOpts as SdkListRunsOpts,
+  ReplayRunOpts as SdkReplayRunOpts,
+  RunFilter as SdkRunFilter,
+} from "@hatchet-dev/typescript-sdk"
 import type { HatchetClientService } from "../core/client.js"
 import { getHatchetClient } from "../core/client.js"
 import { HatchetRunError, HatchetWorkflowError } from "../core/error.js"
@@ -15,21 +20,51 @@ export interface RunOpts {
   readonly priority?: number
 }
 
-export interface ListRunsOpts {
+export interface RunFilter {
   readonly workflowName?: string
   readonly workflowNames?: readonly string[]
   readonly status?: string
-  readonly statuses?: readonly NonNullable<
-    SdkListRunsOpts["statuses"]
-  >[number][]
+  readonly statuses?: readonly NonNullable<SdkRunFilter["statuses"]>[number][]
   readonly since?: Date
   readonly until?: Date
   readonly additionalMetadata?: Record<string, string>
+}
+
+export interface ReplayRunOpts {
+  readonly ids?: readonly string[]
+  readonly filters?: RunFilter
+}
+
+export interface ListRunsOpts extends RunFilter {
   readonly workerId?: string
   readonly includePayloads?: boolean
   readonly limit?: number
   readonly offset?: number
 }
+
+const toSdkRunFilter = (
+  options?: RunFilter,
+): {
+  readonly workflowNames?: string[]
+  readonly statuses?: NonNullable<SdkRunFilter["statuses"]>
+  readonly since?: Date
+  readonly until?: Date
+  readonly additionalMetadata?: Record<string, string>
+} => ({
+  workflowNames: options?.workflowNames?.length
+    ? [...options.workflowNames]
+    : options?.workflowName
+    ? [options.workflowName]
+    : undefined,
+  statuses: options?.statuses?.length
+    ? [...options.statuses]
+    : options?.status
+    ? [options.status as NonNullable<SdkRunFilter["statuses"]>[number]]
+    : undefined,
+  since: options?.since,
+  until: options?.until,
+  additionalMetadata: options?.additionalMetadata,
+})
 
 const toSdkListRunsOpts = (
   options?: ListRunsOpts,
@@ -45,19 +80,7 @@ const toSdkListRunsOpts = (
   readonly offset?: number
   readonly onlyTasks: false
 } => ({
-  workflowNames: options?.workflowNames?.length
-    ? [...options.workflowNames]
-    : options?.workflowName
-    ? [options.workflowName]
-    : undefined,
-  statuses: options?.statuses?.length
-    ? [...options.statuses]
-    : options?.status
-    ? [options.status as NonNullable<SdkListRunsOpts["statuses"]>[number]]
-    : undefined,
-  since: options?.since,
-  until: options?.until,
-  additionalMetadata: options?.additionalMetadata,
+  ...toSdkRunFilter(options),
   workerId: options?.workerId,
   includePayloads: options?.includePayloads,
   limit: options?.limit,
@@ -139,6 +162,70 @@ export const cancelRun = (
           cause: error,
         }),
     })
+  })
+
+export const replayRun = <O = APIContracts.V1ReplayedTasks>(
+  run: string | ReplayRunOpts,
+): Effect.Effect<O, HatchetRunError, HatchetClientService> =>
+  Effect.gen(function*() {
+    const client = yield* getHatchetClient()
+    const replayOptions: SdkReplayRunOpts = typeof run === "string"
+      ? { ids: [run] }
+      : {
+        ids: run.ids?.length ? [...run.ids] : undefined,
+        filters: run.filters ? toSdkRunFilter(run.filters) : undefined,
+      }
+    const result = yield* Effect.tryPromise({
+      try: () => client.runs.replay(replayOptions),
+      catch: (error) =>
+        new HatchetRunError({
+          message: typeof run === "string"
+            ? `Failed to replay run "${run}"`
+            : "Failed to replay runs",
+          runId: typeof run === "string" ? run : undefined,
+          cause: error,
+        }),
+    })
+
+    return result.data as O
+  })
+
+export const restoreTask = <O = APIContracts.V1RestoreTaskResponse>(
+  taskExternalId: string,
+): Effect.Effect<O, HatchetRunError, HatchetClientService> =>
+  Effect.gen(function*() {
+    const client = yield* getHatchetClient()
+    const result = yield* Effect.tryPromise({
+      try: () => client.runs.restoreTask(taskExternalId),
+      catch: (error) =>
+        new HatchetRunError({
+          message: `Failed to restore task "${taskExternalId}"`,
+          runId: taskExternalId,
+          cause: error,
+        }),
+    })
+
+    return result.data as O
+  })
+
+export const branchDurableTask = <O = APIContracts.V1BranchDurableTaskResponse>(
+  taskExternalId: string,
+  nodeId: number,
+  branchId?: number,
+): Effect.Effect<O, HatchetRunError, HatchetClientService> =>
+  Effect.gen(function*() {
+    const client = yield* getHatchetClient()
+    const result = yield* Effect.tryPromise({
+      try: () => client.runs.branchDurableTask(taskExternalId, nodeId, branchId),
+      catch: (error) =>
+        new HatchetRunError({
+          message: `Failed to branch durable task "${taskExternalId}" from node ${nodeId}`,
+          runId: taskExternalId,
+          cause: error,
+        }),
+    })
+
+    return result.data as O
   })
 
 /**

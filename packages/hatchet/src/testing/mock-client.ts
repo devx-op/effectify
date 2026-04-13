@@ -14,6 +14,13 @@ type HatchetClientType = InstanceType<typeof HatchetClientSDK>
 
 type MockHatchetRunsClient = {
   readonly cancel: (options: unknown) => Promise<unknown>
+  readonly replay: (options: unknown) => Promise<unknown>
+  readonly restoreTask: (taskExternalId: string) => Promise<unknown>
+  readonly branchDurableTask: (
+    taskExternalId: string,
+    nodeId: number,
+    branchId?: number,
+  ) => Promise<unknown>
   readonly get: (runId: string) => Promise<unknown>
   readonly get_status: (runId: string) => Promise<string>
   readonly getTaskExternalId: (runId: string) => Promise<string>
@@ -51,6 +58,7 @@ type MockHatchetMetricsClient = {
 type MockHatchetWorkflowsClient = {
   readonly get: (name: string) => Promise<unknown>
   readonly list: (options?: unknown) => Promise<{ workflows: unknown[] }>
+  readonly delete: (workflow: unknown) => Promise<void>
 }
 
 type MockHatchetSchedulesClient = {
@@ -234,6 +242,13 @@ export const createMockHatchetClient = (
     },
     runs: {
       cancel: unimplemented("runs.cancel"),
+      replay: unimplemented("runs.replay"),
+      restoreTask: unimplemented(
+        "runs.restoreTask",
+      ) as MockHatchetClient["runs"]["restoreTask"],
+      branchDurableTask: unimplemented(
+        "runs.branchDurableTask",
+      ) as MockHatchetClient["runs"]["branchDurableTask"],
       get: unimplemented("runs.get"),
       get_status: unimplemented("runs.get_status"),
       getTaskExternalId: unimplemented(
@@ -284,6 +299,7 @@ export const createMockHatchetClient = (
     workflows: {
       get: unimplemented("workflows.get"),
       list: async () => ({ workflows: [] }),
+      delete: (async () => undefined) as MockHatchetClient["workflows"]["delete"],
     },
     worker: (async () => ({
       registerWorkflows: async () => {},

@@ -5,9 +5,12 @@
  */
 
 import * as Effect from "effect/Effect"
+import type { WorkflowsClient } from "@hatchet-dev/typescript-sdk"
 import type { HatchetClientService } from "../core/client.js"
 import { getHatchetClient } from "../core/client.js"
 import { HatchetWorkflowError } from "../core/error.js"
+
+export type WorkflowTarget = Parameters<WorkflowsClient["delete"]>[0]
 
 export interface CreateWorkflowOpts {
   readonly name: string
@@ -83,4 +86,21 @@ export const listWorkflows = <O = unknown>(
     })
 
     return (result as { readonly workflows: O[] }).workflows
+  })
+
+export const deleteWorkflow = (
+  workflow: WorkflowTarget,
+): Effect.Effect<void, HatchetWorkflowError, HatchetClientService> =>
+  Effect.gen(function*() {
+    const client = yield* getHatchetClient()
+
+    yield* Effect.tryPromise({
+      try: () => client.workflows.delete(workflow),
+      catch: (error) =>
+        new HatchetWorkflowError({
+          message: `Failed to delete workflow "${typeof workflow === "string" ? workflow : "workflow"}"`,
+          workflowName: typeof workflow === "string" ? workflow : undefined,
+          cause: error,
+        }),
+    })
   })

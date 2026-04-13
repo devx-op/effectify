@@ -6,12 +6,16 @@ import { describe, expect, it, layer } from "@effect/vitest"
 import * as Cause from "effect/Cause"
 import { Effect, Layer } from "effect"
 import {
+  branchDurableTask,
   cancelRun,
   getRun,
   getRunStatus,
   getRunTaskId,
   listRuns,
   type ListRunsOpts,
+  replayRun,
+  type ReplayRunOpts,
+  restoreTask,
   type RunOpts,
   runWorkflow,
   runWorkflowNoWait,
@@ -19,6 +23,7 @@ import {
 import { HatchetClientService } from "../../../src/core/client"
 import { HatchetRunError, HatchetWorkflowError } from "../../../src/core/error"
 import { MockHatchetClientLayer, TestHatchetConfigLayer } from "../../../src/testing/mock-client"
+import type { ReplayRunOpts as SdkReplayRunOpts } from "@hatchet-dev/typescript-sdk"
 
 describe("Runs Client - Type Exports", () => {
   layer(Layer.mergeAll(TestHatchetConfigLayer, MockHatchetClientLayer))(() => {
@@ -52,6 +57,21 @@ describe("Runs Client - Type Exports", () => {
       expect(typeof listRuns).toBe("function")
     })
 
+    it("should export replayRun function", () => {
+      expect(replayRun).toBeDefined()
+      expect(typeof replayRun).toBe("function")
+    })
+
+    it("should export restoreTask function", () => {
+      expect(restoreTask).toBeDefined()
+      expect(typeof restoreTask).toBe("function")
+    })
+
+    it("should export branchDurableTask function", () => {
+      expect(branchDurableTask).toBeDefined()
+      expect(typeof branchDurableTask).toBe("function")
+    })
+
     it("should export RunOpts interface", () => {
       const opts: RunOpts = {
         additionalMetadata: { source: "test" },
@@ -70,6 +90,41 @@ describe("Runs Client - Type Exports", () => {
       }
       expect(opts.workflowName).toBe("test-workflow")
       expect(opts.status).toBe("COMPLETED")
+    })
+
+    it("should export ReplayRunOpts interface compatible with the SDK shape", () => {
+      const opts: ReplayRunOpts = {
+        ids: ["run-123"],
+        filters: {
+          workflowName: "orders.process",
+          statuses: ["FAILED"],
+        },
+      }
+
+      const sdkOpts: SdkReplayRunOpts = {
+        ids: opts.ids ? [...opts.ids] : undefined,
+        filters: opts.filters
+          ? {
+            workflowNames: opts.filters.workflowNames?.length
+              ? [...opts.filters.workflowNames]
+              : opts.filters.workflowName
+              ? [opts.filters.workflowName]
+              : undefined,
+            statuses: opts.filters.statuses?.length
+              ? [...opts.filters.statuses]
+              : opts.filters.status
+              ? [opts.filters.status]
+              : undefined,
+            since: opts.filters.since,
+            until: opts.filters.until,
+            additionalMetadata: opts.filters.additionalMetadata,
+          }
+          : undefined,
+      }
+
+      expect(opts.filters?.workflowName).toBe("orders.process")
+      expect(sdkOpts.filters?.workflowNames).toEqual(["orders.process"])
+      expect(sdkOpts.filters?.statuses).toEqual(["FAILED"])
     })
   })
 })
@@ -161,6 +216,32 @@ describe("Runs Client - SDK compatibility", () => {
     expect(result).toEqual(runRef)
   })
 
+  it("runWorkflow uses client.run from the public SDK surface", async () => {
+    const input = { orderId: "order-1" }
+
+    const result = await runWorkflow<typeof input, { ok: boolean }>(
+      "orders.process",
+      input,
+      { priority: 1 },
+    ).pipe(
+      provideHatchet({
+        run: async (
+          workflow: string,
+          providedInput: unknown,
+          options?: unknown,
+        ) => {
+          expect(workflow).toBe("orders.process")
+          expect(providedInput).toEqual(input)
+          expect(options).toEqual({ priority: 1 })
+          return { ok: true }
+        },
+      }),
+      Effect.runPromise,
+    )
+
+    expect(result).toEqual({ ok: true })
+  })
+
   it("cancelRun forwards the run id through runs.cancel({ ids })", async () => {
     await cancelRun("run-456").pipe(
       provideHatchet({
@@ -173,6 +254,72 @@ describe("Runs Client - SDK compatibility", () => {
       }),
       Effect.runPromise,
     )
+  })
+
+  it("cancelRun yields HatchetRunError when cancellation fails", async () => {
+    const cause = new Error("cancel unavailable")
+
+    const exit = await cancelRun("run-456").pipe(
+      provideHatchet({
+        runs: {
+          cancel: async () => {
+            throw cause
+          },
+        },
+      }),
+      Effect.runPromiseExit,
+    )
+
+    expect(exit._tag).toBe("Failure")
+
+    if (exit._tag === "Failure") {
+      const error = Cause.squash(exit.cause) as HatchetRunError
+      expect(error).toBeInstanceOf(HatchetRunError)
+      expect(error.runId).toBe("run-456")
+      expect(error.cause).toBe(cause)
+    }
+  })
+
+  it("getRun returns workflow run details from runs.get", async () => {
+    const result = await getRun<{ run: { metadata: { id: string } } }>(
+      "run-789",
+    ).pipe(
+      provideHatchet({
+        runs: {
+          get: async (runId: unknown) => {
+            expect(runId).toBe("run-789")
+            return { run: { metadata: { id: "run-789" } } }
+          },
+        },
+      }),
+      Effect.runPromise,
+    )
+
+    expect(result).toEqual({ run: { metadata: { id: "run-789" } } })
+  })
+
+  it("getRun yields HatchetRunError when the SDK get request fails", async () => {
+    const cause = new Error("get unavailable")
+
+    const exit = await getRun("run-789").pipe(
+      provideHatchet({
+        runs: {
+          get: async () => {
+            throw cause
+          },
+        },
+      }),
+      Effect.runPromiseExit,
+    )
+
+    expect(exit._tag).toBe("Failure")
+
+    if (exit._tag === "Failure") {
+      const error = Cause.squash(exit.cause) as HatchetRunError
+      expect(error).toBeInstanceOf(HatchetRunError)
+      expect(error.runId).toBe("run-789")
+      expect(error.cause).toBe(cause)
+    }
   })
 
   it("getRunStatus uses runs.get_status instead of reading status from getRun details", async () => {
@@ -191,6 +338,30 @@ describe("Runs Client - SDK compatibility", () => {
     expect(status).toBe("COMPLETED")
   })
 
+  it("getRunStatus yields HatchetRunError when the SDK status request fails", async () => {
+    const cause = new Error("status unavailable")
+
+    const exit = await getRunStatus("run-789").pipe(
+      provideHatchet({
+        runs: {
+          get_status: async () => {
+            throw cause
+          },
+        },
+      }),
+      Effect.runPromiseExit,
+    )
+
+    expect(exit._tag).toBe("Failure")
+
+    if (exit._tag === "Failure") {
+      const error = Cause.squash(exit.cause) as HatchetRunError
+      expect(error).toBeInstanceOf(HatchetRunError)
+      expect(error.runId).toBe("run-789")
+      expect(error.cause).toBe(cause)
+    }
+  })
+
   it("getRunTaskId resolves task external ids from workflow run ids for task log lookups", async () => {
     const taskId = await getRunTaskId("run-789").pipe(
       provideHatchet({
@@ -205,6 +376,30 @@ describe("Runs Client - SDK compatibility", () => {
     )
 
     expect(taskId).toBe("task-789")
+  })
+
+  it("getRunTaskId yields HatchetRunError when the task id lookup fails", async () => {
+    const cause = new Error("task lookup unavailable")
+
+    const exit = await getRunTaskId("run-789").pipe(
+      provideHatchet({
+        runs: {
+          getTaskExternalId: async () => {
+            throw cause
+          },
+        },
+      }),
+      Effect.runPromiseExit,
+    )
+
+    expect(exit._tag).toBe("Failure")
+
+    if (exit._tag === "Failure") {
+      const error = Cause.squash(exit.cause) as HatchetRunError
+      expect(error).toBeInstanceOf(HatchetRunError)
+      expect(error.runId).toBe("run-789")
+      expect(error.cause).toBe(cause)
+    }
   })
 
   it("listRuns maps wrapper filters to the SDK list API and normalizes rows", async () => {
@@ -271,6 +466,240 @@ describe("Runs Client - SDK compatibility", () => {
     )
   })
 
+  it("listRuns yields HatchetWorkflowError when the SDK list request fails", async () => {
+    const cause = new Error("list unavailable")
+
+    const exit = await listRuns().pipe(
+      provideHatchet({
+        runs: {
+          list: async () => {
+            throw cause
+          },
+        },
+      }),
+      Effect.runPromiseExit,
+    )
+
+    expect(exit._tag).toBe("Failure")
+
+    if (exit._tag === "Failure") {
+      const error = Cause.squash(exit.cause) as HatchetWorkflowError
+      expect(error).toBeInstanceOf(HatchetWorkflowError)
+      expect(error.message).toBe("Failed to list runs")
+      expect(error.cause).toBe(cause)
+    }
+  })
+
+  it("replayRun replays a single run id through runs.replay and returns response data", async () => {
+    const result = await replayRun<{ ids?: string[] }>("run-456").pipe(
+      provideHatchet({
+        runs: {
+          replay: async (options: unknown) => {
+            expect(options).toEqual({ ids: ["run-456"] })
+
+            return {
+              data: { ids: ["replayed-task-1"] },
+            }
+          },
+        },
+      }),
+      Effect.runPromise,
+    )
+
+    expect(result).toEqual({ ids: ["replayed-task-1"] })
+  })
+
+  it("replayRun normalizes filter input to the SDK replay shape", async () => {
+    const result = await replayRun<{ ids?: string[] }>({
+      filters: {
+        workflowName: "orders.process",
+        status: "FAILED",
+        additionalMetadata: { source: "demo" },
+      },
+    }).pipe(
+      provideHatchet({
+        runs: {
+          replay: async (options: unknown) => {
+            expect(options).toEqual({
+              filters: {
+                workflowNames: ["orders.process"],
+                statuses: ["FAILED"],
+                additionalMetadata: { source: "demo" },
+              },
+            })
+
+            return {
+              data: { ids: ["replayed-task-2"] },
+            }
+          },
+        },
+      }),
+      Effect.runPromise,
+    )
+
+    expect(result).toEqual({ ids: ["replayed-task-2"] })
+  })
+
+  it("replayRun yields HatchetRunError when the SDK replay request fails", async () => {
+    const cause = new Error("replay unavailable")
+
+    const exit = await replayRun("run-456").pipe(
+      provideHatchet({
+        runs: {
+          replay: async () => {
+            throw cause
+          },
+        },
+      }),
+      Effect.runPromiseExit,
+    )
+
+    expect(exit._tag).toBe("Failure")
+
+    if (exit._tag === "Failure") {
+      const error = Cause.squash(exit.cause) as HatchetRunError
+      expect(error).toBeInstanceOf(HatchetRunError)
+      expect(error.message).toContain('Failed to replay run "run-456"')
+      expect(error.runId).toBe("run-456")
+      expect(error.cause).toBe(cause)
+    }
+  })
+
+  it("restoreTask returns the normalized SDK restore payload", async () => {
+    const result = await restoreTask<{ requeued: boolean }>("task-123").pipe(
+      provideHatchet({
+        runs: {
+          restoreTask: async (taskExternalId: unknown) => {
+            expect(taskExternalId).toBe("task-123")
+
+            return {
+              data: { requeued: true },
+            }
+          },
+        },
+      }),
+      Effect.runPromise,
+    )
+
+    expect(result).toEqual({ requeued: true })
+  })
+
+  it("restoreTask yields HatchetRunError when the SDK restore request fails", async () => {
+    const cause = new Error("restore unavailable")
+
+    const exit = await restoreTask("task-123").pipe(
+      provideHatchet({
+        runs: {
+          restoreTask: async () => {
+            throw cause
+          },
+        },
+      }),
+      Effect.runPromiseExit,
+    )
+
+    expect(exit._tag).toBe("Failure")
+
+    if (exit._tag === "Failure") {
+      const error = Cause.squash(exit.cause) as HatchetRunError
+      expect(error).toBeInstanceOf(HatchetRunError)
+      expect(error.message).toContain('Failed to restore task "task-123"')
+      expect(error.runId).toBe("task-123")
+      expect(error.cause).toBe(cause)
+    }
+  })
+
+  it("branchDurableTask forwards the task external id and node id", async () => {
+    const result = await branchDurableTask<{
+      taskExternalId: string
+      nodeId: number
+      branchId: number
+    }>("task-123", 17).pipe(
+      provideHatchet({
+        runs: {
+          branchDurableTask: async (
+            taskExternalId: unknown,
+            nodeId: unknown,
+            branchId?: unknown,
+          ) => {
+            expect(taskExternalId).toBe("task-123")
+            expect(nodeId).toBe(17)
+            expect(branchId).toBeUndefined()
+
+            return {
+              data: {
+                taskExternalId: "task-123",
+                nodeId: 18,
+                branchId: 2,
+              },
+            }
+          },
+        },
+      }),
+      Effect.runPromise,
+    )
+
+    expect(result).toEqual({
+      taskExternalId: "task-123",
+      nodeId: 18,
+      branchId: 2,
+    })
+  })
+
+  it("branchDurableTask passes the optional branch id when provided", async () => {
+    await branchDurableTask("task-123", 17, 9).pipe(
+      provideHatchet({
+        runs: {
+          branchDurableTask: async (
+            taskExternalId: unknown,
+            nodeId: unknown,
+            branchId?: unknown,
+          ) => {
+            expect(taskExternalId).toBe("task-123")
+            expect(nodeId).toBe(17)
+            expect(branchId).toBe(9)
+
+            return {
+              data: {
+                taskExternalId: "task-123",
+                nodeId: 17,
+                branchId: 9,
+              },
+            }
+          },
+        },
+      }),
+      Effect.runPromise,
+    )
+  })
+
+  it("branchDurableTask yields HatchetRunError when the SDK branch request fails", async () => {
+    const cause = new Error("branch unavailable")
+
+    const exit = await branchDurableTask("task-123", 17).pipe(
+      provideHatchet({
+        runs: {
+          branchDurableTask: async () => {
+            throw cause
+          },
+        },
+      }),
+      Effect.runPromiseExit,
+    )
+
+    expect(exit._tag).toBe("Failure")
+
+    if (exit._tag === "Failure") {
+      const error = Cause.squash(exit.cause) as HatchetRunError
+      expect(error).toBeInstanceOf(HatchetRunError)
+      expect(error.message).toContain(
+        'Failed to branch durable task "task-123" from node 17',
+      )
+      expect(error.runId).toBe("task-123")
+      expect(error.cause).toBe(cause)
+    }
+  })
+
   it("wraps typed SDK run errors with HatchetRunError context", async () => {
     const cause = new Error("runNoWait unavailable")
 
@@ -294,6 +723,30 @@ describe("Runs Client - SDK compatibility", () => {
         _tag: "HatchetRunError",
         workflow: "orders.process",
       })
+      expect(error.cause).toBe(cause)
+    }
+  })
+
+  it("wraps typed SDK run execution errors from runWorkflow", async () => {
+    const cause = new Error("run unavailable")
+
+    const exit = await runWorkflow("orders.process", {
+      orderId: "1",
+    }).pipe(
+      provideHatchet({
+        run: async () => {
+          throw cause
+        },
+      }),
+      Effect.runPromiseExit,
+    )
+
+    expect(exit._tag).toBe("Failure")
+
+    if (exit._tag === "Failure") {
+      const error = Cause.squash(exit.cause) as HatchetRunError
+      expect(error).toBeInstanceOf(HatchetRunError)
+      expect(error.workflow).toBe("orders.process")
       expect(error.cause).toBe(cause)
     }
   })
