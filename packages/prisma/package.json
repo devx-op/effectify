@@ -11,7 +11,7 @@
   "type": "module",
   "license": "MIT",
   "bin": {
-    "effect-prisma": "./src/cli.js"
+    "effect-prisma": "./dist/src/cli.js"
   },
   "exports": {
     ".": "./dist/src/runtime/index.js",
