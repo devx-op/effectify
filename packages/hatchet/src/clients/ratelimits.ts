@@ -129,27 +129,27 @@ const normalizeRateLimit = (
 ): Effect.Effect<HatchetRateLimitRecord, HatchetRateLimitError> =>
   Effect.gen(function*() {
     if (!ratelimit.key) {
-      return yield* Effect.fail(failMissingField("key"))
+      return yield* failMissingField("key")
     }
 
     if (!ratelimit.tenantId) {
-      return yield* Effect.fail(failMissingField("tenantId"))
+      return yield* failMissingField("tenantId")
     }
 
     if (typeof ratelimit.limitValue !== "number") {
-      return yield* Effect.fail(failMissingField("limitValue"))
+      return yield* failMissingField("limitValue")
     }
 
     if (typeof ratelimit.value !== "number") {
-      return yield* Effect.fail(failMissingField("value"))
+      return yield* failMissingField("value")
     }
 
     if (!ratelimit.window) {
-      return yield* Effect.fail(failMissingField("window"))
+      return yield* failMissingField("window")
     }
 
     if (!ratelimit.lastRefill) {
-      return yield* Effect.fail(failMissingField("lastRefill"))
+      return yield* failMissingField("lastRefill")
     }
 
     return {

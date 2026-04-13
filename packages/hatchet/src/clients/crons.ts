@@ -67,55 +67,45 @@ const normalizeCron = <TInput = Record<string, unknown>>(
     const cronId = cron.metadata?.id ?? context.cronId
 
     if (!cronId) {
-      return yield* Effect.fail(
-        new HatchetCronError({
-          message: `Cron workflow response did not include an id for workflow "${
-            context.workflowName ?? cron.workflowName ?? "unknown"
-          }"`,
-          workflowName: context.workflowName ?? cron.workflowName,
-        }),
-      )
+      return yield* new HatchetCronError({
+        message: `Cron workflow response did not include an id for workflow "${
+          context.workflowName ?? cron.workflowName ?? "unknown"
+        }"`,
+        workflowName: context.workflowName ?? cron.workflowName,
+      })
     }
 
     const workflowName = cron.workflowName ?? context.workflowName
 
     if (!workflowName) {
-      return yield* Effect.fail(
-        new HatchetCronError({
-          message: `Cron workflow "${cronId}" did not include a workflow name`,
-          cronId,
-        }),
-      )
+      return yield* new HatchetCronError({
+        message: `Cron workflow "${cronId}" did not include a workflow name`,
+        cronId,
+      })
     }
 
     if (!cron.cron) {
-      return yield* Effect.fail(
-        new HatchetCronError({
-          message: `Cron workflow "${cronId}" did not include a cron expression`,
-          cronId,
-          workflowName,
-        }),
-      )
+      return yield* new HatchetCronError({
+        message: `Cron workflow "${cronId}" did not include a cron expression`,
+        cronId,
+        workflowName,
+      })
     }
 
     if (typeof cron.enabled !== "boolean") {
-      return yield* Effect.fail(
-        new HatchetCronError({
-          message: `Cron workflow "${cronId}" did not include enabled status`,
-          cronId,
-          workflowName,
-        }),
-      )
+      return yield* new HatchetCronError({
+        message: `Cron workflow "${cronId}" did not include enabled status`,
+        cronId,
+        workflowName,
+      })
     }
 
     if (cron.method !== "DEFAULT" && cron.method !== "API") {
-      return yield* Effect.fail(
-        new HatchetCronError({
-          message: `Cron workflow "${cronId}" did not include a supported method`,
-          cronId,
-          workflowName,
-        }),
-      )
+      return yield* new HatchetCronError({
+        message: `Cron workflow "${cronId}" did not include a supported method`,
+        cronId,
+        workflowName,
+      })
     }
 
     return {

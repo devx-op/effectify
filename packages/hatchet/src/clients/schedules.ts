@@ -86,25 +86,21 @@ const normalizeSchedule = <TInput = Record<string, unknown>>(
     const scheduleId = schedule.metadata?.id ?? context.scheduleId
 
     if (!scheduleId) {
-      return yield* Effect.fail(
-        new HatchetScheduleError({
-          message: `Scheduled workflow response did not include an id for workflow "${
-            context.workflowName ?? schedule.workflowName ?? "unknown"
-          }"`,
-          workflowName: context.workflowName ?? schedule.workflowName,
-        }),
-      )
+      return yield* new HatchetScheduleError({
+        message: `Scheduled workflow response did not include an id for workflow "${
+          context.workflowName ?? schedule.workflowName ?? "unknown"
+        }"`,
+        workflowName: context.workflowName ?? schedule.workflowName,
+      })
     }
 
     const workflowName = schedule.workflowName ?? context.workflowName
 
     if (!workflowName) {
-      return yield* Effect.fail(
-        new HatchetScheduleError({
-          message: `Scheduled workflow "${scheduleId}" did not include a workflow name`,
-          scheduleId,
-        }),
-      )
+      return yield* new HatchetScheduleError({
+        message: `Scheduled workflow "${scheduleId}" did not include a workflow name`,
+        scheduleId,
+      })
     }
 
     const triggerAt = yield* parseTriggerAt(schedule.triggerAt, {

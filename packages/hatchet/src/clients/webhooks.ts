@@ -123,29 +123,27 @@ const normalizeWebhook = (
     const webhookId = webhook.metadata?.id
 
     if (!webhookId) {
-      return yield* Effect.fail(failMissingField("metadata.id", context))
+      return yield* failMissingField("metadata.id", context)
     }
 
     if (!webhook.tenantId) {
-      return yield* Effect.fail(failMissingField("tenantId", context))
+      return yield* failMissingField("tenantId", context)
     }
 
     if (!webhook.name) {
-      return yield* Effect.fail(failMissingField("name", context))
+      return yield* failMissingField("name", context)
     }
 
     if (!webhook.sourceName) {
-      return yield* Effect.fail(failMissingField("sourceName", context))
+      return yield* failMissingField("sourceName", context)
     }
 
     if (!webhook.eventKeyExpression) {
-      return yield* Effect.fail(
-        failMissingField("eventKeyExpression", context),
-      )
+      return yield* failMissingField("eventKeyExpression", context)
     }
 
     if (!webhook.authType) {
-      return yield* Effect.fail(failMissingField("authType", context))
+      return yield* failMissingField("authType", context)
     }
 
     return {

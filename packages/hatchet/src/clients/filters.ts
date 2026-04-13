@@ -79,57 +79,48 @@ export const normalizeFilter = (
     const filterId = filter.metadata?.id
 
     if (!filterId) {
-      return yield* Effect.fail(
-        failFilter("Filter response did not include metadata.id", context),
+      return yield* failFilter(
+        "Filter response did not include metadata.id",
+        context,
       )
     }
 
     if (!filter.tenantId) {
-      return yield* Effect.fail(
-        failFilter("Filter response did not include tenantId", {
-          ...context,
-          filterId,
-        }),
-      )
+      return yield* failFilter("Filter response did not include tenantId", {
+        ...context,
+        filterId,
+      })
     }
 
     if (!filter.workflowId) {
-      return yield* Effect.fail(
-        failFilter("Filter response did not include workflowId", {
-          ...context,
-          filterId,
-        }),
-      )
+      return yield* failFilter("Filter response did not include workflowId", {
+        ...context,
+        filterId,
+      })
     }
 
     if (!filter.scope) {
-      return yield* Effect.fail(
-        failFilter("Filter response did not include scope", {
-          ...context,
-          filterId,
-          workflowId: filter.workflowId,
-        }),
-      )
+      return yield* failFilter("Filter response did not include scope", {
+        ...context,
+        filterId,
+        workflowId: filter.workflowId,
+      })
     }
 
     if (!filter.expression) {
-      return yield* Effect.fail(
-        failFilter("Filter response did not include expression", {
-          ...context,
-          filterId,
-          workflowId: filter.workflowId,
-        }),
-      )
+      return yield* failFilter("Filter response did not include expression", {
+        ...context,
+        filterId,
+        workflowId: filter.workflowId,
+      })
     }
 
     if (!isRecord(filter.payload)) {
-      return yield* Effect.fail(
-        failFilter("Filter response payload must be an object", {
-          ...context,
-          filterId,
-          workflowId: filter.workflowId,
-        }),
-      )
+      return yield* failFilter("Filter response payload must be an object", {
+        ...context,
+        filterId,
+        workflowId: filter.workflowId,
+      })
     }
 
     return {
@@ -150,30 +141,24 @@ const validateCreateInput = (
 ): Effect.Effect<CreateFilterInput, HatchetFilterError> =>
   Effect.gen(function*() {
     if (!input.workflowId.trim()) {
-      return yield* Effect.fail(
-        failFilter("Workflow ID is required", {
-          operation: "create",
-          workflowId: input.workflowId,
-        }),
-      )
+      return yield* failFilter("Workflow ID is required", {
+        operation: "create",
+        workflowId: input.workflowId,
+      })
     }
 
     if (!input.scope.trim()) {
-      return yield* Effect.fail(
-        failFilter("Filter scope is required", {
-          operation: "create",
-          workflowId: input.workflowId,
-        }),
-      )
+      return yield* failFilter("Filter scope is required", {
+        operation: "create",
+        workflowId: input.workflowId,
+      })
     }
 
     if (!input.expression.trim()) {
-      return yield* Effect.fail(
-        failFilter("Filter expression is required", {
-          operation: "create",
-          workflowId: input.workflowId,
-        }),
-      )
+      return yield* failFilter("Filter expression is required", {
+        operation: "create",
+        workflowId: input.workflowId,
+      })
     }
 
     return input
