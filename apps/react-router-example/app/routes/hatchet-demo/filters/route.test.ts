@@ -1,7 +1,14 @@
 import React from "react"
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 import { renderToStaticMarkup } from "react-dom/server"
-import { HatchetDemoFiltersSection } from "./hatchet-demo-filters.js"
+
+vi.mock("react-router", () => ({
+  Form: ({ children, ...props }: React.ComponentProps<"form">) => React.createElement("form", props, children),
+  useActionData: () => undefined,
+  useLoaderData: () => undefined,
+}))
+
+import { HatchetDemoFiltersSection } from "./route.js"
 
 describe("HatchetDemoFiltersSection", () => {
   it("renders the filter form, selected filter details, and filters list", () => {

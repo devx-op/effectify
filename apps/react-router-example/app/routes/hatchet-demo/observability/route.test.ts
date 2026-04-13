@@ -1,7 +1,7 @@
 import React from "react"
 import { describe, expect, it } from "vitest"
 import { renderToStaticMarkup } from "react-dom/server"
-import { HatchetDemoObservabilitySection } from "./hatchet-demo-observability.js"
+import { HatchetDemoObservabilitySection } from "./route.js"
 
 describe("HatchetDemoObservabilitySection", () => {
   it("renders selected run logs and tenant metrics", () => {
@@ -10,7 +10,15 @@ describe("HatchetDemoObservabilitySection", () => {
         observability: {
           selectedRunId: "run-123",
           selectedTaskId: "task-123",
-          run: { id: "run-123", workflowName: "orders.process" },
+          run: {
+            metadata: {},
+            status: "RUNNING",
+            tenantId: "tenant-1",
+            displayName: "orders.process",
+            workflowId: "workflow-1",
+            input: {},
+            output: {},
+          },
           status: "RUNNING",
           logs: {
             rows: [
