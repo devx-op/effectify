@@ -8,6 +8,7 @@ export {
   HatchetError,
   HatchetEventError,
   HatchetExecutionError,
+  HatchetFilterError,
   HatchetInitError,
   HatchetObservabilityError,
   HatchetRateLimitError,

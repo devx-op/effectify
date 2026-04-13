@@ -144,3 +144,14 @@ export class HatchetRateLimitError extends Data.TaggedError(
   readonly key?: string
   readonly cause?: unknown
 }> {}
+
+/**
+ * Error when a filter operation fails
+ */
+export class HatchetFilterError extends Data.TaggedError("HatchetFilterError")<{
+  readonly message: string
+  readonly operation: "list" | "create" | "get" | "delete"
+  readonly filterId?: string
+  readonly workflowId?: string
+  readonly cause?: unknown
+}> {}

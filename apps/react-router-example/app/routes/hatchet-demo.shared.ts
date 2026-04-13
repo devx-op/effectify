@@ -53,6 +53,16 @@ export const readSelectedCronId = (requestUrl: string): string | undefined => {
 
 export const buildCronRedirect = (cronId: string): string => `/hatchet-demo?cronId=${encodeURIComponent(cronId)}`
 
+export const readSelectedFilterId = (
+  requestUrl: string,
+): string | undefined => {
+  const filterId = new URL(requestUrl).searchParams.get("filterId")?.trim()
+  return filterId ? filterId : undefined
+}
+
+export const buildFilterRedirect = (filterId: string): string =>
+  `/hatchet-demo?filterId=${encodeURIComponent(filterId)}`
+
 export const readSelectedRunId = (requestUrl: string): string | undefined => {
   const runId = new URL(requestUrl).searchParams.get("runId")?.trim()
   return runId ? runId : undefined

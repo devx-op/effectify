@@ -17,7 +17,16 @@ export interface RunOpts {
 
 export interface ListRunsOpts {
   readonly workflowName?: string
+  readonly workflowNames?: readonly string[]
   readonly status?: string
+  readonly statuses?: readonly NonNullable<
+    SdkListRunsOpts["statuses"]
+  >[number][]
+  readonly since?: Date
+  readonly until?: Date
+  readonly additionalMetadata?: Record<string, string>
+  readonly workerId?: string
+  readonly includePayloads?: boolean
   readonly limit?: number
   readonly offset?: number
 }
@@ -27,14 +36,30 @@ const toSdkListRunsOpts = (
 ): {
   readonly workflowNames?: string[]
   readonly statuses?: NonNullable<SdkListRunsOpts["statuses"]>
+  readonly since?: Date
+  readonly until?: Date
+  readonly additionalMetadata?: Record<string, string>
+  readonly workerId?: string
+  readonly includePayloads?: boolean
   readonly limit?: number
   readonly offset?: number
   readonly onlyTasks: false
 } => ({
-  workflowNames: options?.workflowName ? [options.workflowName] : undefined,
-  statuses: options?.status
+  workflowNames: options?.workflowNames?.length
+    ? [...options.workflowNames]
+    : options?.workflowName
+    ? [options.workflowName]
+    : undefined,
+  statuses: options?.statuses?.length
+    ? [...options.statuses]
+    : options?.status
     ? [options.status as NonNullable<SdkListRunsOpts["statuses"]>[number]]
     : undefined,
+  since: options?.since,
+  until: options?.until,
+  additionalMetadata: options?.additionalMetadata,
+  workerId: options?.workerId,
+  includePayloads: options?.includePayloads,
   limit: options?.limit,
   offset: options?.offset,
   onlyTasks: false,

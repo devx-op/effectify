@@ -211,6 +211,11 @@ describe("Runs Client - SDK compatibility", () => {
     const result = await listRuns<{ metadata: { status: string } }>({
       workflowName: "orders.process",
       status: "FAILED",
+      since: new Date("2026-04-12T18:45:00.000Z"),
+      until: new Date("2026-04-12T19:00:00.000Z"),
+      additionalMetadata: { source: "demo", kind: "filter" },
+      workerId: "worker-123",
+      includePayloads: false,
       limit: 5,
       offset: 10,
     }).pipe(
@@ -220,6 +225,11 @@ describe("Runs Client - SDK compatibility", () => {
             expect(options).toEqual({
               workflowNames: ["orders.process"],
               statuses: ["FAILED"],
+              since: new Date("2026-04-12T18:45:00.000Z"),
+              until: new Date("2026-04-12T19:00:00.000Z"),
+              additionalMetadata: { source: "demo", kind: "filter" },
+              workerId: "worker-123",
+              includePayloads: false,
               limit: 5,
               offset: 10,
               onlyTasks: false,
@@ -235,6 +245,30 @@ describe("Runs Client - SDK compatibility", () => {
     )
 
     expect(result).toEqual([{ metadata: { status: "FAILED" } }])
+  })
+
+  it("listRuns supports plural workflow/status filters while keeping compatibility shims", async () => {
+    await listRuns({
+      workflowName: "legacy-workflow",
+      workflowNames: ["orders.process", "emails.send"],
+      status: "FAILED",
+      statuses: ["COMPLETED", "FAILED"],
+    }).pipe(
+      provideHatchet({
+        runs: {
+          list: async (options: unknown) => {
+            expect(options).toEqual({
+              workflowNames: ["orders.process", "emails.send"],
+              statuses: ["COMPLETED", "FAILED"],
+              onlyTasks: false,
+            })
+
+            return { rows: [] }
+          },
+        },
+      }),
+      Effect.runPromise,
+    )
   })
 
   it("wraps typed SDK run errors with HatchetRunError context", async () => {

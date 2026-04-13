@@ -80,6 +80,13 @@ type MockHatchetRateLimitsClient = {
   readonly upsert: (options: unknown) => Promise<string>
 }
 
+type MockHatchetFiltersClient = {
+  readonly list: (options?: unknown) => Promise<{ rows?: unknown[] }>
+  readonly get: (filterId: string) => Promise<unknown>
+  readonly create: (options: unknown) => Promise<unknown>
+  readonly delete: (filterId: string) => Promise<unknown>
+}
+
 type MockWorkerInstance = {
   readonly registerWorkflows: (workflows?: unknown[]) => Promise<void>
   readonly start: () => Promise<void>
@@ -139,6 +146,7 @@ export type MockHatchetClient = HatchetClientType & {
   readonly runs: MockHatchetRunsClient
   readonly crons: MockHatchetCronsClient
   readonly ratelimits: MockHatchetRateLimitsClient
+  readonly filters: MockHatchetFiltersClient
   readonly webhooks: MockHatchetWebhooksClient
   readonly scheduled: MockHatchetSchedulesClient
   readonly workflows: MockHatchetWorkflowsClient
@@ -159,6 +167,7 @@ export interface MockHatchetClientOverrides {
   readonly runs?: Partial<MockHatchetClient["runs"]>
   readonly crons?: Partial<MockHatchetClient["crons"]>
   readonly ratelimits?: Partial<MockHatchetClient["ratelimits"]>
+  readonly filters?: Partial<MockHatchetClient["filters"]>
   readonly webhooks?: Partial<MockHatchetClient["webhooks"]>
   readonly scheduled?: Partial<MockHatchetClient["scheduled"]>
   readonly workflows?: Partial<MockHatchetClient["workflows"]>
@@ -246,6 +255,14 @@ export const createMockHatchetClient = (
       upsert: unimplemented(
         "ratelimits.upsert",
       ) as MockHatchetClient["ratelimits"]["upsert"],
+    },
+    filters: {
+      list: async () => ({ rows: [] }),
+      get: unimplemented("filters.get"),
+      create: unimplemented("filters.create"),
+      delete: unimplemented(
+        "filters.delete",
+      ) as MockHatchetClient["filters"]["delete"],
     },
     webhooks: {
       list: async () => ({ rows: [] }),
@@ -371,6 +388,10 @@ export const createMockHatchetClient = (
     ratelimits: {
       ...baseClient.ratelimits,
       ...overrides.ratelimits,
+    },
+    filters: {
+      ...baseClient.filters,
+      ...overrides.filters,
     },
     webhooks: {
       ...baseClient.webhooks,

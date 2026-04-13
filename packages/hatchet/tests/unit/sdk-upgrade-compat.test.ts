@@ -84,6 +84,12 @@ describe("Hatchet SDK 1.21.0 upgrade contract", () => {
     expect(runsTypes).toContain("get_status")
     expect(runsTypes).toContain("getTaskExternalId")
     expect(runsTypes).toContain("cancel(opts: CancelRunOpts)")
+    expect(runsTypes).toContain("since?: Date")
+    expect(runsTypes).toContain("until?: Date")
+    expect(runsTypes).toContain("statuses?: V1TaskStatus[]")
+    expect(runsTypes).toContain("additionalMetadata?: Record<string, string>")
+    expect(runsTypes).toContain("workerId?: string")
+    expect(runsTypes).toContain("includePayloads?: boolean")
     expect(workflowsTypes).toContain("delete(workflow")
     expect(workflowsTypes).not.toContain("create(")
     expect(workersTypes).not.toContain("register(")
@@ -96,6 +102,17 @@ describe("Hatchet SDK 1.21.0 upgrade contract", () => {
     expect(apiTypes).toContain("v1TaskListStatusMetrics: (tenant: string")
     expect(apiTypes).toContain("tenantGetQueueMetrics: (tenant: string")
     expect(apiTypes).toContain("tenantGetStepRunQueueMetrics: (tenant: string")
+    expect(clientTypes).toContain("get filters(): FiltersClient")
+    expect(apiTypes).toContain("v1FilterList: (tenant: string")
+    expect(apiTypes).toContain(
+      "v1FilterCreate: (tenant: string, data: V1CreateFilterRequest",
+    )
+    expect(apiTypes).toContain(
+      "v1FilterGet: (tenant: string, v1Filter: string",
+    )
+    expect(apiTypes).toContain(
+      "v1FilterDelete: (tenant: string, v1Filter: string",
+    )
     expect(apiTypes).not.toContain("v1TaskLogsList")
     expect(apiTypes).not.toContain("v1LogsList")
     expect(apiTypes).not.toContain("v1TaskMetricsGet")
