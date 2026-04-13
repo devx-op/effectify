@@ -10,7 +10,7 @@
       "defaultConfiguration": "production",
       "options": {
         "outputPath": "packages/prisma/dist",
-        "main": "packages/prisma/src/cli.tsx",
+        "main": "packages/prisma/src/cli.ts",
         "tsConfig": "packages/prisma/tsconfig.lib.json",
         "format": ["esm"],
         "generatePackageJson": false,
@@ -46,7 +46,7 @@
     "cli": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "pnpm dlx tsx src/cli.tsx",
+        "command": "pnpm dlx tsx src/cli.ts",
         "cwd": "packages/prisma"
       }
     },
@@ -56,9 +56,7 @@
         "command": "vitest run",
         "cwd": "packages/prisma"
       },
-      "dependsOn": [
-        "prisma:generate"
-      ]
+      "dependsOn": ["prisma:generate"]
     },
     "lint": {
       "executor": "nx-oxlint:lint",

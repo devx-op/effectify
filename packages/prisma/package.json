@@ -7,16 +7,16 @@
     "url": "https://github.com/devx-op/effectify",
     "directory": "packages/prisma"
   },
-  "main": "./dist/src/cli.js",
+  "main": "./src/cli.js",
   "type": "module",
   "license": "MIT",
   "bin": {
-    "effect-prisma": "./dist/src/cli.js"
+    "effect-prisma": "./src/cli.js"
   },
   "exports": {
     ".": "./dist/src/runtime/index.js",
     "./prisma": "./dist/prisma/index.js",
-    "./cli": "./dist/src/cli.js"
+    "./cli": "./src/cli.js"
   },
   "files": [
     "dist"
@@ -25,7 +25,7 @@
     "access": "public"
   },
   "scripts": {
-    "postinstall": "sh -c 'test -f ./dist/src/cli.js && chmod +x ./dist/src/cli.js || true' 2>/dev/null",
+    "prepare": "pnpm build",
     "prisma:generate": "pnpm dlx prisma generate",
     "build": "effect-build",
     "test": "vitest",
