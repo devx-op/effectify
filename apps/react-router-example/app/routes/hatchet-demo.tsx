@@ -12,12 +12,15 @@ import { withActionEffect, withLoaderEffect } from "../lib/runtime.server.js"
 import {
   cancelRun,
   createCron,
+  createFilter,
   createSchedule,
   createWebhook,
   deleteCron,
+  deleteFilter,
   deleteWebhook,
   getCron,
   getEvent,
+  getFilter,
   getQueueMetrics,
   getRun,
   getRunStatus,
@@ -26,6 +29,7 @@ import {
   getTaskMetrics,
   getWebhook,
   listCrons,
+  listFilters,
   listRateLimits,
   listRuns,
   listSchedules,
@@ -37,6 +41,7 @@ import {
 } from "@effectify/hatchet"
 import { Form, useActionData } from "react-router"
 import { HatchetDemoCronsSection } from "./hatchet-demo-crons.js"
+import { HatchetDemoFiltersSection } from "./hatchet-demo-filters.js"
 import { HatchetDemoObservabilitySection } from "./hatchet-demo-observability.js"
 import { HatchetDemoRateLimitsSection } from "./hatchet-demo-ratelimits.js"
 import { HatchetDemoSchedulesSection } from "./hatchet-demo-schedules.js"
@@ -44,6 +49,7 @@ import { HatchetDemoWebhooksSection } from "./hatchet-demo-webhooks.js"
 import {
   buildCronRedirect,
   buildEventRedirect,
+  buildFilterRedirect,
   buildRateLimitRedirect,
   buildRunRedirect,
   buildScheduleRedirect,
@@ -56,6 +62,7 @@ import {
   parseWebhookStaticPayload,
   readSelectedCronId,
   readSelectedEventId,
+  readSelectedFilterId,
   readSelectedRateLimitKey,
   readSelectedRunId,
   readSelectedScheduleId,
@@ -162,13 +169,15 @@ export const loadHatchetDemo = (request: Request) =>
     const eventId = readSelectedEventId(request.url)
     const scheduleId = readSelectedScheduleId(request.url)
     const cronId = readSelectedCronId(request.url)
+    const filterId = readSelectedFilterId(request.url)
     const webhookName = readSelectedWebhookName(request.url)
     const selectedRateLimitKey = readSelectedRateLimitKey(request.url)
-    const { runs, schedules, crons, webhooks, ratelimits } = yield* Effect.all(
+    const { runs, schedules, crons, filters, webhooks, ratelimits } = yield* Effect.all(
       {
         runs: listRuns(),
         schedules: listSchedules(),
         crons: listCrons(),
+        filters: listFilters(),
         webhooks: listWebhooks(),
         ratelimits: listRateLimits(),
       },
@@ -178,6 +187,7 @@ export const loadHatchetDemo = (request: Request) =>
     const event = eventId ? yield* getEvent(eventId) : undefined
     const schedule = scheduleId ? yield* getSchedule(scheduleId) : undefined
     const cron = cronId ? yield* getCron(cronId) : undefined
+    const filter = filterId ? yield* getFilter(filterId) : undefined
     const webhook = webhookName ? yield* getWebhook(webhookName) : undefined
     const observabilityResult = yield* Effect.exit(
       loadObservability(request.url),
@@ -201,6 +211,8 @@ export const loadHatchetDemo = (request: Request) =>
       schedules,
       cron,
       crons,
+      filter,
+      filters,
       webhook,
       webhooks,
       ratelimits,
@@ -353,6 +365,57 @@ export const handleHatchetDemoAction = (request: Request) =>
       return yield* httpRedirect(buildCronRedirect(cron.cronId))
     }
 
+    if (intent === "create-filter") {
+      const workflowId = String(formData.get("filterWorkflowId") ?? "").trim()
+      const scope = String(formData.get("filterScope") ?? "").trim()
+      const expression = String(formData.get("filterExpression") ?? "").trim()
+      const payloadInput = String(formData.get("filterPayload") ?? "")
+
+      if (!workflowId) {
+        return yield* httpFailure("Workflow ID is required")
+      }
+
+      if (!scope) {
+        return yield* httpFailure("Filter scope is required")
+      }
+
+      if (!expression) {
+        return yield* httpFailure("Filter expression is required")
+      }
+
+      let payload: Record<string, unknown> | undefined
+
+      try {
+        payload = payloadInput.trim()
+          ? parseEventPayload(payloadInput)
+          : undefined
+      } catch (error) {
+        return yield* httpFailure(
+          error instanceof Error ? error.message : "Invalid filter payload",
+        )
+      }
+
+      const filter = yield* createFilter({
+        workflowId,
+        scope,
+        expression,
+        payload,
+      })
+
+      return yield* httpRedirect(buildFilterRedirect(filter.filterId))
+    }
+
+    if (intent === "delete-filter") {
+      const filterId = String(formData.get("filterId") ?? "").trim()
+
+      if (!filterId) {
+        return yield* httpFailure("Filter ID is required")
+      }
+
+      yield* deleteFilter(filterId)
+      return yield* httpRedirect("/hatchet-demo")
+    }
+
     if (intent === "delete-cron") {
       const cronId = String(formData.get("cronId") ?? "").trim()
 
@@ -493,6 +556,8 @@ export default function HatchetDemo({ loaderData }: Route.ComponentProps) {
     const schedules = loaderData.data?.schedules ?? []
     const cron = loaderData.data?.cron
     const crons = loaderData.data?.crons ?? []
+    const filter = loaderData.data?.filter
+    const filters = loaderData.data?.filters ?? []
     const webhook = loaderData.data?.webhook
     const webhooks = loaderData.data?.webhooks ?? []
     const ratelimits = loaderData.data?.ratelimits ?? []
@@ -619,6 +684,12 @@ export default function HatchetDemo({ loaderData }: Route.ComponentProps) {
             actionError={actionError}
             cron={cron}
             crons={crons}
+          />
+
+          <HatchetDemoFiltersSection
+            actionError={actionError}
+            filter={filter}
+            filters={filters}
           />
 
           <HatchetDemoWebhooksSection

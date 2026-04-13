@@ -122,6 +122,13 @@ type MockHatchetRateLimitsClient = {
   readonly upsert: (options: unknown) => Promise<string>
 }
 
+type MockHatchetFiltersClient = {
+  readonly list: (options?: unknown) => Promise<{ rows?: unknown[] }>
+  readonly get: (filterId: string) => Promise<unknown>
+  readonly create: (options: unknown) => Promise<unknown>
+  readonly delete: (filterId: string) => Promise<unknown>
+}
+
 type MockWorkerInstance = {
   readonly registerWorkflows: (workflows?: unknown[]) => Promise<void>
   readonly start: () => Promise<void>

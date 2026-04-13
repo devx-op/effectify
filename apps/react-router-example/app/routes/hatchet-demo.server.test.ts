@@ -26,6 +26,10 @@ const listWebhooksMock = vi.fn()
 const deleteWebhookMock = vi.fn()
 const listRateLimitsMock = vi.fn()
 const upsertRateLimitMock = vi.fn()
+const listFiltersMock = vi.fn()
+const getFilterMock = vi.fn()
+const createFilterMock = vi.fn()
+const deleteFilterMock = vi.fn()
 const listRunsMock = vi.fn()
 const cancelRunMock = vi.fn()
 const runWorkflowMock = vi.fn()
@@ -56,6 +60,10 @@ vi.mock("@effectify/hatchet", () => ({
   listRateLimits: (...args: Array<unknown>) => listRateLimitsMock(...args),
   RateLimitDuration: mockedRateLimitDuration,
   upsertRateLimit: (...args: Array<unknown>) => upsertRateLimitMock(...args),
+  listFilters: (...args: Array<unknown>) => listFiltersMock(...args),
+  getFilter: (...args: Array<unknown>) => getFilterMock(...args),
+  createFilter: (...args: Array<unknown>) => createFilterMock(...args),
+  deleteFilter: (...args: Array<unknown>) => deleteFilterMock(...args),
   listRuns: (...args: Array<unknown>) => listRunsMock(...args),
   cancelRun: (...args: Array<unknown>) => cancelRunMock(...args),
   runWorkflow: (...args: Array<unknown>) => runWorkflowMock(...args),
@@ -76,16 +84,21 @@ import { handleHatchetDemoAction, loadHatchetDemo } from "./hatchet-demo.js"
 import {
   buildCronRedirect,
   buildEventRedirect,
+  buildFilterRedirect,
   buildRateLimitRedirect,
+  buildRunRedirect,
   buildScheduleRedirect,
   buildWebhookRedirect,
   parseEventPayload,
   parseRateLimitDuration,
   parseTriggerTime,
+  parseWebhookAuth,
   parseWebhookAuthType,
+  parseWebhookSourceName,
   parseWebhookStaticPayload,
   readSelectedCronId,
   readSelectedEventId,
+  readSelectedFilterId,
   readSelectedRateLimitKey,
   readSelectedRunId,
   readSelectedScheduleId,
@@ -110,6 +123,10 @@ describe("hatchet demo event helpers", () => {
     deleteWebhookMock.mockReset()
     listRateLimitsMock.mockReset()
     upsertRateLimitMock.mockReset()
+    listFiltersMock.mockReset()
+    getFilterMock.mockReset()
+    createFilterMock.mockReset()
+    deleteFilterMock.mockReset()
     listRunsMock.mockReset()
     cancelRunMock.mockReset()
     runWorkflowMock.mockReset()
@@ -122,6 +139,8 @@ describe("hatchet demo event helpers", () => {
     listCronsMock.mockReturnValue(Effect.succeed([]))
     listWebhooksMock.mockReturnValue(Effect.succeed([]))
     listRateLimitsMock.mockReturnValue(Effect.succeed([]))
+    listFiltersMock.mockReturnValue(Effect.succeed([]))
+    deleteFilterMock.mockReturnValue(Effect.succeed(undefined))
     getTaskMetricsMock.mockReturnValue(
       Effect.succeed({
         byStatus: {
@@ -206,6 +225,9 @@ describe("hatchet demo event helpers", () => {
     expect(
       readSelectedTaskId("https://example.com/hatchet-demo?taskId=task-123"),
     ).toBe("task-123")
+    expect(buildRunRedirect("run id/123")).toBe(
+      "/hatchet-demo?runId=run%20id%2F123",
+    )
   })
 
   it("webhook helpers read selected names, parse static payloads, and encode redirects", () => {
@@ -232,6 +254,63 @@ describe("hatchet demo event helpers", () => {
     )
   })
 
+  it("parseWebhookStaticPayload returns undefined for blank values and source names stay explicit", () => {
+    expect(parseWebhookStaticPayload("   ")).toBeUndefined()
+    expect(parseWebhookSourceName("GITHUB")).toBe("GITHUB")
+    expect(() => parseWebhookSourceName("   ")).toThrowError(
+      "Webhook source is required",
+    )
+    expect(() => parseWebhookSourceName("DISCORD")).toThrowError(
+      "Unsupported webhook source: DISCORD",
+    )
+  })
+
+  it("parseWebhookAuth supports BASIC and API_KEY form shapes", () => {
+    const basicForm = new FormData()
+    basicForm.set("webhookAuthType", "BASIC")
+    basicForm.set("webhookUsername", "demo-user")
+    basicForm.set("webhookPassword", "demo-pass")
+
+    const apiKeyForm = new FormData()
+    apiKeyForm.set("webhookAuthType", "API_KEY")
+    apiKeyForm.set("webhookHeaderName", "x-demo-key")
+    apiKeyForm.set("webhookApiKey", "secret-key")
+
+    expect(parseWebhookAuth(basicForm)).toEqual({
+      authType: "BASIC",
+      username: "demo-user",
+      password: "demo-pass",
+    })
+    expect(parseWebhookAuth(apiKeyForm)).toEqual({
+      authType: "API_KEY",
+      headerName: "x-demo-key",
+      apiKey: "secret-key",
+    })
+  })
+
+  it("parseWebhookAuth rejects unsupported HMAC algorithms and encodings", () => {
+    const invalidAlgorithmForm = new FormData()
+    invalidAlgorithmForm.set("webhookAuthType", "HMAC")
+    invalidAlgorithmForm.set("webhookHmacAlgorithm", "CRC32")
+    invalidAlgorithmForm.set("webhookHmacEncoding", "HEX")
+    invalidAlgorithmForm.set("webhookSignatureHeaderName", "x-signature")
+    invalidAlgorithmForm.set("webhookSigningSecret", "top-secret")
+
+    const invalidEncodingForm = new FormData()
+    invalidEncodingForm.set("webhookAuthType", "HMAC")
+    invalidEncodingForm.set("webhookHmacAlgorithm", "SHA256")
+    invalidEncodingForm.set("webhookHmacEncoding", "UTF8")
+    invalidEncodingForm.set("webhookSignatureHeaderName", "x-signature")
+    invalidEncodingForm.set("webhookSigningSecret", "top-secret")
+
+    expect(() => parseWebhookAuth(invalidAlgorithmForm)).toThrowError(
+      "Unsupported webhook HMAC algorithm: CRC32",
+    )
+    expect(() => parseWebhookAuth(invalidEncodingForm)).toThrowError(
+      "Unsupported webhook HMAC encoding: UTF8",
+    )
+  })
+
   it("rate-limit helpers read selected keys, parse durations, and encode redirects", () => {
     expect(
       readSelectedRateLimitKey(
@@ -242,8 +321,21 @@ describe("hatchet demo event helpers", () => {
     expect(parseRateLimitDuration(String(mockedRateLimitDuration.MINUTE))).toBe(
       "1 minute",
     )
+    expect(parseRateLimitDuration("second")).toBe("1 second")
+    expect(parseRateLimitDuration("1 HOUR")).toBe("1 hour")
     expect(buildRateLimitRedirect("email/send")).toBe(
       "/hatchet-demo?rateLimitKey=email%2Fsend",
+    )
+  })
+
+  it("filter helpers read selected ids and encode filter redirects", () => {
+    expect(
+      readSelectedFilterId(
+        "https://example.com/hatchet-demo?filterId=filter-123",
+      ),
+    ).toBe("filter-123")
+    expect(buildFilterRedirect("filter id/123")).toBe(
+      "/hatchet-demo?filterId=filter%20id%2F123",
     )
   })
 
@@ -294,6 +386,585 @@ describe("hatchet demo event helpers", () => {
         selectedRateLimitKey: "email:send",
       },
     })
+  })
+
+  it("loader includes filters and selected filter details", async () => {
+    listSchedulesMock.mockReturnValue(Effect.succeed([]))
+    listRunsMock.mockReturnValue(Effect.succeed([]))
+    listFiltersMock.mockReturnValue(
+      Effect.succeed([
+        {
+          filterId: "filter-123",
+          tenantId: "tenant-1",
+          workflowId: "workflow-1",
+          scope: "tenant:demo",
+          expression: "input.kind == 'demo'",
+          payload: { feature: "filters" },
+        },
+      ]),
+    )
+    getFilterMock.mockReturnValue(
+      Effect.succeed({
+        filterId: "filter-123",
+        tenantId: "tenant-1",
+        workflowId: "workflow-1",
+        scope: "tenant:demo",
+        expression: "input.kind == 'demo'",
+        payload: { feature: "filters" },
+        isDeclarative: true,
+      }),
+    )
+
+    const loaderResponse = await runMockedHatchetEffect(
+      loadHatchetDemo(
+        new Request("https://example.com/hatchet-demo?filterId=filter-123"),
+      ),
+    )
+
+    expect(listFiltersMock).toHaveBeenCalledTimes(1)
+    expect(getFilterMock).toHaveBeenCalledWith("filter-123")
+    expect(loaderResponse).toMatchObject({
+      _tag: "HttpResponseSuccess",
+      data: {
+        filters: [
+          {
+            filterId: "filter-123",
+            workflowId: "workflow-1",
+          },
+        ],
+        filter: {
+          filterId: "filter-123",
+          isDeclarative: true,
+        },
+      },
+    })
+  })
+
+  it("action creates a filter and redirects the loader to the selected filter", async () => {
+    listSchedulesMock.mockReturnValue(Effect.succeed([]))
+    listRunsMock.mockReturnValue(Effect.succeed([]))
+    listFiltersMock.mockReturnValue(
+      Effect.succeed([
+        {
+          filterId: "filter-123",
+          tenantId: "tenant-1",
+          workflowId: "workflow-1",
+          scope: "tenant:demo",
+          expression: "input.kind == 'demo'",
+          payload: { feature: "filters" },
+        },
+      ]),
+    )
+    getFilterMock.mockReturnValue(
+      Effect.succeed({
+        filterId: "filter-123",
+        tenantId: "tenant-1",
+        workflowId: "workflow-1",
+        scope: "tenant:demo",
+        expression: "input.kind == 'demo'",
+        payload: { feature: "filters" },
+      }),
+    )
+    createFilterMock.mockReturnValue(
+      Effect.succeed({
+        filterId: "filter-123",
+        tenantId: "tenant-1",
+        workflowId: "workflow-1",
+        scope: "tenant:demo",
+        expression: "input.kind == 'demo'",
+        payload: { feature: "filters" },
+      }),
+    )
+
+    const formData = new FormData()
+    formData.set("intent", "create-filter")
+    formData.set("filterWorkflowId", "workflow-1")
+    formData.set("filterScope", "tenant:demo")
+    formData.set("filterExpression", "input.kind == 'demo'")
+    formData.set("filterPayload", '{"feature":"filters"}')
+
+    const actionResponse = await runMockedHatchetEffect(
+      handleHatchetDemoAction(
+        new Request("https://example.com/hatchet-demo", {
+          method: "POST",
+          body: formData,
+        }),
+      ),
+    )
+
+    expect(createFilterMock).toHaveBeenCalledWith({
+      workflowId: "workflow-1",
+      scope: "tenant:demo",
+      expression: "input.kind == 'demo'",
+      payload: { feature: "filters" },
+    })
+    expect(actionResponse).toMatchObject({
+      _tag: "HttpResponseRedirect",
+      to: "/hatchet-demo?filterId=filter-123",
+    })
+  })
+
+  it("action rejects invalid filter submissions before calling the client", async () => {
+    const formData = new FormData()
+    formData.set("intent", "create-filter")
+    formData.set("filterWorkflowId", "")
+    formData.set("filterScope", "tenant:demo")
+    formData.set("filterExpression", "input.kind == 'demo'")
+
+    const response = await runMockedHatchetEffect(
+      handleHatchetDemoAction(
+        new Request("https://example.com/hatchet-demo", {
+          method: "POST",
+          body: formData,
+        }),
+      ),
+    )
+
+    expect(createFilterMock).not.toHaveBeenCalled()
+    expect(response).toMatchObject({
+      _tag: "HttpResponseFailure",
+      cause: "Workflow ID is required",
+    })
+  })
+
+  it("action deletes filters and redirects back to the base demo route", async () => {
+    const formData = new FormData()
+    formData.set("intent", "delete-filter")
+    formData.set("filterId", "filter-123")
+
+    const response = await runMockedHatchetEffect(
+      handleHatchetDemoAction(
+        new Request("https://example.com/hatchet-demo", {
+          method: "POST",
+          body: formData,
+        }),
+      ),
+    )
+
+    expect(deleteFilterMock).toHaveBeenCalledWith("filter-123")
+    expect(response).toMatchObject({
+      _tag: "HttpResponseRedirect",
+      to: "/hatchet-demo",
+    })
+  })
+
+  it("action rejects empty filter ids before delete", async () => {
+    const formData = new FormData()
+    formData.set("intent", "delete-filter")
+    formData.set("filterId", "   ")
+
+    const response = await runMockedHatchetEffect(
+      handleHatchetDemoAction(
+        new Request("https://example.com/hatchet-demo", {
+          method: "POST",
+          body: formData,
+        }),
+      ),
+    )
+
+    expect(deleteFilterMock).not.toHaveBeenCalled()
+    expect(response).toMatchObject({
+      _tag: "HttpResponseFailure",
+      cause: "Filter ID is required",
+    })
+  })
+
+  it("action handles run submissions for missing workflow, invalid JSON, and success", async () => {
+    const missingWorkflow = new FormData()
+    missingWorkflow.set("intent", "run")
+    missingWorkflow.set("workflowName", "")
+    missingWorkflow.set("input", "{}")
+
+    const invalidJson = new FormData()
+    invalidJson.set("intent", "run")
+    invalidJson.set("workflowName", "workflow-1")
+    invalidJson.set("input", "{")
+
+    runWorkflowMock.mockReturnValue(Effect.succeed(undefined))
+    const validRun = new FormData()
+    validRun.set("intent", "run")
+    validRun.set("workflowName", "workflow-1")
+    validRun.set("input", '{"feature":"filters"}')
+
+    const missingWorkflowResponse = await runMockedHatchetEffect(
+      handleHatchetDemoAction(
+        new Request("https://example.com/hatchet-demo", {
+          method: "POST",
+          body: missingWorkflow,
+        }),
+      ),
+    )
+    const invalidJsonResponse = await runMockedHatchetEffect(
+      handleHatchetDemoAction(
+        new Request("https://example.com/hatchet-demo", {
+          method: "POST",
+          body: invalidJson,
+        }),
+      ),
+    )
+    const validResponse = await runMockedHatchetEffect(
+      handleHatchetDemoAction(
+        new Request("https://example.com/hatchet-demo", {
+          method: "POST",
+          body: validRun,
+        }),
+      ),
+    )
+
+    expect(missingWorkflowResponse).toMatchObject({
+      _tag: "HttpResponseFailure",
+      cause: "Workflow name is required",
+    })
+    expect(invalidJsonResponse).toMatchObject({
+      _tag: "HttpResponseFailure",
+      cause: "Invalid JSON input",
+    })
+    expect(runWorkflowMock).toHaveBeenCalledWith("workflow-1", {
+      feature: "filters",
+    })
+    expect(validResponse).toMatchObject({
+      _tag: "HttpResponseRedirect",
+      to: "/hatchet-demo",
+    })
+  })
+
+  it("action validates push, schedule, and cron submissions before side effects", async () => {
+    const missingEventKey = new FormData()
+    missingEventKey.set("intent", "push")
+    missingEventKey.set("eventKey", "")
+
+    const invalidEventPayload = new FormData()
+    invalidEventPayload.set("intent", "push")
+    invalidEventPayload.set("eventKey", "user.created")
+    invalidEventPayload.set("eventPayload", "[]")
+
+    const missingScheduleWorkflow = new FormData()
+    missingScheduleWorkflow.set("intent", "schedule")
+    missingScheduleWorkflow.set("workflowName", "")
+    missingScheduleWorkflow.set("triggerAt", "2026-04-12T18:45:00.000Z")
+
+    const invalidTriggerTime = new FormData()
+    invalidTriggerTime.set("intent", "schedule")
+    invalidTriggerTime.set("workflowName", "workflow-1")
+    invalidTriggerTime.set("triggerAt", "not-a-date")
+
+    const invalidScheduleInput = new FormData()
+    invalidScheduleInput.set("intent", "schedule")
+    invalidScheduleInput.set("workflowName", "workflow-1")
+    invalidScheduleInput.set("triggerAt", "2026-04-12T18:45:00.000Z")
+    invalidScheduleInput.set("scheduleInput", "[]")
+
+    const missingCronWorkflow = new FormData()
+    missingCronWorkflow.set("intent", "create-cron")
+    missingCronWorkflow.set("cronWorkflowName", "")
+
+    const missingCronName = new FormData()
+    missingCronName.set("intent", "create-cron")
+    missingCronName.set("cronWorkflowName", "workflow-1")
+    missingCronName.set("cronName", "")
+
+    const missingCronExpression = new FormData()
+    missingCronExpression.set("intent", "create-cron")
+    missingCronExpression.set("cronWorkflowName", "workflow-1")
+    missingCronExpression.set("cronName", "nightly")
+    missingCronExpression.set("cronExpression", "")
+
+    const invalidCronInput = new FormData()
+    invalidCronInput.set("intent", "create-cron")
+    invalidCronInput.set("cronWorkflowName", "workflow-1")
+    invalidCronInput.set("cronName", "nightly")
+    invalidCronInput.set("cronExpression", "0 0 * * *")
+    invalidCronInput.set("cronInput", "[]")
+
+    const responses = await Promise.all([
+      runMockedHatchetEffect(
+        handleHatchetDemoAction(
+          new Request("https://example.com/hatchet-demo", {
+            method: "POST",
+            body: missingEventKey,
+          }),
+        ),
+      ),
+      runMockedHatchetEffect(
+        handleHatchetDemoAction(
+          new Request("https://example.com/hatchet-demo", {
+            method: "POST",
+            body: invalidEventPayload,
+          }),
+        ),
+      ),
+      runMockedHatchetEffect(
+        handleHatchetDemoAction(
+          new Request("https://example.com/hatchet-demo", {
+            method: "POST",
+            body: missingScheduleWorkflow,
+          }),
+        ),
+      ),
+      runMockedHatchetEffect(
+        handleHatchetDemoAction(
+          new Request("https://example.com/hatchet-demo", {
+            method: "POST",
+            body: invalidTriggerTime,
+          }),
+        ),
+      ),
+      runMockedHatchetEffect(
+        handleHatchetDemoAction(
+          new Request("https://example.com/hatchet-demo", {
+            method: "POST",
+            body: invalidScheduleInput,
+          }),
+        ),
+      ),
+      runMockedHatchetEffect(
+        handleHatchetDemoAction(
+          new Request("https://example.com/hatchet-demo", {
+            method: "POST",
+            body: missingCronWorkflow,
+          }),
+        ),
+      ),
+      runMockedHatchetEffect(
+        handleHatchetDemoAction(
+          new Request("https://example.com/hatchet-demo", {
+            method: "POST",
+            body: missingCronName,
+          }),
+        ),
+      ),
+      runMockedHatchetEffect(
+        handleHatchetDemoAction(
+          new Request("https://example.com/hatchet-demo", {
+            method: "POST",
+            body: missingCronExpression,
+          }),
+        ),
+      ),
+      runMockedHatchetEffect(
+        handleHatchetDemoAction(
+          new Request("https://example.com/hatchet-demo", {
+            method: "POST",
+            body: invalidCronInput,
+          }),
+        ),
+      ),
+    ])
+
+    expect(responses).toMatchObject([
+      { _tag: "HttpResponseFailure", cause: "Event key is required" },
+      {
+        _tag: "HttpResponseFailure",
+        cause: "Event payload must be a JSON object",
+      },
+      { _tag: "HttpResponseFailure", cause: "Workflow name is required" },
+      {
+        _tag: "HttpResponseFailure",
+        cause: "Trigger time must be a valid ISO date",
+      },
+      {
+        _tag: "HttpResponseFailure",
+        cause: "Event payload must be a JSON object",
+      },
+      { _tag: "HttpResponseFailure", cause: "Workflow name is required" },
+      { _tag: "HttpResponseFailure", cause: "Cron name is required" },
+      { _tag: "HttpResponseFailure", cause: "Cron expression is required" },
+      {
+        _tag: "HttpResponseFailure",
+        cause: "Event payload must be a JSON object",
+      },
+    ])
+  })
+
+  it("action validates filter, cron delete, webhook, rate-limit, cancel, and unknown intents", async () => {
+    const missingFilterScope = new FormData()
+    missingFilterScope.set("intent", "create-filter")
+    missingFilterScope.set("filterWorkflowId", "workflow-1")
+    missingFilterScope.set("filterScope", "")
+    missingFilterScope.set("filterExpression", "input.kind == 'demo'")
+
+    const missingFilterExpression = new FormData()
+    missingFilterExpression.set("intent", "create-filter")
+    missingFilterExpression.set("filterWorkflowId", "workflow-1")
+    missingFilterExpression.set("filterScope", "tenant:demo")
+    missingFilterExpression.set("filterExpression", "")
+
+    const invalidFilterPayload = new FormData()
+    invalidFilterPayload.set("intent", "create-filter")
+    invalidFilterPayload.set("filterWorkflowId", "workflow-1")
+    invalidFilterPayload.set("filterScope", "tenant:demo")
+    invalidFilterPayload.set("filterExpression", "input.kind == 'demo'")
+    invalidFilterPayload.set("filterPayload", "[]")
+
+    const missingCronId = new FormData()
+    missingCronId.set("intent", "delete-cron")
+    missingCronId.set("cronId", "")
+
+    const missingWebhookName = new FormData()
+    missingWebhookName.set("intent", "create-webhook")
+    missingWebhookName.set("webhookName", "")
+
+    const missingWebhookEventKey = new FormData()
+    missingWebhookEventKey.set("intent", "create-webhook")
+    missingWebhookEventKey.set("webhookName", "demo-webhook")
+    missingWebhookEventKey.set("webhookEventKeyExpression", "")
+
+    const missingDeleteWebhookName = new FormData()
+    missingDeleteWebhookName.set("intent", "delete-webhook")
+    missingDeleteWebhookName.set("webhookName", "")
+
+    const invalidRateLimit = new FormData()
+    invalidRateLimit.set("intent", "upsert-ratelimit")
+    invalidRateLimit.set("rateLimitKey", "email:send")
+    invalidRateLimit.set("rateLimitLimit", "0")
+
+    const invalidRateLimitDuration = new FormData()
+    invalidRateLimitDuration.set("intent", "upsert-ratelimit")
+    invalidRateLimitDuration.set("rateLimitKey", "email:send")
+    invalidRateLimitDuration.set("rateLimitLimit", "5")
+    invalidRateLimitDuration.set("rateLimitDuration", "weekly")
+
+    const missingCancelRunId = new FormData()
+    missingCancelRunId.set("intent", "cancel")
+    missingCancelRunId.set("runId", "")
+
+    cancelRunMock.mockReturnValue(Effect.succeed(undefined))
+    const validCancel = new FormData()
+    validCancel.set("intent", "cancel")
+    validCancel.set("runId", "run-123")
+
+    const unknownIntent = new FormData()
+    unknownIntent.set("intent", "teleport")
+
+    const responses = await Promise.all([
+      runMockedHatchetEffect(
+        handleHatchetDemoAction(
+          new Request("https://example.com/hatchet-demo", {
+            method: "POST",
+            body: missingFilterScope,
+          }),
+        ),
+      ),
+      runMockedHatchetEffect(
+        handleHatchetDemoAction(
+          new Request("https://example.com/hatchet-demo", {
+            method: "POST",
+            body: missingFilterExpression,
+          }),
+        ),
+      ),
+      runMockedHatchetEffect(
+        handleHatchetDemoAction(
+          new Request("https://example.com/hatchet-demo", {
+            method: "POST",
+            body: invalidFilterPayload,
+          }),
+        ),
+      ),
+      runMockedHatchetEffect(
+        handleHatchetDemoAction(
+          new Request("https://example.com/hatchet-demo", {
+            method: "POST",
+            body: missingCronId,
+          }),
+        ),
+      ),
+      runMockedHatchetEffect(
+        handleHatchetDemoAction(
+          new Request("https://example.com/hatchet-demo", {
+            method: "POST",
+            body: missingWebhookName,
+          }),
+        ),
+      ),
+      runMockedHatchetEffect(
+        handleHatchetDemoAction(
+          new Request("https://example.com/hatchet-demo", {
+            method: "POST",
+            body: missingWebhookEventKey,
+          }),
+        ),
+      ),
+      runMockedHatchetEffect(
+        handleHatchetDemoAction(
+          new Request("https://example.com/hatchet-demo", {
+            method: "POST",
+            body: missingDeleteWebhookName,
+          }),
+        ),
+      ),
+      runMockedHatchetEffect(
+        handleHatchetDemoAction(
+          new Request("https://example.com/hatchet-demo", {
+            method: "POST",
+            body: invalidRateLimit,
+          }),
+        ),
+      ),
+      runMockedHatchetEffect(
+        handleHatchetDemoAction(
+          new Request("https://example.com/hatchet-demo", {
+            method: "POST",
+            body: invalidRateLimitDuration,
+          }),
+        ),
+      ),
+      runMockedHatchetEffect(
+        handleHatchetDemoAction(
+          new Request("https://example.com/hatchet-demo", {
+            method: "POST",
+            body: missingCancelRunId,
+          }),
+        ),
+      ),
+      runMockedHatchetEffect(
+        handleHatchetDemoAction(
+          new Request("https://example.com/hatchet-demo", {
+            method: "POST",
+            body: validCancel,
+          }),
+        ),
+      ),
+      runMockedHatchetEffect(
+        handleHatchetDemoAction(
+          new Request("https://example.com/hatchet-demo", {
+            method: "POST",
+            body: unknownIntent,
+          }),
+        ),
+      ),
+    ])
+
+    expect(responses).toMatchObject([
+      { _tag: "HttpResponseFailure", cause: "Filter scope is required" },
+      {
+        _tag: "HttpResponseFailure",
+        cause: "Filter expression is required",
+      },
+      {
+        _tag: "HttpResponseFailure",
+        cause: "Event payload must be a JSON object",
+      },
+      { _tag: "HttpResponseFailure", cause: "Cron ID is required" },
+      { _tag: "HttpResponseFailure", cause: "Webhook name is required" },
+      {
+        _tag: "HttpResponseFailure",
+        cause: "Webhook event key expression is required",
+      },
+      { _tag: "HttpResponseFailure", cause: "Webhook name is required" },
+      {
+        _tag: "HttpResponseFailure",
+        cause: "Rate limit limit must be a positive integer",
+      },
+      {
+        _tag: "HttpResponseFailure",
+        cause: "Rate limit duration must be SECOND, MINUTE, or HOUR",
+      },
+      { _tag: "HttpResponseFailure", cause: "Run ID is required" },
+      { _tag: "HttpResponseRedirect", to: "/hatchet-demo" },
+      { _tag: "HttpResponseFailure", cause: "Unknown intent" },
+    ])
+    expect(cancelRunMock).toHaveBeenCalledWith("run-123")
   })
 
   it("action upserts a rate limit and redirects the loader to the selected key", async () => {
