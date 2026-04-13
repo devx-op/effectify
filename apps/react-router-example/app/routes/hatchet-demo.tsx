@@ -235,13 +235,24 @@ export const loader = Effect.gen(function*() {
 
 export const handleHatchetDemoAction = (request: Request) =>
   Effect.gen(function*() {
-    const formData = yield* Effect.tryPromise({
-      try: () => request.formData(),
-      catch: (cause) =>
-        new Error(
-          cause instanceof Error ? cause.message : "Failed to read form data",
-        ),
-    })
+    const formDataExit = yield* Effect.exit(
+      Effect.tryPromise({
+        try: () => request.formData(),
+        catch: (cause) =>
+          new Error(
+            cause instanceof Error ? cause.message : "Failed to read form data",
+          ),
+      }),
+    )
+
+    if (formDataExit._tag === "Failure") {
+      const error = Cause.squash(formDataExit.cause)
+      return yield* httpFailure(
+        error instanceof Error ? error.message : "Failed to read form data",
+      )
+    }
+
+    const formData = formDataExit.value
     const intent = String(formData.get("intent") ?? "")
 
     if (intent === "run") {

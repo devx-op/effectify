@@ -1727,6 +1727,66 @@ describe("hatchet demo event helpers", () => {
     })
   })
 
+  it("loader resolves selected task observability without fetching run details", async () => {
+    listSchedulesMock.mockReturnValue(Effect.succeed([]))
+    listCronsMock.mockReturnValue(Effect.succeed([]))
+    listRunsMock.mockReturnValue(Effect.succeed([]))
+    listTaskLogsMock.mockReturnValue(Effect.succeed([{ line: "task-log" }]))
+    getTaskMetricsMock.mockReturnValue(
+      Effect.succeed({
+        byStatus: {
+          PENDING: 1,
+          RUNNING: 2,
+          COMPLETED: 3,
+          FAILED: 4,
+          CANCELLED: 5,
+        },
+      }),
+    )
+    getQueueMetricsMock.mockReturnValue(
+      Effect.succeed({
+        total: { queued: 6, running: 7, pending: 8 },
+        workflowBreakdown: {},
+        stepRun: {},
+      }),
+    )
+
+    const loaderResponse = await runMockedHatchetEffect(
+      loadHatchetDemo(
+        new Request("https://example.com/hatchet-demo?taskId=task-123"),
+      ),
+    )
+
+    expect(getRunMock).not.toHaveBeenCalled()
+    expect(getRunStatusMock).not.toHaveBeenCalled()
+    expect(getRunTaskIdMock).not.toHaveBeenCalled()
+    expect(listTaskLogsMock).toHaveBeenCalledWith("task-123")
+    expect(loaderResponse).toMatchObject({
+      _tag: "HttpResponseSuccess",
+      data: {
+        observability: {
+          selectedRunId: undefined,
+          selectedTaskId: "task-123",
+          logs: [{ line: "task-log" }],
+          taskMetrics: {
+            byStatus: {
+              PENDING: 1,
+              RUNNING: 2,
+              COMPLETED: 3,
+              FAILED: 4,
+              CANCELLED: 5,
+            },
+          },
+          queueMetrics: {
+            total: { queued: 6, running: 7, pending: 8 },
+            workflowBreakdown: {},
+            stepRun: {},
+          },
+        },
+      },
+    })
+  })
+
   it("loader preserves the page when observability reads fail", async () => {
     listSchedulesMock.mockReturnValue(Effect.succeed([]))
     listCronsMock.mockReturnValue(Effect.succeed([]))
@@ -1750,6 +1810,21 @@ describe("hatchet demo event helpers", () => {
           error: "Observability is temporarily unavailable",
         },
       },
+    })
+  })
+
+  it("action turns request.formData failures into a stable http failure response", async () => {
+    const actionResponse = await runMockedHatchetEffect(
+      handleHatchetDemoAction({
+        formData: async () => {
+          throw new Error("body already consumed")
+        },
+      } as unknown as Request),
+    )
+
+    expect(actionResponse).toMatchObject({
+      _tag: "HttpResponseFailure",
+      cause: "body already consumed",
     })
   })
 })
