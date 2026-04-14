@@ -10,12 +10,8 @@ export default defineConfig({
   root: __dirname,
   plugins: [nxViteTsPaths()],
   test: {
-    include: ["app/**/*.test.ts", "test/browser/**/*.test.ts"],
-    exclude: [
-      "test/browser/**/*.browser.test.ts",
-      "**/node_modules/**",
-      "**/dist/**",
-    ],
+    include: ["tests/**/*.{test,spec}.{ts,tsx}"],
+    exclude: ["tests/browser/**", "**/node_modules/**", "**/dist/**"],
     globals: true,
   },
   esbuild: {

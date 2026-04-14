@@ -1,5 +1,6 @@
 import { expect, test } from "vitest"
-import { currentUrl, expectElement, navigateTo, open, readValue, typeInto } from "./harness.js"
+
+import { currentUrl, expectElement, navigateTo, open, readValue, typeInto } from "./support/harness.js"
 
 test("browser harness boots the app and exercises the login route", async () => {
   await open("/")

@@ -1,7 +1,17 @@
 import * as Effect from "effect/Effect"
 import type { HttpResponseFailure, HttpResponseRedirect, HttpResponseSuccess } from "@effectify/react-router"
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import type { HatchetTaskSummaryRecord, HatchetWorkflowRunDetailsRecord } from "../../lib/hatchet/run-models.js"
+
+import { loadObservabilityWithFallback } from "../../../app/lib/hatchet/orchestration.js"
+import type { HatchetTaskSummaryRecord, HatchetWorkflowRunDetailsRecord } from "../../../app/lib/hatchet/run-models.js"
+import { handleCronsAction, loadCrons } from "../../../app/routes/hatchet-demo/crons/route.js"
+import { handleFiltersAction, loadFilters } from "../../../app/routes/hatchet-demo/filters/route.js"
+import { handleManagementAction, loadManagement } from "../../../app/routes/hatchet-demo/management/route.js"
+import { handleRateLimitsAction, loadRateLimits } from "../../../app/routes/hatchet-demo/rate-limits/route.js"
+import { handleRunsAction, loadRuns } from "../../../app/routes/hatchet-demo/runs/route.js"
+import { handleSchedulesAction, loadSchedules } from "../../../app/routes/hatchet-demo/schedules/route.js"
+import { handleWebhooksAction, loadWebhooks } from "../../../app/routes/hatchet-demo/webhooks/route.js"
+import { runTestEffect } from "../_shared/effect-test.js"
 
 const listRunsMock = vi.fn()
 const getRunMock = vi.fn()
@@ -72,22 +82,10 @@ vi.mock("@effectify/hatchet", () => ({
   },
 }))
 
-vi.mock("../../lib/runtime.server.js", () => ({
+vi.mock("../../../app/lib/runtime.server.js", () => ({
   withLoaderEffect: <A>(effect: A) => effect,
   withActionEffect: <A>(effect: A) => effect,
 }))
-
-import { loadObservabilityWithFallback } from "../../lib/hatchet/orchestration.js"
-import { handleCronsAction, loadCrons } from "./crons/route.js"
-import { handleFiltersAction, loadFilters } from "./filters/route.js"
-import { handleManagementAction, loadManagement } from "./management/route.js"
-import { handleRateLimitsAction, loadRateLimits } from "./rate-limits/route.js"
-import { handleRunsAction, loadRuns } from "./runs/route.js"
-import { handleSchedulesAction, loadSchedules } from "./schedules/route.js"
-import { handleWebhooksAction, loadWebhooks } from "./webhooks/route.js"
-
-const runTestEffect = <A, E>(effect: Effect.Effect<A, E, unknown>) =>
-  Effect.runPromise(effect as Effect.Effect<A, E, never>)
 
 const expectSuccess = <T>(response: HttpResponseSuccess<T>) => response.data
 

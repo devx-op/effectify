@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { redirectLegacyHatchetDemoRequest } from "./legacy.js"
+import { redirectLegacyHatchetDemoRequest } from "../../../../app/lib/hatchet/legacy.js"
 import {
   parseDeleteWorkflowIntent,
   parseEventPayload,
@@ -8,7 +8,7 @@ import {
   parseTriggerTime,
   parseWebhookAuth,
   parseWebhookStaticPayload,
-} from "./parsers.js"
+} from "../../../../app/lib/hatchet/parsers.js"
 import {
   readSelectedCronId,
   readSelectedEventId,
@@ -18,7 +18,7 @@ import {
   readSelectedScheduleId,
   readSelectedTaskId,
   readSelectedWebhookName,
-} from "./params.js"
+} from "../../../../app/lib/hatchet/params.js"
 import {
   buildCronRedirect,
   buildEventRedirect,
@@ -28,7 +28,7 @@ import {
   buildRunRedirect,
   buildScheduleRedirect,
   buildWebhookRedirect,
-} from "./redirects.js"
+} from "../../../../app/lib/hatchet/redirects.js"
 
 describe("hatchet demo shared helpers", () => {
   it("redirects legacy deep links to child routes with precedence and original query params", () => {

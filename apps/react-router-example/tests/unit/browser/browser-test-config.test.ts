@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { defaultBrowserTestBaseUrl, resolveBrowserTestBaseUrl } from "./browser-test-config.js"
+import { defaultBrowserTestBaseUrl, resolveBrowserTestBaseUrl } from "../../browser/support/browser-test-config.js"
 
 describe("browser test base url", () => {
   it("defaults to the fixed loopback browser test url", () => {

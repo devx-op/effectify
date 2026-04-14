@@ -18,7 +18,7 @@ const { adapterConfigMock, authHandlerMock, hatchetInitMock, prismaLayerMock } =
   }
 })
 
-vi.mock("./better-auth-options.server.js", () => ({
+vi.mock("../../../app/lib/better-auth-options.server.js", () => ({
   authOptions: {
     baseURL: "http://localhost:3001",
     secret: "runtime-test-secret",
@@ -95,7 +95,7 @@ vi.mock("@effectify/hatchet", async () => {
   }
 })
 
-vi.mock("../../prisma/generated/effect/index.js", async () => {
+vi.mock("../../../prisma/generated/effect/index.js", async () => {
   const Layer = await import("effect/Layer")
   const ServiceMap = await import("effect/ServiceMap")
 
@@ -124,8 +124,8 @@ vi.mock("@prisma/adapter-better-sqlite3", () => ({
   },
 }))
 
-import { action, loader } from "../routes/api.auth.js"
-import { AppLayer, withActionEffect, withLoaderEffect } from "./runtime.server.js"
+import { action, loader } from "../../../app/routes/api.auth.js"
+import { AppLayer, withActionEffect, withLoaderEffect } from "../../../app/lib/runtime.server.js"
 
 const makeLoaderArgs = (request: Request): LoaderFunctionArgs => ({
   context: {},

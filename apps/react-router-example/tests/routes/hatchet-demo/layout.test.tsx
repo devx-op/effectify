@@ -1,8 +1,15 @@
-import * as Effect from "effect/Effect"
+import type { HttpResponseRedirect, HttpResponseSuccess } from "@effectify/react-router"
 import React from "react"
 import { renderToStaticMarkup } from "react-dom/server"
 import { describe, expect, it, vi } from "vitest"
-import type { HttpResponseRedirect, HttpResponseSuccess } from "@effectify/react-router"
+
+import routes from "../../../app/routes.js"
+import HatchetDemoIndex from "../../../app/routes/hatchet-demo/index.js"
+import HatchetDemoLayout, {
+  hatchetDemoNavItems,
+  loadHatchetDemoLayout,
+} from "../../../app/routes/hatchet-demo/route.js"
+import { runTestEffect } from "../_shared/effect-test.js"
 
 const useLocationMock = vi.fn(() => ({ pathname: "/hatchet-demo/runs" }))
 
@@ -19,16 +26,9 @@ vi.mock("react-router", () => ({
   useLocation: () => useLocationMock(),
 }))
 
-vi.mock("../../lib/runtime.server.js", () => ({
+vi.mock("../../../app/lib/runtime.server.js", () => ({
   withLoaderEffect: <A,>(effect: A) => effect,
 }))
-
-import routes from "../../routes.js"
-import HatchetDemoLayout, { hatchetDemoNavItems, loadHatchetDemoLayout } from "./route.js"
-import HatchetDemoIndex from "./index.js"
-
-const runTestEffect = <A, E>(effect: Effect.Effect<A, E, unknown>) =>
-  Effect.runPromise(effect as Effect.Effect<A, E, never>)
 
 const expectRedirect = (
   response:
@@ -101,7 +101,7 @@ describe("hatchet demo route layout", () => {
     expect(markup).toContain("Hatchet Demo")
     for (const item of hatchetDemoNavItems) {
       expect(markup).toContain(`href="${item.to}"`)
-      expect(markup).toContain(item.label)
+      expect(markup).toContain(item.label.replaceAll("&", "&amp;"))
     }
     expect(markup).toContain("child-route")
   })

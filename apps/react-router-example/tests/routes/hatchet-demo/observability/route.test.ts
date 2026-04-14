@@ -1,7 +1,8 @@
 import React from "react"
-import { describe, expect, it } from "vitest"
 import { renderToStaticMarkup } from "react-dom/server"
-import { HatchetDemoObservabilitySection } from "./route.js"
+import { describe, expect, it } from "vitest"
+
+import { HatchetDemoObservabilitySection } from "../../../../app/routes/hatchet-demo/observability/route.js"
 
 describe("HatchetDemoObservabilitySection", () => {
   it("renders selected run logs and tenant metrics", () => {

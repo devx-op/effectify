@@ -2,11 +2,10 @@
   "extends": "./tsconfig.app.json",
   "include": [
     "./vitest.browser.config.ts",
-    "./test/browser/**/*.d.ts",
-    "./test/browser/**/*.ts",
-    "./test/browser/**/*.mts",
+    "./tests/**/*.d.ts",
     "./tests/**/*.ts",
     "./tests/**/*.tsx",
+    "./tests/**/*.mts",
     "./tests/**/*.js",
     "./tests/**/*.jsx"
   ],

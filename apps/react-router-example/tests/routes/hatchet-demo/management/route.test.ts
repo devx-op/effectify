@@ -1,14 +1,14 @@
 import React from "react"
-import { describe, expect, it, vi } from "vitest"
 import { renderToStaticMarkup } from "react-dom/server"
+import { describe, expect, it, vi } from "vitest"
+
+import { HatchetDemoManagementSection } from "../../../../app/routes/hatchet-demo/management/route.js"
 
 vi.mock("react-router", () => ({
   Form: ({ children, ...props }: React.ComponentProps<"form">) => React.createElement("form", props, children),
   useActionData: () => undefined,
   useLoaderData: () => undefined,
 }))
-
-import { HatchetDemoManagementSection } from "./route.js"
 
 describe("HatchetDemoManagementSection", () => {
   it("renders delete workflow controls with the selected run context", () => {

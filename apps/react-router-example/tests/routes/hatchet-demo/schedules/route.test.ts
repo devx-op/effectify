@@ -1,14 +1,14 @@
 import React from "react"
-import { describe, expect, it, vi } from "vitest"
 import { renderToStaticMarkup } from "react-dom/server"
+import { describe, expect, it, vi } from "vitest"
+
+import { HatchetDemoSchedulesSection } from "../../../../app/routes/hatchet-demo/schedules/route.js"
 
 vi.mock("react-router", () => ({
   Form: ({ children, ...props }: React.ComponentProps<"form">) => React.createElement("form", props, children),
   useActionData: () => undefined,
   useLoaderData: () => undefined,
 }))
-
-import { HatchetDemoSchedulesSection } from "./route.js"
 
 describe("HatchetDemoSchedulesSection", () => {
   it("renders the schedule form, selected schedule details, and schedule list", () => {

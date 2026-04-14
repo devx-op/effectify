@@ -1,14 +1,14 @@
 import React from "react"
-import { describe, expect, it, vi } from "vitest"
 import { renderToStaticMarkup } from "react-dom/server"
+import { describe, expect, it, vi } from "vitest"
+
+import { HatchetDemoCronsSection } from "../../../../app/routes/hatchet-demo/crons/route.js"
 
 vi.mock("react-router", () => ({
   Form: ({ children, ...props }: React.ComponentProps<"form">) => React.createElement("form", props, children),
   useActionData: () => undefined,
   useLoaderData: () => undefined,
 }))
-
-import { HatchetDemoCronsSection } from "./route.js"
 
 describe("HatchetDemoCronsSection", () => {
   it("renders the cron form, selected cron details, and cron list", () => {

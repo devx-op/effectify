@@ -1,8 +1,8 @@
 import { webdriverio } from "@vitest/browser-webdriverio"
 import { defineConfig } from "vitest/config"
-import { browserCommands } from "./test/browser/browser-commands.js"
-import { resolveBrowserTestBaseUrl } from "./test/browser/browser-test-config.js"
-import { resolveChromeBin } from "./test/browser/resolve-chrome-bin.js"
+import { browserCommands } from "./tests/browser/support/browser-commands.js"
+import { resolveBrowserTestBaseUrl } from "./tests/browser/support/browser-test-config.js"
+import { resolveChromeBin } from "./tests/browser/support/resolve-chrome-bin.js"
 
 export const browserTestBaseUrl = resolveBrowserTestBaseUrl()
 
@@ -12,8 +12,8 @@ export default defineConfig({
   },
   test: {
     globals: true,
-    include: ["test/browser/**/*.browser.test.ts"],
-    exclude: ["**/node_modules/**", "**/dist/**", "app/**/*.test.ts"],
+    include: ["tests/browser/**/*.browser.test.ts"],
+    exclude: ["**/node_modules/**", "**/dist/**", "tests/unit/browser/**"],
     browser: {
       enabled: true,
       commands: browserCommands,
