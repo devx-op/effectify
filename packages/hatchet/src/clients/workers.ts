@@ -32,14 +32,17 @@ const toWorkerOptions = (
   opts?: RegisterWorkerOpts,
 ): RegisterWorkerOpts | undefined => opts
 
-type RegisterableWorker = {
-  readonly registerWorkflows: (workflows?: unknown[]) => Promise<void>
-  readonly start: () => Promise<void>
-}
+export type WorkerRegistrationWorkflow = NonNullable<
+  Parameters<SdkWorker["registerWorkflows"]>[0]
+>[number]
 
-const toWorkerOptions = (opts?: RegisterWorkerOpts) => ({
-  slots: opts?.maxConcurrent,
-})
+export type WorkerRegistrationWorkflows = NonNullable<
+  Parameters<SdkWorker["registerWorkflows"]>[0]
+>
+
+const toWorkerOptions = (
+  opts?: RegisterWorkerOpts,
+): RegisterWorkerOpts | undefined => opts
 
 /**
  * Register a worker with Hatchet
