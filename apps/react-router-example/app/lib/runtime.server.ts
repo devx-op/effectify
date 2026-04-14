@@ -18,8 +18,6 @@ const prismaLayer = Prisma.layer({
   log: ["query", "info", "warn", "error"],
 })
 
-const resolveHatchetToken = () => process.env.HATCHET_CLIENT_TOKEN ?? process.env.HATCHET_TOKEN ?? ""
-
 export const BaseAppLayer = Layer.mergeAll(
   authLayer,
   prismaLayer,
@@ -27,7 +25,7 @@ export const BaseAppLayer = Layer.mergeAll(
 
 const hatchetConfig = {
   host: process.env.HATCHET_HOST ?? "localhost:7077",
-  token: resolveHatchetToken(),
+  token: process.env.HATCHET_TOKEN ?? "",
   namespace: process.env.HATCHET_NAMESPACE,
 } satisfies HatchetConfigType
 
@@ -44,10 +42,5 @@ export const AppLayer = Layer.merge(
   BaseAppLayer,
   hatchetServicesLayer,
 )
-
-const AppLayer = Layer.mergeAll(
-  Layer.merge(BaseAppLayer, HatchetConfigLayer),
-  HatchetClientLive,
-) as unknown as Layer.Layer<any, any, never>
 
 export const { withLoaderEffect, withActionEffect } = Runtime.make(AppLayer)
