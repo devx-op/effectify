@@ -76,20 +76,34 @@ describe("Runs Client - Type Exports", () => {
       const opts: RunOpts = {
         additionalMetadata: { source: "test" },
         priority: 1,
+        sticky: true,
+        desiredWorkerLabels: {
+          region: {
+            value: "us-east-1",
+          },
+        },
       }
       expect(opts.additionalMetadata).toBeDefined()
       expect(opts.priority).toBe(1)
+      expect(opts.sticky).toBe(true)
+      expect(opts.desiredWorkerLabels?.region?.value).toBe("us-east-1")
     })
 
     it("should export ListRunsOpts interface", () => {
       const opts: ListRunsOpts = {
         workflowName: "test-workflow",
         status: "COMPLETED",
+        workflowNames: ["test-workflow", "backup-workflow"],
         limit: 10,
         offset: 0,
+        parentTaskRunExternalId: "550e8400-e29b-41d4-a716-446655440000",
       }
       expect(opts.workflowName).toBe("test-workflow")
       expect(opts.status).toBe("COMPLETED")
+      expect(opts.workflowNames).toEqual(["test-workflow", "backup-workflow"])
+      expect(opts.parentTaskRunExternalId).toBe(
+        "550e8400-e29b-41d4-a716-446655440000",
+      )
     })
 
     it("should export ReplayRunOpts interface compatible with the SDK shape", () => {

@@ -18,18 +18,18 @@ const RateLimitOrderByField = HatchetSDK.RateLimitOrderByField
 export { RateLimitDuration, RateLimitOrderByDirection, RateLimitOrderByField }
 export type RateLimitDuration = HatchetSDK.RateLimitDuration
 
-interface HatchetSdkRateLimit {
-  readonly key?: string
-  readonly tenantId?: string
-  readonly limitValue?: number
-  readonly value?: number
-  readonly window?: string
-  readonly lastRefill?: string
-}
+/**
+ * Type audit:
+ * - `ListRateLimitsOptions` is a direct SDK passthrough.
+ * - `UpsertRateLimitOptions` stays custom because it accepts `Duration.Input` and normalizes to SDK enums internally.
+ * - `HatchetRateLimitRecord` stays custom because normalization guarantees required fields.
+ */
 
-interface HatchetSdkRateLimitList {
-  readonly rows?: readonly HatchetSdkRateLimit[]
-}
+type HatchetSdkRateLimitList = Awaited<
+  ReturnType<HatchetSDK.RatelimitsClient["list"]>
+>
+
+type HatchetSdkRateLimit = NonNullable<HatchetSdkRateLimitList["rows"]>[number]
 
 export interface HatchetRateLimitRecord {
   readonly key: string
@@ -40,12 +40,9 @@ export interface HatchetRateLimitRecord {
   readonly lastRefill: string
 }
 
-export interface ListRateLimitsOptions {
-  readonly limit?: number
-  readonly offset?: number
-  readonly orderByField?: HatchetSDK.RateLimitOrderByField
-  readonly orderByDirection?: HatchetSDK.RateLimitOrderByDirection
-}
+export type ListRateLimitsOptions = Parameters<
+  HatchetSDK.RatelimitsClient["list"]
+>[0]
 
 export interface UpsertRateLimitOptions {
   readonly key: string

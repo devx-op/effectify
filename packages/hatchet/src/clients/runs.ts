@@ -10,47 +10,42 @@ import type {
   ListRunsOpts as SdkListRunsOpts,
   ReplayRunOpts as SdkReplayRunOpts,
   RunFilter as SdkRunFilter,
+  RunOpts as SdkRunOpts,
 } from "@hatchet-dev/typescript-sdk"
 import type { HatchetClientService } from "../core/client.js"
 import { getHatchetClient } from "../core/client.js"
 import { HatchetRunError, HatchetWorkflowError } from "../core/error.js"
 
-export interface RunOpts {
-  readonly additionalMetadata?: Record<string, string>
-  readonly priority?: number
-}
+/**
+ * Type audit:
+ * - `RunOpts` is a direct SDK passthrough because `run` / `runNoWait` forward it unchanged.
+ * - `RunFilter` keeps singular `workflowName` / `status` convenience while reusing SDK array/date fields.
+ * - `ListRunsOpts` derives from SDK list options, hiding only the internal `onlyTasks` flag.
+ * - `ReplayRunOpts` keeps the convenience filter boundary and readonly ids, then normalizes to SDK transport.
+ * - Tagged errors stay local for the Effect boundary.
+ */
+export type RunOpts = SdkRunOpts
 
-export interface RunFilter {
+export type RunStatus = NonNullable<SdkRunFilter["statuses"]>[number]
+
+export type RunFilter = SdkRunFilter & {
   readonly workflowName?: string
-  readonly workflowNames?: readonly string[]
-  readonly status?: string
-  readonly statuses?: readonly NonNullable<SdkRunFilter["statuses"]>[number][]
-  readonly since?: Date
-  readonly until?: Date
-  readonly additionalMetadata?: Record<string, string>
+  readonly status?: RunStatus
 }
 
-export interface ReplayRunOpts {
+export type ReplayRunOpts = Omit<SdkReplayRunOpts, "ids" | "filters"> & {
   readonly ids?: readonly string[]
   readonly filters?: RunFilter
 }
 
-export interface ListRunsOpts extends RunFilter {
-  readonly workerId?: string
-  readonly includePayloads?: boolean
-  readonly limit?: number
-  readonly offset?: number
-}
+export type ListRunsOpts =
+  & Omit<
+    Partial<SdkListRunsOpts>,
+    "workflowNames" | "statuses" | "onlyTasks"
+  >
+  & RunFilter
 
-const toSdkRunFilter = (
-  options?: RunFilter,
-): {
-  readonly workflowNames?: string[]
-  readonly statuses?: NonNullable<SdkRunFilter["statuses"]>
-  readonly since?: Date
-  readonly until?: Date
-  readonly additionalMetadata?: Record<string, string>
-} => ({
+const toSdkRunFilter = (options?: RunFilter): SdkRunFilter => ({
   workflowNames: options?.workflowNames?.length
     ? [...options.workflowNames]
     : options?.workflowName
@@ -68,25 +63,32 @@ const toSdkRunFilter = (
 
 const toSdkListRunsOpts = (
   options?: ListRunsOpts,
-): {
-  readonly workflowNames?: string[]
-  readonly statuses?: NonNullable<SdkListRunsOpts["statuses"]>
-  readonly since?: Date
-  readonly until?: Date
-  readonly additionalMetadata?: Record<string, string>
-  readonly workerId?: string
-  readonly includePayloads?: boolean
-  readonly limit?: number
-  readonly offset?: number
-  readonly onlyTasks: false
-} => ({
-  ...toSdkRunFilter(options),
-  workerId: options?.workerId,
-  includePayloads: options?.includePayloads,
-  limit: options?.limit,
-  offset: options?.offset,
-  onlyTasks: false,
-})
+): Partial<SdkListRunsOpts> => {
+  const {
+    workflowName,
+    workflowNames,
+    status,
+    statuses,
+    since,
+    until,
+    additionalMetadata,
+    ...rest
+  } = options ?? {}
+
+  return {
+    ...rest,
+    ...toSdkRunFilter({
+      workflowName,
+      workflowNames,
+      status,
+      statuses,
+      since,
+      until,
+      additionalMetadata,
+    }),
+    onlyTasks: false,
+  }
+}
 
 /**
  * Run a workflow and wait for completion

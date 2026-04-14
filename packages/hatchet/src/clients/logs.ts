@@ -4,12 +4,17 @@
  * Effect-first wrappers around Hatchet SDK log APIs.
  */
 
+/**
+ * - `LogQueryOptions` derives from the SDK logs client so task-log filters stay aligned with upstream contracts.
+ * - `TenantLogQueryOptions` stays custom because the wrapper hides raw tenant-log transport keys behind friendlier names.
+ * - `LogEntry` / `LogList` stay custom because normalization merges snake_case and camelCase payloads into a stable record.
+ */
+
 import * as Effect from "effect/Effect"
+import type { LogsClient, V1LogLineLevel } from "@hatchet-dev/typescript-sdk"
 import type { HatchetClientService } from "../core/client.js"
 import { getHatchetClient } from "../core/client.js"
 import { HatchetObservabilityError } from "../core/error.js"
-
-type LogQueryLevels = readonly string[]
 
 type LogMetadata = Record<string, unknown>
 
@@ -34,16 +39,11 @@ type RawLogLine = {
   readonly taskDisplayName?: unknown
 }
 
-export interface LogQueryOptions {
-  readonly limit?: number
-  readonly since?: string
-  readonly until?: string
-  readonly search?: string
-  readonly levels?: LogQueryLevels
-  readonly attempt?: number
-}
+type SdkLogQueryOptions = NonNullable<Parameters<LogsClient["list"]>[1]>
 
-export interface TenantLogQueryOptions extends LogQueryOptions {
+export type LogQueryOptions = SdkLogQueryOptions
+
+export type TenantLogQueryOptions = LogQueryOptions & {
   readonly taskIds?: readonly string[]
   readonly workflowIds?: readonly string[]
   readonly stepIds?: readonly string[]
@@ -136,14 +136,24 @@ const normalizeLogList = (payload: unknown): LogList => {
   }
 }
 
-const toTaskLogQuery = (options?: LogQueryOptions) => ({
-  limit: options?.limit,
-  since: options?.since,
-  until: options?.until,
-  search: options?.search,
-  levels: options?.levels ? [...options.levels] : undefined,
-  attempt: options?.attempt,
-})
+const toIsoString = (value: Date | undefined) => value?.toISOString()
+
+const compactRecord = <T extends Record<string, unknown>>(record: T) =>
+  Object.fromEntries(
+    Object.entries(record).filter(([, value]) => value !== undefined),
+  ) as Partial<T>
+
+const toTaskLogQuery = (options?: LogQueryOptions) =>
+  compactRecord({
+    limit: options?.limit,
+    since: toIsoString(options?.since),
+    until: toIsoString(options?.until),
+    search: options?.search,
+    levels: options?.levels
+      ? ([...options.levels] as V1LogLineLevel[])
+      : undefined,
+    attempt: options?.attempt,
+  })
 
 const toTenantLogQuery = (options?: TenantLogQueryOptions) => ({
   ...toTaskLogQuery(options),

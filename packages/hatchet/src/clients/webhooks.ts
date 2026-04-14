@@ -5,42 +5,37 @@
  */
 
 import * as Effect from "effect/Effect"
+import type { WebhooksClient } from "@hatchet-dev/typescript-sdk"
 import type { HatchetClientService } from "../core/client.js"
 import { getHatchetClient } from "../core/client.js"
 import { HatchetWebhookError } from "../core/error.js"
 
-interface WebhookMetadata {
-  readonly id?: string
-}
+/**
+ * Type audit:
+ * - Webhook enum/string unions are derived from SDK enums to avoid local shadow values.
+ * - `ListWebhooksOptions` and `UpdateWebhookOptions` derive from SDK request contracts.
+ * - `CreateWebhookOptions` / `HatchetWebhookAuth` stay custom because they hide the nested transport `auth` payload behind a flatter public boundary.
+ * - `HatchetWebhookRecord` stays custom because normalization guarantees required fields.
+ */
 
-interface HatchetWebhook {
-  readonly metadata?: WebhookMetadata
-  readonly tenantId?: string
-  readonly name?: string
-  readonly sourceName?: HatchetWebhookSourceName
-  readonly eventKeyExpression?: string
-  readonly scopeExpression?: string
-  readonly staticPayload?: unknown
-  readonly authType?: HatchetWebhookAuthType
-}
+type HatchetWebhook = Awaited<ReturnType<WebhooksClient["get"]>>
+type HatchetWebhookList = Awaited<ReturnType<WebhooksClient["list"]>>
+type SdkCreateWebhookRequest = Parameters<WebhooksClient["create"]>[0]
+type SdkWebhookAuth = SdkCreateWebhookRequest["auth"]
+type SdkWebhookHmacAuth = Extract<
+  SdkWebhookAuth,
+  { readonly algorithm: unknown; readonly encoding: unknown }
+>
 
-interface HatchetWebhookList {
-  readonly rows?: readonly HatchetWebhook[]
-}
+export type HatchetWebhookSourceName = NonNullable<
+  HatchetWebhook["sourceName"]
+>
 
-export type HatchetWebhookSourceName =
-  | "GENERIC"
-  | "GITHUB"
-  | "STRIPE"
-  | "SLACK"
-  | "LINEAR"
-  | "SVIX"
+export type HatchetWebhookAuthType = NonNullable<HatchetWebhook["authType"]>
 
-export type HatchetWebhookAuthType = "BASIC" | "API_KEY" | "HMAC"
+export type HatchetWebhookHmacAlgorithm = SdkWebhookHmacAuth["algorithm"]
 
-export type HatchetWebhookHmacAlgorithm = "SHA1" | "SHA256" | "SHA512" | "MD5"
-
-export type HatchetWebhookHmacEncoding = "HEX" | "BASE64" | "BASE64URL"
+export type HatchetWebhookHmacEncoding = SdkWebhookHmacAuth["encoding"]
 
 export type HatchetWebhookAuth =
   | {
@@ -72,27 +67,32 @@ export interface HatchetWebhookRecord {
   readonly authType: HatchetWebhookAuthType
 }
 
-export interface ListWebhooksOptions {
-  readonly limit?: number
-  readonly offset?: number
-  readonly webhookNames?: readonly string[]
-  readonly sourceNames?: readonly HatchetWebhookSourceName[]
-}
+type SdkListWebhooksOptions = NonNullable<
+  Parameters<WebhooksClient["list"]>[0]
+>
 
-export interface CreateWebhookOptions {
-  readonly name: string
-  readonly sourceName: HatchetWebhookSourceName
-  readonly eventKeyExpression: string
-  readonly scopeExpression?: string
-  readonly staticPayload?: Record<string, unknown>
-  readonly auth: HatchetWebhookAuth
-}
+export type ListWebhooksOptions =
+  & Omit<
+    SdkListWebhooksOptions,
+    "sourceNames"
+  >
+  & {
+    readonly sourceNames?: readonly HatchetWebhookSourceName[]
+  }
 
-export interface UpdateWebhookOptions {
-  readonly eventKeyExpression?: string
-  readonly scopeExpression?: string
-  readonly staticPayload?: Record<string, unknown>
-}
+export type CreateWebhookOptions =
+  & Omit<
+    SdkCreateWebhookRequest,
+    "authType" | "auth" | "sourceName"
+  >
+  & {
+    readonly sourceName: HatchetWebhookSourceName
+    readonly auth: HatchetWebhookAuth
+  }
+
+export type UpdateWebhookOptions = NonNullable<
+  Parameters<WebhooksClient["update"]>[1]
+>
 
 type WebhookOperation = "list" | "get" | "create" | "update" | "delete"
 
@@ -160,7 +160,9 @@ const normalizeWebhook = (
     }
   })
 
-const toSdkCreateWebhookOptions = (options: CreateWebhookOptions) => {
+const toSdkCreateWebhookOptions = (
+  options: CreateWebhookOptions,
+): SdkCreateWebhookRequest => {
   switch (options.auth.authType) {
     case "BASIC":
       return {
@@ -174,7 +176,7 @@ const toSdkCreateWebhookOptions = (options: CreateWebhookOptions) => {
           username: options.auth.username,
           password: options.auth.password,
         },
-      }
+      } as SdkCreateWebhookRequest
     case "API_KEY":
       return {
         name: options.name,
@@ -187,7 +189,7 @@ const toSdkCreateWebhookOptions = (options: CreateWebhookOptions) => {
           headerName: options.auth.headerName,
           apiKey: options.auth.apiKey,
         },
-      }
+      } as SdkCreateWebhookRequest
     case "HMAC":
       return {
         name: options.name,
@@ -202,8 +204,10 @@ const toSdkCreateWebhookOptions = (options: CreateWebhookOptions) => {
           signatureHeaderName: options.auth.signatureHeaderName,
           signingSecret: options.auth.signingSecret,
         },
-      }
+      } as SdkCreateWebhookRequest
   }
+
+  return options as never
 }
 
 export const listWebhooks = (

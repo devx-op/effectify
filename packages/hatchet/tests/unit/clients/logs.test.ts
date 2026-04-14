@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest"
 import * as Cause from "effect/Cause"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
+import { V1LogLineLevel } from "@hatchet-dev/typescript-sdk"
 import { listTaskLogs, listTenantLogs, type LogList } from "../../../src/clients/logs.js"
 import * as publicApi from "../../../src/index.js"
 import { HatchetObservabilityError } from "../../../src/core/error.js"
@@ -20,7 +21,9 @@ describe("Logs Client", () => {
     const result = await publicApi
       .listTaskLogs("task-123", {
         limit: 20,
-        levels: ["INFO", "ERROR"],
+        since: new Date("2026-04-11T16:00:00.000Z"),
+        until: new Date("2026-04-11T18:00:00.000Z"),
+        levels: [V1LogLineLevel.INFO, V1LogLineLevel.ERROR],
         search: "payment",
       })
       .pipe(
@@ -31,6 +34,8 @@ describe("Logs Client", () => {
                 expect(taskId).toBe("task-123")
                 expect(query).toEqual({
                   limit: 20,
+                  since: "2026-04-11T16:00:00.000Z",
+                  until: "2026-04-11T18:00:00.000Z",
                   levels: ["INFO", "ERROR"],
                   search: "payment",
                 })

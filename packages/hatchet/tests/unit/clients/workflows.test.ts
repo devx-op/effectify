@@ -7,12 +7,13 @@ import * as Cause from "effect/Cause"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import {
+  CREATE_WORKFLOW_UNSUPPORTED_MESSAGE,
   createWorkflow,
-  type CreateWorkflowOpts,
   deleteWorkflow,
   getWorkflow,
   listWorkflows,
   type ListWorkflowsOpts,
+  type UnsupportedCreateWorkflowDefinition,
   type WorkflowTarget,
 } from "../../../src/clients/workflows"
 import { HatchetClientService } from "../../../src/core/client"
@@ -41,15 +42,12 @@ describe("Workflows Client - Type Exports", () => {
       expect(typeof deleteWorkflow).toBe("function")
     })
 
-    it("should export CreateWorkflowOpts interface", () => {
-      const opts: CreateWorkflowOpts = {
+    it("should export an honest unsupported create workflow input shape", () => {
+      const workflow: UnsupportedCreateWorkflowDefinition = {
         name: "my-workflow",
-        version: "1.0.0",
-        description: "Test workflow",
       }
-      expect(opts.name).toBe("my-workflow")
-      expect(opts.version).toBe("1.0.0")
-      expect(opts.description).toBe("Test workflow")
+      expect(workflow.name).toBe("my-workflow")
+      expect(CREATE_WORKFLOW_UNSUPPORTED_MESSAGE).toContain("not supported")
     })
 
     it("should export ListWorkflowsOpts interface", () => {
@@ -70,9 +68,8 @@ describe("Workflows Client - Type Exports", () => {
 
 describe("Workflows Client - Function Signatures", () => {
   layer(Layer.mergeAll(TestHatchetConfigLayer, MockHatchetClientLayer))(() => {
-    it("createWorkflow should accept workflow and opts", () => {
-      const workflow = { name: "test" }
-      const opts: CreateWorkflowOpts = { name: "test" }
+    it("createWorkflow should accept only workflow identity for unsupported calls", () => {
+      const workflow: UnsupportedCreateWorkflowDefinition = { name: "test" }
 
       // Just verify the types are correct - actual execution needs mock
       expect(typeof createWorkflow).toBe("function")
@@ -150,7 +147,7 @@ describe("Workflows Client - SDK compatibility", () => {
         workflows: {
           list: async (options: unknown) => {
             expect(options).toEqual({ limit: 2, offset: 1 })
-            return { workflows: [{ name: "orders.process" }] }
+            return { rows: [{ name: "orders.process" }] }
           },
         },
       }),
@@ -185,10 +182,10 @@ describe("Workflows Client - SDK compatibility", () => {
   })
 
   it("createWorkflow fails with a clear unsupported error because SDK 1.21 has no workflows.create", async () => {
-    const exit = await createWorkflow(
-      { name: "orders.process" },
-      { name: "orders.process" },
-    ).pipe(provideHatchet({}), Effect.runPromiseExit)
+    const exit = await createWorkflow({ name: "orders.process" }).pipe(
+      provideHatchet({}),
+      Effect.runPromiseExit,
+    )
 
     expect(exit._tag).toBe("Failure")
 
@@ -199,7 +196,7 @@ describe("Workflows Client - SDK compatibility", () => {
         _tag: "HatchetWorkflowError",
         workflowName: "orders.process",
       })
-      expect(error.message).toContain("not supported")
+      expect(error.message).toBe(CREATE_WORKFLOW_UNSUPPORTED_MESSAGE)
     }
   })
 

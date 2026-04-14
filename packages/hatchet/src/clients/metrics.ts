@@ -4,7 +4,13 @@
  * Effect-first wrappers around Hatchet SDK metrics APIs.
  */
 
+/**
+ * - `TaskMetricsQueryOptions` derives field types from the SDK metrics client while keeping camelCase names at the boundary.
+ * - Queue/task metric read models stay custom because they normalize aggregate payloads into a stable Effect-friendly shape.
+ */
+
 import * as Effect from "effect/Effect"
+import type { MetricsClient } from "@hatchet-dev/typescript-sdk"
 import type { HatchetClientService } from "../core/client.js"
 import { getHatchetClient } from "../core/client.js"
 import { HatchetObservabilityError } from "../core/error.js"
@@ -54,12 +60,14 @@ export interface QueueMetrics {
   readonly stepRun: Record<string, number>
 }
 
+type SdkTaskMetricsQuery = Parameters<MetricsClient["getTaskStatusMetrics"]>[0]
+
 export interface TaskMetricsQueryOptions {
-  readonly since: string
-  readonly until?: string
+  readonly since: SdkTaskMetricsQuery["since"]
+  readonly until?: SdkTaskMetricsQuery["until"]
   readonly workflowIds?: readonly string[]
-  readonly parentTaskExternalId?: string
-  readonly triggeringEventExternalId?: string
+  readonly parentTaskExternalId?: SdkTaskMetricsQuery["parent_task_external_id"]
+  readonly triggeringEventExternalId?: SdkTaskMetricsQuery["triggering_event_external_id"]
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>

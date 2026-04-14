@@ -4,7 +4,13 @@
  * Effect-first wrappers around the Hatchet SDK events surface.
  */
 
+/**
+ * - `PushEventOptions` is a direct SDK passthrough.
+ * - Event record/read-model types stay custom because they normalize protobuf and REST payloads into a stable public shape.
+ */
+
 import * as Effect from "effect/Effect"
+import type { Hatchet as HatchetClientSDK } from "@hatchet-dev/typescript-sdk"
 import type { HatchetClientService } from "../core/client.js"
 import { getHatchetClient } from "../core/client.js"
 import { HatchetEventError } from "../core/error.js"
@@ -45,11 +51,9 @@ interface HatchetRestEvent {
   readonly workflowRunSummary: HatchetEventWorkflowRunSummary
 }
 
-export interface PushEventOptions {
-  readonly additionalMetadata?: Record<string, string>
-  readonly priority?: number
-  readonly scope?: string
-}
+export type PushEventOptions = Parameters<
+  InstanceType<typeof HatchetClientSDK>["events"]["push"]
+>[2]
 
 export interface HatchetEventRecord<TPayload = Record<string, unknown>> {
   readonly eventId: string

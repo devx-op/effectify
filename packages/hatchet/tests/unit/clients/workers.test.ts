@@ -3,11 +3,12 @@
  */
 
 import { describe, expect, it, layer } from "@effect/vitest"
+import type { Worker as SdkWorker } from "@hatchet-dev/typescript-sdk"
 import * as Cause from "effect/Cause"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import { vi } from "vitest"
-import { registerWorker, type RegisterWorkerOpts } from "../../../src/clients/workers"
+import { registerWorker, type RegisterWorkerOpts, type WorkerRegistrationWorkflow } from "../../../src/clients/workers"
 import { HatchetClientService } from "../../../src/core/client"
 import { HatchetWorkerError } from "../../../src/core/error"
 import { MockHatchetClientLayer, TestHatchetConfigLayer } from "../../../src/testing/mock-client"
@@ -21,13 +22,11 @@ describe("Workers Client - Type Exports", () => {
 
     it("should export RegisterWorkerOpts interface", () => {
       const opts: RegisterWorkerOpts = {
-        maxConcurrent: 5,
-        maxWorkflows: 10,
-        timeout: "30s",
+        slots: 5,
+        durableSlots: 10,
       }
-      expect(opts.maxConcurrent).toBe(5)
-      expect(opts.maxWorkflows).toBe(10)
-      expect(opts.timeout).toBe("30s")
+      expect(opts.slots).toBe(5)
+      expect(opts.durableSlots).toBe(10)
     })
 
     it("should allow undefined options", () => {
@@ -41,8 +40,10 @@ describe("Workers Client - Function Signatures", () => {
   layer(Layer.mergeAll(TestHatchetConfigLayer, MockHatchetClientLayer))(() => {
     it("registerWorker should accept name, workflows, and opts", () => {
       const name = "my-worker"
-      const workflows = [{ name: "workflow-1" }]
-      const opts: RegisterWorkerOpts = { maxConcurrent: 3 }
+      const workflows: WorkerRegistrationWorkflow[] = [
+        { name: "workflow-1" } as never,
+      ]
+      const opts: RegisterWorkerOpts = { slots: 3 }
 
       // Just verify the types are correct - actual execution needs mock
       expect(typeof registerWorker).toBe("function")
@@ -88,9 +89,9 @@ describe("Workers Client - SDK compatibility", () => {
 
     const worker = await registerWorker(
       "orders-worker",
-      [{ name: "orders.process" }],
+      [{ name: "orders.process" } as WorkerRegistrationWorkflow],
       {
-        maxConcurrent: 5,
+        slots: 5,
       },
     ).pipe(
       provideHatchet({
@@ -110,7 +111,12 @@ describe("Workers Client - SDK compatibility", () => {
       { name: "orders.process" },
     ])
     expect(start).toHaveBeenCalled()
-    expect(worker).toMatchObject({ registerWorkflows, start })
+    expect(worker).toMatchObject(
+      {
+        registerWorkflows,
+        start,
+      } satisfies Partial<SdkWorker>,
+    )
   })
 
   it("registerWorker wraps SDK worker creation failures with HatchetWorkerError", async () => {

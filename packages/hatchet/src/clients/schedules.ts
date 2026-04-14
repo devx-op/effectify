@@ -5,36 +5,29 @@
  */
 
 import * as Effect from "effect/Effect"
+import type { ScheduleClient } from "@hatchet-dev/typescript-sdk"
 import type { HatchetClientService } from "../core/client.js"
 import { getHatchetClient } from "../core/client.js"
 import { HatchetScheduleError } from "../core/error.js"
 
-interface ScheduledWorkflowMetadata {
-  readonly id?: string
-}
+/**
+ * Type audit:
+ * - `CreateScheduleOptions` comes directly from the SDK schedule client.
+ * - `ListSchedulesOptions` keeps `workflowName` as a transport-hiding alias while deriving from the SDK schedule query.
+ * - `HatchetScheduleRecord` stays custom because normalization guarantees required ids and parses `triggerAt` to `Date`.
+ */
 
-interface HatchetScheduledWorkflow {
-  readonly metadata?: ScheduledWorkflowMetadata
-  readonly workflowName?: string
-  readonly triggerAt?: string
-  readonly input?: unknown
-  readonly additionalMetadata?: unknown
-  readonly priority?: number
-}
+type HatchetScheduledWorkflow = Awaited<ReturnType<ScheduleClient["get"]>>
 
-interface HatchetScheduledWorkflowList {
-  readonly rows?: readonly HatchetScheduledWorkflow[]
-}
+type HatchetScheduledWorkflowList = Awaited<ReturnType<ScheduleClient["list"]>>
 
-export interface CreateScheduleOptions {
-  readonly triggerAt: Date
-  readonly input?: Record<string, unknown>
-  readonly additionalMetadata?: Record<string, string>
-  readonly priority?: number
-}
+export type CreateScheduleOptions = Parameters<ScheduleClient["create"]>[1]
 
 export interface ListSchedulesOptions {
-  readonly workflowName?: string
+  readonly workflowName?: Extract<
+    Parameters<ScheduleClient["list"]>[0]["workflow"],
+    string
+  >
 }
 
 export interface HatchetScheduleRecord<TInput = Record<string, unknown>> {

@@ -4,22 +4,19 @@
  * Effect-first wrappers around the Hatchet SDK filters surface.
  */
 
+/**
+ * - `ListFiltersOptions` and `CreateFilterInput` derive from the SDK filters client.
+ * - `HatchetFilterRecord` stays custom because normalization guarantees required ids, scope, and object payloads.
+ * - Tagged errors stay local for the Effect boundary.
+ */
+
 import * as Effect from "effect/Effect"
+import type { FiltersClient } from "@hatchet-dev/typescript-sdk"
 import type { HatchetClientService } from "../core/client.js"
 import { getHatchetClient } from "../core/client.js"
 import { HatchetFilterError } from "../core/error.js"
 
-interface HatchetSdkFilter {
-  readonly metadata?: {
-    readonly id?: string
-  }
-  readonly tenantId?: string
-  readonly workflowId?: string
-  readonly scope?: string
-  readonly expression?: string
-  readonly payload?: unknown
-  readonly isDeclarative?: boolean
-}
+type HatchetSdkFilter = Awaited<ReturnType<FiltersClient["get"]>>
 
 export interface HatchetFilterRecord {
   readonly filterId: string
@@ -31,19 +28,9 @@ export interface HatchetFilterRecord {
   readonly isDeclarative?: boolean
 }
 
-export interface ListFiltersOptions {
-  readonly limit?: number
-  readonly offset?: number
-  readonly workflowIds?: readonly string[]
-  readonly scopes?: readonly string[]
-}
+export type ListFiltersOptions = Parameters<FiltersClient["list"]>[0]
 
-export interface CreateFilterInput {
-  readonly workflowId: string
-  readonly scope: string
-  readonly expression: string
-  readonly payload?: Record<string, unknown>
-}
+export type CreateFilterInput = Parameters<FiltersClient["create"]>[0]
 
 type FilterOperation = "list" | "create" | "get" | "delete"
 

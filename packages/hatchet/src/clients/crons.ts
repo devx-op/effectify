@@ -5,44 +5,25 @@
  */
 
 import * as Effect from "effect/Effect"
+import type { CreateCronInput as SdkCreateCronOptions, CronClient } from "@hatchet-dev/typescript-sdk"
 import type { HatchetClientService } from "../core/client.js"
 import { getHatchetClient } from "../core/client.js"
 import { HatchetCronError } from "../core/error.js"
 
-interface CronWorkflowMetadata {
-  readonly id?: string
-}
+type HatchetCronWorkflow = Awaited<ReturnType<CronClient["get"]>>
 
-interface HatchetCronWorkflow {
-  readonly metadata?: CronWorkflowMetadata
-  readonly workflowName?: string
-  readonly cron?: string
-  readonly name?: string
-  readonly input?: unknown
-  readonly additionalMetadata?: unknown
-  readonly enabled?: boolean
-  readonly method?: "DEFAULT" | "API"
-  readonly priority?: number
-}
+type HatchetCronWorkflowList = Awaited<ReturnType<CronClient["list"]>>
 
-interface HatchetCronWorkflowList {
-  readonly rows?: readonly HatchetCronWorkflow[]
-}
+export type CreateCronOptions = SdkCreateCronOptions
 
-export interface CreateCronOptions {
-  readonly name: string
-  readonly expression: string
-  readonly input?: Record<string, unknown>
-  readonly additionalMetadata?: Record<string, string>
-  readonly priority?: number
-}
-
-export interface ListCronsOptions {
-  readonly workflowName?: string
-  readonly cronName?: string
-  readonly offset?: number
-  readonly limit?: number
-}
+export type ListCronsOptions =
+  & Omit<
+    Parameters<CronClient["list"]>[0],
+    "workflow" | "orderByField" | "orderByDirection"
+  >
+  & {
+    readonly workflowName?: string
+  }
 
 export interface HatchetCronRecord<TInput = Record<string, unknown>> {
   readonly cronId: string

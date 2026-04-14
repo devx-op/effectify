@@ -5,34 +5,46 @@
  */
 
 import * as Effect from "effect/Effect"
-import type { WorkflowsClient } from "@hatchet-dev/typescript-sdk"
+import type { CreateWorkflowOpts as SdkCreateWorkflowOpts, WorkflowsClient } from "@hatchet-dev/typescript-sdk"
 import type { HatchetClientService } from "../core/client.js"
 import { getHatchetClient } from "../core/client.js"
 import { HatchetWorkflowError } from "../core/error.js"
 
+/**
+ * Type audit:
+ * - `WorkflowTarget` and `ListWorkflowsOpts` are direct SDK derivations for passthrough calls.
+ * - `createWorkflow` is intentionally unsupported because SDK 1.21.0 exposes workflow declarations but no public `workflows.create` transport method.
+ * - Tagged errors stay local for the Effect boundary.
+ */
 export type WorkflowTarget = Parameters<WorkflowsClient["delete"]>[0]
+export type UnsupportedCreateWorkflowDefinition = Pick<
+  SdkCreateWorkflowOpts,
+  "name"
+>
 
-export interface CreateWorkflowOpts {
-  readonly name: string
-  readonly version?: string
-  readonly description?: string
-}
+export const CREATE_WORKFLOW_UNSUPPORTED_MESSAGE =
+  "Workflow creation is not supported by Hatchet SDK 1.21.0 public workflows client"
+
+const getUnsupportedWorkflowName = (
+  workflow: string | UnsupportedCreateWorkflowDefinition,
+): string => (typeof workflow === "string" ? workflow : workflow.name)
 
 /**
  * Create a new workflow in Hatchet
  *
- * @param workflow - The workflow object or name to create
- * @param opts - Optional workflow options
- * @returns Effect that resolves with the created workflow
+ * Honest package stance: the public Hatchet SDK exposes workflow declarations,
+ * but not a supported `workflows.create` mutation in v1.21.0.
+ *
+ * @param workflow - Workflow identity used only for the typed unsupported error
+ * @returns Effect that always fails with `HatchetWorkflowError`
  */
-export const createWorkflow = <O = unknown>(
-  _workflow: unknown,
-  opts?: CreateWorkflowOpts,
-): Effect.Effect<O, HatchetWorkflowError, HatchetClientService> =>
+export const createWorkflow = (
+  workflow: string | UnsupportedCreateWorkflowDefinition,
+): Effect.Effect<never, HatchetWorkflowError, HatchetClientService> =>
   Effect.fail(
     new HatchetWorkflowError({
-      message: "Workflow creation is not supported by Hatchet SDK 1.21.0 public workflows client",
-      workflowName: opts?.name,
+      message: CREATE_WORKFLOW_UNSUPPORTED_MESSAGE,
+      workflowName: getUnsupportedWorkflowName(workflow),
     }),
   )
 
@@ -60,10 +72,7 @@ export const getWorkflow = <O = unknown>(
     return result as O
   })
 
-export interface ListWorkflowsOpts {
-  readonly limit?: number
-  readonly offset?: number
-}
+export type ListWorkflowsOpts = Parameters<WorkflowsClient["list"]>[0]
 
 /**
  * List all workflows
@@ -85,7 +94,7 @@ export const listWorkflows = <O = unknown>(
         }),
     })
 
-    return (result as { readonly workflows: O[] }).workflows
+    return (result.rows ?? []) as O[]
   })
 
 export const deleteWorkflow = (

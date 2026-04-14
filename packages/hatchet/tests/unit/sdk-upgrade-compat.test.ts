@@ -132,4 +132,34 @@ describe("Hatchet SDK 1.21.0 upgrade contract", () => {
       'import type { V1TaskStatus } from "@hatchet-dev/typescript-sdk";',
     )
   })
+
+  it("documents the approved bucket strategy in TYPE_AUDIT.md", async () => {
+    const audit = await readWorkspaceFile(
+      "packages/hatchet/src/clients/TYPE_AUDIT.md",
+    )
+
+    expect(audit).toContain("Passthrough clients")
+    expect(audit).toContain("Boundary clients")
+    expect(audit).toContain("Normalized clients")
+    expect(audit).toContain("SDK/core type availability")
+  })
+
+  it("documents type-decision comments in audited client modules", async () => {
+    const runsSource = await readWorkspaceFile(
+      "packages/hatchet/src/clients/runs.ts",
+    )
+    const workflowsSource = await readWorkspaceFile(
+      "packages/hatchet/src/clients/workflows.ts",
+    )
+    const workersSource = await readWorkspaceFile(
+      "packages/hatchet/src/clients/workers.ts",
+    )
+
+    expect(runsSource).toContain("Type audit")
+    expect(runsSource).toContain("SdkRunOpts")
+    expect(workflowsSource).toContain("Type audit")
+    expect(workflowsSource).toContain("SdkCreateWorkflowOpts")
+    expect(workersSource).toContain("Type audit")
+    expect(workersSource).toContain('Parameters<HatchetClient["worker"]>[1]')
+  })
 })
