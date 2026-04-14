@@ -8,6 +8,11 @@ vi.mock("react-router", () => ({
   useLoaderData: () => undefined,
 }))
 
+vi.mock("../../../lib/runtime.server.js", () => ({
+  withLoaderEffect: <A>(effect: A) => effect,
+  withActionEffect: <A>(effect: A) => effect,
+}))
+
 import { HatchetDemoWebhooksSection } from "./route.js"
 
 describe("HatchetDemoWebhooksSection", () => {

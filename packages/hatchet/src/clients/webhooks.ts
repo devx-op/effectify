@@ -27,15 +27,15 @@ type SdkWebhookHmacAuth = Extract<
   { readonly algorithm: unknown; readonly encoding: unknown }
 >
 
-export type HatchetWebhookSourceName = NonNullable<
+export type HatchetWebhookSourceName = `${NonNullable<
   HatchetWebhook["sourceName"]
->
+>}`
 
-export type HatchetWebhookAuthType = NonNullable<HatchetWebhook["authType"]>
+export type HatchetWebhookAuthType = `${NonNullable<HatchetWebhook["authType"]>}`
 
-export type HatchetWebhookHmacAlgorithm = SdkWebhookHmacAuth["algorithm"]
+export type HatchetWebhookHmacAlgorithm = `${SdkWebhookHmacAuth["algorithm"]}`
 
-export type HatchetWebhookHmacEncoding = SdkWebhookHmacAuth["encoding"]
+export type HatchetWebhookHmacEncoding = `${SdkWebhookHmacAuth["encoding"]}`
 
 export type HatchetWebhookAuth =
   | {
