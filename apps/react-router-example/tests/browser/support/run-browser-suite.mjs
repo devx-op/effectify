@@ -1,5 +1,5 @@
-import { access } from "node:fs/promises";
 import { spawn } from "node:child_process";
+import { access } from "node:fs/promises";
 import { resolve } from "node:path";
 import process from "node:process";
 import { setTimeout as delay } from "node:timers/promises";
@@ -159,7 +159,7 @@ async function ensureServerBuild(appRoot) {
         }
 
         reject(
-          new Error(`react-router build failed with exit code ${code ?? 1}.`)
+          new Error(`react-router build failed with exit code ${code ?? 1}.`),
         );
       });
     });
@@ -206,7 +206,7 @@ async function run() {
 
     if (childExitedEarly) {
       throw new Error(
-        `Browser test server exited before ${plan.healthcheckUrl} became ready.`
+        `Browser test server exited before ${plan.healthcheckUrl} became ready.`,
       );
     }
 

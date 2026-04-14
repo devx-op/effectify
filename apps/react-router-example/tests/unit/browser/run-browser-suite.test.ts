@@ -8,7 +8,7 @@ import {
   createVitestBrowserCommand,
   isReachableStatus,
   stopChildProcess,
-} from "./run-browser-suite.mjs"
+} from "../../browser/support/run-browser-suite.mjs"
 
 describe("browser runner helpers", () => {
   it("reuses an existing base url when provided", () => {

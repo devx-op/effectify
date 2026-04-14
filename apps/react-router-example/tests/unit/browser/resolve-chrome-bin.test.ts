@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { resolveChromeBin } from "./resolve-chrome-bin"
+import { resolveChromeBin } from "../../browser/support/resolve-chrome-bin"
 
 describe("resolveChromeBin", () => {
   it("prefers the CHROME_BIN override when present", () => {
