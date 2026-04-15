@@ -19,7 +19,6 @@ describe("AppNav", () => {
       { to: "/signup", label: "Sign Up" },
       { to: "/todo-app", label: "Todo App" },
       { to: "/chat", label: "Chat Demo" },
-      { to: "/hatchet-demo", label: "Hatchet Demo" },
     ])
   })
 

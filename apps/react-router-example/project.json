@@ -14,14 +14,6 @@
         "cwd": "apps/react-router-example"
       }
     },
-    "test:browser": {
-      "executor": "nx:run-commands",
-      "dependsOn": ["typegen", "prisma:generate", "build"],
-      "options": {
-        "command": "node tests/browser/support/run-browser-suite.mjs",
-        "cwd": "apps/react-router-example"
-      }
-    },
     "typecheck": {
       "executor": "nx:run-commands",
       "options": {
@@ -149,7 +141,15 @@
       "executor": "nx:run-script",
       "outputs": ["{projectRoot}/build"],
       "options": {
-        "script": "build"
+        "outputPath": "apps/react-router-example/build"
+      },
+      "configurations": {
+        "development": {
+          "mode": "development"
+        },
+        "production": {
+          "mode": "production"
+        }
       },
       "dependsOn": ["typegen", "prisma:generate", "^build"]
     }

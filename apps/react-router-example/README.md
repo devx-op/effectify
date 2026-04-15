@@ -6,8 +6,6 @@ This example demonstrates using Effect with React Router 7 and better-auth for a
 
 The example app is intended to be understandable on its own, without relying on the separate e2e app.
 
-For local development, the app serves from `http://localhost:4200` and handles better-auth on the same origin.
-
 - `/` — landing page with a quick overview of the available example slices
 - `/login` — email/password sign-in flow
 - `/signup` — account creation flow
@@ -102,7 +100,7 @@ The app includes a complete authentication system powered by better-auth:
 
 - **Signup**: `/signup` - Create new account
 - **Login**: `/login` - Sign in with existing account
-- **Auth API**: `/api/auth/*` - better-auth loader/action endpoint on the same server/origin
+- **Auth API**: `/api/auth/*` - better-auth loader/action endpoint
 
 ## Tech Stack
 
@@ -152,8 +150,6 @@ pnpm nx run @effectify/react-router-example:typecheck
 # Serve the production build through the Nx start contract
 pnpm nx start @effectify/react-router-example
 ```
-
-If you run the production server on a non-default origin, set `BETTER_AUTH_URL` to match it before starting the app.
 
 ## Notes
 

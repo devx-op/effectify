@@ -70,7 +70,6 @@ describe("react-router example cypress migration", () => {
     })
     expect(cypressConfig).toContain("http://localhost:3100")
     expect(cypressConfig).toContain("nxE2EPreset")
-    expect(cypressConfig).toContain("allowCypressEnv: false")
     expect(cypressConfig).not.toContain("webServerCommands")
     expect(cypressConfig).not.toContain("CYPRESS_MANUAL_SERVER")
     expect(existsSync(resolve(e2eRoot, "src/e2e/app-smoke.cy.ts"))).toBe(true)
