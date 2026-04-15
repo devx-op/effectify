@@ -29,3 +29,4 @@ export {
 export { HatchetClientLive, HatchetClientService } from "./client.js"
 
 export { HatchetStepContext } from "./context.js"
+export type { HatchetTaskContext } from "./context.js"

@@ -9,9 +9,8 @@ import * as Effect from "effect/Effect"
 import * as Cause from "effect/Cause"
 import * as ManagedRuntime from "effect/ManagedRuntime"
 import * as Layer from "effect/Layer"
-import type { Context as HatchetContext } from "@hatchet-dev/typescript-sdk"
 import type { HatchetTaskFn } from "./types.js"
-import { HatchetStepContext } from "../core/context.js"
+import { HatchetStepContext, type HatchetTaskContext } from "../core/context.js"
 
 /**
  * effectifyTask converts an Effect into a Hatchet-compatible task function.
@@ -33,7 +32,7 @@ export const effectifyTask = <A, E, R, ER>(
   effect: Effect.Effect<A, E, R | HatchetStepContext>,
   runtime: ManagedRuntime.ManagedRuntime<R, ER>,
 ): HatchetTaskFn => {
-  return async (input: unknown, ctx: HatchetContext<any, any>): Promise<A> => {
+  return async (input: unknown, ctx: HatchetTaskContext): Promise<A> => {
     // 1. Inject the Hatchet context as a service
     const effectWithContext = Effect.provideService(
       effect,

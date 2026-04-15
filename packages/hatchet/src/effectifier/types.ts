@@ -5,8 +5,7 @@
  */
 
 import type { Effect, ManagedRuntime } from "effect"
-import type { Context as HatchetContext } from "@hatchet-dev/typescript-sdk"
-import type { HatchetStepContext } from "../core/context.js"
+import type { HatchetStepContext, HatchetTaskContext } from "../core/context.js"
 
 /**
  * Signature of a function that Hatchet calls to execute a task
@@ -14,7 +13,7 @@ import type { HatchetStepContext } from "../core/context.js"
  */
 export type HatchetTaskFn = (
   input: unknown,
-  ctx: HatchetContext<any, any>,
+  ctx: HatchetTaskContext,
 ) => Promise<unknown>
 
 /**

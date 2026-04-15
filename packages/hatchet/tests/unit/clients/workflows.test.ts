@@ -73,6 +73,7 @@ describe("Workflows Client - Function Signatures", () => {
 
       // Just verify the types are correct - actual execution needs mock
       expect(typeof createWorkflow).toBe("function")
+      expect(workflow.name).toBe("test")
     })
 
     it("getWorkflow should accept workflow name", () => {
@@ -183,7 +184,6 @@ describe("Workflows Client - SDK compatibility", () => {
 
   it("createWorkflow fails with a clear unsupported error because SDK 1.21 has no workflows.create", async () => {
     const exit = await createWorkflow({ name: "orders.process" }).pipe(
-      provideHatchet({}),
       Effect.runPromiseExit,
     )
 
@@ -196,6 +196,20 @@ describe("Workflows Client - SDK compatibility", () => {
         _tag: "HatchetWorkflowError",
         workflowName: "orders.process",
       })
+      expect(error.message).toBe(CREATE_WORKFLOW_UNSUPPORTED_MESSAGE)
+    }
+  })
+
+  it("createWorkflow keeps string-name compatibility while staying unsupported", async () => {
+    const exit = await createWorkflow("orders.process").pipe(
+      Effect.runPromiseExit,
+    )
+
+    expect(exit._tag).toBe("Failure")
+
+    if (exit._tag === "Failure") {
+      const error = Cause.squash(exit.cause) as HatchetWorkflowError
+      expect(error.workflowName).toBe("orders.process")
       expect(error.message).toBe(CREATE_WORKFLOW_UNSUPPORTED_MESSAGE)
     }
   })

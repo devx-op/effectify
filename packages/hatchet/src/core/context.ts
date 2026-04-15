@@ -5,7 +5,12 @@
  */
 
 import * as ServiceMap from "effect/ServiceMap"
-import type { Context as HatchetContext } from "@hatchet-dev/typescript-sdk"
+import type { Context as SdkContext } from "@hatchet-dev/typescript-sdk"
+
+export type HatchetTaskContext<
+  I = unknown,
+  U extends Record<string, unknown> = Record<string, never>,
+> = SdkContext<I, U>
 
 /**
  * ServiceMap.Service for the Hatchet step context
@@ -13,5 +18,5 @@ import type { Context as HatchetContext } from "@hatchet-dev/typescript-sdk"
  */
 export class HatchetStepContext extends ServiceMap.Service<
   HatchetStepContext,
-  HatchetContext<any, any>
+  HatchetTaskContext
 >()("HatchetStepContext") {}

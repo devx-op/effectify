@@ -5,9 +5,11 @@
  */
 
 import * as Effect from "effect/Effect"
+import { Hatchet as HatchetClientSDK } from "@hatchet-dev/typescript-sdk"
 import type {
-  APIContracts,
+  InputType,
   ListRunsOpts as SdkListRunsOpts,
+  OutputType,
   ReplayRunOpts as SdkReplayRunOpts,
   RunFilter as SdkRunFilter,
   RunOpts as SdkRunOpts,
@@ -25,6 +27,33 @@ import { HatchetRunError, HatchetWorkflowError } from "../core/error.js"
  * - Tagged errors stay local for the Effect boundary.
  */
 export type RunOpts = SdkRunOpts
+
+type HatchetClientType = InstanceType<typeof HatchetClientSDK>
+type HatchetRunsClient = HatchetClientType["runs"]
+type WorkflowRunRefResult<O extends OutputType> =
+  & Awaited<
+    ReturnType<HatchetClientType["runNoWait"]>
+  >
+  & {
+    readonly output: Promise<O>
+    result(): Promise<O>
+  }
+
+export type RunDetails = Awaited<ReturnType<HatchetRunsClient["get"]>>
+export type RunSummaryList = Awaited<ReturnType<HatchetRunsClient["list"]>>
+export type RunSummary = NonNullable<RunSummaryList["rows"]>[number]
+export type ReplayRunResponse = Awaited<
+  ReturnType<HatchetRunsClient["replay"]>
+>
+export type ReplayRunResult = ReplayRunResponse["data"]
+export type RestoreTaskResponse = Awaited<
+  ReturnType<HatchetRunsClient["restoreTask"]>
+>
+export type RestoreTaskResult = RestoreTaskResponse["data"]
+export type BranchDurableTaskResponse = Awaited<
+  ReturnType<HatchetRunsClient["branchDurableTask"]>
+>
+export type BranchDurableTaskResult = BranchDurableTaskResponse["data"]
 
 export type RunStatus = NonNullable<SdkRunFilter["statuses"]>[number]
 
@@ -90,6 +119,12 @@ const toSdkListRunsOpts = (
   }
 }
 
+const responseData = <R extends { data: unknown }>(response: R): R["data"] => response.data
+
+const responseRows = <Row, R extends { rows?: readonly Row[] }>(
+  response: R,
+): readonly Row[] => response.rows ?? []
+
 /**
  * Run a workflow and wait for completion
  *
@@ -98,7 +133,7 @@ const toSdkListRunsOpts = (
  * @param options - Optional run options
  * @returns Effect that resolves with the workflow result
  */
-export const runWorkflow = <I, O>(
+export const runWorkflow = <I extends InputType, O extends OutputType>(
   workflow: string,
   input: I,
   options?: RunOpts,
@@ -106,7 +141,7 @@ export const runWorkflow = <I, O>(
   Effect.gen(function*() {
     const client = yield* getHatchetClient()
     const result = yield* Effect.tryPromise({
-      try: () => client.run(workflow, input as never, options),
+      try: () => client.run<I, O>(workflow, input, options),
       catch: (error) =>
         new HatchetRunError({
           message: `Workflow "${workflow}" failed to run`,
@@ -114,7 +149,7 @@ export const runWorkflow = <I, O>(
           cause: error,
         }),
     })
-    return result as O
+    return result
   })
 
 /**
@@ -125,15 +160,19 @@ export const runWorkflow = <I, O>(
  * @param options - Optional run options
  * @returns Effect that resolves with the workflow run details
  */
-export const runWorkflowNoWait = <I, O>(
+export const runWorkflowNoWait = <I extends InputType, O extends OutputType>(
   workflow: string,
   input: I,
   options?: RunOpts,
-): Effect.Effect<O, HatchetRunError, HatchetClientService> =>
+): Effect.Effect<
+  WorkflowRunRefResult<O>,
+  HatchetRunError,
+  HatchetClientService
+> =>
   Effect.gen(function*() {
     const client = yield* getHatchetClient()
     const result = yield* Effect.tryPromise({
-      try: () => client.runNoWait(workflow, input as never, options ?? {}),
+      try: () => client.runNoWait<I, O>(workflow, input, options ?? {}),
       catch: (error) =>
         new HatchetRunError({
           message: `Workflow "${workflow}" failed to start`,
@@ -141,7 +180,7 @@ export const runWorkflowNoWait = <I, O>(
           cause: error,
         }),
     })
-    return result as O
+    return result
   })
 
 /**
@@ -166,9 +205,9 @@ export const cancelRun = (
     })
   })
 
-export const replayRun = <O = APIContracts.V1ReplayedTasks>(
+export const replayRun = (
   run: string | ReplayRunOpts,
-): Effect.Effect<O, HatchetRunError, HatchetClientService> =>
+): Effect.Effect<ReplayRunResult, HatchetRunError, HatchetClientService> =>
   Effect.gen(function*() {
     const client = yield* getHatchetClient()
     const replayOptions: SdkReplayRunOpts = typeof run === "string"
@@ -189,12 +228,12 @@ export const replayRun = <O = APIContracts.V1ReplayedTasks>(
         }),
     })
 
-    return result.data as O
+    return responseData(result)
   })
 
-export const restoreTask = <O = APIContracts.V1RestoreTaskResponse>(
+export const restoreTask = (
   taskExternalId: string,
-): Effect.Effect<O, HatchetRunError, HatchetClientService> =>
+): Effect.Effect<RestoreTaskResult, HatchetRunError, HatchetClientService> =>
   Effect.gen(function*() {
     const client = yield* getHatchetClient()
     const result = yield* Effect.tryPromise({
@@ -207,14 +246,18 @@ export const restoreTask = <O = APIContracts.V1RestoreTaskResponse>(
         }),
     })
 
-    return result.data as O
+    return responseData(result)
   })
 
-export const branchDurableTask = <O = APIContracts.V1BranchDurableTaskResponse>(
+export const branchDurableTask = (
   taskExternalId: string,
   nodeId: number,
   branchId?: number,
-): Effect.Effect<O, HatchetRunError, HatchetClientService> =>
+): Effect.Effect<
+  BranchDurableTaskResult,
+  HatchetRunError,
+  HatchetClientService
+> =>
   Effect.gen(function*() {
     const client = yield* getHatchetClient()
     const result = yield* Effect.tryPromise({
@@ -227,7 +270,7 @@ export const branchDurableTask = <O = APIContracts.V1BranchDurableTaskResponse>(
         }),
     })
 
-    return result.data as O
+    return responseData(result)
   })
 
 /**
@@ -236,9 +279,9 @@ export const branchDurableTask = <O = APIContracts.V1BranchDurableTaskResponse>(
  * @param runId - The ID of the run to get
  * @returns Effect that resolves with the run details
  */
-export const getRun = <O = unknown>(
+export const getRun = (
   runId: string,
-): Effect.Effect<O, HatchetRunError, HatchetClientService> =>
+): Effect.Effect<RunDetails, HatchetRunError, HatchetClientService> =>
   Effect.gen(function*() {
     const client = yield* getHatchetClient()
     const result = yield* Effect.tryPromise({
@@ -250,7 +293,7 @@ export const getRun = <O = unknown>(
           cause: error,
         }),
     })
-    return result as O
+    return result
   })
 
 /**
@@ -261,7 +304,7 @@ export const getRun = <O = unknown>(
  */
 export const getRunStatus = (
   runId: string,
-): Effect.Effect<string, HatchetRunError, HatchetClientService> =>
+): Effect.Effect<RunStatus, HatchetRunError, HatchetClientService> =>
   Effect.gen(function*() {
     const client = yield* getHatchetClient()
     const result = yield* Effect.tryPromise({
@@ -273,7 +316,7 @@ export const getRunStatus = (
           cause: error,
         }),
     })
-    return result as string
+    return result
   })
 
 /**
@@ -303,9 +346,9 @@ export const getRunTaskId = (
  * @param options - Options for filtering and paginating runs
  * @returns Effect that resolves with the list of runs
  */
-export const listRuns = <O = unknown>(
+export const listRuns = (
   options?: ListRunsOpts,
-): Effect.Effect<O[], HatchetWorkflowError, HatchetClientService> =>
+): Effect.Effect<RunSummary[], HatchetWorkflowError, HatchetClientService> =>
   Effect.gen(function*() {
     const client = yield* getHatchetClient()
     const result = yield* Effect.tryPromise({
@@ -316,6 +359,5 @@ export const listRuns = <O = unknown>(
           cause: error,
         }),
     })
-    const runs = result as unknown as { readonly rows?: O[] }
-    return runs.rows ?? []
+    return [...responseRows<RunSummary, RunSummaryList>(result)]
   })

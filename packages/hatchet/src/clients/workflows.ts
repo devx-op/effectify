@@ -35,12 +35,13 @@ const getUnsupportedWorkflowName = (
  * Honest package stance: the public Hatchet SDK exposes workflow declarations,
  * but not a supported `workflows.create` mutation in v1.21.0.
  *
+ * @deprecated Compatibility-only shim. Hatchet SDK 1.21.0 does not expose a supported `workflows.create` API.
  * @param workflow - Workflow identity used only for the typed unsupported error
  * @returns Effect that always fails with `HatchetWorkflowError`
  */
 export const createWorkflow = (
   workflow: string | UnsupportedCreateWorkflowDefinition,
-): Effect.Effect<never, HatchetWorkflowError, HatchetClientService> =>
+): Effect.Effect<never, HatchetWorkflowError, never> =>
   Effect.fail(
     new HatchetWorkflowError({
       message: CREATE_WORKFLOW_UNSUPPORTED_MESSAGE,

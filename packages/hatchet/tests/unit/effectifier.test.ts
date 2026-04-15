@@ -4,13 +4,12 @@
  * Unit tests for the effectifier module that converts Effect → Promise for Hatchet
  */
 
-import { describe, expect, it, vi } from "vitest"
+import { describe, expect, expectTypeOf, it } from "vitest"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import * as ManagedRuntime from "effect/ManagedRuntime"
 import * as ServiceMap from "effect/ServiceMap"
-import type { Context as HatchetContext } from "@hatchet-dev/typescript-sdk"
-import { HatchetStepContext } from "@effectify/hatchet"
+import { HatchetStepContext, type HatchetTaskContext } from "@effectify/hatchet"
 import { createMockContext } from "@effectify/hatchet"
 import {
   createEffectifierFromLayer,
@@ -357,6 +356,17 @@ describe("Effect with complex error handling", () => {
 })
 
 describe("Context access patterns", () => {
+  it("createMockContext returns the shared HatchetTaskContext boundary", () => {
+    const mockCtx = createMockContext({
+      input: { key: "value" },
+      retryCount: 1,
+    })
+
+    expectTypeOf(mockCtx).toMatchTypeOf<HatchetTaskContext>()
+    expect(mockCtx.input).toEqual({ key: "value" })
+    expect(mockCtx.retryCount()).toBe(1)
+  })
+
   it("should allow accessing all context methods", async () => {
     const effect = Effect.gen(function*() {
       const ctx = yield* HatchetStepContext

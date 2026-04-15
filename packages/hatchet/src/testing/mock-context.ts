@@ -7,8 +7,27 @@
 import * as Effect from "effect/Effect"
 import * as Exit from "effect/Exit"
 import * as Layer from "effect/Layer"
-import type { Context as HatchetContext } from "@hatchet-dev/typescript-sdk"
-import { HatchetStepContext } from "../core/context.js"
+import { HatchetStepContext, type HatchetTaskContext } from "../core/context.js"
+
+type MockHatchetTaskContext<I, U extends Record<string, unknown>> = Pick<
+  HatchetTaskContext<I, U>,
+  | "input"
+  | "taskName"
+  | "workflowName"
+  | "workflowRunId"
+  | "retryCount"
+  | "parentOutput"
+  | "log"
+  | "logger"
+>
+
+const toHatchetTaskContext = <I, U extends Record<string, unknown>>(
+  context: MockHatchetTaskContext<I, U>,
+): HatchetTaskContext<I, U> => context as unknown as HatchetTaskContext<I, U>
+
+const createProvidedMockLayer = (
+  mockContext: HatchetTaskContext,
+): Layer.Layer<HatchetStepContext, never, never> => Layer.succeed(HatchetStepContext, mockContext)
 
 /**
  * Creates a mock HatchetStepContext for testing.
@@ -16,40 +35,48 @@ import { HatchetStepContext } from "../core/context.js"
  * @param options - Optional configuration for the mock context
  * @returns A mock context object
  */
-export const createMockContext = (
+export const createMockContext = <
+  I = unknown,
+  U extends Record<string, unknown> = Record<string, never>,
+>(
   options: {
-    readonly input?: unknown
+    readonly input?: I
     readonly taskName?: string
     readonly workflowName?: string
     readonly workflowRunId?: string
     readonly retryCount?: number
   } = {},
-): HatchetContext<any, any> => {
+): HatchetTaskContext<I, U> => {
   const {
-    input = {},
+    input,
     taskName = "test-task",
     workflowName = "test-workflow",
     workflowRunId = "test-run-id",
     retryCount = 0,
   } = options
 
-  // Return as any - the actual Hatchet SDK context has many internal properties
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return {
-    input,
+  const providedInput = (input ?? {}) as I
+
+  const mockContext: MockHatchetTaskContext<I, U> = {
+    input: providedInput,
     taskName: () => taskName,
     workflowName: () => workflowName,
     workflowRunId: () => workflowRunId,
     retryCount: () => retryCount,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    parentOutput: async () => null as any,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    log: async (_msg: any) => {
+    parentOutput: async () => null as never,
+    log: async (_message) => {
       // no-op for testing
     },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    logger: {} as any,
-  } as any
+    logger: {
+      info: async () => {},
+      debug: async () => {},
+      warn: async () => {},
+      error: async () => {},
+      util: () => {},
+    },
+  }
+
+  return toHatchetTaskContext(mockContext)
 }
 
 /**
@@ -59,10 +86,8 @@ export const createMockContext = (
  * @returns A Layer that provides the mock context
  */
 export const createMockLayer = (
-  mockContext: HatchetContext<any, any>,
-): Layer.Layer<HatchetStepContext, never, never> =>
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  Layer.succeed(HatchetStepContext, mockContext as any)
+  mockContext: HatchetTaskContext,
+): Layer.Layer<HatchetStepContext, never, never> => createProvidedMockLayer(mockContext)
 
 /**
  * Creates a Layer with a default mock context.
@@ -73,9 +98,7 @@ export const createDefaultMockLayer = (): Layer.Layer<
   HatchetStepContext,
   never,
   never
-> =>
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  Layer.succeed(HatchetStepContext, createMockContext() as any)
+> => createProvidedMockLayer(createMockContext())
 
 /**
  * Runs an Effect with a mock HatchetStepContext using provide.
@@ -86,11 +109,10 @@ export const createDefaultMockLayer = (): Layer.Layer<
  */
 export const runWithMockContext = <A, E>(
   effect: Effect.Effect<A, E, HatchetStepContext>,
-  mockContext?: HatchetContext<any, any>,
+  mockContext?: HatchetTaskContext,
 ): Effect.Effect<A, E, never> => {
   const ctx = mockContext ?? createMockContext()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const mockLayer = Layer.succeed(HatchetStepContext, ctx as any)
+  const mockLayer = createProvidedMockLayer(ctx)
   return Effect.provide(effect, mockLayer)
 }
 
@@ -103,11 +125,10 @@ export const runWithMockContext = <A, E>(
  */
 export const testTask = async <A, E>(
   effect: Effect.Effect<A, E, HatchetStepContext>,
-  mockContext?: HatchetContext<any, any>,
+  mockContext?: HatchetTaskContext,
 ): Promise<A> => {
   const ctx = mockContext ?? createMockContext()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const mockLayer = Layer.succeed(HatchetStepContext, ctx as any)
+  const mockLayer = createProvidedMockLayer(ctx)
   const effectWithContext = Effect.provide(effect, mockLayer)
   return Effect.runPromise(effectWithContext)
 }
@@ -121,11 +142,10 @@ export const testTask = async <A, E>(
  */
 export const testTaskExit = async <A, E>(
   effect: Effect.Effect<A, E, HatchetStepContext>,
-  mockContext?: HatchetContext<any, any>,
+  mockContext?: HatchetTaskContext,
 ): Promise<Exit.Exit<A, E>> => {
   const ctx = mockContext ?? createMockContext()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const mockLayer = Layer.succeed(HatchetStepContext, ctx as any)
+  const mockLayer = createProvidedMockLayer(ctx)
   const effectWithContext = Effect.provide(effect, mockLayer)
   return Effect.runPromiseExit(effectWithContext)
 }

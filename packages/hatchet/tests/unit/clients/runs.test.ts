@@ -2,11 +2,12 @@
  * @effectify/hatchet - Runs Client Tests
  */
 
-import { describe, expect, it, layer } from "@effect/vitest"
+import { describe, expect, expectTypeOf, it, layer } from "@effect/vitest"
 import * as Cause from "effect/Cause"
 import { Effect, Layer } from "effect"
 import {
   branchDurableTask,
+  type BranchDurableTaskResult,
   cancelRun,
   getRun,
   getRunStatus,
@@ -15,8 +16,12 @@ import {
   type ListRunsOpts,
   replayRun,
   type ReplayRunOpts,
+  type ReplayRunResult,
   restoreTask,
+  type RestoreTaskResult,
+  type RunDetails,
   type RunOpts,
+  type RunSummary,
   runWorkflow,
   runWorkflowNoWait,
 } from "../../../src/clients/runs"
@@ -139,6 +144,14 @@ describe("Runs Client - Type Exports", () => {
       expect(opts.filters?.workflowName).toBe("orders.process")
       expect(sdkOpts.filters?.workflowNames).toEqual(["orders.process"])
       expect(sdkOpts.filters?.statuses).toEqual(["FAILED"])
+    })
+
+    it("should export SDK-derived run result aliases", () => {
+      expectTypeOf<RunDetails>().toMatchTypeOf<{ metadata?: object }>()
+      expectTypeOf<RunSummary>().toMatchTypeOf<{ metadata?: object }>()
+      expectTypeOf<ReplayRunResult>().toMatchTypeOf<{ ids?: string[] }>()
+      expectTypeOf<RestoreTaskResult>().toMatchTypeOf<object>()
+      expectTypeOf<BranchDurableTaskResult>().toMatchTypeOf<object>()
     })
   })
 })
