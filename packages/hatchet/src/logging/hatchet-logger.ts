@@ -11,29 +11,57 @@ import * as Option from "effect/Option"
 import * as ServiceMap from "effect/ServiceMap"
 import { HatchetStepContext } from "../core/context.js"
 
-/**
- * Creates a Hatchet-aware logger that:
- * - If inside a Hatchet task: forwards logs to Hatchet UI via ctx.log()
- * - Otherwise: behaves as the default console logger
- */
-export const makeHatchetLogger = (): Logger.Logger<unknown, void> =>
-  Logger.make(({ logLevel, message, fiber }) => {
-    const msg = typeof message === "string" ? message : String(message)
-    const formatted = `[${String(logLevel)}] ${msg}`
+const defaultFormat = (level: string, message: string): string => `[${level}] ${message}`
 
-    const hatchetCtx = ServiceMap.getOption(fiber.services, HatchetStepContext)
+const stringifyMessage = (message: unknown): string => typeof message === "string" ? message : String(message)
+
+const makeConsoleFallback = (
+  format: (level: string, message: string) => string,
+): Logger.Logger<unknown, void> =>
+  Logger.withConsoleLog(
+    Logger.make(({ logLevel, message }) => format(String(logLevel), stringifyMessage(message))),
+  )
+
+const makeConfiguredHatchetLogger = (
+  format: (level: string, message: string) => string,
+  shouldConsole: boolean,
+): Logger.Logger<unknown, void> => {
+  const fallback = makeConsoleFallback(format)
+
+  return Logger.make((options) => {
+    const formatted = format(
+      String(options.logLevel),
+      stringifyMessage(options.message),
+    )
+
+    const hatchetCtx = ServiceMap.getOption(
+      options.fiber.services,
+      HatchetStepContext,
+    )
 
     if (Option.isSome(hatchetCtx)) {
       try {
         hatchetCtx.value.log(formatted)
       } catch {
-        console.log(formatted)
+        if (shouldConsole) {
+          fallback.log(options)
+        }
       }
       return
     }
 
-    console.log(formatted)
+    if (shouldConsole) {
+      fallback.log(options)
+    }
   })
+}
+
+/**
+ * Creates a Hatchet-aware logger that:
+ * - If inside a Hatchet task: forwards logs to Hatchet UI via ctx.log()
+ * - Otherwise: behaves as the default console logger
+ */
+export const makeHatchetLogger = (): Logger.Logger<unknown, void> => makeConfiguredHatchetLogger(defaultFormat, true)
 
 /**
  * Default Hatchet logger instance
@@ -73,30 +101,7 @@ export const createHatchetLogger = (
     console?: boolean
   } = {},
 ): Logger.Logger<unknown, void> => {
-  const {
-    format = (level, msg) => `[${level}] ${msg}`,
-    console: shouldConsole = true,
-  } = options
+  const { format = defaultFormat, console: shouldConsole = true } = options
 
-  return Logger.make(({ logLevel, message, fiber }) => {
-    const msg = typeof message === "string" ? message : String(message)
-    const formatted = format(String(logLevel), msg)
-
-    const hatchetCtx = ServiceMap.getOption(fiber.services, HatchetStepContext)
-
-    if (Option.isSome(hatchetCtx)) {
-      try {
-        hatchetCtx.value.log(formatted)
-      } catch {
-        if (shouldConsole) {
-          console.log(formatted)
-        }
-      }
-      return
-    }
-
-    if (shouldConsole) {
-      console.log(formatted)
-    }
-  })
+  return makeConfiguredHatchetLogger(format, shouldConsole)
 }

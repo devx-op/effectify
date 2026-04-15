@@ -2,6 +2,7 @@ import * as Cause from "effect/Cause"
 import * as Config from "effect/Config"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
+import * as Logger from "effect/Logger"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 const initMock = vi.hoisted(() => vi.fn())
@@ -18,9 +19,18 @@ describe("Hatchet client bootstrap and config", () => {
   })
 
   it("initializes the SDK client from config and logs the successful bootstrap", async () => {
-    const consoleLogSpy = vi
-      .spyOn(console, "log")
-      .mockImplementation(() => undefined)
+    const logEntries: Array<{
+      level: string
+      message: ReadonlyArray<unknown>
+    }> = []
+    const captureLogger = Logger.make<unknown, void>(
+      ({ logLevel, message }) => {
+        logEntries.push({
+          level: String(logLevel),
+          message: Array.isArray(message) ? message : [message],
+        })
+      },
+    )
     const sdkClient = { tenantId: "tenant-1" }
     initMock.mockReturnValue(sdkClient)
 
@@ -31,11 +41,14 @@ describe("Hatchet client bootstrap and config", () => {
       Effect.provide(
         Layer.provide(
           HatchetClientLive,
-          HatchetConfigLayer({
-            host: "https://hatchet.internal",
-            token: "token-123",
-            namespace: "demo",
-          }),
+          Layer.mergeAll(
+            HatchetConfigLayer({
+              host: "https://hatchet.internal",
+              token: "token-123",
+              namespace: "demo",
+            }),
+            Logger.layer([captureLogger]),
+          ),
         ),
       ),
       Effect.runPromise,
@@ -46,17 +59,21 @@ describe("Hatchet client bootstrap and config", () => {
       host_port: "https://hatchet.internal",
     })
     expect(client).toBe(sdkClient)
-    expect(consoleLogSpy).toHaveBeenCalledWith(
-      "[Hatchet] Initializing with host:",
-      "https://hatchet.internal",
-    )
-    expect(consoleLogSpy).toHaveBeenCalledWith(
-      "[Hatchet] Token present:",
-      true,
-    )
-    expect(consoleLogSpy).toHaveBeenCalledWith(
-      "[Hatchet] Client initialized successfully!",
-    )
+    expect(logEntries).toContainEqual({
+      level: "Info",
+      message: [
+        "[Hatchet] Initializing with host:",
+        "https://hatchet.internal",
+      ],
+    })
+    expect(logEntries).toContainEqual({
+      level: "Info",
+      message: ["[Hatchet] Token present:", true],
+    })
+    expect(logEntries).toContainEqual({
+      level: "Info",
+      message: ["[Hatchet] Client initialized successfully!"],
+    })
   })
 
   it("propagates SDK init failures through the Effect exit", async () => {

@@ -5,6 +5,7 @@
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import * as Logger from "effect/Logger"
+import * as TestConsole from "effect/testing/TestConsole"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import {
   createHatchetLogger,
@@ -26,6 +27,21 @@ const runWithLogger = async <A, E, R>(
 
   return effect.pipe(Effect.provideServices(services), Effect.runPromise)
 }
+
+const runWithLoggerCaptureConsole = async <E, R>(
+  effect: Effect.Effect<unknown, E, R>,
+  logger: Logger.Logger<unknown, void>,
+  extraLayer: Layer.Layer.Any = Layer.empty,
+) =>
+  Effect.gen(function*() {
+    yield* effect
+    return yield* TestConsole.logLines
+  }).pipe(
+    Effect.provide(
+      Layer.mergeAll(Logger.layer([logger]), TestConsole.layer, extraLayer),
+    ),
+    Effect.runPromise,
+  )
 
 afterEach(() => {
   vi.restoreAllMocks()
@@ -60,23 +76,20 @@ describe("makeHatchetLogger", () => {
   })
 
   it("falls back to console when no Hatchet step context exists", async () => {
-    const consoleLogSpy = vi
-      .spyOn(console, "log")
-      .mockImplementation(() => undefined)
     const logger = makeHatchetLogger()
 
-    await runWithLogger(Effect.log("sync order"), logger)
+    const logs = await runWithLoggerCaptureConsole(
+      Effect.log("sync order"),
+      logger,
+    )
 
-    expect(consoleLogSpy).toHaveBeenCalledWith("[Info] sync order")
+    expect(logs).toContain("[Info] sync order")
   })
 
   it("falls back to console when Hatchet logging throws", async () => {
-    const consoleLogSpy = vi
-      .spyOn(console, "log")
-      .mockImplementation(() => undefined)
     const logger = makeHatchetLogger()
 
-    await runWithLogger(
+    const logs = await runWithLoggerCaptureConsole(
       Effect.log("sync order"),
       logger,
       Layer.succeed(HatchetStepContext, {
@@ -87,7 +100,7 @@ describe("makeHatchetLogger", () => {
       } as never),
     )
 
-    expect(consoleLogSpy).toHaveBeenCalledWith("[Info] sync order")
+    expect(logs).toContain("[Info] sync order")
   })
 })
 
@@ -140,26 +153,26 @@ describe("createHatchetLogger", () => {
   })
 
   it("applies the custom formatter to emitted messages", async () => {
-    const consoleLogSpy = vi
-      .spyOn(console, "log")
-      .mockImplementation(() => undefined)
     const logger = createHatchetLogger({
       format: (level, message) => `${level.toUpperCase()} :: ${message}`,
     })
 
-    await runWithLogger(Effect.log("sync order"), logger)
+    const logs = await runWithLoggerCaptureConsole(
+      Effect.log("sync order"),
+      logger,
+    )
 
-    expect(consoleLogSpy).toHaveBeenCalledWith("INFO :: sync order")
+    expect(logs).toContain("INFO :: sync order")
   })
 
   it("silences console output when console=false and no Hatchet context exists", async () => {
-    const consoleLogSpy = vi
-      .spyOn(console, "log")
-      .mockImplementation(() => undefined)
     const logger = createHatchetLogger({ console: false })
 
-    await runWithLogger(Effect.log("sync order"), logger)
+    const logs = await runWithLoggerCaptureConsole(
+      Effect.log("sync order"),
+      logger,
+    )
 
-    expect(consoleLogSpy).not.toHaveBeenCalled()
+    expect(logs).toEqual([])
   })
 })
