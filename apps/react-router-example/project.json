@@ -13,14 +13,6 @@
         "cwd": "apps/react-router-example"
       }
     },
-    "test:browser": {
-      "executor": "nx:run-commands",
-      "dependsOn": ["typegen", "prisma:generate", "build"],
-      "options": {
-        "command": "node tests/browser/support/run-browser-suite.mjs",
-        "cwd": "apps/react-router-example"
-      }
-    },
     "typecheck": {
       "executor": "nx:run-commands",
       "options": {
@@ -49,8 +41,11 @@
       "continuous": true,
       "dependsOn": ["build"],
       "options": {
-        "command": "react-router-serve build/server/index.js",
-        "cwd": "apps/react-router-example"
+        "command": "PORT={args.port} react-router-serve build/server/index.js",
+        "cwd": "apps/react-router-example",
+        "port": 3100,
+        "readyWhen": "[react-router-serve] http://localhost:3100",
+        "forwardAllArgs": false
       }
     },
     "build": {
@@ -58,7 +53,7 @@
       "outputs": ["{options.outputPath}"],
       "defaultConfiguration": "production",
       "options": {
-        "outputPath": "dist/apps/react-router-example"
+        "outputPath": "apps/react-router-example/build"
       },
       "configurations": {
         "development": {

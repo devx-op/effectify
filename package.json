@@ -26,6 +26,7 @@
   "devDependencies": {
     "@effect/language-service": "catalog:",
     "@effect/tsgo": "catalog:",
+    "@nx/cypress": "catalog:",
     "@nx/js": "catalog:",
     "@nx/node": "catalog:",
     "@nx/react": "catalog:",
@@ -44,6 +45,7 @@
     "@vitest/coverage-v8": "catalog:",
     "@vitest/ui": "catalog:",
     "dprint": "catalog:",
+    "cypress": "catalog:",
     "husky": "catalog:",
     "jiti": "catalog:",
     "jsdom": "catalog:",

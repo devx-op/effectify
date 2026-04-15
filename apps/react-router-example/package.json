@@ -36,11 +36,8 @@
     "@types/better-sqlite3": "7.6.13",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
-    "@vitest/browser": "catalog:",
-    "@vitest/browser-webdriverio": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "prisma": "catalog:",
-    "vitest": "catalog:",
-    "webdriverio": "catalog:"
+    "vitest": "catalog:"
   }
 }

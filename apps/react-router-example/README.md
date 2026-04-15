@@ -2,6 +2,19 @@
 
 This example demonstrates using Effect with React Router 7 and better-auth for authentication.
 
+## Stable app entrypoints
+
+The example app is intended to be understandable on its own, without relying on the separate e2e app.
+
+- `/` — landing page with a quick overview of the available example slices
+- `/login` — email/password sign-in flow
+- `/signup` — account creation flow
+- `/todo-app` — protected loader/action example backed by Prisma + auth runtime
+- `/chat` — simple UI demo route for smoke-checking the shell/runtime
+- `/api/auth/*` — better-auth handler entrypoint used by the reachable auth flows
+
+The root document shell loads Pico CSS and Inter through the React Router `links()` contract so SSR and hydration stay deterministic.
+
 ## Features
 
 - **React Router 7** - Modern routing with loaders and actions
@@ -43,7 +56,7 @@ The app includes a complete authentication system powered by better-auth:
 
 - **Signup**: `/signup` - Create new account
 - **Login**: `/login` - Sign in with existing account
-- **Dashboard**: `/dashboard` - Protected route (requires auth)
+- **Auth API**: `/api/auth/*` - better-auth loader/action endpoint
 
 ## Tech Stack
 
@@ -61,19 +74,19 @@ The app includes a complete authentication system powered by better-auth:
 
 ```
 app/
+├── app.tsx                # Stable landing page overview for the example slices
+├── app-nav.tsx            # Deterministic top-level navigation
 ├── lib/
 │   ├── auth-client.ts      # Client-side auth
 │   ├── better-auth-options.server.ts  # Server auth config
-│   └── prisma.ts           # Database connection
+│   └── runtime.server.ts   # Shared Effect runtime wrappers and AppLayer
 ├── routes/
-│   ├── _layout.tsx         # Root layout
-│   ├── index.tsx           # Home page
 │   ├── signup.tsx          # Signup page
 │   ├── login.tsx           # Login page
-│   ├── dashboard.tsx       # Protected dashboard
+│   ├── todo-app.tsx        # Protected todo workflow
+│   ├── chat.tsx            # Simple chat demo
 │   └── api.auth.ts         # Auth API endpoints
-└── styles/
-    └── app.css             # Tailwind styles
+└── root.tsx                # Document shell + global navigation
 ```
 
 ## Environment Variables
@@ -93,44 +106,6 @@ pnpm typecheck
 # Build for production
 pnpm build
 ```
-
-## Browser Tests
-
-This app now includes a reusable Vitest Browser Mode harness backed by WebdriverIO and a real system Chrome/Chromium binary.
-
-### Prerequisites
-
-- Arch Linux with `chromium` installed, or another supported Chrome binary available on your `PATH`
-- The normal workspace dependencies installed with `pnpm install`
-
-### Run the browser harness
-
-```bash
-pnpm nx run @effectify/react-router-example:test:browser
-```
-
-The Nx target builds the app, serves `dist/apps/react-router-example` on `http://127.0.0.1:3100`, then runs the smoke browser test in headless Chrome.
-
-### Environment variables
-
-- `CHROME_BIN` — absolute path override for the browser binary, for example `CHROME_BIN=/usr/bin/chromium`
-- `BROWSER_TEST_BASE_URL` — reuse an already-running app instead of spawning `react-router-serve`
-
-Examples:
-
-```bash
-CHROME_BIN=/usr/bin/chromium pnpm nx run @effectify/react-router-example:test:browser
-BROWSER_TEST_BASE_URL=http://127.0.0.1:3200 pnpm nx run @effectify/react-router-example:test:browser
-```
-
-### Troubleshooting
-
-If the harness reports that Chrome cannot be found, set `CHROME_BIN` explicitly or install one of the supported binaries:
-
-- `chromium`
-- `google-chrome-stable`
-
-The resolver checks `CHROME_BIN` first, then searches `PATH` for those binaries in that order.
 
 ## Notes
 
