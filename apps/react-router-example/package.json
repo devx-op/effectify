@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "typecheck": "react-router typegen && tsc",
+    "build": "react-router build",
     "dev": "react-router dev",
     "prisma:generate": "pnpm dlx prisma generate"
   },

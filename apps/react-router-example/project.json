@@ -48,20 +48,12 @@
         "forwardAllArgs": false
       }
     },
+    "// build-contract": "React Router owns the build/server + build/client artifact tree consumed by the Nx start/e2e flow.",
     "build": {
-      "executor": "@nx/vite:build",
-      "outputs": ["{options.outputPath}"],
-      "defaultConfiguration": "production",
+      "executor": "nx:run-script",
+      "outputs": ["{projectRoot}/build"],
       "options": {
-        "outputPath": "apps/react-router-example/build"
-      },
-      "configurations": {
-        "development": {
-          "mode": "development"
-        },
-        "production": {
-          "mode": "production"
-        }
+        "script": "build"
       },
       "dependsOn": ["typegen", "prisma:generate", "^build"]
     }

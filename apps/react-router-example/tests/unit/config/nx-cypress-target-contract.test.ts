@@ -30,6 +30,42 @@ describe("Nx Cypress target contract", () => {
     )
   })
 
+  it("uses the React Router build script as the single build artifact producer", () => {
+    const projectJson = readJson<{
+      targets?: {
+        build?: {
+          executor?: string
+          dependsOn?: string[]
+          options?: Record<string, string | number | boolean>
+        }
+      }
+    }>(resolve(workspaceRoot, "apps/react-router-example/project.json"))
+    const packageJson = readJson<{
+      scripts?: Record<string, string>
+    }>(resolve(workspaceRoot, "apps/react-router-example/package.json"))
+
+    expect(projectJson.targets?.build?.executor).toBe("nx:run-script")
+    expect(projectJson.targets?.build?.dependsOn).toEqual([
+      "typegen",
+      "prisma:generate",
+      "^build",
+    ])
+    expect(projectJson.targets?.build?.options).toEqual({ script: "build" })
+    expect(packageJson.scripts?.build).toBe("react-router build")
+  })
+
+  it("removes the stale Vite outDir override so build artifacts stay under build/", () => {
+    const viteConfig = readFileSync(
+      resolve(workspaceRoot, "apps/react-router-example/vite.config.ts"),
+      "utf8",
+    )
+
+    expect(viteConfig).not.toContain(
+      "../../dist/apps/react-app-router-example",
+    )
+    expect(viteConfig).not.toContain("outDir:")
+  })
+
   it("makes the e2e project own orchestration and expose an explicit manual bypass", () => {
     const projectJson = readJson<{
       targets?: {
@@ -60,6 +96,7 @@ describe("Nx Cypress target contract", () => {
 
     expect(cypressConfig).toContain("nxE2EPreset")
     expect(cypressConfig).toContain('baseUrl: "http://localhost:3100"')
+    expect(cypressConfig).toContain("allowCypressEnv: false")
     expect(cypressConfig).not.toContain("webServerCommands")
     expect(cypressConfig).not.toContain("CYPRESS_MANUAL_SERVER")
   })

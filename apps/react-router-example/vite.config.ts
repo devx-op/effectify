@@ -62,7 +62,6 @@ export default defineConfig({
   //  plugins: [ nxViteTsPaths() ],
   // },
   build: {
-    outDir: "../../dist/apps/react-app-router-example",
     emptyOutDir: true,
     reportCompressedSize: true,
     commonjsOptions: {

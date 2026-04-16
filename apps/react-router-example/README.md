@@ -103,8 +103,11 @@ DATABASE_URL=file:./dev.db
 # Type checking
 pnpm typecheck
 
-# Build for production
+# Build for production (emits build/server + build/client)
 pnpm build
+
+# Serve the production build through the Nx start contract
+pnpm nx start @effectify/react-router-example
 ```
 
 ## Notes
