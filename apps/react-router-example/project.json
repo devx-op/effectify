@@ -141,15 +141,7 @@
       "executor": "nx:run-script",
       "outputs": ["{projectRoot}/build"],
       "options": {
-        "outputPath": "apps/react-router-example/build"
-      },
-      "configurations": {
-        "development": {
-          "mode": "development"
-        },
-        "production": {
-          "mode": "production"
-        }
+        "script": "build"
       },
       "dependsOn": ["typegen", "prisma:generate", "^build"]
     }
