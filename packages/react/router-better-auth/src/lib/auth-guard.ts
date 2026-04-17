@@ -3,25 +3,34 @@ import { ActionArgsContext, type HttpResponse, LoaderArgsContext } from "@effect
 import * as Effect from "effect/Effect"
 import { redirect } from "react-router"
 
+const getRequestOrigin = (request: Request) => new URL(request.url).origin
+
 const mapHeaders = (args: { request: Request }) => {
   const headers = new Headers(args.request.headers)
   if (!headers.has("origin")) {
-    headers.set("origin", "http://localhost:3000")
+    headers.set("origin", getRequestOrigin(args.request))
   }
   return headers
 }
 
-// Default auth server URL - can be overridden with BETTER_AUTH_URL env var
-const getAuthServerOrigin = () =>
+const getAuthServerOrigin = (request: Request) =>
   process.env.BETTER_AUTH_URL?.replace(/\/api\/auth\/?$/, "") ||
-  "http://localhost:3001"
+  getRequestOrigin(request)
+
+const failUnauthorized = (details: string) =>
+  Effect.fail(
+    new AuthService.Unauthorized({
+      details,
+    }),
+  )
 
 const verifySessionWithContext = (context: typeof LoaderArgsContext) =>
   Effect.gen(function*() {
     const args = yield* context
     const forwardedHeaders = mapHeaders(args)
     const cookieValue = forwardedHeaders.get("cookie") || ""
-    const authOrigin = getAuthServerOrigin()
+    const requestOrigin = getRequestOrigin(args.request)
+    const authOrigin = getAuthServerOrigin(args.request)
 
     // Make direct fetch call to auth server
     const response = yield* Effect.tryPromise({
@@ -30,7 +39,7 @@ const verifySessionWithContext = (context: typeof LoaderArgsContext) =>
           headers: {
             cookie: cookieValue,
             "Content-Type": "application/json",
-            origin: "http://localhost:3000",
+            origin: requestOrigin,
           },
         }),
       catch: (cause) =>
@@ -54,9 +63,7 @@ const verifySessionWithContext = (context: typeof LoaderArgsContext) =>
       } as const
     }
 
-    throw new AuthService.Unauthorized({
-      details: "Missing or invalid authentication",
-    })
+    return yield* failUnauthorized("Missing or invalid authentication")
   })
 
 const verifySessionWithActionContext = (context: typeof ActionArgsContext) =>
@@ -64,7 +71,8 @@ const verifySessionWithActionContext = (context: typeof ActionArgsContext) =>
     const args = yield* context
     const forwardedHeaders = mapHeaders(args)
     const cookieValue = forwardedHeaders.get("cookie") || ""
-    const authOrigin = getAuthServerOrigin()
+    const requestOrigin = getRequestOrigin(args.request)
+    const authOrigin = getAuthServerOrigin(args.request)
 
     const response = yield* Effect.tryPromise({
       try: () =>
@@ -72,7 +80,7 @@ const verifySessionWithActionContext = (context: typeof ActionArgsContext) =>
           headers: {
             cookie: cookieValue,
             "Content-Type": "application/json",
-            origin: "http://localhost:3000",
+            origin: requestOrigin,
           },
         }),
       catch: (cause) =>
@@ -96,9 +104,7 @@ const verifySessionWithActionContext = (context: typeof ActionArgsContext) =>
       } as const
     }
 
-    throw new AuthService.Unauthorized({
-      details: "Missing or invalid authentication",
-    })
+    return yield* failUnauthorized("Missing or invalid authentication")
   })
 
 const verifySession = () => verifySessionWithContext(LoaderArgsContext)
@@ -110,7 +116,9 @@ export type AuthGuardOptions = {
 }
 
 type WithBetterAuthGuard = {
-  <A, E, R>(eff: Effect.Effect<A, E, R>): Effect.Effect<
+  <A, E, R>(
+    eff: Effect.Effect<A, E, R>,
+  ): Effect.Effect<
     A,
     E | AuthService.Unauthorized,
     | Exclude<R, AuthService.AuthContext>
@@ -167,7 +175,9 @@ export const withBetterAuthGuard: WithBetterAuthGuard = Object.assign(
 )
 
 type WithBetterAuthGuardAction = {
-  <A, E, R>(eff: Effect.Effect<A, E, R>): Effect.Effect<
+  <A, E, R>(
+    eff: Effect.Effect<A, E, R>,
+  ): Effect.Effect<
     A,
     E | AuthService.Unauthorized,
     | Exclude<R, AuthService.AuthContext>

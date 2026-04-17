@@ -20,7 +20,7 @@ const { adapterConfigMock, authHandlerMock, hatchetInitMock, prismaLayerMock } =
 
 vi.mock("../../../app/lib/better-auth-options.server.js", () => ({
   authOptions: {
-    baseURL: "http://localhost:3001",
+    baseURL: "http://localhost:4200",
     secret: "runtime-test-secret",
   },
 }))

@@ -9,8 +9,7 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    // Provide a default value for CI/CD environments where the database URL is not set
-    // This allows prisma generate to run without connecting to the database
-    url: process.env.DATABASE_URL ?? "postgresql://postgres:postgres@localhost:5432/effectify",
+    // Keep local tooling aligned with the example app's SQLite default.
+    url: process.env.DATABASE_URL ?? "file:./dev.db",
   },
 })

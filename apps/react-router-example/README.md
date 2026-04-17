@@ -6,6 +6,8 @@ This example demonstrates using Effect with React Router 7 and better-auth for a
 
 The example app is intended to be understandable on its own, without relying on the separate e2e app.
 
+For local development, the app serves from `http://localhost:4200` and handles better-auth on the same origin.
+
 - `/` — landing page with a quick overview of the available example slices
 - `/login` — email/password sign-in flow
 - `/signup` — account creation flow
@@ -29,26 +31,28 @@ The root document shell loads Pico CSS and Inter through the React Router `links
 # Install dependencies
 pnpm install
 
-# Generate Prisma client
-npx prisma generate
-
-# Run migrations (creates dev.db SQLite file)
-npx prisma migrate dev
-
-# Create better-auth tables (only needed once)
-sqlite3 dev.db < prisma/better-auth-init.sql
-
 # Start development server
-pnpm dev
+pnpm nx run @effectify/react-router-example:dev
+```
+
+The example now bootstraps the local SQLite schema on startup for ergonomic local dev:
+
+- better-auth tables: `user`, `session`, `account`, `verification`
+- Prisma todo table: `Todo`
+
+If you change `prisma/schema.prisma`, regenerate the Prisma client before restarting the app:
+
+```bash
+pnpm nx run @effectify/react-router-example:prisma:generate
 ```
 
 ## Database
 
 This example uses **SQLite** (file-based database) instead of PostgreSQL. No Docker required!
 
-- Database file: `dev.db` (created automatically)
-- Connection: `DATABASE_URL=file:./dev.db`
-- Tables: `user`, `session`, `account`, `verification` (better-auth), `Todo` (Prisma)
+- Database file: `dev.db` (created automatically if missing)
+- Connection: `DATABASE_URL=file:./dev.db` (defaults automatically for local dev)
+- Tables: `user`, `session`, `account`, `verification` (better-auth), `Todo` (Prisma/local bootstrap)
 
 ## Authentication
 
@@ -56,7 +60,7 @@ The app includes a complete authentication system powered by better-auth:
 
 - **Signup**: `/signup` - Create new account
 - **Login**: `/login` - Sign in with existing account
-- **Auth API**: `/api/auth/*` - better-auth loader/action endpoint
+- **Auth API**: `/api/auth/*` - better-auth loader/action endpoint on the same server/origin
 
 ## Tech Stack
 
@@ -91,7 +95,7 @@ app/
 
 ## Environment Variables
 
-Create a `.env` file:
+Optional `.env` file for overriding the local SQLite path:
 
 ```
 DATABASE_URL=file:./dev.db
@@ -101,17 +105,17 @@ DATABASE_URL=file:./dev.db
 
 ```bash
 # Type checking
-pnpm typecheck
-
-# Build for production (emits build/server + build/client)
-pnpm build
+pnpm nx run @effectify/react-router-example:typecheck
 
 # Serve the production build through the Nx start contract
 pnpm nx start @effectify/react-router-example
 ```
 
+If you run the production server on a non-default origin, set `BETTER_AUTH_URL` to match it before starting the app.
+
 ## Notes
 
 - SQLite is used for simplicity (no Docker needed)
-- better-auth tables are created via SQL script (see `prisma/better-auth-init.sql`)
+- Local dev bootstraps auth + todo tables automatically from `app/lib/prisma.ts`
+- `prisma/better-auth-init.sql` remains available if you want to inspect or run the auth schema manually
 - The database file (`dev.db`) is gitignored - each dev has their own local DB
