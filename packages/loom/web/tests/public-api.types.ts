@@ -1,3 +1,4 @@
+import { Atom, AtomRegistry } from "effect/unstable/reactivity"
 import { Component, Html, Hydration } from "../src/index.js"
 
 const effectLike = { _tag: "EffectLike" } as const
@@ -10,6 +11,7 @@ type Expect<Value extends true> = Value
 const component = Component.make(Html.text("typed"))
 const capability = Component.effect(effectLike)
 const visibleStrategy = Hydration.strategy.visible()
+const liveAtom = Atom.make("typed-live")
 
 const usedDataFirst = Component.use(component, capability)
 const usedDataLast = Component.use(capability)(component)
@@ -24,8 +26,15 @@ const simple = Html.on("click", effectLike)
 
 Html.el("form", Html.hydrate(visibleStrategy), contextual, Html.children(usedDataFirst, usedDataLast))
 Html.el("button", simple, Html.children("send"))
+Html.live(liveAtom, (value) => {
+  const text: string = value
+  return Html.text(text)
+})
 
 const ssr = Html.ssr(Html.el("main", Html.children("ready")))
+const ssrWithRegistry = Html.ssr(Html.live(liveAtom, (value) => Html.text(value)), {
+  registry: AtomRegistry.make(),
+})
 const html = Html.renderToString(Html.el("main", Html.children("ready")))
 const bootstrap = Hydration.bootstrap(document.body)
 const activation = Hydration.activate(document.body, ssr)
@@ -38,6 +47,8 @@ const activationFromSource = Hydration.activate(document.body, ssr.activation, {
 })
 const mismatches: ReadonlyArray<Hydration.Mismatch> = bootstrap.mismatches
 const activationIssues = activation.issues
+const activationRegistry = activation.registry
+const disposeActivation = activation.dispose
 
 type StrategyContract = Expect<Equal<typeof visibleStrategy, Hydration.Strategy>>
 
@@ -53,6 +64,7 @@ export const typecheckSmoke = {
   contextual,
   simple,
   ssr,
+  ssrWithRegistry,
   html,
   visibleStrategy,
   mismatches,
@@ -60,6 +72,8 @@ export const typecheckSmoke = {
   activation,
   activationFromSource,
   activationIssues,
+  activationRegistry,
+  disposeActivation,
 }
 
 export type { StrategyContract }

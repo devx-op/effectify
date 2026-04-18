@@ -1,3 +1,4 @@
+import type { Atom } from "effect/unstable/reactivity"
 import type * as Ast from "../ast.js"
 import type * as Component from "../component.js"
 
@@ -34,11 +35,11 @@ export const makeComponentUseNode = (component: Component.Definition): Ast.Compo
 })
 
 export const makeLiveNode = <Value>(
-  source: Value,
+  atom: Atom.Atom<Value>,
   render: Ast.LiveRender<Value>,
 ): Ast.LiveNode<Value> => ({
   _tag: "Live",
-  source,
+  atom,
   render,
 })
 

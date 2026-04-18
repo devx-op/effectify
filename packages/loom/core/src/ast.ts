@@ -1,3 +1,4 @@
+import type { Atom } from "effect/unstable/reactivity"
 import * as internal from "./internal/ast.js"
 import type * as Component from "./component.js"
 
@@ -47,7 +48,7 @@ export interface ComponentUseNode {
 
 export interface LiveNode<Value> {
   readonly _tag: "Live"
-  readonly source: Value
+  readonly atom: Atom.Atom<Value>
   readonly render: LiveRender<Value>
 }
 
@@ -85,8 +86,8 @@ export const componentUse = (component: Component.Definition): ComponentUseNode 
   internal.makeComponentUseNode(component)
 
 /** Create a neutral live node placeholder. */
-export const live = <Value>(source: Value, render: LiveRender<Value>): LiveNode<Value> =>
-  internal.makeLiveNode(source, render)
+export const live = <Value>(atom: Atom.Atom<Value>, render: LiveRender<Value>): LiveNode<Value> =>
+  internal.makeLiveNode(atom, render)
 
 /** Create hydration metadata for later renderer/runtime use. */
 export const hydrationMetadata = (

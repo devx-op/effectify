@@ -34,6 +34,9 @@ export type ActivatedBoundary = LoomRuntime.Runtime.ActivatedBoundary
 /** Public view of activation issues discovered during hydration startup. */
 export type ActivationIssue = LoomRuntime.Runtime.HydrationActivationIssue
 
+/** Public view of activated live regions discovered during hydration startup. */
+export type ActivatedLiveRegion = LoomRuntime.Runtime.ActivatedLiveRegion
+
 /** Public activation result for the current first real hydration scope. */
 export type ActivationResult = LoomRuntime.Runtime.HydrationActivationResult
 
@@ -45,11 +48,6 @@ export type ActivationSource = LoomRuntime.Runtime.ActivationSource
 
 /** Input accepted by hydration activation while the public SSR contract still carries extra planning data. */
 export type ActivationInput = ActivationSource | LoomRuntime.Runtime.SsrRenderResult
-
-const isSsrRenderResult = (source: ActivationInput): source is LoomRuntime.Runtime.SsrRenderResult => "plan" in source
-
-const normalizeActivationSource = (source: ActivationInput): ActivationSource =>
-  isSsrRenderResult(source) ? source.activation : source
 
 const makeStrategy = (name: StrategyName): Strategy => LoomRuntime.Hydration.marker(name)
 
@@ -103,4 +101,4 @@ export const bootstrap = (root: ParentNode): BootstrapResult => LoomRuntime.Runt
 
 /** Activate discovered hydratable boundaries against the current SSR activation source. */
 export const activate = (root: ParentNode, source: ActivationInput, options?: ActivationOptions): ActivationResult =>
-  LoomRuntime.Runtime.activateHydration(root, normalizeActivationSource(source), options)
+  LoomRuntime.Runtime.activateHydration(root, source, options)

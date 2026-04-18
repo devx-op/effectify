@@ -16,8 +16,8 @@ export const nodeEventNamesAttributeName = "data-loom-node-events"
 /** Comment marker prefix used for SSR/client hydration handshakes. */
 export const markerPrefix = "loom-hydrate"
 
-/** Deferred live placeholder prefix used until live SSR is implemented. */
-export const livePlaceholderPrefix = "loom-live:deferred"
+/** Comment marker prefix used for SSR/client live-region handshakes. */
+export const liveMarkerPrefix = "loom-live"
 
 /** Runtime hydration strategies supported by the public API skeleton. */
 export type StrategyName = "visible" | "idle" | "interaction" | "manual"
@@ -40,9 +40,6 @@ export const startMarker = (id: string): string => `${markerPrefix}-start:${id}`
 
 /** Create the SSR end marker text for a hydratable boundary. */
 export const endMarker = (id: string): string => `${markerPrefix}-end:${id}`
-
-/** Create the deferred live placeholder marker text. */
-export const livePlaceholder = (id: string): string => `${livePlaceholderPrefix}:${id}`
 
 /** Normalize event names for SSR metadata. */
 export const formatEventNames = (events: ReadonlyArray<string>): string =>

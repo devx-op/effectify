@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "paths": {
+      "@effectify/loom-core": ["./core/src/index.ts"],
+      "@effectify/loom-runtime": ["./runtime/src/index.ts"],
+      "@effectify/loom": ["./web/src/index.ts"],
+      "@effectify/loom-router": ["./router/src/index.ts"],
+      "@effectify/loom-vite": ["./vite/src/index.ts"],
+      "@effectify/loom-nitro": ["./nitro/src/index.ts"]
+    }
+  }
+}

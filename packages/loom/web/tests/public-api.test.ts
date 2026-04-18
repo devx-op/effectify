@@ -1,10 +1,17 @@
 // @vitest-environment jsdom
 
+import { Atom, AtomRegistry, Hydration as ReactivityHydration } from "effect/unstable/reactivity"
+import * as Schema from "effect/Schema"
 import * as LoomRuntime from "@effectify/loom-runtime"
 import { describe, expect, it } from "vitest"
 import { Component, Html, Hydration } from "../src/index.js"
 
 const effectLike = { _tag: "EffectLike" } as const
+const makeSerializableTextAtom = (key: string, value: string) =>
+  Atom.serializable(Atom.make(value), {
+    key,
+    schema: Schema.String,
+  })
 
 describe("@effectify/loom public semantics", () => {
   it("re-exports namespace modules from the package root", () => {
@@ -111,12 +118,13 @@ describe("@effectify/loom public semantics", () => {
     expect(effect).toBe(effectLike)
   })
 
-  it("creates fragment and live placeholder nodes", () => {
-    const source = { current: "ready" }
-    const node = Html.live(source, (value) => Html.fragment(Html.text(value), "!"))
+  it("creates fragment-backed live atom nodes and SSR live markers", () => {
+    const atom = makeSerializableTextAtom("live:ready", "ready")
+    const registry = AtomRegistry.make()
+    const node = Html.live(atom, (value) => Html.fragment(Html.text(value), "!"))
 
     expect(node._tag).toBe("Live")
-    expect(node.render(source)).toEqual({
+    expect(node.render("ready")).toEqual({
       _tag: "Fragment",
       children: [
         { _tag: "Text", value: "ready" },
@@ -124,16 +132,76 @@ describe("@effectify/loom public semantics", () => {
       ],
     })
 
-    const ssr = Html.ssr(Html.el("section", Html.children(node)))
+    const ssr = Html.ssr(Html.el("section", Html.children(node)), { registry })
 
-    expect(ssr.html).toBe("<section><!--loom-live:deferred:l0--></section>")
-    expect(ssr.plan.deferred).toEqual([
+    expect(ssr.html).toBe("<section><!--loom-live-start:l0-->ready!<!--loom-live-end:l0--></section>")
+    expect(ssr.plan.liveRegions).toEqual([
+      {
+        id: "l0",
+        boundaryId: undefined,
+        startMarker: "loom-live-start:l0",
+        endMarker: "loom-live-end:l0",
+      },
+    ])
+    expect(ssr.plan.deferred).toEqual([])
+    expect(ReactivityHydration.toValues(ssr.dehydratedAtoms)).toEqual([
+      expect.objectContaining({
+        key: "live:ready",
+        value: "ready",
+      }),
+    ])
+  })
+
+  it("keeps live-region markers deterministic and marks hydratable live regions as activation-pending", () => {
+    const atom = makeSerializableTextAtom("live:deterministic", "hello")
+    const registry = AtomRegistry.make()
+    const tree = Html.el(
+      "section",
+      Html.hydrate(Hydration.strategy.visible()),
+      Html.children(Html.live(atom, (value) => Html.el("span", Html.children(value)))),
+    )
+
+    const first = Html.ssr(tree, { registry })
+    const second = Html.ssr(tree, { registry })
+
+    expect(first.html).toBe(
+      '<!--loom-hydrate-start:b0--><section data-loom-hydrate="visible" data-loom-boundary="b0"><!--loom-live-start:l0--><span>hello</span><!--loom-live-end:l0--></section><!--loom-hydrate-end:b0-->',
+    )
+    expect(second.html).toBe(first.html)
+    expect(first.plan.liveRegions).toEqual(second.plan.liveRegions)
+    expect(first.plan.liveRegions).toEqual([
+      {
+        id: "l0",
+        boundaryId: "b0",
+        startMarker: "loom-live-start:l0",
+        endMarker: "loom-live-end:l0",
+      },
+    ])
+    expect(first.activation.manifest.deferred).toEqual([
       {
         id: "l0",
         kind: "live",
-        reason: "deferred",
+        reason: "activation-pending",
       },
     ])
+  })
+
+  it("exposes the current dehydration seam for live-region SSR", () => {
+    const atom = makeSerializableTextAtom("live:dehydrated", "seeded")
+    const registry = AtomRegistry.make()
+    const result = Html.ssr(Html.live(atom, (value) => Html.text(value)), {
+      registry,
+      dehydrate: { encodeInitialAs: "value-only" },
+    })
+
+    const dehydratedValues = ReactivityHydration.toValues(result.dehydratedAtoms)
+
+    expect(dehydratedValues).toHaveLength(1)
+    expect(dehydratedValues[0]).toMatchObject({
+      key: "live:dehydrated",
+      value: "seeded",
+    })
+    expect(typeof dehydratedValues[0]?.dehydratedAt).toBe("number")
   })
 
   it("collects hydration metadata in the runtime render plan", () => {
@@ -330,28 +398,197 @@ describe("@effectify/loom public semantics", () => {
     expect(interactions).toEqual([["click", "BUTTON", "MAIN"]])
   })
 
-  it("keeps live nodes explicitly deferred during hydration activation", () => {
-    const source = { current: "ready" }
+  it("hydrates dehydrated live state before subscriptions activate", () => {
+    const source = makeSerializableTextAtom("live:ordering", "client")
+    const serverRegistry = AtomRegistry.make()
+    const clientRegistry = AtomRegistry.make()
+    const renders: Array<string> = []
+
+    serverRegistry.set(source, "server")
+
+    const result = Html.ssr(
+      Html.el(
+        "section",
+        Html.hydrate(Hydration.strategy.visible()),
+        Html.children(Html.live(source, (value) => {
+          renders.push(value)
+          return Html.text(value)
+        })),
+      ),
+      { registry: serverRegistry },
+    )
+
+    renders.length = 0
+    document.body.innerHTML = result.html
+
+    const activation = Hydration.activate(document.body, result, { registry: clientRegistry })
+
+    expect(renders).toEqual(["server"])
+    expect(activation.registry.get(source)).toBe("server")
+    expect(activation.deferred).toEqual([])
+    expect(document.body.innerHTML).toContain("<!--loom-live-start:l0-->server<!--loom-live-end:l0-->")
+  })
+
+  it("activates live regions and replaces the owned DOM range after Atom updates", () => {
+    const source = makeSerializableTextAtom("live:update", "client")
+    const serverRegistry = AtomRegistry.make()
+    const clientRegistry = AtomRegistry.make()
+
+    serverRegistry.set(source, "ready")
+
+    const result = Html.ssr(
+      Html.el(
+        "section",
+        Html.hydrate(Hydration.strategy.visible()),
+        Html.children(Html.live(source, (value) => Html.el("span", Html.children(value)))),
+      ),
+      { registry: serverRegistry },
+    )
+
+    document.body.innerHTML = result.html
+
+    const activation = Hydration.activate(document.body, result, { registry: clientRegistry })
+
+    expect(activation.liveRegions).toHaveLength(1)
+    expect(document.body.innerHTML).toContain("<!--loom-live-start:l0--><span>ready</span><!--loom-live-end:l0-->")
+
+    clientRegistry.set(source, "updated")
+
+    expect(document.body.innerHTML).toContain("<!--loom-live-start:l0--><span>updated</span><!--loom-live-end:l0-->")
+  })
+
+  it("keeps live output outside hydration boundaries static", () => {
+    const source = makeSerializableTextAtom("live:static", "client")
+    const serverRegistry = AtomRegistry.make()
+    const clientRegistry = AtomRegistry.make()
+
+    serverRegistry.set(source, "server")
+
+    const result = Html.ssr(
+      Html.el("section", Html.children(Html.live(source, (value) => Html.text(value)))),
+      { registry: serverRegistry },
+    )
+
+    document.body.innerHTML = result.html
+
+    const activation = Hydration.activate(document.body, result, { registry: clientRegistry })
+
+    expect(activation.liveRegions).toEqual([])
+    expect(activation.deferred).toEqual([])
+    expect(document.body.innerHTML).toContain("<!--loom-live-start:l0-->server<!--loom-live-end:l0-->")
+
+    clientRegistry.set(source, "updated")
+
+    expect(document.body.innerHTML).toContain("<!--loom-live-start:l0-->server<!--loom-live-end:l0-->")
+  })
+
+  it("keeps multiple live regions isolated from each other", () => {
+    const firstSource = makeSerializableTextAtom("live:isolated:first", "client:first")
+    const secondSource = makeSerializableTextAtom("live:isolated:second", "client:second")
+    const serverRegistry = AtomRegistry.make()
+    const clientRegistry = AtomRegistry.make()
+
+    serverRegistry.set(firstSource, "server:first")
+    serverRegistry.set(secondSource, "server:second")
+
+    const result = Html.ssr(
+      Html.el(
+        "section",
+        Html.hydrate(Hydration.strategy.visible()),
+        Html.children(
+          Html.live(firstSource, (value) => Html.el("span", Html.attr("data-region", "first"), Html.children(value))),
+          Html.live(secondSource, (value) => Html.el("span", Html.attr("data-region", "second"), Html.children(value))),
+        ),
+      ),
+      { registry: serverRegistry },
+    )
+
+    document.body.innerHTML = result.html
+
+    const activation = Hydration.activate(document.body, result, { registry: clientRegistry })
+
+    expect(activation.liveRegions.map(({ id }) => id)).toEqual(["l0", "l1"])
+    expect(document.body.querySelector('[data-region="first"]')?.textContent).toBe("server:first")
+    expect(document.body.querySelector('[data-region="second"]')?.textContent).toBe("server:second")
+
+    clientRegistry.set(firstSource, "updated:first")
+
+    expect(document.body.querySelector('[data-region="first"]')?.textContent).toBe("updated:first")
+    expect(document.body.querySelector('[data-region="second"]')?.textContent).toBe("server:second")
+    expect(document.body.innerHTML).toContain(
+      '<!--loom-live-start:l0--><span data-region="first">updated:first</span><!--loom-live-end:l0-->',
+    )
+    expect(document.body.innerHTML).toContain(
+      '<!--loom-live-start:l1--><span data-region="second">server:second</span><!--loom-live-end:l1-->',
+    )
+  })
+
+  it("cleans up live subscriptions when unsubscribed or disposed", () => {
+    const source = makeSerializableTextAtom("live:cleanup", "client")
+    const serverRegistry = AtomRegistry.make()
+    const clientRegistry = AtomRegistry.make()
+
+    serverRegistry.set(source, "ready")
+
     const result = Html.ssr(
       Html.el(
         "section",
         Html.hydrate(Hydration.strategy.visible()),
         Html.children(Html.live(source, (value) => Html.text(value))),
       ),
+      { registry: serverRegistry },
     )
 
     document.body.innerHTML = result.html
 
-    const activation = Hydration.activate(document.body, result)
+    const activation = Hydration.activate(document.body, result, { registry: clientRegistry })
 
+    activation.liveRegions[0]?.unsubscribe()
+    clientRegistry.set(source, "after-unsubscribe")
+
+    expect(document.body.innerHTML).toContain("<!--loom-live-start:l0-->ready<!--loom-live-end:l0-->")
+
+    activation.dispose()
+    clientRegistry.set(source, "after-dispose")
+
+    expect(document.body.innerHTML).toContain("<!--loom-live-start:l0-->ready<!--loom-live-end:l0-->")
+  })
+
+  it("keeps nested interactive live output unsupported during activation", () => {
+    const source = makeSerializableTextAtom("live:unsupported", "ready")
+    const serverRegistry = AtomRegistry.make()
+
+    const result = Html.ssr(
+      Html.el(
+        "section",
+        Html.hydrate(Hydration.strategy.visible()),
+        Html.children(
+          Html.live(source, (value) => Html.el("button", Html.on("click", effectLike), Html.children(value))),
+        ),
+      ),
+      { registry: serverRegistry },
+    )
+
+    document.body.innerHTML = result.html
+
+    const activation = Hydration.activate(document.body, result, { registry: AtomRegistry.make() })
+
+    expect(activation.liveRegions).toEqual([])
+    expect(activation.issues).toContainEqual({
+      boundaryId: "b0",
+      liveRegionId: "l0",
+      nodeId: "",
+      event: "",
+      reason: "unsupported-live-content",
+    })
     expect(activation.deferred).toEqual([
       {
         id: "l0",
         kind: "live",
-        reason: "deferred",
+        reason: "activation-pending",
       },
     ])
-    expect(document.body.innerHTML).toContain("loom-live:deferred:l0")
+    expect(document.body.innerHTML).toContain("<!--loom-live-start:l0--><button>ready</button><!--loom-live-end:l0-->")
   })
 
   it("discovers and normalizes hydratable boundaries from SSR output", () => {

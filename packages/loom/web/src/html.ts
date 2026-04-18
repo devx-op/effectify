@@ -1,13 +1,9 @@
+import type { Atom } from "effect/unstable/reactivity"
 import * as LoomCore from "@effectify/loom-core"
 import * as LoomRuntime from "@effectify/loom-runtime"
 import type * as Component from "./component.js"
 import * as Hydration from "./hydration.js"
 import * as internal from "./internal/api.js"
-
-/** Minimal source contract for the future Atom bridge. */
-export interface LiveSource<Value> {
-  readonly current: Value
-}
 
 /** Effect-only event handler form. */
 export type SimpleHandler = LoomCore.Component.EffectLike
@@ -30,6 +26,8 @@ export interface EventBinding<
   Target extends EventTarget = EventTarget,
   EventType extends Event = Event,
 > extends LoomRuntime.Runtime.EventBinding<EventHandler<Target, EventType>> {}
+
+export interface SsrOptions extends LoomRuntime.Runtime.SsrOptions {}
 
 export interface SsrResult extends LoomRuntime.Runtime.SsrRenderResult {}
 
@@ -170,13 +168,13 @@ export const el = (tagName: string, ...modifiers: ReadonlyArray<ElementModifier>
 /** Backwards-compatible alias for the earlier scaffolding API. */
 export const element = el
 
-/** Create a placeholder live bridge without runtime semantics yet. */
+/** Create a live Atom bridge over the Loom neutral AST. */
 export const live = <Value>(
-  source: LiveSource<Value>,
+  atom: Atom.Atom<Value>,
   render: (value: Value) => Child,
-): LoomCore.Ast.LiveNode<LiveSource<Value>> =>
-  LoomCore.Ast.live(source, (state: LiveSource<Value>) => {
-    const rendered = normalizeChild(render(state.current))
+): LoomCore.Ast.LiveNode<Value> =>
+  LoomCore.Ast.live(atom, (value) => {
+    const rendered = normalizeChild(render(value))
     return rendered.length === 1 ? rendered[0] : LoomCore.Ast.fragment(rendered)
   })
 
@@ -196,7 +194,8 @@ export const on = <Target extends EventTarget = EventTarget, EventType extends E
 })
 
 /** Serialize the current Loom tree to SSR HTML plus explicit runtime metadata. */
-export const ssr = (root: Child): SsrResult => LoomRuntime.Runtime.renderToHtml(normalizeRoot(root))
+export const ssr = (root: Child, options?: SsrOptions): SsrResult =>
+  LoomRuntime.Runtime.renderToHtml(normalizeRoot(root), options)
 
 /** Serialize the current Loom tree to SSR HTML only. */
-export const renderToString = (root: Child): string => ssr(root).html
+export const renderToString = (root: Child, options?: SsrOptions): string => ssr(root, options).html
