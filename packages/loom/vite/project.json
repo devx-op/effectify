@@ -1,0 +1,23 @@
+{
+  "name": "@effectify/loom-vite",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/loom/vite/src",
+  "projectType": "library",
+  "tags": ["loom", "public", "vite"],
+  "targets": {
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit -p tsconfig.lib.json",
+        "cwd": "packages/loom/vite"
+      }
+    },
+    "lint": {
+      "executor": "nx-oxlint:lint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["packages/loom/vite/**/*.{ts,tsx,js,jsx,mts,cts}"]
+      }
+    }
+  }
+}

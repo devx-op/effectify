@@ -1,0 +1,31 @@
+{
+  "name": "@effectify/loom-nitro",
+  "version": "0.0.1",
+  "description": "Nitro integration surface for Loom",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/devx-op/effectify",
+    "directory": "packages/loom/nitro"
+  },
+  "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "@effectify/source": "./src/index.ts",
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./LoomNitro": "./src/loom-nitro.ts"
+  },
+  "dependencies": {
+    "tslib": "catalog:"
+  },
+  "peerDependencies": {
+    "@effectify/loom": "workspace:*"
+  }
+}
