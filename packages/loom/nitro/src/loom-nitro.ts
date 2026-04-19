@@ -1,10 +1,23 @@
-/** Placeholder Nitro integration contract for Loom. */
-export interface Options {
-  readonly entry?: string
+import {
+  type LoomNitroOptions,
+  type LoomNitroRenderResult,
+  type LoomNitroRequest,
+  renderLoomNitroResponse,
+} from "./internal/ssr-adapter.js"
+import type { LoomActivationPayload } from "./internal/payload.js"
+
+/** Public option contract for the initial Loom Nitro integration. */
+export type Options = LoomNitroOptions
+
+export interface LoomNitroRenderer {
+  readonly name: "effectify:loom-nitro"
+  readonly render: (request: LoomNitroRequest) => Promise<LoomNitroRenderResult>
 }
 
-/** Create a Nitro renderer descriptor for a later implementation batch. */
-export const renderer = (options: Options = {}) => ({
+export type { LoomActivationPayload, LoomNitroOptions, LoomNitroRenderResult, LoomNitroRequest }
+
+/** Create the initial Loom Nitro adapter surface. */
+export const renderer = (options: Options): LoomNitroRenderer => ({
   name: "effectify:loom-nitro",
-  options,
+  render: (request) => renderLoomNitroResponse(options, request),
 })

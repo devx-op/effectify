@@ -23,9 +23,11 @@
     "./LoomNitro": "./src/loom-nitro.ts"
   },
   "dependencies": {
+    "effect": "catalog:",
     "tslib": "catalog:"
   },
   "peerDependencies": {
-    "@effectify/loom": "workspace:*"
+    "@effectify/loom": "workspace:*",
+    "effect": "^4.0.0-beta"
   }
 }
