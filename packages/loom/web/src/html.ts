@@ -22,6 +22,11 @@ export type EventHandler<
   EventType extends Event = Event,
 > = SimpleHandler | ContextualHandler<Target, EventType>
 
+export type ReferencedEventHandler<
+  Target extends EventTarget = EventTarget,
+  EventType extends Event = Event,
+> = LoomRuntime.Resumability.ReferencedHandler<EventHandler<Target, EventType>>
+
 export interface EventBinding<
   Target extends EventTarget = EventTarget,
   EventType extends Event = Event,
@@ -68,6 +73,11 @@ const isComponent = (value: Child): value is Component.Type =>
 
 const isNode = (value: Child): value is LoomCore.Ast.Node =>
   typeof value === "object" && value !== null && "_tag" in value && value._tag !== "Component"
+
+const isReferencedLiveRegion = <Value>(
+  value: ((value: Value) => Child) | LoomRuntime.Resumability.ReferencedLiveRegion<Value>,
+): value is LoomRuntime.Resumability.ReferencedLiveRegion<Value> =>
+  typeof value === "object" && value !== null && "_tag" in value && value._tag === "ReferencedLiveRegion"
 
 const normalizeChild = (child: Child): ReadonlyArray<LoomCore.Ast.Node> => {
   if (typeof child === "string") {
@@ -171,12 +181,27 @@ export const element = el
 /** Create a live Atom bridge over the Loom neutral AST. */
 export const live = <Value>(
   atom: Atom.Atom<Value>,
-  render: (value: Value) => Child,
-): LoomCore.Ast.LiveNode<Value> =>
-  LoomCore.Ast.live(atom, (value) => {
-    const rendered = normalizeChild(render(value))
+  render: ((value: Value) => Child) | LoomRuntime.Resumability.ReferencedLiveRegion<Value>,
+): LoomCore.Ast.LiveNode<Value> => {
+  const normalized = isReferencedLiveRegion(render)
+    ? render
+    : {
+      ref: undefined,
+      render,
+    }
+
+  const node = LoomCore.Ast.live(atom, (value) => {
+    const rendered = normalizeChild(normalized.render(value))
     return rendered.length === 1 ? rendered[0] : LoomCore.Ast.fragment(rendered)
   })
+
+  return normalized.ref === undefined
+    ? node
+    : {
+      ...node,
+      ref: normalized.ref,
+    }
+}
 
 /** Mark an element as hydratable under a given strategy. */
 export const hydrate = (strategy: Hydration.Strategy): HydrationModifier => ({
@@ -187,7 +212,7 @@ export const hydrate = (strategy: Hydration.Strategy): HydrationModifier => ({
 /** Create an event binding descriptor for a future DOM runtime. */
 export const on = <Target extends EventTarget = EventTarget, EventType extends Event = Event>(
   event: string,
-  handler: EventHandler<Target, EventType>,
+  handler: EventHandler<Target, EventType> | ReferencedEventHandler<Target, EventType>,
 ): EventModifier<Target, EventType> => ({
   _tag: "EventModifier",
   binding: internal.makeEventBinding(event, handler),

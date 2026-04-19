@@ -1,5 +1,6 @@
 import type { AtomRegistry, Hydration as ReactivityHydration } from "effect/unstable/reactivity"
 import type * as LoomCore from "@effectify/loom-core"
+import type * as Resumability from "./resumability.js"
 import * as internal from "./internal/runtime.js"
 
 /** Minimal runtime boundary for future DOM/SSR executors. */
@@ -20,6 +21,7 @@ export interface RegisteredEventBinding {
   readonly event: string
   readonly mode: LoomCore.Ast.EventBinding["mode"]
   readonly handler: LoomCore.Ast.EventBinding["handler"]
+  readonly ref?: Resumability.ExecutableRef
 }
 
 export interface HydrationBoundary {
@@ -85,6 +87,15 @@ export interface SsrRenderResult {
   readonly plan: RenderPlan
   readonly activation: ActivationSource
   readonly dehydratedAtoms: ReadonlyArray<ReactivityHydration.DehydratedAtom>
+  readonly resumability: Resumability.RenderResumabilityResult
+}
+
+export type ResumabilityActivationSource = Resumability.ResumabilityActivationSource
+export type CreatedRenderContractResult = Resumability.CreatedRenderContractResult
+
+export interface ResumabilityIdentity {
+  readonly buildId: string
+  readonly rootId: string
 }
 
 export interface HydrationBoundaryHandle {
@@ -170,6 +181,12 @@ export const plan = (root: LoomCore.Ast.Node, options?: SsrOptions): RenderPlan 
 export const renderToHtml = (root: LoomCore.Ast.Node, options?: SsrOptions): SsrRenderResult =>
   internal.renderToHtml(root, options)
 
+/** Materialize a serialized resumability contract from the latest SSR render output. */
+export const createResumabilityContract = (
+  render: SsrRenderResult,
+  identity: ResumabilityIdentity,
+): Promise<Resumability.CreatedRenderContractResult> => internal.createResumabilityContract(render, identity)
+
 /** Discover hydratable boundaries from SSR markup. */
 export const discoverHydrationBoundaries = (root: ParentNode): ReadonlyArray<HydrationBoundaryHandle> =>
   internal.discoverHydrationBoundaries(root)
@@ -180,6 +197,6 @@ export const bootstrapHydration = (root: ParentNode): HydrationBootstrapResult =
 /** Activate discovered hydration boundaries against the current hydration activation source. */
 export const activateHydration = (
   root: ParentNode,
-  source: ActivationSource | SsrRenderResult,
+  source: ActivationSource | SsrRenderResult | Resumability.ResumabilityActivationSource,
   options?: HydrationActivationOptions,
 ): HydrationActivationResult => internal.activateHydration(root, source, options)

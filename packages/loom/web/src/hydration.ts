@@ -46,8 +46,11 @@ export type ActivationOptions = LoomRuntime.Runtime.HydrationActivationOptions
 /** Minimal activation source contract accepted from SSR output. */
 export type ActivationSource = LoomRuntime.Runtime.ActivationSource
 
+/** Activation source created from a validated resumability contract plus local executable registry. */
+export type ResumabilityActivationSource = LoomRuntime.Runtime.ResumabilityActivationSource
+
 /** Input accepted by hydration activation while the public SSR contract still carries extra planning data. */
-export type ActivationInput = ActivationSource | LoomRuntime.Runtime.SsrRenderResult
+export type ActivationInput = ActivationSource | ResumabilityActivationSource | LoomRuntime.Runtime.SsrRenderResult
 
 const makeStrategy = (name: StrategyName): Strategy => LoomRuntime.Hydration.marker(name)
 

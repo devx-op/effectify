@@ -22,7 +22,8 @@
     },
     "./Component": "./src/component.ts",
     "./Html": "./src/html.ts",
-    "./Hydration": "./src/hydration.ts"
+    "./Hydration": "./src/hydration.ts",
+    "./Resumability": "./src/resumability.ts"
   },
   "dependencies": {
     "@effectify/loom-core": "workspace:*",

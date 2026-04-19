@@ -223,6 +223,18 @@ This enables selective live islands without forcing the entire page into client 
 
 Nitro support belongs in `@effectify/loom-nitro`, not in the base package. The base package owns renderer contracts; Nitro owns environment-specific SSR integration.
 
+### 6.6 Resumability contract guardrails
+
+Loom resumability is intentionally **refs + serialized state**, not arbitrary runtime capture. The current contract serializes stable handler/live-region refs, dehydrated Atom state, deferred live nodes, and integrity metadata. It does **not** attempt to serialize closures, DOM handles, caches, or other host-bound runtime objects.
+
+The current slice keeps these cases explicit:
+
+- **Rejected**: payload integrity drift, contract version drift, and cross-build resume attempts. These fail validation before browser activation and must fall back to a fresh start.
+- **Deferred**: automatic ref extraction from anonymous handlers/live renderers. Today, resumable behavior requires explicit `Resumability.handler(...)` / `Resumability.live(...)` refs.
+- **Deferred**: cross-build or cross-boundary migration. `buildId` mismatches are treated as incompatible, not partially migrated.
+- **Out of scope**: closure serialization and interactive nested live-region resume. Those cases stay unsupported until Loom has a formal compile-time/runtime story for them.
+- **Operational note**: deferred live descriptors are only activation-pending inputs; after a successful resume, the activation result should retain only still-unresolved deferred entries.
+
 ---
 
 ## 7. API Draft v0.1

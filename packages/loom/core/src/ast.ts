@@ -25,6 +25,7 @@ export interface EventBinding<Handler = unknown> {
   readonly event: string
   readonly mode: "effect" | "contextual"
   readonly handler: Handler
+  readonly ref?: string
 }
 
 export interface ElementNode {
@@ -50,6 +51,7 @@ export interface LiveNode<Value> {
   readonly _tag: "Live"
   readonly atom: Atom.Atom<Value>
   readonly render: LiveRender<Value>
+  readonly ref?: string
 }
 
 interface LiveRenderSignature<Value> {

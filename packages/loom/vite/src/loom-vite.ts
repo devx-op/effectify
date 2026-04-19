@@ -1,12 +1,23 @@
 import type { Plugin } from "vite"
 import { bootstrapLoomBrowser, type LoomBootstrapOptions, type LoomBootstrapResult } from "./internal/bootstrap.js"
 import { logLoomDevDiagnostics, transformLoomIndexHtml } from "./internal/html-transform.js"
-import { type LoomActivationPayload, type LoomViteOptions, resolveLoomViteState } from "./internal/plugin-state.js"
+import {
+  type LoomActivationPayload,
+  type LoomResumabilityPayload,
+  type LoomViteOptions,
+  resolveLoomViteState,
+} from "./internal/plugin-state.js"
 
 /** Public option contract for the initial Loom Vite integration. */
 export type Options = LoomViteOptions
 
-export type { LoomActivationPayload, LoomBootstrapOptions, LoomBootstrapResult, LoomViteOptions }
+export type {
+  LoomActivationPayload,
+  LoomBootstrapOptions,
+  LoomBootstrapResult,
+  LoomResumabilityPayload,
+  LoomViteOptions,
+}
 
 const assertWebOnlyRenderer = (options: Options): void => {
   if (!("renderer" in options)) {
@@ -21,7 +32,7 @@ const assertWebOnlyRenderer = (options: Options): void => {
 }
 
 /** Activate Loom SSR activation handoff from the current browser document. */
-export const bootstrap = (document: Document, options?: LoomBootstrapOptions): LoomBootstrapResult =>
+export const bootstrap = (document: Document, options?: LoomBootstrapOptions): Promise<LoomBootstrapResult> =>
   bootstrapLoomBrowser(document, options)
 
 /**

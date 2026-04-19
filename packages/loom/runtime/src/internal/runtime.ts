@@ -1,6 +1,7 @@
-import { AtomRegistry, Hydration as EffectHydration } from "effect/unstable/reactivity"
+import { Atom, AtomRegistry, Hydration as EffectHydration } from "effect/unstable/reactivity"
 import type * as LoomCore from "@effectify/loom-core"
 import * as Hydration from "../hydration.js"
+import * as Resumability from "../resumability.js"
 import * as LiveRegion from "./live-region.js"
 import type * as Runtime from "../runtime.js"
 
@@ -60,11 +61,12 @@ const collectRegisteredEvents = (
         const nodeId = current.events.length > 0 ? `${boundaryId}.n${state.nextNodeId++}` : undefined
         const own = nodeId === undefined
           ? []
-          : current.events.map(({ event, handler, mode }) => ({
+          : current.events.map(({ event, handler, mode, ref }) => ({
             nodeId,
             event,
             mode,
             handler,
+            ref,
           }))
 
         return [...own, ...current.children.flatMap((child) => loop(child, false))]
@@ -86,8 +88,12 @@ const serializeAttributes = (attributes: Readonly<Record<string, string>>): stri
 }
 
 const commentNodeType = 8
+const documentNodeType = 9
+const showCommentNodeMask = 128
 
 const isComment = (value: ChildNode | null): value is Comment => value?.nodeType === commentNodeType
+
+const isCommentNode = (value: Node | null): value is Comment => value?.nodeType === commentNodeType
 
 const findMarkerSibling = (node: Element, marker: string, direction: "previous" | "next"): Comment | undefined => {
   const sibling = direction === "previous" ? node.previousSibling : node.nextSibling
@@ -100,13 +106,15 @@ const findMarkerSibling = (node: Element, marker: string, direction: "previous" 
 }
 
 const createCommentWalker = (root: ParentNode): TreeWalker => {
-  const document = root instanceof Document ? root : root.ownerDocument
+  const document = root.nodeType === documentNodeType
+    ? (root as Document)
+    : root.ownerDocument
 
   if (document === null) {
     throw new Error("expected ParentNode to have an ownerDocument")
   }
 
-  return document.createTreeWalker(root, NodeFilter.SHOW_COMMENT)
+  return document.createTreeWalker(root, showCommentNodeMask)
 }
 
 const findCommentMarker = (root: ParentNode, marker: string): Comment | undefined => {
@@ -114,7 +122,7 @@ const findCommentMarker = (root: ParentNode, marker: string): Comment | undefine
   let current = walker.nextNode()
 
   while (current !== null) {
-    if (current instanceof Comment && current.data === marker) {
+    if (isCommentNode(current) && current.data === marker) {
       return current
     }
 
@@ -145,8 +153,26 @@ const replaceOwnedDomRange = (startMarker: Comment, endMarker: Comment, html: st
 }
 
 const isSsrRenderResult = (
-  source: Runtime.ActivationSource | Runtime.SsrRenderResult,
+  source: Runtime.ActivationSource | Runtime.SsrRenderResult | Resumability.ResumabilityActivationSource,
 ): source is Runtime.SsrRenderResult => "plan" in source
+
+const isResumabilityActivationSource = (
+  source: Runtime.ActivationSource | Runtime.SsrRenderResult | Resumability.ResumabilityActivationSource,
+): source is Resumability.ResumabilityActivationSource => "contract" in source && "localRegistry" in source
+
+const isReferencedHandler = <Handler>(
+  value: Handler | Resumability.ReferencedHandler<Handler>,
+): value is Resumability.ReferencedHandler<Handler> =>
+  typeof value === "object" && value !== null && "_tag" in value && value._tag === "ReferencedHandler"
+
+const getSerializableAtomKey = (atom: Atom.Atom<unknown>): string | undefined =>
+  Atom.isSerializable(atom) ? atom[Atom.SerializableTypeId].key : undefined
+
+const isDehydratedAtom = (value: unknown): value is EffectHydration.DehydratedAtom =>
+  typeof value === "object" && value !== null && "~effect/reactivity/DehydratedAtom" in value
+
+const readDehydratedAtoms = (value: ReadonlyArray<unknown>): ReadonlyArray<EffectHydration.DehydratedAtom> =>
+  value.flatMap((entry) => isDehydratedAtom(entry) ? [entry] : [])
 
 const serializeNode = (
   node: LoomCore.Ast.Node,
@@ -155,6 +181,8 @@ const serializeNode = (
     nextLiveRegionId: number
     boundaries: Array<Runtime.HydrationBoundary>
     liveRegions: Array<Runtime.LiveRegionPlan>
+    resumableLiveRegions: Array<Resumability.LiveRegionDescriptor>
+    resumabilityIssues: Array<Resumability.RenderResumabilityIssue>
     deferred: Array<Runtime.DeferredNode>
     registry: AtomRegistry.AtomRegistry
   },
@@ -201,6 +229,33 @@ const serializeNode = (
         kind: "live",
         reason: "activation-pending",
       })
+
+      if (current.ref === undefined) {
+        state.resumabilityIssues.push({
+          path: `liveRegions[${state.resumableLiveRegions.length}].ref`,
+          reason: "missing-live-region-ref",
+          message: `Live region ${liveId} requires an explicit resumability ref.`,
+        })
+      } else {
+        const atomKey = getSerializableAtomKey(current.atom)
+
+        if (atomKey === undefined) {
+          state.resumabilityIssues.push({
+            path: `liveRegions[${state.resumableLiveRegions.length}].atomKey`,
+            reason: "non-serializable-live-atom",
+            message: `Live region ${liveId} requires a serializable Atom key to resume.`,
+          })
+        } else {
+          state.resumableLiveRegions.push({
+            id: liveId,
+            boundaryId: currentBoundaryId,
+            ref: current.ref,
+            atomKey,
+            startMarker: LiveRegion.startMarker(liveId),
+            endMarker: LiveRegion.endMarker(liveId),
+          })
+        }
+      }
     }
 
     return LiveRegion.wrapHtml(liveId, serializeStaticNode(rendered))
@@ -277,12 +332,22 @@ const serializeNode = (
   }
 }
 
-export const makeEventBinding = <Handler>(event: string, handler: Handler): Runtime.EventBinding<Handler> => ({
-  _tag: "EventBinding",
-  event,
-  mode: typeof handler === "function" ? "contextual" : "effect",
-  handler,
-})
+export const makeEventBinding = <Handler>(event: string, handler: Handler): Runtime.EventBinding<Handler> => {
+  const normalized = isReferencedHandler(handler)
+    ? handler
+    : {
+      handler,
+      ref: undefined,
+    }
+
+  return {
+    _tag: "EventBinding",
+    event,
+    mode: typeof normalized.handler === "function" ? "contextual" : "effect",
+    handler: normalized.handler,
+    ref: normalized.ref,
+  }
+}
 
 export const makeRenderPlan = (root: LoomCore.Ast.Node, options?: Runtime.SsrOptions): Runtime.RenderPlan =>
   renderToHtml(root, options).plan
@@ -293,6 +358,8 @@ export const renderToHtml = (root: LoomCore.Ast.Node, options: Runtime.SsrOption
     nextLiveRegionId: number
     boundaries: Array<Runtime.HydrationBoundary>
     liveRegions: Array<Runtime.LiveRegionPlan>
+    resumableLiveRegions: Array<Resumability.LiveRegionDescriptor>
+    resumabilityIssues: Array<Resumability.RenderResumabilityIssue>
     deferred: Array<Runtime.DeferredNode>
     registry: AtomRegistry.AtomRegistry
   } = {
@@ -300,13 +367,33 @@ export const renderToHtml = (root: LoomCore.Ast.Node, options: Runtime.SsrOption
     nextLiveRegionId: 0,
     boundaries: [],
     liveRegions: [],
+    resumableLiveRegions: [],
+    resumabilityIssues: [],
     deferred: [],
     registry: options.registry ?? AtomRegistry.make(),
   }
 
   const html = serializeNode(root, serializationState, undefined, undefined)
+  const dehydratedAtoms = EffectHydration.dehydrate(serializationState.registry, options.dehydrate)
+  const serializedDehydratedAtoms = EffectHydration.toValues(dehydratedAtoms).map((
+    { resultPromise: _resultPromise, ...entry },
+  ) => entry)
   const handlers: Record<string, LoomCore.Ast.EventBinding["handler"]> = {}
   let nextHandlerId = 0
+
+  let missingHandlerRefIndex = 0
+
+  for (const boundary of serializationState.boundaries) {
+    for (const binding of boundary.eventBindings) {
+      if (binding.ref === undefined) {
+        serializationState.resumabilityIssues.push({
+          path: `handlers[${missingHandlerRefIndex++}].ref`,
+          reason: "missing-handler-ref",
+          message: `Hydration binding ${binding.event} on ${binding.nodeId} requires an explicit resumability ref.`,
+        })
+      }
+    }
+  }
 
   const activationBoundaries = serializationState.boundaries.map((boundary) => ({
     id: boundary.id,
@@ -340,7 +427,117 @@ export const renderToHtml = (root: LoomCore.Ast.Node, options: Runtime.SsrOption
       },
       handlers,
     },
-    dehydratedAtoms: EffectHydration.dehydrate(serializationState.registry, options.dehydrate),
+    dehydratedAtoms,
+    resumability: activationBoundaries.length === 0 && serializationState.deferred.length === 0
+      ? {
+        status: "none",
+        issues: [],
+      }
+      : serializationState.resumabilityIssues.length > 0
+      ? {
+        status: "unsupported",
+        issues: serializationState.resumabilityIssues,
+      }
+      : {
+        status: "ready",
+        draft: {
+          boundaries: serializationState.boundaries.map((boundary) => ({
+            id: boundary.id,
+            strategy: boundary.strategy,
+            nodeIds: [...new Set(boundary.eventBindings.map(({ nodeId }) => nodeId))],
+          })),
+          handlers: serializationState.boundaries.flatMap((boundary) =>
+            boundary.eventBindings.flatMap((binding) => {
+              if (binding.ref === undefined) {
+                return []
+              }
+
+              return [
+                {
+                  ref: binding.ref,
+                  boundaryId: boundary.id,
+                  nodeId: binding.nodeId,
+                  event: binding.event,
+                  mode: binding.mode,
+                } satisfies Resumability.HandlerDescriptor,
+              ]
+            })
+          ),
+          liveRegions: serializationState.resumableLiveRegions,
+          state: {
+            dehydratedAtoms: serializedDehydratedAtoms,
+            deferred: serializationState.deferred,
+          },
+        },
+        issues: [],
+      },
+  }
+}
+
+export const createResumabilityContract = async (
+  render: Runtime.SsrRenderResult,
+  identity: Runtime.ResumabilityIdentity,
+): Promise<Resumability.CreatedRenderContractResult> => {
+  switch (render.resumability.status) {
+    case "none": {
+      return {
+        status: "none",
+        issues: [],
+      }
+    }
+    case "unsupported": {
+      return {
+        status: "unsupported",
+        issues: render.resumability.issues,
+      }
+    }
+    case "ready": {
+      const draft: Resumability.RenderContractDraft = render.resumability.draft
+
+      return {
+        status: "ready",
+        contract: await Resumability.createContract({
+          buildId: identity.buildId,
+          rootId: identity.rootId,
+          boundaries: draft.boundaries,
+          handlers: draft.handlers,
+          liveRegions: draft.liveRegions,
+          state: draft.state,
+        }),
+        issues: [],
+      }
+    }
+  }
+}
+
+const resolveContractActivationSource = (
+  source: Resumability.ResumabilityActivationSource,
+): Runtime.ActivationSource => {
+  const handlers: Record<string, LoomCore.Ast.EventBinding["handler"]> = {}
+  let nextHandlerId = 0
+
+  return {
+    manifest: {
+      boundaries: source.contract.boundaries.map((boundary) => ({
+        id: boundary.id,
+        strategy: boundary.strategy,
+        eventBindings: source.contract.handlers
+          .filter((handler) => handler.boundaryId === boundary.id)
+          .map((handler) => {
+            const handlerId = `contract-h${nextHandlerId++}`
+            handlers[handlerId] = Resumability.resolveHandler(source.localRegistry, handler.ref)
+
+            return {
+              nodeId: handler.nodeId,
+              event: handler.event,
+              mode: handler.mode,
+              handlerId,
+            } satisfies Runtime.ActivationEventBinding
+          }),
+      })),
+      deferred: source.contract.state.deferred,
+    },
+    handlers,
   }
 }
 
@@ -455,10 +652,14 @@ const isEffectHandler = (
 
 export const activateHydration = (
   root: ParentNode,
-  source: Runtime.ActivationSource | Runtime.SsrRenderResult,
+  source: Runtime.ActivationSource | Runtime.SsrRenderResult | Resumability.ResumabilityActivationSource,
   options: Runtime.HydrationActivationOptions = {},
 ): Runtime.HydrationActivationResult => {
-  const activationSource = isSsrRenderResult(source) ? source.activation : source
+  const activationSource = isSsrRenderResult(source)
+    ? source.activation
+    : isResumabilityActivationSource(source)
+    ? resolveContractActivationSource(source)
+    : source
   const bootstrap = bootstrapHydration(root)
   const runtimeBoundaries = new Map(activationSource.manifest.boundaries.map((boundary) => [boundary.id, boundary]))
   const discoveredBoundaries = new Map(bootstrap.boundaries.map((boundary) => [boundary.id, boundary]))
@@ -470,6 +671,8 @@ export const activateHydration = (
     EffectHydration.hydrate(registry, options.dehydratedState)
   } else if (isSsrRenderResult(source)) {
     EffectHydration.hydrate(registry, source.dehydratedAtoms)
+  } else if (isResumabilityActivationSource(source)) {
+    EffectHydration.hydrate(registry, readDehydratedAtoms(source.contract.state.dehydratedAtoms))
   }
 
   const boundaries = bootstrap.boundaries.flatMap((boundary) => {
@@ -658,6 +861,76 @@ export const activateHydration = (
           unsubscribe,
         } satisfies Runtime.ActivatedLiveRegion,
       ].filter(() => !unsupported)
+    })
+    : isResumabilityActivationSource(source)
+    ? source.contract.liveRegions.flatMap((plan) => {
+      const markerRoot = plan.boundaryId === undefined
+        ? root
+        : (discoveredBoundaries.get(plan.boundaryId)?.element ?? root)
+      const startMarker = findCommentMarker(markerRoot, plan.startMarker)
+      const endMarker = findCommentMarker(markerRoot, plan.endMarker)
+
+      if (startMarker === undefined) {
+        issues.push({
+          boundaryId: plan.boundaryId ?? "",
+          liveRegionId: plan.id,
+          nodeId: "",
+          event: "",
+          reason: "missing-live-start-marker",
+        })
+
+        return []
+      }
+
+      if (endMarker === undefined) {
+        issues.push({
+          boundaryId: plan.boundaryId ?? "",
+          liveRegionId: plan.id,
+          nodeId: "",
+          event: "",
+          reason: "missing-live-end-marker",
+        })
+
+        return []
+      }
+
+      let unsupported = false
+      const executable = Resumability.resolveLiveRegion(source.localRegistry, plan.ref)
+      const renderValue = (value: unknown) => {
+        const rendered = LiveRegion.serializeStaticNode(executable.render(value))
+
+        if (rendered._tag === "Unsupported") {
+          if (!unsupported) {
+            unsupported = true
+            issues.push({
+              boundaryId: plan.boundaryId ?? "",
+              liveRegionId: plan.id,
+              nodeId: "",
+              event: "",
+              reason: "unsupported-live-content",
+            })
+          }
+
+          return
+        }
+
+        replaceOwnedDomRange(startMarker, endMarker, rendered.html)
+      }
+
+      const unsubscribe = registry.subscribe(executable.atom, renderValue, { immediate: true })
+      cleanup.push(unsubscribe)
+
+      return unsupported
+        ? []
+        : [
+          {
+            id: plan.id,
+            boundaryId: plan.boundaryId,
+            startMarker,
+            endMarker,
+            unsubscribe,
+          } satisfies Runtime.ActivatedLiveRegion,
+        ]
     })
     : []
 

@@ -3,9 +3,10 @@
 import { Atom, AtomRegistry } from "effect/unstable/reactivity"
 import * as Schema from "effect/Schema"
 import { describe, expect, it } from "vitest"
+import * as LoomRuntime from "@effectify/loom-runtime"
 import { LoomNitro } from "../../nitro/src/index.js"
 import { LoomVite } from "../../vite/src/index.js"
-import { Html, Hydration } from "../src/index.js"
+import { Html, Hydration, Resumability } from "../src/index.js"
 
 const makeSerializableTextAtom = (key: string, value: string) =>
   Atom.serializable(Atom.make(value), {
@@ -20,21 +21,54 @@ const writePayloadDocument = (html: string, payload: unknown, payloadElementId =
     }</script><div id="outside-root"><p>outside</p></div>`
 }
 
+const recreateContract = (
+  contract: LoomRuntime.Resumability.LoomResumabilityContract,
+  overrides: Partial<
+    Pick<LoomRuntime.Resumability.ContractDraft, "rootId" | "boundaries" | "handlers" | "liveRegions" | "state">
+  >,
+) =>
+  LoomRuntime.Resumability.createContract({
+    buildId: contract.buildId,
+    rootId: overrides.rootId ?? contract.rootId,
+    boundaries: overrides.boundaries ?? contract.boundaries,
+    handlers: overrides.handlers ?? contract.handlers,
+    liveRegions: overrides.liveRegions ?? contract.liveRegions,
+    state: overrides.state ?? {
+      dehydratedAtoms: contract.state.dehydratedAtoms,
+      deferred: contract.state.deferred,
+    },
+  })
+
 describe("loom web integrations browser bootstrap", () => {
   it("consumes the Nitro activation payload and activates matching live islands from the browser document", async () => {
     const source = makeSerializableTextAtom("live:bootstrap", "client")
+    const liveRef = Resumability.makeExecutableRef("app/live", "render")
     const serverRegistry = AtomRegistry.make()
     const clientRegistry = AtomRegistry.make()
+    const localRegistry = Resumability.makeLocalRegistry()
     serverRegistry.set(source, "server")
+    Resumability.registerLiveRegion(
+      localRegistry,
+      liveRef,
+      source,
+      (value) => Html.el("span", Html.attr("data-live", "value"), Html.children(String(value))),
+    )
 
     const nitro = LoomNitro.renderer({
+      buildId: "build-123",
       rootId: "loom-root",
       render: () =>
         Html.el(
           "section",
           Html.hydrate(Hydration.visible()),
           Html.children(
-            Html.live(source, (value) => Html.el("span", Html.attr("data-live", "value"), Html.children(value))),
+            Html.live(
+              source,
+              Resumability.live(
+                liveRef,
+                (value) => Html.el("span", Html.attr("data-live", "value"), Html.children(value)),
+              ),
+            ),
           ),
         ),
       ssr: { registry: serverRegistry },
@@ -46,31 +80,33 @@ describe("loom web integrations browser bootstrap", () => {
       headers: {},
     })
 
-    if (result.activation === undefined) {
+    if (result.resumability === undefined) {
       throw new Error("expected Nitro activation payload")
     }
 
-    writePayloadDocument(result.html, result.activation)
+    writePayloadDocument(result.html, result.resumability)
 
-    const bootstrap = LoomVite.bootstrap(document, {
+    const bootstrap = await LoomVite.bootstrap(document, {
       payloadElementId: "loom-payload",
+      expectedBuildId: "build-123",
+      localRegistry,
       registry: clientRegistry,
     })
 
-    expect(bootstrap.status).toBe("activated")
+    expect(bootstrap.status).toBe("resumed")
     expect(bootstrap.activation?.issues).toEqual([])
     expect(bootstrap.activation?.boundaries.map(({ id }) => id)).toEqual(["b0"])
-    expect(bootstrap.activation?.deferred).toEqual(result.activation.manifest.deferred)
+    expect(bootstrap.activation?.deferred).toEqual([])
     expect(clientRegistry.get(source)).toBe("server")
     expect(document.querySelector('[data-live="value"]')?.textContent).toBe("server")
     expect(document.querySelector("#outside-root")?.textContent).toContain("outside")
   })
 
-  it("leaves static html unchanged when no serialized payload is present", () => {
+  it("leaves static html unchanged when no serialized payload is present", async () => {
     document.body.innerHTML = '<div id="loom-root"><main>static</main></div>'
     const before = document.body.innerHTML
 
-    const bootstrap = LoomVite.bootstrap(document)
+    const bootstrap = await LoomVite.bootstrap(document)
 
     expect(bootstrap.status).toBe("missing-payload")
     expect(bootstrap.activation).toBeUndefined()
@@ -79,6 +115,7 @@ describe("loom web integrations browser bootstrap", () => {
 
   it("reports root drift without mutating the DOM when the payload root cannot be found", async () => {
     const nitro = LoomNitro.renderer({
+      buildId: "build-123",
       rootId: "loom-root",
       render: () => Html.el("section", Html.hydrate(Hydration.visible()), Html.children("ready")),
     })
@@ -89,17 +126,18 @@ describe("loom web integrations browser bootstrap", () => {
       headers: {},
     })
 
-    if (result.activation === undefined) {
+    if (result.resumability === undefined) {
       throw new Error("expected Nitro activation payload")
     }
 
-    writePayloadDocument(result.html, {
-      ...result.activation,
-      rootId: "missing-root",
-    })
+    writePayloadDocument(result.html, await recreateContract(result.resumability, { rootId: "missing-root" }))
     const before = document.body.innerHTML
 
-    const bootstrap = LoomVite.bootstrap(document, { payloadElementId: "loom-payload" })
+    const bootstrap = await LoomVite.bootstrap(document, {
+      payloadElementId: "loom-payload",
+      expectedBuildId: "build-123",
+      localRegistry: Resumability.makeLocalRegistry(),
+    })
 
     expect(bootstrap.status).toBe("missing-root")
     expect(bootstrap.activation).toBeUndefined()
@@ -108,6 +146,7 @@ describe("loom web integrations browser bootstrap", () => {
 
   it("surfaces boundary drift issues from a stale payload manifest", async () => {
     const nitro = LoomNitro.renderer({
+      buildId: "build-123",
       rootId: "loom-root",
       render: () => Html.el("section", Html.hydrate(Hydration.visible()), Html.children("ready")),
     })
@@ -118,24 +157,27 @@ describe("loom web integrations browser bootstrap", () => {
       headers: {},
     })
 
-    if (result.activation === undefined) {
+    if (result.resumability === undefined) {
       throw new Error("expected Nitro activation payload")
     }
 
-    writePayloadDocument(result.html, {
-      ...result.activation,
-      manifest: {
-        ...result.activation.manifest,
-        boundaries: result.activation.manifest.boundaries.map((boundary) => ({
+    writePayloadDocument(
+      result.html,
+      await recreateContract(result.resumability, {
+        boundaries: result.resumability.boundaries.map((boundary) => ({
           ...boundary,
           id: `${boundary.id}-stale`,
         })),
-      },
+      }),
+    )
+
+    const bootstrap = await LoomVite.bootstrap(document, {
+      payloadElementId: "loom-payload",
+      expectedBuildId: "build-123",
+      localRegistry: Resumability.makeLocalRegistry(),
     })
 
-    const bootstrap = LoomVite.bootstrap(document, { payloadElementId: "loom-payload" })
-
-    expect(bootstrap.status).toBe("activated")
+    expect(bootstrap.status).toBe("resumed")
     expect(bootstrap.activation?.issues).toContainEqual({
       boundaryId: "b0",
       nodeId: "",

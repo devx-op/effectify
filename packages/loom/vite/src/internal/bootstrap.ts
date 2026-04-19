@@ -1,74 +1,39 @@
-import { Hydration } from "@effectify/loom"
-import { defaultLoomPayloadElementId, type LoomActivationPayload } from "./plugin-state.js"
+import * as Loom from "@effectify/loom"
+import { defaultLoomPayloadElementId, type LoomResumabilityPayload } from "./plugin-state.js"
 
-export interface LoomBootstrapOptions extends Hydration.ActivationOptions {
+export interface LoomBootstrapOptions extends Loom.Hydration.ActivationOptions {
   readonly payloadElementId?: string
+  readonly expectedBuildId?: string
+  readonly localRegistry?: Loom.Resumability.LocalRegistry
 }
 
-export type LoomBootstrapStatus = "activated" | "missing-payload" | "missing-root"
+export type LoomBootstrapStatus = "resumed" | "fresh-start" | "missing-payload" | "missing-root"
 
 export interface LoomBootstrapResult {
   readonly status: LoomBootstrapStatus
-  readonly payload?: LoomActivationPayload
-  readonly activation?: Hydration.ActivationResult
+  readonly payload?: LoomResumabilityPayload
+  readonly validation?: Loom.Resumability.ContractValidationResult
+  readonly activation?: Loom.Hydration.ActivationResult
 }
 
-const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null
-
-const isActivationManifest = (value: unknown): value is LoomActivationPayload["manifest"] => {
-  if (!isRecord(value)) {
-    return false
-  }
-
-  return Array.isArray(value.boundaries) && Array.isArray(value.deferred)
+type ScriptLikeElement = Element & {
+  readonly textContent: string | null
 }
 
-const assertLoomActivationPayload = (value: unknown): LoomActivationPayload => {
-  if (!isRecord(value)) {
-    throw new Error("Expected Loom activation payload object")
-  }
-
-  const version = value.version
-  const rootId = value.rootId
-  const manifest = value.manifest
-  const dehydratedAtoms = value.dehydratedAtoms
-
-  if (version !== 1) {
-    throw new Error(`Unsupported Loom activation payload version: ${String(version)}`)
-  }
-
-  if (typeof rootId !== "string" || rootId.length === 0) {
-    throw new Error("Expected Loom activation payload rootId")
-  }
-
-  if (!isActivationManifest(manifest)) {
-    throw new Error("Expected Loom activation payload manifest")
-  }
-
-  if (!Array.isArray(dehydratedAtoms)) {
-    throw new Error("Expected Loom activation payload dehydratedAtoms")
-  }
-
-  return {
-    version: 1,
-    rootId,
-    manifest,
-    dehydratedAtoms,
-  }
-}
-
-const readPayloadElement = (document: Document, payloadElementId: string): HTMLScriptElement | undefined => {
+const readPayloadElement = (document: Document, payloadElementId: string): ScriptLikeElement | undefined => {
   const element = document.getElementById(payloadElementId)
-  return element instanceof HTMLScriptElement ? element : undefined
+
+  if (element === null || element.tagName !== "SCRIPT") {
+    return undefined
+  }
+
+  return element
 }
 
-const decodeLoomActivationPayload = (payload: string): LoomActivationPayload =>
-  assertLoomActivationPayload(JSON.parse(payload) as unknown)
-
-export const bootstrapLoomBrowser = (
+export const bootstrapLoomBrowser = async (
   document: Document,
   options: LoomBootstrapOptions = {},
-): LoomBootstrapResult => {
+): Promise<LoomBootstrapResult> => {
   const payloadElement = readPayloadElement(document, options.payloadElementId ?? defaultLoomPayloadElementId)
   const serializedPayload = payloadElement?.textContent?.trim()
 
@@ -78,21 +43,42 @@ export const bootstrapLoomBrowser = (
     }
   }
 
-  const payload = decodeLoomActivationPayload(serializedPayload)
+  const validation = await Loom.Resumability.decodeContract(serializedPayload, {
+    expectedBuildId: options.expectedBuildId,
+    registry: options.localRegistry,
+  })
+
+  if (validation.status === "invalid") {
+    return {
+      status: "fresh-start",
+      validation,
+    }
+  }
+
+  const payload = validation.contract
   const root = document.getElementById(payload.rootId)
 
   if (root === null) {
     return {
       status: "missing-root",
       payload,
+      validation,
+    }
+  }
+
+  if (validation.status === "fresh-start" || options.localRegistry === undefined) {
+    return {
+      status: "fresh-start",
+      payload,
+      validation,
     }
   }
 
   return {
-    status: "activated",
+    status: "resumed",
     payload,
-    activation: Hydration.activate(root, { manifest: payload.manifest, handlers: {} }, {
-      dehydratedState: payload.dehydratedAtoms,
+    validation,
+    activation: Loom.Hydration.activate(root, { contract: payload, localRegistry: options.localRegistry }, {
       registry: options.registry,
       onEffect: options.onEffect,
     }),

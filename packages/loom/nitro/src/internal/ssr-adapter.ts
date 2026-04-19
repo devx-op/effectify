@@ -1,7 +1,8 @@
 import { Html } from "@effectify/loom"
-import { createLoomActivationPayload, type LoomActivationPayload } from "./payload.js"
+import { createLoomResumabilityPayload, type LoomResumabilityPayload } from "./payload.js"
 
 export const defaultLoomNitroRootId = "loom-root"
+export const defaultLoomNitroBuildId = "loom-dev"
 
 export interface LoomNitroRequest {
   readonly method: string
@@ -18,11 +19,13 @@ export interface LoomNitroRenderResult {
   readonly html: string
   readonly status?: number
   readonly headers?: Readonly<Record<string, string>>
-  readonly activation?: LoomActivationPayload
+  readonly activation?: LoomResumabilityPayload
+  readonly resumability?: LoomResumabilityPayload
 }
 
 export interface LoomNitroOptions {
   readonly rootId?: string
+  readonly buildId?: string
   readonly render: (request: LoomNitroRequest) => Html.Child | Promise<Html.Child>
   readonly response?: (request: LoomNitroRequest) => LoomNitroResponseInit | Promise<LoomNitroResponseInit>
   readonly ssr?: Html.SsrOptions | ((request: LoomNitroRequest) => Html.SsrOptions | Promise<Html.SsrOptions>)
@@ -47,11 +50,15 @@ export const renderLoomNitroResponse = async (
   const response = options.response === undefined ? undefined : await options.response(request)
   const render = Html.ssr(root, await resolveSsrOptions(request, options))
   const rootId = options.rootId ?? defaultLoomNitroRootId
+  const buildId = options.buildId ?? defaultLoomNitroBuildId
+
+  const resumability = await createLoomResumabilityPayload({ buildId, rootId }, render)
 
   return {
     html: render.html,
     status: response?.status,
     headers: response?.headers,
-    activation: createLoomActivationPayload(rootId, render),
+    activation: resumability,
+    resumability,
   }
 }

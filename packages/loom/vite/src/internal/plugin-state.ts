@@ -3,12 +3,8 @@ import type * as Loom from "@effectify/loom"
 export const defaultLoomClientEntry = "/src/loom-client.ts"
 export const defaultLoomPayloadElementId = "__loom_payload__"
 
-export interface LoomActivationPayload {
-  readonly version: 1
-  readonly rootId: string
-  readonly manifest: Loom.Hydration.ActivationManifest
-  readonly dehydratedAtoms: Loom.Html.SsrResult["dehydratedAtoms"]
-}
+export type LoomResumabilityPayload = Loom.Resumability.LoomResumabilityContract
+export type LoomActivationPayload = LoomResumabilityPayload
 
 export interface LoomViteOptions {
   readonly root?: string

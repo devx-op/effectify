@@ -27,7 +27,7 @@ const unsupportedRendererOptions: LoomVite.Options = {
 LoomVite.loom(unsupportedRendererOptions)
 
 type OptionsContract = Expect<Equal<Parameters<typeof LoomVite.loom>[0], LoomVite.Options | undefined>>
-type BootstrapContract = Expect<Equal<typeof bootstrap, LoomVite.LoomBootstrapResult>>
+type BootstrapContract = Expect<Equal<typeof bootstrap, Promise<LoomVite.LoomBootstrapResult>>>
 
 export const typecheckSmoke = {
   bootstrap,
