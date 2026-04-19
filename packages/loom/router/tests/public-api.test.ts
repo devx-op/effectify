@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs"
 import * as Result from "effect/Result"
 import { describe, expect, it } from "vitest"
-import { Decode, Fallback, Layout, Match, Route, Router } from "../src/index.js"
+import { Decode, Fallback, Layout, Link, Match, Navigation, Route, RouteGroup, Router } from "../src/index.js"
 
 const manifestUrl = new URL("../package.json", import.meta.url)
 
@@ -16,14 +16,21 @@ describe("@effectify/loom-router public surface", () => {
     expect(typeof Decode.make).toBe("function")
     expect(typeof Layout.make).toBe("function")
     expect(typeof Fallback.make).toBe("function")
+    expect(typeof Route.href).toBe("function")
+    expect(typeof Navigation.memory).toBe("function")
+    expect(typeof Link.intercept).toBe("function")
+    expect(typeof RouteGroup.make).toBe("function")
 
     expect(Object.keys(manifest.exports)).toEqual([
       ".",
       "./Decode",
       "./Fallback",
       "./Layout",
+      "./Link",
       "./Match",
+      "./Navigation",
       "./Route",
+      "./RouteGroup",
       "./Router",
     ])
   })

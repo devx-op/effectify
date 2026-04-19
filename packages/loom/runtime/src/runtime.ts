@@ -9,9 +9,10 @@ export interface Handle {
   readonly root: Element | DocumentFragment | null
 }
 
-export interface EventContext<Target extends EventTarget = EventTarget, EventType extends Event = Event> {
+export interface EventContext<CurrentTarget extends EventTarget = EventTarget, EventType extends Event = Event> {
   readonly event: EventType
-  readonly target: Target
+  readonly target: EventTarget
+  readonly currentTarget: CurrentTarget
   readonly runtime: Handle
 }
 

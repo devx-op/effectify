@@ -659,6 +659,9 @@ const isEffectHandler = (
   handler: LoomCore.Ast.EventBinding["handler"],
 ): handler is LoomCore.Component.EffectLike => typeof handler === "object" && handler !== null && "_tag" in handler
 
+const isEventTarget = (value: unknown): value is EventTarget =>
+  typeof value === "object" && value !== null && "addEventListener" in value && "dispatchEvent" in value
+
 export const activateHydration = (
   root: ParentNode,
   source: Runtime.ActivationSource | Runtime.SsrRenderResult | Resumability.ResumabilityActivationSource,
@@ -747,10 +750,11 @@ export const activateHydration = (
       }
 
       const listener = (event: Event) => {
-        const target = event.target instanceof EventTarget ? event.target : element
+        const target = isEventTarget(event.target) ? event.target : element
         const context = {
           event,
           target,
+          currentTarget: element,
           runtime: {
             root: boundary.element,
           },

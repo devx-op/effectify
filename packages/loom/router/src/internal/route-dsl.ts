@@ -1,9 +1,12 @@
+import type * as ServiceMap from "effect/ServiceMap"
 import * as Decode from "../decode.js"
 import * as Fallback from "../fallback.js"
 import * as Layout from "../layout.js"
 import * as Route from "../route.js"
+import type { Annotations } from "./annotations.js"
+import { annotateValue, emptyAnnotations, mergeAnnotations } from "./annotations.js"
 import { normalizeFallbacks } from "./fallback.js"
-import { normalizePathname, tokenizePath } from "./path.js"
+import { joinPathnames, normalizePathname, tokenizePath } from "./path.js"
 
 export interface RouteDefinition<
   Content = unknown,
@@ -20,6 +23,7 @@ export interface RouteDefinition<
     readonly params?: Decode.Decoder<Route.Params, ParamsOutput>
     readonly search?: Decode.Decoder<Route.Search, SearchOutput>
   }
+  readonly annotations: Annotations
   readonly layout: Layout.Definition | undefined
   readonly fallback: Fallback.Boundaries
 }
@@ -63,6 +67,7 @@ const createRoute = <
       params: options.decode?.params === undefined ? undefined : Decode.toDecoder(options.decode.params),
       search: options.decode?.search === undefined ? undefined : Decode.toDecoder(options.decode.search),
     },
+    annotations: emptyAnnotations(),
     layout: options.layout,
     fallback: normalizeFallbacks(options.fallback),
   }
@@ -139,3 +144,39 @@ export const makeIndexRoute = <
     layout: options.layout,
     fallback: options.fallback,
   })
+
+const prefixChildren = (
+  children: ReadonlyArray<Route.Definition>,
+  prefix: Route.AbsolutePath,
+): ReadonlyArray<Route.Definition> => children.map((child) => prefixRoute(child, prefix))
+
+export const prefixRoute = <Content, ParamsOutput extends Route.Params, SearchOutput extends Route.Search>(
+  self: RouteDefinition<Content, ParamsOutput, SearchOutput>,
+  prefix: Route.AbsolutePath,
+): RouteDefinition<Content, ParamsOutput, SearchOutput> => {
+  const nextPath = self.kind === "path" && self.path.startsWith("/") ? joinPathnames(prefix, self.path) : self.path
+
+  return {
+    ...self,
+    path: nextPath,
+    segments: nextPath.startsWith("/") ? tokenizePath(nextPath) : self.segments,
+    children: prefixChildren(self.children, prefix),
+  }
+}
+
+export const annotateRoute = <Content, ParamsOutput extends Route.Params, SearchOutput extends Route.Search, I, S>(
+  self: RouteDefinition<Content, ParamsOutput, SearchOutput>,
+  tag: ServiceMap.Key<I, S>,
+  value: S,
+): RouteDefinition<Content, ParamsOutput, SearchOutput> => ({
+  ...self,
+  annotations: annotateValue(self.annotations, tag, value),
+})
+
+export const annotateRouteMerge = <Content, ParamsOutput extends Route.Params, SearchOutput extends Route.Search>(
+  self: RouteDefinition<Content, ParamsOutput, SearchOutput>,
+  annotations: Route.Annotations,
+): RouteDefinition<Content, ParamsOutput, SearchOutput> => ({
+  ...self,
+  annotations: mergeAnnotations(self.annotations, annotations),
+})

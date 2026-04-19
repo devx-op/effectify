@@ -2,21 +2,62 @@ import { Diagnostics, Html } from "@effectify/loom"
 import type * as Loom from "@effectify/loom"
 import * as Decode from "../decode.js"
 import * as Result from "effect/Result"
+import type * as ServiceMap from "effect/ServiceMap"
 import type * as Fallback from "../fallback.js"
 import type * as Layout from "../layout.js"
 import * as Match from "../match.js"
 import type * as Route from "../route.js"
+import type * as RouteGroup from "../route-group.js"
 import type * as Router from "../router.js"
+import { annotateValue, emptyAnnotations, mergeAnnotations } from "./annotations.js"
 import { normalizeFallbacks } from "./fallback.js"
 import { runDecoder } from "./decode.js"
 import { matchRoutes } from "./matcher.js"
+import { joinPathnames } from "./path.js"
+import { isRouteGroup, prefixRouteGroup } from "./route-group.js"
+import { prefixRoute } from "./route-dsl.js"
 
 export interface RouterDefinition {
   readonly _tag: "LoomRouter"
+  readonly identifier: string
+  readonly entries: ReadonlyArray<RouterEntry>
   readonly routes: ReadonlyArray<Route.Definition>
+  readonly groups: ReadonlyArray<RouteGroup.Definition>
+  readonly annotations: Route.Annotations
+  readonly pathPrefix: Route.AbsolutePath | undefined
   readonly layout: Layout.Definition | undefined
   readonly fallback: Fallback.Boundaries
 }
+
+export type RouterEntry = Route.Definition | RouteGroup.Definition
+
+const toRoutes = (entries: ReadonlyArray<RouterEntry>): ReadonlyArray<Route.Definition> =>
+  entries.flatMap((entry) => (isRouteGroup(entry) ? entry.routes : [entry]))
+
+const toGroups = (entries: ReadonlyArray<RouterEntry>): ReadonlyArray<RouteGroup.Definition> =>
+  entries.filter(isRouteGroup)
+
+const applyPrefixToEntry = (entry: RouterEntry, prefix: Route.AbsolutePath): RouterEntry =>
+  isRouteGroup(entry) ? prefixRouteGroup(entry, prefix) : prefixRoute(entry, prefix)
+
+const makeDefinition = (options: {
+  readonly identifier: string
+  readonly entries: ReadonlyArray<RouterEntry>
+  readonly annotations?: Route.Annotations
+  readonly pathPrefix?: Route.AbsolutePath
+  readonly layout?: Layout.Definition
+  readonly fallback?: Fallback.Config
+}): RouterDefinition => ({
+  _tag: "LoomRouter",
+  identifier: options.identifier,
+  entries: options.entries,
+  routes: toRoutes(options.entries),
+  groups: toGroups(options.entries),
+  annotations: options.annotations ?? emptyAnnotations(),
+  pathPrefix: options.pathPrefix,
+  layout: options.layout,
+  fallback: normalizeFallbacks(options.fallback),
+})
 
 const isResolver = <Input>(value: unknown): value is (input: Input) => Html.Child => typeof value === "function"
 
@@ -183,11 +224,63 @@ const selectFallback = (
 }
 
 export const makeRouter = (options: Router.Options): RouterDefinition => ({
-  _tag: "LoomRouter",
-  routes: options.routes,
-  layout: options.layout,
-  fallback: normalizeFallbacks(options.fallback),
+  ...makeDefinition({
+    identifier: "compat",
+    entries: options.routes,
+    layout: options.layout,
+    fallback: options.fallback,
+  }),
 })
+
+export const makeEmptyRouter = (identifier: string): RouterDefinition =>
+  makeDefinition({
+    identifier,
+    entries: [],
+  })
+
+export const addEntryToRouter = (self: RouterDefinition, entry: RouterEntry): RouterDefinition =>
+  makeDefinition({
+    identifier: self.identifier,
+    entries: [...self.entries, self.pathPrefix === undefined ? entry : applyPrefixToEntry(entry, self.pathPrefix)],
+    annotations: self.annotations,
+    pathPrefix: self.pathPrefix,
+    layout: self.layout,
+    fallback: self.fallback,
+  })
+
+export const prefixRouter = (self: RouterDefinition, prefix: Route.AbsolutePath): RouterDefinition =>
+  makeDefinition({
+    identifier: self.identifier,
+    entries: self.entries.map((entry) => applyPrefixToEntry(entry, prefix)),
+    annotations: self.annotations,
+    pathPrefix: self.pathPrefix === undefined ? prefix : joinPathnames(self.pathPrefix, prefix),
+    layout: self.layout,
+    fallback: self.fallback,
+  })
+
+export const annotateRouter = <I, S>(
+  self: RouterDefinition,
+  tag: ServiceMap.Key<I, S>,
+  value: S,
+): RouterDefinition =>
+  makeDefinition({
+    identifier: self.identifier,
+    entries: self.entries,
+    annotations: annotateValue(self.annotations, tag, value),
+    pathPrefix: self.pathPrefix,
+    layout: self.layout,
+    fallback: self.fallback,
+  })
+
+export const annotateRouterMerge = (self: RouterDefinition, annotations: Route.Annotations): RouterDefinition =>
+  makeDefinition({
+    identifier: self.identifier,
+    entries: self.entries,
+    annotations: mergeAnnotations(self.annotations, annotations),
+    pathPrefix: self.pathPrefix,
+    layout: self.layout,
+    fallback: self.fallback,
+  })
 
 export const matchRouter = (self: RouterDefinition, input: string | URL): Match.Result =>
   matchRoutes(self.routes, input, self.layout, self.fallback.notFound)

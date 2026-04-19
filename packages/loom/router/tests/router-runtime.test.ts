@@ -1,7 +1,8 @@
+import { SchemaGetter } from "effect"
 import * as Schema from "effect/Schema"
 import { Component, Html, Hydration } from "@effectify/loom"
 import { describe, expect, it } from "vitest"
-import { Decode, Fallback, Layout, Route, Router } from "../src/index.js"
+import { Decode, Fallback, Layout, Route, RouteGroup, Router } from "../src/index.js"
 
 const render = (router: Router.Definition, input: string | URL): string => {
   const output = Router.render(router, input)
@@ -215,6 +216,72 @@ describe("@effectify/loom-router runtime", () => {
 
     expect(render(router, "/posts/nope?page=2")).toBe("<p>route-invalid:params</p>")
     expect(render(router, "/posts/42?page=nope")).toBe("<p>route-invalid:search</p>")
+  })
+
+  it("does not treat a non-leaf route group prefix as a navigable endpoint", () => {
+    const router = Router.add(
+      Router.make("app"),
+      RouteGroup.add(
+        RouteGroup.prefix(RouteGroup.make("posts"), "/posts"),
+        Route.make({
+          path: "/:postId",
+          content: (context: Router.Context) => Html.el("main", Html.children(context.params.postId)),
+        }),
+      ),
+    )
+
+    const result = Router.resolve(router, "/posts")
+
+    expect(result._tag).toBe("LoomRouterResolveNotFound")
+
+    if (result._tag !== "LoomRouterResolveNotFound") {
+      throw new Error("expected route-group prefix without a leaf route to stay non-navigable")
+    }
+
+    expect(result.context.pathname).toBe("/posts")
+    expect(result.context.matches).toEqual([])
+    expect(result.output).toBeUndefined()
+  })
+
+  it("uses optional/default query schema decoding when search params are omitted", () => {
+    const router = Router.make({
+      routes: [
+        Route.make({
+          path: "/posts/:postId",
+          decode: {
+            params: Decode.schema(Schema.Struct({ postId: Schema.String })),
+            search: Decode.schema(
+              Schema.Struct({
+                tab: Schema.optional(Schema.String),
+                page: Schema.optional(Schema.String).pipe(
+                  Schema.decodeTo(Schema.String, {
+                    decode: SchemaGetter.withDefault(() => "1"),
+                    encode: SchemaGetter.required(),
+                  }),
+                ),
+              }),
+            ),
+          },
+          content: (context: Router.Context) =>
+            Html.el(
+              "main",
+              Html.children(`${context.params.postId}:${String(context.query.tab ?? "none")}:${context.query.page}`),
+            ),
+        }),
+      ],
+    })
+
+    const result = Router.resolve(router, "/posts/42")
+
+    expect(result._tag).toBe("LoomRouterResolveSuccess")
+
+    if (result._tag !== "LoomRouterResolveSuccess") {
+      throw new Error("expected omitted optional/default search params to decode successfully")
+    }
+
+    expect(result.context.params).toEqual({ postId: "42" })
+    expect(result.context.query).toEqual({ page: "1" })
+    expect(render(router, "/posts/42")).toBe("<main>42:none:1</main>")
   })
 
   it("composes routed output through Html.ssr without changing hydration seams", () => {
