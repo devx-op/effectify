@@ -13,6 +13,7 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
+    "./Diagnostics": "./src/diagnostics.ts",
     "./Hydration": "./src/hydration.ts",
     "./Resumability": "./src/resumability.ts",
     "./Runtime": "./src/runtime.ts"

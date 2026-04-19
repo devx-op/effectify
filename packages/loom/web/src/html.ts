@@ -2,6 +2,7 @@ import type { Atom } from "effect/unstable/reactivity"
 import * as LoomCore from "@effectify/loom-core"
 import * as LoomRuntime from "@effectify/loom-runtime"
 import type * as Component from "./component.js"
+import type * as Diagnostics from "./diagnostics.js"
 import * as Hydration from "./hydration.js"
 import * as internal from "./internal/api.js"
 
@@ -34,7 +35,9 @@ export interface EventBinding<
 
 export interface SsrOptions extends LoomRuntime.Runtime.SsrOptions {}
 
-export interface SsrResult extends LoomRuntime.Runtime.SsrRenderResult {}
+export interface SsrResult extends LoomRuntime.Runtime.SsrRenderResult {
+  readonly diagnosticSummary: ReadonlyArray<Diagnostics.Summary>
+}
 
 export type Child = LoomCore.Ast.Node | Component.Type | string | ReadonlyArray<Child>
 
@@ -219,8 +222,14 @@ export const on = <Target extends EventTarget = EventTarget, EventType extends E
 })
 
 /** Serialize the current Loom tree to SSR HTML plus explicit runtime metadata. */
-export const ssr = (root: Child, options?: SsrOptions): SsrResult =>
-  LoomRuntime.Runtime.renderToHtml(normalizeRoot(root), options)
+export const ssr = (root: Child, options?: SsrOptions): SsrResult => {
+  const result = LoomRuntime.Runtime.renderToHtml(normalizeRoot(root), options)
+
+  return {
+    ...result,
+    diagnosticSummary: result.diagnostics.map(LoomRuntime.Diagnostics.summarize),
+  }
+}
 
 /** Serialize the current Loom tree to SSR HTML only. */
 export const renderToString = (root: Child, options?: SsrOptions): string => ssr(root, options).html

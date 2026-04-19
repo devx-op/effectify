@@ -1,4 +1,4 @@
-import { Html } from "@effectify/loom"
+import { Diagnostics, Html } from "@effectify/loom"
 import { LoomNitro } from "../src/index.js"
 
 type Equal<Left, Right> = (<Value>() => Value extends Left ? 1 : 2) extends <Value>() => Value extends Right ? 1 : 2
@@ -20,9 +20,10 @@ LoomNitro.renderer({
 
 type RenderResult = Awaited<ReturnType<typeof descriptor.render>>
 type ResultContract = Expect<Equal<RenderResult, LoomNitro.LoomNitroRenderResult>>
+type DiagnosticSummaryContract = Expect<Equal<RenderResult["diagnosticSummary"], ReadonlyArray<Diagnostics.Summary>>>
 
 export const typecheckSmoke = {
   descriptor,
 }
 
-export type { ResultContract }
+export type { DiagnosticSummaryContract, ResultContract }

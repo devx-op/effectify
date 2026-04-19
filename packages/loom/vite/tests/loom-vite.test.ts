@@ -45,9 +45,39 @@ describe("@effectify/loom-vite", () => {
     logLoomDevDiagnostics(info, disabled)
 
     expect(info).toHaveBeenCalledTimes(1)
-    expect(info).toHaveBeenCalledWith(
-      "[loom] enabled root=src/app.ts client=/src/loom-client.ts payload=__loom_payload__",
-    )
+    expect(JSON.parse(info.mock.calls[0]?.[0] ?? "{}")).toEqual({
+      scope: "loom",
+      report: {
+        phase: "adapter",
+        counts: {
+          info: 1,
+          warn: 0,
+          error: 0,
+          fatal: 0,
+        },
+        highestSeverity: "info",
+        issues: [
+          {
+            phase: "adapter",
+            severity: "info",
+            code: "loom.adapter.vite.enabled",
+            message: "Loom Vite is enabled for the configured browser entry.",
+            subject: "src/app.ts",
+            details: {
+              root: "src/app.ts",
+              clientEntry: "/src/loom-client.ts",
+              payloadElementId: "__loom_payload__",
+            },
+          },
+        ],
+      },
+      summary: {
+        phase: "adapter",
+        total: 1,
+        highestSeverity: "info",
+        hasErrors: false,
+      },
+    })
   })
 
   it("runs the Vite hook callbacks end to end for a Loom-owned project", () => {
@@ -89,7 +119,39 @@ describe("@effectify/loom-vite", () => {
 
     expect(transformed).toContain('data-loom-client-entry="src/app.ts"')
     expect(transformed).toContain('id="loom-payload"')
-    expect(info).toHaveBeenCalledWith("[loom] enabled root=src/app.ts client=/src/entry-client.ts payload=loom-payload")
+    expect(JSON.parse(info.mock.calls[0]?.[0] ?? "{}")).toEqual({
+      scope: "loom",
+      report: {
+        phase: "adapter",
+        counts: {
+          info: 1,
+          warn: 0,
+          error: 0,
+          fatal: 0,
+        },
+        highestSeverity: "info",
+        issues: [
+          {
+            phase: "adapter",
+            severity: "info",
+            code: "loom.adapter.vite.enabled",
+            message: "Loom Vite is enabled for the configured browser entry.",
+            subject: "src/app.ts",
+            details: {
+              root: "src/app.ts",
+              clientEntry: "/src/entry-client.ts",
+              payloadElementId: "loom-payload",
+            },
+          },
+        ],
+      },
+      summary: {
+        phase: "adapter",
+        total: 1,
+        highestSeverity: "info",
+        hasErrors: false,
+      },
+    })
   })
 
   it("rejects unsupported renderer options at the Vite adapter boundary", () => {

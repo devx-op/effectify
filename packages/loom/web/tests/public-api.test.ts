@@ -4,7 +4,7 @@ import { Atom, AtomRegistry, Hydration as ReactivityHydration } from "effect/uns
 import * as Schema from "effect/Schema"
 import * as LoomRuntime from "@effectify/loom-runtime"
 import { describe, expect, it } from "vitest"
-import { Component, Html, Hydration } from "../src/index.js"
+import { Component, Diagnostics, Html, Hydration, Resumability } from "../src/index.js"
 
 const effectLike = { _tag: "EffectLike" } as const
 const makeSerializableTextAtom = (key: string, value: string) =>
@@ -17,6 +17,7 @@ describe("@effectify/loom public semantics", () => {
   it("re-exports namespace modules from the package root", () => {
     expect(typeof Component.make).toBe("function")
     expect(typeof Component.effect).toBe("function")
+    expect(typeof Diagnostics.summaries).toBe("function")
     expect(typeof Html.text).toBe("function")
     expect(typeof Html.el).toBe("function")
     expect(typeof Html.ssr).toBe("function")
@@ -217,6 +218,36 @@ describe("@effectify/loom public semantics", () => {
       ["data-loom-hydrate", "visible"],
       ["data-loom-hydrate", "idle"],
     ])
+  })
+
+  it("attaches diagnostic summaries to SSR, bootstrap, and activation results", () => {
+    const clickRef = Resumability.makeExecutableRef("app/counter", "onClick")
+    const ssr = Html.ssr(
+      Html.el(
+        "section",
+        Html.hydrate(Hydration.strategy.visible()),
+        Html.on("click", Resumability.handler(clickRef, effectLike)),
+        Html.children("save"),
+      ),
+    )
+    const dom = document.createElement("div")
+
+    dom.innerHTML = ssr.html
+
+    const bootstrap = Hydration.bootstrap(dom)
+    const activation = Hydration.activate(dom, ssr)
+
+    expect(ssr.diagnosticSummary).toEqual([])
+    expect(bootstrap.diagnosticSummary).toEqual([])
+    expect(activation.diagnosticSummary).toEqual([
+      {
+        phase: "hydration",
+        total: 1,
+        highestSeverity: "error",
+        hasErrors: true,
+      },
+    ])
+    expect(Diagnostics.summaries(activation.diagnostics)).toEqual(activation.diagnosticSummary)
   })
 
   it("serializes SSR HTML with component expansion, escaping, and hydration markers", () => {

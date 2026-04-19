@@ -1,5 +1,6 @@
 import type { AtomRegistry, Hydration as ReactivityHydration } from "effect/unstable/reactivity"
 import type * as LoomCore from "@effectify/loom-core"
+import type * as Diagnostics from "./diagnostics.js"
 import type * as Resumability from "./resumability.js"
 import * as internal from "./internal/runtime.js"
 
@@ -88,6 +89,7 @@ export interface SsrRenderResult {
   readonly activation: ActivationSource
   readonly dehydratedAtoms: ReadonlyArray<ReactivityHydration.DehydratedAtom>
   readonly resumability: Resumability.RenderResumabilityResult
+  readonly diagnostics: ReadonlyArray<Diagnostics.DiagnosticReport>
 }
 
 export type ResumabilityActivationSource = Resumability.ResumabilityActivationSource
@@ -116,6 +118,7 @@ export interface HydrationMismatch {
 export interface HydrationBootstrapResult {
   readonly boundaries: ReadonlyArray<HydrationBoundaryHandle>
   readonly mismatches: ReadonlyArray<HydrationMismatch>
+  readonly diagnostics: ReadonlyArray<Diagnostics.DiagnosticReport>
 }
 
 export interface ActivatedEventBinding {
@@ -166,6 +169,7 @@ export interface HydrationActivationResult {
   readonly issues: ReadonlyArray<HydrationActivationIssue>
   readonly deferred: ReadonlyArray<DeferredNode>
   readonly registry: AtomRegistry.AtomRegistry
+  readonly diagnostics: ReadonlyArray<Diagnostics.DiagnosticReport>
   readonly dispose: () => void
 }
 

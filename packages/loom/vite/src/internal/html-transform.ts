@@ -1,3 +1,4 @@
+import { makeEnabledStateDiagnostics, renderDiagnosticsLogMessage } from "./diagnostics.js"
 import type { LoomViteState } from "./plugin-state.js"
 
 const injectBeforeClosingTag = (html: string, closingTag: string, fragment: string): string => {
@@ -37,7 +38,5 @@ export const logLoomDevDiagnostics = (
     return
   }
 
-  info(
-    `[loom] enabled root=${state.options.root} client=${state.options.clientEntry} payload=${state.options.payloadElementId}`,
-  )
+  info(renderDiagnosticsLogMessage(makeEnabledStateDiagnostics(state)))
 }

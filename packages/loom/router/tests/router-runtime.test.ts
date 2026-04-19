@@ -37,6 +37,8 @@ describe("@effectify/loom-router runtime", () => {
     expect(result.context.query).toEqual({ page: "2" })
     expect(result.context.pathname).toBe("/posts/42")
     expect(result.context.matches).toHaveLength(1)
+    expect(result.diagnostics).toEqual([])
+    expect(result.diagnosticSummary).toEqual([])
     expect(render(router, "/posts/42?page=2")).toBe("<main>42:2</main>")
   })
 
@@ -99,6 +101,37 @@ describe("@effectify/loom-router runtime", () => {
       ],
     })
 
+    const result = Router.resolve(router, "/dashboard/settings/missing")
+
+    expect(result._tag).toBe("LoomRouterResolveNotFound")
+
+    if (result._tag !== "LoomRouterResolveNotFound") {
+      throw new Error("expected a routed notFound result")
+    }
+
+    expect(result.diagnosticSummary).toEqual([
+      {
+        phase: "router",
+        total: 1,
+        highestSeverity: "warn",
+        hasErrors: false,
+      },
+    ])
+    expect(result.diagnostics).toEqual([
+      expect.objectContaining({
+        phase: "router",
+        highestSeverity: "warn",
+        issues: [
+          expect.objectContaining({
+            phase: "router",
+            severity: "warn",
+            code: "loom.router.resolve.not-found",
+            subject: "/dashboard/settings/missing",
+          }),
+        ],
+      }),
+    ])
+
     expect(render(router, "/dashboard/settings/missing")).toBe(
       '<main><section data-layout="dashboard"><article data-layout="settings"><p>settings-missing:/dashboard/settings/missing</p></article></section></main>',
     )
@@ -128,6 +161,57 @@ describe("@effectify/loom-router runtime", () => {
         }),
       ],
     })
+
+    const paramsResult = Router.resolve(router, "/posts/nope?page=2")
+
+    expect(paramsResult._tag).toBe("LoomRouterResolveInvalidInput")
+
+    if (paramsResult._tag !== "LoomRouterResolveInvalidInput") {
+      throw new Error("expected invalid-input router result")
+    }
+
+    expect(paramsResult.diagnosticSummary).toEqual([
+      {
+        phase: "router",
+        total: 1,
+        highestSeverity: "warn",
+        hasErrors: false,
+      },
+    ])
+    expect(paramsResult.diagnostics).toEqual([
+      expect.objectContaining({
+        phase: "router",
+        highestSeverity: "warn",
+        issues: [
+          expect.objectContaining({
+            code: "loom.router.resolve.invalid-input",
+            subject: "/posts/:postId",
+            details: expect.objectContaining({
+              pathname: "/posts/nope",
+              issueCount: 1,
+            }),
+          }),
+        ],
+      }),
+    ])
+
+    const searchResult = Router.resolve(router, "/posts/42?page=nope")
+
+    expect(searchResult._tag).toBe("LoomRouterResolveInvalidInput")
+
+    if (searchResult._tag !== "LoomRouterResolveInvalidInput") {
+      throw new Error("expected invalid-input router result")
+    }
+
+    expect(searchResult.diagnostics[0]?.issues).toEqual([
+      expect.objectContaining({
+        code: "loom.router.resolve.invalid-input",
+        details: expect.objectContaining({
+          pathname: "/posts/42",
+          issueCount: 1,
+        }),
+      }),
+    ])
 
     expect(render(router, "/posts/nope?page=2")).toBe("<p>route-invalid:params</p>")
     expect(render(router, "/posts/42?page=nope")).toBe("<p>route-invalid:search</p>")

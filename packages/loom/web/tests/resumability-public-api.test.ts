@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { Html, Resumability } from "../src/index.js"
+import { Html, Hydration, Resumability } from "../src/index.js"
 
 const effectLike = { _tag: "EffectLike" } as const
 
@@ -24,5 +24,26 @@ describe("@effectify/loom resumability public api", () => {
     })
     expect(typeof Resumability.makeLocalRegistry).toBe("function")
     expect(typeof Resumability.createRenderContract).toBe("function")
+  })
+
+  it("keeps resumability diagnostics on the public contract result seam", async () => {
+    const render = Html.ssr(
+      Html.el("section", Html.hydrate(Hydration.visible()), Html.on("click", effectLike), Html.children("save")),
+    )
+    const result = await Resumability.createRenderContract(render, {
+      buildId: "build-123",
+      rootId: "loom-root",
+    })
+
+    expect(result.status).toBe("unsupported")
+    expect(result.diagnostics).toEqual(render.diagnostics)
+    expect(result.diagnosticSummary).toEqual([
+      {
+        phase: "resumability",
+        total: 1,
+        highestSeverity: "error",
+        hasErrors: true,
+      },
+    ])
   })
 })

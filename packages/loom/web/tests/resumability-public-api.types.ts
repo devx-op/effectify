@@ -1,5 +1,5 @@
 import { Atom } from "effect/unstable/reactivity"
-import { Html, Resumability } from "../src/index.js"
+import { Diagnostics, Html, Resumability } from "../src/index.js"
 
 const effectLike = { _tag: "EffectLike" } as const
 
@@ -47,6 +47,9 @@ type DecodeContractReturn = Expect<
 type CreateRenderContractReturn = Expect<
   Equal<typeof createdRenderContract, Promise<Resumability.CreatedRenderContractResult>>
 >
+type CreateRenderContractDiagnostics = Expect<
+  Equal<Awaited<typeof createdRenderContract>["diagnosticSummary"], ReadonlyArray<Diagnostics.Summary>>
+>
 
 // @ts-expect-error Resumability.live requires a renderer function.
 Resumability.live(liveRef, "not-a-renderer")
@@ -62,6 +65,7 @@ export const typecheckSmoke = {
 }
 
 export type {
+  CreateRenderContractDiagnostics,
   CreateRenderContractReturn,
   DecodeContractReturn,
   EncodeContractParam,

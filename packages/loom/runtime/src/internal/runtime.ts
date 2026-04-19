@@ -1,5 +1,6 @@
 import { Atom, AtomRegistry, Hydration as EffectHydration } from "effect/unstable/reactivity"
 import type * as LoomCore from "@effectify/loom-core"
+import * as Diagnostics from "./diagnostics.js"
 import * as Hydration from "../hydration.js"
 import * as Resumability from "../resumability.js"
 import * as LiveRegion from "./live-region.js"
@@ -410,6 +411,53 @@ export const renderToHtml = (root: LoomCore.Ast.Node, options: Runtime.SsrOption
       } satisfies Runtime.ActivationEventBinding
     }),
   }))
+  let resumability: Resumability.RenderResumabilityResult
+
+  if (activationBoundaries.length === 0 && serializationState.deferred.length === 0) {
+    resumability = {
+      status: "none",
+      issues: [],
+    }
+  } else if (serializationState.resumabilityIssues.length > 0) {
+    resumability = {
+      status: "unsupported",
+      issues: serializationState.resumabilityIssues,
+    }
+  } else {
+    resumability = {
+      status: "ready",
+      draft: {
+        boundaries: serializationState.boundaries.map((boundary) => ({
+          id: boundary.id,
+          strategy: boundary.strategy,
+          nodeIds: [...new Set(boundary.eventBindings.map(({ nodeId }) => nodeId))],
+        })),
+        handlers: serializationState.boundaries.flatMap((boundary) =>
+          boundary.eventBindings.flatMap((binding) => {
+            if (binding.ref === undefined) {
+              return []
+            }
+
+            return [
+              {
+                ref: binding.ref,
+                boundaryId: boundary.id,
+                nodeId: binding.nodeId,
+                event: binding.event,
+                mode: binding.mode,
+              } satisfies Resumability.HandlerDescriptor,
+            ]
+          })
+        ),
+        liveRegions: serializationState.resumableLiveRegions,
+        state: {
+          dehydratedAtoms: serializedDehydratedAtoms,
+          deferred: serializationState.deferred,
+        },
+      },
+      issues: [],
+    }
+  }
 
   return {
     html,
@@ -428,49 +476,8 @@ export const renderToHtml = (root: LoomCore.Ast.Node, options: Runtime.SsrOption
       handlers,
     },
     dehydratedAtoms,
-    resumability: activationBoundaries.length === 0 && serializationState.deferred.length === 0
-      ? {
-        status: "none",
-        issues: [],
-      }
-      : serializationState.resumabilityIssues.length > 0
-      ? {
-        status: "unsupported",
-        issues: serializationState.resumabilityIssues,
-      }
-      : {
-        status: "ready",
-        draft: {
-          boundaries: serializationState.boundaries.map((boundary) => ({
-            id: boundary.id,
-            strategy: boundary.strategy,
-            nodeIds: [...new Set(boundary.eventBindings.map(({ nodeId }) => nodeId))],
-          })),
-          handlers: serializationState.boundaries.flatMap((boundary) =>
-            boundary.eventBindings.flatMap((binding) => {
-              if (binding.ref === undefined) {
-                return []
-              }
-
-              return [
-                {
-                  ref: binding.ref,
-                  boundaryId: boundary.id,
-                  nodeId: binding.nodeId,
-                  event: binding.event,
-                  mode: binding.mode,
-                } satisfies Resumability.HandlerDescriptor,
-              ]
-            })
-          ),
-          liveRegions: serializationState.resumableLiveRegions,
-          state: {
-            dehydratedAtoms: serializedDehydratedAtoms,
-            deferred: serializationState.deferred,
-          },
-        },
-        issues: [],
-      },
+    resumability,
+    diagnostics: Diagnostics.fromRenderResumability(resumability),
   }
 }
 
@@ -627,10 +634,12 @@ export const discoverHydrationBoundaries = (root: ParentNode): ReadonlyArray<Run
 
 export const bootstrapHydration = (root: ParentNode): Runtime.HydrationBootstrapResult => {
   const inspections = collectHydrationElements(root).map(inspectHydrationBoundary)
+  const mismatches = inspections.flatMap((inspection) => inspection.mismatches)
 
   return {
     boundaries: inspections.flatMap((inspection) => inspection.boundary === undefined ? [] : [inspection.boundary]),
-    mismatches: inspections.flatMap((inspection) => inspection.mismatches),
+    mismatches,
+    diagnostics: Diagnostics.fromHydrationMismatches(mismatches),
   }
 }
 
@@ -957,6 +966,10 @@ export const activateHydration = (
     issues,
     deferred,
     registry,
+    diagnostics: Diagnostics.fromHydrationActivation({
+      mismatches: bootstrap.mismatches,
+      issues,
+    }),
     dispose,
   }
 }

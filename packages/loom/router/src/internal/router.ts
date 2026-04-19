@@ -1,4 +1,5 @@
-import { Html } from "@effectify/loom"
+import { Diagnostics, Html } from "@effectify/loom"
+import type * as Loom from "@effectify/loom"
 import * as Decode from "../decode.js"
 import * as Result from "effect/Result"
 import type * as Fallback from "../fallback.js"
@@ -123,6 +124,44 @@ const renderFallback = <Input>(fallback: Fallback.Definition | undefined, input:
   return isResolver<Input>(fallback.content) ? fallback.content(input) : toChild(fallback.content)
 }
 
+const emptyDiagnostics: ReadonlyArray<Loom.Diagnostics.Report> = []
+const emptyDiagnosticSummary: ReadonlyArray<Loom.Diagnostics.Summary> = []
+
+const makeRouterReport = (input: {
+  readonly severity: Loom.Diagnostics.Severity
+  readonly code: string
+  readonly message: string
+  readonly subject: string
+  readonly details: Record<string, Loom.Diagnostics.JsonValue>
+}): Loom.Diagnostics.Report => ({
+  phase: "router",
+  counts: {
+    info: input.severity === "info" ? 1 : 0,
+    warn: input.severity === "warn" ? 1 : 0,
+    error: input.severity === "error" ? 1 : 0,
+    fatal: input.severity === "fatal" ? 1 : 0,
+  },
+  highestSeverity: input.severity,
+  issues: [
+    {
+      phase: "router",
+      severity: input.severity,
+      code: input.code,
+      message: input.message,
+      subject: input.subject,
+      details: input.details,
+    },
+  ],
+})
+
+const withRouterDiagnostics = (report: Loom.Diagnostics.Report): {
+  readonly diagnostics: ReadonlyArray<Loom.Diagnostics.Report>
+  readonly diagnosticSummary: ReadonlyArray<Loom.Diagnostics.Summary>
+} => ({
+  diagnostics: [report],
+  diagnosticSummary: [Diagnostics.summarize(report)],
+})
+
 const selectFallback = (
   matches: ReadonlyArray<Match.RouteMatch>,
   fallback: Fallback.Boundaries,
@@ -175,6 +214,8 @@ export const resolveRouter = (self: RouterDefinition, input: string | URL): Rout
       context,
       route: match.route,
       output,
+      diagnostics: emptyDiagnostics,
+      diagnosticSummary: emptyDiagnosticSummary,
     }
   }
 
@@ -198,12 +239,30 @@ export const resolveRouter = (self: RouterDefinition, input: string | URL): Rout
       output: output === undefined
         ? undefined
         : foldLayouts(collectLayouts(self.layout, match.matches), context, output),
+      ...withRouterDiagnostics(
+        makeRouterReport({
+          severity: "warn",
+          code: "loom.router.resolve.invalid-input",
+          message: `Router input for ${match.route.path} could not be decoded for ${match.pathname}.`,
+          subject: match.route.path,
+          details: {
+            pathname: match.pathname,
+            issueCount: match.issues.length,
+            issues: match.issues.map((issue) => ({
+              phase: issue.phase,
+              message: issue.message,
+            })),
+          },
+        }),
+      ),
     }
   }
 
   const decoded = match.route === undefined ? undefined : decodeRouteInput(match.route, match.params, match.search)
 
-  if (decoded?._tag === "failure") {
+  if (match.route !== undefined && decoded?._tag === "failure") {
+    const route = match.route
+
     const context = buildContext({
       url: match.url,
       pathname: match.pathname,
@@ -217,12 +276,28 @@ export const resolveRouter = (self: RouterDefinition, input: string | URL): Rout
     return {
       _tag: "LoomRouterResolveInvalidInput",
       context,
-      route: match.route,
+      route,
       issues: decoded.issues,
       fallback,
       output: output === undefined
         ? undefined
         : foldLayouts(collectLayouts(self.layout, match.matches), context, output),
+      ...withRouterDiagnostics(
+        makeRouterReport({
+          severity: "warn",
+          code: "loom.router.resolve.invalid-input",
+          message: `Router input for ${route.path} could not be decoded for ${match.pathname}.`,
+          subject: route.path,
+          details: {
+            pathname: match.pathname,
+            issueCount: decoded.issues.length,
+            issues: decoded.issues.map((issue) => ({
+              phase: issue.phase,
+              message: issue.message,
+            })),
+          },
+        }),
+      ),
     }
   }
 
@@ -241,6 +316,19 @@ export const resolveRouter = (self: RouterDefinition, input: string | URL): Rout
     context,
     fallback,
     output: output === undefined ? undefined : foldLayouts(collectLayouts(self.layout, match.matches), context, output),
+    ...withRouterDiagnostics(
+      makeRouterReport({
+        severity: "warn",
+        code: "loom.router.resolve.not-found",
+        message: `Router could not resolve a matching route for ${match.pathname}.`,
+        subject: match.pathname,
+        details: {
+          pathname: match.pathname,
+          matchedRoutePath: match.route?.path ?? null,
+          matchedRouteCount: match.matches.length,
+        },
+      }),
+    ),
   }
 }
 

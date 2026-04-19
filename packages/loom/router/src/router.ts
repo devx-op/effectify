@@ -30,6 +30,8 @@ export interface ResolveSuccess<Params extends Route.Params = Route.Params, Quer
   readonly context: Context<Params, Query>
   readonly route: Route.Definition<unknown, Params, Query>
   readonly output: Loom.Html.Child
+  readonly diagnostics: ReadonlyArray<Loom.Diagnostics.Report>
+  readonly diagnosticSummary: ReadonlyArray<Loom.Diagnostics.Summary>
 }
 
 export interface ResolveNotFound {
@@ -37,6 +39,8 @@ export interface ResolveNotFound {
   readonly context: Context
   readonly fallback: Fallback.Definition | undefined
   readonly output: Loom.Html.Child | undefined
+  readonly diagnostics: ReadonlyArray<Loom.Diagnostics.Report>
+  readonly diagnosticSummary: ReadonlyArray<Loom.Diagnostics.Summary>
 }
 
 export interface ResolveInvalidInput {
@@ -46,6 +50,8 @@ export interface ResolveInvalidInput {
   readonly issues: ReadonlyArray<Decode.Issue>
   readonly fallback: Fallback.Definition | undefined
   readonly output: Loom.Html.Child | undefined
+  readonly diagnostics: ReadonlyArray<Loom.Diagnostics.Report>
+  readonly diagnosticSummary: ReadonlyArray<Loom.Diagnostics.Summary>
 }
 
 export type ResolveResult = ResolveSuccess | ResolveNotFound | ResolveInvalidInput

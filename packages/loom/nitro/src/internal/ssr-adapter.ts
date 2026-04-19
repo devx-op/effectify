@@ -1,4 +1,5 @@
 import { Html } from "@effectify/loom"
+import type * as Loom from "@effectify/loom"
 import { createLoomResumabilityPayload, type LoomResumabilityPayload } from "./payload.js"
 
 export const defaultLoomNitroRootId = "loom-root"
@@ -21,6 +22,8 @@ export interface LoomNitroRenderResult {
   readonly headers?: Readonly<Record<string, string>>
   readonly activation?: LoomResumabilityPayload
   readonly resumability?: LoomResumabilityPayload
+  readonly diagnostics: ReadonlyArray<Loom.Diagnostics.Report>
+  readonly diagnosticSummary: ReadonlyArray<Loom.Diagnostics.Summary>
 }
 
 export interface LoomNitroOptions {
@@ -60,5 +63,7 @@ export const renderLoomNitroResponse = async (
     headers: response?.headers,
     activation: resumability,
     resumability,
+    diagnostics: render.diagnostics,
+    diagnosticSummary: render.diagnosticSummary,
   }
 }

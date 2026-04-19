@@ -1,5 +1,6 @@
 import * as LoomCore from "@effectify/loom-core"
 import * as LoomRuntime from "@effectify/loom-runtime"
+import type * as Diagnostics from "./diagnostics.js"
 
 /** Supported public hydration strategy names for the Loom skeleton. */
 export type StrategyName = LoomRuntime.Hydration.StrategyName
@@ -14,7 +15,9 @@ export type Boundary = LoomRuntime.Runtime.HydrationBoundaryHandle
 export type Mismatch = LoomRuntime.Runtime.HydrationMismatch
 
 /** Public bootstrap result for hydratable DOM discovery. */
-export type BootstrapResult = LoomRuntime.Runtime.HydrationBootstrapResult
+export interface BootstrapResult extends LoomRuntime.Runtime.HydrationBootstrapResult {
+  readonly diagnosticSummary: ReadonlyArray<Diagnostics.Summary>
+}
 
 /** Public view of a hydrated event binding attached during activation. */
 export type ActivatedEventBinding = LoomRuntime.Runtime.ActivatedEventBinding
@@ -38,7 +41,9 @@ export type ActivationIssue = LoomRuntime.Runtime.HydrationActivationIssue
 export type ActivatedLiveRegion = LoomRuntime.Runtime.ActivatedLiveRegion
 
 /** Public activation result for the current first real hydration scope. */
-export type ActivationResult = LoomRuntime.Runtime.HydrationActivationResult
+export interface ActivationResult extends LoomRuntime.Runtime.HydrationActivationResult {
+  readonly diagnosticSummary: ReadonlyArray<Diagnostics.Summary>
+}
 
 /** Explicit dispatcher hook for simple Effect-form event handlers during hydration activation. */
 export type ActivationOptions = LoomRuntime.Runtime.HydrationActivationOptions
@@ -100,8 +105,21 @@ export const discover = (root: ParentNode): ReadonlyArray<Boundary> =>
   LoomRuntime.Runtime.discoverHydrationBoundaries(root)
 
 /** Normalize the current DOM root into a bootstrap plan. */
-export const bootstrap = (root: ParentNode): BootstrapResult => LoomRuntime.Runtime.bootstrapHydration(root)
+export const bootstrap = (root: ParentNode): BootstrapResult => {
+  const result = LoomRuntime.Runtime.bootstrapHydration(root)
+
+  return {
+    ...result,
+    diagnosticSummary: result.diagnostics.map(LoomRuntime.Diagnostics.summarize),
+  }
+}
 
 /** Activate discovered hydratable boundaries against the current SSR activation source. */
-export const activate = (root: ParentNode, source: ActivationInput, options?: ActivationOptions): ActivationResult =>
-  LoomRuntime.Runtime.activateHydration(root, source, options)
+export const activate = (root: ParentNode, source: ActivationInput, options?: ActivationOptions): ActivationResult => {
+  const result = LoomRuntime.Runtime.activateHydration(root, source, options)
+
+  return {
+    ...result,
+    diagnosticSummary: result.diagnostics.map(LoomRuntime.Diagnostics.summarize),
+  }
+}

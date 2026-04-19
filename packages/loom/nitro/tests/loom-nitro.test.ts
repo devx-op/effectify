@@ -61,11 +61,42 @@ describe("@effectify/loom-nitro", () => {
       html: expect.stringContaining("GET:/demo"),
       status: 201,
       headers: { "x-loom": "ready" },
+      diagnosticSummary: [],
       resumability: expect.objectContaining({
         version: 1,
         rootId: "loom-root",
       }),
     })
+  })
+
+  it("surfaces canonical resumability diagnostics through the Nitro adapter result", async () => {
+    const result = await renderLoomNitroResponse(
+      {
+        rootId: "loom-root",
+        render: () =>
+          Html.el(
+            "section",
+            Html.hydrate(Hydration.visible()),
+            Html.on("click", { _tag: "EffectLike" }),
+            Html.children("ready"),
+          ),
+      },
+      {
+        method: "GET",
+        url: "/unsupported",
+        headers: {},
+      },
+    )
+
+    expect(result.resumability).toBeUndefined()
+    expect(result.diagnosticSummary).toEqual([
+      {
+        phase: "resumability",
+        total: 1,
+        highestSeverity: "error",
+        hasErrors: true,
+      },
+    ])
   })
 
   it("exposes the initial Nitro adapter module shape", async () => {
