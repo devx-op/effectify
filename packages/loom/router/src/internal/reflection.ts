@@ -14,21 +14,21 @@ const toPathname = (segments: ReadonlyArray<string>): Route.AbsolutePath => {
 }
 
 export interface ReflectedRoute {
-  readonly route: Route.Definition
-  readonly group: RouteGroup.Definition | undefined
+  readonly route: Route.Definition<any, any, any, any, any>
+  readonly group: RouteGroup.Definition<any> | undefined
   readonly path: Route.AbsolutePath
-  readonly parents: ReadonlyArray<Route.Definition>
+  readonly parents: ReadonlyArray<Route.Definition<any, any, any, any, any>>
   readonly mergedAnnotations: Route.Annotations
   readonly layouts: ReadonlyArray<Layout.Definition>
   readonly fallback: Fallback.Boundaries
 }
 
 export interface ReflectRoutesOptions {
-  readonly group?: RouteGroup.Definition
+  readonly group?: RouteGroup.Definition<any>
   readonly inheritedAnnotations: Route.Annotations
   readonly inheritedFallback?: Fallback.Boundaries
   readonly inheritedLayouts?: ReadonlyArray<Layout.Definition>
-  readonly parents?: ReadonlyArray<Route.Definition>
+  readonly parents?: ReadonlyArray<Route.Definition<any, any, any, any, any>>
   readonly prefixSegments?: ReadonlyArray<string>
   readonly predicate?: ((route: ReflectedRoute) => boolean) | undefined
   readonly onRoute: (route: ReflectedRoute) => void
@@ -43,7 +43,7 @@ const mergeFallbacks = (
 })
 
 export const reflectRoutes = (
-  routes: ReadonlyArray<Route.Definition>,
+  routes: ReadonlyArray<Route.Definition<any, any, any, any, any>>,
   options: ReflectRoutesOptions,
 ): void => {
   const prefixSegments = options.prefixSegments ?? []

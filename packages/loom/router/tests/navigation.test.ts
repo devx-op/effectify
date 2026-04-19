@@ -159,6 +159,8 @@ describe("@effectify/loom-router navigation", () => {
       params: { postId: "42" },
       query: { page: "2", tab: "activity" },
     })
+    const runtimeRoute: Route.Definition = postRoute
+    const invalidQuery: Route.Search = { page: "2", tab: "activity", extra: "ignored" }
     const success = Router.resolve(router, href)
 
     expect(href).toBe("https://effectify.dev/posts/42?page=2&tab=activity")
@@ -186,6 +188,47 @@ describe("@effectify/loom-router navigation", () => {
     }
 
     expect(invalid.issues.map((issue) => issue.phase)).toEqual(["params", "search"])
+
+    expect(() =>
+      Route.href(runtimeRoute, {
+        params: { postId: "42" },
+        query: invalidQuery,
+      })
+    ).toThrowError(/Unknown search keys: extra/)
+  })
+
+  it("keeps link and navigation helpers compatible with router-generated hrefs", () => {
+    const postDetail = Route.child({
+      identifier: "posts.detail",
+      path: ":postId",
+      decode: {
+        params: Decode.schema(Schema.Struct({ postId: Schema.Literal("42") })),
+        search: Decode.schema(Schema.Struct({ tab: Schema.Literal("activity") })),
+      },
+      content: (context: Router.Context) => `${context.params.postId}:${context.query.tab}`,
+    })
+    const router = Router.make({
+      routes: [Route.make({ path: "/posts", content: "posts-home", children: [postDetail] })],
+    })
+    const navigation = Navigation.memory(`${effectifyOrigin}/home`)
+    const href = Router.href(router, "posts.detail", {
+      params: { postId: "42" },
+      query: { tab: "activity" },
+    })
+
+    expect(Link.href(href, navigation.current().url)).toBe(`${effectifyOrigin}/posts/42?tab=activity`)
+
+    Link.navigate(navigation, href)
+
+    expect(navigation.current().pathname).toBe("/posts/42")
+    expect(navigation.current().query.get("tab")).toBe("activity")
+
+    const modifiers = Link.modifiers({
+      navigation,
+      to: href,
+    })
+
+    expect(modifiers.href).toBe(`${effectifyOrigin}/posts/42?tab=activity`)
   })
 
   it("intercepts same-origin self-navigation links and skips ineligible clicks", () => {

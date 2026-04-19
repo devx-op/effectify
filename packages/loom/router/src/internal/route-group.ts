@@ -4,18 +4,22 @@ import { annotateValue, emptyAnnotations, mergeAnnotations } from "./annotations
 import { joinPathnames } from "./path.js"
 import { prefixRoute } from "./route-dsl.js"
 
-export interface RouteGroupDefinition {
+export interface RouteGroupDefinition<
+  Routes extends ReadonlyArray<Route.AnyDefinition> = ReadonlyArray<Route.AnyDefinition>,
+> {
   readonly _tag: "LoomRouterRouteGroup"
   readonly identifier: string
-  readonly routes: ReadonlyArray<Route.Definition>
+  readonly routes: Routes
   readonly annotations: Route.Annotations
   readonly pathPrefix: Route.AbsolutePath | undefined
 }
 
-const applyPrefix = (prefix: Route.AbsolutePath | undefined, route: Route.Definition): Route.Definition =>
-  prefix === undefined ? route : prefixRoute(route, prefix)
+const applyPrefix = <CurrentRoute extends Route.AnyDefinition>(
+  prefix: Route.AbsolutePath | undefined,
+  route: CurrentRoute,
+): CurrentRoute => (prefix === undefined ? route : (prefixRoute(route, prefix) as unknown as CurrentRoute))
 
-export const isRouteGroup = (value: unknown): value is RouteGroupDefinition =>
+export const isRouteGroup = (value: unknown): value is RouteGroupDefinition<ReadonlyArray<Route.AnyDefinition>> =>
   typeof value === "object" && value !== null && "_tag" in value && value._tag === "LoomRouterRouteGroup"
 
 export const makeRouteGroup = (identifier: string): RouteGroupDefinition => ({
@@ -26,30 +30,39 @@ export const makeRouteGroup = (identifier: string): RouteGroupDefinition => ({
   pathPrefix: undefined,
 })
 
-export const addRouteToGroup = (self: RouteGroupDefinition, route: Route.Definition): RouteGroupDefinition => ({
+export const addRouteToGroup = <
+  Routes extends ReadonlyArray<Route.AnyDefinition>,
+  RouteToAdd extends Route.AnyDefinition,
+>(
+  self: RouteGroupDefinition<Routes>,
+  route: RouteToAdd,
+): RouteGroupDefinition<[...Routes, RouteToAdd]> => ({
   ...self,
   routes: [...self.routes, applyPrefix(self.pathPrefix, route)],
 })
 
-export const prefixRouteGroup = (self: RouteGroupDefinition, prefix: Route.AbsolutePath): RouteGroupDefinition => ({
+export const prefixRouteGroup = <Routes extends ReadonlyArray<Route.AnyDefinition>>(
+  self: RouteGroupDefinition<Routes>,
+  prefix: Route.AbsolutePath,
+): RouteGroupDefinition<Routes> => ({
   ...self,
   pathPrefix: self.pathPrefix === undefined ? prefix : joinPathnames(self.pathPrefix, prefix),
-  routes: self.routes.map((route) => prefixRoute(route, prefix)),
+  routes: self.routes.map((route) => prefixRoute(route, prefix)) as unknown as Routes,
 })
 
-export const annotateRouteGroup = <I, S>(
-  self: RouteGroupDefinition,
+export const annotateRouteGroup = <Routes extends ReadonlyArray<Route.AnyDefinition>, I, S>(
+  self: RouteGroupDefinition<Routes>,
   tag: ServiceMap.Key<I, S>,
   value: S,
-): RouteGroupDefinition => ({
+): RouteGroupDefinition<Routes> => ({
   ...self,
   annotations: annotateValue(self.annotations, tag, value),
 })
 
-export const annotateRouteGroupMerge = (
-  self: RouteGroupDefinition,
+export const annotateRouteGroupMerge = <Routes extends ReadonlyArray<Route.AnyDefinition>>(
+  self: RouteGroupDefinition<Routes>,
   annotations: Route.Annotations,
-): RouteGroupDefinition => ({
+): RouteGroupDefinition<Routes> => ({
   ...self,
   annotations: mergeAnnotations(self.annotations, annotations),
 })

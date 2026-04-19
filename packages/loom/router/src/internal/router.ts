@@ -3,6 +3,7 @@ import type * as Loom from "@effectify/loom"
 import * as Decode from "../decode.js"
 import * as Result from "effect/Result"
 import type * as ServiceMap from "effect/ServiceMap"
+import { buildUrl, validateHrefInput } from "./path.js"
 import type * as Fallback from "../fallback.js"
 import type * as Layout from "../layout.js"
 import * as Match from "../match.js"
@@ -16,38 +17,85 @@ import { matchRoutes } from "./matcher.js"
 import { joinPathnames } from "./path.js"
 import { isRouteGroup, prefixRouteGroup } from "./route-group.js"
 import { prefixRoute } from "./route-dsl.js"
+import { reflectRoutes } from "./reflection.js"
 
-export interface RouterDefinition {
+export interface HrefResolutionErrorDetails {
+  readonly routerIdentifier: string
+  readonly target: string
+  readonly reason: "missing" | "ambiguous"
+  readonly candidates: ReadonlyArray<Route.AbsolutePath>
+}
+
+export class HrefResolutionError extends Error {
+  readonly _tag = "LoomRouterHrefResolutionError"
+  readonly details: HrefResolutionErrorDetails
+
+  constructor(details: HrefResolutionErrorDetails) {
+    super(
+      details.reason === "ambiguous"
+        ? `Router ${details.routerIdentifier} resolved ${details.target} to multiple routes: ${
+          details.candidates.join(", ")
+        }`
+        : `Router ${details.routerIdentifier} could not resolve href target ${details.target}`,
+    )
+    this.name = "HrefResolutionError"
+    this.details = details
+  }
+}
+
+type KnownRoute = Route.Definition<any, any, any, any, any>
+
+export type RouterEntry = KnownRoute | RouteGroup.Definition<any>
+
+export interface RouterDefinition<Entries extends ReadonlyArray<RouterEntry> = ReadonlyArray<RouterEntry>> {
   readonly _tag: "LoomRouter"
   readonly identifier: string
-  readonly entries: ReadonlyArray<RouterEntry>
-  readonly routes: ReadonlyArray<Route.Definition>
-  readonly groups: ReadonlyArray<RouteGroup.Definition>
+  readonly entries: Entries
+  readonly routes: ReadonlyArray<KnownRoute>
+  readonly groups: ReadonlyArray<RouteGroup.Definition<any>>
   readonly annotations: Route.Annotations
   readonly pathPrefix: Route.AbsolutePath | undefined
   readonly layout: Layout.Definition | undefined
   readonly fallback: Fallback.Boundaries
 }
 
-export type RouterEntry = Route.Definition | RouteGroup.Definition
+const toRoutes = <Entries extends ReadonlyArray<RouterEntry>>(
+  entries: Entries,
+): ReadonlyArray<KnownRoute> => {
+  const routes: Array<KnownRoute> = []
 
-const toRoutes = (entries: ReadonlyArray<RouterEntry>): ReadonlyArray<Route.Definition> =>
-  entries.flatMap((entry) => (isRouteGroup(entry) ? entry.routes : [entry]))
+  for (const entry of entries) {
+    if (isRouteGroup(entry)) {
+      routes.push(...entry.routes)
+      continue
+    }
 
-const toGroups = (entries: ReadonlyArray<RouterEntry>): ReadonlyArray<RouteGroup.Definition> =>
-  entries.filter(isRouteGroup)
+    routes.push(entry as KnownRoute)
+  }
 
-const applyPrefixToEntry = (entry: RouterEntry, prefix: Route.AbsolutePath): RouterEntry =>
-  isRouteGroup(entry) ? prefixRouteGroup(entry, prefix) : prefixRoute(entry, prefix)
+  return routes
+}
 
-const makeDefinition = (options: {
+const toGroups = <Entries extends ReadonlyArray<RouterEntry>>(
+  entries: Entries,
+): ReadonlyArray<RouteGroup.Definition<any>> => entries.filter(isRouteGroup)
+
+const applyPrefixToEntry = <Entry extends RouterEntry>(entry: Entry, prefix: Route.AbsolutePath): Entry => {
+  if (isRouteGroup(entry)) {
+    return prefixRouteGroup(entry, prefix) as unknown as Entry
+  }
+
+  return prefixRoute(entry as KnownRoute, prefix) as unknown as Entry
+}
+
+const makeDefinition = <Entries extends ReadonlyArray<RouterEntry>>(options: {
   readonly identifier: string
-  readonly entries: ReadonlyArray<RouterEntry>
+  readonly entries: Entries
   readonly annotations?: Route.Annotations
   readonly pathPrefix?: Route.AbsolutePath
   readonly layout?: Layout.Definition
   readonly fallback?: Fallback.Config
-}): RouterDefinition => ({
+}): RouterDefinition<Entries> => ({
   _tag: "LoomRouter",
   identifier: options.identifier,
   entries: options.entries,
@@ -95,7 +143,7 @@ const buildContext = <Params extends Route.Params = Route.Params, Query extends 
 })
 
 const decodeRouteInput = (
-  route: Route.Definition,
+  route: KnownRoute,
   params: Route.Params,
   search: Route.Search,
 ):
@@ -223,14 +271,96 @@ const selectFallback = (
   return fallback[key]
 }
 
-export const makeRouter = (options: Router.Options): RouterDefinition => ({
-  ...makeDefinition({
+const reflectEntries = (
+  self: RouterDefinition<ReadonlyArray<RouterEntry>>,
+  onRoute: (route: {
+    readonly route: KnownRoute
+    readonly path: Route.AbsolutePath
+  }) => void,
+): void => {
+  for (const entry of self.entries) {
+    if (isRouteGroup(entry)) {
+      reflectRoutes(entry.routes, {
+        group: entry,
+        inheritedAnnotations: mergeAnnotations(self.annotations, entry.annotations),
+        inheritedFallback: self.fallback,
+        inheritedLayouts: self.layout === undefined ? [] : [self.layout],
+        onRoute,
+      })
+      continue
+    }
+
+    reflectRoutes([entry as KnownRoute], {
+      inheritedAnnotations: self.annotations,
+      inheritedFallback: self.fallback,
+      inheritedLayouts: self.layout === undefined ? [] : [self.layout],
+      onRoute,
+    })
+  }
+}
+
+const describeTarget = (target: string | KnownRoute): string => {
+  if (typeof target === "string") {
+    return `identifier:${target}`
+  }
+
+  if (target.identifier !== undefined) {
+    return `identifier:${target.identifier}`
+  }
+
+  return `path:${target.path}`
+}
+
+const collectRouteMatches = (
+  self: RouterDefinition<ReadonlyArray<RouterEntry>>,
+  target: string | KnownRoute,
+): Array<{ readonly route: KnownRoute; readonly path: Route.AbsolutePath }> => {
+  const matches: Array<{ readonly route: KnownRoute; readonly path: Route.AbsolutePath }> = []
+
+  reflectEntries(self, ({ route, path }) => {
+    if (typeof target === "string") {
+      if (route.identifier === target) {
+        matches.push({ route, path })
+      }
+
+      return
+    }
+
+    if (route === target || (target.identifier !== undefined && route.identifier === target.identifier)) {
+      matches.push({ route, path })
+    }
+  })
+
+  return matches
+}
+
+const resolveHrefTarget = (
+  self: RouterDefinition<ReadonlyArray<RouterEntry>>,
+  target: string | KnownRoute,
+): { readonly route: KnownRoute; readonly path: Route.AbsolutePath } => {
+  const matches = collectRouteMatches(self, target)
+
+  if (matches.length === 1) {
+    return matches[0]!
+  }
+
+  throw new HrefResolutionError({
+    routerIdentifier: self.identifier,
+    target: describeTarget(target),
+    reason: matches.length === 0 ? "missing" : "ambiguous",
+    candidates: matches.map(({ path }) => path),
+  })
+}
+
+export const makeRouter = <Routes extends ReadonlyArray<KnownRoute>>(
+  options: Router.Options<Routes>,
+): RouterDefinition<Routes> =>
+  makeDefinition({
     identifier: "compat",
     entries: options.routes,
     layout: options.layout,
     fallback: options.fallback,
-  }),
-})
+  })
 
 export const makeEmptyRouter = (identifier: string): RouterDefinition =>
   makeDefinition({
@@ -238,7 +368,10 @@ export const makeEmptyRouter = (identifier: string): RouterDefinition =>
     entries: [],
   })
 
-export const addEntryToRouter = (self: RouterDefinition, entry: RouterEntry): RouterDefinition =>
+export const addEntryToRouter = <Entries extends ReadonlyArray<RouterEntry>, Entry extends RouterEntry>(
+  self: RouterDefinition<Entries>,
+  entry: Entry,
+): RouterDefinition<[...Entries, Entry]> =>
   makeDefinition({
     identifier: self.identifier,
     entries: [...self.entries, self.pathPrefix === undefined ? entry : applyPrefixToEntry(entry, self.pathPrefix)],
@@ -248,21 +381,24 @@ export const addEntryToRouter = (self: RouterDefinition, entry: RouterEntry): Ro
     fallback: self.fallback,
   })
 
-export const prefixRouter = (self: RouterDefinition, prefix: Route.AbsolutePath): RouterDefinition =>
+export const prefixRouter = <Entries extends ReadonlyArray<RouterEntry>>(
+  self: RouterDefinition<Entries>,
+  prefix: Route.AbsolutePath,
+): RouterDefinition<Entries> =>
   makeDefinition({
     identifier: self.identifier,
-    entries: self.entries.map((entry) => applyPrefixToEntry(entry, prefix)),
+    entries: self.entries.map((entry) => applyPrefixToEntry(entry, prefix)) as unknown as Entries,
     annotations: self.annotations,
     pathPrefix: self.pathPrefix === undefined ? prefix : joinPathnames(self.pathPrefix, prefix),
     layout: self.layout,
     fallback: self.fallback,
   })
 
-export const annotateRouter = <I, S>(
-  self: RouterDefinition,
+export const annotateRouter = <Entries extends ReadonlyArray<RouterEntry>, I, S>(
+  self: RouterDefinition<Entries>,
   tag: ServiceMap.Key<I, S>,
   value: S,
-): RouterDefinition =>
+): RouterDefinition<Entries> =>
   makeDefinition({
     identifier: self.identifier,
     entries: self.entries,
@@ -272,7 +408,10 @@ export const annotateRouter = <I, S>(
     fallback: self.fallback,
   })
 
-export const annotateRouterMerge = (self: RouterDefinition, annotations: Route.Annotations): RouterDefinition =>
+export const annotateRouterMerge = <Entries extends ReadonlyArray<RouterEntry>>(
+  self: RouterDefinition<Entries>,
+  annotations: Route.Annotations,
+): RouterDefinition<Entries> =>
   makeDefinition({
     identifier: self.identifier,
     entries: self.entries,
@@ -282,10 +421,57 @@ export const annotateRouterMerge = (self: RouterDefinition, annotations: Route.A
     fallback: self.fallback,
   })
 
-export const matchRouter = (self: RouterDefinition, input: string | URL): Match.Result =>
-  matchRoutes(self.routes, input, self.layout, self.fallback.notFound)
+export const findRouteByIdentifier = <Entries extends ReadonlyArray<RouterEntry>>(
+  self: RouterDefinition<Entries>,
+  identifier: string,
+): KnownRoute | undefined => {
+  const matches = collectRouteMatches(self, identifier)
 
-export const resolveRouter = (self: RouterDefinition, input: string | URL): Router.ResolveResult => {
+  return matches[0]?.route
+}
+
+export const resolveRoutePath = <Entries extends ReadonlyArray<RouterEntry>>(
+  self: RouterDefinition<Entries>,
+  target: string | KnownRoute,
+): Route.AbsolutePath | undefined => {
+  const matches = collectRouteMatches(self, target)
+  return matches[0]?.path
+}
+
+export const buildRouteHref = <Entries extends ReadonlyArray<RouterEntry>>(
+  self: RouterDefinition<Entries>,
+  target: string | KnownRoute,
+  options?: Route.HrefOptions,
+  base?: string | URL,
+): string => {
+  const resolved = resolveHrefTarget(self, target)
+
+  validateHrefInput({
+    params: options?.params,
+    search: options?.query,
+    decode: resolved.route.decode,
+  })
+
+  return buildUrl(
+    {
+      pathname: resolved.path,
+      params: options?.params,
+      search: options?.query,
+      hash: options?.hash,
+    },
+    base,
+  ).toString()
+}
+
+export const matchRouter = <Entries extends ReadonlyArray<RouterEntry>>(
+  self: RouterDefinition<Entries>,
+  input: string | URL,
+): Match.Result => matchRoutes(self.routes, input, self.layout, self.fallback.notFound)
+
+export const resolveRouter = <Entries extends ReadonlyArray<RouterEntry>>(
+  self: RouterDefinition<Entries>,
+  input: string | URL,
+): Router.ResolveResult => {
   const match = matchRoutes(self.routes, input, self.layout, self.fallback.notFound)
 
   if (Match.isSuccess(match)) {
@@ -425,5 +611,7 @@ export const resolveRouter = (self: RouterDefinition, input: string | URL): Rout
   }
 }
 
-export const renderRouter = (self: RouterDefinition, input: string | URL): Html.Child | undefined =>
-  resolveRouter(self, input).output
+export const renderRouter = <Entries extends ReadonlyArray<RouterEntry>>(
+  self: RouterDefinition<Entries>,
+  input: string | URL,
+): Html.Child | undefined => resolveRouter(self, input).output

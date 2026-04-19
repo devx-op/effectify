@@ -15,17 +15,18 @@ export type Annotations = Route.Annotations
  * Layout and fallback inheritance stays on concrete route nodes and is
  * surfaced through reflection/resolution rather than a group-local API.
  */
-export type Definition = internal.RouteGroupDefinition
+export type Definition<Routes extends ReadonlyArray<Route.AnyDefinition> = ReadonlyArray<Route.AnyDefinition>> =
+  internal.RouteGroupDefinition<Routes>
 
 export interface ReflectOptions {
   readonly predicate?:
-    | ((options: { readonly group: Definition; readonly route: Route.Definition }) => boolean)
+    | ((options: { readonly group: Definition; readonly route: Route.Definition<any, any, any, any, any> }) => boolean)
     | undefined
   readonly onRoute: (options: {
     readonly group: Definition
-    readonly route: Route.Definition
+    readonly route: Route.Definition<any, any, any, any, any>
     readonly path: Route.AbsolutePath
-    readonly parents: ReadonlyArray<Route.Definition>
+    readonly parents: ReadonlyArray<Route.Definition<any, any, any, any, any>>
     readonly mergedAnnotations: Annotations
     readonly layouts: ReadonlyArray<Layout.Definition>
     readonly fallback: Fallback.Boundaries
@@ -37,37 +38,52 @@ export const make = (identifier: string): Definition => internal.makeRouteGroup(
 
 /** Add a route to a route group in data-first or pipeable form. */
 export const add: {
-  (route: Route.Definition): (self: Definition) => Definition
-  (self: Definition, route: Route.Definition): Definition
-} = dual(2, (self: Definition, route: Route.Definition): Definition => internal.addRouteToGroup(self, route))
+  <RouteToAdd extends Route.AnyDefinition>(route: RouteToAdd): <Routes extends ReadonlyArray<Route.AnyDefinition>>(
+    self: Definition<Routes>,
+  ) => Definition<[...Routes, RouteToAdd]>
+  <Routes extends ReadonlyArray<Route.AnyDefinition>, RouteToAdd extends Route.AnyDefinition>(
+    self: Definition<Routes>,
+    route: RouteToAdd,
+  ): Definition<[...Routes, RouteToAdd]>
+} = dual(2, internal.addRouteToGroup)
 
 /** Prefix every route already contained in the group, and future routes added to it. */
 export const prefix: {
-  (path: Route.AbsolutePath): (self: Definition) => Definition
-  (self: Definition, path: Route.AbsolutePath): Definition
-} = dual(2, (self: Definition, path: Route.AbsolutePath): Definition => internal.prefixRouteGroup(self, path))
+  (
+    path: Route.AbsolutePath,
+  ): <Routes extends ReadonlyArray<Route.AnyDefinition>>(self: Definition<Routes>) => Definition<Routes>
+  <Routes extends ReadonlyArray<Route.AnyDefinition>>(
+    self: Definition<Routes>,
+    path: Route.AbsolutePath,
+  ): Definition<Routes>
+} = dual(2, internal.prefixRouteGroup)
 
 /** Add a single Effect ServiceMap annotation to a route group. */
 export const annotate: {
-  <I, S>(tag: ServiceMap.Key<I, S>, value: S): (self: Definition) => Definition
-  <I, S>(self: Definition, tag: ServiceMap.Key<I, S>, value: S): Definition
-} = dual(
-  3,
-  <I, S>(self: Definition, tag: ServiceMap.Key<I, S>, value: S): Definition =>
-    internal.annotateRouteGroup(self, tag, value),
-)
+  <I, S>(tag: ServiceMap.Key<I, S>, value: S): <Routes extends ReadonlyArray<Route.AnyDefinition>>(
+    self: Definition<Routes>,
+  ) => Definition<Routes>
+  <Routes extends ReadonlyArray<Route.AnyDefinition>, I, S>(
+    self: Definition<Routes>,
+    tag: ServiceMap.Key<I, S>,
+    value: S,
+  ): Definition<Routes>
+} = dual(3, internal.annotateRouteGroup)
 
 /** Merge multiple Effect ServiceMap annotations into a route group. */
 export const annotateMerge: {
-  (annotations: Annotations): (self: Definition) => Definition
-  (self: Definition, annotations: Annotations): Definition
-} = dual(
-  2,
-  (self: Definition, annotations: Annotations): Definition => internal.annotateRouteGroupMerge(self, annotations),
-)
+  (
+    annotations: Annotations,
+  ): <Routes extends ReadonlyArray<Route.AnyDefinition>>(self: Definition<Routes>) => Definition<Routes>
+  <Routes extends ReadonlyArray<Route.AnyDefinition>>(
+    self: Definition<Routes>,
+    annotations: Annotations,
+  ): Definition<Routes>
+} = dual(2, internal.annotateRouteGroupMerge)
 
 /** Read the stable route list stored in a group. */
-export const routes = (self: Definition): ReadonlyArray<Route.Definition> => self.routes
+export const routes = <Routes extends ReadonlyArray<Route.AnyDefinition>>(self: Definition<Routes>): Routes =>
+  self.routes
 
 /** Reflect over the effective grouped routes and their merged annotations. */
 export const reflect = (self: Definition, options: ReflectOptions): void => {

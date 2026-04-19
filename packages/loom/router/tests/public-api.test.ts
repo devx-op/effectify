@@ -11,7 +11,10 @@ describe("@effectify/loom-router public surface", () => {
 
     expect(typeof Router.make).toBe("function")
     expect(typeof Router.match).toBe("function")
+    expect(typeof Router.pathFor).toBe("function")
+    expect(typeof Router.href).toBe("function")
     expect(typeof Route.make).toBe("function")
+    expect(typeof Route.identifier).toBe("function")
     expect(typeof Match.isSuccess).toBe("function")
     expect(typeof Decode.make).toBe("function")
     expect(typeof Layout.make).toBe("function")

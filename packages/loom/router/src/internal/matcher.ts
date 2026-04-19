@@ -8,7 +8,7 @@ import { runDecoder } from "./decode.js"
 import { normalizePathname, parseLocation, tokenizePath } from "./path.js"
 
 interface Candidate {
-  readonly route: Route.Definition
+  readonly route: Route.Definition<any, any, any, any>
   readonly params: Route.Params
   readonly score: number
   readonly consumedSegments: number
@@ -64,7 +64,7 @@ const scoreSegments = (segments: ReadonlyArray<string>): number =>
   )
 
 const collectCandidates = (
-  route: Route.Definition,
+  route: Route.Definition<any, any, any, any>,
   pathnameSegments: ReadonlyArray<string>,
   startIndex: number,
   inheritedParams: Route.Params,
@@ -114,7 +114,7 @@ const collectCandidates = (
 }
 
 const selectCandidate = (
-  routes: ReadonlyArray<Route.Definition>,
+  routes: ReadonlyArray<Route.Definition<any, any, any, any>>,
   pathnameSegments: ReadonlyArray<string>,
 ): { readonly exact: Candidate | undefined; readonly closest: Candidate | undefined } => {
   let exact: Candidate | undefined
@@ -145,7 +145,7 @@ const selectCandidate = (
 }
 
 export const matchRoutes = (
-  routes: ReadonlyArray<Route.Definition>,
+  routes: ReadonlyArray<Route.Definition<any, any, any, any>>,
   input: string | URL,
   layout: Layout.Definition | undefined,
   fallback: Fallback.Definition | undefined,

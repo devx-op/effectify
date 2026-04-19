@@ -1,8 +1,77 @@
+import * as Result from "effect/Result"
+import type * as Decode from "../decode.js"
 import type * as Route from "../route.js"
 
 const ensureLeadingSlash = (value: string): string => (value.startsWith("/") ? value : `/${value}`)
 
 const defaultBase = "https://effectify.dev"
+
+const findUnknownKeys = (
+  input: Readonly<Record<string, unknown>>,
+  decoded: unknown,
+): ReadonlyArray<string> => {
+  if (decoded === null || typeof decoded !== "object" || Array.isArray(decoded)) {
+    return []
+  }
+
+  return Object.keys(input).filter((key) => !(key in decoded))
+}
+
+const validateHrefParams = (
+  input: Route.Params | undefined,
+  decoder: Decode.Decoder<Route.Params, Route.Params> | undefined,
+): void => {
+  if (decoder === undefined) {
+    return
+  }
+
+  const source = input ?? {}
+  const result = decoder.decode(source)
+
+  if (Result.isFailure(result)) {
+    return
+  }
+
+  const unknownKeys = findUnknownKeys(source, result.success)
+
+  if (unknownKeys.length > 0) {
+    throw new Error(`Unknown param keys: ${unknownKeys.join(", ")}`)
+  }
+}
+
+const validateHrefSearch = (
+  input: Route.Search | undefined,
+  decoder: Decode.Decoder<Route.Search, Route.Search> | undefined,
+): void => {
+  if (decoder === undefined) {
+    return
+  }
+
+  const source = input ?? {}
+  const result = decoder.decode(source)
+
+  if (Result.isFailure(result)) {
+    return
+  }
+
+  const unknownKeys = findUnknownKeys(source, result.success)
+
+  if (unknownKeys.length > 0) {
+    throw new Error(`Unknown search keys: ${unknownKeys.join(", ")}`)
+  }
+}
+
+export const validateHrefInput = (options: {
+  readonly params?: Route.Params
+  readonly search?: Route.Search
+  readonly decode?: {
+    readonly params?: Decode.Decoder<Route.Params, Route.Params>
+    readonly search?: Decode.Decoder<Route.Search, Route.Search>
+  }
+}): void => {
+  validateHrefParams(options.params, options.decode?.params)
+  validateHrefSearch(options.search, options.decode?.search)
+}
 
 export const normalizePathname = (value: string): Route.AbsolutePath => {
   const pathname = ensureLeadingSlash(value)
