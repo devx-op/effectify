@@ -1,1 +1,6 @@
+export * as Decode from "./decode.js"
+export * as Fallback from "./fallback.js"
+export * as Layout from "./layout.js"
+export * as Match from "./match.js"
+export * as Route from "./route.js"
 export * as Router from "./router.js"

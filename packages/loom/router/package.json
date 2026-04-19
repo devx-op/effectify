@@ -20,6 +20,11 @@
       "import": "./src/index.ts",
       "default": "./src/index.ts"
     },
+    "./Decode": "./src/decode.ts",
+    "./Fallback": "./src/fallback.ts",
+    "./Layout": "./src/layout.ts",
+    "./Match": "./src/match.ts",
+    "./Route": "./src/route.ts",
     "./Router": "./src/router.ts"
   },
   "dependencies": {
