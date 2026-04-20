@@ -65,12 +65,13 @@ export const mount = (components, options) => {
     if (disposed) {
       return options?.root?.innerHTML ?? html
     }
+    const rendered = instance.render(actions)
     if (options?.root !== undefined) {
       mountedView?.dispose()
-      mountedView = mountView(options.root, instance.render(actions), registry)
+      mountedView = mountView(options.root, rendered, registry)
       html = options.root.innerHTML
     } else {
-      html = Html.renderToString(instance.render(actions), { registry })
+      html = Html.renderToString(rendered, { registry })
     }
     return html
   }

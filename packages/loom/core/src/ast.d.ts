@@ -1,10 +1,14 @@
 import type { Atom } from "effect/unstable/reactivity"
 import type * as Component from "./component.js"
 /** Neutral AST contracts for Loom renderers. */
-export type Node = TextNode | ElementNode | FragmentNode | ComponentUseNode | LiveNode<unknown>
+export type Node = TextNode | DynamicTextNode | ElementNode | FragmentNode | ComponentUseNode | LiveNode<unknown>
 export interface TextNode {
   readonly _tag: "Text"
   readonly value: string
+}
+export interface DynamicTextNode {
+  readonly _tag: "DynamicText"
+  readonly render: () => string
 }
 export interface HydrationMetadata {
   readonly strategy: string
@@ -45,6 +49,8 @@ interface LiveRenderSignature<Value> {
 export type LiveRender<Value> = LiveRenderSignature<Value>["bivarianceHack"]
 /** Create a neutral text node. */
 export declare const text: (value: string) => TextNode
+/** Create a neutral dynamic text node. */
+export declare const dynamicText: (render: () => string) => DynamicTextNode
 /** Create a neutral element node. */
 export declare const element: (tagName: string, options?: {
   readonly attributes?: Readonly<Record<string, string>>

@@ -353,6 +353,43 @@ describe("@effectify/loom vNext public surface", () => {
     handle.dispose()
   })
 
+  it("wires mounted button clicks to actions in the fine-grained mount path", () => {
+    const root = document.createElement("div")
+    const counter = Component.make("counter").pipe(
+      Component.model({ count: Atom.make(1) }),
+      Component.actions({
+        increment: ({ count }) => count.update((value) => value + 1),
+        decrement: ({ count }) => count.update((value) => value - 1),
+        reset: ({ count }) => count.set(1),
+      }),
+      Component.view(({ state, actions }) =>
+        View.stack(
+          View.button("Increase", actions.increment),
+          View.button("Decrease", actions.decrement),
+          View.button("Reset", actions.reset),
+          View.text(() => `Count: ${state.count()}`),
+        )
+      ),
+    )
+
+    const handle = mount({ counter }, { root })
+    const buttons = root.querySelectorAll("button")
+    const countNode = root.firstElementChild?.childNodes[3]
+
+    expect(countNode?.textContent).toBe("Count: 1")
+
+    buttons[0]?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+    expect(countNode?.textContent).toBe("Count: 2")
+
+    buttons[1]?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+    expect(countNode?.textContent).toBe("Count: 1")
+
+    buttons[2]?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+    expect(countNode?.textContent).toBe("Count: 1")
+
+    handle.dispose()
+  })
+
   it("keeps mounted regions isolated and stops updating disposed dynamic text bindings", () => {
     const parent = document.createElement("div")
     const firstRoot = document.createElement("div")

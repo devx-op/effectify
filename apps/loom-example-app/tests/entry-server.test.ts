@@ -17,6 +17,8 @@ describe("loom example app server entry", () => {
     expect(result.html).toContain('id="__loom_payload__"')
     expect(result.html).toContain('data-counter-action="increment"')
     expect(result.html).toContain('data-counter-value="true"')
+    expect(result.html).toContain('data-counter-dynamic-value="true"')
+    expect(result.html).toContain("only the numeric value flashes")
     expect(result.html).toContain("mount(...) to fill the empty root")
   })
 

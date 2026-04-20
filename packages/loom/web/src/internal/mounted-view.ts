@@ -8,6 +8,20 @@ interface MountedNode {
   readonly dispose: () => void
 }
 
+const isContextualHandler = (
+  handler: unknown,
+): handler is (context: {
+  readonly event: Event
+  readonly target: EventTarget
+  readonly currentTarget: Element
+  readonly runtime: {
+    readonly root: Element
+  }
+}) => unknown => typeof handler === "function"
+
+const isEventTarget = (value: unknown): value is EventTarget =>
+  typeof value === "object" && value !== null && "addEventListener" in value && "dispatchEvent" in value
+
 export interface MountedView {
   readonly hasDynamicText: boolean
   readonly dispose: () => void
@@ -74,18 +88,18 @@ const mountDynamicTextNode = (
   }
 }
 
-const mountNode = (node: LoomCore.Ast.Node, registry: AtomRegistry.AtomRegistry): MountedNode => {
+const mountNode = (node: LoomCore.Ast.Node, registry: AtomRegistry.AtomRegistry, root: Element): MountedNode => {
   switch (node._tag) {
     case "Text":
       return mountTextNode(node.value)
     case "DynamicText":
       return mountDynamicTextNode(node, registry)
     case "ComponentUse":
-      return mountNode(node.component.node, registry)
+      return mountNode(node.component.node, registry, root)
     case "Live":
       return mountTextNode("")
     case "Fragment": {
-      const children = node.children.map((child) => mountNode(child, registry))
+      const children = node.children.map((child) => mountNode(child, registry, root))
 
       return {
         nodes: children.flatMap((child) => child.nodes),
@@ -99,12 +113,35 @@ const mountNode = (node: LoomCore.Ast.Node, registry: AtomRegistry.AtomRegistry)
     }
     case "Element": {
       const element = document.createElement(node.tagName)
+      const cleanup: Array<() => void> = []
 
       for (const [name, value] of Object.entries(node.attributes)) {
         element.setAttribute(name, value)
       }
 
-      const children = node.children.map((child) => mountNode(child, registry))
+      for (const binding of node.events) {
+        const handler = binding.handler
+
+        if (!isContextualHandler(handler)) {
+          continue
+        }
+
+        const listener = (event: Event) => {
+          handler({
+            event,
+            target: isEventTarget(event.target) ? event.target : element,
+            currentTarget: element,
+            runtime: {
+              root,
+            },
+          })
+        }
+
+        element.addEventListener(binding.event, listener)
+        cleanup.push(() => element.removeEventListener(binding.event, listener))
+      }
+
+      const children = node.children.map((child) => mountNode(child, registry, root))
 
       for (const child of children) {
         element.append(...child.nodes)
@@ -114,6 +151,10 @@ const mountNode = (node: LoomCore.Ast.Node, registry: AtomRegistry.AtomRegistry)
         nodes: [element],
         hasDynamicText: children.some((child) => child.hasDynamicText),
         dispose: () => {
+          for (let index = cleanup.length - 1; index >= 0; index--) {
+            cleanup[index]?.()
+          }
+
           for (let index = children.length - 1; index >= 0; index--) {
             children[index]?.dispose()
           }
@@ -128,7 +169,7 @@ export const mountView = (
   node: LoomCore.Ast.Node,
   registry: AtomRegistry.AtomRegistry,
 ): MountedView => {
-  const mounted = mountNode(node, registry)
+  const mounted = mountNode(node, registry, root)
 
   root.replaceChildren(...mounted.nodes)
 

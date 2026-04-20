@@ -18,37 +18,59 @@ export const counterRoute = Component.make("counter-route").pipe(
   }),
   Component.view(({ state, actions }) =>
     View.stack(
-      View.stack(View.text("Loom vNext counter")).pipe(
-        Web.className("counter-title"),
-        Web.attr("role", "heading"),
-        Web.aria("level", 1),
-      ),
       View.stack(
-        View.text(
-          "This example keeps a single route and teaches the current Loom happy path first: Component.model/actions/view with View + Web modifiers.",
+        View.stack(View.text("Example app only")).pipe(Web.className("loom-example-eyebrow")),
+        View.stack(View.text("Loom vNext counter")).pipe(
+          Web.className("counter-title"),
+          Web.attr("role", "heading"),
+          Web.aria("level", 1),
         ),
-      ).pipe(Web.className("counter-copy")),
+        View.stack(
+          View.text(
+            "This example keeps a single route and teaches the current Loom happy path first: Component.model/actions/view with View + Web modifiers.",
+          ),
+        ).pipe(Web.className("counter-copy")),
+      ).pipe(Web.className("loom-example-hero")),
       View.stack(
-        View.text(
-          "Html stays at the document/resume boundary only, not in the main authoring path developers copy from this example.",
-        ),
-      ).pipe(Web.data("compat-seam-note", "true")),
-      View.row(
-        View.button("-1", actions.decrement).pipe(Web.data("counter-action", "decrement")),
-        View.button("+1", actions.increment).pipe(Web.data("counter-action", "increment")),
-        View.button("Reset", actions.reset).pipe(Web.data("counter-action", "reset")),
-      ).pipe(
-        Web.className("counter-actions"),
-        Web.data("counter-controls", "true"),
-        Web.style({ display: "flex", gap: "0.75rem", marginTop: "1rem" }),
-      ),
-      View.stack(View.text(`Count: ${state.count}`)).pipe(Web.data("counter-value", "true")),
+        View.stack(
+          View.text("Counter state").pipe(Web.className("counter-value-label")),
+          View.row(
+            View.text("Count: ").pipe(Web.className("counter-value-prefix")),
+            View.stack(View.text(() => `${state.count()}`)).pipe(
+              Web.className("counter-dynamic-value"),
+            ),
+          ).pipe(Web.className("counter-value"), Web.data("counter-value", "true")),
+        ).pipe(Web.className("counter-value-card")),
+        View.row(
+          View.button("-1", actions.decrement).pipe(
+            Web.className("secondary"),
+          ),
+          View.button("+1", actions.increment).pipe(
+            Web.className("contrast"),
+          ),
+          View.button("Reset", actions.reset).pipe(
+            Web.className("outline secondary"),
+          ),
+        ).pipe(Web.className("counter-actions"), Web.data("counter-controls", "true")),
+      ).pipe(Web.className("loom-example-card")),
       View.stack(
-        View.text(
-          "Dev caveat: in plain Vite dev the browser uses mount(...) to fill the empty root when no payload is present. That fallback is honest DX, not fake full SSR.",
-        ),
-      ).pipe(Web.data("dev-mode-note", "true")),
-    ).pipe(Web.className("loom-example-counter"), Web.data("route-view", "counter"))
+        View.stack(
+          View.text(
+            "Html stays at the document/resume boundary only, not in the main authoring path developers copy from this example.",
+          ),
+        ).pipe(Web.className("compat-seam-note"), Web.data("compat-seam-note", "true")),
+        View.stack(
+          View.text(
+            "Debug cue: only the numeric value flashes when the current text-node slice updates; the surrounding label stays static.",
+          ),
+        ).pipe(Web.className("counter-debug-note"), Web.data("counter-debug-note", "true")),
+        View.stack(
+          View.text(
+            "Dev caveat: in plain Vite dev the browser uses mount(...) to fill the empty root when no payload is present. That fallback is honest DX, not fake full SSR.",
+          ),
+        ).pipe(Web.className("dev-mode-note"), Web.data("dev-mode-note", "true")),
+      ).pipe(Web.className("loom-example-note-stack")),
+    ).pipe(Web.className("loom-example-layout"), Web.data("route-view", "counter"))
   ),
 )
 

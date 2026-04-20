@@ -1,0 +1,121 @@
+@import "@picocss/pico/css/pico.min.css";
+
+:root {
+  --loom-example-surface: rgba(255, 255, 255, 0.82);
+  --loom-example-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+}
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top, rgba(16, 185, 129, 0.12), transparent 30%),
+    linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+}
+
+[data-app-shell="loom-example-app"] {
+  padding-block: clamp(2rem, 4vw, 4rem);
+}
+
+.loom-example-layout {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.loom-example-hero {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.loom-example-eyebrow {
+  margin: 0;
+  color: var(--pico-primary);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.counter-title,
+.loom-example-not-found-title {
+  margin: 0;
+}
+
+.counter-copy,
+.loom-example-copy,
+.counter-debug-note,
+.dev-mode-note,
+.compat-seam-note {
+  margin: 0;
+  color: var(--pico-muted-color);
+}
+
+.loom-example-card,
+.loom-example-note-stack {
+  display: grid;
+  gap: 1rem;
+  padding: clamp(1.25rem, 3vw, 2rem);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 1.25rem;
+  background: var(--loom-example-surface);
+  box-shadow: var(--loom-example-shadow);
+  backdrop-filter: blur(10px);
+}
+
+.counter-value-card {
+  display: inline-grid;
+  gap: 0.35rem;
+}
+
+.counter-value-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--pico-muted-color);
+}
+
+.counter-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.counter-value-prefix {
+  color: var(--pico-muted-color);
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.counter-dynamic-value {
+  display: inline-flex;
+  min-width: 2.5ch;
+  justify-content: center;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background-color: var(--counter-debug-bg, rgba(15, 23, 42, 0.05));
+  box-shadow: var(--counter-debug-ring, none);
+  transform: var(--counter-debug-scale, scale(1));
+  transition: background-color 120ms ease, box-shadow 120ms ease, transform 120ms ease;
+}
+
+.counter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.counter-actions > button {
+  margin: 0;
+}
+
+.loom-example-note-stack {
+  gap: 0.85rem;
+}
+
+.loom-example-not-found {
+  display: grid;
+  gap: 1rem;
+}

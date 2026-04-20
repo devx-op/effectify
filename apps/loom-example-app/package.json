@@ -7,6 +7,7 @@
     "@effectify/loom-nitro": "workspace:*",
     "@effectify/loom-router": "workspace:*",
     "@effectify/loom-vite": "workspace:*",
+    "@picocss/pico": "catalog:",
     "effect": "catalog:"
   },
   "devDependencies": {

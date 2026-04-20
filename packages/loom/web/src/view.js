@@ -1,14 +1,14 @@
 import * as LoomCore from "@effectify/loom-core"
 import * as Html from "./html.js"
 import * as internal from "./internal/view-node.js"
-/** Create a renderer-neutral text node backed by the current Html-first runtime seam. */
-export const text = (value) =>
-  typeof value === "function"
+export function text(value) {
+  return typeof value === "function"
     ? internal.wrap(LoomCore.Ast.dynamicText(value))
     : internal.wrap({
       _tag: "Text",
       value,
     })
+}
 /** Create a renderer-neutral fragment. */
 export const fragment = (...children) =>
   internal.wrap({

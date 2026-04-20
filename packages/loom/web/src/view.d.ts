@@ -8,7 +8,8 @@ export type Child = Html.Child
 export type MaybeChild = Child | undefined | null | false
 export type SlotDefinition = Slot.Definition
 /** Create a renderer-neutral text node backed by the current Html-first runtime seam. */
-export declare const text: (value: string) => Type
+export declare function text(value: string): Type
+export declare function text(render: () => string): Type
 /** Create a renderer-neutral fragment. */
 export declare const fragment: (...children: ReadonlyArray<MaybeChild>) => Type
 /** Create a neutral vertical layout primitive. */

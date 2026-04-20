@@ -57,6 +57,8 @@ describe("loom example app client entry", () => {
 
     const result = await startClientApp(document)
     const count = () => document.querySelector('[data-counter-value="true"]')?.textContent
+    const normalizedCount = () => count()?.replace(/\s+/g, " ").trim()
+    const dynamicValue = () => document.querySelector('[data-counter-dynamic-value="true"]')
     const click = (actionName: "decrement" | "increment" | "reset") => {
       const button = document.querySelector(`[data-counter-action="${actionName}"]`)
 
@@ -69,26 +71,29 @@ describe("loom example app client entry", () => {
 
     expect(result.status).toBe("missing-payload")
     expect(document.querySelectorAll('[data-app-shell="loom-example-app"]')).toHaveLength(1)
-    expect(count()).toBe("Count: 2")
+    expect(normalizedCount()).toBe("Count: 2")
+    expect(document.body.textContent).toContain("only the numeric value flashes")
 
     click("increment")
-    expect(count()).toBe("Count: 3")
     await yieldToEventLoop()
+    expect(normalizedCount()).toBe("Count: 3")
+    expect(dynamicValue()?.getAttribute("data-counter-debug-flash")).toBe("active")
 
     click("increment")
-    expect(count()).toBe("Count: 4")
     await yieldToEventLoop()
+    expect(normalizedCount()).toBe("Count: 4")
 
     click("decrement")
-    expect(count()).toBe("Count: 3")
     await yieldToEventLoop()
+    expect(normalizedCount()).toBe("Count: 3")
 
     click("decrement")
-    expect(count()).toBe("Count: 2")
     await yieldToEventLoop()
+    expect(normalizedCount()).toBe("Count: 2")
 
     click("reset")
-    expect(count()).toBe("Count: 2")
+    await yieldToEventLoop()
+    expect(normalizedCount()).toBe("Count: 2")
     expect(document.body.textContent).toContain("mount(...)")
     expect(document.title).toBe("Loom Example App · Counter")
   })
@@ -119,7 +124,9 @@ describe("loom example app client entry", () => {
 
     labelNode.dispatchEvent(new MouseEvent("click", { bubbles: true }))
 
-    expect(document.querySelector('[data-counter-value="true"]')?.textContent).toBe("Count: 3")
+    expect(document.querySelector('[data-counter-value="true"]')?.textContent?.replace(/\s+/g, " ").trim()).toBe(
+      "Count: 3",
+    )
   })
 
   it("renders a minimal not-found message for non-root dev fallback paths", async () => {

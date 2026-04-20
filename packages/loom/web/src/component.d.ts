@@ -52,7 +52,7 @@ export interface WritableAtom<Value> {
 type WritableValue<Value> = MaterializedValue<Value> extends Atom.Writable<infer AtomValue> ? WritableAtom<AtomValue>
   : MaterializedValue<Value>
 export type State<Model extends ModelShape> = {
-  readonly [Key in keyof Model]: StateValue<Model[Key]>
+  readonly [Key in keyof Model]: () => StateValue<Model[Key]>
 }
 export type WriteModel<Model extends ModelShape> = {
   readonly [Key in keyof Model]: WritableValue<Model[Key]>

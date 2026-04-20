@@ -2,6 +2,7 @@ import type { Atom } from "effect/unstable/reactivity"
 import type * as Ast from "../ast.js"
 import type * as Component from "../component.js"
 export declare const makeTextNode: (value: string) => Ast.TextNode
+export declare const makeDynamicTextNode: (render: () => string) => Ast.DynamicTextNode
 export declare const makeElementNode: (tagName: string, options: {
   readonly attributes: Readonly<Record<string, string>>
   readonly children: ReadonlyArray<Ast.Node>

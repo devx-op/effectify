@@ -1,4 +1,7 @@
 import { withStateTracking } from "./tracked-state.js"
+const isContextualHandler = (handler) => typeof handler === "function"
+const isEventTarget = (value) =>
+  typeof value === "object" && value !== null && "addEventListener" in value && "dispatchEvent" in value
 const mountTextNode = (value) => ({
   nodes: [document.createTextNode(value)],
   hasDynamicText: false,
@@ -45,18 +48,18 @@ const mountDynamicTextNode = (node, registry) => {
     },
   }
 }
-const mountNode = (node, registry) => {
+const mountNode = (node, registry, root) => {
   switch (node._tag) {
     case "Text":
       return mountTextNode(node.value)
     case "DynamicText":
       return mountDynamicTextNode(node, registry)
     case "ComponentUse":
-      return mountNode(node.component.node, registry)
+      return mountNode(node.component.node, registry, root)
     case "Live":
       return mountTextNode("")
     case "Fragment": {
-      const children = node.children.map((child) => mountNode(child, registry))
+      const children = node.children.map((child) => mountNode(child, registry, root))
       return {
         nodes: children.flatMap((child) => child.nodes),
         hasDynamicText: children.some((child) => child.hasDynamicText),
@@ -69,10 +72,29 @@ const mountNode = (node, registry) => {
     }
     case "Element": {
       const element = document.createElement(node.tagName)
+      const cleanup = []
       for (const [name, value] of Object.entries(node.attributes)) {
         element.setAttribute(name, value)
       }
-      const children = node.children.map((child) => mountNode(child, registry))
+      for (const binding of node.events) {
+        const handler = binding.handler
+        if (!isContextualHandler(handler)) {
+          continue
+        }
+        const listener = (event) => {
+          handler({
+            event,
+            target: isEventTarget(event.target) ? event.target : element,
+            currentTarget: element,
+            runtime: {
+              root,
+            },
+          })
+        }
+        element.addEventListener(binding.event, listener)
+        cleanup.push(() => element.removeEventListener(binding.event, listener))
+      }
+      const children = node.children.map((child) => mountNode(child, registry, root))
       for (const child of children) {
         element.append(...child.nodes)
       }
@@ -80,6 +102,9 @@ const mountNode = (node, registry) => {
         nodes: [element],
         hasDynamicText: children.some((child) => child.hasDynamicText),
         dispose: () => {
+          for (let index = cleanup.length - 1; index >= 0; index--) {
+            cleanup[index]?.()
+          }
           for (let index = children.length - 1; index >= 0; index--) {
             children[index]?.dispose()
           }
@@ -89,7 +114,7 @@ const mountNode = (node, registry) => {
   }
 }
 export const mountView = (root, node, registry) => {
-  const mounted = mountNode(node, registry)
+  const mounted = mountNode(node, registry, root)
   root.replaceChildren(...mounted.nodes)
   return {
     hasDynamicText: mounted.hasDynamicText,
