@@ -24,7 +24,7 @@ export const createDocument = (options: DocumentOptions): Html.Child =>
         Html.children(
           Html.el("div", Html.attr("id", appRootId), Html.children(options.body)),
           Html.el("script", Html.attr("type", "application/json"), Html.attr("id", appPayloadElementId)),
-          Html.el("script", Html.attr("type", "module"), Html.attr("src", "/src/entry-client.ts")),
+          Html.el("script", Html.attr("type", "module"), Html.attr("src", "/src/entry-browser.ts")),
         ),
       ),
     ),

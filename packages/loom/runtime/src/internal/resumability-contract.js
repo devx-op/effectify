@@ -1,0 +1,575 @@
+const executableRefSeparator = "#"
+export const contractVersion = 1
+export const integrityAlgorithm = "sha256"
+const isRecord = (value) => typeof value === "object" && value !== null
+const isNonEmptyString = (value) => typeof value === "string" && value.length > 0
+const isExecutableRef = (value) => {
+  if (!isNonEmptyString(value)) {
+    return false
+  }
+  const separatorIndex = value.indexOf(executableRefSeparator)
+  return separatorIndex > 0 && separatorIndex < value.length - 1
+}
+const sortObject = (value) => {
+  if (Array.isArray(value)) {
+    return value.map(sortObject)
+  }
+  if (isRecord(value)) {
+    return Object.fromEntries(
+      Object.entries(value)
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([key, entry]) => [key, sortObject(entry)]),
+    )
+  }
+  return value
+}
+const toJsonValue = (value, path) => {
+  if (value === null || typeof value === "boolean" || typeof value === "string") {
+    return { ok: true, value }
+  }
+  if (typeof value === "number") {
+    if (Number.isFinite(value)) {
+      return { ok: true, value }
+    }
+    return {
+      ok: false,
+      issue: {
+        path,
+        reason: "non-serializable-state",
+        message: "Expected a finite JSON number.",
+      },
+    }
+  }
+  if (Array.isArray(value)) {
+    const items = []
+    for (const [index, entry] of value.entries()) {
+      const normalized = toJsonValue(entry, `${path}[${index}]`)
+      if (!normalized.ok) {
+        return normalized
+      }
+      items.push(normalized.value)
+    }
+    return { ok: true, value: items }
+  }
+  if (isRecord(value)) {
+    const entries = {}
+    for (const [key, entry] of Object.entries(value)) {
+      const normalized = toJsonValue(entry, path.length === 0 ? key : `${path}.${key}`)
+      if (!normalized.ok) {
+        return normalized
+      }
+      entries[key] = normalized.value
+    }
+    return { ok: true, value: entries }
+  }
+  return {
+    ok: false,
+    issue: {
+      path,
+      reason: "non-serializable-state",
+      message: "Expected a JSON-serializable value.",
+    },
+  }
+}
+const sortBoundaries = (boundaries) => {
+  return [...boundaries]
+    .map((boundary) => ({
+      id: boundary.id,
+      strategy: boundary.strategy,
+      nodeIds: [...boundary.nodeIds].sort((left, right) => left.localeCompare(right)),
+    }))
+    .sort((left, right) => left.id.localeCompare(right.id))
+}
+const sortHandlers = (handlers) => {
+  return [...handlers]
+    .map((handler) => ({
+      ref: handler.ref,
+      boundaryId: handler.boundaryId,
+      nodeId: handler.nodeId,
+      event: handler.event,
+      mode: handler.mode,
+    }))
+    .sort((left, right) =>
+      `${left.boundaryId}:${left.nodeId}:${left.event}:${left.ref}`.localeCompare(
+        `${right.boundaryId}:${right.nodeId}:${right.event}:${right.ref}`,
+      )
+    )
+}
+const sortLiveRegions = (liveRegions) => {
+  return [...liveRegions]
+    .map((liveRegion) => ({
+      id: liveRegion.id,
+      boundaryId: liveRegion.boundaryId,
+      ref: liveRegion.ref,
+      atomKey: liveRegion.atomKey,
+      startMarker: liveRegion.startMarker,
+      endMarker: liveRegion.endMarker,
+    }))
+    .sort((left, right) => left.id.localeCompare(right.id))
+}
+const sortDeferred = (deferred) => {
+  return [...deferred]
+    .map((entry) => ({
+      id: entry.id,
+      kind: entry.kind,
+      reason: entry.reason,
+    }))
+    .sort((left, right) => left.id.localeCompare(right.id))
+}
+const normalizeDehydratedAtoms = (dehydratedAtoms) => {
+  const normalized = []
+  for (const [index, entry] of dehydratedAtoms.entries()) {
+    const jsonValue = toJsonValue(entry, `state.dehydratedAtoms[${index}]`)
+    if (!jsonValue.ok) {
+      throw new TypeError(jsonValue.issue.message)
+    }
+    normalized.push(sortObject(jsonValue.value))
+  }
+  return normalized
+}
+const normalizePayload = (draft) => ({
+  version: contractVersion,
+  buildId: draft.buildId,
+  rootId: draft.rootId,
+  boundaries: sortBoundaries(draft.boundaries),
+  handlers: sortHandlers(draft.handlers),
+  liveRegions: sortLiveRegions(draft.liveRegions),
+  state: {
+    dehydratedAtoms: normalizeDehydratedAtoms(draft.state.dehydratedAtoms),
+    deferred: sortDeferred(draft.state.deferred),
+  },
+})
+const digestPayload = async (payload) => {
+  const subtle = globalThis.crypto?.subtle
+  if (subtle === undefined) {
+    throw new TypeError("Web Crypto is required to hash Loom resumability payloads.")
+  }
+  const bytes = new TextEncoder().encode(payload)
+  const hash = await subtle.digest("SHA-256", bytes)
+  return Array.from(new Uint8Array(hash), (value) => value.toString(16).padStart(2, "0")).join("")
+}
+const encodeJson = (value) => JSON.stringify(sortObject(value))
+const encodeUnknownJson = (value) => {
+  const normalized = toJsonValue(value, "$")
+  if (!normalized.ok) {
+    throw new TypeError(normalized.issue.message)
+  }
+  return encodeJson(normalized.value)
+}
+const readString = (value, path, issues) => {
+  if (!isNonEmptyString(value)) {
+    issues.push({
+      path,
+      reason: "missing-field",
+      message: `Expected ${path} to be a non-empty string.`,
+    })
+    return undefined
+  }
+  return value
+}
+const readExecutableRef = (value, path, issues) => {
+  if (!isExecutableRef(value)) {
+    issues.push({
+      path,
+      reason: "missing-field",
+      message: `Expected ${path} to be a stable executable ref (<module>#<export>).`,
+    })
+    return undefined
+  }
+  return value
+}
+const readBoundaries = (value, issues) => {
+  if (!Array.isArray(value)) {
+    issues.push({
+      path: "boundaries",
+      reason: "missing-field",
+      message: "Expected boundaries to be an array.",
+    })
+    return undefined
+  }
+  const boundaries = []
+  for (const [index, entry] of value.entries()) {
+    if (!isRecord(entry)) {
+      issues.push({
+        path: `boundaries[${index}]`,
+        reason: "missing-field",
+        message: "Expected a boundary descriptor object.",
+      })
+      continue
+    }
+    const id = readString(entry.id, `boundaries[${index}].id`, issues)
+    const strategy = readString(entry.strategy, `boundaries[${index}].strategy`, issues)
+    const nodeIdsValue = entry.nodeIds
+    if (!Array.isArray(nodeIdsValue)) {
+      issues.push({
+        path: `boundaries[${index}].nodeIds`,
+        reason: "missing-field",
+        message: "Expected boundary nodeIds to be an array.",
+      })
+      continue
+    }
+    const nodeIds = nodeIdsValue.flatMap((nodeId, nodeIndex) => {
+      const normalized = readString(nodeId, `boundaries[${index}].nodeIds[${nodeIndex}]`, issues)
+      return normalized === undefined ? [] : [normalized]
+    })
+    if (id !== undefined && strategy !== undefined) {
+      boundaries.push({ id, strategy, nodeIds })
+    }
+  }
+  return issues.length > 0 ? undefined : sortBoundaries(boundaries)
+}
+const readHandlers = (value, issues) => {
+  if (!Array.isArray(value)) {
+    issues.push({
+      path: "handlers",
+      reason: "missing-field",
+      message: "Expected handlers to be an array.",
+    })
+    return undefined
+  }
+  const handlers = []
+  for (const [index, entry] of value.entries()) {
+    if (!isRecord(entry)) {
+      issues.push({
+        path: `handlers[${index}]`,
+        reason: "missing-field",
+        message: "Expected a handler descriptor object.",
+      })
+      continue
+    }
+    const ref = readExecutableRef(entry.ref, `handlers[${index}].ref`, issues)
+    const boundaryId = readString(entry.boundaryId, `handlers[${index}].boundaryId`, issues)
+    const nodeId = readString(entry.nodeId, `handlers[${index}].nodeId`, issues)
+    const event = readString(entry.event, `handlers[${index}].event`, issues)
+    const mode = entry.mode === "effect" || entry.mode === "contextual"
+      ? entry.mode
+      : undefined
+    if (mode === undefined) {
+      issues.push({
+        path: `handlers[${index}].mode`,
+        reason: "missing-field",
+        message: "Expected handler mode to be 'effect' or 'contextual'.",
+      })
+    }
+    if (
+      ref !== undefined && boundaryId !== undefined && nodeId !== undefined && event !== undefined && mode !== undefined
+    ) {
+      handlers.push({ ref, boundaryId, nodeId, event, mode })
+    }
+  }
+  return issues.length > 0 ? undefined : sortHandlers(handlers)
+}
+const readLiveRegions = (value, issues) => {
+  if (!Array.isArray(value)) {
+    issues.push({
+      path: "liveRegions",
+      reason: "missing-field",
+      message: "Expected liveRegions to be an array.",
+    })
+    return undefined
+  }
+  const liveRegions = []
+  for (const [index, entry] of value.entries()) {
+    if (!isRecord(entry)) {
+      issues.push({
+        path: `liveRegions[${index}]`,
+        reason: "missing-field",
+        message: "Expected a live-region descriptor object.",
+      })
+      continue
+    }
+    const id = readString(entry.id, `liveRegions[${index}].id`, issues)
+    const boundaryId = entry.boundaryId === undefined
+      ? undefined
+      : readString(entry.boundaryId, `liveRegions[${index}].boundaryId`, issues)
+    const ref = readExecutableRef(entry.ref, `liveRegions[${index}].ref`, issues)
+    const atomKey = readString(entry.atomKey, `liveRegions[${index}].atomKey`, issues)
+    const startMarker = readString(entry.startMarker, `liveRegions[${index}].startMarker`, issues)
+    const endMarker = readString(entry.endMarker, `liveRegions[${index}].endMarker`, issues)
+    if (
+      id !== undefined && ref !== undefined && atomKey !== undefined && startMarker !== undefined &&
+      endMarker !== undefined
+    ) {
+      liveRegions.push({ id, boundaryId, ref, atomKey, startMarker, endMarker })
+    }
+  }
+  return issues.length > 0 ? undefined : sortLiveRegions(liveRegions)
+}
+const readDeferred = (value, issues) => {
+  if (!Array.isArray(value)) {
+    issues.push({
+      path: "state.deferred",
+      reason: "missing-field",
+      message: "Expected state.deferred to be an array.",
+    })
+    return undefined
+  }
+  const deferred = []
+  for (const [index, entry] of value.entries()) {
+    if (!isRecord(entry)) {
+      issues.push({
+        path: `state.deferred[${index}]`,
+        reason: "missing-field",
+        message: "Expected a deferred descriptor object.",
+      })
+      continue
+    }
+    const id = readString(entry.id, `state.deferred[${index}].id`, issues)
+    const kind = entry.kind === "live" ? entry.kind : undefined
+    const reason = entry.reason === "activation-pending" ? entry.reason : undefined
+    if (kind === undefined) {
+      issues.push({
+        path: `state.deferred[${index}].kind`,
+        reason: "missing-field",
+        message: "Expected deferred kind to be 'live'.",
+      })
+    }
+    if (reason === undefined) {
+      issues.push({
+        path: `state.deferred[${index}].reason`,
+        reason: "missing-field",
+        message: "Expected deferred reason to be 'activation-pending'.",
+      })
+    }
+    if (id !== undefined && kind !== undefined && reason !== undefined) {
+      deferred.push({ id, kind, reason })
+    }
+  }
+  return issues.length > 0 ? undefined : sortDeferred(deferred)
+}
+const readState = (value, issues) => {
+  if (!isRecord(value)) {
+    issues.push({
+      path: "state",
+      reason: "missing-field",
+      message: "Expected state to be an object.",
+    })
+    return undefined
+  }
+  const dehydratedAtomsValue = value.dehydratedAtoms
+  const deferredValue = readDeferred(value.deferred, issues)
+  if (!Array.isArray(dehydratedAtomsValue)) {
+    issues.push({
+      path: "state.dehydratedAtoms",
+      reason: "missing-field",
+      message: "Expected state.dehydratedAtoms to be an array.",
+    })
+    return undefined
+  }
+  const dehydratedAtoms = []
+  for (const [index, entry] of dehydratedAtomsValue.entries()) {
+    const normalized = toJsonValue(entry, `state.dehydratedAtoms[${index}]`)
+    if (!normalized.ok) {
+      issues.push(normalized.issue)
+      continue
+    }
+    dehydratedAtoms.push(sortObject(normalized.value))
+  }
+  if (deferredValue === undefined || issues.length > 0) {
+    return undefined
+  }
+  return {
+    dehydratedAtoms,
+    deferred: deferredValue,
+  }
+}
+const readIntegrity = (value, issues) => {
+  if (!isRecord(value)) {
+    issues.push({
+      path: "integrity",
+      reason: "missing-field",
+      message: "Expected integrity to be an object.",
+    })
+    return undefined
+  }
+  const algorithm = value.algorithm === integrityAlgorithm ? value.algorithm : undefined
+  const payloadHash = readString(value.payloadHash, "integrity.payloadHash", issues)
+  if (algorithm === undefined) {
+    issues.push({
+      path: "integrity.algorithm",
+      reason: "missing-field",
+      message: `Expected integrity.algorithm to be '${integrityAlgorithm}'.`,
+    })
+  }
+  if (algorithm === undefined || payloadHash === undefined) {
+    return undefined
+  }
+  return {
+    algorithm,
+    payloadHash,
+  }
+}
+const validateRegistryRefs = (contract, registry) => {
+  const issues = []
+  for (const [index, handler] of contract.handlers.entries()) {
+    if (!registry.handlers.has(handler.ref)) {
+      issues.push({
+        path: `handlers[${index}].ref`,
+        reason: "missing-local-handler-ref",
+        message: `No local handler implementation is registered for ${handler.ref}.`,
+      })
+    }
+  }
+  for (const [index, liveRegion] of contract.liveRegions.entries()) {
+    if (!registry.liveRegions.has(liveRegion.ref)) {
+      issues.push({
+        path: `liveRegions[${index}].ref`,
+        reason: "missing-local-live-region-ref",
+        message: `No local live-region renderer is registered for ${liveRegion.ref}.`,
+      })
+    }
+  }
+  return issues
+}
+export const makeExecutableRef = (modulePath, exportName) => {
+  if (!isNonEmptyString(modulePath) || !isNonEmptyString(exportName)) {
+    throw new TypeError("Executable refs require both a module path and export name.")
+  }
+  return `${modulePath}${executableRefSeparator}${exportName}`
+}
+export const createContract = async (draft) => {
+  const payload = normalizePayload(draft)
+  const encodedPayload = encodeUnknownJson(payload)
+  const payloadHash = await digestPayload(encodedPayload)
+  return {
+    ...payload,
+    integrity: {
+      algorithm: integrityAlgorithm,
+      payloadHash,
+    },
+  }
+}
+export const encodeContract = (contract) => {
+  return encodeUnknownJson({
+    version: contract.version,
+    buildId: contract.buildId,
+    rootId: contract.rootId,
+    boundaries: contract.boundaries,
+    handlers: contract.handlers,
+    liveRegions: contract.liveRegions,
+    state: contract.state,
+    integrity: contract.integrity,
+  })
+}
+export const validateContract = async (value, options = {}) => {
+  const issues = []
+  if (!isRecord(value)) {
+    return {
+      status: "invalid",
+      issues: [
+        {
+          path: "$",
+          reason: "missing-field",
+          message: "Expected a resumability contract object.",
+        },
+      ],
+    }
+  }
+  const version = value.version
+  if (version !== contractVersion) {
+    issues.push({
+      path: "version",
+      reason: "missing-field",
+      message: `Expected version to be ${contractVersion}.`,
+    })
+  }
+  const buildId = readString(value.buildId, "buildId", issues)
+  const rootId = readString(value.rootId, "rootId", issues)
+  const boundaries = readBoundaries(value.boundaries, issues)
+  const handlers = readHandlers(value.handlers, issues)
+  const liveRegions = readLiveRegions(value.liveRegions, issues)
+  const state = readState(value.state, issues)
+  const integrity = readIntegrity(value.integrity, issues)
+  if (
+    issues.length > 0 || buildId === undefined || rootId === undefined || boundaries === undefined ||
+    handlers === undefined || liveRegions === undefined || state === undefined || integrity === undefined
+  ) {
+    return {
+      status: "invalid",
+      issues,
+    }
+  }
+  const contract = {
+    version: contractVersion,
+    buildId,
+    rootId,
+    boundaries,
+    handlers,
+    liveRegions,
+    state,
+    integrity,
+  }
+  const encodedPayload = encodeUnknownJson({
+    version: contract.version,
+    buildId: contract.buildId,
+    rootId: contract.rootId,
+    boundaries: contract.boundaries,
+    handlers: contract.handlers,
+    liveRegions: contract.liveRegions,
+    state: contract.state,
+  })
+  const payloadHash = await digestPayload(encodedPayload)
+  if (payloadHash !== contract.integrity.payloadHash) {
+    issues.push({
+      path: "integrity.payloadHash",
+      reason: "integrity-mismatch",
+      message: "Payload integrity hash does not match the serialized contract body.",
+    })
+  }
+  if (options.expectedVersion !== undefined && contract.version !== options.expectedVersion) {
+    issues.push({
+      path: "version",
+      reason: "version-mismatch",
+      message: `Expected contract version ${options.expectedVersion} but received ${contract.version}.`,
+    })
+  }
+  if (options.expectedBuildId !== undefined && contract.buildId !== options.expectedBuildId) {
+    issues.push({
+      path: "buildId",
+      reason: "build-id-mismatch",
+      message: `Expected buildId ${options.expectedBuildId} but received ${contract.buildId}.`,
+    })
+  }
+  if (issues.length > 0) {
+    return {
+      status: "invalid",
+      issues,
+    }
+  }
+  if (options.registry !== undefined) {
+    const registryIssues = validateRegistryRefs(contract, options.registry)
+    if (registryIssues.length > 0) {
+      return {
+        status: "fresh-start",
+        contract,
+        issues: registryIssues,
+      }
+    }
+  }
+  return {
+    status: "valid",
+    contract,
+    issues: [],
+  }
+}
+export const decodeContract = async (json, options) => {
+  try {
+    const parsed = JSON.parse(json)
+    return validateContract(parsed, options)
+  } catch {
+    return {
+      status: "invalid",
+      issues: [
+        {
+          path: "$",
+          reason: "invalid-json",
+          message: "Expected resumability payload JSON.",
+        },
+      ],
+    }
+  }
+}
+export const executableRefPattern = new RegExp(
+  `^[^${executableRefSeparator}]+\\${executableRefSeparator}[^${executableRefSeparator}]+$`,
+)
+export const isStableExecutableRef = isExecutableRef

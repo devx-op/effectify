@@ -8,9 +8,9 @@
 
 ## 1. Purpose
 
-This RFC defines the initial architecture and API direction for the `@effectify/loom` package family. It translates the product intent into concrete technical decisions covering package topology, module organization, runtime boundaries, SSR/hydration behavior, API draft v0.1, and testing strategy.
+This RFC defines the updated architecture and API direction for the `@effectify/loom` package family. It translates the revised product intent into concrete technical decisions covering package topology, module organization, runtime boundaries, Atom integration, routing direction, future server layering, and testing strategy.
 
-The core design constraint is simple: **the public model should feel small, but the internal model must remain strong and extensible**.
+The important correction in this revision is explicit: the earlier Loom direction was strong on runtime capability, but too heavy in its first DX story because it centered SSR/resumability/server concerns too early. The new direction keeps those capabilities important while re-centering the public model on a **tiny-framework feel**, **Effect-first composition**, and **simple interactive ergonomics first**.
 
 ---
 
@@ -23,35 +23,59 @@ The core design constraint is simple: **the public model should feel small, but 
 - Public authoring style: **plain TypeScript only**
 - JSX/TSX: **not supported in v0/v1**
 
-### 2.2 Reactive foundation
+### 2.2 Atom-native reactive foundation
 
-- Atom from the local Effect v4 beta reference is the reactive foundation.
-- Atom is an **obligatory peer dependency** for the public stack.
-- Loom does not introduce a parallel reactive primitive in v0.1.
+- Atom is the reactive foundation.
+- Loom does **not** introduce a parallel Loom-native model primitive.
+- `Component.model(...)` should consume real Atom values and factories directly.
+- Directionally, that includes primitives such as `Atom.make(...)`, `Atom.family(...)`, and `Atom.serializable(...)`.
+- An integration surface like `@effectify/loom-atom` is acceptable as a future package direction, but it must remain an integration layer, not a replacement state model.
 
-### 2.3 Internal model
+### 2.3 Strong component typing
 
-- The internal representation is a **neutral AST**.
-- The AST is not a public compatibility contract in v0.1.
-- Renderer-specific behavior belongs below the AST boundary, not in the public component contract.
+- Loom should preserve strong component typing in the direction of:
 
-### 2.4 Renderer and deployment direction
+```ts
+Component<Props, Err, Requirements>
+```
 
-- Web renderer is the first renderer and the only primary renderer in v0.1.
-- SSR + hydration are supported in v1.
-- Hydration is **opt-in by attribute**.
-- Vite is the default tooling path.
-- Nitro is a supported SSR target.
+- This type shape is a design principle, not a documentation flourish.
+- Props, error channels, and Effect requirements should remain visible in the public mental model.
 
-### 2.5 Router and packaging
+### 2.4 Public view/runtime split
+
+- `View` is renderer-agnostic.
+- `Web` owns browser/CSS/DOM/platform-specific behavior.
+- CSS helpers such as `className` and `style`, DOM attributes, and browser APIs do **not** belong in the neutral `View` namespace.
+
+### 2.5 Composition model
+
+- `Component.actions(...)` is the main bridge from UI declarations to Effect services, HTTP APIs, and RPC APIs.
+- `Component.view(...)` should receive a read-friendly reactive facade over model state so authors are not forced into raw `.get()` everywhere.
+- `Component.slots(...)` and `Slot` are the official composition/nesting mechanism for layouts, routes, and reusable components.
+
+### 2.6 Router direction
 
 - Router is a separate package, but treated as first-class.
-- `core` and `runtime` are internal monorepo packages only in v0/v1.
-- Public npm packages in v0/v1:
-  - `@effectify/loom`
-  - `@effectify/loom-router`
-  - `@effectify/loom-vite`
-  - `@effectify/loom-nitro`
+- The route-definition experience should be strongly inspired by Effect `HttpApi`:
+  - declaration
+  - composition
+  - prefixing/grouping
+  - annotation
+  - reflection
+- The router should feel like an Effect-native description system, not just a path table.
+
+### 2.7 Rendering and server direction
+
+- Web is the first renderer and only primary renderer in v0.1.
+- The primary DX target is **SPA/simple interactive applications first**.
+- SSR, loaders, server actions, resumability, and deployment integrations remain important, but are layered after the core interactive story is strong.
+- Future loader/action direction may borrow inspiration from React Router 7, but Loom should express those ideas in Effect-native terms.
+
+### 2.8 Observability and tracing
+
+- Observability/tracing remain first-class Loom strengths.
+- The runtime model should preserve explicit visibility into behavior across render, action, routing, and later server boundaries.
 
 ---
 
@@ -61,11 +85,11 @@ The core design constraint is simple: **the public model should feel small, but 
 
 #### `@effectify/loom`
 
-Primary public package. Owns the `Component`, `Html`, and hydration-facing APIs.
+Primary public package. Owns `Component`, `View`, `Web`, and the core mounting/composition story.
 
 #### `@effectify/loom-router`
 
-Companion router package. Separate installation boundary, aligned conventions, first-class documentation.
+Companion router package. Separate installation boundary, aligned conventions, first-class documentation, and `HttpApi`-inspired route composition.
 
 #### `@effectify/loom-vite`
 
@@ -73,7 +97,11 @@ Default tooling and developer experience integration for local development and s
 
 #### `@effectify/loom-nitro`
 
-Nitro-specific SSR target support and integration glue.
+Nitro-specific server/SSR target support and integration glue.
+
+#### Directional future package: `@effectify/loom-atom`
+
+Potential companion package for Atom integration ergonomics if needed. This is a **design direction only**, not an already-established package contract.
 
 ### 3.2 Internal monorepo layout
 
@@ -89,14 +117,14 @@ packages/loom/
 
 ### 3.3 Package responsibilities
 
-| Package                 | Visibility                          | Responsibility                                                         |
-| ----------------------- | ----------------------------------- | ---------------------------------------------------------------------- |
-| `packages/loom/core`    | Internal                            | Neutral AST types, core contracts, composition primitives              |
-| `packages/loom/runtime` | Internal                            | Runtime execution model, hydration coordination, event runtime context |
-| `packages/loom/web`     | Public via `@effectify/loom`        | Web renderer and DOM-facing implementation                             |
-| `packages/loom/router`  | Public via `@effectify/loom-router` | Routing primitives and navigation integration                          |
-| `packages/loom/vite`    | Public via `@effectify/loom-vite`   | Vite plugin/tooling integration                                        |
-| `packages/loom/nitro`   | Public via `@effectify/loom-nitro`  | Nitro SSR target integration                                           |
+| Package                 | Visibility                          | Responsibility                                                               |
+| ----------------------- | ----------------------------------- | ---------------------------------------------------------------------------- |
+| `packages/loom/core`    | Internal                            | Neutral view/runtime contracts, component typing, composition primitives     |
+| `packages/loom/runtime` | Internal                            | Runtime execution model, observability/tracing hooks, future server layering |
+| `packages/loom/web`     | Public via `@effectify/loom`        | Web renderer and browser/CSS/DOM implementation                              |
+| `packages/loom/router`  | Public via `@effectify/loom-router` | Route definition, composition, reflection, navigation integration            |
+| `packages/loom/vite`    | Public via `@effectify/loom-vite`   | Vite plugin/tooling integration                                              |
+| `packages/loom/nitro`   | Public via `@effectify/loom-nitro`  | Nitro SSR/server target integration                                          |
 
 ### 3.4 Boundary rule
 
@@ -106,26 +134,29 @@ packages/loom/
 
 ## 4. Module Organization Conventions
 
-Loom should follow the **Effect-style code organization and JSDoc conventions** already established in the wider Effect ecosystem.
+Loom should follow the Effect-style code organization and JSDoc conventions already established in the wider Effect ecosystem.
 
 ### 4.1 Public module style
 
 - Prefer namespace-style public modules.
-- Avoid dumping a large number of top-level functions directly from a flat index.
-- Group related capabilities under teachable namespaces such as `Component`, `Html`, and `Hydration`.
+- Keep the first-use surface deliberately small.
+- Group capabilities under teachable namespaces such as `Component`, `View`, `Web`, `Slot`, and router namespaces.
+- Avoid leaking server-specific or browser-specific complexity into the neutral authoring model.
 
 ### 4.2 File organization
 
 - Keep modules focused and concept-driven.
 - Separate internal implementation from public re-export boundaries.
 - Favor explicit exports over wildcard barrel ambiguity in core architectural layers.
-- Keep runtime-only code out of purely declarative modules.
+- Keep Web/browser code out of renderer-neutral modules.
+- Keep future SSR/server helpers out of the core interactive path unless they are explicitly additive.
 
 ### 4.3 Documentation style
 
 - Public APIs should carry Effect-style JSDoc with concise purpose, parameter meaning, and behavioral notes.
 - Examples should prefer plain TypeScript snippets.
-- Behavioral footguns, especially around hydration and runtime context, must be documented at the API boundary.
+- Docs must clearly distinguish **current implementation** from **target API direction**.
+- Docs should avoid presenting future SSR/server capabilities as if they are already the primary experience.
 
 ---
 
@@ -133,205 +164,341 @@ Loom should follow the **Effect-style code organization and JSDoc conventions** 
 
 ### 5.1 High-level model
 
-The runtime model separates **declaration**, **render planning**, and **environment-specific execution**:
+The runtime model separates **component declaration**, **view description**, and **environment-specific execution**:
 
-1. Public `Component` and `Html` APIs produce declarative structures.
-2. Internal layers normalize those structures into a neutral AST.
-3. The web/runtime packages interpret the AST for SSR output, client rendering, event wiring, and hydration.
+1. Public `Component` APIs assemble typed component definitions.
+2. `Component.view(...)` produces renderer-neutral `View` structures.
+3. Internal layers normalize component/view declarations into neutral runtime structures.
+4. Renderer-specific packages such as Web interpret those structures for DOM output, interactivity, and later server integration.
 
-This separation is what keeps Loom web-first without making it web-locked.
+This separation keeps Loom web-first without making the authoring model web-locked.
 
-### 5.2 Reactive bridge
+### 5.2 Atom integration model
 
-The first reactive bridge is:
+The key rule is simple: **Loom integrates Atom directly rather than wrapping or replacing it**.
 
-```ts
-Html.live(atom, render)
-```
-
-This bridge establishes a contract:
-
-- Atom owns reactive state propagation.
-- Loom owns how reactive state becomes updated HTML/DOM behavior.
-- The `render` callback maps Atom values into declarative HTML/component output.
-
-Loom should not hide Atom. It should integrate with Atom directly and intentionally.
-
-### 5.3 Event runtime model
-
-`Html.on(...)` must support two forms:
-
-#### Simple Effect form
-
-For straightforward handlers where only the Effect matters.
-
-#### Contextual form
-
-For advanced handlers that require structured runtime access:
+Directional target:
 
 ```ts
-{
-  event, target, runtime
-}
+Component.make("counter").pipe(
+  Component.model({
+    count: Atom.make(0),
+  }),
+)
 ```
 
-This contextual form is important because event handling in a runtime-driven system is not just “call a callback”. It often needs access to the DOM target, event object, and runtime services coordinating the live tree.
+This establishes the contract:
 
-### 5.4 Canonical composition API
+- Atom owns state and reactivity.
+- Loom owns typed component composition, rendering, and runtime orchestration.
+- Loom should not invent `Model.atom(...)` or similar shadow primitives.
 
-The canonical early composition API is:
+### 5.3 Read-friendly state facade in views
+
+`Component.view(...)` should receive a state facade that is ergonomic to read during rendering.
+
+Directional target:
 
 ```ts
-Component.use(...)
+Component.view(({ state }) => View.text(`Count: ${state.count}`))
 ```
 
-This is the primary composition mechanism for v0.1 and should be treated as the most teachable path while the ecosystem is still forming.
+This means the view layer should not force authors to litter render code with raw `.get()` calls while still preserving the reality that Atom is the underlying source of truth.
+
+### 5.4 Actions as the Effect bridge
+
+`Component.actions(...)` is the primary bridge from component declarations to Effectful behavior.
+
+That bridge should cover:
+
+- local Atom updates,
+- access to Effect services,
+- integration with HTTP APIs,
+- integration with RPC APIs,
+- future server-facing flows.
+
+This is preferable to scattering Effect access across unrelated ad hoc handlers because it gives Loom a clear action boundary.
+
+### 5.5 Slot-based composition
+
+Slots are the canonical mechanism for composition and nesting.
+
+Directional target:
+
+```ts
+Component.slots({
+  default: Slot.required(),
+  sidebar: Slot.optional(),
+})
+```
+
+This should be the official way to express layouts and nesting rather than defaulting to React-children-first framing.
+
+### 5.6 Observability model
+
+Observability/tracing must remain explicit in the runtime architecture.
+
+At minimum, the runtime design should preserve clear instrumentation seams around:
+
+- component mount/update flows,
+- action execution,
+- route resolution/navigation,
+- later server/render hydration boundaries.
 
 ---
 
-## 6. SSR and Hydration Model
+## 6. View and Web API Direction
 
-### 6.1 SSR direction
-
-SSR is a first-line feature, not a later add-on. The server renderer should produce HTML from the neutral AST through the web renderer path.
-
-### 6.2 Hydration direction
-
-Hydration is supported in v1, but **only when explicitly marked**. This is a deliberate rejection of blanket hydration.
-
-### 6.3 Primary hydration helper
-
-The primary hydration helper is:
-
-```ts
-Html.hydrate(Hydration.strategy)
-```
-
-This keeps hydration declaration close to the HTML/component boundary rather than scattering it across build config or framework-only conventions.
-
-### 6.4 Opt-in by attribute
-
-Hydration eligibility must be encoded by attribute. That rule is important because it creates a stable handshake between:
-
-- server-rendered markup,
-- client bootstrap logic,
-- runtime hydration scanning.
-
-This enables selective live islands without forcing the entire page into client ownership.
-
-### 6.5 Nitro support
-
-Nitro support belongs in `@effectify/loom-nitro`, not in the base package. The base package owns renderer contracts; Nitro owns environment-specific SSR integration.
-
-### 6.6 Resumability contract guardrails
-
-Loom resumability is intentionally **refs + serialized state**, not arbitrary runtime capture. The current contract serializes stable handler/live-region refs, dehydrated Atom state, deferred live nodes, and integrity metadata. It does **not** attempt to serialize closures, DOM handles, caches, or other host-bound runtime objects.
-
-The current slice keeps these cases explicit:
-
-- **Rejected**: payload integrity drift, contract version drift, and cross-build resume attempts. These fail validation before browser activation and must fall back to a fresh start.
-- **Deferred**: automatic ref extraction from anonymous handlers/live renderers. Today, resumable behavior requires explicit `Resumability.handler(...)` / `Resumability.live(...)` refs.
-- **Deferred**: cross-build or cross-boundary migration. `buildId` mismatches are treated as incompatible, not partially migrated.
-- **Out of scope**: closure serialization and interactive nested live-region resume. Those cases stay unsupported until Loom has a formal compile-time/runtime story for them.
-- **Operational note**: deferred live descriptors are only activation-pending inputs; after a successful resume, the activation result should retain only still-unresolved deferred entries.
-
----
-
-## 7. API Draft v0.1
-
-This section captures the intended direction, not a finalized signature freeze.
-
-### 7.1 Public namespaces
+### 6.1 Public namespaces
 
 Initial public namespaces should include at least:
 
 - `Component`
-- `Html`
-- `Hydration`
+- `View`
+- `Web`
+- `Slot`
 
 Additional namespaces may emerge later, but the early surface should remain deliberately small.
 
-### 7.2 `Component.use(...)`
+### 6.2 `View`
 
-Canonical composition API for v0.1.
+`View` is the renderer-agnostic DSL.
 
-Expected role:
+Directional responsibilities include:
 
-- compose behavior,
-- attach reusable capabilities,
-- keep component authoring explicit and plain-TypeScript friendly.
+- structural composition,
+- text/content nodes,
+- control flow helpers,
+- neutral layout primitives,
+- component/slot rendering.
 
-### 7.3 `Html.live(atom, render)`
+Directional examples:
 
-Initial reactive bridge between Atom and Loom rendering.
+```ts
+View.stack(...)
+View.row(...)
+View.text("hello")
+View.when(condition, content)
+View.main(slot)
+```
 
-Expected role:
+### 6.3 `Web`
 
-- subscribe to Atom-driven changes,
-- convert current reactive state into declarative HTML/component output,
-- integrate with runtime update semantics.
+`Web` owns browser-specific concerns.
 
-### 7.4 `Html.hydrate(Hydration.strategy)`
+Directional responsibilities include:
 
-Primary hydration helper for marking server-rendered content as hydratable under a chosen strategy.
+- CSS hooks such as `className(...)`,
+- inline styles,
+- DOM attributes,
+- browser APIs,
+- web-only event/runtime affordances.
 
-Expected role:
+Directional examples:
 
-- expose a visible hydration declaration in userland,
-- map to attribute-based hydration markers,
-- coordinate with client runtime bootstrap behavior.
+```ts
+View.stack(...).pipe(
+  Web.className("flex flex-col gap-2"),
+)
+```
 
-### 7.5 `Html.on(...)`
-
-Must support both:
-
-1. a simple Effect form for common event handlers,
-2. a contextual form providing `{ event, target, runtime }`.
-
-This dual form gives the API a smooth beginner path without blocking advanced runtime-aware use cases.
+This split is important because it preserves the renderer-neutral character of `View` while staying honest about what is actually web-specific.
 
 ---
 
-## 8. Testing Strategy
+## 7. Router Direction
+
+The router should be treated as a first-class companion package with API design strongly inspired by Effect `HttpApi`.
+
+### 7.1 Router design goals
+
+- routes are declared, not scattered,
+- groups compose naturally,
+- layouts attach explicitly,
+- prefixes and annotations are first-class,
+- route definitions can be reflected for tooling/runtime use,
+- the system feels like Effect description/composition rather than framework convention magic.
+
+### 7.2 Directional API target
+
+```ts
+const appRouter = Router.make("app").pipe(
+  Router.add(
+    RouteGroup.make("marketing").add(
+      Route.make("home").path("/").view(homePage),
+      Route.make("about").path("/about").view(aboutPage),
+    ),
+    RouteGroup.make("app")
+      .prefix("/app")
+      .layout(appLayout)
+      .add(
+        Route.make("counter").path("/counter").view(counterPage),
+      ),
+  ),
+)
+```
+
+### 7.3 Reflection direction
+
+Router APIs should directionally support operations such as:
+
+- `annotate(...)`
+- `reflect(...)`
+- extracting route metadata for tooling, navigation, and later server features.
+
+The inspiration from `HttpApi` should be structural and conceptual, not superficial naming only.
+
+---
+
+## 8. Server Layering Direction
+
+### 8.1 Priority rule
+
+The primary DX target is simple interactive applications first. Therefore, SSR/server features are layered on top of the core authoring model rather than defining it.
+
+### 8.2 SSR and resumability
+
+SSR and resumability remain important architectural directions, but this RFC no longer treats them as the first user-facing identity of Loom.
+
+They should be added in a way that:
+
+- preserves the tiny core authoring experience,
+- does not force server concepts into every component,
+- keeps capabilities explicit and observable.
+
+### 8.3 Future loaders and actions
+
+Future loader/action APIs may borrow inspiration from React Router 7, especially around route-associated data workflows, but Loom should express those patterns through Effect-native composition and type boundaries.
+
+### 8.4 Nitro support
+
+Nitro support belongs in `@effectify/loom-nitro`, not in the base package. The base package owns core component/view/runtime contracts; Nitro owns environment-specific integration.
+
+---
+
+## 9. API Directional Examples
+
+This section captures the intended direction, not a finalized signature freeze.
+
+### 9.1 Counter target DX
+
+```ts
+import * as Atom from "effect/unstable/reactivity/Atom"
+import { Component, mount, View, Web } from "@effectify/loom"
+
+export const counter = Component.make("counter").pipe(
+  Component.model({
+    count: Atom.make(0),
+  }),
+  Component.actions({
+    increase: ({ count }) => count.update((n) => n + 1),
+    decrease: ({ count }) => count.update((n) => n - 1),
+    reset: ({ count }) => count.set(0),
+  }),
+  Component.view(({ state, actions }) =>
+    View.stack(
+      View.text(`Count: ${state.count}`),
+      View.text(`Doubled: ${state.count * 2}`),
+      View.button("Increase", actions.increase),
+      View.button("Decrease", actions.decrease),
+      View.button("Reset", actions.reset),
+    ).pipe(
+      Web.className("flex flex-col gap-2"),
+    )
+  ),
+)
+
+mount({ counter })
+```
+
+### 9.2 Layout/slot target DX
+
+```ts
+import { Component, Slot, View, Web } from "@effectify/loom"
+
+export const appLayout = Component.make("app-layout").pipe(
+  Component.slots({
+    default: Slot.required(),
+    header: Slot.optional(),
+    sidebar: Slot.optional(),
+  }),
+  Component.view(({ slots }) =>
+    View.stack(
+      View.when(slots.header, View.header(slots.header)),
+      View.row(
+        View.when(slots.sidebar, View.aside(slots.sidebar)),
+        View.main(slots.default),
+      ),
+    ).pipe(
+      Web.className("min-h-screen"),
+    )
+  ),
+)
+```
+
+### 9.3 Router target DX
+
+```ts
+const appRouter = Router.make("app").pipe(
+  Router.add(
+    RouteGroup.make("marketing").add(
+      Route.make("home").path("/").view(homePage),
+      Route.make("about").path("/about").view(aboutPage),
+    ),
+    RouteGroup.make("app")
+      .prefix("/app")
+      .layout(appLayout)
+      .add(
+        Route.make("counter").path("/counter").view(counterPage),
+      ),
+  ),
+)
+```
+
+---
+
+## 10. Testing Strategy
 
 Loom should adopt a testing culture inspired by the Effect repository.
 
-### 8.1 Required test categories
+### 10.1 Required test categories
 
-- **Runtime tests** for rendering, events, SSR, and hydration behavior.
+- **Runtime tests** for interactive rendering, actions, routing behavior, and later SSR/server integration.
 - **dtslint/type tests** for public API correctness and inference behavior.
 - **Explicit assertions** instead of vague snapshots as the default confidence mechanism.
-- **Regression tests** for any bug fixed in rendering, hydration, or event/runtime interaction.
+- **Regression tests** for any bug fixed in rendering, actions, routing, observability, or later server/runtime interactions.
 
-### 8.2 Testing priorities
+### 10.2 Testing priorities
 
 Highest-value early coverage areas:
 
-1. `Component.use(...)` composition semantics
-2. `Html.live(atom, render)` update behavior
-3. `Html.on(...)` simple and contextual forms
-4. SSR output stability
-5. Opt-in hydration boundary detection and client activation
-6. Package-level type surface for namespace-style modules
+1. `Component.model(...)` Atom-native integration semantics
+2. `Component.actions(...)` typing and runtime behavior
+3. `Component.view(...)` state facade ergonomics and inference
+4. slot composition and layout behavior
+5. router declaration/composition/reflection behavior
+6. package-level type surface for namespace-style modules
+7. observability/tracing boundaries in runtime flows
 
-### 8.3 Testing philosophy
+### 10.3 Testing philosophy
 
 - Prefer precise assertions over broad snapshots.
 - When a runtime edge case is discovered, add a regression test immediately.
 - Type-level behavior is part of the public contract and must be tested, not assumed.
+- Future SSR/server features must prove they layer onto the existing DX without distorting the core API.
 
 ---
 
-## 9. Open Questions
+## 11. Open Questions
 
-- What exact neutral AST node taxonomy gives enough renderer flexibility without over-engineering v0.1?
-- Which hydration strategies should be first-class in `Hydration.strategy` at launch?
-- How much runtime context should be exposed through `{ event, target, runtime }` before it becomes too leaky?
-- Should `@effectify/loom-vite` own only plugin wiring, or also recommended project scaffolding conventions?
-- What minimum router primitives are required for `@effectify/loom-router` to feel first-class from day one?
+- What exact component constructor/combinator surface best preserves `Component<Props, Err, Requirements>` inference?
+- What is the right state facade shape for `Component.view(...)` so it stays ergonomic without hiding Atom reality?
+- Which router reflection APIs are essential in the first public router slice?
+- Should `@effectify/loom-atom` exist, and if yes, what ergonomics belong there instead of the base package?
+- What is the first SSR/server capability worth adding once the interactive DX is stable?
 
 ---
 
-## 10. Summary
+## 12. Summary
 
-This RFC locks the foundational direction for `@effectify/loom`: a plain-TypeScript, Effect-native UI system built on a neutral AST, Atom-based reactivity, a web-first renderer, selective SSR hydration, and a disciplined package topology. The public API stays small and namespace-oriented; the internal architecture keeps enough separation to support future evolution without destabilizing the initial developer experience.
+This RFC revises Loom's technical direction around a simpler and stronger DX target: Atom-native state, strongly typed `Component` boundaries, renderer-agnostic `View`, Web-specific browser/CSS APIs, slot-based composition, `HttpApi`-inspired routing, and explicit observability/tracing. SSR, resumability, loaders, and server integration remain important, but they are now intentionally framed as layered capabilities after the tiny, Effect-first interactive model already works beautifully.

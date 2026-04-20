@@ -111,6 +111,7 @@ describe("@effectify/loom public semantics", () => {
     const effect = contextualHandler({
       event: new Event("input"),
       target: new EventTarget(),
+      currentTarget: new EventTarget(),
       runtime: { root: null },
     })
 

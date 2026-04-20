@@ -15,7 +15,7 @@ export type ContextualHandler<
   EventType extends Event = Event,
 > = (
   context: LoomRuntime.Runtime.EventContext<Target, EventType>,
-) => LoomCore.Component.EffectLike
+) => unknown
 
 /** Event handler contract supporting simple and contextual forms. */
 export type EventHandler<
@@ -39,7 +39,7 @@ export interface SsrResult extends LoomRuntime.Runtime.SsrRenderResult {
   readonly diagnosticSummary: ReadonlyArray<Diagnostics.Summary>
 }
 
-export type Child = LoomCore.Ast.Node | Component.Type | string | ReadonlyArray<Child>
+export type Child = LoomCore.Ast.Node | Component.Type | string | ReadonlyArray<Child> | undefined | null | false
 
 export interface AttributeModifier {
   readonly _tag: "AttributeModifier"
@@ -83,6 +83,10 @@ const isReferencedLiveRegion = <Value>(
   typeof value === "object" && value !== null && "_tag" in value && value._tag === "ReferencedLiveRegion"
 
 const normalizeChild = (child: Child): ReadonlyArray<LoomCore.Ast.Node> => {
+  if (child === undefined || child === null || child === false) {
+    return []
+  }
+
   if (typeof child === "string") {
     return [text(child)]
   }

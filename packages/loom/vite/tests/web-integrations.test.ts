@@ -4,9 +4,9 @@ import { Atom, AtomRegistry } from "effect/unstable/reactivity"
 import * as Schema from "effect/Schema"
 import { describe, expect, it } from "vitest"
 import * as LoomRuntime from "@effectify/loom-runtime"
+import { Html, Hydration, Resumability } from "@effectify/loom"
 import { LoomNitro } from "../../nitro/src/index.js"
-import { LoomVite } from "../../vite/src/index.js"
-import { Html, Hydration, Resumability } from "../src/index.js"
+import { LoomVite } from "../src/index.js"
 
 const makeSerializableTextAtom = (key: string, value: string) =>
   Atom.serializable(Atom.make(value), {

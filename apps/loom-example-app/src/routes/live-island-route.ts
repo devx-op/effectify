@@ -13,7 +13,7 @@ export const liveIslandRoute = Route.make({
     Html.el(
       "p",
       Html.children(
-        "The counter state is server-rendered, resumed on the client, and updated through a local executable registry plus dehydrated Atom state.",
+        "The counter uses the real resumability path when rendered through the server entry. In plain Vite dev, the same DOM falls back to a narrow client-only enhancement so the demo still works without faking full SSR.",
       ),
     ),
     renderLiveIslandDemo(),

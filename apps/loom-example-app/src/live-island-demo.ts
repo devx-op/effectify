@@ -13,7 +13,7 @@ const counterCommand = (type: CounterCommand["type"]): CounterCommand => ({
   type,
 })
 
-export const counterAtom = Atom.serializable(Atom.make(liveIslandInitialCount), {
+export const counterAtom = Atom.serializable(Atom.make(liveIslandInitialCount).pipe(Atom.keepAlive), {
   key: "loom-example:counter",
   schema: Schema.Number,
 })
@@ -85,6 +85,64 @@ export const registerLiveIslandExecutables = (
   return registry
 }
 
+const liveIslandSelector = '[data-demo="live-island-counter"]'
+const liveCountSelector = '[data-live-count-value="true"]'
+const counterActionSelector = "[data-counter-action]"
+
+const asCounterCommandType = (value: string | undefined): CounterCommand["type"] | undefined => {
+  switch (value) {
+    case "increment":
+    case "decrement":
+    case "reset":
+      return value
+    default:
+      return undefined
+  }
+}
+
+export const activateLiveIslandFallback = (
+  document: Document,
+  registry: AtomRegistry.AtomRegistry = AtomRegistry.make(),
+): boolean => {
+  const island = document.querySelector(liveIslandSelector)
+  const liveCount = document.querySelector(liveCountSelector)
+
+  if (!(island instanceof HTMLElement) || !(liveCount instanceof HTMLElement)) {
+    return false
+  }
+
+  const syncCountText = (): void => {
+    liveCount.textContent = String(readCounter(registry))
+  }
+
+  if (island.dataset.liveIslandFallback !== "active") {
+    const buttons = Array.from(document.querySelectorAll(counterActionSelector))
+
+    for (const button of buttons) {
+      if (!(button instanceof HTMLButtonElement)) {
+        continue
+      }
+
+      const type = asCounterCommandType(button.dataset.counterAction)
+
+      if (type === undefined) {
+        continue
+      }
+
+      button.addEventListener("click", () => {
+        applyCounterCommand(counterCommand(type), registry)
+        syncCountText()
+      })
+    }
+
+    island.dataset.liveIslandFallback = "active"
+  }
+
+  syncCountText()
+
+  return true
+}
+
 export const renderLiveIslandDemo = (): Html.Child =>
   Html.el(
     "section",
@@ -94,7 +152,7 @@ export const renderLiveIslandDemo = (): Html.Child =>
       Html.el(
         "p",
         Html.children(
-          "This island hydrates only the counter controls and live text. The controls stay outside the live render callback on purpose.",
+          "When the Loom server entry is in play this island resumes the server-rendered counter. In the plain Vite fallback it degrades to a tiny client-side enhancement instead of pretending SSR exists.",
         ),
       ),
       Html.el(
