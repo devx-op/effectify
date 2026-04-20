@@ -1,12 +1,12 @@
-import type * as Loom from "@effectify/loom"
 import * as internal from "./internal/layout.js"
+import type * as Renderable from "./renderable.js"
 
 export interface Input<Context = unknown> {
-  readonly child: Loom.Html.Child
+  readonly child: Renderable.Type
   readonly context: Context
 }
 
-export type Content<Context = unknown> = Loom.Html.Child | ((input: Input<Context>) => Loom.Html.Child)
+export type Content<Context = unknown> = Renderable.Content<Input<Context>>
 
 /** Minimal layout boundary that can wrap a matched route later in the runtime slice. */
 export type Definition<Context = unknown> = internal.LayoutDefinition<Context>

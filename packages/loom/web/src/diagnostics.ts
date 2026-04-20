@@ -1,5 +1,14 @@
 import * as LoomRuntime from "@effectify/loom-runtime"
 
+/**
+ * Advanced diagnostics surface.
+ *
+ * This namespace is public, but it is not part of the primary first-path Loom
+ * authoring story. Prefer the root `Component` / `View` / `Web` / `Slot` /
+ * `mount` flow first, then reach for diagnostics when you need runtime or
+ * adapter visibility.
+ */
+
 export type Phase = LoomRuntime.Diagnostics.DiagnosticPhase
 export type Severity = LoomRuntime.Diagnostics.DiagnosticSeverity
 export type JsonPrimitive = LoomRuntime.Diagnostics.DiagnosticJsonPrimitive

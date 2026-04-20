@@ -7,6 +7,7 @@ import { buildUrl, validateHrefInput } from "./path.js"
 import type * as Fallback from "../fallback.js"
 import type * as Layout from "../layout.js"
 import * as Match from "../match.js"
+import type * as Renderable from "../renderable.js"
 import type * as Route from "../route.js"
 import type * as RouteGroup from "../route-group.js"
 import type * as Router from "../router.js"
@@ -107,7 +108,7 @@ const makeDefinition = <Entries extends ReadonlyArray<RouterEntry>>(options: {
   fallback: normalizeFallbacks(options.fallback),
 })
 
-const isResolver = <Input>(value: unknown): value is (input: Input) => Html.Child => typeof value === "function"
+const isResolver = <Input>(value: unknown): value is Renderable.Resolver<Input> => typeof value === "function"
 
 const isObjectChild = (value: unknown): value is Exclude<Html.Child, string | ReadonlyArray<Html.Child>> =>
   typeof value === "object" && value !== null
@@ -192,9 +193,9 @@ const collectLayouts = (
 const foldLayouts = (
   layouts: ReadonlyArray<Layout.Definition>,
   context: Router.Context,
-  child: Html.Child,
-): Html.Child =>
-  layouts.reduceRight<Html.Child>(
+  child: Renderable.Type,
+): Renderable.Type =>
+  layouts.reduceRight<Renderable.Type>(
     (current, layout) =>
       isResolver<Layout.Input<Router.Context>>(layout.content)
         ? layout.content({ child: current, context })
@@ -202,10 +203,13 @@ const foldLayouts = (
     child,
   )
 
-const renderPage = (content: unknown, context: Router.Context): Html.Child =>
+const renderPage = (content: unknown, context: Router.Context): Renderable.Type =>
   isResolver<Router.Context>(content) ? content(context) : toChild(content)
 
-const renderFallback = <Input>(fallback: Fallback.Definition | undefined, input: Input): Html.Child | undefined => {
+const renderFallback = <Input>(
+  fallback: Fallback.Definition | undefined,
+  input: Input,
+): Renderable.Type | undefined => {
   if (fallback === undefined) {
     return undefined
   }
@@ -614,4 +618,4 @@ export const resolveRouter = <Entries extends ReadonlyArray<RouterEntry>>(
 export const renderRouter = <Entries extends ReadonlyArray<RouterEntry>>(
   self: RouterDefinition<Entries>,
   input: string | URL,
-): Html.Child | undefined => resolveRouter(self, input).output
+): Renderable.Type | undefined => resolveRouter(self, input).output

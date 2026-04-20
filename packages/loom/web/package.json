@@ -21,14 +21,14 @@
       "default": "./src/index.ts"
     },
     "./Component": "./src/component.ts",
-    "./Diagnostics": "./src/diagnostics.ts",
-    "./Html": "./src/html.ts",
-    "./Hydration": "./src/hydration.ts",
-    "./Resumability": "./src/resumability.ts",
-    "./Slot": "./src/slot.ts",
     "./View": "./src/view.ts",
     "./Web": "./src/web.ts",
-    "./mount": "./src/mount.ts"
+    "./Slot": "./src/slot.ts",
+    "./mount": "./src/mount.ts",
+    "./Html": "./src/html.ts",
+    "./Diagnostics": "./src/diagnostics.ts",
+    "./Hydration": "./src/hydration.ts",
+    "./Resumability": "./src/resumability.ts"
   },
   "dependencies": {
     "@effectify/loom-core": "workspace:*",

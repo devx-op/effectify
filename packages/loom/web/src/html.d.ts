@@ -4,6 +4,13 @@ import * as LoomRuntime from "@effectify/loom-runtime"
 import type * as Component from "./component.js"
 import type * as Diagnostics from "./diagnostics.js"
 import * as Hydration from "./hydration.js"
+/**
+ * Compatibility-focused Html DSL and low-level AST / SSR seam.
+ *
+ * Prefer `View`, `Web`, `Slot`, and `mount` from the package root for new vNext
+ * authoring. Keep `Html` for compatibility, renderer-adjacent primitives, and
+ * advanced runtime handoff seams.
+ */
 /** Effect-only event handler form. */
 export type SimpleHandler = LoomCore.Component.EffectLike
 /** Contextual event handler form. */
@@ -44,9 +51,9 @@ export interface EventModifier<Target extends EventTarget = EventTarget, EventTy
   readonly binding: EventBinding<Target, EventType>
 }
 export type ElementModifier = AttributeModifier | ChildrenModifier | HydrationModifier | EventModifier
-/** Create a neutral text node. */
+/** Create a low-level neutral text node for the compatibility Html seam. */
 export declare const text: (value: string) => LoomCore.Ast.TextNode
-/** Create a neutral fragment node. */
+/** Create a low-level neutral fragment node for the compatibility Html seam. */
 export declare const fragment: (...nodes: ReadonlyArray<Child>) => LoomCore.Ast.FragmentNode
 /** Add children to an element. */
 export declare const children: (...nodes: ReadonlyArray<Child>) => ChildrenModifier
@@ -54,9 +61,9 @@ export declare const children: (...nodes: ReadonlyArray<Child>) => ChildrenModif
 export declare const attr: (name: string, value: string) => AttributeModifier
 /** Add or extend an element class attribute. */
 export declare const className: (value: string) => AttributeModifier
-/** Create a neutral element node. */
+/** Create a low-level neutral element node. Prefer `View` + `Web` for new root happy-path authoring. */
 export declare const el: (tagName: string, ...modifiers: ReadonlyArray<ElementModifier>) => LoomCore.Ast.ElementNode
-/** Backwards-compatible alias for the earlier scaffolding API. */
+/** Backwards-compatible alias for the earlier scaffolding API. Prefer `Html.el(...)` or the root `View` / `Web` surface. */
 export declare const element: (
   tagName: string,
   ...modifiers: ReadonlyArray<ElementModifier>
@@ -66,14 +73,14 @@ export declare const live: <Value>(
   atom: Atom.Atom<Value>,
   render: ((value: Value) => Child) | LoomRuntime.Resumability.ReferencedLiveRegion<Value>,
 ) => LoomCore.Ast.LiveNode<Value>
-/** Mark an element as hydratable under a given strategy. */
+/** Mark a low-level Html element as hydratable under a given strategy. */
 export declare const hydrate: (strategy: Hydration.Strategy) => HydrationModifier
-/** Create an event binding descriptor for a future DOM runtime. */
+/** Create a low-level event binding descriptor for DOM/runtime interoperability. */
 export declare const on: <Target extends EventTarget = EventTarget, EventType extends Event = Event>(
   event: string,
   handler: EventHandler<Target, EventType> | ReferencedEventHandler<Target, EventType>,
 ) => EventModifier<Target, EventType>
-/** Serialize the current Loom tree to SSR HTML plus explicit runtime metadata. */
+/** Serialize the current Loom tree to SSR HTML plus explicit runtime metadata for advanced compatibility flows. */
 export declare const ssr: (root: Child, options?: SsrOptions) => SsrResult
-/** Serialize the current Loom tree to SSR HTML only. */
+/** Serialize the current Loom tree to SSR HTML only through the low-level Html seam. */
 export declare const renderToString: (root: Child, options?: SsrOptions) => string

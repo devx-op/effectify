@@ -13,6 +13,7 @@ describe("loom example app server entry", () => {
     expect(result.status).toBe(200)
     expect(result.html).toContain("Loom Example App")
     expect(result.html).toContain('id="loom-root"')
+    expect(result.html).toContain('data-route-view="home"')
     expect(result.html).toContain('href="/docs/about"')
     expect(result.html).toContain('href="/live-island"')
   })
@@ -27,7 +28,8 @@ describe("loom example app server entry", () => {
 
     expect(result.status).toBe(200)
     expect(result.html).toContain("About this Loom example")
-    expect(result.html).toContain("one resumable live island")
+    expect(result.html).toContain('data-route-view="docs-about"')
+    expect(result.html).toContain("vNext authoring path first")
   })
 
   it("documents deferred scope explicitly on the docs/about route", async () => {
@@ -39,6 +41,7 @@ describe("loom example app server entry", () => {
     })
 
     expect(result.status).toBe(200)
+    expect(result.html).toContain('data-route-view="docs-about"')
     expect(result.html).toContain("What it does not try to fake yet")
     expect(result.html).toContain("full SPA navigation")
     expect(result.html).toContain("router-owned client transitions")
@@ -55,6 +58,7 @@ describe("loom example app server entry", () => {
 
     expect(result.status).toBe(200)
     expect(result.resumability).toBeDefined()
+    expect(result.html).toContain('data-route-view="live-island"')
     expect(result.html).toContain('id="__loom_payload__"')
     expect(result.html).toContain('data-loom-hydrate="visible"')
     expect(result.html).toContain('data-counter-action="increment"')
@@ -71,6 +75,7 @@ describe("loom example app server entry", () => {
 
     expect(result.status).toBe(404)
     expect(result.html).toContain("Page not found")
+    expect(result.html).toContain('data-route-view="not-found"')
     expect(result.html).toContain("/missing-route")
   })
 })

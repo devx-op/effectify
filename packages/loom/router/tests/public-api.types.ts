@@ -1,3 +1,5 @@
+import type * as Loom from "@effectify/loom"
+import { Component, View } from "@effectify/loom"
 import { pipe, ServiceMap } from "effect"
 import * as Result from "effect/Result"
 import { Decode, Fallback, Layout, Link, Match, Navigation, Route, RouteGroup, Router } from "../src/index.js"
@@ -17,6 +19,10 @@ const route = Route.make({
   },
 })
 
+const routeComponent = Component.make("router-page").pipe(
+  Component.view(() => View.stack(View.text("router-page"))),
+)
+
 const nestedLeafRoute = Route.child({
   identifier: "posts.detail",
   path: ":postId",
@@ -33,10 +39,11 @@ const nestedRoute = Route.make({
   children: [nestedLeafRoute],
 })
 
-const layout = Layout.make("shell")
-const fallback = Fallback.make("missing")
+const renderable: Loom.View.Child = View.stack(View.text("router-renderable"))
+const layout = Layout.make(({ child }) => View.main(child))
+const fallback = Fallback.make(({ pathname }: { readonly pathname: string }) => View.stack(View.text(pathname)))
 const router = Router.make({
-  routes: [route],
+  routes: [route, Route.make({ path: "/component", content: routeComponent })],
   layout,
   fallback,
 })
@@ -51,6 +58,7 @@ const resolveResult: Router.ResolveResult = Router.resolve(
   router,
   new URL("https://effectify.dev/users/42?tab=profile"),
 )
+const resolvedOutput: Loom.View.Child | undefined = resolveResult.output
 const RouterTitle = ServiceMap.Service<{ readonly title: string }>("RouterTitle")
 const routeGroup = pipe(RouteGroup.make("users"), RouteGroup.add(route))
 const algebraRouter = pipe(
@@ -121,7 +129,7 @@ if (Match.isSuccess(result)) {
 }
 
 if (Match.isMiss(result)) {
-  const fallbackContent: string = Fallback.content(fallback)
+  const fallbackContent: Fallback.Content<{ readonly pathname: string }> = Fallback.content(fallback)
 
   void fallbackContent
 }
@@ -159,6 +167,7 @@ type NestedLeafSearchContract = Expect<Equal<typeof nestedLeafSearch, { mode: st
 type RouteIdentifierContract = Expect<Equal<typeof routeIdentifier, "users.detail">>
 type NestedLeafIdentifierContract = Expect<Equal<typeof nestedLeafIdentifier, "posts.detail">>
 type ResolveResultContract = Expect<Equal<typeof resolveResult, Router.ResolveResult>>
+type ResolvedOutputContract = Expect<Equal<typeof resolvedOutput, Loom.View.Child | undefined>>
 type GroupedRoutesContract = Expect<Equal<typeof groupedRoutes, ReadonlyArray<RouteGroup.Definition>>>
 type NavigationSnapshotContract = Expect<Equal<typeof navigationSnapshot, Navigation.LocationSnapshot<unknown>>>
 type RouteHrefContract = Expect<Equal<typeof routeHref, string>>
@@ -188,6 +197,7 @@ Router.href(nestedTypedRouter, "posts.detail", { query: { tab: "oops" } })
 
 export const typecheckSmoke = {
   fallback,
+  renderable,
   identityDecoder,
   layout,
   nestedLeafParams,
@@ -239,6 +249,7 @@ export type {
   NestedLeafIdentifierContract,
   NestedLeafParamsContract,
   NestedLeafSearchContract,
+  ResolvedOutputContract,
   ResolveResultContract,
   RouteHrefContract,
   RouteIdentifierContract,

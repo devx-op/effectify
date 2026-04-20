@@ -2,6 +2,14 @@ import * as LoomCore from "@effectify/loom-core"
 import * as LoomRuntime from "@effectify/loom-runtime"
 import type * as Diagnostics from "./diagnostics.js"
 
+/**
+ * Advanced hydration surface.
+ *
+ * Keep hydration explicit and public, but document it as layered after the
+ * primary interactive authoring path (`Component`, `View`, `Web`, `Slot`, and
+ * `mount`).
+ */
+
 /** Supported public hydration strategy names for the Loom skeleton. */
 export type StrategyName = LoomRuntime.Hydration.StrategyName
 

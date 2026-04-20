@@ -1,6 +1,6 @@
 import { SchemaGetter } from "effect"
 import * as Schema from "effect/Schema"
-import { Component, Html, Hydration } from "@effectify/loom"
+import { Component, Html, Hydration, Slot, View, Web } from "@effectify/loom"
 import { describe, expect, it } from "vitest"
 import { Decode, Fallback, Layout, Route, RouteGroup, Router } from "../src/index.js"
 
@@ -338,5 +338,50 @@ describe("@effectify/loom-router runtime", () => {
       '<main><section data-shell="dashboard"><!--loom-hydrate-start:b0--><p data-loom-hydrate="visible" data-loom-boundary="b0">missing-dashboard</p><!--loom-hydrate-end:b0--></section></main>',
     )
     expect(ssr.plan.boundaries.map(({ id }) => id)).toEqual(["b0"])
+  })
+
+  it("renders vNext view/component layout and fallback contracts through the router boundary", () => {
+    const appShell = Component.make("router-shell").pipe(
+      Component.slots({ default: Slot.required() }),
+      Component.view(({ slots }) =>
+        View.stack(
+          View.text("shell"),
+          View.main(slots.default),
+        ).pipe(Web.data("router-shell", "true"))
+      ),
+    )
+    const settingsPage = Component.make("settings-page").pipe(
+      Component.view(() =>
+        View.stack(
+          View.text("settings-home"),
+        ).pipe(Web.data("route-view", "settings"))
+      ),
+    )
+    const missingPage = Component.make("missing-page").pipe(
+      Component.view(() =>
+        View.stack(
+          View.text("settings-missing"),
+        ).pipe(Web.data("route-view", "missing"))
+      ),
+    )
+    const router = Router.make({
+      layout: Layout.make(({ child }) => Component.use(appShell, undefined, { default: child })),
+      routes: [
+        Route.make({
+          path: "/settings",
+          content: settingsPage,
+          fallback: {
+            notFound: Fallback.make(() => missingPage),
+          },
+        }),
+      ],
+    })
+
+    expect(render(router, "/settings")).toBe(
+      '<div data-router-shell="true">shell<main><div data-route-view="settings">settings-home</div></main></div>',
+    )
+    expect(render(router, "/settings/unknown")).toBe(
+      '<div data-router-shell="true">shell<main><div data-route-view="missing">settings-missing</div></main></div>',
+    )
   })
 })

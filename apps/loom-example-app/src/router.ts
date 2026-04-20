@@ -1,3 +1,4 @@
+import type * as Loom from "@effectify/loom"
 import { Html } from "@effectify/loom"
 import { Layout, Route, Router } from "@effectify/loom-router"
 import { renderAppShell } from "./app-shell.js"
@@ -44,5 +45,5 @@ export const statusForResult = (result: Router.ResolveResult): number => {
   return 200
 }
 
-export const bodyForResult = (result: Router.ResolveResult): Html.Child =>
+export const bodyForResult = (result: Router.ResolveResult): Loom.View.Child =>
   result.output ?? Html.el("p", Html.children("Loom example route output is unavailable."))

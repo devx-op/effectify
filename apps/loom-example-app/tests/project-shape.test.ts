@@ -44,4 +44,18 @@ describe("loom example app project shape", () => {
       expect.arrayContaining(["effectify:loom-vite"]),
     )
   })
+
+  it("authors the shell and primary routes through the vNext root surface first", () => {
+    const appShellSource = readFileSync(new URL("../src/app-shell.ts", import.meta.url), "utf8")
+    const homeRouteSource = readFileSync(new URL("../src/routes/home-route.ts", import.meta.url), "utf8")
+    const docsRouteSource = readFileSync(new URL("../src/routes/docs-about-route.ts", import.meta.url), "utf8")
+
+    expect(appShellSource).toContain("Component")
+    expect(appShellSource).toContain("View")
+    expect(appShellSource).toContain("Slot.required")
+    expect(homeRouteSource).toContain("Component.make")
+    expect(homeRouteSource).toContain("View.stack")
+    expect(docsRouteSource).toContain("Component.make")
+    expect(docsRouteSource).toContain("View.stack")
+  })
 })

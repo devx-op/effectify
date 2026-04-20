@@ -89,7 +89,7 @@ describe("loom example app client entry", () => {
     }
 
     const staticHeaderBefore = readOuterHtml('[data-app-shell="loom-example-app"] > header')
-    const staticIntroBefore = readOuterHtml('[data-app-main="true"] > p')
+    const staticIntroBefore = readOuterHtml('[data-route-view="live-island"] > p')
     const staticFooterBefore = readOuterHtml('[data-app-shell="loom-example-app"] > footer')
 
     const bootstrap = await bootstrapClient(document)
@@ -97,7 +97,7 @@ describe("loom example app client entry", () => {
 
     expect(bootstrap.status).toBe("resumed")
     expect(readOuterHtml('[data-app-shell="loom-example-app"] > header')).toBe(staticHeaderBefore)
-    expect(readOuterHtml('[data-app-main="true"] > p')).toBe(staticIntroBefore)
+    expect(readOuterHtml('[data-route-view="live-island"] > p')).toBe(staticIntroBefore)
     expect(readOuterHtml('[data-app-shell="loom-example-app"] > footer')).toBe(staticFooterBefore)
 
     if (!(incrementButton instanceof HTMLButtonElement)) {
@@ -107,7 +107,7 @@ describe("loom example app client entry", () => {
     incrementButton.click()
 
     expect(readOuterHtml('[data-app-shell="loom-example-app"] > header')).toBe(staticHeaderBefore)
-    expect(readOuterHtml('[data-app-main="true"] > p')).toBe(staticIntroBefore)
+    expect(readOuterHtml('[data-route-view="live-island"] > p')).toBe(staticIntroBefore)
     expect(readOuterHtml('[data-app-shell="loom-example-app"] > footer')).toBe(staticFooterBefore)
   })
 

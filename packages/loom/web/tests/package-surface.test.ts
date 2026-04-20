@@ -7,6 +7,7 @@ type PackageManifest = {
   readonly publishConfig?: {
     readonly access?: string
   }
+  readonly exports?: Readonly<Record<string, unknown>>
 }
 
 type ProjectConfig = {
@@ -46,6 +47,7 @@ const internalPackages = [
 ] as const
 
 const packageMatrixReadme = new URL("../../README.md", import.meta.url)
+const loomRootIndex = new URL("../src/index.ts", import.meta.url)
 
 const readJson = <Value>(url: URL): Value => JSON.parse(readFileSync(url, "utf8")) as Value
 const readText = (url: URL): string => readFileSync(url, "utf8")
@@ -88,5 +90,46 @@ describe("loom package surface guardrails", () => {
 
     expect(readme).toContain("Internal-only packages")
     expect(readme).toContain("public package surface")
+  })
+
+  it("documents and orders the root happy path as the primary Loom surface", () => {
+    const manifest = readJson<PackageManifest>(new URL("../package.json", import.meta.url))
+    const readme = readText(packageMatrixReadme)
+    const index = readText(loomRootIndex)
+    const exportKeys = Object.keys(manifest.exports ?? {})
+
+    expect(exportKeys).toEqual([
+      ".",
+      "./Component",
+      "./View",
+      "./Web",
+      "./Slot",
+      "./mount",
+      "./Html",
+      "./Diagnostics",
+      "./Hydration",
+      "./Resumability",
+    ])
+
+    expect(index.indexOf('export * as Component from "./component.js"')).toBeLessThan(
+      index.indexOf('export * as View from "./view.js"'),
+    )
+    expect(index.indexOf('export * as View from "./view.js"')).toBeLessThan(
+      index.indexOf('export * as Web from "./web.js"'),
+    )
+    expect(index.indexOf('export * as Web from "./web.js"')).toBeLessThan(
+      index.indexOf('export * as Slot from "./slot.js"'),
+    )
+    expect(index.indexOf('export * as Slot from "./slot.js"')).toBeLessThan(
+      index.indexOf('export { mount } from "./mount.js"'),
+    )
+    expect(index.indexOf('export { mount } from "./mount.js"')).toBeLessThan(
+      index.indexOf('export * as Html from "./html.js"'),
+    )
+
+    expect(readme).toContain("primary root surface")
+    expect(readme).toContain("This is the primary documented/public contract for new Loom authoring.")
+    expect(readme).toContain("Html")
+    expect(readme).toContain("compatibility-first low-level AST / SSR seam")
   })
 })

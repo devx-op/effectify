@@ -9,6 +9,25 @@ This directory contains the Loom package family for the `loom-web-runtime` chang
 - `@effectify/loom-vite` — Vite integration package
 - `@effectify/loom-nitro` — Nitro integration package
 
+## `@effectify/loom` primary root surface
+
+For the current vNext authoring story, teach the root happy path in this order:
+
+1. `Component`
+2. `View`
+3. `Web`
+4. `Slot`
+5. `mount`
+
+This is the primary documented/public contract for new Loom authoring.
+
+## Compatibility and advanced seams
+
+- `Html` — compatibility-first low-level AST / SSR seam; prefer `View` + `Web` for new authoring
+- `Diagnostics` — advanced runtime visibility helpers
+- `Hydration` — advanced hydration helpers layered after the primary interactive path
+- `Resumability` — advanced resumability helpers layered after the primary interactive path
+
 ## Internal-only packages
 
 - `@effectify/loom-core` — neutral AST and composition contracts

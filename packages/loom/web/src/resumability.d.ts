@@ -1,5 +1,11 @@
 import * as LoomRuntime from "@effectify/loom-runtime"
 import type * as Diagnostics from "./diagnostics.js"
+/**
+ * Advanced resumability surface.
+ *
+ * Resumability stays public and important, but it is intentionally documented
+ * as a layered capability after the root interactive happy path.
+ */
 export type ExecutableRef = LoomRuntime.Resumability.ExecutableRef
 export type ReferencedHandler<Handler = LoomRuntime.Resumability.HandlerExecutable> =
   LoomRuntime.Resumability.ReferencedHandler<Handler>

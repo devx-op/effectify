@@ -5,6 +5,7 @@ import type * as Decode from "./decode.js"
 import type * as Fallback from "./fallback.js"
 import type * as Layout from "./layout.js"
 import type * as Match from "./match.js"
+import type * as Renderable from "./renderable.js"
 import type * as Route from "./route.js"
 import type * as RouteGroup from "./route-group.js"
 import { mergeAnnotations } from "./internal/annotations.js"
@@ -101,7 +102,7 @@ export interface ResolveSuccess<Params extends Route.Params = Route.Params, Quer
   readonly _tag: "LoomRouterResolveSuccess"
   readonly context: Context<Params, Query>
   readonly route: Route.Definition<unknown, Params, Query, any, any>
-  readonly output: Loom.Html.Child
+  readonly output: Renderable.Type
   readonly diagnostics: ReadonlyArray<Loom.Diagnostics.Report>
   readonly diagnosticSummary: ReadonlyArray<Loom.Diagnostics.Summary>
 }
@@ -110,7 +111,7 @@ export interface ResolveNotFound {
   readonly _tag: "LoomRouterResolveNotFound"
   readonly context: Context
   readonly fallback: Fallback.Definition | undefined
-  readonly output: Loom.Html.Child | undefined
+  readonly output: Renderable.Type | undefined
   readonly diagnostics: ReadonlyArray<Loom.Diagnostics.Report>
   readonly diagnosticSummary: ReadonlyArray<Loom.Diagnostics.Summary>
 }
@@ -121,7 +122,7 @@ export interface ResolveInvalidInput {
   readonly route: Route.Definition<any, any, any, any, any> | undefined
   readonly issues: ReadonlyArray<Decode.Issue>
   readonly fallback: Fallback.Definition | undefined
-  readonly output: Loom.Html.Child | undefined
+  readonly output: Renderable.Type | undefined
   readonly diagnostics: ReadonlyArray<Loom.Diagnostics.Report>
   readonly diagnosticSummary: ReadonlyArray<Loom.Diagnostics.Summary>
 }
@@ -329,4 +330,4 @@ export const resolve = <Entries extends ReadonlyArray<RouterEntry>>(
 export const render = <Entries extends ReadonlyArray<RouterEntry>>(
   self: Definition<Entries>,
   input: string | URL,
-): Loom.Html.Child | undefined => internal.renderRouter(self, input)
+): Renderable.Type | undefined => internal.renderRouter(self, input)

@@ -1,7 +1,7 @@
-import type * as Loom from "@effectify/loom"
 import * as internal from "./internal/fallback.js"
+import type * as Renderable from "./renderable.js"
 
-export type Content<Input = unknown> = Loom.Html.Child | ((input: Input) => Loom.Html.Child)
+export type Content<Input = unknown> = Renderable.Content<Input>
 
 /** Fallback definition used when no route matches the current location. */
 export type Definition<Content = unknown> = internal.FallbackDefinition<Content>

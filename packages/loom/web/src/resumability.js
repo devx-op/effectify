@@ -1,4 +1,10 @@
 import * as LoomRuntime from "@effectify/loom-runtime"
+/**
+ * Advanced resumability surface.
+ *
+ * Resumability stays public and important, but it is intentionally documented
+ * as a layered capability after the root interactive happy path.
+ */
 /** Create a stable executable ref (<module>#<export>) for resumable handlers/live regions. */
 export const makeExecutableRef = LoomRuntime.Resumability.makeExecutableRef
 /** Attach a stable resumability ref to an event handler used by `Html.on(...)`. */

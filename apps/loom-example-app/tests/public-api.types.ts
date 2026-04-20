@@ -1,5 +1,6 @@
+import type * as Loom from "@effectify/loom"
 import { Link, Navigation, Router } from "@effectify/loom-router"
-import { appRouter } from "../src/router.js"
+import { appRouter, bodyForResult, resolveAppRequest } from "../src/router.js"
 import { goToDocsAbout, goToLiveIsland, hrefToDocsAbout, hrefToHome, hrefToLiveIsland } from "../src/navigation.js"
 import { routeIds } from "../src/routes/route-ids.js"
 
@@ -14,6 +15,7 @@ const docsAboutHref = hrefToDocsAbout()
 const liveIslandHref = hrefToLiveIsland()
 const docsAboutRouterHref = Router.href(appRouter, routeIds.docsAbout)
 const routerHref = Router.href(appRouter, routeIds.liveIsland)
+const homeBody: Loom.View.Child = bodyForResult(resolveAppRequest("https://effectify.dev/"))
 
 goToDocsAbout(navigation)
 goToLiveIsland(navigation)
@@ -21,6 +23,7 @@ Link.navigate(navigation, docsAboutRouterHref)
 Link.navigate(navigation, routerHref)
 
 type HomeHrefContract = Expect<Equal<typeof homeHref, string>>
+type HomeBodyContract = Expect<Equal<typeof homeBody, Loom.View.Child>>
 type DocsAboutHrefContract = Expect<Equal<typeof docsAboutHref, string>>
 type LiveIslandHrefContract = Expect<Equal<typeof liveIslandHref, string>>
 type DocsAboutRouterHrefContract = Expect<Equal<typeof docsAboutRouterHref, string>>
@@ -33,6 +36,7 @@ export const typecheckSmoke = {
   appRouter,
   docsAboutHref,
   docsAboutRouterHref,
+  homeBody,
   homeHref,
   liveIslandHref,
   navigation,
@@ -43,6 +47,7 @@ export const typecheckSmoke = {
 export type {
   DocsAboutHrefContract,
   DocsAboutRouterHrefContract,
+  HomeBodyContract,
   HomeHrefContract,
   LiveIslandHrefContract,
   RouterHrefContract,

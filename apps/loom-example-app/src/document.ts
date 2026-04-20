@@ -1,12 +1,13 @@
+import type * as Loom from "@effectify/loom"
 import { Html } from "@effectify/loom"
 import { appPayloadElementId, appRootId } from "./app-config.js"
 
 export interface DocumentOptions {
   readonly title: string
-  readonly body: Html.Child
+  readonly body: Loom.View.Child
 }
 
-export const createDocument = (options: DocumentOptions): Html.Child =>
+export const createDocument = (options: DocumentOptions): Loom.View.Child =>
   Html.el(
     "html",
     Html.attr("lang", "en"),

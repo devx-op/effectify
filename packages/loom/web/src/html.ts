@@ -6,6 +6,14 @@ import type * as Diagnostics from "./diagnostics.js"
 import * as Hydration from "./hydration.js"
 import * as internal from "./internal/api.js"
 
+/**
+ * Compatibility-focused Html DSL and low-level AST / SSR seam.
+ *
+ * Prefer `View`, `Web`, `Slot`, and `mount` from the package root for new vNext
+ * authoring. Keep `Html` for compatibility, renderer-adjacent primitives, and
+ * advanced runtime handoff seams.
+ */
+
 /** Effect-only event handler form. */
 export type SimpleHandler = LoomCore.Component.EffectLike
 
@@ -116,10 +124,10 @@ const normalizeRoot = (child: Child): LoomCore.Ast.Node => {
   return normalized.length === 1 ? normalized[0] : LoomCore.Ast.fragment(normalized)
 }
 
-/** Create a neutral text node. */
+/** Create a low-level neutral text node for the compatibility Html seam. */
 export const text = (value: string): LoomCore.Ast.TextNode => LoomCore.Ast.text(value)
 
-/** Create a neutral fragment node. */
+/** Create a low-level neutral fragment node for the compatibility Html seam. */
 export const fragment = (...nodes: ReadonlyArray<Child>): LoomCore.Ast.FragmentNode =>
   LoomCore.Ast.fragment(nodes.flatMap(normalizeChild))
 
@@ -139,7 +147,7 @@ export const attr = (name: string, value: string): AttributeModifier => ({
 /** Add or extend an element class attribute. */
 export const className = (value: string): AttributeModifier => attr("class", value)
 
-/** Create a neutral element node. */
+/** Create a low-level neutral element node. Prefer `View` + `Web` for new root happy-path authoring. */
 export const el = (tagName: string, ...modifiers: ReadonlyArray<ElementModifier>): LoomCore.Ast.ElementNode => {
   const state: {
     attributes: Record<string, string>
@@ -182,7 +190,7 @@ export const el = (tagName: string, ...modifiers: ReadonlyArray<ElementModifier>
   return LoomCore.Ast.element(tagName, state)
 }
 
-/** Backwards-compatible alias for the earlier scaffolding API. */
+/** Backwards-compatible alias for the earlier scaffolding API. Prefer `Html.el(...)` or the root `View` / `Web` surface. */
 export const element = el
 
 /** Create a live Atom bridge over the Loom neutral AST. */
@@ -210,13 +218,13 @@ export const live = <Value>(
     }
 }
 
-/** Mark an element as hydratable under a given strategy. */
+/** Mark a low-level Html element as hydratable under a given strategy. */
 export const hydrate = (strategy: Hydration.Strategy): HydrationModifier => ({
   _tag: "HydrationModifier",
   metadata: Hydration.boundary(strategy),
 })
 
-/** Create an event binding descriptor for a future DOM runtime. */
+/** Create a low-level event binding descriptor for DOM/runtime interoperability. */
 export const on = <Target extends EventTarget = EventTarget, EventType extends Event = Event>(
   event: string,
   handler: EventHandler<Target, EventType> | ReferencedEventHandler<Target, EventType>,
@@ -225,7 +233,7 @@ export const on = <Target extends EventTarget = EventTarget, EventType extends E
   binding: internal.makeEventBinding(event, handler),
 })
 
-/** Serialize the current Loom tree to SSR HTML plus explicit runtime metadata. */
+/** Serialize the current Loom tree to SSR HTML plus explicit runtime metadata for advanced compatibility flows. */
 export const ssr = (root: Child, options?: SsrOptions): SsrResult => {
   const result = LoomRuntime.Runtime.renderToHtml(normalizeRoot(root), options)
 
@@ -235,5 +243,5 @@ export const ssr = (root: Child, options?: SsrOptions): SsrResult => {
   }
 }
 
-/** Serialize the current Loom tree to SSR HTML only. */
+/** Serialize the current Loom tree to SSR HTML only through the low-level Html seam. */
 export const renderToString = (root: Child, options?: SsrOptions): string => ssr(root, options).html
