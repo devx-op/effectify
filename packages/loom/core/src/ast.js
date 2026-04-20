@@ -1,6 +1,8 @@
 import * as internal from "./internal/ast.js"
 /** Create a neutral text node. */
 export const text = (value) => internal.makeTextNode(value)
+/** Create a neutral dynamic text node. */
+export const dynamicText = (render) => internal.makeDynamicTextNode(render)
 /** Create a neutral element node. */
 export const element = (tagName, options) =>
   internal.makeElementNode(tagName, {

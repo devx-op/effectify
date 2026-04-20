@@ -3,10 +3,12 @@ import * as Html from "./html.js"
 import * as internal from "./internal/view-node.js"
 /** Create a renderer-neutral text node backed by the current Html-first runtime seam. */
 export const text = (value) =>
-  internal.wrap({
-    _tag: "Text",
-    value,
-  })
+  typeof value === "function"
+    ? internal.wrap(LoomCore.Ast.dynamicText(value))
+    : internal.wrap({
+      _tag: "Text",
+      value,
+    })
 /** Create a renderer-neutral fragment. */
 export const fragment = (...children) =>
   internal.wrap({
@@ -33,21 +35,25 @@ export const main = (content) => internal.wrap(Html.el("main", Html.children(con
 export const aside = (content) => internal.wrap(Html.el("aside", Html.children(content)))
 /** Create a semantic header region. */
 export const header = (content) => internal.wrap(Html.el("header", Html.children(content)))
+const isComponentChild = (child) =>
+  typeof child === "object" && child !== null && "_tag" in child && child._tag === "Component"
+const isNodeChild = (child) =>
+  typeof child === "object" && child !== null && "_tag" in child && child._tag !== "Component"
 const normalizeChild = (child) => {
   if (child === undefined || child === null || child === false) {
     return []
   }
   if (typeof child === "string") {
-    return [{
-      _tag: "Text",
-      value: child,
-    }]
+    return [{ _tag: "Text", value: child }]
   }
   if (Array.isArray(child)) {
     return child.flatMap(normalizeChild)
   }
-  if (typeof child === "object" && child !== null && child._tag === "Component") {
+  if (isComponentChild(child)) {
     return [LoomCore.Ast.componentUse(child)]
   }
-  return [child]
+  if (isNodeChild(child)) {
+    return [child]
+  }
+  return []
 }

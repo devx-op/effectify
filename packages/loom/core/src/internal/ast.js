@@ -2,6 +2,10 @@ export const makeTextNode = (value) => ({
   _tag: "Text",
   value,
 })
+export const makeDynamicTextNode = (render) => ({
+  _tag: "DynamicText",
+  render,
+})
 export const makeElementNode = (tagName, options) => ({
   _tag: "Element",
   tagName,

@@ -3,7 +3,7 @@
 import * as Effect from "effect/Effect"
 import { Atom, AtomRegistry } from "effect/unstable/reactivity"
 import { describe, expect, it } from "vitest"
-import { Component, mount, Slot, View, Web } from "../src/index.js"
+import { Component, Hydration, mount, Slot, View, Web } from "../src/index.js"
 
 const effectLike = { _tag: "EffectLike" } as const
 
@@ -37,7 +37,7 @@ describe("@effectify/loom vNext public surface", () => {
       }),
       Component.view(({ state, actions, slots }) =>
         View.stack(
-          View.text(`Count: ${state.count}`),
+          View.text(() => `Count: ${state.count()}`),
           View.text(Object.keys(slots).join(",")),
           View.button("Increment", actions.increment),
         ).pipe(Web.className("counter"))
@@ -57,7 +57,7 @@ describe("@effectify/loom vNext public surface", () => {
         class: "counter",
       },
       children: [
-        { _tag: "Text", value: "Count: 2" },
+        { _tag: "DynamicText" },
         { _tag: "Text", value: "default,sidebar" },
         {
           _tag: "Element",
@@ -68,18 +68,18 @@ describe("@effectify/loom vNext public surface", () => {
 
     const handle = mount({ counter }, { registry })
 
-    expect(handle.state.count).toBe(2)
+    expect(handle.state.count()).toBe(2)
 
     // @ts-expect-error mount action typing still widens in the current additive bridge.
     handle.actions.increment()
 
-    expect(handle.state.count).toBe(3)
+    expect(handle.state.count()).toBe(3)
     expect(handle.html).toContain("Count: 3")
 
     // @ts-expect-error mount action typing still widens in the current additive bridge.
     handle.actions.reset()
 
-    expect(handle.state.count).toBe(0)
+    expect(handle.state.count()).toBe(0)
     expect(handle.html).toContain("Count: 0")
 
     handle.dispose()
@@ -97,8 +97,8 @@ describe("@effectify/loom vNext public surface", () => {
       }),
       Component.view(({ state }) =>
         View.stack(
-          View.text(`Count: ${state.count}`),
-          View.text(`Label: ${state.label}`),
+          View.text(() => `Count: ${state.count()}`),
+          View.text(() => `Label: ${state.label()}`),
         )
       ),
     )
@@ -106,16 +106,16 @@ describe("@effectify/loom vNext public surface", () => {
     const first = mount({ counter })
     const second = mount({ counter })
 
-    expect(first.state.count).toBe(1)
-    expect(second.state.count).toBe(1)
-    expect(first.state.label).toBe("ready")
-    expect(second.state.label).toBe("ready")
+    expect(first.state.count()).toBe(1)
+    expect(second.state.count()).toBe(1)
+    expect(first.state.label()).toBe("ready")
+    expect(second.state.label()).toBe("ready")
 
     // @ts-expect-error mount action typing still widens in the current additive bridge.
     first.actions.increment()
 
-    expect(first.state.count).toBe(2)
-    expect(second.state.count).toBe(1)
+    expect(first.state.count()).toBe(2)
+    expect(second.state.count()).toBe(1)
     expect(first.html).toContain("Count: 2")
     expect(second.html).toContain("Count: 1")
 
@@ -134,13 +134,13 @@ describe("@effectify/loom vNext public surface", () => {
           count.update((value) => value + 1)
 
           return Component.actionEffect(
-            Effect.succeed(`saved:${state.count}`),
+            Effect.succeed(`saved:${state.count()}`),
             {
               label: "persist-count",
               details: {
                 action: "save",
                 component: component.name ?? "anonymous",
-                count: state.count,
+                count: state.count(),
               },
             },
           )
@@ -148,7 +148,7 @@ describe("@effectify/loom vNext public surface", () => {
       }),
       Component.view(({ state, actions }) =>
         View.stack(
-          View.text(`Count: ${state.count}`),
+          View.text(() => `Count: ${state.count()}`),
           View.button("Save", actions.save),
         )
       ),
@@ -170,7 +170,7 @@ describe("@effectify/loom vNext public surface", () => {
         },
       },
     })
-    expect(handle.state.count).toBe(2)
+    expect(handle.state.count()).toBe(2)
     expect(handle.html).toContain("Count: 2")
     expect(handle.observability.mount).toEqual({
       entry: "counter",
@@ -311,6 +311,187 @@ describe("@effectify/loom vNext public surface", () => {
     expect(handle.component).toBe(counter)
     expect(handle.html).toBe('<div class="mounted">Mounted</div>')
     expect(root.innerHTML).toBe(handle.html)
+
+    handle.dispose()
+  })
+
+  it("updates dynamic text nodes in place without replacing static siblings", () => {
+    const root = document.createElement("div")
+    const counter = Component.make("counter").pipe(
+      Component.model({ count: Atom.make(1) }),
+      Component.actions({
+        increment: ({ count }) => count.update((value) => value + 1),
+      }),
+      Component.view(({ state, actions }) =>
+        View.stack(
+          View.button("Increment", actions.increment),
+          View.text(() => `Count: ${state.count()}`),
+          View.text("Stable footer"),
+        )
+      ),
+    )
+
+    const handle = mount({ counter }, { root })
+    const container = root.firstElementChild
+    const button = container?.querySelector("button")
+    const textNode = container?.childNodes[1]
+    const footerNode = container?.childNodes[2]
+
+    expect(textNode?.textContent).toBe("Count: 1")
+    expect(footerNode?.textContent).toBe("Stable footer")
+
+    // @ts-expect-error mount action typing still widens in the current additive bridge.
+    handle.actions.increment()
+
+    expect(container?.querySelector("button")).toBe(button)
+    expect(container?.childNodes[1]).toBe(textNode)
+    expect(container?.childNodes[2]).toBe(footerNode)
+    expect(textNode?.textContent).toBe("Count: 2")
+    expect(footerNode?.textContent).toBe("Stable footer")
+    expect(root.innerHTML).toContain("Count: 2")
+
+    handle.dispose()
+  })
+
+  it("keeps mounted regions isolated and stops updating disposed dynamic text bindings", () => {
+    const parent = document.createElement("div")
+    const firstRoot = document.createElement("div")
+    const secondRoot = document.createElement("div")
+    const registry = AtomRegistry.make()
+    parent.append(firstRoot, secondRoot)
+
+    const first = Component.make("first").pipe(
+      Component.model({ count: Atom.make(1) }),
+      Component.actions({
+        increment: ({ count }) => count.update((value) => value + 1),
+      }),
+      Component.view(({ state }) => View.text(() => `First: ${state.count()}`)),
+    )
+
+    const second = Component.make("second").pipe(
+      Component.model({ label: Atom.make("ready") }),
+      Component.actions({
+        rename: ({ label }) => label.set("done"),
+      }),
+      Component.view(({ state }) => View.text(() => `Second: ${state.label()}`)),
+    )
+
+    const firstHandle = mount({ first }, { root: firstRoot, registry })
+    const secondHandle = mount({ second }, { root: secondRoot, registry })
+    const secondNode = secondRoot.firstChild
+
+    // @ts-expect-error mount action typing still widens in the current additive bridge.
+    firstHandle.actions.increment()
+
+    expect(firstRoot.textContent).toBe("First: 2")
+    expect(secondRoot.firstChild).toBe(secondNode)
+    expect(secondRoot.textContent).toBe("Second: ready")
+
+    firstHandle.dispose()
+
+    expect(() => firstHandle.model.count.set(3)).not.toThrow()
+    expect(firstRoot.textContent).toBe("First: 2")
+
+    // @ts-expect-error mount action typing still widens in the current additive bridge.
+    secondHandle.actions.rename()
+
+    expect(secondRoot.firstChild).toBe(secondNode)
+    expect(secondRoot.textContent).toBe("Second: done")
+
+    secondHandle.dispose()
+    registry.dispose()
+  })
+
+  it("keeps non-reactive state reads inert outside tracked dynamic text render contexts", () => {
+    const root = document.createElement("div")
+    const counter = Component.make("counter").pipe(
+      Component.model({ count: Atom.make(1) }),
+      Component.actions({
+        increment: ({ count }) => count.update((value) => value + 1),
+      }),
+      Component.view(({ state }) => {
+        const snapshot = state.count()
+
+        return View.stack(
+          View.text(() => `Live: ${state.count()}`),
+          View.text(`Snapshot: ${snapshot}`),
+        ).pipe(Web.attr("data-count", String(snapshot)))
+      }),
+    )
+
+    const handle = mount({ counter }, { root })
+    const container = root.firstElementChild
+    const liveNode = container?.childNodes[0]
+    const snapshotNode = container?.childNodes[1]
+
+    expect(container?.getAttribute("data-count")).toBe("1")
+    expect(liveNode?.textContent).toBe("Live: 1")
+    expect(snapshotNode?.textContent).toBe("Snapshot: 1")
+
+    // @ts-expect-error mount action typing still widens in the current additive bridge.
+    handle.actions.increment()
+
+    expect(handle.state.count()).toBe(2)
+    expect(container?.childNodes[0]).toBe(liveNode)
+    expect(container?.childNodes[1]).toBe(snapshotNode)
+    expect(liveNode?.textContent).toBe("Live: 2")
+    expect(snapshotNode?.textContent).toBe("Snapshot: 1")
+    expect(container?.getAttribute("data-count")).toBe("1")
+
+    handle.dispose()
+  })
+
+  it("keeps attrs, styles, lists, and hydration metadata snapshot-only in this slice", () => {
+    const root = document.createElement("div")
+    const inventory = Component.make("inventory").pipe(
+      Component.model({
+        count: Atom.make(1),
+        items: Atom.make(["alpha"]),
+      }),
+      Component.actions({
+        advance: ({ count, items }) => {
+          count.update((value) => value + 1)
+          items.update((value) => [...value, `item-${value.length + 1}`])
+        },
+      }),
+      Component.view(({ state, actions }) => {
+        const countSnapshot = state.count()
+        const itemsSnapshot = state.items()
+        const strategy = countSnapshot > 1 ? Hydration.idle() : Hydration.manual()
+
+        return View.stack(
+          View.button("Advance", actions.advance),
+          View.text(() => `Live count: ${state.count()}`),
+          View.fragment(...itemsSnapshot.map((item) => View.text(item))),
+        ).pipe(
+          Web.className(`count-${countSnapshot}`),
+          Web.attr("data-count", String(countSnapshot)),
+          Web.style({ order: countSnapshot, gap: `${itemsSnapshot.length}rem` }),
+          Web.hydrate(strategy),
+        )
+      }),
+    )
+
+    const handle = mount({ inventory }, { root })
+    const container = root.firstElementChild
+
+    expect(container?.className).toBe("count-1")
+    expect(container?.getAttribute("data-count")).toBe("1")
+    expect(container?.getAttribute("style")).toBe("order:1;gap:1rem")
+    expect(container?.getAttribute(Hydration.attributeName)).toBe("manual")
+    expect(root.textContent).toBe("AdvanceLive count: 1alpha")
+
+    // @ts-expect-error mount action typing still widens in the current additive bridge.
+    handle.actions.advance()
+
+    expect(handle.state.count()).toBe(2)
+    expect(handle.state.items()).toEqual(["alpha", "item-2"])
+    expect(container?.className).toBe("count-1")
+    expect(container?.getAttribute("data-count")).toBe("1")
+    expect(container?.getAttribute("style")).toBe("order:1;gap:1rem")
+    expect(container?.getAttribute(Hydration.attributeName)).toBe("manual")
+    expect(root.textContent).toBe("AdvanceLive count: 2alpha")
+    expect(root.textContent).not.toContain("item-2")
 
     handle.dispose()
   })

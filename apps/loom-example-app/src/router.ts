@@ -1,37 +1,34 @@
 import type * as Loom from "@effectify/loom"
-import { Html } from "@effectify/loom"
-import { Layout, Route, Router } from "@effectify/loom-router"
-import { renderAppShell } from "./app-shell.js"
-import { docsAboutRoute, docsAboutRouteTitle } from "./routes/docs-about-route.js"
-import { homeRoute, homeRouteTitle } from "./routes/home-route.js"
-import { liveIslandRoute, liveIslandRouteTitle } from "./routes/live-island-route.js"
-import { notFoundFallback, notFoundRouteTitle } from "./routes/not-found-route.js"
-import { routeIds } from "./routes/route-ids.js"
+import { Component, Slot, View, Web } from "@effectify/loom"
+import { Fallback, Layout, Router, type Router as RouterTypes } from "@effectify/loom-router"
+import { counterPageRoute, counterRoutePath, counterRouteTitle } from "./routes/counter-route.js"
+
+const appShell = Component.make("app-shell").pipe(
+  Component.slots({ default: Slot.required() }),
+  Component.view(({ slots }) => View.main(slots.default).pipe(Web.data("app-shell", "loom-example-app"))),
+)
+
+const notFoundView = (context: RouterTypes.Context): Loom.View.Child =>
+  View.stack(
+    View.stack(View.text("Route not found")).pipe(Web.attr("role", "heading"), Web.aria("level", 1)),
+    View.stack(View.text(`The minimal Loom example only serves ${counterRoutePath}.`)),
+    View.stack(View.text(`Requested path: ${context.pathname}`)),
+  ).pipe(Web.data("route-view", "not-found"))
 
 export const appRouter = Router.make({
-  layout: Layout.make(({ child }) => renderAppShell(child)),
-  routes: [homeRoute, docsAboutRoute, liveIslandRoute],
-  fallback: { notFound: notFoundFallback },
+  layout: Layout.make(({ child }) => Component.use(appShell, undefined, { default: child })),
+  routes: [counterPageRoute],
+  fallback: {
+    notFound: Fallback.make(notFoundView),
+  },
 })
 
-const matchedRouteTitle = (result: Router.ResolveSuccess): string => {
-  const identifier = Route.identifier(result.route)
-
-  switch (identifier) {
-    case routeIds.docsAbout:
-      return docsAboutRouteTitle
-    case routeIds.liveIsland:
-      return liveIslandRouteTitle
-    case routeIds.home:
-    default:
-      return homeRouteTitle
-  }
-}
+const matchedRouteTitle = (_result: Router.ResolveSuccess): string => counterRouteTitle
 
 export const resolveAppRequest = (input: string | URL): Router.ResolveResult => Router.resolve(appRouter, input)
 
 export const titleForResult = (result: Router.ResolveResult): string =>
-  Router.isResolveSuccess(result) ? matchedRouteTitle(result) : notFoundRouteTitle
+  Router.isResolveSuccess(result) ? matchedRouteTitle(result) : "Not Found"
 
 export const statusForResult = (result: Router.ResolveResult): number => {
   if (Router.isResolveNotFound(result)) {
@@ -46,4 +43,4 @@ export const statusForResult = (result: Router.ResolveResult): number => {
 }
 
 export const bodyForResult = (result: Router.ResolveResult): Loom.View.Child =>
-  result.output ?? Html.el("p", Html.children("Loom example route output is unavailable."))
+  result.output ?? View.stack(View.text("Loom example route output is unavailable."))

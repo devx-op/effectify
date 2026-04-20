@@ -4,6 +4,7 @@ import type * as Effect from "effect/Effect"
 import type * as Pipeable from "effect/Pipeable"
 import type * as Diagnostics from "./diagnostics.js"
 import * as pipeable from "./internal/pipeable.js"
+import { trackStateAtomRead } from "./internal/tracked-state.js"
 import type * as Slot from "./slot.js"
 import type * as View from "./view.js"
 
@@ -64,7 +65,7 @@ type WritableValue<Value> = MaterializedValue<Value> extends Atom.Writable<infer
   : MaterializedValue<Value>
 
 export type State<Model extends ModelShape> = {
-  readonly [Key in keyof Model]: StateValue<Model[Key]>
+  readonly [Key in keyof Model]: () => StateValue<Model[Key]>
 }
 
 export type WriteModel<Model extends ModelShape> = {
@@ -199,7 +200,12 @@ const createState = <Model extends ModelShape>(
       }
 
       const value = model[property as keyof Model]
-      return Atom.isAtom(value) ? registry.get(value) : value
+      return Atom.isAtom(value)
+        ? () => {
+          trackStateAtomRead(value)
+          return registry.get(value)
+        }
+        : () => value
     },
     has(_target, property) {
       return typeof property === "string" && keys.includes(property)

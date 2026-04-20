@@ -2,6 +2,7 @@ import { AtomRegistry } from "effect/unstable/reactivity"
 import * as Component from "./component.js"
 import { instantiate } from "./component.js"
 import * as Html from "./html.js"
+import { type MountedView, mountView } from "./internal/mounted-view.js"
 
 export interface Options {
   readonly entry?: string
@@ -98,6 +99,7 @@ export const mount = <
   }
 
   const registry = options?.registry ?? component.registry ?? AtomRegistry.make()
+  const ownsRegistry = options?.registry === undefined && component.registry === undefined
   const instance = instantiate(component, registry)
   const actionNames = Object.keys(instance.actions)
   const observabilityActions = Object.fromEntries(
@@ -124,6 +126,8 @@ export const mount = <
   }
 
   let html = ""
+  let mountedView: MountedView | undefined
+  let disposed = false
 
   const observeAction = (name: string, result: unknown): void => {
     const observation = observabilityActions[name] as MutableActionObservation | undefined
@@ -142,10 +146,18 @@ export const mount = <
   }
 
   const sync = () => {
-    html = Html.renderToString(instance.render(actions), { registry })
+    if (disposed) {
+      return options?.root?.innerHTML ?? html
+    }
+
+    const rendered = instance.render(actions)
 
     if (options?.root !== undefined) {
-      options.root.innerHTML = html
+      mountedView?.dispose()
+      mountedView = mountView(options.root, rendered, registry)
+      html = options.root.innerHTML
+    } else {
+      html = Html.renderToString(rendered, { registry })
     }
 
     return html
@@ -158,7 +170,11 @@ export const mount = <
         ? (...args: ReadonlyArray<unknown>) => {
           const result = action(...args)
           observeAction(key, result)
-          sync()
+
+          if (options?.root === undefined || mountedView?.hasDynamicText !== true) {
+            sync()
+          }
+
           return result
         }
         : action,
@@ -175,12 +191,23 @@ export const mount = <
     state: instance.state,
     actions,
     get html() {
-      return html
+      return options?.root?.innerHTML ?? html
     },
     sync,
     root: options?.root,
     registry,
     observability,
-    dispose: () => registry.dispose(),
+    dispose: () => {
+      if (disposed) {
+        return
+      }
+
+      disposed = true
+      mountedView?.dispose()
+
+      if (ownsRegistry) {
+        registry.dispose()
+      }
+    },
   }
 }

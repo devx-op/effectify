@@ -16,6 +16,8 @@ const collectHydrationAttributes = (node) => {
   switch (node._tag) {
     case "Text":
       return []
+    case "DynamicText":
+      return []
     case "ComponentUse":
       return collectHydrationAttributes(node.component.node)
     case "Live":
@@ -35,6 +37,8 @@ const collectRegisteredEvents = (node, boundaryId) => {
   const loop = (current, isBoundaryRoot) => {
     switch (current._tag) {
       case "Text":
+        return []
+      case "DynamicText":
         return []
       case "Live":
         return []
@@ -129,6 +133,8 @@ const serializeNode = (node, state, boundaryId, nextBoundaryNodeId, isBoundaryRo
     switch (current._tag) {
       case "Text":
         return escapeText(current.value)
+      case "DynamicText":
+        return escapeText(String(current.render()))
       case "Fragment":
         return current.children.map(serializeStaticNode).join("")
       case "ComponentUse":
@@ -184,6 +190,8 @@ const serializeNode = (node, state, boundaryId, nextBoundaryNodeId, isBoundaryRo
   switch (node._tag) {
     case "Text":
       return escapeText(node.value)
+    case "DynamicText":
+      return escapeText(String(node.render()))
     case "Fragment":
       return node.children.map((child) => serializeNode(child, state, boundaryId, nextBoundaryNodeId)).join("")
     case "ComponentUse":

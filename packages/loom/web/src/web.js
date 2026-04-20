@@ -20,6 +20,8 @@ const serializeStyle = (value) => {
     })
     .join(";")
 }
+/** Attach a CSS class to a view element. Non-element nodes pass through unchanged. */
+export const className = (value) => attr("class", value)
 /** Attach a DOM attribute to a view element. Non-element nodes pass through unchanged. */
 export const attr = (name, value) => (view) =>
   internal.mapElement(view, (element) => {
@@ -40,8 +42,6 @@ export const attr = (name, value) => (view) =>
       },
     }
   })
-/** Attach a CSS class to a view element. Non-element nodes pass through unchanged. */
-export const className = (value) => attr("class", value)
 /** Attach multiple DOM attributes at once. */
 export const attrs = (values) => (view) =>
   Object.entries(values).reduce((currentView, [name, value]) => attr(name, value)(currentView), view)
@@ -52,17 +52,15 @@ export const aria = (name, value) => attr(`aria-${name}`, value)
 /** Attach inline styles using a string or a style object. */
 export const style = (value) => attr("style", serializeStyle(value))
 /** Attach hydration metadata to a view element. Non-element nodes pass through unchanged. */
-export const hydrate = (strategy) => (view) => {
-  const boundary = Hydration.boundary(strategy)
-  return internal.mapElement(view, (element) => ({
+export const hydrate = (strategy) => (view) =>
+  internal.mapElement(view, (element) => ({
     ...element,
-    hydration: boundary,
+    hydration: Hydration.boundary(strategy),
     attributes: {
       ...element.attributes,
-      ...boundary.attributes,
+      ...Hydration.boundary(strategy).attributes,
     },
   }))
-}
 /** Attach a click or DOM event handler to an element view. Non-element nodes pass through unchanged. */
 export const on = (event, handler) => (view) =>
   internal.mapElement(view, (element) => ({

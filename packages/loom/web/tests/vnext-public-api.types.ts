@@ -1,6 +1,6 @@
 import * as Effect from "effect/Effect"
 import { Atom, AtomRegistry } from "effect/unstable/reactivity"
-import { Component, mount, Slot, View, Web } from "../src/index.js"
+import { Component, Hydration, mount, Slot, View, Web } from "../src/index.js"
 
 const effectLike = { _tag: "EffectLike" } as const
 
@@ -35,8 +35,8 @@ const counter = Component.make("counter").pipe(
   }),
   Component.view(({ state, actions }) =>
     View.stack(
-      View.text(`Count: ${state.count}`),
-      View.text(`Label: ${state.label}`),
+      View.text(() => `Count: ${state.count()}`),
+      View.text(() => `Label: ${state.label()}`),
       View.button("Increment", actions.increment),
     ).pipe(Web.className("counter"))
   ),
@@ -110,8 +110,8 @@ const dataVariantValue: string | undefined = maybeDataVariant
 const ariaLabelValue: string | undefined = maybeAriaLabel
 const styleValue: string | undefined = maybeStyle
 const mountEntry: string = mounted.entry
-const mountedCount: number = mounted.state.count
-const mountedLabel: string = mounted.state.label
+const mountedCount: number = mounted.state.count()
+const mountedLabel: string = mounted.state.label()
 const mountedReadResult: string = instantiatedCounter.actions.read()
 const mountedObservabilityEntry: string = mounted.observability.mount.entry
 const mountedActionObservationCount: number = mounted.observability.actions.increment.invocations
@@ -138,8 +138,23 @@ mount(counter)
 // @ts-expect-error Read-friendly state exposes plain values, not writable handles.
 mounted.state.count.set(0)
 
+// @ts-expect-error Mounted state accessors must be invoked to read their values.
+const _invalidMountedCount: number = mounted.state.count
+
 // @ts-expect-error Non-Atom model values are not writable handles.
 mounted.model.label.update((value) => value)
+
+// @ts-expect-error Fine-grained reactive attrs are out of scope for this slice.
+Web.attr("data-count", () => "1")
+
+// @ts-expect-error Fine-grained reactive attrs are out of scope for this slice.
+Web.attrs({ id: () => "dynamic-id" })
+
+// @ts-expect-error Fine-grained reactive styles are out of scope for this slice.
+Web.style(() => ({ display: "flex" }))
+
+// @ts-expect-error Fine-grained reactive hydration is out of scope for this slice.
+Web.hydrate(() => Hydration.manual())
 
 if (Component.isActionEffect(mountedLoad)) {
   const observedLabel: string | undefined = mountedLoad.annotations?.label

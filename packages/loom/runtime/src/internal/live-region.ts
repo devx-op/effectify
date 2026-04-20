@@ -74,6 +74,8 @@ export const collectLiveNodes = (node: LoomCore.Ast.Node): ReadonlyArray<LoomCor
   switch (node._tag) {
     case "Text":
       return []
+    case "DynamicText":
+      return []
     case "Live":
       return [node]
     case "ComponentUse":
@@ -91,6 +93,11 @@ export const serializeStaticNode = (node: LoomCore.Ast.Node): StaticSerializatio
       return {
         _tag: "Supported",
         html: escapeText(node.value),
+      }
+    case "DynamicText":
+      return {
+        _tag: "Supported",
+        html: escapeText(String(node.render())),
       }
     case "ComponentUse":
       return serializeStaticNode(node.component.node)

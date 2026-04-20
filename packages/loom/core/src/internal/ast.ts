@@ -7,6 +7,11 @@ export const makeTextNode = (value: string): Ast.TextNode => ({
   value,
 })
 
+export const makeDynamicTextNode = (render: () => string): Ast.DynamicTextNode => ({
+  _tag: "DynamicText",
+  render,
+})
+
 export const makeElementNode = (
   tagName: string,
   options: {

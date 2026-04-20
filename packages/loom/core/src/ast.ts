@@ -5,6 +5,7 @@ import type * as Component from "./component.js"
 /** Neutral AST contracts for Loom renderers. */
 export type Node =
   | TextNode
+  | DynamicTextNode
   | ElementNode
   | FragmentNode
   | ComponentUseNode
@@ -13,6 +14,11 @@ export type Node =
 export interface TextNode {
   readonly _tag: "Text"
   readonly value: string
+}
+
+export interface DynamicTextNode {
+  readonly _tag: "DynamicText"
+  readonly render: () => string
 }
 
 export interface HydrationMetadata {
@@ -62,6 +68,9 @@ export type LiveRender<Value> = LiveRenderSignature<Value>["bivarianceHack"]
 
 /** Create a neutral text node. */
 export const text = (value: string): TextNode => internal.makeTextNode(value)
+
+/** Create a neutral dynamic text node. */
+export const dynamicText = (render: () => string): DynamicTextNode => internal.makeDynamicTextNode(render)
 
 /** Create a neutral element node. */
 export const element = (

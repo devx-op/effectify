@@ -44,6 +44,8 @@ export const collectLiveNodes = (node) => {
   switch (node._tag) {
     case "Text":
       return []
+    case "DynamicText":
+      return []
     case "Live":
       return [node]
     case "ComponentUse":
@@ -60,6 +62,11 @@ export const serializeStaticNode = (node) => {
       return {
         _tag: "Supported",
         html: escapeText(node.value),
+      }
+    case "DynamicText":
+      return {
+        _tag: "Supported",
+        html: escapeText(String(node.render())),
       }
     case "ComponentUse":
       return serializeStaticNode(node.component.node)

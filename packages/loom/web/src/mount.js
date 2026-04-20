@@ -2,6 +2,7 @@ import { AtomRegistry } from "effect/unstable/reactivity"
 import * as Component from "./component.js"
 import { instantiate } from "./component.js"
 import * as Html from "./html.js"
+import { mountView } from "./internal/mounted-view.js"
 /**
  * Minimal vNext mount seam.
  *
@@ -21,6 +22,7 @@ export const mount = (components, options) => {
     throw new Error(`mount could not find component '${entry}'`)
   }
   const registry = options?.registry ?? component.registry ?? AtomRegistry.make()
+  const ownsRegistry = options?.registry === undefined && component.registry === undefined
   const instance = instantiate(component, registry)
   const actionNames = Object.keys(instance.actions)
   const observabilityActions = Object.fromEntries(actionNames.map((name) => [
@@ -44,6 +46,8 @@ export const mount = (components, options) => {
     actions: observabilityActions,
   }
   let html = ""
+  let mountedView
+  let disposed = false
   const observeAction = (name, result) => {
     const observation = observabilityActions[name]
     if (observation === undefined) {
@@ -58,9 +62,15 @@ export const mount = (components, options) => {
     observation.lastAnnotations = Component.isActionEffect(result) ? result.annotations : undefined
   }
   const sync = () => {
-    html = Html.renderToString(instance.render(actions), { registry })
+    if (disposed) {
+      return options?.root?.innerHTML ?? html
+    }
     if (options?.root !== undefined) {
-      options.root.innerHTML = html
+      mountedView?.dispose()
+      mountedView = mountView(options.root, instance.render(actions), registry)
+      html = options.root.innerHTML
+    } else {
+      html = Html.renderToString(instance.render(actions), { registry })
     }
     return html
   }
@@ -71,7 +81,9 @@ export const mount = (components, options) => {
         ? (...args) => {
           const result = action(...args)
           observeAction(key, result)
-          sync()
+          if (options?.root === undefined || mountedView?.hasDynamicText !== true) {
+            sync()
+          }
           return result
         }
         : action,
@@ -86,12 +98,21 @@ export const mount = (components, options) => {
     state: instance.state,
     actions,
     get html() {
-      return html
+      return options?.root?.innerHTML ?? html
     },
     sync,
     root: options?.root,
     registry,
     observability,
-    dispose: () => registry.dispose(),
+    dispose: () => {
+      if (disposed) {
+        return
+      }
+      disposed = true
+      mountedView?.dispose()
+      if (ownsRegistry) {
+        registry.dispose()
+      }
+    },
   }
 }

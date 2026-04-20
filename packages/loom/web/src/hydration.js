@@ -1,12 +1,5 @@
 import * as LoomCore from "@effectify/loom-core"
 import * as LoomRuntime from "@effectify/loom-runtime"
-/**
- * Advanced hydration surface.
- *
- * Keep hydration explicit and public, but document it as layered after the
- * primary interactive authoring path (`Component`, `View`, `Web`, `Slot`, and
- * `mount`).
- */
 const makeStrategy = (name) => LoomRuntime.Hydration.marker(name)
 /** First-class hydration strategy helpers kept close to the public API. */
 export const strategy = {

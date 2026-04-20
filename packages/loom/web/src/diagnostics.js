@@ -1,12 +1,4 @@
 import * as LoomRuntime from "@effectify/loom-runtime"
-/**
- * Advanced diagnostics surface.
- *
- * This namespace is public, but it is not part of the primary first-path Loom
- * authoring story. Prefer the root `Component` / `View` / `Web` / `Slot` /
- * `mount` flow first, then reach for diagnostics when you need runtime or
- * adapter visibility.
- */
 /** Stable Loom diagnostic phases exposed to public consumers. */
 export const phases = LoomRuntime.Diagnostics.phases
 /** Stable Loom diagnostic severities exposed to public consumers. */

@@ -1,0 +1,27 @@
+import type * as Html from "./html.js"
+import * as Hydration from "./hydration.js"
+import * as internal from "./internal/view-node.js"
+export type Modifier = (view: internal.Type) => internal.Type
+export type AttrValue = string | number | boolean | null | undefined
+export type AttrRecord = Readonly<Record<string, AttrValue>>
+export type StyleValue = string | number | null | undefined
+export type StyleRecord = Readonly<Record<string, StyleValue>>
+/** Attach a CSS class to a view element. Non-element nodes pass through unchanged. */
+export declare const className: (value: string) => Modifier
+/** Attach a DOM attribute to a view element. Non-element nodes pass through unchanged. */
+export declare const attr: (name: string, value: AttrValue) => Modifier
+/** Attach multiple DOM attributes at once. */
+export declare const attrs: (values: AttrRecord) => Modifier
+/** Attach a data-* attribute. */
+export declare const data: (name: string, value: AttrValue) => Modifier
+/** Attach an aria-* attribute. */
+export declare const aria: (name: string, value: AttrValue) => Modifier
+/** Attach inline styles using a string or a style object. */
+export declare const style: (value: string | StyleRecord) => Modifier
+/** Attach hydration metadata to a view element. Non-element nodes pass through unchanged. */
+export declare const hydrate: (strategy: Hydration.Strategy) => Modifier
+/** Attach a click or DOM event handler to an element view. Non-element nodes pass through unchanged. */
+export declare const on: <Target extends EventTarget = EventTarget, EventType extends Event = Event>(
+  event: string,
+  handler: Html.EventHandler<Target, EventType>,
+) => Modifier

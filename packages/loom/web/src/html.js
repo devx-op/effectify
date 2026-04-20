@@ -2,19 +2,15 @@ import * as LoomCore from "@effectify/loom-core"
 import * as LoomRuntime from "@effectify/loom-runtime"
 import * as Hydration from "./hydration.js"
 import * as internal from "./internal/api.js"
-/**
- * Compatibility-focused Html DSL and low-level AST / SSR seam.
- *
- * Prefer `View`, `Web`, `Slot`, and `mount` from the package root for new vNext
- * authoring. Keep `Html` for compatibility, renderer-adjacent primitives, and
- * advanced runtime handoff seams.
- */
 const isComponent = (value) =>
   typeof value === "object" && value !== null && "_tag" in value && value._tag === "Component"
 const isNode = (value) => typeof value === "object" && value !== null && "_tag" in value && value._tag !== "Component"
 const isReferencedLiveRegion = (value) =>
   typeof value === "object" && value !== null && "_tag" in value && value._tag === "ReferencedLiveRegion"
 const normalizeChild = (child) => {
+  if (child === undefined || child === null || child === false) {
+    return []
+  }
   if (typeof child === "string") {
     return [text(child)]
   }

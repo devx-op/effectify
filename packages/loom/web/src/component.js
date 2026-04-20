@@ -1,6 +1,8 @@
 import { Atom, AtomRegistry } from "effect/unstable/reactivity"
 import * as LoomCore from "@effectify/loom-core"
 import * as pipeable from "./internal/pipeable.js"
+import { trackStateAtomRead } from "./internal/tracked-state.js"
+const makePipeable = (value) => pipeable.make(value)
 const emptyNode = LoomCore.Ast.fragment([])
 const emptyActions = {}
 const isNode = (value) => typeof value === "object" && value !== null && "_tag" in value
@@ -10,15 +12,14 @@ const isCapability = (value) =>
   typeof value === "object" && value !== null && "_tag" in value && value._tag === "ComponentEffect"
 export const isActionEffect = (value) =>
   typeof value === "object" && value !== null && "_tag" in value && value._tag === "LoomActionEffect"
-const makePipeable = (value) => pipeable.make(value)
 const isModelFactory = (value) => typeof value === "function" && !Atom.isAtom(value)
-const materializeModel = (model) =>
-  Object.fromEntries(
-    Object.entries(model ?? {}).map(([key, value]) => [
-      key,
-      isModelFactory(value) ? value() : value,
-    ]),
-  )
+const materializeModel = (model) => {
+  const entries = Object.entries(model ?? {}).map(([key, value]) => [
+    key,
+    isModelFactory(value) ? value() : value,
+  ])
+  return Object.fromEntries(entries)
+}
 const createState = (model, registry) => {
   const keys = Object.keys(model)
   return new Proxy({}, {
@@ -27,7 +28,12 @@ const createState = (model, registry) => {
         return undefined
       }
       const value = model[property]
-      return Atom.isAtom(value) ? registry.get(value) : value
+      return Atom.isAtom(value)
+        ? () => {
+          trackStateAtomRead(value)
+          return registry.get(value)
+        }
+        : () => value
     },
     has(_target, property) {
       return typeof property === "string" && keys.includes(property)
@@ -46,30 +52,30 @@ const createState = (model, registry) => {
     },
   })
 }
-const createWriteModel = (model, registry) =>
-  Object.fromEntries(
-    Object.entries(model).map(([key, value]) => [
-      key,
-      typeof value === "object" && value !== null && Atom.isWritable(value)
-        ? {
-          atom: value,
-          get: () => registry.get(value),
-          set: (next) => registry.set(value, next),
-          update: (update) => registry.update(value, update),
-        }
-        : value,
-    ]),
-  )
-const resolveSlots = (slots, values) =>
-  Object.fromEntries(
-    Object.entries(slots ?? {}).map(([key, definition]) => {
-      const slotValue = values?.[key]
-      if (definition.required && values !== undefined && slotValue === undefined) {
-        throw new Error(`missing required slot '${key}'`)
+const createWriteModel = (model, registry) => {
+  const entries = Object.entries(model).map(([key, value]) => [
+    key,
+    typeof value === "object" && value !== null && Atom.isWritable(value)
+      ? {
+        atom: value,
+        get: () => registry.get(value),
+        set: (next) => registry.set(value, next),
+        update: (update) => registry.update(value, update),
       }
-      return [key, slotValue]
-    }),
-  )
+      : value,
+  ])
+  return Object.fromEntries(entries)
+}
+const resolveSlots = (slots, values) => {
+  const entries = Object.entries(slots ?? {}).map(([key, definition]) => {
+    const slotValue = values?.[key]
+    if (definition.required && values !== undefined && slotValue === undefined) {
+      throw new Error(`missing required slot '${key}'`)
+    }
+    return [key, slotValue]
+  })
+  return Object.fromEntries(entries)
+}
 const isActionSpec = (value) => {
   if (typeof value !== "object" || value === null) {
     return false
@@ -78,13 +84,13 @@ const isActionSpec = (value) => {
   return entries.length > 0 && entries.every((entry) => typeof entry === "function") &&
     entries.some((entry) => entry.length > 0)
 }
-const bindActionSpec = (actionSpec, context) =>
-  Object.fromEntries(
-    Object.entries(actionSpec).map(([key, action]) => [
-      key,
-      () => action(context),
-    ]),
-  )
+const bindActionSpec = (actionSpec, context) => {
+  const entries = Object.entries(actionSpec).map(([key, action]) => [
+    key,
+    () => action(context),
+  ])
+  return Object.fromEntries(entries)
+}
 export const instantiate = (component, registry = component.registry ?? AtomRegistry.make(), props, slotInput) => {
   const materializedModel = materializeModel(component.model)
   const model = createWriteModel(materializedModel, registry)
@@ -139,8 +145,7 @@ const patch = (component, update) =>
     ...component,
     ...update,
   }))
-/** Create a component from a neutral AST node or a named vNext component seam. */
-export const make = (input) => {
+export function make(input) {
   const definition = LoomCore.Component.make(isNode(input) ? input : emptyNode)
   return reconcile(makePipeable({
     ...definition,
@@ -158,7 +163,6 @@ export const actionEffect = (effect, annotations) => ({
   effect,
   annotations,
 })
-/** Attach model atoms and values to a component definition. */
 export function model(selfOrModel, modelDefinition) {
   if (modelDefinition === undefined) {
     return (self) => patch(self, { model: selfOrModel })
@@ -168,7 +172,6 @@ export function model(selfOrModel, modelDefinition) {
   }
   return patch(selfOrModel, { model: modelDefinition })
 }
-/** Attach action definitions or factories to a component definition. */
 export function actions(selfOrActions, actionDefinition) {
   if (actionDefinition === undefined) {
     return (self) => patch(self, { actions: selfOrActions })
@@ -178,7 +181,6 @@ export function actions(selfOrActions, actionDefinition) {
   }
   return patch(selfOrActions, { actions: actionDefinition })
 }
-/** Attach a renderer-neutral view renderer to a component definition. */
 export function view(selfOrRender, render) {
   if (render === undefined) {
     if (isComponent(selfOrRender)) {
@@ -191,7 +193,6 @@ export function view(selfOrRender, render) {
   }
   return patch(selfOrRender, { render })
 }
-/** Attach slot contracts to a component definition. */
 export function slots(selfOrSlots, slotDefinition) {
   if (slotDefinition === undefined) {
     return (self) => patch(self, { slots: selfOrSlots })
@@ -201,10 +202,10 @@ export function slots(selfOrSlots, slotDefinition) {
   }
   return patch(selfOrSlots, { slots: slotDefinition })
 }
-export function use(selfOrCapability, capability) {
-  if (capability === undefined) {
-    if (selfOrCapability._tag === "Component" && arguments[2] !== undefined) {
-      return renderComponentUse(selfOrCapability, undefined, arguments[2])
+export function use(selfOrCapability, capabilityOrProps, slotInput) {
+  if (capabilityOrProps === undefined) {
+    if (selfOrCapability._tag === "Component" && slotInput !== undefined) {
+      return renderComponentUse(selfOrCapability, undefined, slotInput)
     }
     if (selfOrCapability._tag === "ComponentEffect") {
       return (self) =>
@@ -216,13 +217,13 @@ export function use(selfOrCapability, capability) {
     return (self) => self
   }
   if (selfOrCapability._tag === "Component") {
-    if (isCapability(capability)) {
+    if (isCapability(capabilityOrProps)) {
       return reconcile(makePipeable({
         ...selfOrCapability,
-        ...LoomCore.Component.use(selfOrCapability, capability),
+        ...LoomCore.Component.use(selfOrCapability, capabilityOrProps),
       }))
     }
-    return renderComponentUse(selfOrCapability, capability, arguments[2])
+    return renderComponentUse(selfOrCapability, capabilityOrProps, slotInput)
   }
   return make(LoomCore.Ast.text(""))
 }

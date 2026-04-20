@@ -11,11 +11,16 @@ export type MaybeChild = Child | undefined | null | false
 export type SlotDefinition = Slot.Definition
 
 /** Create a renderer-neutral text node backed by the current Html-first runtime seam. */
-export const text = (value: string): Type =>
-  internal.wrap({
-    _tag: "Text",
-    value,
-  })
+export function text(value: string): Type
+export function text(render: () => string): Type
+export function text(value: string | (() => string)): Type {
+  return typeof value === "function"
+    ? internal.wrap(LoomCore.Ast.dynamicText(value))
+    : internal.wrap({
+      _tag: "Text",
+      value,
+    })
+}
 
 /** Create a renderer-neutral fragment. */
 export const fragment = (...children: ReadonlyArray<MaybeChild>): Type =>

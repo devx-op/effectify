@@ -16,7 +16,7 @@ export type SimpleHandler = LoomCore.Component.EffectLike
 /** Contextual event handler form. */
 export type ContextualHandler<Target extends EventTarget = EventTarget, EventType extends Event = Event> = (
   context: LoomRuntime.Runtime.EventContext<Target, EventType>,
-) => LoomCore.Component.EffectLike
+) => unknown
 /** Event handler contract supporting simple and contextual forms. */
 export type EventHandler<Target extends EventTarget = EventTarget, EventType extends Event = Event> =
   | SimpleHandler
@@ -32,7 +32,7 @@ export interface SsrOptions extends LoomRuntime.Runtime.SsrOptions {
 export interface SsrResult extends LoomRuntime.Runtime.SsrRenderResult {
   readonly diagnosticSummary: ReadonlyArray<Diagnostics.Summary>
 }
-export type Child = LoomCore.Ast.Node | Component.Type | string | ReadonlyArray<Child>
+export type Child = LoomCore.Ast.Node | Component.Type | string | ReadonlyArray<Child> | undefined | null | false
 export interface AttributeModifier {
   readonly _tag: "AttributeModifier"
   readonly name: string

@@ -23,6 +23,8 @@ const collectHydrationAttributes = (
   switch (node._tag) {
     case "Text":
       return []
+    case "DynamicText":
+      return []
     case "ComponentUse":
       return collectHydrationAttributes(node.component.node)
     case "Live":
@@ -47,6 +49,8 @@ const collectRegisteredEvents = (
   const loop = (current: LoomCore.Ast.Node, isBoundaryRoot: boolean): ReadonlyArray<Runtime.RegisteredEventBinding> => {
     switch (current._tag) {
       case "Text":
+        return []
+      case "DynamicText":
         return []
       case "Live":
         return []
@@ -199,6 +203,8 @@ const serializeNode = (
     switch (current._tag) {
       case "Text":
         return escapeText(current.value)
+      case "DynamicText":
+        return escapeText(String(current.render()))
       case "Fragment":
         return current.children.map(serializeStaticNode).join("")
       case "ComponentUse":
@@ -265,6 +271,8 @@ const serializeNode = (
   switch (node._tag) {
     case "Text":
       return escapeText(node.value)
+    case "DynamicText":
+      return escapeText(String(node.render()))
     case "Fragment":
       return node.children.map((child) => serializeNode(child, state, boundaryId, nextBoundaryNodeId)).join("")
     case "ComponentUse":
