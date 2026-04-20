@@ -1,0 +1,19 @@
+{
+  "name": "@effectify/loom-example-app",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@effectify/loom": "workspace:*",
+    "@effectify/loom-nitro": "workspace:*",
+    "@effectify/loom-router": "workspace:*",
+    "@effectify/loom-vite": "workspace:*",
+    "effect": "catalog:"
+  },
+  "devDependencies": {
+    "@nx/vite": "catalog:",
+    "jsdom": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "name": "@effectify/loom-example-app",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/loom-example-app/src",
+  "projectType": "application",
+  "tags": ["loom", "example", "app"],
+  "targets": {
+    "lint": {
+      "executor": "nx-oxlint:lint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["apps/loom-example-app/**/*.{ts,tsx,js,jsx,mts,cts}"]
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "../../node_modules/.bin/vitest run --config vite.config.mts",
+        "cwd": "apps/loom-example-app"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "../../node_modules/.bin/tsc --noEmit -p tsconfig.app.json && ../../node_modules/.bin/tsc --noEmit -p tsconfig.spec.json",
+        "cwd": "apps/loom-example-app"
+      }
+    }
+  }
+}
