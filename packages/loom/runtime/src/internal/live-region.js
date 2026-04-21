@@ -46,6 +46,15 @@ export const collectLiveNodes = (node) => {
       return []
     case "DynamicText":
       return []
+    case "If":
+      return collectLiveNodes(node.condition() ? node.then : (node.else ?? { _tag: "Fragment", children: [] }))
+    case "For": {
+      const items = Array.from(node.each())
+      const nodes = items.length === 0
+        ? node.fallback === undefined ? [] : [node.fallback]
+        : items.map((item, index) => node.render(item, index))
+      return nodes.flatMap(collectLiveNodes)
+    }
     case "Live":
       return [node]
     case "ComponentUse":
@@ -68,6 +77,26 @@ export const serializeStaticNode = (node) => {
         _tag: "Supported",
         html: escapeText(String(node.render())),
       }
+    case "If":
+      return serializeStaticNode(node.condition() ? node.then : (node.else ?? { _tag: "Fragment", children: [] }))
+    case "For": {
+      const items = Array.from(node.each())
+      const nodes = items.length === 0
+        ? node.fallback === undefined ? [] : [node.fallback]
+        : items.map((item, index) => node.render(item, index))
+      let html = ""
+      for (const child of nodes) {
+        const serialized = serializeStaticNode(child)
+        if (serialized._tag === "Unsupported") {
+          return serialized
+        }
+        html += serialized.html
+      }
+      return {
+        _tag: "Supported",
+        html,
+      }
+    }
     case "ComponentUse":
       return serializeStaticNode(node.component.node)
     case "Live":

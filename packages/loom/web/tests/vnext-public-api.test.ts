@@ -3,6 +3,7 @@
 import * as Effect from "effect/Effect"
 import { Atom, AtomRegistry } from "effect/unstable/reactivity"
 import { describe, expect, it } from "vitest"
+import { DuplicateControlFlowKeyError } from "../src/internal/control-flow-error.js"
 import { Component, Hydration, mount, Slot, View, Web } from "../src/index.js"
 
 const effectLike = { _tag: "EffectLike" } as const
@@ -413,6 +414,112 @@ describe("@effectify/loom vNext public surface", () => {
 
     full.dispose()
     optional.dispose()
+  })
+
+  it("treats direct View.if conditions as snapshots, tracks thunk conditions, and keeps View.when compatible", () => {
+    const root = document.createElement("div")
+    const widget = Component.make("control-flow-widget").pipe(
+      Component.model({ visible: Atom.make(true) }),
+      Component.view(({ state }) =>
+        View.stack(
+          View.if(state.visible(), View.text("snapshot-on"), View.text("snapshot-off")),
+          View.if(() => state.visible(), View.text("tracked-on"), View.text("tracked-off")),
+          View.when(() => state.visible(), View.text("when-on"), View.text("when-off")),
+        )
+      ),
+    )
+
+    const handle = mount({ widget }, { root })
+
+    expect(root.textContent).toBe("snapshot-ontracked-onwhen-on")
+
+    handle.model.visible.set(false)
+
+    expect(root.textContent).toBe("snapshot-ontracked-offwhen-off")
+
+    handle.sync()
+
+    expect(root.textContent).toBe("snapshot-offtracked-offwhen-off")
+
+    handle.dispose()
+  })
+
+  it("reorders keyed View.for items without remounting retained nodes and renders empty fallback", () => {
+    const root = document.createElement("div")
+    const alpha = { id: "alpha", label: "Alpha" }
+    const beta = { id: "beta", label: "Beta" }
+    const inventory = Component.make("inventory").pipe(
+      Component.model({
+        items: Atom.make([alpha, beta]),
+      }),
+      Component.view(({ state }) =>
+        View.for(() => state.items(), {
+          key: (item) => item.id,
+          render: (item) => View.text(item.label).pipe(Web.as("p")),
+          empty: View.text("empty").pipe(Web.as("p")),
+        })
+      ),
+    )
+
+    const handle = mount({ inventory }, { root })
+    const before = Array.from(root.querySelectorAll("p"))
+
+    expect(before.map((node) => node.textContent)).toEqual(["Alpha", "Beta"])
+
+    handle.model.items.set([beta, alpha])
+
+    const reordered = Array.from(root.querySelectorAll("p"))
+
+    expect(reordered.map((node) => node.textContent)).toEqual(["Beta", "Alpha"])
+    expect(reordered[0]).toBe(before[1])
+    expect(reordered[1]).toBe(before[0])
+
+    handle.model.items.set([])
+
+    expect(Array.from(root.querySelectorAll("p")).map((node) => node.textContent)).toEqual(["empty"])
+
+    handle.model.items.set([{ id: "gamma", label: "Gamma" }])
+
+    expect(Array.from(root.querySelectorAll("p")).map((node) => node.textContent)).toEqual(["Gamma"])
+
+    handle.dispose()
+  })
+
+  it("throws duplicate-key failures for View.for without corrupting the previous DOM", () => {
+    const root = document.createElement("div")
+    const inventory = Component.make("duplicate-inventory").pipe(
+      Component.model({
+        items: Atom.make([
+          { id: "alpha", label: "Alpha" },
+          { id: "beta", label: "Beta" },
+        ]),
+      }),
+      Component.view(({ state }) =>
+        View.for(() => state.items(), {
+          key: (item) => item.id,
+          render: (item) => View.text(item.label).pipe(Web.as("p")),
+        })
+      ),
+    )
+
+    const handle = mount({ inventory }, { root })
+    const before = Array.from(root.querySelectorAll("p"))
+
+    expect(() =>
+      handle.model.items.set([
+        { id: "alpha", label: "Alpha" },
+        { id: "alpha", label: "Again" },
+      ])
+    ).toThrowError(DuplicateControlFlowKeyError)
+
+    const after = Array.from(root.querySelectorAll("p"))
+
+    expect(after).toHaveLength(2)
+    expect(after[0]).toBe(before[0])
+    expect(after[1]).toBe(before[1])
+    expect(after.map((node) => node.textContent)).toEqual(["Alpha", "Beta"])
+
+    handle.dispose()
   })
 
   it("supports children-based composition through metadata-driven Component.use dispatch", () => {

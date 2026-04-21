@@ -3,6 +3,7 @@ import { LoomVite } from "@effectify/loom-vite"
 import { appBuildId, appPayloadElementId, appRootId } from "./app-config.js"
 import { bodyForResult, resolveAppRequest, titleForResult } from "./router.js"
 import { counterRoute } from "./routes/counter-route.js"
+import { todoRoute, todoRoutePath } from "./routes/todo-route.js"
 
 export const bootstrapClient = (
   document: Document,
@@ -16,6 +17,20 @@ export const bootstrapClient = (
 
 const defaultClientUrl = "https://effectify.dev/"
 
+const mountClientRoute = (pathname: string, root: HTMLElement): boolean => {
+  if (pathname === "/") {
+    mount({ counterRoute }, { root })
+    return true
+  }
+
+  if (pathname === todoRoutePath) {
+    mount({ todoRoute }, { root })
+    return true
+  }
+
+  return false
+}
+
 const renderClientFallback = (document: Document): boolean => {
   const root = document.getElementById(appRootId)
 
@@ -26,12 +41,12 @@ const renderClientFallback = (document: Document): boolean => {
   const requestUrl = new URL(document.location?.href ?? defaultClientUrl, defaultClientUrl)
   const result = resolveAppRequest(requestUrl)
 
-  if (requestUrl.pathname === "/") {
+  if (requestUrl.pathname === "/" || requestUrl.pathname === todoRoutePath) {
     root.innerHTML = '<main class="container" data-app-shell="loom-example-app"></main>'
     const shell = root.querySelector('[data-app-shell="loom-example-app"]')
 
     if (shell instanceof HTMLElement) {
-      mount({ counterRoute }, { root: shell })
+      mountClientRoute(requestUrl.pathname, shell)
     }
   } else {
     root.innerHTML = Html.renderToString(bodyForResult(result))

@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 
-import { describe, expect, it } from "vitest"
+import { beforeEach, describe, expect, it } from "vitest"
 import { bootstrapClient, startClientApp } from "../src/entry-client.js"
 import { createServerRenderer } from "../src/entry-server.js"
+import { resetTodoExampleState } from "../src/routes/todo-route.js"
 
 const yieldToEventLoop = async (): Promise<void> => {
   await new Promise((resolve) => setTimeout(resolve, 0))
@@ -16,7 +17,19 @@ const expectElement = (value: Element | null, name: string): HTMLElement => {
   return value
 }
 
+const expectInputElement = (value: Element | null, name: string): HTMLInputElement => {
+  if (!(value instanceof HTMLInputElement)) {
+    throw new Error(`expected ${name}`)
+  }
+
+  return value
+}
+
 describe("loom example app client entry", () => {
+  beforeEach(() => {
+    resetTodoExampleState()
+  })
+
   it("reports a missing payload while leaving the SSR shell untouched", async () => {
     document.body.innerHTML = '<div id="loom-root"><main>server shell</main></div>'
     const before = document.body.innerHTML
@@ -174,5 +187,71 @@ describe("loom example app client entry", () => {
     expect(result.status).toBe("missing-payload")
     expect(document.body.textContent).toContain("Route not found")
     expect(document.body.textContent).toContain("Requested path: /missing")
+  })
+
+  it("mounts the todo route into the dev fallback and keeps shared atoms in sync across sections", async () => {
+    document.documentElement.innerHTML = `
+      <head><title>Loom Example App</title></head>
+      <body>
+        <div id="loom-root"></div>
+        <script type="application/json" id="__loom_payload__"></script>
+      </body>
+    `
+    window.history.replaceState({}, "", "/todos")
+
+    const result = await startClientApp(document)
+    const todoInput = () => document.querySelector('[data-todo-input="true"]')
+    const addTodoButton = () => document.querySelector('[data-todo-add-action="true"]')
+    const openCount = () => document.querySelector('[data-todo-open-count="true"]')?.textContent?.trim()
+    const completedCount = () => document.querySelector('[data-todo-completed-count="true"]')?.textContent?.trim()
+    const sessionCount = () => document.querySelector('[data-todo-session-count="true"]')?.textContent?.trim()
+    const clickButton = (selector: string) => {
+      const button = document.querySelector(selector)
+
+      if (!(button instanceof HTMLButtonElement)) {
+        throw new Error(`expected button for ${selector}`)
+      }
+
+      button.click()
+    }
+
+    expect(result.status).toBe("missing-payload")
+    expect(document.querySelector('[data-route-view="todo"]')).not.toBeNull()
+    expect(openCount()).toBe("2")
+    expect(completedCount()).toBe("1")
+    expect(sessionCount()).toBe("Added from this mounted composer: 0")
+
+    const input = expectInputElement(todoInput(), "todo input")
+    input.value = "Document the slot tradeoffs"
+    input.dispatchEvent(new Event("input", { bubbles: true }))
+    await yieldToEventLoop()
+
+    const addButton = expectElement(addTodoButton(), "add todo button")
+
+    addButton.click()
+    await yieldToEventLoop()
+
+    expect(openCount()).toBe("3")
+    expect(sessionCount()).toBe("Added from this mounted composer: 1")
+    expect(expectInputElement(todoInput(), "todo input after add").value).toBe("")
+    expect(document.querySelector('[data-todo-item-id="4"]')?.textContent).toContain("Document the slot tradeoffs")
+
+    clickButton('[data-todo-toggle-id="2"]')
+    await yieldToEventLoop()
+    expect(openCount()).toBe("2")
+    expect(completedCount()).toBe("2")
+
+    clickButton('[data-todo-remove-id="1"]')
+    await yieldToEventLoop()
+    expect(openCount()).toBe("2")
+    expect(completedCount()).toBe("1")
+    expect(document.querySelector('[data-todo-item-id="1"]')).toBeNull()
+
+    clickButton('[data-todo-clear-completed="true"]')
+    await yieldToEventLoop()
+    expect(openCount()).toBe("2")
+    expect(completedCount()).toBe("0")
+    expect(document.querySelector('[data-todo-item-id="2"]')).toBeNull()
+    expect(document.title).toBe("Loom Example App · Todo app")
   })
 })

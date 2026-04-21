@@ -19,6 +19,19 @@ export const makeFragmentNode = (children) => ({
   _tag: "Fragment",
   children,
 })
+export const makeIfNode = (condition, thenNode, elseNode) => ({
+  _tag: "If",
+  condition,
+  then: thenNode,
+  else: elseNode,
+})
+export const makeForNode = (each, key, render, fallback) => ({
+  _tag: "For",
+  each,
+  key,
+  render,
+  fallback,
+})
 export const makeComponentUseNode = (component) => ({
   _tag: "ComponentUse",
   component,

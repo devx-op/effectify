@@ -2,6 +2,7 @@ import type * as Loom from "@effectify/loom"
 import { Component, View, Web } from "@effectify/loom"
 import { Fallback, Layout, Router, type Router as RouterTypes } from "@effectify/loom-router"
 import { counterPageRoute, counterRoutePath, counterRouteTitle } from "./routes/counter-route.js"
+import { todoPageRoute, todoRoutePath, todoRouteTitle } from "./routes/todo-route.js"
 
 const appShell = Component.make("app-shell").pipe(
   Component.children(),
@@ -17,7 +18,7 @@ const notFoundView = (context: RouterTypes.Context): Loom.View.ViewChild =>
       Web.attr("role", "heading"),
       Web.aria("level", 1),
     ),
-    View.vstack(View.text(`The minimal Loom example only serves ${counterRoutePath}.`)).pipe(
+    View.vstack(View.text(`The Loom example serves ${counterRoutePath} and ${todoRoutePath}.`)).pipe(
       Web.className("loom-example-copy"),
     ),
     View.vstack(View.text(`Requested path: ${context.pathname}`)).pipe(Web.className("loom-example-copy")),
@@ -25,13 +26,22 @@ const notFoundView = (context: RouterTypes.Context): Loom.View.ViewChild =>
 
 export const appRouter = Router.make({
   layout: Layout.make(({ child }) => Component.use(appShell, child)),
-  routes: [counterPageRoute],
+  routes: [counterPageRoute, todoPageRoute],
   fallback: {
     notFound: Fallback.make(notFoundView),
   },
 })
 
-const matchedRouteTitle = (_result: Router.ResolveSuccess): string => counterRouteTitle
+const matchedRouteTitle = (result: Router.ResolveSuccess): string => {
+  switch (result.route.identifier) {
+    case counterPageRoute.identifier:
+      return counterRouteTitle
+    case todoPageRoute.identifier:
+      return todoRouteTitle
+    default:
+      return "Not Found"
+  }
+}
 
 export const resolveAppRequest = (input: string | URL): Router.ResolveResult => Router.resolve(appRouter, input)
 

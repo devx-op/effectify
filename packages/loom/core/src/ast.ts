@@ -8,6 +8,8 @@ export type Node =
   | DynamicTextNode
   | ElementNode
   | FragmentNode
+  | IfNode
+  | ForNode<unknown>
   | ComponentUseNode
   | LiveNode<unknown>
 
@@ -67,6 +69,39 @@ export interface FragmentNode {
   readonly children: ReadonlyArray<Node>
 }
 
+export interface IfNode {
+  readonly _tag: "If"
+  readonly condition: () => boolean
+  readonly then: Node
+  readonly else: Node | undefined
+}
+
+interface ForKeySignature<Item, Key extends PropertyKey> {
+  bivarianceHack(item: Item, index: number): Key
+}
+
+export type ForKey<Item, Key extends PropertyKey = PropertyKey> = ForKeySignature<Item, Key>["bivarianceHack"]
+
+interface ForRenderSignature<Item> {
+  bivarianceHack(item: Item, index: number): Node
+}
+
+export type ForRender<Item> = ForRenderSignature<Item>["bivarianceHack"]
+
+export interface ForNode<Item, Key extends PropertyKey = PropertyKey> {
+  readonly _tag: "For"
+  readonly each: () => Iterable<Item>
+  readonly key: ForKey<Item, Key>
+  readonly render: ForRender<Item>
+  readonly fallback: Node | undefined
+}
+
+export interface KeyedForOptions<Item, Key extends PropertyKey = PropertyKey> {
+  readonly key: ForKey<Item, Key>
+  readonly render: ForRender<Item>
+  readonly fallback?: Node
+}
+
 export interface ComponentUseNode {
   readonly _tag: "ComponentUse"
   readonly component: Component.Definition
@@ -112,6 +147,32 @@ export const element = (
 
 /** Create a neutral fragment node. */
 export const fragment = (children: ReadonlyArray<Node>): FragmentNode => internal.makeFragmentNode(children)
+
+/** Create a structural control-flow branch node. */
+export const ifNode = (condition: () => boolean, thenNode: Node, elseNode?: Node): IfNode =>
+  internal.makeIfNode(condition, thenNode, elseNode)
+
+/** Create a structural control-flow list node. */
+export function forEach<Item>(
+  each: () => Iterable<Item>,
+  render: ForRender<Item>,
+  fallback?: Node,
+): ForNode<Item, number>
+export function forEach<Item, Key extends PropertyKey>(
+  each: () => Iterable<Item>,
+  options: KeyedForOptions<Item, Key>,
+): ForNode<Item, Key>
+export function forEach<Item, Key extends PropertyKey>(
+  each: () => Iterable<Item>,
+  renderOrOptions: ForRender<Item> | KeyedForOptions<Item, Key>,
+  fallback?: Node,
+): ForNode<Item, PropertyKey> {
+  if (typeof renderOrOptions === "function") {
+    return internal.makeForNode(each, (_item, index) => index, renderOrOptions, fallback)
+  }
+
+  return internal.makeForNode(each, renderOrOptions.key, renderOrOptions.render, renderOrOptions.fallback)
+}
 
 /** Create a neutral component usage node. */
 export const componentUse = (component: Component.Definition): ComponentUseNode =>

@@ -1,4 +1,5 @@
 import { Atom, AtomRegistry, Hydration as EffectHydration } from "effect/unstable/reactivity"
+import * as LoomCore from "@effectify/loom-core"
 import * as Diagnostics from "./diagnostics.js"
 import * as Hydration from "../hydration.js"
 import * as Resumability from "../resumability.js"
@@ -18,6 +19,15 @@ const collectHydrationAttributes = (node) => {
       return []
     case "DynamicText":
       return []
+    case "If":
+      return collectHydrationAttributes(node.condition() ? node.then : (node.else ?? LoomCore.Ast.fragment([])))
+    case "For": {
+      const items = Array.from(node.each())
+      const nodes = items.length === 0
+        ? node.fallback === undefined ? [] : [node.fallback]
+        : items.map((item, index) => node.render(item, index))
+      return nodes.flatMap(collectHydrationAttributes)
+    }
     case "ComponentUse":
       return collectHydrationAttributes(node.component.node)
     case "Live":
@@ -40,6 +50,15 @@ const collectRegisteredEvents = (node, boundaryId) => {
         return []
       case "DynamicText":
         return []
+      case "If":
+        return loop(current.condition() ? current.then : (current.else ?? LoomCore.Ast.fragment([])), isBoundaryRoot)
+      case "For": {
+        const items = Array.from(current.each())
+        const nodes = items.length === 0
+          ? current.fallback === undefined ? [] : [current.fallback]
+          : items.map((item, index) => current.render(item, index))
+        return nodes.flatMap((child) => loop(child, false))
+      }
       case "Live":
         return []
       case "ComponentUse":
@@ -135,6 +154,15 @@ const serializeNode = (node, state, boundaryId, nextBoundaryNodeId, isBoundaryRo
         return escapeText(current.value)
       case "DynamicText":
         return escapeText(String(current.render()))
+      case "If":
+        return serializeStaticNode(current.condition() ? current.then : (current.else ?? LoomCore.Ast.fragment([])))
+      case "For": {
+        const items = Array.from(current.each())
+        const nodes = items.length === 0
+          ? current.fallback === undefined ? [] : [current.fallback]
+          : items.map((item, index) => current.render(item, index))
+        return nodes.map(serializeStaticNode).join("")
+      }
       case "Fragment":
         return current.children.map(serializeStaticNode).join("")
       case "ComponentUse":
@@ -192,6 +220,20 @@ const serializeNode = (node, state, boundaryId, nextBoundaryNodeId, isBoundaryRo
       return escapeText(node.value)
     case "DynamicText":
       return escapeText(String(node.render()))
+    case "If":
+      return serializeNode(
+        node.condition() ? node.then : (node.else ?? LoomCore.Ast.fragment([])),
+        state,
+        boundaryId,
+        nextBoundaryNodeId,
+      )
+    case "For": {
+      const items = Array.from(node.each())
+      const nodes = items.length === 0
+        ? node.fallback === undefined ? [] : [node.fallback]
+        : items.map((item, index) => node.render(item, index))
+      return nodes.map((child) => serializeNode(child, state, boundaryId, nextBoundaryNodeId)).join("")
+    }
     case "Fragment":
       return node.children.map((child) => serializeNode(child, state, boundaryId, nextBoundaryNodeId)).join("")
     case "ComponentUse":

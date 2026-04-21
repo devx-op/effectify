@@ -1,7 +1,12 @@
-import { describe, expect, it } from "vitest"
+import { beforeEach, describe, expect, it } from "vitest"
 import { createServerRenderer } from "../src/entry-server.js"
+import { resetTodoExampleState } from "../src/routes/todo-route.js"
 
 describe("loom example app server entry", () => {
+  beforeEach(() => {
+    resetTodoExampleState()
+  })
+
   it("renders the single counter route inside the shared document shell", async () => {
     const renderer = createServerRenderer()
     const result = await renderer.render({
@@ -21,6 +26,25 @@ describe("loom example app server entry", () => {
     expect(result.html).toContain('data-counter-reactive-cue="true"')
     expect(result.html).toContain("Loom-native attr/class/style bindings")
     expect(result.html).toContain("mount(...) to fill the empty root")
+  })
+
+  it("renders the todo route with shared-state sections and interactive controls", async () => {
+    const renderer = createServerRenderer()
+    const result = await renderer.render({
+      method: "GET",
+      url: "/todos",
+      headers: {},
+    })
+
+    expect(result.status).toBe(200)
+    expect(result.html).toContain("Loom vNext todo app")
+    expect(result.html).toContain('data-route-view="todo"')
+    expect(result.html).toContain('data-todo-input="true"')
+    expect(result.html).toContain('data-todo-add-action="true"')
+    expect(result.html).toContain('data-todo-list="true"')
+    expect(result.html).toContain('data-todo-session-count="true"')
+    expect(result.html).toContain("Sketch the shared Atom shape")
+    expect(result.html).toContain("DX caveat: until Loom grows a dedicated input primitive")
   })
 
   it("returns a minimal not-found document for unknown paths", async () => {

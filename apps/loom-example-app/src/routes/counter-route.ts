@@ -67,6 +67,7 @@ export const counterRoute = Component.make("counter-route").pipe(
         View.text(
           "This example keeps a single route and teaches the current Loom happy path first: Component.state/actions/view with View.text + Web modifiers.",
         ).pipe(Web.className("counter-copy")),
+        View.link("Open the todo app example", "/todos").pipe(Web.className("outline secondary todo-link")),
       ).pipe(Web.className("loom-example-hero")),
       View.vstack(
         View.vstack(

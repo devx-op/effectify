@@ -10,6 +10,13 @@ export type ViewChild = viewChild.ViewChild
 export type Child = ViewChild
 export type MaybeChild = ViewChild
 export type SlotDefinition = Slot.Definition
+type ReactiveInput<Value> = Value | (() => Value)
+
+export interface ForOptions<Item, Key extends PropertyKey = PropertyKey> {
+  readonly key: (item: Item, index: number) => Key
+  readonly render: (item: Item, index: number) => MaybeChild
+  readonly empty?: MaybeChild
+}
 
 export interface LinkOptions {
   readonly href: string
@@ -43,6 +50,24 @@ const textChildNode = (value: string | (() => string)): LoomCore.Ast.Node =>
   typeof value === "function"
     ? LoomCore.Ast.dynamicText(value)
     : LoomCore.Ast.text(value)
+
+const normalizeNode = (child: MaybeChild): LoomCore.Ast.Node => {
+  const normalized = viewChild.normalizeViewChild(child)
+
+  if (normalized.length === 0) {
+    return LoomCore.Ast.fragment([])
+  }
+
+  return normalized.length === 1 ? normalized[0] : LoomCore.Ast.fragment(normalized)
+}
+
+const renderSnapshotForItems = <Item>(
+  items: ReadonlyArray<Item>,
+  options: ForOptions<Item>,
+): Type =>
+  items.length === 0
+    ? fragment(options.empty)
+    : fragment(...items.map((item, index) => options.render(item, index)))
 
 /** Create a renderer-neutral text view backed by an inline element root. */
 export function text(value: string): Type
@@ -80,8 +105,70 @@ export const button = (content: ViewChild, handler: Html.EventHandler): Type =>
 export const link = (content: ViewChild, target: LinkTarget): Type =>
   internal.wrap(Html.el("a", ...linkTargetModifiers(target), Html.children(content)))
 
+const renderIf = (condition: ReactiveInput<boolean>, content: MaybeChild, otherwise?: MaybeChild): Type => {
+  if (typeof condition === "function") {
+    return internal.wrap(
+      LoomCore.Ast.ifNode(
+        condition,
+        normalizeNode(content),
+        otherwise === undefined ? undefined : normalizeNode(otherwise),
+      ),
+    )
+  }
+
+  return condition ? fragment(content) : fragment(otherwise)
+}
+
+/** Render exactly one branch from an explicit boolean condition. */
+export function ifView(condition: boolean, content: MaybeChild, otherwise?: MaybeChild): Type
+export function ifView(condition: () => boolean, content: MaybeChild, otherwise?: MaybeChild): Type
+export function ifView(condition: ReactiveInput<boolean>, content: MaybeChild, otherwise?: MaybeChild): Type {
+  return renderIf(condition, content, otherwise)
+}
+
+const renderWhen = (condition: unknown | (() => unknown), content: MaybeChild, otherwise?: MaybeChild): Type =>
+  typeof condition === "function"
+    ? renderIf(() => Boolean(condition()), content, otherwise)
+    : renderIf(Boolean(condition), content, otherwise)
+
 /** Render content only when a condition is truthy. */
-export const when = (condition: unknown, content: MaybeChild): Type => condition ? fragment(content) : fragment()
+export function whenView(condition: unknown, content: MaybeChild, otherwise?: MaybeChild): Type
+export function whenView(condition: () => unknown, content: MaybeChild, otherwise?: MaybeChild): Type
+export function whenView(condition: unknown | (() => unknown), content: MaybeChild, otherwise?: MaybeChild): Type {
+  return renderWhen(condition, content, otherwise)
+}
+
+const forViewImpl = <Item, Key extends PropertyKey>(
+  items: ReactiveInput<ReadonlyArray<Item>>,
+  options: ForOptions<Item, Key>,
+): Type => {
+  if (typeof items === "function") {
+    return internal.wrap(
+      LoomCore.Ast.forEach(() => items(), {
+        key: options.key,
+        render: (item, index) => normalizeNode(options.render(item, index)),
+        fallback: options.empty === undefined ? undefined : normalizeNode(options.empty),
+      }),
+    )
+  }
+
+  return renderSnapshotForItems(items, options)
+}
+
+/** Render a keyed list with explicit snapshot vs tracked collection semantics. */
+export function forView<Item, Key extends PropertyKey>(items: ReadonlyArray<Item>, options: ForOptions<Item, Key>): Type
+export function forView<Item, Key extends PropertyKey>(
+  items: () => ReadonlyArray<Item>,
+  options: ForOptions<Item, Key>,
+): Type
+export function forView<Item, Key extends PropertyKey>(
+  items: ReactiveInput<ReadonlyArray<Item>>,
+  options: ForOptions<Item, Key>,
+): Type {
+  return forViewImpl(items, options)
+}
+
+export { forView as for, ifView as if, whenView as when }
 
 /** Create a semantic main region. */
 export const main = (content: MaybeChild): Type => internal.wrap(Html.el("main", Html.children(content)))

@@ -47,6 +47,7 @@ describe("loom example app project shape", () => {
 
   it("authors the example through the vNext root surface first and uses mount for the dev fallback", () => {
     const counterRouteSource = readFileSync(new URL("../src/routes/counter-route.ts", import.meta.url), "utf8")
+    const todoRouteSource = readFileSync(new URL("../src/routes/todo-route.ts", import.meta.url), "utf8")
     const routerSource = readFileSync(new URL("../src/router.ts", import.meta.url), "utf8")
     const entryClientSource = readFileSync(new URL("../src/entry-client.ts", import.meta.url), "utf8")
 
@@ -59,10 +60,19 @@ describe("loom example app project shape", () => {
     expect(counterRouteSource).toContain("View.hstack")
     expect(counterRouteSource).toContain("Web.data")
     expect(counterRouteSource).not.toContain("Html.el(")
+    expect(todoRouteSource).toContain("const todoItemsWritable = Atom.make")
+    expect(todoRouteSource).toContain("Component.state({")
+    expect(todoRouteSource).toContain("Component.stateFactory")
+    expect(todoRouteSource).toContain("Component.children()")
+    expect(todoRouteSource).toContain("View.link")
+    expect(todoRouteSource).toContain("View.button")
+    expect(todoRouteSource).toContain('Web.on("input"')
+    expect(todoRouteSource).not.toContain("Html.el(")
     expect(routerSource).toContain("Component.children()")
     expect(routerSource).toContain("Component.use(appShell")
     expect(routerSource).toContain("Fallback.make(notFoundView)")
     expect(routerSource).not.toContain("Html.el(")
     expect(entryClientSource).toContain("mount({ counterRoute }")
+    expect(entryClientSource).toContain("mount({ todoRoute }")
   })
 })

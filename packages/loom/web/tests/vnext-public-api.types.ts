@@ -134,6 +134,30 @@ const view = View.vstack(View.text("hello")).pipe(
 const textView = View.text("hello")
 const semanticTextView = View.text("paragraph copy").pipe(Web.as("p"))
 const aliasView = View.stack(View.text("hello"))
+let isPositive = true
+let hasMany = false
+const conditionalView = View.if(true, View.text("ready"), View.text("waiting"))
+const trackedConditionalView = View.if(() => isPositive, View.text("positive"), View.text("empty"))
+const legacyConditionalView = View.when(() => hasMany, View.text("many"), View.text("few"))
+const keyedListView = View.for(
+  [
+    { id: "alpha", label: "Alpha" },
+    { id: "beta", label: "Beta" },
+  ],
+  {
+    key: (item) => {
+      const id: string = item.id
+      return id
+    },
+    render: (item, index) => {
+      const label: string = item.label
+      const position: number = index
+
+      return View.text(`${position}:${label}`)
+    },
+    empty: View.text("empty"),
+  },
+)
 const reactiveView = View.stack(View.text("hello")).pipe(
   Web.as("section"),
   Web.attr("data-count", () => "1"),
@@ -204,6 +228,10 @@ const mountedLoad = instantiatedEffectful.actions.load()
 const loadExecution: Component.ActionEffect<string, SaveFailure, SaveGateway> = mountedLoad
 const loadExecutionLabel: string | undefined = loadExecution.annotations?.label
 const stackAlias: View.Node = aliasView
+const conditionalNode: View.Node = conditionalView
+const trackedConditionalNode: View.Node = trackedConditionalView
+const legacyConditionalNode: View.Node = legacyConditionalView
+const keyedListNode: View.Node = keyedListView
 const reactiveNode: View.Node = reactiveView
 const buttonView: View.Node = actionView
 const plainLinkNode: View.Node = stringLinkView
@@ -260,6 +288,23 @@ Web.hydrate(() => Hydration.manual())
 // @ts-expect-error Link options require an href contract.
 View.link("Docs", { target: "_blank" })
 
+// @ts-expect-error View.if requires boolean snapshot inputs.
+View.if(1, View.text("invalid"))
+
+// @ts-expect-error View.if thunk inputs must resolve to booleans.
+View.if(() => "truthy", View.text("invalid"))
+
+// @ts-expect-error View.for requires an explicit key extractor.
+View.for([{ id: "alpha", label: "Alpha" }], {
+  render: (item) => View.text(item.label),
+})
+
+// @ts-expect-error View.for keys must be PropertyKey values.
+View.for([{ id: "alpha", label: "Alpha" }], {
+  key: (item) => ({ id: item.id }),
+  render: (item) => View.text(item.label),
+})
+
 if (Component.isActionEffect(mountedLoad)) {
   const observedLabel: string | undefined = mountedLoad.annotations?.label
   void observedLabel
@@ -300,6 +345,10 @@ export const typecheckSmoke = {
   childrenPage,
   view,
   stackAlias,
+  conditionalNode,
+  trackedConditionalNode,
+  legacyConditionalNode,
+  keyedListNode,
   reactiveNode,
   reactiveBindings,
   buttonView,

@@ -36,11 +36,13 @@ body {
 }
 
 .counter-title,
+.todo-title,
 .loom-example-not-found-title {
   margin: 0;
 }
 
 .counter-copy,
+.todo-copy,
 .loom-example-copy,
 .counter-debug-note,
 .dev-mode-note,
@@ -144,6 +146,150 @@ body {
 
 .counter-actions > button {
   margin: 0;
+}
+
+.todo-top-row {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 900px) {
+  .todo-top-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+    align-items: start;
+  }
+}
+
+.todo-kpi-row,
+.todo-stat-grid,
+.todo-composer-row,
+.todo-composer-meta,
+.todo-list-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  align-items: center;
+}
+
+.todo-kpi,
+.todo-stat {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 9rem;
+  padding: 0.9rem 1rem;
+  border-radius: 1rem;
+  background: rgba(15, 23, 42, 0.04);
+}
+
+.todo-kpi-label,
+.todo-stat-label,
+.todo-section-title,
+.todo-item-status,
+.todo-session-count {
+  margin: 0;
+}
+
+.todo-kpi-label,
+.todo-stat-label,
+.todo-item-status {
+  color: var(--pico-muted-color);
+  font-size: 0.85rem;
+}
+
+.todo-kpi-value,
+.todo-stat-value,
+.todo-title,
+.todo-section-title,
+.todo-item-title {
+  margin: 0;
+}
+
+.todo-kpi-value,
+.todo-stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.todo-panel {
+  gap: 1rem;
+}
+
+.todo-section-title {
+  font-size: 1.25rem;
+}
+
+.todo-input {
+  flex: 1 1 18rem;
+  min-width: 15rem;
+  margin: 0;
+}
+
+.todo-composer-row > button,
+.todo-list-header > button,
+.todo-item > button,
+.todo-link {
+  margin: 0;
+}
+
+.todo-composer-meta {
+  justify-content: space-between;
+}
+
+.todo-session-count {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.1);
+  color: #1d4ed8;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.todo-item-list {
+  display: grid;
+  gap: 0.85rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.todo-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.85rem;
+  align-items: center;
+  padding: 0.95rem 1rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.todo-item--completed {
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.todo-item-copy {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.todo-item-title {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.todo-item-title--completed {
+  text-decoration: line-through;
+  color: var(--pico-muted-color);
+}
+
+.todo-empty-state {
+  margin: 0;
+  padding: 1rem;
+  border-radius: 1rem;
+  background: rgba(15, 23, 42, 0.04);
+  color: var(--pico-muted-color);
 }
 
 .loom-example-note-stack {

@@ -36,6 +36,30 @@ export const makeFragmentNode = (children: ReadonlyArray<Ast.Node>): Ast.Fragmen
   children,
 })
 
+export const makeIfNode = (
+  condition: () => boolean,
+  thenNode: Ast.Node,
+  elseNode: Ast.Node | undefined,
+): Ast.IfNode => ({
+  _tag: "If",
+  condition,
+  then: thenNode,
+  else: elseNode,
+})
+
+export const makeForNode = <Item, Key extends PropertyKey = PropertyKey>(
+  each: () => Iterable<Item>,
+  key: Ast.ForKey<Item, Key>,
+  render: Ast.ForRender<Item>,
+  fallback: Ast.Node | undefined,
+): Ast.ForNode<Item, Key> => ({
+  _tag: "For",
+  each,
+  key,
+  render,
+  fallback,
+})
+
 export const makeComponentUseNode = (component: Component.Definition): Ast.ComponentUseNode => ({
   _tag: "ComponentUse",
   component,

@@ -1,5 +1,11 @@
 import type { Atom, AtomRegistry } from "effect/unstable/reactivity"
 import * as LoomCore from "@effectify/loom-core"
+import {
+  DuplicateControlFlowKeyError,
+  MismatchedMountedRangeParentError,
+  MissingMountedRangeParentError,
+} from "./control-flow-error.js"
+import { makeMountedRange } from "./mounted-range.js"
 import { withStateTracking } from "./tracked-state.js"
 
 interface MountedNode {
@@ -199,6 +205,28 @@ const mountTextNode = (value: string): MountedNode => ({
   dispose: () => undefined,
 })
 
+const syncTrackedSubscriptions = (
+  subscriptions: Map<Atom.Atom<unknown>, () => void>,
+  atoms: ReadonlySet<Atom.Atom<unknown>>,
+  registry: AtomRegistry.AtomRegistry,
+  render: () => void,
+): void => {
+  const nextAtoms = new Set(atoms)
+
+  for (const [atom, unsubscribe] of subscriptions) {
+    if (!nextAtoms.has(atom)) {
+      unsubscribe()
+      subscriptions.delete(atom)
+    }
+  }
+
+  for (const atom of nextAtoms) {
+    if (!subscriptions.has(atom)) {
+      subscriptions.set(atom, registry.subscribe(atom, render))
+    }
+  }
+}
+
 const mountDynamicTextNode = (
   node: LoomCore.Ast.DynamicTextNode,
   registry: AtomRegistry.AtomRegistry,
@@ -226,20 +254,7 @@ const mountDynamicTextNode = (
       textNode.data = tracked.value
     }
 
-    const nextAtoms = new Set(tracked.atoms)
-
-    for (const [atom, unsubscribe] of subscriptions) {
-      if (!nextAtoms.has(atom)) {
-        unsubscribe()
-        subscriptions.delete(atom)
-      }
-    }
-
-    for (const atom of nextAtoms) {
-      if (!subscriptions.has(atom)) {
-        subscriptions.set(atom, registry.subscribe(atom, render))
-      }
-    }
+    syncTrackedSubscriptions(subscriptions, tracked.atoms, registry, render)
   }
 
   render()
@@ -254,6 +269,346 @@ const mountDynamicTextNode = (
   }
 }
 
+const emptyNode = LoomCore.Ast.fragment([])
+
+const resolveRangeParent = (owner: string, start: Comment, end: Comment): ParentNode => {
+  const parent = start.parentNode
+
+  if (parent === null || end.parentNode === null) {
+    throw new MissingMountedRangeParentError({ owner })
+  }
+
+  if (parent !== end.parentNode) {
+    throw new MismatchedMountedRangeParentError({ owner })
+  }
+
+  return parent
+}
+
+const insertNodesBefore = (parent: ParentNode, anchor: Node, nodes: ReadonlyArray<Node>): void => {
+  const fragment = anchor.ownerDocument?.createDocumentFragment() ?? document.createDocumentFragment()
+
+  for (const node of nodes) {
+    fragment.append(node)
+  }
+
+  parent.insertBefore(fragment, anchor)
+}
+
+const moveRangeBefore = (owner: string, start: Comment, end: Comment, anchor: Node): void => {
+  const parent = resolveRangeParent(owner, start, end)
+
+  if (anchor.parentNode !== parent) {
+    throw new MismatchedMountedRangeParentError({ owner })
+  }
+
+  const fragment = anchor.ownerDocument?.createDocumentFragment() ?? document.createDocumentFragment()
+  let current: Node | null = start
+
+  while (current !== null) {
+    const next: Node | null = current.nextSibling
+    fragment.append(current)
+
+    if (current === end) {
+      break
+    }
+
+    current = next
+  }
+
+  parent.insertBefore(fragment, anchor)
+}
+
+const removeRangeNodes = (owner: string, start: Comment, end: Comment): void => {
+  const parent = resolveRangeParent(owner, start, end)
+  let current: Node | null = start
+
+  while (current !== null) {
+    const next: Node | null = current.nextSibling
+    parent.removeChild(current)
+
+    if (current === end) {
+      break
+    }
+
+    current = next
+  }
+}
+
+const mountIfNode = (node: LoomCore.Ast.IfNode, registry: AtomRegistry.AtomRegistry, root: Element): MountedNode => {
+  const range = makeMountedRange("if")
+  const subscriptions = new Map<Atom.Atom<unknown>, () => void>()
+  let disposed = false
+  let tracked = withStateTracking(() => node.condition())
+  let mountedBranch = mountNode(tracked.value ? node.then : (node.else ?? emptyNode), registry, root)
+
+  const render = (): void => {
+    if (disposed) {
+      return
+    }
+
+    const nextTracked = withStateTracking(() => node.condition())
+
+    if (nextTracked.value !== tracked.value) {
+      const nextBranch = mountNode(nextTracked.value ? node.then : (node.else ?? emptyNode), registry, root)
+
+      range.replace(nextBranch.nodes)
+      mountedBranch.dispose()
+      mountedBranch = nextBranch
+    }
+
+    tracked = nextTracked
+    syncTrackedSubscriptions(subscriptions, tracked.atoms, registry, render)
+  }
+
+  syncTrackedSubscriptions(subscriptions, tracked.atoms, registry, render)
+
+  return {
+    nodes: [range.start, ...mountedBranch.nodes, range.end],
+    hasReactiveBindings: tracked.atoms.size > 0 || mountedBranch.hasReactiveBindings,
+    dispose: () => {
+      disposed = true
+
+      for (const unsubscribe of subscriptions.values()) {
+        unsubscribe()
+      }
+
+      subscriptions.clear()
+      mountedBranch.dispose()
+    },
+  }
+}
+
+interface MountedForItem<Item> {
+  readonly key: PropertyKey
+  item: Item
+  index: number
+  readonly range: ReturnType<typeof makeMountedRange>
+  mounted: MountedNode
+}
+
+const mountedForItemNodes = <Item>(entry: MountedForItem<Item>): ReadonlyArray<Node> => [
+  entry.range.start,
+  ...entry.mounted.nodes,
+  entry.range.end,
+]
+
+const makeMountedForItem = <Item>(
+  key: PropertyKey,
+  item: Item,
+  index: number,
+  mounted: MountedNode,
+): MountedForItem<Item> => ({
+  key,
+  item,
+  index,
+  range: makeMountedRange(`for-item:${String(key)}`),
+  mounted,
+})
+
+const disposeMountedForItem = <Item>(entry: MountedForItem<Item>): void => {
+  entry.mounted.dispose()
+}
+
+const detachMountedForItem = <Item>(entry: MountedForItem<Item>): void => {
+  if (entry.range.start.parentNode !== null && entry.range.end.parentNode !== null) {
+    removeRangeNodes(entry.range.owner, entry.range.start, entry.range.end)
+  }
+}
+
+const replaceMountedForItem = <Item>(
+  entry: MountedForItem<Item>,
+  item: Item,
+  index: number,
+  mounted: MountedNode,
+): void => {
+  if (entry.range.start.parentNode !== null && entry.range.end.parentNode !== null) {
+    entry.range.replace(mounted.nodes)
+  }
+
+  entry.mounted.dispose()
+  entry.item = item
+  entry.index = index
+  entry.mounted = mounted
+}
+
+const assertDistinctForKeys = <Item>(
+  owner: string,
+  entries: ReadonlyArray<readonly [key: PropertyKey, item: Item, index: number]>,
+): void => {
+  const seen = new Set<PropertyKey>()
+
+  for (const [key] of entries) {
+    if (seen.has(key)) {
+      throw new DuplicateControlFlowKeyError({ owner, key })
+    }
+
+    seen.add(key)
+  }
+}
+
+const mountForNode = <Item>(
+  node: LoomCore.Ast.ForNode<Item>,
+  registry: AtomRegistry.AtomRegistry,
+  root: Element,
+): MountedNode => {
+  const range = makeMountedRange("for")
+  const subscriptions = new Map<Atom.Atom<unknown>, () => void>()
+  let disposed = false
+  let tracked = withStateTracking(() => Array.from(node.each()))
+
+  const materializeEntries = (items: ReadonlyArray<Item>) =>
+    items.map(
+      (item, index) => [node.key(item, index), item, index] as const,
+    )
+
+  const mountItems = (
+    entries: ReadonlyArray<readonly [key: PropertyKey, item: Item, index: number]>,
+  ): ReadonlyArray<MountedForItem<Item>> =>
+    entries.map(([key, item, index]) =>
+      makeMountedForItem(key, item, index, mountNode(node.render(item, index), registry, root))
+    )
+
+  type MountedForState =
+    | { readonly _tag: "empty"; readonly fallback: MountedNode | undefined }
+    | { readonly _tag: "items"; readonly items: ReadonlyArray<MountedForItem<Item>> }
+
+  const initialEntries = materializeEntries(tracked.value)
+  assertDistinctForKeys("for", initialEntries)
+
+  let mountedState: MountedForState = initialEntries.length === 0
+    ? { _tag: "empty", fallback: node.fallback === undefined ? undefined : mountNode(node.fallback, registry, root) }
+    : { _tag: "items", items: mountItems(initialEntries) }
+
+  const render = (): void => {
+    if (disposed) {
+      return
+    }
+
+    const nextTracked = withStateTracking(() => Array.from(node.each()))
+    const nextEntries = materializeEntries(nextTracked.value)
+    assertDistinctForKeys("for", nextEntries)
+
+    if (nextEntries.length === 0) {
+      const nextFallback = node.fallback === undefined ? undefined : mountNode(node.fallback, registry, root)
+
+      range.replace(nextFallback === undefined ? [] : nextFallback.nodes)
+
+      if (mountedState._tag === "items") {
+        for (let index = mountedState.items.length - 1; index >= 0; index--) {
+          const entry = mountedState.items[index]
+
+          if (entry !== undefined) {
+            disposeMountedForItem(entry)
+          }
+        }
+      } else {
+        mountedState.fallback?.dispose()
+      }
+
+      mountedState = { _tag: "empty", fallback: nextFallback }
+      tracked = nextTracked
+      syncTrackedSubscriptions(subscriptions, tracked.atoms, registry, render)
+      return
+    }
+
+    if (mountedState._tag === "empty") {
+      const nextItems = mountItems(nextEntries)
+
+      range.replace(nextItems.flatMap(mountedForItemNodes))
+      mountedState.fallback?.dispose()
+      mountedState = { _tag: "items", items: nextItems }
+      tracked = nextTracked
+      syncTrackedSubscriptions(subscriptions, tracked.atoms, registry, render)
+      return
+    }
+
+    const previousItemsByKey = new Map(mountedState.items.map((entry) => [entry.key, entry] as const))
+    const nextItems = nextEntries.map(([key, item, index]) => {
+      const existing = previousItemsByKey.get(key)
+
+      if (existing === undefined) {
+        return makeMountedForItem(key, item, index, mountNode(node.render(item, index), registry, root))
+      }
+
+      previousItemsByKey.delete(key)
+
+      if (existing.item !== item) {
+        replaceMountedForItem(existing, item, index, mountNode(node.render(item, index), registry, root))
+      } else {
+        existing.index = index
+      }
+
+      return existing
+    })
+
+    const parent = resolveRangeParent(range.owner, range.start, range.end)
+    let anchor: Node = range.end
+
+    for (let index = nextItems.length - 1; index >= 0; index--) {
+      const entry = nextItems[index]
+
+      if (entry === undefined) {
+        continue
+      }
+
+      if (entry.range.start.parentNode === parent && entry.range.end.parentNode === parent) {
+        moveRangeBefore(entry.range.owner, entry.range.start, entry.range.end, anchor)
+      } else {
+        insertNodesBefore(parent, anchor, mountedForItemNodes(entry))
+      }
+
+      anchor = entry.range.start
+    }
+
+    for (const leftover of previousItemsByKey.values()) {
+      detachMountedForItem(leftover)
+      disposeMountedForItem(leftover)
+    }
+
+    mountedState = { _tag: "items", items: nextItems }
+    tracked = nextTracked
+    syncTrackedSubscriptions(subscriptions, tracked.atoms, registry, render)
+  }
+
+  syncTrackedSubscriptions(subscriptions, tracked.atoms, registry, render)
+
+  return {
+    nodes: [
+      range.start,
+      ...(mountedState._tag === "empty"
+        ? mountedState.fallback === undefined ? [] : mountedState.fallback.nodes
+        : mountedState.items.flatMap(mountedForItemNodes)),
+      range.end,
+    ],
+    hasReactiveBindings: tracked.atoms.size > 0 || (mountedState._tag === "empty"
+      ? mountedState.fallback?.hasReactiveBindings === true
+      : mountedState.items.some((item) => item.mounted.hasReactiveBindings)),
+    dispose: () => {
+      disposed = true
+
+      for (const unsubscribe of subscriptions.values()) {
+        unsubscribe()
+      }
+
+      subscriptions.clear()
+
+      if (mountedState._tag === "empty") {
+        mountedState.fallback?.dispose()
+        return
+      }
+
+      for (let index = mountedState.items.length - 1; index >= 0; index--) {
+        const entry = mountedState.items[index]
+
+        if (entry !== undefined) {
+          disposeMountedForItem(entry)
+        }
+      }
+    },
+  }
+}
+
 const mountNode = (node: LoomCore.Ast.Node, registry: AtomRegistry.AtomRegistry, root: Element): MountedNode => {
   switch (node._tag) {
     case "Text":
@@ -264,6 +619,10 @@ const mountNode = (node: LoomCore.Ast.Node, registry: AtomRegistry.AtomRegistry,
       return mountNode(node.component.node, registry, root)
     case "Live":
       return mountTextNode("")
+    case "If":
+      return mountIfNode(node, registry, root)
+    case "For":
+      return mountForNode(node, registry, root)
     case "Fragment": {
       const children = node.children.map((child) => mountNode(child, registry, root))
 
