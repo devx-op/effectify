@@ -52,7 +52,13 @@ Component<Props, Err, Requirements>
 
 - `Component.actions(...)` is the main bridge from UI declarations to Effect services, HTTP APIs, and RPC APIs.
 - `Component.view(...)` should receive a read-friendly reactive facade over model state so authors are not forced into raw `.get()` everywhere.
-- `Component.slots(...)` and `Slot` are the official composition/nesting mechanism for layouts, routes, and reusable components.
+- `ViewChild` is the broad composition type for primitive content and ordinary unnamed composition.
+- `Component.children()` is the standard/default-content mechanism for ordinary composition.
+- `Component.slots(...)` and `Slot` are for named structural composition such as layouts, shells, and route frames.
+- `Component.use(component, props?, childrenOrSlots?)` should support either children-based composition or named slot objects depending on the component declaration.
+- `View.vstack(...)` and `View.hstack(...)` are the preferred directional layout primitives.
+- `View.stack(...)` may remain as a compatibility alias/directional bridge, but it is not the preferred teaching surface.
+- `Html.*` stays low-level/compatibility, not the primary authoring or teaching path.
 
 ### 2.6 Router direction
 
@@ -200,7 +206,7 @@ This establishes the contract:
 Directional target:
 
 ```ts
-Component.view(({ state }) => View.text(`Count: ${state.count}`))
+Component.view(({ state }) => View.text(() => `Count: ${state.count()}`))
 ```
 
 This means the view layer should not force authors to litter render code with raw `.get()` calls while still preserving the reality that Atom is the underlying source of truth.
@@ -219,22 +225,68 @@ That bridge should cover:
 
 This is preferable to scattering Effect access across unrelated ad hoc handlers because it gives Loom a clear action boundary.
 
-### 5.5 Slot-based composition
+### 5.5 Composition model: `children`, `Slot`, and `ViewChild`
 
-Slots are the canonical mechanism for composition and nesting.
+Loom should document composition in three layers, not one:
 
-Directional target:
+1. `ViewChild` is the broad content type for unnamed/default composition and primitive child content.
+2. `Component.children()` is the standard mechanism for ordinary/default composition.
+3. `Component.slots(...)` / `Slot` are for named structural composition.
+
+Directional target for children-based composition:
 
 ```ts
-Component.slots({
-  default: Slot.required(),
-  sidebar: Slot.optional(),
-})
+const card = Component.make("card").pipe(
+  Component.children(),
+  Component.view(({ children }) => View.box(children).pipe(Web.className("card"))),
+)
 ```
 
-This should be the official way to express layouts and nesting rather than defaulting to React-children-first framing.
+Directional target for slot-based composition:
 
-### 5.6 Observability model
+```ts
+const appLayout = Component.make("app-layout").pipe(
+  Component.slots({
+    header: Slot.optional(),
+    sidebar: Slot.optional(),
+    default: Slot.required(),
+  }),
+)
+```
+
+This avoids over-teaching slots for everyday unnamed composition while keeping named structure explicit where it genuinely helps.
+
+### 5.6 Primitive content model
+
+Interactive primitives should accept broad `ViewChild` content, not only string labels.
+
+Directional targets:
+
+```ts
+View.button("Increase", actions.increment)
+
+View.button(
+  View.hstack(
+    Icon.plus(),
+    View.text("Increase"),
+  ),
+  actions.increment,
+)
+
+View.link("Open settings", "/settings")
+
+View.link(
+  View.hstack(
+    Icon.externalLink(),
+    View.text("Docs"),
+  ),
+  { href: "/docs" },
+)
+```
+
+String sugar is valuable and should stay ergonomic, but the type contract should be broad enough to support composed child content directly.
+
+### 5.7 Observability model
 
 Observability/tracing must remain explicit in the runtime architecture.
 
@@ -272,14 +324,21 @@ Directional responsibilities include:
 - neutral layout primitives,
 - component/slot rendering.
 
+Directional teaching guidance:
+
+- Prefer `View.vstack(...)` and `View.hstack(...)` in docs and examples.
+- Treat `View.stack(...)` as compatibility vocabulary only.
+- Prefer `ViewChild`-accepting primitives for content-bearing controls such as buttons and links.
+
 Directional examples:
 
 ```ts
-View.stack(...)
-View.row(...)
+View.vstack(...)
+View.hstack(...)
 View.text("hello")
 View.when(condition, content)
 View.main(slot)
+View.button(View.text("Save"), save)
 ```
 
 ### 6.3 `Web`
@@ -297,12 +356,22 @@ Directional responsibilities include:
 Directional examples:
 
 ```ts
-View.stack(...).pipe(
-  Web.className("flex flex-col gap-2"),
+View.vstack(...).pipe(
+  Web.className("gap-2"),
 )
 ```
 
 This split is important because it preserves the renderer-neutral character of `View` while staying honest about what is actually web-specific.
+
+### 6.4 `Html`
+
+`Html.*` may continue to exist as a lower-level or compatibility surface, but it should not be the primary teaching path for Loom.
+
+When documenting Loom's public model:
+
+- teach `View` for renderer-agnostic structure,
+- teach `Web` for browser/CSS/DOM concerns,
+- mention `Html` only as a compatibility or low-level escape hatch.
 
 ---
 
@@ -391,52 +460,72 @@ export const counter = Component.make("counter").pipe(
     count: Atom.make(0),
   }),
   Component.actions({
-    increase: ({ count }) => count.update((n) => n + 1),
-    decrease: ({ count }) => count.update((n) => n - 1),
+    increment: ({ count }) => count.update((n) => n + 1),
+    decrement: ({ count }) => count.update((n) => n - 1),
     reset: ({ count }) => count.set(0),
   }),
   Component.view(({ state, actions }) =>
-    View.stack(
-      View.text(`Count: ${state.count}`),
-      View.text(`Doubled: ${state.count * 2}`),
-      View.button("Increase", actions.increase),
-      View.button("Decrease", actions.decrease),
-      View.button("Reset", actions.reset),
-    ).pipe(
-      Web.className("flex flex-col gap-2"),
-    )
+    View.vstack(
+      View.text(() => `Count: ${state.count()}`),
+      View.text(() => `Doubled: ${state.count() * 2}`),
+      View.hstack(
+        View.button("Decrease", actions.decrement),
+        View.button("Increase", actions.increment),
+        View.button("Reset", actions.reset),
+      ),
+    ).pipe(Web.className("gap-2"))
   ),
 )
 
 mount({ counter })
 ```
 
-### 9.2 Layout/slot target DX
+### 9.2 children-based component target DX
+
+```ts
+const card = Component.make("card").pipe(
+  Component.children(),
+  Component.view(({ children }) => View.box(children).pipe(Web.className("card"))),
+)
+```
+
+### 9.3 Layout/slot target DX
 
 ```ts
 import { Component, Slot, View, Web } from "@effectify/loom"
 
 export const appLayout = Component.make("app-layout").pipe(
   Component.slots({
-    default: Slot.required(),
     header: Slot.optional(),
     sidebar: Slot.optional(),
+    default: Slot.required(),
   }),
   Component.view(({ slots }) =>
-    View.stack(
+    View.vstack(
       View.when(slots.header, View.header(slots.header)),
-      View.row(
+      View.hstack(
         View.when(slots.sidebar, View.aside(slots.sidebar)),
         View.main(slots.default),
       ),
-    ).pipe(
-      Web.className("min-h-screen"),
     )
   ),
 )
 ```
 
-### 9.3 Router target DX
+### 9.4 `Component.use(...)` target DX
+
+```ts
+Component.use(card, { tone: "info" }, View.text("Saved"))
+
+Component.use(appLayout, {}, {
+  header: View.text("Dashboard"),
+  default: Component.use(card, {}, View.text("Body")),
+})
+```
+
+This is a directional API target: the third argument should match the declared composition model of the component — plain children for children-based components, named slot objects for slot-based components.
+
+### 9.5 Router target DX
 
 ```ts
 const appRouter = Router.make("app").pipe(
@@ -475,7 +564,7 @@ Highest-value early coverage areas:
 1. `Component.model(...)` Atom-native integration semantics
 2. `Component.actions(...)` typing and runtime behavior
 3. `Component.view(...)` state facade ergonomics and inference
-4. slot composition and layout behavior
+4. children-based composition, slot composition, and layout behavior
 5. router declaration/composition/reflection behavior
 6. package-level type surface for namespace-style modules
 7. observability/tracing boundaries in runtime flows
@@ -501,4 +590,4 @@ Highest-value early coverage areas:
 
 ## 12. Summary
 
-This RFC revises Loom's technical direction around a simpler and stronger DX target: Atom-native state, strongly typed `Component` boundaries, renderer-agnostic `View`, Web-specific browser/CSS APIs, slot-based composition, `HttpApi`-inspired routing, and explicit observability/tracing. SSR, resumability, loaders, and server integration remain important, but they are now intentionally framed as layered capabilities after the tiny, Effect-first interactive model already works beautifully.
+This RFC revises Loom's technical direction around a simpler and stronger DX target: Atom-native state, strongly typed `Component` boundaries, renderer-agnostic `View`, explicit `children` versus named `Slot` composition, broad `ViewChild` support for primitives, preferred `View.vstack` / `View.hstack` layouts, Web-specific browser/CSS APIs, `HttpApi`-inspired routing, and explicit observability/tracing. SSR, resumability, loaders, and server integration remain important, but they are now intentionally framed as layered capabilities after the tiny, Effect-first interactive model already works beautifully.

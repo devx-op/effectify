@@ -2,31 +2,11 @@ import * as LoomCore from "@effectify/loom-core"
 import * as LoomRuntime from "@effectify/loom-runtime"
 import * as Hydration from "./hydration.js"
 import * as internal from "./internal/api.js"
-const isComponent = (value) =>
-  typeof value === "object" && value !== null && "_tag" in value && value._tag === "Component"
-const isNode = (value) => typeof value === "object" && value !== null && "_tag" in value && value._tag !== "Component"
+import * as viewChild from "./internal/view-child.js"
 const isReferencedLiveRegion = (value) =>
   typeof value === "object" && value !== null && "_tag" in value && value._tag === "ReferencedLiveRegion"
-const normalizeChild = (child) => {
-  if (child === undefined || child === null || child === false) {
-    return []
-  }
-  if (typeof child === "string") {
-    return [text(child)]
-  }
-  if (Array.isArray(child)) {
-    return child.flatMap(normalizeChild)
-  }
-  if (isComponent(child)) {
-    return [LoomCore.Ast.componentUse(child)]
-  }
-  if (isNode(child)) {
-    return [child]
-  }
-  return []
-}
 const normalizeRoot = (child) => {
-  const normalized = normalizeChild(child)
+  const normalized = viewChild.normalizeViewChild(child)
   if (normalized.length === 0) {
     return LoomCore.Ast.fragment([])
   }
@@ -35,7 +15,7 @@ const normalizeRoot = (child) => {
 /** Create a low-level neutral text node for the compatibility Html seam. */
 export const text = (value) => LoomCore.Ast.text(value)
 /** Create a low-level neutral fragment node for the compatibility Html seam. */
-export const fragment = (...nodes) => LoomCore.Ast.fragment(nodes.flatMap(normalizeChild))
+export const fragment = (...nodes) => LoomCore.Ast.fragment(viewChild.normalizeViewChildren(nodes))
 /** Add children to an element. */
 export const children = (...nodes) => ({
   _tag: "ChildrenModifier",
@@ -68,7 +48,7 @@ export const el = (tagName, ...modifiers) => {
         break
       }
       case "ChildrenModifier": {
-        state.children.push(...modifier.children.flatMap(normalizeChild))
+        state.children.push(...viewChild.normalizeViewChildren(modifier.children))
         break
       }
       case "HydrationModifier": {
@@ -95,7 +75,7 @@ export const live = (atom, render) => {
       render,
     }
   const node = LoomCore.Ast.live(atom, (value) => {
-    const rendered = normalizeChild(normalized.render(value))
+    const rendered = viewChild.normalizeViewChild(normalized.render(value))
     return rendered.length === 1 ? rendered[0] : LoomCore.Ast.fragment(rendered)
   })
   return normalized.ref === undefined

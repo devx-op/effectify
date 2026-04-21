@@ -67,6 +67,20 @@ const layout = Component.make("layout").pipe(
   Component.view(({ slots }) => View.text(Object.keys(slots).join(","))),
 )
 
+const card = Component.make("card").pipe(
+  Component.children(),
+  Component.view(({ children }) =>
+    View.vstack(
+      View.text("Card"),
+      View.main(children),
+    )
+  ),
+)
+
+const badge = Component.make("badge").pipe(
+  Component.view(() => View.text("Docs")),
+)
+
 const slottedPage = Component.make("slotted-page").pipe(
   Component.view(() =>
     Component.use(layout, undefined, {
@@ -76,13 +90,30 @@ const slottedPage = Component.make("slotted-page").pipe(
   ),
 )
 
-const view = View.stack(View.text("hello")).pipe(
+const childrenPage = Component.make("children-page").pipe(
+  Component.view(() =>
+    View.fragment(
+      Component.use(card, View.text("content")),
+      Component.use(card, undefined, ["nested ", 2, View.text("content")]),
+    )
+  ),
+)
+
+const view = View.vstack(View.text("hello")).pipe(
   Web.className("stack"),
   Web.attrs({ id: "stack" }),
   Web.data("variant", "primary"),
   Web.aria("label", "Greeting"),
   Web.style({ display: "flex", gap: "1rem" }),
 )
+const aliasView = View.stack(View.text("hello"))
+const actionView = View.button(View.hstack(View.text("+"), "Save"), effectLike)
+const stringLinkView = View.link("Open settings", "/settings")
+const objectLinkView = View.link(View.fragment(badge, " docs"), {
+  href: "/docs",
+  target: "_blank",
+  rel: "noreferrer",
+})
 const mounted = mount({ counter }, { registry: AtomRegistry.make() })
 const mountedEffectful = mount({ effectfulCounter })
 const instantiatedCounter = Component.instantiate(counter)
@@ -105,6 +136,7 @@ const layoutSlots:
     readonly header: Slot.Definition
   }
   | undefined = layout.slots
+const cardChildren: true | undefined = card.children
 const classNameValue: string | undefined = maybeClassName
 const dataVariantValue: string | undefined = maybeDataVariant
 const ariaLabelValue: string | undefined = maybeAriaLabel
@@ -120,6 +152,10 @@ const effectfulRequirements: SaveGateway | undefined = effectfulCounter.__requir
 const mountedLoad = instantiatedEffectful.actions.load()
 const loadExecution: Component.ActionEffect<string, SaveFailure, SaveGateway> = mountedLoad
 const loadExecutionLabel: string | undefined = loadExecution.annotations?.label
+const stackAlias: View.Node = aliasView
+const buttonView: View.Node = actionView
+const plainLinkNode: View.Node = stringLinkView
+const objectLinkNode: View.Node = objectLinkView
 
 mounted.model.count.set(0)
 mounted.model.local.update((value) => value + 1)
@@ -131,6 +167,14 @@ Slot.required("default")
 Component.use(layout, undefined, {
   header: View.text("header"),
 })
+
+// @ts-expect-error Children components accept unnamed content, not slot objects.
+Component.use(card, {
+  default: View.text("content"),
+})
+
+// @ts-expect-error Slot-based components do not accept plain children content.
+Component.use(layout, View.text("content"))
 
 // @ts-expect-error mount requires named component records.
 mount(counter)
@@ -155,6 +199,9 @@ Web.style(() => ({ display: "flex" }))
 
 // @ts-expect-error Fine-grained reactive hydration is out of scope for this slice.
 Web.hydrate(() => Hydration.manual())
+
+// @ts-expect-error Link options require an href contract.
+View.link("Docs", { target: "_blank" })
 
 if (Component.isActionEffect(mountedLoad)) {
   const observedLabel: string | undefined = mountedLoad.annotations?.label
@@ -182,8 +229,15 @@ export const typecheckSmoke = {
   effectfulError,
   effectfulRequirements,
   layout,
+  card,
+  cardChildren,
   slottedPage,
+  childrenPage,
   view,
+  stackAlias,
+  buttonView,
+  plainLinkNode,
+  objectLinkNode,
   mounted,
   mountedEffectful,
 }

@@ -1,10 +1,10 @@
 import type { Atom } from "effect/unstable/reactivity"
 import * as LoomCore from "@effectify/loom-core"
 import * as LoomRuntime from "@effectify/loom-runtime"
-import type * as Component from "./component.js"
 import type * as Diagnostics from "./diagnostics.js"
 import * as Hydration from "./hydration.js"
 import * as internal from "./internal/api.js"
+import * as viewChild from "./internal/view-child.js"
 
 /**
  * Compatibility-focused Html DSL and low-level AST / SSR seam.
@@ -47,7 +47,7 @@ export interface SsrResult extends LoomRuntime.Runtime.SsrRenderResult {
   readonly diagnosticSummary: ReadonlyArray<Diagnostics.Summary>
 }
 
-export type Child = LoomCore.Ast.Node | Component.Type | string | ReadonlyArray<Child> | undefined | null | false
+export type Child = viewChild.ViewChild
 
 export interface AttributeModifier {
   readonly _tag: "AttributeModifier"
@@ -79,43 +79,13 @@ export type ElementModifier =
   | HydrationModifier
   | EventModifier
 
-const isComponent = (value: Child): value is Component.Type =>
-  typeof value === "object" && value !== null && "_tag" in value && value._tag === "Component"
-
-const isNode = (value: Child): value is LoomCore.Ast.Node =>
-  typeof value === "object" && value !== null && "_tag" in value && value._tag !== "Component"
-
 const isReferencedLiveRegion = <Value>(
   value: ((value: Value) => Child) | LoomRuntime.Resumability.ReferencedLiveRegion<Value>,
 ): value is LoomRuntime.Resumability.ReferencedLiveRegion<Value> =>
   typeof value === "object" && value !== null && "_tag" in value && value._tag === "ReferencedLiveRegion"
 
-const normalizeChild = (child: Child): ReadonlyArray<LoomCore.Ast.Node> => {
-  if (child === undefined || child === null || child === false) {
-    return []
-  }
-
-  if (typeof child === "string") {
-    return [text(child)]
-  }
-
-  if (Array.isArray(child)) {
-    return child.flatMap(normalizeChild)
-  }
-
-  if (isComponent(child)) {
-    return [LoomCore.Ast.componentUse(child)]
-  }
-
-  if (isNode(child)) {
-    return [child]
-  }
-
-  return []
-}
-
 const normalizeRoot = (child: Child): LoomCore.Ast.Node => {
-  const normalized = normalizeChild(child)
+  const normalized = viewChild.normalizeViewChild(child)
 
   if (normalized.length === 0) {
     return LoomCore.Ast.fragment([])
@@ -129,7 +99,7 @@ export const text = (value: string): LoomCore.Ast.TextNode => LoomCore.Ast.text(
 
 /** Create a low-level neutral fragment node for the compatibility Html seam. */
 export const fragment = (...nodes: ReadonlyArray<Child>): LoomCore.Ast.FragmentNode =>
-  LoomCore.Ast.fragment(nodes.flatMap(normalizeChild))
+  LoomCore.Ast.fragment(viewChild.normalizeViewChildren(nodes))
 
 /** Add children to an element. */
 export const children = (...nodes: ReadonlyArray<Child>): ChildrenModifier => ({
@@ -172,7 +142,7 @@ export const el = (tagName: string, ...modifiers: ReadonlyArray<ElementModifier>
         break
       }
       case "ChildrenModifier": {
-        state.children.push(...modifier.children.flatMap(normalizeChild))
+        state.children.push(...viewChild.normalizeViewChildren(modifier.children))
         break
       }
       case "HydrationModifier": {
@@ -206,7 +176,7 @@ export const live = <Value>(
     }
 
   const node = LoomCore.Ast.live(atom, (value) => {
-    const rendered = normalizeChild(normalized.render(value))
+    const rendered = viewChild.normalizeViewChild(normalized.render(value))
     return rendered.length === 1 ? rendered[0] : LoomCore.Ast.fragment(rendered)
   })
 

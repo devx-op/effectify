@@ -2,6 +2,7 @@ import { Atom, AtomRegistry } from "effect/unstable/reactivity"
 import * as LoomCore from "@effectify/loom-core"
 import * as pipeable from "./internal/pipeable.js"
 import { trackStateAtomRead } from "./internal/tracked-state.js"
+import * as viewChild from "./internal/view-child.js"
 const makePipeable = (value) => pipeable.make(value)
 const emptyNode = LoomCore.Ast.fragment([])
 const emptyActions = {}
@@ -91,7 +92,12 @@ const bindActionSpec = (actionSpec, context) => {
   ])
   return Object.fromEntries(entries)
 }
-export const instantiate = (component, registry = component.registry ?? AtomRegistry.make(), props, slotInput) => {
+export const instantiate = (
+  component,
+  registry = component.registry ?? AtomRegistry.make(),
+  props,
+  compositionInput,
+) => {
   const materializedModel = materializeModel(component.model)
   const model = createWriteModel(materializedModel, registry)
   const state = createState(materializedModel, registry)
@@ -110,12 +116,14 @@ export const instantiate = (component, registry = component.registry ?? AtomRegi
     : isActionSpec(actionDefinition)
     ? bindActionSpec(actionDefinition, actionBindingContext)
     : (actionDefinition ?? emptyActions)
-  const slots = resolveSlots(component.slots, slotInput)
+  const children = component.children === true ? compositionInput?.children : undefined
+  const slots = resolveSlots(component.slots, compositionInput?.slots)
   return {
     registry,
     model,
     state,
     actions,
+    children,
     slots,
     render: (boundActions = actions) =>
       component.render === undefined
@@ -124,6 +132,7 @@ export const instantiate = (component, registry = component.registry ?? AtomRegi
           ...actionContext,
           props,
           actions: boundActions,
+          children,
           slots,
         }),
   }
@@ -132,8 +141,8 @@ const materialize = (component) => {
   const instance = instantiate(component, component.registry ?? AtomRegistry.make())
   return instance.render()
 }
-const renderComponentUse = (component, props, slots) =>
-  instantiate(component, component.registry ?? AtomRegistry.make(), props, slots).render()
+const renderComponentUse = (component, props, compositionInput) =>
+  instantiate(component, component.registry ?? AtomRegistry.make(), props, compositionInput).render()
 const reconcile = (component) =>
   makePipeable({
     ...component,
@@ -202,11 +211,51 @@ export function slots(selfOrSlots, slotDefinition) {
   }
   return patch(selfOrSlots, { slots: slotDefinition })
 }
+export function children(self) {
+  if (self === undefined) {
+    return (component) => patch(component, { children: true })
+  }
+  return patch(self, { children: true })
+}
+const isPropsLikeObject = (value) =>
+  typeof value === "object" && value !== null && !Array.isArray(value) && !("_tag" in value)
+const resolveUseComposition = (component, propsOrComposition, composition) => {
+  if (component.children === true) {
+    if (composition !== undefined) {
+      return {
+        props: propsOrComposition,
+        composition: { children: composition },
+      }
+    }
+    if (viewChild.isViewChild(propsOrComposition) && !isPropsLikeObject(propsOrComposition)) {
+      return {
+        props: undefined,
+        composition: { children: propsOrComposition },
+      }
+    }
+    return {
+      props: propsOrComposition,
+      composition: undefined,
+    }
+  }
+  if (component.slots !== undefined) {
+    return {
+      props: propsOrComposition,
+      composition: composition === undefined ? undefined : { slots: composition },
+    }
+  }
+  return {
+    props: propsOrComposition,
+    composition: undefined,
+  }
+}
 export function use(selfOrCapability, capabilityOrProps, slotInput) {
   if (capabilityOrProps === undefined) {
     if (selfOrCapability._tag === "Component" && slotInput !== undefined) {
-      return renderComponentUse(selfOrCapability, undefined, slotInput)
+      const resolved = resolveUseComposition(selfOrCapability, undefined, slotInput)
+      return renderComponentUse(selfOrCapability, resolved.props, resolved.composition)
     }
+
     if (selfOrCapability._tag === "ComponentEffect") {
       return (self) =>
         reconcile(makePipeable({
@@ -223,7 +272,8 @@ export function use(selfOrCapability, capabilityOrProps, slotInput) {
         ...LoomCore.Component.use(selfOrCapability, capabilityOrProps),
       }))
     }
-    return renderComponentUse(selfOrCapability, capabilityOrProps, slotInput)
+    const resolved = resolveUseComposition(selfOrCapability, capabilityOrProps, slotInput)
+    return renderComponentUse(selfOrCapability, resolved.props, resolved.composition)
   }
   return make(LoomCore.Ast.text(""))
 }

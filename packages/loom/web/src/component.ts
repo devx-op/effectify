@@ -5,6 +5,7 @@ import type * as Pipeable from "effect/Pipeable"
 import type * as Diagnostics from "./diagnostics.js"
 import * as pipeable from "./internal/pipeable.js"
 import { trackStateAtomRead } from "./internal/tracked-state.js"
+import * as viewChild from "./internal/view-child.js"
 import type * as Slot from "./slot.js"
 import type * as View from "./view.js"
 
@@ -12,6 +13,7 @@ export type ModelValueInput = unknown | Atom.Atom<unknown> | (() => unknown)
 export type ModelShape = Readonly<Record<string, ModelValueInput>>
 export type ActionShape = Readonly<Record<string, unknown>>
 export type SlotShape = Readonly<Record<string, Slot.Definition>>
+type ChildrenFlag = true | false
 
 export interface ActionAnnotations {
   readonly label?: string
@@ -116,6 +118,7 @@ export interface ViewContext<Props, Model extends ModelShape, Actions extends Ac
 {
   readonly props: Props | undefined
   readonly actions: Actions
+  readonly children: View.ViewChild | undefined
   readonly slots: SlotAssignments<Slots>
 }
 
@@ -127,10 +130,12 @@ export interface Type<
   Model extends ModelShape = {},
   Actions extends ActionShape = {},
   Slots extends SlotShape = {},
+  _AcceptsChildren extends ChildrenFlag = false,
 > extends LoomCore.Component.Definition, Pipeable.Pipeable {
   readonly name?: string
   readonly model?: Model
   readonly actions?: ActionsInput<Model, Actions>
+  readonly children?: true
   readonly slots?: Slots
   readonly registry?: AtomRegistry.AtomRegistry
   readonly render?: (context: ViewContext<Props, Model, Actions, Slots>) => View.Node
@@ -139,11 +144,11 @@ export interface Type<
   readonly __requirements?: Requirements
 }
 
-export type ModelOf<ComponentType extends Type<any, any, any, any, any, any>> = ComponentType extends
-  Type<any, any, any, infer Model, any, any> ? Model : {}
+export type ModelOf<ComponentType extends Type<any, any, any, any, any, any, any>> = ComponentType extends
+  Type<any, any, any, infer Model, any, any, any> ? Model : {}
 
-export type ActionsOf<ComponentType extends Type<any, any, any, any, any, any>> = ComponentType extends
-  Type<any, any, any, any, infer Actions, any> ? Actions : {}
+export type ActionsOf<ComponentType extends Type<any, any, any, any, any, any, any>> = ComponentType extends
+  Type<any, any, any, any, infer Actions, any, any> ? Actions : {}
 
 /** Public Loom component capability. */
 export type Capability = LoomCore.Component.Capability
@@ -155,9 +160,10 @@ const makePipeable = <
   Model extends ModelShape,
   Actions extends ActionShape,
   Slots extends SlotShape,
+  AcceptsChildren extends ChildrenFlag,
 >(
-  value: Omit<Type<Props, Err, Requirements, Model, Actions, Slots>, keyof Pipeable.Pipeable>,
-): Type<Props, Err, Requirements, Model, Actions, Slots> => pipeable.make(value)
+  value: Omit<Type<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren>, keyof Pipeable.Pipeable>,
+): Type<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren> => pipeable.make(value)
 
 const emptyNode = LoomCore.Ast.fragment([])
 
@@ -290,8 +296,14 @@ export interface Instance<Model extends ModelShape, Actions extends ActionShape,
   readonly model: WriteModel<Model>
   readonly state: State<Model>
   readonly actions: Actions
+  readonly children: View.ViewChild | undefined
   readonly slots: SlotAssignments<Slots>
   readonly render: (actions?: Actions) => View.Node
+}
+
+interface InstanceCompositionInput {
+  readonly children?: View.ViewChild
+  readonly slots?: RuntimeSlotInput
 }
 
 export const instantiate = <
@@ -301,11 +313,12 @@ export const instantiate = <
   Model extends ModelShape,
   Actions extends ActionShape,
   Slots extends SlotShape,
+  AcceptsChildren extends ChildrenFlag,
 >(
-  component: Type<Props, Err, Requirements, Model, Actions, Slots>,
+  component: Type<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren>,
   registry: AtomRegistry.AtomRegistry = component.registry ?? AtomRegistry.make(),
   props?: Props,
-  slotInput?: RuntimeSlotInput,
+  compositionInput?: InstanceCompositionInput,
 ): Instance<Model, Actions, Slots> => {
   const materializedModel = materializeModel(component.model)
   const model = createWriteModel(materializedModel, registry)
@@ -325,13 +338,15 @@ export const instantiate = <
     : isActionSpec(actionDefinition)
     ? bindActionSpec(actionDefinition, actionBindingContext)
     : (actionDefinition ?? emptyActions)) as Actions
-  const slots = resolveSlots(component.slots, slotInput)
+  const children = component.children === true ? compositionInput?.children : undefined
+  const slots = resolveSlots(component.slots, compositionInput?.slots)
 
   return {
     registry,
     model,
     state,
     actions,
+    children,
     slots,
     render: (boundActions = actions) =>
       component.render === undefined
@@ -340,6 +355,7 @@ export const instantiate = <
           ...actionContext,
           props,
           actions: boundActions,
+          children,
           slots,
         }),
   }
@@ -352,23 +368,24 @@ const materialize = <
   Model extends ModelShape,
   Actions extends ActionShape,
   Slots extends SlotShape,
+  AcceptsChildren extends ChildrenFlag,
 >(
-  component: Type<Props, Err, Requirements, Model, Actions, Slots>,
+  component: Type<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren>,
 ): LoomCore.Ast.Node => {
   const instance = instantiate(component, component.registry ?? AtomRegistry.make())
   return instance.render()
 }
 
 const renderComponentUse = (
-  component: Type<any, any, any, any, any, any>,
+  component: Type<any, any, any, any, any, any, any>,
   props?: unknown,
-  slots?: RuntimeSlotInput,
+  compositionInput?: InstanceCompositionInput,
 ): View.Node =>
   instantiate(
     component,
     component.registry ?? AtomRegistry.make(),
     props,
-    slots,
+    compositionInput,
   ).render()
 
 const reconcile = <
@@ -378,9 +395,10 @@ const reconcile = <
   Model extends ModelShape,
   Actions extends ActionShape,
   Slots extends SlotShape,
+  AcceptsChildren extends ChildrenFlag,
 >(
-  component: Type<Props, Err, Requirements, Model, Actions, Slots>,
-): Type<Props, Err, Requirements, Model, Actions, Slots> =>
+  component: Type<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren>,
+): Type<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren> =>
   makePipeable({
     ...component,
     registry: component.registry ?? AtomRegistry.make(),
@@ -394,10 +412,13 @@ const patch = <
   Model extends ModelShape,
   Actions extends ActionShape,
   Slots extends SlotShape,
+  AcceptsChildren extends ChildrenFlag,
 >(
-  component: Type<Props, Err, Requirements, Model, Actions, Slots>,
-  update: Partial<Omit<Type<Props, Err, Requirements, Model, Actions, Slots>, keyof Pipeable.Pipeable>>,
-): Type<Props, Err, Requirements, Model, Actions, Slots> =>
+  component: Type<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren>,
+  update: Partial<
+    Omit<Type<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren>, keyof Pipeable.Pipeable>
+  >,
+): Type<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren> =>
   reconcile(makePipeable({
     ...component,
     ...update,
@@ -439,9 +460,16 @@ export const actionEffect = <Success, Err, Requirements>(
 /** Attach model atoms and values to a component definition. */
 export function model<Model extends ModelShape>(
   modelDefinition: Model,
-): <Props, Err, Requirements, Actions extends ActionShape, Slots extends SlotShape>(
-  self: Type<Props, Err, Requirements, {}, Actions, Slots>,
-) => Type<Props, Err, Requirements, Model, Actions, Slots>
+): <
+  Props,
+  Err,
+  Requirements,
+  Actions extends ActionShape,
+  Slots extends SlotShape,
+  AcceptsChildren extends ChildrenFlag,
+>(
+  self: Type<Props, Err, Requirements, {}, Actions, Slots, AcceptsChildren>,
+) => Type<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren>
 export function model<
   Props,
   Err,
@@ -449,23 +477,22 @@ export function model<
   Model extends ModelShape,
   Actions extends ActionShape,
   Slots extends SlotShape,
+  AcceptsChildren extends ChildrenFlag,
 >(
-  self: Type<Props, Err, Requirements, {}, Actions, Slots>,
+  self: Type<Props, Err, Requirements, {}, Actions, Slots, AcceptsChildren>,
   modelDefinition: Model,
-): Type<Props, Err, Requirements, Model, Actions, Slots>
+): Type<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren>
 export function model<
-  Props,
-  Err,
-  Requirements,
   Model extends ModelShape,
   Actions extends ActionShape,
   Slots extends SlotShape,
+  AcceptsChildren extends ChildrenFlag,
 >(
-  selfOrModel: Type<Props, Err, Requirements, {}, Actions, Slots> | Model,
+  selfOrModel: Type<any, any, any, {}, Actions, Slots, AcceptsChildren> | Model,
   modelDefinition?: Model,
 ) {
   if (modelDefinition === undefined) {
-    return (self: Type<Props, Err, Requirements, {}, Actions, Slots>) => patch(self, { model: selfOrModel })
+    return (self: Type<any, any, any, {}, Actions, Slots, AcceptsChildren>) => patch(self, { model: selfOrModel })
   }
 
   if (!isComponent(selfOrModel)) {
@@ -478,15 +505,16 @@ export function model<
 /** Attach action definitions or factories to a component definition. */
 export function actions<Model extends ModelShape, Spec extends ActionSpec<Model>>(
   actionDefinition: Spec,
-): <Props, Err, Requirements, Slots extends SlotShape>(
-  self: Type<Props, Err, Requirements, Model, {}, Slots>,
+): <Props, Err, Requirements, Slots extends SlotShape, AcceptsChildren extends ChildrenFlag>(
+  self: Type<Props, Err, Requirements, Model, {}, Slots, AcceptsChildren>,
 ) => Type<
   Props,
   Err | ActionError<BoundActions<Spec, Model>>,
   Requirements | ActionRequirements<BoundActions<Spec, Model>>,
   Model,
   BoundActions<Spec, Model>,
-  Slots
+  Slots,
+  AcceptsChildren
 >
 export function actions<
   Props,
@@ -495,8 +523,9 @@ export function actions<
   Model extends ModelShape,
   Spec extends ActionSpec<Model>,
   Slots extends SlotShape,
+  AcceptsChildren extends ChildrenFlag,
 >(
-  self: Type<Props, Err, Requirements, Model, {}, Slots>,
+  self: Type<Props, Err, Requirements, Model, {}, Slots, AcceptsChildren>,
   actionDefinition: Spec,
 ): Type<
   Props,
@@ -504,13 +533,22 @@ export function actions<
   Requirements | ActionRequirements<BoundActions<Spec, Model>>,
   Model,
   BoundActions<Spec, Model>,
-  Slots
+  Slots,
+  AcceptsChildren
 >
 export function actions<Model extends ModelShape, Actions extends ActionShape>(
   actionDefinition: ActionsInput<Model, Actions>,
-): <Props, Err, Requirements, Slots extends SlotShape>(
-  self: Type<Props, Err, Requirements, Model, {}, Slots>,
-) => Type<Props, Err | ActionError<Actions>, Requirements | ActionRequirements<Actions>, Model, Actions, Slots>
+): <Props, Err, Requirements, Slots extends SlotShape, AcceptsChildren extends ChildrenFlag>(
+  self: Type<Props, Err, Requirements, Model, {}, Slots, AcceptsChildren>,
+) => Type<
+  Props,
+  Err | ActionError<Actions>,
+  Requirements | ActionRequirements<Actions>,
+  Model,
+  Actions,
+  Slots,
+  AcceptsChildren
+>
 export function actions<
   Props,
   Err,
@@ -518,23 +556,28 @@ export function actions<
   Model extends ModelShape,
   Actions extends ActionShape,
   Slots extends SlotShape,
+  AcceptsChildren extends ChildrenFlag,
 >(
-  self: Type<Props, Err, Requirements, Model, {}, Slots>,
+  self: Type<Props, Err, Requirements, Model, {}, Slots, AcceptsChildren>,
   actionDefinition: ActionsInput<Model, Actions>,
-): Type<Props, Err | ActionError<Actions>, Requirements | ActionRequirements<Actions>, Model, Actions, Slots>
-export function actions<
+): Type<
   Props,
-  Err,
-  Requirements,
+  Err | ActionError<Actions>,
+  Requirements | ActionRequirements<Actions>,
+  Model,
+  Actions,
+  Slots,
+  AcceptsChildren
+>
+export function actions<
   Model extends ModelShape,
   Actions extends ActionShape,
-  Slots extends SlotShape,
 >(
-  selfOrActions: Type<Props, Err, Requirements, Model, {}, Slots> | ActionsInput<Model, Actions>,
+  selfOrActions: Type<any, any, any, Model, {}, SlotShape, ChildrenFlag> | ActionsInput<Model, Actions>,
   actionDefinition?: ActionsInput<Model, Actions>,
 ) {
   if (actionDefinition === undefined) {
-    return (self: Type<Props, Err, Requirements, Model, {}, Slots>) => patch(self, { actions: selfOrActions })
+    return (self: Type<any, any, any, Model, {}, SlotShape, ChildrenFlag>) => patch(self, { actions: selfOrActions })
   }
 
   if (!isComponent(selfOrActions)) {
@@ -548,8 +591,13 @@ export function actions<
 export function view<Model extends ModelShape, Actions extends ActionShape, Slots extends SlotShape>(
   render: (context: ViewContext<never, Model, Actions, Slots>) => View.Node,
 ): <Props, Err, Requirements>(
-  self: Type<Props, Err, Requirements, Model, Actions, Slots>,
-) => Type<Props, Err, Requirements, Model, Actions, Slots>
+  self: Type<Props, Err, Requirements, Model, Actions, Slots, false>,
+) => Type<Props, Err, Requirements, Model, Actions, Slots, false>
+export function view<Model extends ModelShape, Actions extends ActionShape, Slots extends SlotShape>(
+  render: (context: ViewContext<never, Model, Actions, Slots>) => View.Node,
+): <Props, Err, Requirements>(
+  self: Type<Props, Err, Requirements, Model, Actions, Slots, true>,
+) => Type<Props, Err, Requirements, Model, Actions, Slots, true>
 export function view<
   Props,
   Err,
@@ -557,10 +605,11 @@ export function view<
   Model extends ModelShape,
   Actions extends ActionShape,
   Slots extends SlotShape,
+  AcceptsChildren extends ChildrenFlag,
 >(
-  self: Type<Props, Err, Requirements, Model, Actions, Slots>,
+  self: Type<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren>,
   render: (context: ViewContext<Props, Model, Actions, Slots>) => View.Node,
-): Type<Props, Err, Requirements, Model, Actions, Slots>
+): Type<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren>
 export function view(
   selfOrRender: Type | ((context: ViewContext<never, ModelShape, ActionShape, SlotShape>) => View.Node),
   render?: (context: ViewContext<never, ModelShape, ActionShape, SlotShape>) => View.Node,
@@ -584,8 +633,16 @@ export function view(
 export function slots<Slots extends SlotShape>(
   slotDefinition: Slots,
 ): <Props, Err, Requirements, Model extends ModelShape, Actions extends ActionShape>(
-  self: Type<Props, Err, Requirements, Model, Actions, {}>,
-) => Type<Props, Err, Requirements, Model, Actions, Slots>
+  self: Type<
+    Props,
+    Err,
+    Requirements,
+    Model,
+    Actions,
+    {},
+    false
+  >,
+) => Type<Props, Err, Requirements, Model, Actions, Slots, false>
 export function slots<
   Props,
   Err,
@@ -594,22 +651,17 @@ export function slots<
   Actions extends ActionShape,
   Slots extends SlotShape,
 >(
-  self: Type<Props, Err, Requirements, Model, Actions, {}>,
+  self: Type<Props, Err, Requirements, Model, Actions, {}, false>,
   slotDefinition: Slots,
-): Type<Props, Err, Requirements, Model, Actions, Slots>
+): Type<Props, Err, Requirements, Model, Actions, Slots, false>
 export function slots<
-  Props,
-  Err,
-  Requirements,
-  Model extends ModelShape,
-  Actions extends ActionShape,
   Slots extends SlotShape,
 >(
-  selfOrSlots: Type<Props, Err, Requirements, Model, Actions, {}> | Slots,
+  selfOrSlots: Type | Slots,
   slotDefinition?: Slots,
 ) {
   if (slotDefinition === undefined) {
-    return (self: Type<Props, Err, Requirements, Model, Actions, {}>) => patch(self, { slots: selfOrSlots })
+    return (self: Type) => patch(self, { slots: selfOrSlots })
   }
 
   if (!isComponent(selfOrSlots)) {
@@ -617,6 +669,72 @@ export function slots<
   }
 
   return patch(selfOrSlots, { slots: slotDefinition })
+}
+
+/** Attach default unnamed child composition to a component definition. */
+export function children(): <Props, Err, Requirements, Model extends ModelShape, Actions extends ActionShape>(
+  self: Type<
+    Props,
+    Err,
+    Requirements,
+    Model,
+    Actions,
+    {},
+    false
+  >,
+) => Type<Props, Err, Requirements, Model, Actions, {}, true>
+export function children(self: Type): Type
+export function children(self?: Type) {
+  if (self === undefined) {
+    return (component: Type) => patch(component, { children: true })
+  }
+
+  return patch(self, { children: true })
+}
+
+const isPropsLikeObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value) && !("_tag" in value)
+
+const resolveUseComposition = (
+  component: Type,
+  propsOrComposition: unknown,
+  composition: unknown,
+): {
+  readonly props: unknown
+  readonly composition: InstanceCompositionInput | undefined
+} => {
+  if (component.children === true) {
+    if (composition !== undefined) {
+      return {
+        props: propsOrComposition,
+        composition: { children: composition as View.ViewChild },
+      }
+    }
+
+    if (viewChild.isViewChild(propsOrComposition) && !isPropsLikeObject(propsOrComposition)) {
+      return {
+        props: undefined,
+        composition: { children: propsOrComposition },
+      }
+    }
+
+    return {
+      props: propsOrComposition,
+      composition: undefined,
+    }
+  }
+
+  if (component.slots !== undefined) {
+    return {
+      props: propsOrComposition,
+      composition: composition === undefined ? undefined : { slots: composition as RuntimeSlotInput },
+    }
+  }
+
+  return {
+    props: propsOrComposition,
+    composition: undefined,
+  }
 }
 
 /**
@@ -631,9 +749,30 @@ export function use<
   Requirements,
   Model extends ModelShape,
   Actions extends ActionShape,
+>(
+  component: Type<Props, Err, Requirements, Model, Actions, {}, true>,
+  children: View.ViewChild,
+): View.Node
+export function use<
+  Props,
+  Err,
+  Requirements,
+  Model extends ModelShape,
+  Actions extends ActionShape,
+>(
+  component: Type<Props, Err, Requirements, Model, Actions, {}, true>,
+  props: Props,
+  children: View.ViewChild,
+): View.Node
+export function use<
+  Props,
+  Err,
+  Requirements,
+  Model extends ModelShape,
+  Actions extends ActionShape,
   Slots extends SlotShape,
 >(
-  component: Type<Props, Err, Requirements, Model, Actions, Slots>,
+  component: Type<Props, Err, Requirements, Model, Actions, Slots, false>,
   props: Props,
   slots: SlotInput<Slots>,
 ): View.Node
@@ -645,18 +784,19 @@ export function use<
   Actions extends ActionShape,
   Slots extends SlotShape,
 >(
-  component: Type<Props, Err, Requirements, Model, Actions, Slots>,
+  component: Type<Props, Err, Requirements, Model, Actions, Slots, false>,
   props?: Props,
   slots?: SlotInput<Slots>,
 ): View.Node
 export function use(
   selfOrCapability: Type | Capability,
   capabilityOrProps?: Capability | unknown,
-  slotInput?: SlotInput<SlotShape>,
+  slotInput?: unknown,
 ) {
   if (capabilityOrProps === undefined) {
     if (selfOrCapability._tag === "Component" && slotInput !== undefined) {
-      return renderComponentUse(selfOrCapability, undefined, slotInput)
+      const resolved = resolveUseComposition(selfOrCapability, undefined, slotInput)
+      return renderComponentUse(selfOrCapability, resolved.props, resolved.composition)
     }
 
     if (selfOrCapability._tag === "ComponentEffect") {
@@ -682,7 +822,8 @@ export function use(
       )
     }
 
-    return renderComponentUse(selfOrCapability, capabilityOrProps, slotInput)
+    const resolved = resolveUseComposition(selfOrCapability, capabilityOrProps, slotInput)
+    return renderComponentUse(selfOrCapability, resolved.props, resolved.composition)
   }
 
   return make(LoomCore.Ast.text(""))

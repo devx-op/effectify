@@ -14,10 +14,14 @@ describe("@effectify/loom vNext public surface", () => {
     expect(typeof Component.actions).toBe("function")
     expect(typeof Component.actionEffect).toBe("function")
     expect(typeof Component.isActionEffect).toBe("function")
+    expect(typeof Component.children).toBe("function")
     expect(typeof Component.view).toBe("function")
     expect(typeof Component.slots).toBe("function")
     expect(typeof Slot.required).toBe("function")
+    expect(typeof View.vstack).toBe("function")
+    expect(typeof View.hstack).toBe("function")
     expect(typeof View.stack).toBe("function")
+    expect(typeof View.link).toBe("function")
     expect(typeof Web.className).toBe("function")
     expect(typeof mount).toBe("function")
   })
@@ -247,6 +251,120 @@ describe("@effectify/loom vNext public surface", () => {
 
     full.dispose()
     optional.dispose()
+  })
+
+  it("supports children-based composition through metadata-driven Component.use dispatch", () => {
+    const card = Component.make("card").pipe(
+      Component.children(),
+      Component.view(({ children }) =>
+        View.vstack(
+          View.text("Card"),
+          View.main(children),
+        ).pipe(Web.className("card"))
+      ),
+    )
+
+    const page = Component.make("page").pipe(
+      Component.view(() =>
+        View.fragment(
+          Component.use(card, View.text("Simple body")),
+          Component.use(card, undefined, ["Nested ", 2, false, View.text("items")]),
+        )
+      ),
+    )
+
+    const handle = mount({ page })
+
+    expect(handle.html).toContain('<div class="card">Card<main>Simple body</main></div>')
+    expect(handle.html).toContain('<div class="card">Card<main>Nested 2items</main></div>')
+
+    handle.dispose()
+  })
+
+  it("normalizes broad ViewChild content for fragments, buttons, links, and layout aliases", () => {
+    const badge = Component.make("badge").pipe(
+      Component.view(() => View.text("Docs")),
+    )
+    const icon = View.text("+")
+    const vertical = View.vstack("one", [2, null, false, View.text("three")])
+    const horizontal = View.hstack(icon, "Save")
+    const button = View.button([horizontal, " now"], effectLike)
+    const link = View.link([badge, " guide"], {
+      href: "/docs",
+      target: "_blank",
+      rel: "noreferrer",
+      download: true,
+    })
+
+    expect(View.stack("one", [2, null, false, View.text("three")])).toEqual(vertical)
+    expect(View.row(icon, "Save")).toEqual(horizontal)
+    expect(vertical).toMatchObject({
+      _tag: "Element",
+      tagName: "div",
+      children: [
+        { _tag: "Text", value: "one" },
+        { _tag: "Text", value: "2" },
+        { _tag: "Text", value: "three" },
+      ],
+    })
+    expect(button).toMatchObject({
+      _tag: "Element",
+      tagName: "button",
+      children: [
+        {
+          _tag: "Element",
+          tagName: "div",
+          children: [
+            { _tag: "Text", value: "+" },
+            { _tag: "Text", value: "Save" },
+          ],
+        },
+        { _tag: "Text", value: " now" },
+      ],
+    })
+    expect(link).toMatchObject({
+      _tag: "Element",
+      tagName: "a",
+      attributes: {
+        href: "/docs",
+        target: "_blank",
+        rel: "noreferrer",
+        download: "",
+      },
+      children: [
+        {
+          _tag: "ComponentUse",
+          component: badge,
+        },
+        { _tag: "Text", value: " guide" },
+      ],
+    })
+  })
+
+  it("renders primitive child content with text, nested views, and component children", () => {
+    const badge = Component.make("badge").pipe(
+      Component.view(() => View.text("Guide")),
+    )
+
+    const page = Component.make("primitive-content-page").pipe(
+      Component.view(() =>
+        View.fragment(
+          View.button(View.fragment("Save", " now"), effectLike),
+          View.button(View.hstack(View.text("+"), "1"), effectLike),
+          View.link("Open settings", "/settings"),
+          View.link(View.fragment(badge, " docs"), { href: "/docs" }),
+        )
+      ),
+    )
+
+    const handle = mount({ page })
+
+    expect(handle.html).toContain("<button>Save now</button>")
+    expect(handle.html).toContain("<button><div>+1</div></button>")
+    expect(handle.html).toContain('<a href="/settings">Open settings</a>')
+    expect(handle.html).toContain('<a href="/docs">Guide docs</a>')
+
+    handle.dispose()
   })
 
   it("keeps View nodes pipeable and lets Web modifiers update element attributes", () => {
