@@ -417,6 +417,34 @@ describe("@effectify/loom vNext public surface", () => {
     })
   })
 
+  it("widens Web modifiers to retain snapshot attrs and record reactive element bindings", () => {
+    const view = View.main(
+      View.text("Ready"),
+    ).pipe(
+      Web.className("shell"),
+      Web.attr("title", () => "Dynamic title"),
+      Web.data("panel", () => "main"),
+      Web.aria("label", () => "Primary content"),
+      Web.className(() => "interactive"),
+      Web.style(() => ({ display: "flex", gap: "1rem" })),
+    )
+
+    expect(view).toMatchObject({
+      _tag: "Element",
+      tagName: "main",
+      attributes: {
+        class: "shell",
+      },
+      bindings: [
+        { _tag: "AttrBinding", name: "title" },
+        { _tag: "AttrBinding", name: "data-panel" },
+        { _tag: "AttrBinding", name: "aria-label" },
+        { _tag: "ClassBinding" },
+        { _tag: "StyleBinding" },
+      ],
+    })
+  })
+
   it("mounts a named component record through the additive mount seam", () => {
     const root = document.createElement("div")
     const counter = Component.make("counter").pipe(
@@ -467,6 +495,50 @@ describe("@effectify/loom vNext public surface", () => {
     expect(textNode?.textContent).toBe("Count: 2")
     expect(footerNode?.textContent).toBe("Stable footer")
     expect(root.innerHTML).toContain("Count: 2")
+
+    handle.dispose()
+  })
+
+  it("updates mounted reactive attrs, data, aria, class, and style bindings in place", () => {
+    const root = document.createElement("div")
+    const counter = Component.make("counter").pipe(
+      Component.model({ count: Atom.make(1) }),
+      Component.actions({
+        increment: ({ count }) => count.update((value) => value + 1),
+      }),
+      Component.view(({ state }) =>
+        View.stack(
+          View.text("Stable label"),
+        ).pipe(
+          Web.attr("title", () => `Count ${state.count()}`),
+          Web.data("count", () => state.count()),
+          Web.aria("label", () => `Counter ${state.count()}`),
+          Web.className(() => `count-${state.count()}`),
+          Web.style(() => ({ order: state.count(), gap: `${state.count()}rem` })),
+        )
+      ),
+    )
+
+    const handle = mount({ counter }, { root })
+    const container = root.firstElementChild
+    const stableNode = container?.firstChild
+
+    expect(container?.getAttribute("title")).toBe("Count 1")
+    expect(container?.getAttribute("data-count")).toBe("1")
+    expect(container?.getAttribute("aria-label")).toBe("Counter 1")
+    expect(container?.className).toBe("count-1")
+    expect(container?.getAttribute("style")).toBe("order:1;gap:1rem")
+
+    // @ts-expect-error mount action typing still widens in the current additive bridge.
+    handle.actions.increment()
+
+    expect(root.firstElementChild).toBe(container)
+    expect(container?.firstChild).toBe(stableNode)
+    expect(container?.getAttribute("title")).toBe("Count 2")
+    expect(container?.getAttribute("data-count")).toBe("2")
+    expect(container?.getAttribute("aria-label")).toBe("Counter 2")
+    expect(container?.className).toBe("count-2")
+    expect(container?.getAttribute("style")).toBe("order:2;gap:2rem")
 
     handle.dispose()
   })
@@ -552,6 +624,68 @@ describe("@effectify/loom vNext public surface", () => {
 
     expect(secondRoot.firstChild).toBe(secondNode)
     expect(secondRoot.textContent).toBe("Second: done")
+
+    secondHandle.dispose()
+    registry.dispose()
+  })
+
+  it("keeps mounted reactive element bindings isolated and stops updating disposed roots", () => {
+    const parent = document.createElement("div")
+    const firstRoot = document.createElement("div")
+    const secondRoot = document.createElement("div")
+    const registry = AtomRegistry.make()
+    parent.append(firstRoot, secondRoot)
+
+    const first = Component.make("first").pipe(
+      Component.model({ count: Atom.make(1) }),
+      Component.actions({
+        increment: ({ count }) => count.update((value) => value + 1),
+      }),
+      Component.view(({ state }) =>
+        View.stack(View.text("First")).pipe(
+          Web.attr("data-count", () => state.count()),
+          Web.className(() => `first-${state.count()}`),
+        )
+      ),
+    )
+
+    const second = Component.make("second").pipe(
+      Component.model({ label: Atom.make("ready") }),
+      Component.actions({
+        rename: ({ label }) => label.set("done"),
+      }),
+      Component.view(({ state }) =>
+        View.stack(View.text("Second")).pipe(
+          Web.attr("data-label", () => state.label()),
+          Web.className(() => `second-${state.label()}`),
+        )
+      ),
+    )
+
+    const firstHandle = mount({ first }, { root: firstRoot, registry })
+    const secondHandle = mount({ second }, { root: secondRoot, registry })
+    const secondNode = secondRoot.firstElementChild
+
+    // @ts-expect-error mount action typing still widens in the current additive bridge.
+    firstHandle.actions.increment()
+
+    expect(firstRoot.firstElementChild?.getAttribute("data-count")).toBe("2")
+    expect(firstRoot.firstElementChild?.className).toBe("first-2")
+    expect(secondRoot.firstElementChild).toBe(secondNode)
+    expect(secondRoot.firstElementChild?.getAttribute("data-label")).toBe("ready")
+
+    firstHandle.dispose()
+
+    expect(() => firstHandle.model.count.set(3)).not.toThrow()
+    expect(firstRoot.firstElementChild?.getAttribute("data-count")).toBe("2")
+    expect(firstRoot.firstElementChild?.className).toBe("first-2")
+
+    // @ts-expect-error mount action typing still widens in the current additive bridge.
+    secondHandle.actions.rename()
+
+    expect(secondRoot.firstElementChild).toBe(secondNode)
+    expect(secondRoot.firstElementChild?.getAttribute("data-label")).toBe("done")
+    expect(secondRoot.firstElementChild?.className).toBe("second-done")
 
     secondHandle.dispose()
     registry.dispose()

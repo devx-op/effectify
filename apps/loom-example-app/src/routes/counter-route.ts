@@ -7,6 +7,46 @@ export const counterRouteId = "counter"
 export const counterRoutePath = "/"
 export const counterRouteTitle = "Counter"
 
+const counterCueTone = (count: number): "baseline" | "rising" | "falling" => {
+  if (count > counterInitialCount) {
+    return "rising"
+  }
+
+  if (count < counterInitialCount) {
+    return "falling"
+  }
+
+  return "baseline"
+}
+
+const counterCueStyle = (count: number): Web.StyleRecord => {
+  const delta = count - counterInitialCount
+  const tone = counterCueTone(count)
+  const lift = Math.min(Math.abs(delta), 4)
+
+  if (tone === "rising") {
+    return {
+      backgroundColor: `rgba(16, 185, 129, ${0.14 + lift * 0.06})`,
+      boxShadow: `0 0 0 1px rgba(5, 150, 105, ${0.35 + lift * 0.08})`,
+      transform: `translateY(${-lift}px)`,
+    }
+  }
+
+  if (tone === "falling") {
+    return {
+      backgroundColor: `rgba(249, 115, 22, ${0.14 + lift * 0.06})`,
+      boxShadow: `0 0 0 1px rgba(234, 88, 12, ${0.35 + lift * 0.08})`,
+      transform: `translateY(${lift}px)`,
+    }
+  }
+
+  return {
+    backgroundColor: "rgba(59, 130, 246, 0.12)",
+    boxShadow: "0 0 0 1px rgba(37, 99, 235, 0.18)",
+    transform: "translateY(0px)",
+  }
+}
+
 export const counterRoute = Component.make("counter-route").pipe(
   Component.model({
     count: () => Atom.make(counterInitialCount).pipe(Atom.keepAlive),
@@ -41,6 +81,17 @@ export const counterRoute = Component.make("counter-route").pipe(
               Web.data("counter-dynamic-value", "true"),
             ),
           ).pipe(Web.className("counter-value"), Web.data("counter-value", "true")),
+          View.hstack(
+            View.text("Reactive cue").pipe(Web.className("counter-cue-label")),
+            View.vstack(View.text("Loom attr/class/style in place")).pipe(
+              Web.className("counter-reactive-cue"),
+              Web.data("counter-reactive-cue", "true"),
+              Web.attr("title", () => `Reactive cue tone: ${counterCueTone(state.count())} (${state.count()})`),
+              Web.data("counter-tone", () => counterCueTone(state.count())),
+              Web.className(() => `counter-reactive-cue--${counterCueTone(state.count())}`),
+              Web.style(() => counterCueStyle(state.count())),
+            ),
+          ).pipe(Web.className("counter-cue-row")),
         ).pipe(Web.className("counter-value-card")),
         View.hstack(
           View.button(View.fragment("-", 1), actions.decrement).pipe(
@@ -65,7 +116,7 @@ export const counterRoute = Component.make("counter-route").pipe(
         ).pipe(Web.className("compat-seam-note"), Web.data("compat-seam-note", "true")),
         View.vstack(
           View.text(
-            "Debug cue: only the numeric value flashes when the current text-node slice updates; the surrounding label stays static.",
+            "Reactive cue: the badge now uses Loom-native attr/class/style bindings, while the numeric text stays on the existing dynamic-text seam.",
           ),
         ).pipe(Web.className("counter-debug-note"), Web.data("counter-debug-note", "true")),
         View.vstack(

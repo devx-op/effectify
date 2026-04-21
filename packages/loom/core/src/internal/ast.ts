@@ -16,6 +16,7 @@ export const makeElementNode = (
   tagName: string,
   options: {
     readonly attributes: Readonly<Record<string, string>>
+    readonly bindings: ReadonlyArray<Ast.ElementBinding>
     readonly children: ReadonlyArray<Ast.Node>
     readonly events: ReadonlyArray<Ast.EventBinding>
     readonly hydration: Ast.HydrationMetadata | undefined
@@ -24,6 +25,7 @@ export const makeElementNode = (
   _tag: "Element",
   tagName,
   attributes: options.attributes,
+  bindings: options.bindings,
   children: options.children,
   events: options.events,
   hydration: options.hydration,

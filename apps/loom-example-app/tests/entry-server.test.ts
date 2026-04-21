@@ -18,7 +18,8 @@ describe("loom example app server entry", () => {
     expect(result.html).toContain('data-counter-action="increment"')
     expect(result.html).toContain('data-counter-value="true"')
     expect(result.html).toContain('data-counter-dynamic-value="true"')
-    expect(result.html).toContain("only the numeric value flashes")
+    expect(result.html).toContain('data-counter-reactive-cue="true"')
+    expect(result.html).toContain("Loom-native attr/class/style bindings")
     expect(result.html).toContain("mount(...) to fill the empty root")
   })
 

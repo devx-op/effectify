@@ -1,7 +1,6 @@
 import { Html, mount } from "@effectify/loom"
 import { LoomVite } from "@effectify/loom-vite"
 import { appBuildId, appPayloadElementId, appRootId } from "./app-config.js"
-import { attachCounterDebugFlash } from "./counter-debug.js"
 import { bodyForResult, resolveAppRequest, titleForResult } from "./router.js"
 import { counterRoute } from "./routes/counter-route.js"
 
@@ -33,7 +32,6 @@ const renderClientFallback = (document: Document): boolean => {
 
     if (shell instanceof HTMLElement) {
       mount({ counterRoute }, { root: shell })
-      attachCounterDebugFlash(document)
     }
   } else {
     root.innerHTML = Html.renderToString(bodyForResult(result))

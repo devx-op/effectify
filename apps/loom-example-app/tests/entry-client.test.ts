@@ -8,6 +8,14 @@ const yieldToEventLoop = async (): Promise<void> => {
   await new Promise((resolve) => setTimeout(resolve, 0))
 }
 
+const expectElement = (value: Element | null, name: string): HTMLElement => {
+  if (!(value instanceof HTMLElement)) {
+    throw new Error(`expected ${name}`)
+  }
+
+  return value
+}
+
 describe("loom example app client entry", () => {
   it("reports a missing payload while leaving the SSR shell untouched", async () => {
     document.body.innerHTML = '<div id="loom-root"><main>server shell</main></div>'
@@ -59,6 +67,7 @@ describe("loom example app client entry", () => {
     const count = () => document.querySelector('[data-counter-value="true"]')?.textContent
     const normalizedCount = () => count()?.replace(/\s+/g, " ").trim()
     const dynamicValue = () => document.querySelector('[data-counter-dynamic-value="true"]')
+    const reactiveCue = () => document.querySelector('[data-counter-reactive-cue="true"]')
     const click = (actionName: "decrement" | "increment" | "reset") => {
       const button = document.querySelector(`[data-counter-action="${actionName}"]`)
 
@@ -72,16 +81,35 @@ describe("loom example app client entry", () => {
     expect(result.status).toBe("missing-payload")
     expect(document.querySelectorAll('[data-app-shell="loom-example-app"]')).toHaveLength(1)
     expect(normalizedCount()).toBe("Count: 2")
-    expect(document.body.textContent).toContain("only the numeric value flashes")
+    expect(document.body.textContent).toContain("Loom-native attr/class/style bindings")
+
+    const cueBefore = expectElement(reactiveCue(), "reactive cue")
+    const dynamicValueBefore = expectElement(dynamicValue(), "dynamic counter value")
+
+    expect(cueBefore.dataset.counterTone).toBe("baseline")
+    expect(cueBefore.className).toContain("counter-reactive-cue--baseline")
+    expect(cueBefore.getAttribute("title")).toBe("Reactive cue tone: baseline (2)")
+    expect(cueBefore.style.backgroundColor).toBe("rgba(59, 130, 246, 0.12)")
+    expect(cueBefore.style.transform).toBe("translateY(0px)")
 
     click("increment")
     await yieldToEventLoop()
     expect(normalizedCount()).toBe("Count: 3")
-    expect(dynamicValue()?.getAttribute("data-counter-debug-flash")).toBe("active")
+
+    const cueAfterIncrement = expectElement(reactiveCue(), "reactive cue after increment")
+    const dynamicValueAfterIncrement = expectElement(dynamicValue(), "dynamic counter value after increment")
+
+    expect(cueAfterIncrement).toBe(cueBefore)
+    expect(dynamicValueAfterIncrement).toBe(dynamicValueBefore)
+    expect(cueAfterIncrement.getAttribute("data-counter-tone")).toBe("rising")
+    expect(cueAfterIncrement.className).toContain("counter-reactive-cue--rising")
+    expect(cueAfterIncrement.getAttribute("title")).toBe("Reactive cue tone: rising (3)")
+    expect(cueAfterIncrement.style.transform).toBe("translateY(-1px)")
 
     click("increment")
     await yieldToEventLoop()
     expect(normalizedCount()).toBe("Count: 4")
+    expect(expectElement(reactiveCue(), "reactive cue after second increment").style.transform).toBe("translateY(-2px)")
 
     click("decrement")
     await yieldToEventLoop()
@@ -90,6 +118,8 @@ describe("loom example app client entry", () => {
     click("decrement")
     await yieldToEventLoop()
     expect(normalizedCount()).toBe("Count: 2")
+    expect(reactiveCue()?.getAttribute("data-counter-tone")).toBe("baseline")
+    expect(expectElement(reactiveCue(), "reactive cue after decrement").style.transform).toBe("translateY(0px)")
 
     click("reset")
     await yieldToEventLoop()

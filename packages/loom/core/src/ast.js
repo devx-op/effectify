@@ -7,6 +7,7 @@ export const dynamicText = (render) => internal.makeDynamicTextNode(render)
 export const element = (tagName, options) =>
   internal.makeElementNode(tagName, {
     attributes: options?.attributes ?? {},
+    bindings: options?.bindings ?? [],
     children: options?.children ?? [],
     events: options?.events ?? [],
     hydration: options?.hydration,

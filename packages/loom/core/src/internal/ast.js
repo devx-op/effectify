@@ -10,6 +10,7 @@ export const makeElementNode = (tagName, options) => ({
   _tag: "Element",
   tagName,
   attributes: options.attributes,
+  bindings: options.bindings,
   children: options.children,
   events: options.events,
   hydration: options.hydration,

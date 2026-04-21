@@ -107,6 +107,17 @@ const view = View.vstack(View.text("hello")).pipe(
   Web.style({ display: "flex", gap: "1rem" }),
 )
 const aliasView = View.stack(View.text("hello"))
+const reactiveView = View.stack(View.text("hello")).pipe(
+  Web.attr("data-count", () => "1"),
+  Web.attrs({
+    id: () => "dynamic-id",
+    title: () => "Dynamic title",
+  }),
+  Web.data("variant", () => "interactive"),
+  Web.aria("label", () => "Greeting"),
+  Web.className(() => "stack interactive"),
+  Web.style(() => ({ display: "flex", gap: "1rem" })),
+)
 const actionView = View.button(View.hstack(View.text("+"), "Save"), effectLike)
 const stringLinkView = View.link("Open settings", "/settings")
 const objectLinkView = View.link(View.fragment(badge, " docs"), {
@@ -122,6 +133,7 @@ const maybeClassName = view._tag === "Element" ? view.attributes.class : undefin
 const maybeDataVariant = view._tag === "Element" ? view.attributes["data-variant"] : undefined
 const maybeAriaLabel = view._tag === "Element" ? view.attributes["aria-label"] : undefined
 const maybeStyle = view._tag === "Element" ? view.attributes.style : undefined
+const reactiveBindings = reactiveView._tag === "Element" ? reactiveView.bindings : []
 const counterName: string | undefined = counter.name
 const counterModel:
   | {
@@ -153,6 +165,7 @@ const mountedLoad = instantiatedEffectful.actions.load()
 const loadExecution: Component.ActionEffect<string, SaveFailure, SaveGateway> = mountedLoad
 const loadExecutionLabel: string | undefined = loadExecution.annotations?.label
 const stackAlias: View.Node = aliasView
+const reactiveNode: View.Node = reactiveView
 const buttonView: View.Node = actionView
 const plainLinkNode: View.Node = stringLinkView
 const objectLinkNode: View.Node = objectLinkView
@@ -188,14 +201,8 @@ const _invalidMountedCount: number = mounted.state.count
 // @ts-expect-error Non-Atom model values are not writable handles.
 mounted.model.label.update((value) => value)
 
-// @ts-expect-error Fine-grained reactive attrs are out of scope for this slice.
-Web.attr("data-count", () => "1")
-
-// @ts-expect-error Fine-grained reactive attrs are out of scope for this slice.
-Web.attrs({ id: () => "dynamic-id" })
-
-// @ts-expect-error Fine-grained reactive styles are out of scope for this slice.
-Web.style(() => ({ display: "flex" }))
+// @ts-expect-error Fine-grained reactive attrs record thunks stay out of scope for this slice.
+Web.attrs(() => ({ id: "dynamic-id" }))
 
 // @ts-expect-error Fine-grained reactive hydration is out of scope for this slice.
 Web.hydrate(() => Hydration.manual())
@@ -235,6 +242,8 @@ export const typecheckSmoke = {
   childrenPage,
   view,
   stackAlias,
+  reactiveNode,
+  reactiveBindings,
   buttonView,
   plainLinkNode,
   objectLinkNode,

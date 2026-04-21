@@ -1,12 +1,19 @@
+import type * as LoomCore from "@effectify/loom-core"
 import type * as Html from "./html.js"
 import * as Hydration from "./hydration.js"
 import * as internal from "./internal/view-node.js"
 
 export type Modifier = (view: internal.Type) => internal.Type
 export type AttrValue = string | number | boolean | null | undefined
-export type AttrRecord = Readonly<Record<string, AttrValue>>
+export type ReactiveInput<Value> = Value | (() => Value)
+export type ReactiveAttrValue = ReactiveInput<AttrValue>
+export type AttrRecord = Readonly<Record<string, ReactiveAttrValue>>
 export type StyleValue = string | number | null | undefined
 export type StyleRecord = Readonly<Record<string, StyleValue>>
+export type StyleInput = string | StyleRecord
+export type ReactiveStyleInput = ReactiveInput<StyleInput>
+
+const isReactiveInput = <Value>(value: ReactiveInput<Value>): value is () => Value => typeof value === "function"
 
 const toAttrValue = (value: AttrValue): string | undefined => {
   if (value === undefined || value === null || value === false) {
@@ -34,12 +41,50 @@ const serializeStyle = (value: string | StyleRecord): string => {
     .join(";")
 }
 
+const appendBinding = (
+  view: internal.Type,
+  binding: LoomCore.Ast.ElementBinding,
+): internal.Type =>
+  internal.mapElement(view, (element) => ({
+    ...element,
+    bindings: [...element.bindings, binding],
+  }))
+
 /** Attach a CSS class to a view element. Non-element nodes pass through unchanged. */
-export const className = (value: string): Modifier => attr("class", value)
+export const className = (value: ReactiveInput<string>): Modifier =>
+  isReactiveInput(value)
+    ? (view) =>
+      appendBinding(view, {
+        _tag: "ClassBinding",
+        render: () => value(),
+      })
+    : attr("class", value)
 
 /** Attach a DOM attribute to a view element. Non-element nodes pass through unchanged. */
-export const attr = (name: string, value: AttrValue): Modifier => (view) =>
-  internal.mapElement(view, (element) => {
+export const attr = (name: string, value: ReactiveAttrValue): Modifier => (view) => {
+  if (isReactiveInput(value)) {
+    if (name === "class") {
+      return appendBinding(view, {
+        _tag: "ClassBinding",
+        render: () => toAttrValue(value()),
+      })
+    }
+
+    if (name === "style") {
+      return appendBinding(view, {
+        _tag: "StyleBinding",
+        render: () => toAttrValue(value()),
+      })
+    }
+
+    return appendBinding(view, {
+      _tag: "AttrBinding",
+      name,
+      render: () => toAttrValue(value()),
+    })
+  }
+
+  return internal.mapElement(view, (element) => {
     const attrValue = toAttrValue(value)
 
     if (attrValue === undefined) {
@@ -60,6 +105,7 @@ export const attr = (name: string, value: AttrValue): Modifier => (view) =>
       },
     }
   })
+}
 
 /** Attach multiple DOM attributes at once. */
 export const attrs = (values: AttrRecord): Modifier => (view) =>
@@ -69,13 +115,20 @@ export const attrs = (values: AttrRecord): Modifier => (view) =>
   )
 
 /** Attach a data-* attribute. */
-export const data = (name: string, value: AttrValue): Modifier => attr(`data-${name}`, value)
+export const data = (name: string, value: ReactiveAttrValue): Modifier => attr(`data-${name}`, value)
 
 /** Attach an aria-* attribute. */
-export const aria = (name: string, value: AttrValue): Modifier => attr(`aria-${name}`, value)
+export const aria = (name: string, value: ReactiveAttrValue): Modifier => attr(`aria-${name}`, value)
 
 /** Attach inline styles using a string or a style object. */
-export const style = (value: string | StyleRecord): Modifier => attr("style", serializeStyle(value))
+export const style = (value: ReactiveStyleInput): Modifier =>
+  isReactiveInput(value)
+    ? (view) =>
+      appendBinding(view, {
+        _tag: "StyleBinding",
+        render: () => serializeStyle(value()),
+      })
+    : attr("style", serializeStyle(value))
 
 /** Attach hydration metadata to a view element. Non-element nodes pass through unchanged. */
 export const hydrate = (strategy: Hydration.Strategy): Modifier => (view) =>

@@ -82,7 +82,7 @@ export const mount = (components, options) => {
         ? (...args) => {
           const result = action(...args)
           observeAction(key, result)
-          if (options?.root === undefined || mountedView?.hasDynamicText !== true) {
+          if (options?.root === undefined || mountedView?.hasReactiveBindings !== true) {
             sync()
           }
           return result

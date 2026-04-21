@@ -62,6 +62,7 @@ describe("@effectify/loom public semantics", () => {
         class: "primary cta",
         "data-loom-hydrate": "visible",
       },
+      bindings: [],
       children: [{ _tag: "Text", value: "save" }],
       events: [
         {
@@ -69,6 +70,7 @@ describe("@effectify/loom public semantics", () => {
           event: "click",
           mode: "effect",
           handler: effectLike,
+          ref: undefined,
         },
       ],
       hydration: {
