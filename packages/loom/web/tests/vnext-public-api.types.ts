@@ -133,6 +133,8 @@ const view = View.vstack(View.text("hello")).pipe(
 )
 const textView = View.text("hello")
 const semanticTextView = View.text("paragraph copy").pipe(Web.as("p"))
+const inputView = View.input().pipe(Web.value("hello"))
+const reactiveInputView = View.input().pipe(Web.inputValue(() => "next"))
 const aliasView = View.stack(View.text("hello"))
 let isPositive = true
 let hasMany = false
@@ -190,6 +192,7 @@ const maybeStyle = view._tag === "Element" ? view.attributes.style : undefined
 const textTag = textView._tag === "Element" ? textView.tagName : undefined
 const semanticTextTag = semanticTextView._tag === "Element" ? semanticTextView.tagName : undefined
 const reactiveBindings = reactiveView._tag === "Element" ? reactiveView.bindings : []
+const inputBindings = reactiveInputView._tag === "Element" ? reactiveInputView.bindings : []
 const counterName: string | undefined = counter.name
 const counterModel:
   | {
@@ -211,6 +214,7 @@ const ariaLabelValue: string | undefined = maybeAriaLabel
 const styleValue: string | undefined = maybeStyle
 const textTagValue: string | undefined = textTag
 const semanticTextTagValue: string | undefined = semanticTextTag
+const inputTagValue: string | undefined = inputView._tag === "Element" ? inputView.tagName : undefined
 const mountEntry: string = mounted.entry
 const mountedCount: number = mounted.state.count()
 const mountedLabel: string = mounted.state.label()
@@ -233,6 +237,7 @@ const trackedConditionalNode: View.Node = trackedConditionalView
 const legacyConditionalNode: View.Node = legacyConditionalView
 const keyedListNode: View.Node = keyedListView
 const reactiveNode: View.Node = reactiveView
+const inputNode: View.Node = inputView
 const buttonView: View.Node = actionView
 const plainLinkNode: View.Node = stringLinkView
 const objectLinkNode: View.Node = objectLinkView
@@ -285,6 +290,12 @@ Web.attrs(() => ({ id: "dynamic-id" }))
 // @ts-expect-error Fine-grained reactive hydration is out of scope for this slice.
 Web.hydrate(() => Hydration.manual())
 
+// @ts-expect-error Value bindings intentionally reject boolean DOM semantics in this text-input slice.
+Web.value(true)
+
+// @ts-expect-error View.input does not accept child content in this slice.
+View.input("label")
+
 // @ts-expect-error Link options require an href contract.
 View.link("Docs", { target: "_blank" })
 
@@ -325,6 +336,7 @@ export const typecheckSmoke = {
   styleValue,
   textTagValue,
   semanticTextTagValue,
+  inputTagValue,
   mountEntry,
   mountedObservabilityEntry,
   mountedActionObservationCount,
@@ -350,7 +362,9 @@ export const typecheckSmoke = {
   legacyConditionalNode,
   keyedListNode,
   reactiveNode,
+  inputNode,
   reactiveBindings,
+  inputBindings,
   buttonView,
   plainLinkNode,
   objectLinkNode,

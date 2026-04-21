@@ -9,6 +9,44 @@ import { withStateTracking } from "./tracked-state.js"
 const isContextualHandler = (handler) => typeof handler === "function"
 const isEventTarget = (value) =>
   typeof value === "object" && value !== null && "addEventListener" in value && "dispatchEvent" in value
+const isValueElement = (element) => "value" in element
+const isFocusedElement = (element) => element.ownerDocument?.activeElement === element
+const isTextSelectableInput = (element) =>
+  element instanceof HTMLInputElement
+  && ["text", "search", "url", "tel", "password", "email"].includes(element.type)
+const captureSelection = (element) => {
+  if (!isTextSelectableInput(element)) {
+    return undefined
+  }
+  if (element.selectionStart === null || element.selectionEnd === null) {
+    return undefined
+  }
+  return {
+    start: element.selectionStart,
+    end: element.selectionEnd,
+    direction: element.selectionDirection,
+  }
+}
+const restoreSelection = (element, selection) => {
+  if (!isTextSelectableInput(element) || selection === undefined) {
+    return
+  }
+  const limit = element.value.length
+  const start = Math.min(selection.start, limit)
+  const end = Math.min(selection.end, limit)
+  if (selection.direction === null) {
+    element.setSelectionRange(start, end)
+    return
+  }
+  element.setSelectionRange(start, end, selection.direction)
+}
+const syncValueAttribute = (element, value) => {
+  if (value === undefined) {
+    element.removeAttribute("value")
+    return
+  }
+  element.setAttribute("value", value)
+}
 const isPresent = (value) => value !== undefined
 const serializeClassBindings = (values) => {
   const present = values.filter(isPresent)
@@ -30,6 +68,25 @@ const serializeStyleBindings = (values) => {
   }
   return present.filter((value) => value.length > 0).join(";")
 }
+const setValueProperty = (element, value, state) => {
+  if (!isValueElement(element)) {
+    return
+  }
+  const nextValue = value ?? ""
+  const lastWrittenValue = state.lastWrittenValue ?? ""
+  const selection = isFocusedElement(element) ? captureSelection(element) : undefined
+  if (isFocusedElement(element) && element.value !== lastWrittenValue) {
+    if (element.value === nextValue) {
+      state.lastWrittenValue = value
+      syncValueAttribute(element, value)
+    }
+    return
+  }
+  element.value = nextValue
+  state.lastWrittenValue = value
+  syncValueAttribute(element, value)
+  restoreSelection(element, selection)
+}
 const mountElementBindings = (element, node, registry) => {
   if (node.bindings.length === 0) {
     return {
@@ -39,6 +96,9 @@ const mountElementBindings = (element, node, registry) => {
   }
   const baseAttributes = node.attributes
   const states = []
+  const valueState = {
+    lastWrittenValue: baseAttributes.value,
+  }
   const setAttribute = (name, value) => {
     if (value === undefined) {
       element.removeAttribute(name)
@@ -69,6 +129,15 @@ const mountElementBindings = (element, node, registry) => {
     ]
     setAttribute("style", serializeStyleBindings(styleValues))
   }
+  const recomputeValue = () => {
+    let nextValue = baseAttributes.value
+    for (const state of states) {
+      if (state.binding._tag === "ValueBinding" && state.value !== undefined) {
+        nextValue = state.value
+      }
+    }
+    setValueProperty(element, nextValue, valueState)
+  }
   const recompute = (binding) => {
     switch (binding._tag) {
       case "AttrBinding":
@@ -79,6 +148,9 @@ const mountElementBindings = (element, node, registry) => {
         break
       case "StyleBinding":
         recomputeStyle()
+        break
+      case "ValueBinding":
+        recomputeValue()
         break
     }
   }
@@ -443,6 +515,9 @@ const mountNode = (node, registry, root) => {
       const cleanup = []
       for (const [name, value] of Object.entries(node.attributes)) {
         element.setAttribute(name, value)
+      }
+      if (node.attributes.value !== undefined) {
+        setValueProperty(element, node.attributes.value, { lastWrittenValue: undefined })
       }
       for (const binding of node.events) {
         const handler = binding.handler

@@ -43,8 +43,9 @@ describe("loom example app server entry", () => {
     expect(result.html).toContain('data-todo-add-action="true"')
     expect(result.html).toContain('data-todo-list="true"')
     expect(result.html).toContain('data-todo-session-count="true"')
+    expect(result.html).toContain('value=""')
     expect(result.html).toContain("Sketch the shared Atom shape")
-    expect(result.html).toContain("DX caveat: until Loom grows a dedicated input primitive")
+    expect(result.html).toContain("View.input() + Web.value() now cover the todo composer")
   })
 
   it("returns a minimal not-found document for unknown paths", async () => {

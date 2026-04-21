@@ -4,7 +4,7 @@ import * as Effect from "effect/Effect"
 import { Atom, AtomRegistry } from "effect/unstable/reactivity"
 import { describe, expect, it } from "vitest"
 import { DuplicateControlFlowKeyError } from "../src/internal/control-flow-error.js"
-import { Component, Hydration, mount, Slot, View, Web } from "../src/index.js"
+import { Component, Html, Hydration, mount, Slot, View, Web } from "../src/index.js"
 
 const effectLike = { _tag: "EffectLike" } as const
 
@@ -23,10 +23,13 @@ describe("@effectify/loom vNext public surface", () => {
     expect(typeof Slot.required).toBe("function")
     expect(typeof View.vstack).toBe("function")
     expect(typeof View.hstack).toBe("function")
+    expect(typeof View.input).toBe("function")
     expect(typeof View.stack).toBe("function")
     expect(typeof View.link).toBe("function")
     expect(typeof Web.as).toBe("function")
     expect(typeof Web.className).toBe("function")
+    expect(typeof Web.value).toBe("function")
+    expect(typeof Web.inputValue).toBe("function")
     expect(typeof mount).toBe("function")
   })
 
@@ -724,6 +727,29 @@ describe("@effectify/loom vNext public surface", () => {
     })
   })
 
+  it("introduces a text input primitive with dedicated value-property bindings", () => {
+    const input = View.input().pipe(
+      Web.value("seed"),
+      Web.inputValue(() => "reactive"),
+    )
+
+    expect(input).toMatchObject({
+      _tag: "Element",
+      tagName: "input",
+      attributes: {
+        type: "text",
+        value: "seed",
+      },
+      bindings: [{ _tag: "ValueBinding" }],
+    })
+  })
+
+  it("serializes the current reactive input value into SSR html", () => {
+    const html = Html.renderToString(View.input().pipe(Web.value(() => "seed")))
+
+    expect(html).toBe('<input type="text" value="seed"></input>')
+  })
+
   it("mounts a named component record through the additive mount seam", () => {
     const root = document.createElement("div")
     const counter = Component.make("counter").pipe(
@@ -826,6 +852,123 @@ describe("@effectify/loom vNext public surface", () => {
     expect(container?.getAttribute("style")).toBe("order:2;gap:2rem")
 
     handle.dispose()
+  })
+
+  it("updates mounted input values through DOM property semantics", () => {
+    const root = document.createElement("div")
+    const counter = Component.make("counter").pipe(
+      Component.model({ value: Atom.make("seed") }),
+      Component.actions({
+        advance: ({ value }) => value.set("next"),
+      }),
+      Component.view(({ state }) => View.input().pipe(Web.inputValue(() => state.value()))),
+    )
+
+    const handle = mount({ counter }, { root })
+    const input = root.querySelector("input")
+
+    expect(input?.getAttribute("type")).toBe("text")
+    expect(input?.value).toBe("seed")
+
+    if (input !== null) {
+      input.value = "typed-locally"
+    }
+
+    // @ts-expect-error mount action typing still widens in the current additive bridge.
+    handle.actions.advance()
+
+    expect(root.querySelector("input")).toBe(input)
+    expect(input?.value).toBe("next")
+    expect(input?.getAttribute("value")).toBe("next")
+
+    handle.dispose()
+  })
+
+  it("preserves focused dirty input edits until the model catches up", () => {
+    const root = document.createElement("div")
+    document.body.append(root)
+    const counter = Component.make("counter").pipe(
+      Component.model({ value: Atom.make("seed") }),
+      Component.actions(({ model }) => ({
+        sync: (nextValue: string) => model.value.set(nextValue),
+      })),
+      Component.view(({ state }) => View.input().pipe(Web.inputValue(() => state.value()))),
+    )
+
+    const handle = mount({ counter }, { root })
+    const input = root.querySelector("input")
+
+    if (!(input instanceof HTMLInputElement)) {
+      throw new Error("expected mounted input")
+    }
+
+    input.focus()
+    input.value = "typed-locally"
+
+    // @ts-expect-error mount action typing still widens in the current additive bridge.
+    handle.actions.sync("server-update")
+
+    expect(root.querySelector("input")).toBe(input)
+    expect(document.activeElement).toBe(input)
+    expect(input.value).toBe("typed-locally")
+
+    // @ts-expect-error mount action typing still widens in the current additive bridge.
+    handle.actions.sync("typed-locally")
+
+    expect(input.value).toBe("typed-locally")
+
+    // @ts-expect-error mount action typing still widens in the current additive bridge.
+    handle.actions.sync("model-after-catchup")
+
+    expect(input.value).toBe("model-after-catchup")
+    expect(input.getAttribute("value")).toBe("model-after-catchup")
+
+    handle.dispose()
+    root.remove()
+  })
+
+  it("preserves caret selection for focused controlled input updates when safe", () => {
+    const root = document.createElement("div")
+    document.body.append(root)
+    const counter = Component.make("counter").pipe(
+      Component.model({ value: Atom.make("seed") }),
+      Component.actions(({ model }) => ({
+        sync: (nextValue: string) => model.value.set(nextValue),
+      })),
+      Component.view(({ state }) => View.input().pipe(Web.inputValue(() => state.value()))),
+    )
+
+    const handle = mount({ counter }, { root })
+    const input = root.querySelector("input")
+
+    if (!(input instanceof HTMLInputElement)) {
+      throw new Error("expected mounted input")
+    }
+
+    input.focus()
+    input.setSelectionRange(2, 2, "forward")
+
+    // @ts-expect-error mount action typing still widens in the current additive bridge.
+    handle.actions.sync("seeding")
+
+    expect(document.activeElement).toBe(input)
+    expect(input.value).toBe("seeding")
+    expect(input.selectionStart).toBe(2)
+    expect(input.selectionEnd).toBe(2)
+    expect(input.selectionDirection).toBe("forward")
+
+    input.setSelectionRange(3, 6, "backward")
+
+    // @ts-expect-error mount action typing still widens in the current additive bridge.
+    handle.actions.sync("go")
+
+    expect(input.value).toBe("go")
+    expect(input.selectionStart).toBe(2)
+    expect(input.selectionEnd).toBe(2)
+    expect(input.selectionDirection).toBe("backward")
+
+    handle.dispose()
+    root.remove()
   })
 
   it("wires mounted button clicks to actions in the fine-grained mount path", () => {

@@ -28,6 +28,68 @@ const isContextualHandler = (
 const isEventTarget = (value: unknown): value is EventTarget =>
   typeof value === "object" && value !== null && "addEventListener" in value && "dispatchEvent" in value
 
+const isValueElement = (
+  element: Element,
+): element is HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement => "value" in element
+
+const isFocusedElement = (element: Element): boolean => element.ownerDocument?.activeElement === element
+
+const isTextSelectableInput = (element: Element): element is HTMLInputElement =>
+  element instanceof HTMLInputElement
+  && ["text", "search", "url", "tel", "password", "email"].includes(element.type)
+
+interface SelectionSnapshot {
+  readonly start: number
+  readonly end: number
+  readonly direction: typeof HTMLInputElement.prototype.selectionDirection
+}
+
+const captureSelection = (element: Element): SelectionSnapshot | undefined => {
+  if (!isTextSelectableInput(element)) {
+    return undefined
+  }
+
+  if (element.selectionStart === null || element.selectionEnd === null) {
+    return undefined
+  }
+
+  return {
+    start: element.selectionStart,
+    end: element.selectionEnd,
+    direction: element.selectionDirection,
+  }
+}
+
+const restoreSelection = (element: Element, selection: SelectionSnapshot | undefined): void => {
+  if (!isTextSelectableInput(element) || selection === undefined) {
+    return
+  }
+
+  const limit = element.value.length
+  const start = Math.min(selection.start, limit)
+  const end = Math.min(selection.end, limit)
+
+  if (selection.direction === null) {
+    element.setSelectionRange(start, end)
+    return
+  }
+
+  element.setSelectionRange(start, end, selection.direction)
+}
+
+const syncValueAttribute = (element: Element, value: string | undefined): void => {
+  if (value === undefined) {
+    element.removeAttribute("value")
+    return
+  }
+
+  element.setAttribute("value", value)
+}
+
+interface MountedValueState {
+  lastWrittenValue: string | undefined
+}
+
 export interface MountedView {
   readonly hasReactiveBindings: boolean
   readonly dispose: () => void
@@ -70,6 +132,34 @@ const serializeStyleBindings = (values: ReadonlyArray<string | undefined>): stri
   return present.filter((value) => value.length > 0).join(";")
 }
 
+const setValueProperty = (
+  element: Element,
+  value: string | undefined,
+  state: MountedValueState,
+): void => {
+  if (!isValueElement(element)) {
+    return
+  }
+
+  const nextValue = value ?? ""
+  const lastWrittenValue = state.lastWrittenValue ?? ""
+  const selection = isFocusedElement(element) ? captureSelection(element) : undefined
+
+  if (isFocusedElement(element) && element.value !== lastWrittenValue) {
+    if (element.value === nextValue) {
+      state.lastWrittenValue = value
+      syncValueAttribute(element, value)
+    }
+
+    return
+  }
+
+  element.value = nextValue
+  state.lastWrittenValue = value
+  syncValueAttribute(element, value)
+  restoreSelection(element, selection)
+}
+
 const mountElementBindings = (
   element: Element,
   node: LoomCore.Ast.ElementNode,
@@ -84,6 +174,9 @@ const mountElementBindings = (
 
   const baseAttributes = node.attributes
   const states: Array<MountedElementBindingState> = []
+  const valueState: MountedValueState = {
+    lastWrittenValue: baseAttributes.value,
+  }
 
   const setAttribute = (name: string, value: string | undefined): void => {
     if (value === undefined) {
@@ -124,6 +217,18 @@ const mountElementBindings = (
     setAttribute("style", serializeStyleBindings(styleValues))
   }
 
+  const recomputeValue = (): void => {
+    let nextValue = baseAttributes.value
+
+    for (const state of states) {
+      if (state.binding._tag === "ValueBinding" && state.value !== undefined) {
+        nextValue = state.value
+      }
+    }
+
+    setValueProperty(element, nextValue, valueState)
+  }
+
   const recompute = (binding: LoomCore.Ast.ElementBinding): void => {
     switch (binding._tag) {
       case "AttrBinding":
@@ -134,6 +239,9 @@ const mountElementBindings = (
         break
       case "StyleBinding":
         recomputeStyle()
+        break
+      case "ValueBinding":
+        recomputeValue()
         break
     }
   }
@@ -642,6 +750,10 @@ const mountNode = (node: LoomCore.Ast.Node, registry: AtomRegistry.AtomRegistry,
 
       for (const [name, value] of Object.entries(node.attributes)) {
         element.setAttribute(name, value)
+      }
+
+      if (node.attributes.value !== undefined) {
+        setValueProperty(element, node.attributes.value, { lastWrittenValue: undefined })
       }
 
       for (const binding of node.events) {

@@ -8,6 +8,8 @@ export type RootTagName = string
 export type AttrValue = string | number | boolean | null | undefined
 export type ReactiveInput<Value> = Value | (() => Value)
 export type ReactiveAttrValue = ReactiveInput<AttrValue>
+export type ValueInput = string | number | null | undefined
+export type ReactiveValueInput = ReactiveInput<ValueInput>
 export type AttrRecord = Readonly<Record<string, ReactiveAttrValue>>
 export type StyleValue = string | number | null | undefined
 export type StyleRecord = Readonly<Record<string, StyleValue>>
@@ -18,6 +20,14 @@ const isReactiveInput = <Value>(value: ReactiveInput<Value>): value is () => Val
 
 const toAttrValue = (value: AttrValue): string | undefined => {
   if (value === undefined || value === null || value === false) {
+    return undefined
+  }
+
+  return String(value)
+}
+
+const toValueInput = (value: ValueInput): string | undefined => {
+  if (value === undefined || value === null) {
     return undefined
   }
 
@@ -121,6 +131,35 @@ export const attrs = (values: AttrRecord): Modifier => (view) =>
     (currentView, [name, value]) => attr(name, value)(currentView),
     view,
   )
+
+/** Attach text-input value semantics using DOM property updates instead of plain attributes. */
+export const value = (nextValue: ReactiveValueInput): Modifier => (view) => {
+  if (isReactiveInput(nextValue)) {
+    return appendBinding(view, {
+      _tag: "ValueBinding",
+      render: () => toValueInput(nextValue()),
+    })
+  }
+
+  return internal.mapElement(view, (element) => {
+    const value = toValueInput(nextValue)
+
+    if (value === undefined) {
+      return element
+    }
+
+    return {
+      ...element,
+      attributes: {
+        ...element.attributes,
+        value,
+      },
+    }
+  })
+}
+
+/** Attach value semantics specifically for the current `View.input(...)` text-input slice. */
+export const inputValue = (nextValue: ReactiveValueInput): Modifier => value(nextValue)
 
 /** Attach a data-* attribute. */
 export const data = (name: string, value: ReactiveAttrValue): Modifier => attr(`data-${name}`, value)

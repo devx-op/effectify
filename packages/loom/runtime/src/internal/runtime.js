@@ -92,6 +92,19 @@ const serializeAttributes = (attributes) => {
   }
   return entries.map(([key, value]) => ` ${key}="${escapeAttribute(value)}"`).join("")
 }
+const applyValueBindingSnapshot = (node, attributes) => {
+  let nextValue = attributes.value
+  for (const binding of node.bindings) {
+    if (binding._tag === "ValueBinding") {
+      nextValue = binding.render()
+    }
+  }
+  if (nextValue === undefined) {
+    delete attributes.value
+    return
+  }
+  attributes.value = nextValue
+}
 const commentNodeType = 8
 const documentNodeType = 9
 const showCommentNodeMask = 128
@@ -245,6 +258,7 @@ const serializeNode = (node, state, boundaryId, nextBoundaryNodeId, isBoundaryRo
         return serializeNode(node, state, undefined, undefined, true)
       }
       const attributes = { ...node.attributes }
+      applyValueBindingSnapshot(node, attributes)
       const activeBoundaryId = isBoundaryRoot ? `b${state.nextBoundaryId++}` : boundaryId
       const activeBoundaryNodeId = isBoundaryRoot ? { current: 0 } : nextBoundaryNodeId
       let nodeId

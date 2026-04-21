@@ -222,9 +222,14 @@ describe("loom example app client entry", () => {
     expect(sessionCount()).toBe("Added from this mounted composer: 0")
 
     const input = expectInputElement(todoInput(), "todo input")
+    input.focus()
     input.value = "Document the slot tradeoffs"
     input.dispatchEvent(new Event("input", { bubbles: true }))
     await yieldToEventLoop()
+
+    expect(expectInputElement(todoInput(), "todo input after typing")).toBe(input)
+    expect(document.activeElement).toBe(input)
+    expect(input.value).toBe("Document the slot tradeoffs")
 
     const addButton = expectElement(addTodoButton(), "add todo button")
 

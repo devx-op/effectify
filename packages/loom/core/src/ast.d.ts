@@ -21,10 +21,29 @@ export interface EventBinding<Handler = unknown> {
   readonly handler: Handler
   readonly ref?: string
 }
+export interface AttrBinding {
+  readonly _tag: "AttrBinding"
+  readonly name: string
+  readonly render: () => string | undefined
+}
+export interface ClassBinding {
+  readonly _tag: "ClassBinding"
+  readonly render: () => string | undefined
+}
+export interface StyleBinding {
+  readonly _tag: "StyleBinding"
+  readonly render: () => string | undefined
+}
+export interface ValueBinding {
+  readonly _tag: "ValueBinding"
+  readonly render: () => string | undefined
+}
+export type ElementBinding = AttrBinding | ClassBinding | StyleBinding | ValueBinding
 export interface ElementNode {
   readonly _tag: "Element"
   readonly tagName: string
   readonly attributes: Readonly<Record<string, string>>
+  readonly bindings: ReadonlyArray<ElementBinding>
   readonly children: ReadonlyArray<Node>
   readonly events: ReadonlyArray<EventBinding>
   readonly hydration: HydrationMetadata | undefined
@@ -54,6 +73,7 @@ export declare const dynamicText: (render: () => string) => DynamicTextNode
 /** Create a neutral element node. */
 export declare const element: (tagName: string, options?: {
   readonly attributes?: Readonly<Record<string, string>>
+  readonly bindings?: ReadonlyArray<ElementBinding>
   readonly children?: ReadonlyArray<Node>
   readonly events?: ReadonlyArray<EventBinding>
   readonly hydration?: HydrationMetadata

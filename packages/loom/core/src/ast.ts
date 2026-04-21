@@ -52,7 +52,12 @@ export interface StyleBinding {
   readonly render: () => string | undefined
 }
 
-export type ElementBinding = AttrBinding | ClassBinding | StyleBinding
+export interface ValueBinding {
+  readonly _tag: "ValueBinding"
+  readonly render: () => string | undefined
+}
+
+export type ElementBinding = AttrBinding | ClassBinding | StyleBinding | ValueBinding
 
 export interface ElementNode {
   readonly _tag: "Element"

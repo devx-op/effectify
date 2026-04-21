@@ -101,6 +101,9 @@ export const row = hstack
 export const button = (content: ViewChild, handler: Html.EventHandler): Type =>
   internal.wrap(Html.el("button", Html.on("click", handler), Html.children(content)))
 
+/** Create the first text-input primitive backed by a text input element. */
+export const input = (): Type => internal.wrap(Html.el("input", Html.attr("type", "text")))
+
 /** Create a router-neutral link node with broad child content. */
 export const link = (content: ViewChild, target: LinkTarget): Type =>
   internal.wrap(Html.el("a", ...linkTargetModifiers(target), Html.children(content)))

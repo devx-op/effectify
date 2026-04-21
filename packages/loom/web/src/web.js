@@ -7,6 +7,12 @@ const toAttrValue = (value) => {
   }
   return String(value)
 }
+const toValueInput = (value) => {
+  if (value === undefined || value === null) {
+    return undefined
+  }
+  return String(value)
+}
 const toKebabCase = (value) => value.replace(/[A-Z]/g, (match) => `-${match.toLowerCase()}`)
 const serializeStyle = (value) => {
   if (typeof value === "string") {
@@ -84,6 +90,30 @@ export const attr = (name, value) => (view) => {
 /** Attach multiple DOM attributes at once. */
 export const attrs = (values) => (view) =>
   Object.entries(values).reduce((currentView, [name, value]) => attr(name, value)(currentView), view)
+/** Attach text-input value semantics using DOM property updates instead of plain attributes. */
+export const value = (nextValue) => (view) => {
+  if (isReactiveInput(nextValue)) {
+    return appendBinding(view, {
+      _tag: "ValueBinding",
+      render: () => toValueInput(nextValue()),
+    })
+  }
+  return internal.mapElement(view, (element) => {
+    const value = toValueInput(nextValue)
+    if (value === undefined) {
+      return element
+    }
+    return {
+      ...element,
+      attributes: {
+        ...element.attributes,
+        value,
+      },
+    }
+  })
+}
+/** Attach value semantics specifically for the current `View.input(...)` text-input slice. */
+export const inputValue = (nextValue) => value(nextValue)
 /** Attach a data-* attribute. */
 export const data = (name, value) => attr(`data-${name}`, value)
 /** Attach an aria-* attribute. */

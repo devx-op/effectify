@@ -30,6 +30,8 @@ export declare const stack: (...children: ReadonlyArray<MaybeChild>) => Type
 export declare const row: (...children: ReadonlyArray<MaybeChild>) => Type
 /** Create a button node with broad child content and click handler support. */
 export declare const button: (content: ViewChild, handler: Html.EventHandler) => Type
+/** Create the first text-input primitive backed by a text input element. */
+export declare const input: () => Type
 /** Create a router-neutral link node with broad child content. */
 export declare const link: (content: ViewChild, target: LinkTarget) => Type
 /** Render content only when a condition is truthy. */
