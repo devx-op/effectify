@@ -22,13 +22,13 @@ const linkTargetModifiers = (target) => {
   return modifiers
 }
 
+const textChildNode = (value) =>
+  typeof value === "function"
+    ? LoomCore.Ast.dynamicText(value)
+    : LoomCore.Ast.text(value)
+
 export function text(value) {
-  return typeof value === "function"
-    ? internal.wrap(LoomCore.Ast.dynamicText(value))
-    : internal.wrap({
-      _tag: "Text",
-      value,
-    })
+  return internal.wrap(Html.el("span", Html.children(textChildNode(value))))
 }
 /** Create a renderer-neutral fragment. */
 export const fragment = (...children) =>

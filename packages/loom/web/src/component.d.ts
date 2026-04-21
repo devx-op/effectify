@@ -8,9 +8,15 @@ import type * as View from "./view.js"
 
 export type ModelValueInput = unknown | Atom.Atom<unknown> | (() => unknown)
 export type ModelShape = Readonly<Record<string, ModelValueInput>>
+export type StateDefinition = Readonly<Record<string, unknown | Atom.Atom<unknown>>>
 export type ActionShape = Readonly<Record<string, unknown>>
 export type SlotShape = Readonly<Record<string, Slot.Definition>>
 type ChildrenFlag = true | false
+type MergeModel<Model extends ModelShape, Added extends ModelShape> = Omit<Model, keyof Added> & Added
+type FactoryLike = (...args: ReadonlyArray<any>) => unknown
+type RejectFactoryEntries<Definition extends Readonly<Record<string, unknown>>> = {
+  readonly [Key in keyof Definition]: Definition[Key] extends FactoryLike ? never : Definition[Key]
+}
 
 export interface ActionAnnotations {
   readonly label?: string
@@ -137,6 +143,8 @@ export interface Type<
 > extends LoomCore.Component.Definition, Pipeable.Pipeable {
   readonly name?: string
   readonly model?: Model
+  readonly state?: StateDefinition
+  readonly stateFactory?: () => StateDefinition
   readonly actions?: ActionsInput<Model, Actions>
   readonly children?: true
   readonly slots?: Slots
@@ -204,21 +212,10 @@ export declare const actionEffect: <Success, Err, Requirements>(
   annotations?: ActionAnnotations,
 ) => ActionEffect<Success, Err, Requirements>
 
-/** Attach model atoms and values to a component definition. */
-export declare function model<Model extends ModelShape>(
-  modelDefinition: Model,
+/** Attach shared state values and atoms to a component definition. */
+export declare function state<Added extends StateDefinition>(
+  stateDefinition: Added & RejectFactoryEntries<Added>,
 ): <
-  Props,
-  Err,
-  Requirements,
-  Actions extends ActionShape,
-  Slots extends SlotShape,
-  AcceptsChildren extends ChildrenFlag,
->(
-  self: Type<Props, Err, Requirements, {}, Actions, Slots, AcceptsChildren>,
-) => Type<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren>
-
-export declare function model<
   Props,
   Err,
   Requirements,
@@ -227,9 +224,80 @@ export declare function model<
   Slots extends SlotShape,
   AcceptsChildren extends ChildrenFlag,
 >(
-  self: Type<Props, Err, Requirements, {}, Actions, Slots, AcceptsChildren>,
+  self: Type<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren>,
+) => Type<Props, Err, Requirements, MergeModel<Model, Added>, Actions, Slots, AcceptsChildren>
+
+export declare function state<
+  Props,
+  Err,
+  Requirements,
+  Model extends ModelShape,
+  Added extends StateDefinition,
+  Actions extends ActionShape,
+  Slots extends SlotShape,
+  AcceptsChildren extends ChildrenFlag,
+>(
+  self: Type<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren>,
+  stateDefinition: Added & RejectFactoryEntries<Added>,
+): Type<Props, Err, Requirements, MergeModel<Model, Added>, Actions, Slots, AcceptsChildren>
+
+/** Attach per-instance local state materialization to a component definition. */
+export declare function stateFactory<Added extends StateDefinition>(
+  factory: () => Added,
+): <
+  Props,
+  Err,
+  Requirements,
+  Model extends ModelShape,
+  Actions extends ActionShape,
+  Slots extends SlotShape,
+  AcceptsChildren extends ChildrenFlag,
+>(
+  self: Type<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren>,
+) => Type<Props, Err, Requirements, MergeModel<Model, Added>, Actions, Slots, AcceptsChildren>
+
+export declare function stateFactory<
+  Props,
+  Err,
+  Requirements,
+  Model extends ModelShape,
+  Added extends StateDefinition,
+  Actions extends ActionShape,
+  Slots extends SlotShape,
+  AcceptsChildren extends ChildrenFlag,
+>(
+  self: Type<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren>,
+  factory: () => Added,
+): Type<Props, Err, Requirements, MergeModel<Model, Added>, Actions, Slots, AcceptsChildren>
+
+/** Attach model atoms and values to a component definition. */
+export declare function model<Model extends ModelShape>(
   modelDefinition: Model,
-): Type<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren>
+): <
+  Props,
+  Err,
+  Requirements,
+  ExistingModel extends ModelShape,
+  Actions extends ActionShape,
+  Slots extends SlotShape,
+  AcceptsChildren extends ChildrenFlag,
+>(
+  self: Type<Props, Err, Requirements, ExistingModel, Actions, Slots, AcceptsChildren>,
+) => Type<Props, Err, Requirements, MergeModel<ExistingModel, Model>, Actions, Slots, AcceptsChildren>
+
+export declare function model<
+  Props,
+  Err,
+  Requirements,
+  ExistingModel extends ModelShape,
+  Model extends ModelShape,
+  Actions extends ActionShape,
+  Slots extends SlotShape,
+  AcceptsChildren extends ChildrenFlag,
+>(
+  self: Type<Props, Err, Requirements, ExistingModel, Actions, Slots, AcceptsChildren>,
+  modelDefinition: Model,
+): Type<Props, Err, Requirements, MergeModel<ExistingModel, Model>, Actions, Slots, AcceptsChildren>
 
 /** Attach action definitions or factories to a component definition. */
 export declare function actions<Model extends ModelShape, Spec extends ActionSpec<Model>>(

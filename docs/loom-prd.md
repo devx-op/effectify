@@ -67,7 +67,7 @@ The package family must ship under the **`@effectify/loom`** brand, with **Compo
 
 Atom is the real state/reactivity model. Loom must integrate **real Atom primitives directly** rather than inventing a Loom-native replacement such as `Model.atom(...)`.
 
-`Component.model(...)` should accept real Atom values and factories such as `Atom.make(...)`, `Atom.family(...)`, and `Atom.serializable(...)`.
+`Component.state(...)` should accept real shared/materialized Atom values, while `Component.stateFactory(...)` should own per-instance/local factories such as `() => Atom.make(...)`. `Component.model(...)` remains compatibility-only during migration.
 
 ### Goal 3: Preserve strong typing as a core value
 
@@ -120,7 +120,7 @@ Tracing and observability must remain explicit product differentiators. Loom sho
 - **Component** as the central public abstraction.
 - A renderer-agnostic **View** DSL.
 - A **Web** namespace for CSS, DOM attributes, and browser-specific capabilities.
-- Atom-native state integration through `Component.model(...)` using real Atom primitives.
+- Atom-native state integration through `Component.state(...)` and `Component.stateFactory(...)` using real Atom primitives.
 - A read-friendly reactive facade in `Component.view(...)`, so view code does not require raw `.get()` calls everywhere.
 - `Component.actions(...)` as the bridge to Effect services and remote APIs.
 - `ViewChild` as the broad composition type for unnamed content and primitive child content.
@@ -201,7 +201,7 @@ These are intentionally NOT goals for the first line of the initiative:
 ### Technical success
 
 - The internal architecture preserves a renderer-agnostic view/runtime boundary.
-- `Component.model(...)` accepts real Atom constructs without a Loom-owned shadow abstraction.
+- `Component.state(...)` and `Component.stateFactory(...)` accept real Atom constructs without a Loom-owned shadow abstraction.
 - `Component.view(...)` exposes a read-friendly state facade suitable for ergonomic rendering.
 - The API surface preserves strong component typing and type inference expectations.
 - Observability/tracing remain explicit in runtime architecture and documentation.
@@ -254,7 +254,7 @@ import * as Atom from "effect/unstable/reactivity/Atom"
 import { Component, mount, View, Web } from "@effectify/loom"
 
 export const counter = Component.make("counter").pipe(
-  Component.model({
+  Component.state({
     count: Atom.make(0),
   }),
   Component.actions({
@@ -264,6 +264,7 @@ export const counter = Component.make("counter").pipe(
   }),
   Component.view(({ state, actions }) =>
     View.vstack(
+      View.text("Counter").pipe(Web.as("h1")),
       View.text(() => `Count: ${state.count()}`),
       View.text(() => `Doubled: ${state.count() * 2}`),
       View.hstack(
@@ -359,7 +360,7 @@ const appRouter = Router.make("app").pipe(
 ### Phase 1: Core interactive DX
 
 - Deliver `@effectify/loom` with initial `Component`, `View`, and `Web` direction.
-- Prove Atom-native `Component.model(...)` with real Atom values.
+- Prove Atom-native `Component.state(...)` with shared values and `Component.stateFactory(...)` with per-instance factories.
 - Prove `Component.actions(...)` as the bridge to Effectful behavior.
 - Prove read-friendly state access inside `Component.view(...)`.
 - Establish the composition split: `children` for ordinary/default content, `Slot` for named structural composition.

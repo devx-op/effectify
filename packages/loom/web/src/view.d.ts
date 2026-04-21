@@ -15,7 +15,7 @@ export interface LinkOptions {
   readonly download?: true | string
 }
 export type LinkTarget = string | LinkOptions
-/** Create a renderer-neutral text node backed by the current Html-first runtime seam. */
+/** Create a renderer-neutral text view backed by an inline element root. */
 export declare function text(value: string): Type
 export declare function text(render: () => string): Type
 /** Create a renderer-neutral fragment. */

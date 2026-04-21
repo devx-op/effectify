@@ -4,6 +4,7 @@ import * as Hydration from "./hydration.js"
 import * as internal from "./internal/view-node.js"
 
 export type Modifier = (view: internal.Type) => internal.Type
+export type RootTagName = string
 export type AttrValue = string | number | boolean | null | undefined
 export type ReactiveInput<Value> = Value | (() => Value)
 export type ReactiveAttrValue = ReactiveInput<AttrValue>
@@ -48,6 +49,13 @@ const appendBinding = (
   internal.mapElement(view, (element) => ({
     ...element,
     bindings: [...element.bindings, binding],
+  }))
+
+/** Override the root element tag for an element-backed view. Non-element nodes pass through unchanged. */
+export const as = (tagName: RootTagName): Modifier => (view) =>
+  internal.mapElement(view, (element) => ({
+    ...element,
+    tagName,
   }))
 
 /** Attach a CSS class to a view element. Non-element nodes pass through unchanged. */

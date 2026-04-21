@@ -17,6 +17,31 @@ const loadRemote = (_count: number): Effect.Effect<string, SaveFailure, SaveGate
 
 const count = Atom.make(1)
 
+const stateCounter = Component.make("state-counter").pipe(
+  Component.state({ count, label: "ready" }),
+  Component.stateFactory(() => ({ local: Atom.make(0) })),
+  Component.actions({
+    incrementShared: ({ count }) => count.update((value) => value + 1),
+    incrementLocal: ({ local }) => local.update((value) => value + 1),
+    read: ({ count, label, local, state }) => {
+      const sharedCount: number = count.get()
+      const currentLabel: string = label
+      const localCount: number = local.get()
+      const liveShared: number = state.count()
+      const liveLocal: number = state.local()
+
+      return `${currentLabel}:${sharedCount + localCount + liveShared + liveLocal}`
+    },
+  }),
+  Component.view(({ state }) =>
+    View.stack(
+      View.text(() => `Count: ${state.count()}`),
+      View.text(() => `Local: ${state.local()}`),
+      View.text(() => `Label: ${state.label()}`),
+    )
+  ),
+)
+
 const counter = Component.make("counter").pipe(
   Component.model({ count, label: "ready", local: () => Atom.make(0) }),
   Component.actions({
@@ -106,8 +131,11 @@ const view = View.vstack(View.text("hello")).pipe(
   Web.aria("label", "Greeting"),
   Web.style({ display: "flex", gap: "1rem" }),
 )
+const textView = View.text("hello")
+const semanticTextView = View.text("paragraph copy").pipe(Web.as("p"))
 const aliasView = View.stack(View.text("hello"))
 const reactiveView = View.stack(View.text("hello")).pipe(
+  Web.as("section"),
   Web.attr("data-count", () => "1"),
   Web.attrs({
     id: () => "dynamic-id",
@@ -126,13 +154,17 @@ const objectLinkView = View.link(View.fragment(badge, " docs"), {
   rel: "noreferrer",
 })
 const mounted = mount({ counter }, { registry: AtomRegistry.make() })
+const mountedStateCounter = mount({ stateCounter }, { registry: AtomRegistry.make() })
 const mountedEffectful = mount({ effectfulCounter })
+const instantiatedStateCounter = Component.instantiate(stateCounter)
 const instantiatedCounter = Component.instantiate(counter)
 const instantiatedEffectful = Component.instantiate(effectfulCounter)
 const maybeClassName = view._tag === "Element" ? view.attributes.class : undefined
 const maybeDataVariant = view._tag === "Element" ? view.attributes["data-variant"] : undefined
 const maybeAriaLabel = view._tag === "Element" ? view.attributes["aria-label"] : undefined
 const maybeStyle = view._tag === "Element" ? view.attributes.style : undefined
+const textTag = textView._tag === "Element" ? textView.tagName : undefined
+const semanticTextTag = semanticTextView._tag === "Element" ? semanticTextView.tagName : undefined
 const reactiveBindings = reactiveView._tag === "Element" ? reactiveView.bindings : []
 const counterName: string | undefined = counter.name
 const counterModel:
@@ -153,12 +185,19 @@ const classNameValue: string | undefined = maybeClassName
 const dataVariantValue: string | undefined = maybeDataVariant
 const ariaLabelValue: string | undefined = maybeAriaLabel
 const styleValue: string | undefined = maybeStyle
+const textTagValue: string | undefined = textTag
+const semanticTextTagValue: string | undefined = semanticTextTag
 const mountEntry: string = mounted.entry
 const mountedCount: number = mounted.state.count()
 const mountedLabel: string = mounted.state.label()
+const mountedStateShared: number = mountedStateCounter.state.count()
+const mountedStateLocal: number = mountedStateCounter.state.local()
 const mountedReadResult: string = instantiatedCounter.actions.read()
+const mountedStateReadResult: string = instantiatedStateCounter.actions.read()
 const mountedObservabilityEntry: string = mounted.observability.mount.entry
 const mountedActionObservationCount: number = mounted.observability.actions.increment.invocations
+const stateCounterHasSharedState: boolean = stateCounter.state !== undefined
+const stateCounterHasFactory: boolean = typeof stateCounter.stateFactory === "function"
 const effectfulError: SaveFailure | undefined = effectfulCounter.__error
 const effectfulRequirements: SaveGateway | undefined = effectfulCounter.__requirements
 const mountedLoad = instantiatedEffectful.actions.load()
@@ -172,6 +211,8 @@ const objectLinkNode: View.Node = objectLinkView
 
 mounted.model.count.set(0)
 mounted.model.local.update((value) => value + 1)
+mountedStateCounter.model.count.set(0)
+mountedStateCounter.model.local.update((value) => value + 1)
 
 // @ts-expect-error Slot.required does not accept arguments.
 Slot.required("default")
@@ -195,8 +236,17 @@ mount(counter)
 // @ts-expect-error Read-friendly state exposes plain values, not writable handles.
 mounted.state.count.set(0)
 
+// @ts-expect-error Read-friendly state exposes plain local values, not writable handles.
+mountedStateCounter.state.local.set(0)
+
 // @ts-expect-error Mounted state accessors must be invoked to read their values.
 const _invalidMountedCount: number = mounted.state.count
+
+// @ts-expect-error Component.state rejects factory entries; use Component.stateFactory instead.
+Component.state({ invalid: () => Atom.make(0) })
+
+// @ts-expect-error Component.state rejects thunk values even when they do not return Atoms.
+Component.state({ invalid: () => 1 })
 
 // @ts-expect-error Non-Atom model values are not writable handles.
 mounted.model.label.update((value) => value)
@@ -217,20 +267,28 @@ if (Component.isActionEffect(mountedLoad)) {
 
 export const typecheckSmoke = {
   counter,
+  stateCounter,
   effectfulCounter,
   counterName,
   counterModel,
+  stateCounterHasSharedState,
+  stateCounterHasFactory,
   layoutSlots,
   classNameValue,
   dataVariantValue,
   ariaLabelValue,
   styleValue,
+  textTagValue,
+  semanticTextTagValue,
   mountEntry,
   mountedObservabilityEntry,
   mountedActionObservationCount,
   mountedCount,
   mountedLabel,
+  mountedStateShared,
+  mountedStateLocal,
   mountedReadResult,
+  mountedStateReadResult,
   loadExecution,
   loadExecutionLabel,
   effectfulError,
@@ -248,5 +306,6 @@ export const typecheckSmoke = {
   plainLinkNode,
   objectLinkNode,
   mounted,
+  mountedStateCounter,
   mountedEffectful,
 }

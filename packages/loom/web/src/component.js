@@ -14,12 +14,54 @@ const isCapability = (value) =>
 export const isActionEffect = (value) =>
   typeof value === "object" && value !== null && "_tag" in value && value._tag === "LoomActionEffect"
 const isModelFactory = (value) => typeof value === "function" && !Atom.isAtom(value)
-const materializeModel = (model) => {
-  const entries = Object.entries(model ?? {}).map(([key, value]) => [
-    key,
-    isModelFactory(value) ? value() : value,
-  ])
-  return Object.fromEntries(entries)
+const assertNoStateFactories = (stateDefinition) => {
+  for (const [key, value] of Object.entries(stateDefinition)) {
+    if (typeof value === "function") {
+      throw new Error(
+        `Component.state(...) does not accept factory entry '${key}'. Use Component.stateFactory(...) instead.`,
+      )
+    }
+  }
+}
+const splitModelDefinition = (model) => {
+  const sharedEntries = []
+  const localEntries = []
+  for (const [key, value] of Object.entries(model ?? {})) {
+    if (isModelFactory(value)) {
+      localEntries.push([key, value])
+      continue
+    }
+    sharedEntries.push([key, value])
+  }
+  return {
+    shared: Object.fromEntries(sharedEntries),
+    localFactory: localEntries.length === 0
+      ? undefined
+      : () => Object.fromEntries(localEntries.map(([key, materialize]) => [key, materialize()])),
+  }
+}
+const mergeStateFactory = (current, next) => {
+  if (current === undefined) {
+    return next
+  }
+  if (next === undefined) {
+    return current
+  }
+  return () => ({
+    ...current(),
+    ...next(),
+  })
+}
+const resolveSharedStateDefinition = (component) => {
+  const compatibility = splitModelDefinition(component.model)
+  return {
+    ...compatibility.shared,
+    ...component.state,
+  }
+}
+const materializeStateFactoryDefinition = (component) => {
+  const compatibility = splitModelDefinition(component.model)
+  return mergeStateFactory(compatibility.localFactory, component.stateFactory)?.() ?? {}
 }
 const createState = (model, registry) => {
   const keys = Object.keys(model)
@@ -98,7 +140,10 @@ export const instantiate = (
   props,
   compositionInput,
 ) => {
-  const materializedModel = materializeModel(component.model)
+  const materializedModel = {
+    ...resolveSharedStateDefinition(component),
+    ...materializeStateFactoryDefinition(component),
+  }
   const model = createWriteModel(materializedModel, registry)
   const state = createState(materializedModel, registry)
   const actionContext = {
@@ -172,14 +217,78 @@ export const actionEffect = (effect, annotations) => ({
   effect,
   annotations,
 })
+export function state(selfOrState, stateDefinition) {
+  if (stateDefinition === undefined) {
+    if (isComponent(selfOrState)) {
+      return selfOrState
+    }
+    assertNoStateFactories(selfOrState)
+    return (self) =>
+      patch(self, {
+        state: {
+          ...self.state,
+          ...selfOrState,
+        },
+      })
+  }
+  if (!isComponent(selfOrState)) {
+    return make(LoomCore.Ast.text(""))
+  }
+  assertNoStateFactories(stateDefinition)
+  return patch(selfOrState, {
+    state: {
+      ...selfOrState.state,
+      ...stateDefinition,
+    },
+  })
+}
+export function stateFactory(selfOrFactory, factory) {
+  if (factory === undefined) {
+    if (isComponent(selfOrFactory)) {
+      return selfOrFactory
+    }
+    return (self) =>
+      patch(self, {
+        stateFactory: mergeStateFactory(self.stateFactory, selfOrFactory),
+      })
+  }
+  if (!isComponent(selfOrFactory)) {
+    return make(LoomCore.Ast.text(""))
+  }
+  return patch(selfOrFactory, {
+    stateFactory: mergeStateFactory(selfOrFactory.stateFactory, factory),
+  })
+}
 export function model(selfOrModel, modelDefinition) {
   if (modelDefinition === undefined) {
-    return (self) => patch(self, { model: selfOrModel })
+    if (isComponent(selfOrModel)) {
+      return selfOrModel
+    }
+    const legacyModel = selfOrModel
+    return (self) => {
+      const compatibility = splitModelDefinition(legacyModel)
+      return patch(self, {
+        model: legacyModel,
+        state: {
+          ...self.state,
+          ...compatibility.shared,
+        },
+        stateFactory: mergeStateFactory(self.stateFactory, compatibility.localFactory),
+      })
+    }
   }
   if (!isComponent(selfOrModel)) {
     return make(LoomCore.Ast.text(""))
   }
-  return patch(selfOrModel, { model: modelDefinition })
+  const compatibility = splitModelDefinition(modelDefinition)
+  return patch(selfOrModel, {
+    model: modelDefinition,
+    state: {
+      ...selfOrModel.state,
+      ...compatibility.shared,
+    },
+    stateFactory: mergeStateFactory(selfOrModel.stateFactory, compatibility.localFactory),
+  })
 }
 export function actions(selfOrActions, actionDefinition) {
   if (actionDefinition === undefined) {

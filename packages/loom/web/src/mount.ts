@@ -118,7 +118,7 @@ export const mount = <
     mount: {
       entry,
       componentName: component.name,
-      modelKeys: Object.keys(component.model ?? {}),
+      modelKeys: Object.keys(instance.state),
       actionNames,
       slotNames: Object.keys(component.slots ?? {}),
     },

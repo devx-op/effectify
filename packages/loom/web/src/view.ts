@@ -39,16 +39,16 @@ const linkTargetModifiers = (target: LinkTarget): ReadonlyArray<Html.AttributeMo
   return modifiers
 }
 
-/** Create a renderer-neutral text node backed by the current Html-first runtime seam. */
+const textChildNode = (value: string | (() => string)): LoomCore.Ast.Node =>
+  typeof value === "function"
+    ? LoomCore.Ast.dynamicText(value)
+    : LoomCore.Ast.text(value)
+
+/** Create a renderer-neutral text view backed by an inline element root. */
 export function text(value: string): Type
 export function text(render: () => string): Type
 export function text(value: string | (() => string)): Type {
-  return typeof value === "function"
-    ? internal.wrap(LoomCore.Ast.dynamicText(value))
-    : internal.wrap({
-      _tag: "Text",
-      value,
-    })
+  return internal.wrap(Html.el("span", Html.children(textChildNode(value))))
 }
 
 /** Create a renderer-neutral fragment. */

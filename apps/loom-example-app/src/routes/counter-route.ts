@@ -48,9 +48,9 @@ const counterCueStyle = (count: number): Web.StyleRecord => {
 }
 
 export const counterRoute = Component.make("counter-route").pipe(
-  Component.model({
-    count: () => Atom.make(counterInitialCount).pipe(Atom.keepAlive),
-  }),
+  Component.stateFactory(() => ({
+    count: Atom.make(counterInitialCount).pipe(Atom.keepAlive),
+  })),
   Component.actions({
     decrement: ({ count }) => count.update((value) => value - 1),
     increment: ({ count }) => count.update((value) => value + 1),
@@ -59,16 +59,13 @@ export const counterRoute = Component.make("counter-route").pipe(
   Component.view(({ state, actions }) =>
     View.vstack(
       View.vstack(
-        View.vstack(View.text("Example app only")).pipe(Web.className("loom-example-eyebrow")),
-        View.vstack(View.text("Loom vNext counter")).pipe(
+        View.text("Example app only").pipe(Web.className("loom-example-eyebrow")),
+        View.text("Loom vNext counter").pipe(
+          Web.as("h1"),
           Web.className("counter-title"),
-          Web.attr("role", "heading"),
-          Web.aria("level", 1),
         ),
-        View.vstack(
-          View.text(
-            "This example keeps a single route and teaches the current Loom happy path first: Component.model/actions/view with View + Web modifiers.",
-          ),
+        View.text(
+          "This example keeps a single route and teaches the current Loom happy path first: Component.state/actions/view with View.text + Web modifiers.",
         ).pipe(Web.className("counter-copy")),
       ).pipe(Web.className("loom-example-hero")),
       View.vstack(
@@ -76,14 +73,14 @@ export const counterRoute = Component.make("counter-route").pipe(
           View.text("Counter state").pipe(Web.className("counter-value-label")),
           View.hstack(
             View.text("Count: ").pipe(Web.className("counter-value-prefix")),
-            View.vstack(View.text(() => `${state.count()}`)).pipe(
+            View.text(() => `${state.count()}`).pipe(
               Web.className("counter-dynamic-value"),
               Web.data("counter-dynamic-value", "true"),
             ),
           ).pipe(Web.className("counter-value"), Web.data("counter-value", "true")),
           View.hstack(
             View.text("Reactive cue").pipe(Web.className("counter-cue-label")),
-            View.vstack(View.text("Loom attr/class/style in place")).pipe(
+            View.text("Loom attr/class/style in place").pipe(
               Web.className("counter-reactive-cue"),
               Web.data("counter-reactive-cue", "true"),
               Web.attr("title", () => `Reactive cue tone: ${counterCueTone(state.count())} (${state.count()})`),
@@ -109,20 +106,14 @@ export const counterRoute = Component.make("counter-route").pipe(
         ).pipe(Web.className("counter-actions"), Web.data("counter-controls", "true")),
       ).pipe(Web.className("loom-example-card")),
       View.vstack(
-        View.vstack(
-          View.text(
-            "Html stays at the document/resume boundary only, not in the main authoring path developers copy from this example.",
-          ),
+        View.text(
+          "Html stays at the document/resume boundary only, not in the main authoring path developers copy from this example.",
         ).pipe(Web.className("compat-seam-note"), Web.data("compat-seam-note", "true")),
-        View.vstack(
-          View.text(
-            "Reactive cue: the badge now uses Loom-native attr/class/style bindings, while the numeric text stays on the existing dynamic-text seam.",
-          ),
+        View.text(
+          "Reactive cue: the badge now uses Loom-native attr/class/style bindings, while the numeric text stays on the span-backed dynamic-text seam.",
         ).pipe(Web.className("counter-debug-note"), Web.data("counter-debug-note", "true")),
-        View.vstack(
-          View.text(
-            "Dev caveat: in plain Vite dev the browser uses mount(...) to fill the empty root when no payload is present. That fallback is honest DX, not fake full SSR.",
-          ),
+        View.text(
+          "Dev caveat: in plain Vite dev the browser uses mount(...) to fill the empty root when no payload is present. That fallback is honest DX, not fake full SSR.",
         ).pipe(Web.className("dev-mode-note"), Web.data("dev-mode-note", "true")),
       ).pipe(Web.className("loom-example-note-stack")),
     ).pipe(Web.className("loom-example-layout"), Web.data("route-view", "counter"))

@@ -10,6 +10,8 @@ const effectLike = { _tag: "EffectLike" } as const
 describe("@effectify/loom vNext public surface", () => {
   it("re-exports the vNext namespaces and mount seam from the package root", () => {
     expect(typeof Component.make).toBe("function")
+    expect(typeof Component.state).toBe("function")
+    expect(typeof Component.stateFactory).toBe("function")
     expect(typeof Component.model).toBe("function")
     expect(typeof Component.actions).toBe("function")
     expect(typeof Component.actionEffect).toBe("function")
@@ -22,15 +24,16 @@ describe("@effectify/loom vNext public surface", () => {
     expect(typeof View.hstack).toBe("function")
     expect(typeof View.stack).toBe("function")
     expect(typeof View.link).toBe("function")
+    expect(typeof Web.as).toBe("function")
     expect(typeof Web.className).toBe("function")
     expect(typeof mount).toBe("function")
   })
 
-  it("supports pipeable component authoring with model, actions, view, and slots seams", () => {
+  it("supports pipeable component authoring with state, actions, view, and slots seams", () => {
     const registry = AtomRegistry.make()
     const count = Atom.make(2)
     const counter = Component.make("counter").pipe(
-      Component.model({ count }),
+      Component.state({ count }),
       Component.actions({
         increment: ({ count }) => count.update((value) => value + 1),
         reset: ({ count }) => count.set(0),
@@ -49,7 +52,7 @@ describe("@effectify/loom vNext public surface", () => {
     )
 
     expect(counter.name).toBe("counter")
-    expect(counter.model).toEqual({ count })
+    expect(counter.state).toEqual({ count })
     expect(counter.slots).toEqual({
       default: { _tag: "Slot", required: true },
       sidebar: { _tag: "Slot", required: false },
@@ -61,8 +64,16 @@ describe("@effectify/loom vNext public surface", () => {
         class: "counter",
       },
       children: [
-        { _tag: "DynamicText" },
-        { _tag: "Text", value: "default,sidebar" },
+        {
+          _tag: "Element",
+          tagName: "span",
+          children: [{ _tag: "DynamicText" }],
+        },
+        {
+          _tag: "Element",
+          tagName: "span",
+          children: [{ _tag: "Text", value: "default,sidebar" }],
+        },
         {
           _tag: "Element",
           tagName: "button",
@@ -122,6 +133,157 @@ describe("@effectify/loom vNext public surface", () => {
     expect(second.state.count()).toBe(1)
     expect(first.html).toContain("Count: 2")
     expect(second.html).toContain("Count: 1")
+
+    first.dispose()
+    second.dispose()
+  })
+
+  it("supports explicit shared state and per-instance state factories in the public surface", () => {
+    const registry = AtomRegistry.make()
+    const count = Atom.make(2)
+    const counter = Component.make("state-counter").pipe(
+      Component.state({
+        count,
+        label: "ready",
+      }),
+      Component.stateFactory(() => ({
+        local: Atom.make(1),
+      })),
+      Component.actions({
+        incrementShared: ({ count }) => count.update((value) => value + 1),
+        incrementLocal: ({ local }) => local.update((value) => value + 1),
+      }),
+      Component.view(({ state }) =>
+        View.stack(
+          View.text(() => `Shared: ${state.count()}`),
+          View.text(() => `Local: ${state.local()}`),
+          View.text(() => `Label: ${state.label()}`),
+        )
+      ),
+    )
+
+    expect(counter.state).toEqual({
+      count,
+      label: "ready",
+    })
+    expect(typeof Component.stateFactory).toBe("function")
+    expect(typeof counter.stateFactory).toBe("function")
+
+    const first = mount({ counter }, { registry })
+    const second = mount({ counter }, { registry })
+
+    expect(first.state.count()).toBe(2)
+    expect(second.state.count()).toBe(2)
+    expect(first.state.local()).toBe(1)
+    expect(second.state.local()).toBe(1)
+    expect(first.observability.mount.modelKeys).toEqual(["count", "label", "local"])
+
+    // @ts-expect-error mount action typing still widens in the current additive bridge.
+    first.actions.incrementShared()
+    // @ts-expect-error mount action typing still widens in the current additive bridge.
+    first.actions.incrementLocal()
+
+    expect(first.state.count()).toBe(3)
+    expect(second.state.count()).toBe(3)
+    expect(first.state.local()).toBe(2)
+    expect(second.state.local()).toBe(1)
+    second.sync()
+    expect(first.html).toContain("Shared: 3")
+    expect(first.html).toContain("Local: 2")
+    expect(second.html).toContain("Shared: 3")
+    expect(second.html).toContain("Local: 1")
+
+    first.dispose()
+    second.dispose()
+    registry.dispose()
+  })
+
+  it("rejects factory-like entries passed through Component.state at runtime", () => {
+    const invalidState: Record<string, unknown> = {
+      count: () => Atom.make(0),
+    }
+
+    expect(() => Component.make("bad-state").pipe(Component.state(invalidState))).toThrowError(
+      /Component\.state\(\.\.\.\) does not accept factory entry 'count'\. Use Component\.stateFactory\(\.\.\.\) instead\./,
+    )
+  })
+
+  it("backs View.text with span roots and lets Web.as override the root tag", () => {
+    const inline = View.text("hello").pipe(Web.className("copy"))
+    const paragraph = View.text(() => "reactive").pipe(Web.as("p"), Web.className("body"))
+    const section = View.vstack(View.text("nested")).pipe(Web.as("section"))
+
+    expect(inline).toMatchObject({
+      _tag: "Element",
+      tagName: "span",
+      attributes: {
+        class: "copy",
+      },
+      children: [{ _tag: "Text", value: "hello" }],
+    })
+    expect(paragraph).toMatchObject({
+      _tag: "Element",
+      tagName: "p",
+      attributes: {
+        class: "body",
+      },
+      children: [{ _tag: "DynamicText" }],
+    })
+    expect(section).toMatchObject({
+      _tag: "Element",
+      tagName: "section",
+    })
+  })
+
+  it("keeps Component.model as a compatibility bridge over shared and local state semantics", () => {
+    const sharedCount = Atom.make(1)
+    const counter = Component.make("legacy-counter").pipe(
+      Component.model({
+        count: sharedCount,
+        label: "ready",
+        local: () => Atom.make(0),
+      }),
+      Component.actions({
+        incrementShared: ({ count }) => count.update((value) => value + 1),
+        incrementLocal: ({ local }) => local.update((value) => value + 1),
+      }),
+      Component.view(({ state }) =>
+        View.stack(
+          View.text(() => `Shared: ${state.count()}`),
+          View.text(() => `Local: ${state.local()}`),
+          View.text(() => `Label: ${state.label()}`),
+        )
+      ),
+    )
+
+    expect(counter.model).toMatchObject({
+      count: sharedCount,
+      label: "ready",
+    })
+    expect(counter.state).toEqual({
+      count: sharedCount,
+      label: "ready",
+    })
+    expect(typeof counter.stateFactory).toBe("function")
+
+    const first = mount({ counter })
+    const second = mount({ counter })
+
+    expect(first.state.count()).toBe(1)
+    expect(second.state.count()).toBe(1)
+    expect(first.state.local()).toBe(0)
+    expect(second.state.local()).toBe(0)
+    expect(first.observability.mount.modelKeys).toEqual(["count", "label", "local"])
+
+    // @ts-expect-error mount action typing still widens in the current additive bridge.
+    first.actions.incrementShared()
+    // @ts-expect-error mount action typing still widens in the current additive bridge.
+    first.actions.incrementLocal()
+
+    expect(first.state.count()).toBe(2)
+    expect(second.state.count()).toBe(2)
+    expect(first.state.local()).toBe(1)
+    expect(second.state.local()).toBe(0)
 
     first.dispose()
     second.dispose()
@@ -242,12 +404,12 @@ describe("@effectify/loom vNext public surface", () => {
     const full = mount({ page })
     const optional = mount({ withoutSidebar })
 
-    expect(full.html).toContain("<header>Header</header>")
-    expect(full.html).toContain("<aside>Sidebar</aside>")
-    expect(full.html).toContain("<main><div>Content</div></main>")
-    expect(optional.html).toContain("<header>Header</header>")
+    expect(full.html).toContain("<header><span>Header</span></header>")
+    expect(full.html).toContain("<aside><span>Sidebar</span></aside>")
+    expect(full.html).toContain("<main><div><span>Content</span></div></main>")
+    expect(optional.html).toContain("<header><span>Header</span></header>")
     expect(optional.html).not.toContain("<aside>Sidebar</aside>")
-    expect(optional.html).toContain("<main>Content</main>")
+    expect(optional.html).toContain("<main><span>Content</span></main>")
 
     full.dispose()
     optional.dispose()
@@ -275,8 +437,10 @@ describe("@effectify/loom vNext public surface", () => {
 
     const handle = mount({ page })
 
-    expect(handle.html).toContain('<div class="card">Card<main>Simple body</main></div>')
-    expect(handle.html).toContain('<div class="card">Card<main>Nested 2items</main></div>')
+    expect(handle.html).toContain('<div class="card"><span>Card</span><main><span>Simple body</span></main></div>')
+    expect(handle.html).toContain(
+      '<div class="card"><span>Card</span><main>Nested 2<span>items</span></main></div>',
+    )
 
     handle.dispose()
   })
@@ -304,7 +468,11 @@ describe("@effectify/loom vNext public surface", () => {
       children: [
         { _tag: "Text", value: "one" },
         { _tag: "Text", value: "2" },
-        { _tag: "Text", value: "three" },
+        {
+          _tag: "Element",
+          tagName: "span",
+          children: [{ _tag: "Text", value: "three" }],
+        },
       ],
     })
     expect(button).toMatchObject({
@@ -315,7 +483,11 @@ describe("@effectify/loom vNext public surface", () => {
           _tag: "Element",
           tagName: "div",
           children: [
-            { _tag: "Text", value: "+" },
+            {
+              _tag: "Element",
+              tagName: "span",
+              children: [{ _tag: "Text", value: "+" }],
+            },
             { _tag: "Text", value: "Save" },
           ],
         },
@@ -360,9 +532,9 @@ describe("@effectify/loom vNext public surface", () => {
     const handle = mount({ page })
 
     expect(handle.html).toContain("<button>Save now</button>")
-    expect(handle.html).toContain("<button><div>+1</div></button>")
+    expect(handle.html).toContain("<button><div><span>+</span>1</div></button>")
     expect(handle.html).toContain('<a href="/settings">Open settings</a>')
-    expect(handle.html).toContain('<a href="/docs">Guide docs</a>')
+    expect(handle.html).toContain('<a href="/docs"><span>Guide</span> docs</a>')
 
     handle.dispose()
   })
@@ -455,7 +627,7 @@ describe("@effectify/loom vNext public surface", () => {
 
     expect(handle.entry).toBe("counter")
     expect(handle.component).toBe(counter)
-    expect(handle.html).toBe('<div class="mounted">Mounted</div>')
+    expect(handle.html).toBe('<div class="mounted"><span>Mounted</span></div>')
     expect(root.innerHTML).toBe(handle.html)
 
     handle.dispose()
@@ -480,19 +652,25 @@ describe("@effectify/loom vNext public surface", () => {
     const handle = mount({ counter }, { root })
     const container = root.firstElementChild
     const button = container?.querySelector("button")
-    const textNode = container?.childNodes[1]
+    const countNode = container?.childNodes[1]
     const footerNode = container?.childNodes[2]
+    const dynamicTextNode = countNode?.firstChild
+    const stableFooterTextNode = footerNode?.firstChild
 
-    expect(textNode?.textContent).toBe("Count: 1")
+    expect(countNode?.nodeName).toBe("SPAN")
+    expect(footerNode?.nodeName).toBe("SPAN")
+    expect(dynamicTextNode?.textContent).toBe("Count: 1")
     expect(footerNode?.textContent).toBe("Stable footer")
 
     // @ts-expect-error mount action typing still widens in the current additive bridge.
     handle.actions.increment()
 
     expect(container?.querySelector("button")).toBe(button)
-    expect(container?.childNodes[1]).toBe(textNode)
+    expect(container?.childNodes[1]).toBe(countNode)
     expect(container?.childNodes[2]).toBe(footerNode)
-    expect(textNode?.textContent).toBe("Count: 2")
+    expect(countNode?.firstChild).toBe(dynamicTextNode)
+    expect(footerNode?.firstChild).toBe(stableFooterTextNode)
+    expect(dynamicTextNode?.textContent).toBe("Count: 2")
     expect(footerNode?.textContent).toBe("Stable footer")
     expect(root.innerHTML).toContain("Count: 2")
 

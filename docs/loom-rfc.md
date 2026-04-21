@@ -27,7 +27,9 @@ The important correction in this revision is explicit: the earlier Loom directio
 
 - Atom is the reactive foundation.
 - Loom does **not** introduce a parallel Loom-native model primitive.
-- `Component.model(...)` should consume real Atom values and factories directly.
+- `Component.state(...)` is the primary seam for shared/materialized Atom values.
+- `Component.stateFactory(...)` is the explicit seam for per-instance/local factories.
+- `Component.model(...)` remains a temporary compatibility bridge for older mixed call sites.
 - Directionally, that includes primitives such as `Atom.make(...)`, `Atom.family(...)`, and `Atom.serializable(...)`.
 - An integration surface like `@effectify/loom-atom` is acceptable as a future package direction, but it must remain an integration layer, not a replacement state model.
 
@@ -187,7 +189,7 @@ Directional target:
 
 ```ts
 Component.make("counter").pipe(
-  Component.model({
+  Component.state({
     count: Atom.make(0),
   }),
 )
@@ -336,6 +338,7 @@ Directional examples:
 View.vstack(...)
 View.hstack(...)
 View.text("hello")
+View.text("Title").pipe(Web.as("h1"))
 View.when(condition, content)
 View.main(slot)
 View.button(View.text("Save"), save)
@@ -456,7 +459,7 @@ import * as Atom from "effect/unstable/reactivity/Atom"
 import { Component, mount, View, Web } from "@effectify/loom"
 
 export const counter = Component.make("counter").pipe(
-  Component.model({
+  Component.state({
     count: Atom.make(0),
   }),
   Component.actions({
@@ -561,7 +564,7 @@ Loom should adopt a testing culture inspired by the Effect repository.
 
 Highest-value early coverage areas:
 
-1. `Component.model(...)` Atom-native integration semantics
+1. `Component.state(...)` / `Component.stateFactory(...)` Atom-native integration semantics
 2. `Component.actions(...)` typing and runtime behavior
 3. `Component.view(...)` state facade ergonomics and inference
 4. children-based composition, slot composition, and layout behavior

@@ -11,9 +11,15 @@ import type * as View from "./view.js"
 
 export type ModelValueInput = unknown | Atom.Atom<unknown> | (() => unknown)
 export type ModelShape = Readonly<Record<string, ModelValueInput>>
+export type StateDefinition = Readonly<Record<string, unknown | Atom.Atom<unknown>>>
 export type ActionShape = Readonly<Record<string, unknown>>
 export type SlotShape = Readonly<Record<string, Slot.Definition>>
 type ChildrenFlag = true | false
+type MergeModel<Model extends ModelShape, Added extends ModelShape> = Omit<Model, keyof Added> & Added
+type FactoryLike = (...args: ReadonlyArray<any>) => unknown
+type RejectFactoryEntries<Definition extends Readonly<Record<string, unknown>>> = {
+  readonly [Key in keyof Definition]: Definition[Key] extends FactoryLike ? never : Definition[Key]
+}
 
 export interface ActionAnnotations {
   readonly label?: string
@@ -134,6 +140,8 @@ export interface Type<
 > extends LoomCore.Component.Definition, Pipeable.Pipeable {
   readonly name?: string
   readonly model?: Model
+  readonly state?: StateDefinition
+  readonly stateFactory?: () => StateDefinition
   readonly actions?: ActionsInput<Model, Actions>
   readonly children?: true
   readonly slots?: Slots
@@ -184,13 +192,73 @@ export const isActionEffect = (value: unknown): value is ActionEffect =>
 const isModelFactory = (value: ModelValueInput): value is () => unknown =>
   typeof value === "function" && !Atom.isAtom(value)
 
-const materializeModel = <Model extends ModelShape>(model: Model | undefined): MaterializedModel<Model> => {
-  const entries = Object.entries(model ?? {}).map(([key, value]) => [
-    key,
-    isModelFactory(value) ? value() : value,
-  ])
+const assertNoStateFactories = (stateDefinition: StateDefinition): void => {
+  for (const [key, value] of Object.entries(stateDefinition)) {
+    if (typeof value === "function") {
+      throw new Error(
+        `Component.state(...) does not accept factory entry '${key}'. Use Component.stateFactory(...) instead.`,
+      )
+    }
+  }
+}
 
-  return Object.fromEntries(entries) as MaterializedModel<Model>
+const splitModelDefinition = (model: ModelShape | undefined): {
+  readonly shared: StateDefinition
+  readonly localFactory: (() => StateDefinition) | undefined
+} => {
+  const sharedEntries: Array<readonly [string, unknown]> = []
+  const localEntries: Array<readonly [string, () => unknown]> = []
+
+  for (const [key, value] of Object.entries(model ?? {})) {
+    if (isModelFactory(value)) {
+      localEntries.push([key, value])
+      continue
+    }
+
+    sharedEntries.push([key, value])
+  }
+
+  return {
+    shared: Object.fromEntries(sharedEntries),
+    localFactory: localEntries.length === 0
+      ? undefined
+      : () =>
+        Object.fromEntries(
+          localEntries.map(([key, materialize]) => [key, materialize()]),
+        ),
+  }
+}
+
+const mergeStateFactory = (
+  current: (() => StateDefinition) | undefined,
+  next: (() => StateDefinition) | undefined,
+): (() => StateDefinition) | undefined => {
+  if (current === undefined) {
+    return next
+  }
+
+  if (next === undefined) {
+    return current
+  }
+
+  return () => ({
+    ...current(),
+    ...next(),
+  })
+}
+
+const resolveSharedStateDefinition = (component: Type<any, any, any, any, any, any, any>): StateDefinition => {
+  const compatibility = splitModelDefinition(component.model)
+
+  return {
+    ...compatibility.shared,
+    ...component.state,
+  }
+}
+
+const materializeStateFactoryDefinition = (component: Type<any, any, any, any, any, any, any>): StateDefinition => {
+  const compatibility = splitModelDefinition(component.model)
+  return mergeStateFactory(compatibility.localFactory, component.stateFactory)?.() ?? {}
 }
 
 const createState = <Model extends ModelShape>(
@@ -320,7 +388,10 @@ export const instantiate = <
   props?: Props,
   compositionInput?: InstanceCompositionInput,
 ): Instance<Model, Actions, Slots> => {
-  const materializedModel = materializeModel(component.model)
+  const materializedModel = {
+    ...resolveSharedStateDefinition(component),
+    ...materializeStateFactoryDefinition(component),
+  } as MaterializedModel<Model>
   const model = createWriteModel(materializedModel, registry)
   const state = createState(materializedModel, registry)
   const actionContext: ActionContext<Model> = {
@@ -457,6 +528,118 @@ export const actionEffect = <Success, Err, Requirements>(
   annotations,
 })
 
+/** Attach shared state values and atoms to a component definition. */
+export function state<Added extends StateDefinition>(
+  stateDefinition: Added & RejectFactoryEntries<Added>,
+): <
+  Props,
+  Err,
+  Requirements,
+  Model extends ModelShape,
+  Actions extends ActionShape,
+  Slots extends SlotShape,
+  AcceptsChildren extends ChildrenFlag,
+>(
+  self: Type<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren>,
+) => Type<Props, Err, Requirements, MergeModel<Model, Added>, Actions, Slots, AcceptsChildren>
+export function state<
+  Props,
+  Err,
+  Requirements,
+  Model extends ModelShape,
+  Added extends StateDefinition,
+  Actions extends ActionShape,
+  Slots extends SlotShape,
+  AcceptsChildren extends ChildrenFlag,
+>(
+  self: Type<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren>,
+  stateDefinition: Added & RejectFactoryEntries<Added>,
+): Type<Props, Err, Requirements, MergeModel<Model, Added>, Actions, Slots, AcceptsChildren>
+export function state<Added extends StateDefinition>(
+  selfOrState: Type | Added,
+  stateDefinition?: Added,
+) {
+  if (stateDefinition === undefined) {
+    if (isComponent(selfOrState)) {
+      return selfOrState
+    }
+
+    assertNoStateFactories(selfOrState)
+
+    return (self: Type) =>
+      patch(self, {
+        state: {
+          ...self.state,
+          ...selfOrState,
+        },
+      })
+  }
+
+  if (!isComponent(selfOrState)) {
+    return make(LoomCore.Ast.text(""))
+  }
+
+  assertNoStateFactories(stateDefinition)
+
+  return patch(selfOrState, {
+    state: {
+      ...selfOrState.state,
+      ...stateDefinition,
+    },
+  })
+}
+
+/** Attach per-instance local state materialization to a component definition. */
+export function stateFactory<Added extends StateDefinition>(
+  factory: () => Added,
+): <
+  Props,
+  Err,
+  Requirements,
+  Model extends ModelShape,
+  Actions extends ActionShape,
+  Slots extends SlotShape,
+  AcceptsChildren extends ChildrenFlag,
+>(
+  self: Type<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren>,
+) => Type<Props, Err, Requirements, MergeModel<Model, Added>, Actions, Slots, AcceptsChildren>
+export function stateFactory<
+  Props,
+  Err,
+  Requirements,
+  Model extends ModelShape,
+  Added extends StateDefinition,
+  Actions extends ActionShape,
+  Slots extends SlotShape,
+  AcceptsChildren extends ChildrenFlag,
+>(
+  self: Type<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren>,
+  factory: () => Added,
+): Type<Props, Err, Requirements, MergeModel<Model, Added>, Actions, Slots, AcceptsChildren>
+export function stateFactory<Added extends StateDefinition>(
+  selfOrFactory: Type | (() => Added),
+  factory?: () => Added,
+) {
+  if (factory === undefined) {
+    if (isComponent(selfOrFactory)) {
+      return selfOrFactory
+    }
+
+    return (self: Type) =>
+      patch(self, {
+        stateFactory: mergeStateFactory(self.stateFactory, selfOrFactory),
+      })
+  }
+
+  if (!isComponent(selfOrFactory)) {
+    return make(LoomCore.Ast.text(""))
+  }
+
+  return patch(selfOrFactory, {
+    stateFactory: mergeStateFactory(selfOrFactory.stateFactory, factory),
+  })
+}
+
 /** Attach model atoms and values to a component definition. */
 export function model<Model extends ModelShape>(
   modelDefinition: Model,
@@ -464,42 +647,70 @@ export function model<Model extends ModelShape>(
   Props,
   Err,
   Requirements,
+  ExistingModel extends ModelShape,
   Actions extends ActionShape,
   Slots extends SlotShape,
   AcceptsChildren extends ChildrenFlag,
 >(
-  self: Type<Props, Err, Requirements, {}, Actions, Slots, AcceptsChildren>,
-) => Type<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren>
+  self: Type<Props, Err, Requirements, ExistingModel, Actions, Slots, AcceptsChildren>,
+) => Type<Props, Err, Requirements, MergeModel<ExistingModel, Model>, Actions, Slots, AcceptsChildren>
 export function model<
   Props,
   Err,
   Requirements,
+  ExistingModel extends ModelShape,
   Model extends ModelShape,
   Actions extends ActionShape,
   Slots extends SlotShape,
   AcceptsChildren extends ChildrenFlag,
 >(
-  self: Type<Props, Err, Requirements, {}, Actions, Slots, AcceptsChildren>,
+  self: Type<Props, Err, Requirements, ExistingModel, Actions, Slots, AcceptsChildren>,
   modelDefinition: Model,
-): Type<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren>
+): Type<Props, Err, Requirements, MergeModel<ExistingModel, Model>, Actions, Slots, AcceptsChildren>
 export function model<
   Model extends ModelShape,
   Actions extends ActionShape,
   Slots extends SlotShape,
   AcceptsChildren extends ChildrenFlag,
 >(
-  selfOrModel: Type<any, any, any, {}, Actions, Slots, AcceptsChildren> | Model,
+  selfOrModel: Type<any, any, any, ModelShape, Actions, Slots, AcceptsChildren> | Model,
   modelDefinition?: Model,
 ) {
   if (modelDefinition === undefined) {
-    return (self: Type<any, any, any, {}, Actions, Slots, AcceptsChildren>) => patch(self, { model: selfOrModel })
+    if (isComponent(selfOrModel)) {
+      return selfOrModel
+    }
+
+    const legacyModel = selfOrModel as Model
+
+    return (self: Type<any, any, any, ModelShape, Actions, Slots, AcceptsChildren>) => {
+      const compatibility = splitModelDefinition(legacyModel)
+
+      return patch(self, {
+        model: legacyModel,
+        state: {
+          ...self.state,
+          ...compatibility.shared,
+        },
+        stateFactory: mergeStateFactory(self.stateFactory, compatibility.localFactory),
+      })
+    }
   }
 
   if (!isComponent(selfOrModel)) {
     return make(LoomCore.Ast.text(""))
   }
 
-  return patch(selfOrModel, { model: modelDefinition })
+  const compatibility = splitModelDefinition(modelDefinition)
+
+  return patch(selfOrModel, {
+    model: modelDefinition,
+    state: {
+      ...selfOrModel.state,
+      ...compatibility.shared,
+    },
+    stateFactory: mergeStateFactory(selfOrModel.stateFactory, compatibility.localFactory),
+  })
 }
 
 /** Attach action definitions or factories to a component definition. */

@@ -50,9 +50,11 @@ describe("loom example app project shape", () => {
     const routerSource = readFileSync(new URL("../src/router.ts", import.meta.url), "utf8")
     const entryClientSource = readFileSync(new URL("../src/entry-client.ts", import.meta.url), "utf8")
 
-    expect(counterRouteSource).toContain("Component.model")
+    expect(counterRouteSource).toContain("Component.state")
+    expect(counterRouteSource).toContain("Component.stateFactory")
     expect(counterRouteSource).toContain("Component.actions")
     expect(counterRouteSource).toContain("Component.view")
+    expect(counterRouteSource).toContain("Web.as")
     expect(counterRouteSource).toContain("View.vstack")
     expect(counterRouteSource).toContain("View.hstack")
     expect(counterRouteSource).toContain("Web.data")

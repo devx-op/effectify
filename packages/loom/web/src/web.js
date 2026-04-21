@@ -26,6 +26,12 @@ const appendBinding = (view, binding) =>
     ...element,
     bindings: [...element.bindings, binding],
   }))
+/** Override the root element tag for an element-backed view. Non-element nodes pass through unchanged. */
+export const as = (tagName) => (view) =>
+  internal.mapElement(view, (element) => ({
+    ...element,
+    tagName,
+  }))
 /** Attach a CSS class to a view element. Non-element nodes pass through unchanged. */
 export const className = (value) =>
   isReactiveInput(value)
