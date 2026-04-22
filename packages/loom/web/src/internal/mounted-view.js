@@ -333,8 +333,11 @@ const mountIfNode = (node, registry, root) => {
     },
   }
 }
-
-const mountedForItemNodes = (entry) => [entry.range.start, ...entry.mounted.nodes, entry.range.end]
+const mountedForItemNodes = (entry) => [
+  entry.range.start,
+  ...entry.mounted.nodes,
+  entry.range.end,
+]
 const makeMountedForItem = (key, item, index, mounted) => ({
   key,
   item,

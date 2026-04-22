@@ -11,15 +11,11 @@ import type * as View from "./view.js"
 
 export type ModelValueInput = unknown | Atom.Atom<unknown> | (() => unknown)
 export type ModelShape = Readonly<Record<string, ModelValueInput>>
-export type StateDefinition = Readonly<Record<string, unknown | Atom.Atom<unknown>>>
+export type StateDefinition = ModelShape
 export type ActionShape = Readonly<Record<string, unknown>>
 export type SlotShape = Readonly<Record<string, Slot.Definition>>
 type ChildrenFlag = true | false
 type MergeModel<Model extends ModelShape, Added extends ModelShape> = Omit<Model, keyof Added> & Added
-type FactoryLike = (...args: ReadonlyArray<any>) => unknown
-type RejectFactoryEntries<Definition extends Readonly<Record<string, unknown>>> = {
-  readonly [Key in keyof Definition]: Definition[Key] extends FactoryLike ? never : Definition[Key]
-}
 
 export interface ActionAnnotations {
   readonly label?: string
@@ -94,11 +90,22 @@ export type SlotInput<Slots extends SlotShape> = Readonly<
 >
 
 type RuntimeSlotInput = Readonly<Record<string, View.Child | undefined>>
+type RuntimeFields = {
+  readonly registry?: AtomRegistry.AtomRegistry
+}
+type RuntimeType<
+  Props = never,
+  Err = never,
+  Requirements = never,
+  Model extends ModelShape = {},
+  Actions extends ActionShape = {},
+  Slots extends SlotShape = {},
+  AcceptsChildren extends ChildrenFlag = true,
+> = Component<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren> & RuntimeFields
 
 export interface ActionContext<Model extends ModelShape> {
   readonly model: WriteModel<Model>
   readonly state: State<Model>
-  readonly registry: AtomRegistry.AtomRegistry
   readonly component: {
     readonly name: string | undefined
   }
@@ -129,34 +136,43 @@ export interface ViewContext<Props, Model extends ModelShape, Actions extends Ac
 }
 
 /** Public Loom component definition. */
-export interface Type<
+export interface Component<
   Props = never,
   Err = never,
   Requirements = never,
   Model extends ModelShape = {},
   Actions extends ActionShape = {},
   Slots extends SlotShape = {},
-  _AcceptsChildren extends ChildrenFlag = false,
-> extends LoomCore.Component.Definition, Pipeable.Pipeable {
+  _AcceptsChildren extends ChildrenFlag = true,
+> extends LoomCore.Component.Component, Pipeable.Pipeable {
   readonly name?: string
   readonly model?: Model
   readonly state?: StateDefinition
-  readonly stateFactory?: () => StateDefinition
   readonly actions?: ActionsInput<Model, Actions>
   readonly children?: true
   readonly slots?: Slots
-  readonly registry?: AtomRegistry.AtomRegistry
   readonly render?: (context: ViewContext<Props, Model, Actions, Slots>) => View.Node
   readonly __props?: Props
   readonly __error?: Err
   readonly __requirements?: Requirements
 }
 
-export type ModelOf<ComponentType extends Type<any, any, any, any, any, any, any>> = ComponentType extends
-  Type<any, any, any, infer Model, any, any, any> ? Model : {}
+/** Backwards-compatible alias kept while the public API settles. */
+export type Type<
+  Props = never,
+  Err = never,
+  Requirements = never,
+  Model extends ModelShape = {},
+  Actions extends ActionShape = {},
+  Slots extends SlotShape = {},
+  AcceptsChildren extends ChildrenFlag = true,
+> = Component<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren>
 
-export type ActionsOf<ComponentType extends Type<any, any, any, any, any, any, any>> = ComponentType extends
-  Type<any, any, any, any, infer Actions, any, any> ? Actions : {}
+export type ModelOf<ComponentType extends Component<any, any, any, any, any, any, any>> = ComponentType extends
+  Component<any, any, any, infer Model, any, any, any> ? Model : {}
+
+export type ActionsOf<ComponentType extends Component<any, any, any, any, any, any, any>> = ComponentType extends
+  Component<any, any, any, any, infer Actions, any, any> ? Actions : {}
 
 /** Public Loom component capability. */
 export type Capability = LoomCore.Component.Capability
@@ -170,8 +186,8 @@ const makePipeable = <
   Slots extends SlotShape,
   AcceptsChildren extends ChildrenFlag,
 >(
-  value: Omit<Type<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren>, keyof Pipeable.Pipeable>,
-): Type<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren> => pipeable.make(value)
+  value: Omit<RuntimeType<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren>, keyof Pipeable.Pipeable>,
+): RuntimeType<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren> => pipeable.make(value)
 
 const emptyNode = LoomCore.Ast.fragment([])
 
@@ -191,16 +207,6 @@ export const isActionEffect = (value: unknown): value is ActionEffect =>
 
 const isModelFactory = (value: ModelValueInput): value is () => unknown =>
   typeof value === "function" && !Atom.isAtom(value)
-
-const assertNoStateFactories = (stateDefinition: StateDefinition): void => {
-  for (const [key, value] of Object.entries(stateDefinition)) {
-    if (typeof value === "function") {
-      throw new Error(
-        `Component.state(...) does not accept factory entry '${key}'. Use Component.stateFactory(...) instead.`,
-      )
-    }
-  }
-}
 
 const splitModelDefinition = (model: ModelShape | undefined): {
   readonly shared: StateDefinition
@@ -247,19 +253,38 @@ const mergeStateFactory = (
   })
 }
 
-const resolveSharedStateDefinition = (component: Type<any, any, any, any, any, any, any>): StateDefinition => {
+const resolveSharedStateDefinition = (component: RuntimeType<any, any, any, any, any, any, any>): StateDefinition => {
   const compatibility = splitModelDefinition(component.model)
+  const authoredState = splitModelDefinition(component.state)
 
   return {
     ...compatibility.shared,
-    ...component.state,
+    ...authoredState.shared,
   }
 }
 
-const materializeStateFactoryDefinition = (component: Type<any, any, any, any, any, any, any>): StateDefinition => {
+const materializeStateFactoryDefinition = (
+  component: RuntimeType<any, any, any, any, any, any, any>,
+): StateDefinition => {
   const compatibility = splitModelDefinition(component.model)
-  return mergeStateFactory(compatibility.localFactory, component.stateFactory)?.() ?? {}
+  const authoredState = splitModelDefinition(component.state)
+
+  return mergeStateFactory(compatibility.localFactory, authoredState.localFactory)?.() ?? {}
 }
+
+const renderRegistryStack: Array<AtomRegistry.AtomRegistry> = []
+
+const withRenderRegistry = <Value>(registry: AtomRegistry.AtomRegistry, evaluate: () => Value): Value => {
+  renderRegistryStack.push(registry)
+
+  try {
+    return evaluate()
+  } finally {
+    renderRegistryStack.pop()
+  }
+}
+
+const getCurrentRenderRegistry = (): AtomRegistry.AtomRegistry | undefined => renderRegistryStack.at(-1)
 
 const createState = <Model extends ModelShape>(
   model: MaterializedModel<Model>,
@@ -384,7 +409,15 @@ export const instantiate = <
   AcceptsChildren extends ChildrenFlag,
 >(
   component: Type<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren>,
-  registry: AtomRegistry.AtomRegistry = component.registry ?? AtomRegistry.make(),
+  registry: AtomRegistry.AtomRegistry = (component as RuntimeType<
+    Props,
+    Err,
+    Requirements,
+    Model,
+    Actions,
+    Slots,
+    AcceptsChildren
+  >).registry ?? AtomRegistry.make(),
   props?: Props,
   compositionInput?: InstanceCompositionInput,
 ): Instance<Model, Actions, Slots> => {
@@ -397,7 +430,6 @@ export const instantiate = <
   const actionContext: ActionContext<Model> = {
     model,
     state,
-    registry,
     component: {
       name: component.name,
     },
@@ -409,7 +441,7 @@ export const instantiate = <
     : isActionSpec(actionDefinition)
     ? bindActionSpec(actionDefinition, actionBindingContext)
     : (actionDefinition ?? emptyActions)) as Actions
-  const children = component.children === true ? compositionInput?.children : undefined
+  const children = compositionInput?.children
   const slots = resolveSlots(component.slots, compositionInput?.slots)
 
   return {
@@ -420,15 +452,19 @@ export const instantiate = <
     children,
     slots,
     render: (boundActions = actions) =>
-      component.render === undefined
-        ? component.node
-        : component.render({
-          ...actionContext,
-          props,
-          actions: boundActions,
-          children,
-          slots,
-        }),
+      withRenderRegistry(
+        registry,
+        () =>
+          component.render === undefined
+            ? component.node
+            : component.render({
+              ...actionContext,
+              props,
+              actions: boundActions,
+              children,
+              slots,
+            }),
+      ),
   }
 }
 
@@ -441,20 +477,20 @@ const materialize = <
   Slots extends SlotShape,
   AcceptsChildren extends ChildrenFlag,
 >(
-  component: Type<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren>,
+  component: RuntimeType<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren>,
 ): LoomCore.Ast.Node => {
   const instance = instantiate(component, component.registry ?? AtomRegistry.make())
   return instance.render()
 }
 
 const renderComponentUse = (
-  component: Type<any, any, any, any, any, any, any>,
+  component: RuntimeType<any, any, any, any, any, any, any>,
   props?: unknown,
   compositionInput?: InstanceCompositionInput,
 ): View.Node =>
   instantiate(
     component,
-    component.registry ?? AtomRegistry.make(),
+    getCurrentRenderRegistry() ?? component.registry ?? AtomRegistry.make(),
     props,
     compositionInput,
   ).render()
@@ -468,7 +504,7 @@ const reconcile = <
   Slots extends SlotShape,
   AcceptsChildren extends ChildrenFlag,
 >(
-  component: Type<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren>,
+  component: RuntimeType<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren>,
 ): Type<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren> =>
   makePipeable({
     ...component,
@@ -485,9 +521,9 @@ const patch = <
   Slots extends SlotShape,
   AcceptsChildren extends ChildrenFlag,
 >(
-  component: Type<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren>,
+  component: RuntimeType<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren>,
   update: Partial<
-    Omit<Type<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren>, keyof Pipeable.Pipeable>
+    Omit<RuntimeType<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren>, keyof Pipeable.Pipeable>
   >,
 ): Type<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren> =>
   reconcile(makePipeable({
@@ -530,7 +566,7 @@ export const actionEffect = <Success, Err, Requirements>(
 
 /** Attach shared state values and atoms to a component definition. */
 export function state<Added extends StateDefinition>(
-  stateDefinition: Added & RejectFactoryEntries<Added>,
+  stateDefinition: Added,
 ): <
   Props,
   Err,
@@ -553,7 +589,7 @@ export function state<
   AcceptsChildren extends ChildrenFlag,
 >(
   self: Type<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren>,
-  stateDefinition: Added & RejectFactoryEntries<Added>,
+  stateDefinition: Added,
 ): Type<Props, Err, Requirements, MergeModel<Model, Added>, Actions, Slots, AcceptsChildren>
 export function state<Added extends StateDefinition>(
   selfOrState: Type | Added,
@@ -563,8 +599,6 @@ export function state<Added extends StateDefinition>(
     if (isComponent(selfOrState)) {
       return selfOrState
     }
-
-    assertNoStateFactories(selfOrState)
 
     return (self: Type) =>
       patch(self, {
@@ -579,64 +613,11 @@ export function state<Added extends StateDefinition>(
     return make(LoomCore.Ast.text(""))
   }
 
-  assertNoStateFactories(stateDefinition)
-
   return patch(selfOrState, {
     state: {
       ...selfOrState.state,
       ...stateDefinition,
     },
-  })
-}
-
-/** Attach per-instance local state materialization to a component definition. */
-export function stateFactory<Added extends StateDefinition>(
-  factory: () => Added,
-): <
-  Props,
-  Err,
-  Requirements,
-  Model extends ModelShape,
-  Actions extends ActionShape,
-  Slots extends SlotShape,
-  AcceptsChildren extends ChildrenFlag,
->(
-  self: Type<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren>,
-) => Type<Props, Err, Requirements, MergeModel<Model, Added>, Actions, Slots, AcceptsChildren>
-export function stateFactory<
-  Props,
-  Err,
-  Requirements,
-  Model extends ModelShape,
-  Added extends StateDefinition,
-  Actions extends ActionShape,
-  Slots extends SlotShape,
-  AcceptsChildren extends ChildrenFlag,
->(
-  self: Type<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren>,
-  factory: () => Added,
-): Type<Props, Err, Requirements, MergeModel<Model, Added>, Actions, Slots, AcceptsChildren>
-export function stateFactory<Added extends StateDefinition>(
-  selfOrFactory: Type | (() => Added),
-  factory?: () => Added,
-) {
-  if (factory === undefined) {
-    if (isComponent(selfOrFactory)) {
-      return selfOrFactory
-    }
-
-    return (self: Type) =>
-      patch(self, {
-        stateFactory: mergeStateFactory(self.stateFactory, selfOrFactory),
-      })
-  }
-
-  if (!isComponent(selfOrFactory)) {
-    return make(LoomCore.Ast.text(""))
-  }
-
-  return patch(selfOrFactory, {
-    stateFactory: mergeStateFactory(selfOrFactory.stateFactory, factory),
   })
 }
 
@@ -684,15 +665,12 @@ export function model<
     const legacyModel = selfOrModel as Model
 
     return (self: Type<any, any, any, ModelShape, Actions, Slots, AcceptsChildren>) => {
-      const compatibility = splitModelDefinition(legacyModel)
-
       return patch(self, {
         model: legacyModel,
         state: {
           ...self.state,
-          ...compatibility.shared,
+          ...legacyModel,
         },
-        stateFactory: mergeStateFactory(self.stateFactory, compatibility.localFactory),
       })
     }
   }
@@ -701,15 +679,12 @@ export function model<
     return make(LoomCore.Ast.text(""))
   }
 
-  const compatibility = splitModelDefinition(modelDefinition)
-
   return patch(selfOrModel, {
     model: modelDefinition,
     state: {
       ...selfOrModel.state,
-      ...compatibility.shared,
+      ...modelDefinition,
     },
-    stateFactory: mergeStateFactory(selfOrModel.stateFactory, compatibility.localFactory),
   })
 }
 
@@ -801,14 +776,9 @@ export function actions<
 /** Attach a renderer-neutral view renderer to a component definition. */
 export function view<Model extends ModelShape, Actions extends ActionShape, Slots extends SlotShape>(
   render: (context: ViewContext<never, Model, Actions, Slots>) => View.Node,
-): <Props, Err, Requirements>(
-  self: Type<Props, Err, Requirements, Model, Actions, Slots, false>,
-) => Type<Props, Err, Requirements, Model, Actions, Slots, false>
-export function view<Model extends ModelShape, Actions extends ActionShape, Slots extends SlotShape>(
-  render: (context: ViewContext<never, Model, Actions, Slots>) => View.Node,
-): <Props, Err, Requirements>(
-  self: Type<Props, Err, Requirements, Model, Actions, Slots, true>,
-) => Type<Props, Err, Requirements, Model, Actions, Slots, true>
+): <Props, Err, Requirements, AcceptsChildren extends ChildrenFlag>(
+  self: Type<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren>,
+) => Type<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren>
 export function view<
   Props,
   Err,
@@ -843,7 +813,14 @@ export function view(
 /** Attach slot contracts to a component definition. */
 export function slots<Slots extends SlotShape>(
   slotDefinition: Slots,
-): <Props, Err, Requirements, Model extends ModelShape, Actions extends ActionShape>(
+): <
+  Props,
+  Err,
+  Requirements,
+  Model extends ModelShape,
+  Actions extends ActionShape,
+  AcceptsChildren extends ChildrenFlag,
+>(
   self: Type<
     Props,
     Err,
@@ -851,7 +828,7 @@ export function slots<Slots extends SlotShape>(
     Model,
     Actions,
     {},
-    false
+    AcceptsChildren
   >,
 ) => Type<Props, Err, Requirements, Model, Actions, Slots, false>
 export function slots<
@@ -861,8 +838,9 @@ export function slots<
   Model extends ModelShape,
   Actions extends ActionShape,
   Slots extends SlotShape,
+  AcceptsChildren extends ChildrenFlag,
 >(
-  self: Type<Props, Err, Requirements, Model, Actions, {}, false>,
+  self: Type<Props, Err, Requirements, Model, Actions, {}, AcceptsChildren>,
   slotDefinition: Slots,
 ): Type<Props, Err, Requirements, Model, Actions, Slots, false>
 export function slots<
@@ -906,26 +884,38 @@ export function children(self?: Type) {
 const isPropsLikeObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value) && !("_tag" in value)
 
+const isSlotInputLike = (component: RuntimeType, value: unknown): value is RuntimeSlotInput => {
+  if (!isPropsLikeObject(value)) {
+    return false
+  }
+
+  const slotKeys = Object.keys(component.slots ?? {})
+  const valueKeys = Object.keys(value)
+
+  return valueKeys.length > 0 && valueKeys.every((key) => slotKeys.includes(key)) &&
+    valueKeys.every((key) => viewChild.isViewChild(value[key]))
+}
+
 const resolveUseComposition = (
-  component: Type,
+  component: RuntimeType,
   propsOrComposition: unknown,
   composition: unknown,
 ): {
   readonly props: unknown
   readonly composition: InstanceCompositionInput | undefined
 } => {
-  if (component.children === true) {
+  if (component.slots !== undefined) {
     if (composition !== undefined) {
       return {
         props: propsOrComposition,
-        composition: { children: composition as View.ViewChild },
+        composition: { slots: composition as RuntimeSlotInput },
       }
     }
 
-    if (viewChild.isViewChild(propsOrComposition) && !isPropsLikeObject(propsOrComposition)) {
+    if (isSlotInputLike(component, propsOrComposition)) {
       return {
         props: undefined,
-        composition: { children: propsOrComposition },
+        composition: { slots: propsOrComposition },
       }
     }
 
@@ -935,10 +925,17 @@ const resolveUseComposition = (
     }
   }
 
-  if (component.slots !== undefined) {
+  if (composition !== undefined) {
     return {
       props: propsOrComposition,
-      composition: composition === undefined ? undefined : { slots: composition as RuntimeSlotInput },
+      composition: { children: composition as View.ViewChild },
+    }
+  }
+
+  if (viewChild.isViewChild(propsOrComposition) && !isPropsLikeObject(propsOrComposition)) {
+    return {
+      props: undefined,
+      composition: { children: propsOrComposition },
     }
   }
 
@@ -962,6 +959,15 @@ export function use<
   Actions extends ActionShape,
 >(
   component: Type<Props, Err, Requirements, Model, Actions, {}, true>,
+): View.Node
+export function use<
+  Props,
+  Err,
+  Requirements,
+  Model extends ModelShape,
+  Actions extends ActionShape,
+>(
+  component: Type<Props, Err, Requirements, Model, Actions, {}, true>,
   children: View.ViewChild,
 ): View.Node
 export function use<
@@ -974,6 +980,17 @@ export function use<
   component: Type<Props, Err, Requirements, Model, Actions, {}, true>,
   props: Props,
   children: View.ViewChild,
+): View.Node
+export function use<
+  Props,
+  Err,
+  Requirements,
+  Model extends ModelShape,
+  Actions extends ActionShape,
+  Slots extends SlotShape,
+>(
+  component: Type<Props, Err, Requirements, Model, Actions, Slots, false>,
+  slots: SlotInput<Slots>,
 ): View.Node
 export function use<
   Props,
@@ -1005,7 +1022,7 @@ export function use(
   slotInput?: unknown,
 ) {
   if (capabilityOrProps === undefined) {
-    if (selfOrCapability._tag === "Component" && slotInput !== undefined) {
+    if (selfOrCapability._tag === "Component") {
       const resolved = resolveUseComposition(selfOrCapability, undefined, slotInput)
       return renderComponentUse(selfOrCapability, resolved.props, resolved.composition)
     }

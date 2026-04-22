@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest"
 import { createServerRenderer } from "../src/entry-server.js"
-import { resetTodoExampleState } from "../src/routes/todo-route.js"
+import { resetTodoExampleState } from "../src/router-runtime.js"
 
 describe("loom example app server entry", () => {
   beforeEach(() => {

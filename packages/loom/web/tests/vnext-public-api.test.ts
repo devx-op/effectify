@@ -12,12 +12,11 @@ describe("@effectify/loom vNext public surface", () => {
   it("re-exports the vNext namespaces and mount seam from the package root", () => {
     expect(typeof Component.make).toBe("function")
     expect(typeof Component.state).toBe("function")
-    expect(typeof Component.stateFactory).toBe("function")
+    expect(Reflect.has(Component, "stateFactory")).toBe(false)
     expect(typeof Component.model).toBe("function")
     expect(typeof Component.actions).toBe("function")
     expect(typeof Component.actionEffect).toBe("function")
     expect(typeof Component.isActionEffect).toBe("function")
-    expect(typeof Component.children).toBe("function")
     expect(typeof Component.view).toBe("function")
     expect(typeof Component.slots).toBe("function")
     expect(typeof Slot.required).toBe("function")
@@ -142,17 +141,15 @@ describe("@effectify/loom vNext public surface", () => {
     second.dispose()
   })
 
-  it("supports explicit shared state and per-instance state factories in the public surface", () => {
+  it("supports explicit shared state and per-instance state thunks through Component.state", () => {
     const registry = AtomRegistry.make()
     const count = Atom.make(2)
     const counter = Component.make("state-counter").pipe(
       Component.state({
         count,
         label: "ready",
+        local: () => Atom.make(1),
       }),
-      Component.stateFactory(() => ({
-        local: Atom.make(1),
-      })),
       Component.actions({
         incrementShared: ({ count }) => count.update((value) => value + 1),
         incrementLocal: ({ local }) => local.update((value) => value + 1),
@@ -166,12 +163,11 @@ describe("@effectify/loom vNext public surface", () => {
       ),
     )
 
-    expect(counter.state).toEqual({
+    expect(counter.state).toMatchObject({
       count,
       label: "ready",
     })
-    expect(typeof Component.stateFactory).toBe("function")
-    expect(typeof counter.stateFactory).toBe("function")
+    expect(typeof counter.state?.local).toBe("function")
 
     const first = mount({ counter }, { registry })
     const second = mount({ counter }, { registry })
@@ -200,16 +196,6 @@ describe("@effectify/loom vNext public surface", () => {
     first.dispose()
     second.dispose()
     registry.dispose()
-  })
-
-  it("rejects factory-like entries passed through Component.state at runtime", () => {
-    const invalidState: Record<string, unknown> = {
-      count: () => Atom.make(0),
-    }
-
-    expect(() => Component.make("bad-state").pipe(Component.state(invalidState))).toThrowError(
-      /Component\.state\(\.\.\.\) does not accept factory entry 'count'\. Use Component\.stateFactory\(\.\.\.\) instead\./,
-    )
   })
 
   it("backs View.text with span roots and lets Web.as override the root tag", () => {
@@ -264,11 +250,11 @@ describe("@effectify/loom vNext public surface", () => {
       count: sharedCount,
       label: "ready",
     })
-    expect(counter.state).toEqual({
+    expect(counter.state).toMatchObject({
       count: sharedCount,
       label: "ready",
     })
-    expect(typeof counter.stateFactory).toBe("function")
+    expect(typeof counter.state?.local).toBe("function")
 
     const first = mount({ counter })
     const second = mount({ counter })
@@ -388,7 +374,7 @@ describe("@effectify/loom vNext public surface", () => {
 
     const page = Component.make("page").pipe(
       Component.view(() =>
-        Component.use(layout, undefined, {
+        Component.use(layout, {
           header: View.text("Header"),
           sidebar: View.text("Sidebar"),
           default: View.stack(View.text("Content")),
@@ -398,7 +384,7 @@ describe("@effectify/loom vNext public surface", () => {
 
     const withoutSidebar = Component.make("page-no-sidebar").pipe(
       Component.view(() =>
-        Component.use(layout, undefined, {
+        Component.use(layout, {
           header: View.text("Header"),
           default: View.text("Content"),
         })
@@ -527,7 +513,6 @@ describe("@effectify/loom vNext public surface", () => {
 
   it("supports children-based composition through metadata-driven Component.use dispatch", () => {
     const card = Component.make("card").pipe(
-      Component.children(),
       Component.view(({ children }) =>
         View.vstack(
           View.text("Card"),
@@ -540,7 +525,7 @@ describe("@effectify/loom vNext public surface", () => {
       Component.view(() =>
         View.fragment(
           Component.use(card, View.text("Simple body")),
-          Component.use(card, undefined, ["Nested ", 2, false, View.text("items")]),
+          Component.use(card, ["Nested ", 2, false, View.text("items")]),
         )
       ),
     )
@@ -551,6 +536,57 @@ describe("@effectify/loom vNext public surface", () => {
     expect(handle.html).toContain(
       '<div class="card"><span>Card</span><main>Nested 2<span>items</span></main></div>',
     )
+
+    handle.dispose()
+  })
+
+  it("supports zero-argument component use for leaf components", () => {
+    const todoHero = Component.make("todo-hero").pipe(
+      Component.view(() => View.text("Tiny DX")),
+    )
+
+    const page = Component.make("todo-page").pipe(
+      Component.view(() => Component.use(todoHero)),
+    )
+
+    const handle = mount({ page })
+
+    expect(handle.html).toContain("<span>Tiny DX</span>")
+
+    handle.dispose()
+  })
+
+  it("propagates the active registry through nested Component.use calls", () => {
+    const root = document.createElement("div")
+    const count = Atom.make(1)
+    const CounterLabel = Component.make("counter-label").pipe(
+      Component.state({ count }),
+      Component.view(({ state }) => View.text(() => `Count: ${state.count()}`)),
+    )
+    const CounterControls = Component.make("counter-controls").pipe(
+      Component.state({ count }),
+      Component.actions({
+        increment: ({ count }) => count.update((value) => value + 1),
+      }),
+      Component.view(({ actions }) => View.button("Increment", actions.increment)),
+    )
+    const CounterPage = Component.make("counter-page").pipe(
+      Component.view(() =>
+        View.fragment(
+          Component.use(CounterLabel),
+          Component.use(CounterControls),
+        )
+      ),
+    )
+
+    const handle = mount({ CounterPage }, { root })
+    const button = root.querySelector("button")
+
+    expect(root.textContent).toContain("Count: 1")
+
+    button?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+
+    expect(root.textContent).toContain("Count: 2")
 
     handle.dispose()
   })

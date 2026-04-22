@@ -1,4 +1,4 @@
-import type * as LoomCore from "@effectify/loom-core"
+import * as LoomCore from "@effectify/loom-core"
 import * as Resumability from "../resumability.js"
 import type * as Runtime from "../runtime.js"
 export declare const makeEventBinding: <Handler>(event: string, handler: Handler) => Runtime.EventBinding<Handler>

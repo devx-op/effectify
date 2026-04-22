@@ -30,7 +30,7 @@ export const executeAction = async <
   Result,
 >(options: {
   readonly descriptor: Route.ActionDescriptor<ParamsOutput, SearchOutput, Input, ActionResult, Error, Services>
-  readonly input: Route.ActionInput<ParamsOutput, SearchOutput, Input, Services>
+  readonly input: Route.ActionContext<ParamsOutput, SearchOutput, Input, Services>
   readonly onSuccess: (result: ActionResult) => Result
   readonly onFailure: (error: Error) => Result
 }): Promise<Result> => {

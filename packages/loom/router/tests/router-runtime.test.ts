@@ -3,6 +3,7 @@ import * as Schema from "effect/Schema"
 import { Component, Html, Hydration, Slot, View, Web } from "@effectify/loom"
 import { describe, expect, it } from "vitest"
 import { Decode, Fallback, Layout, Route, RouteGroup, Router } from "../src/index.js"
+import * as RouteModule from "../src/route-module.js"
 
 const render = (router: Router.Definition, input: string | URL): string => {
   const output = Router.render(router, input)
@@ -284,6 +285,37 @@ describe("@effectify/loom-router runtime", () => {
     expect(render(router, "/posts/42")).toBe("<main>42:none:1</main>")
   })
 
+  it("renders component-only route modules without requiring loader or action hooks", () => {
+    const componentOnlyRoute = RouteModule.compile({
+      identifier: "component.only",
+      module: {
+        component: Component.make("ComponentOnlyPage").pipe(
+          Component.view(() =>
+            View.stack(
+              View.text("component-only"),
+            ).pipe(Web.data("route-view", "component-only"))
+          ),
+        ),
+      },
+      path: "/component-only",
+    })
+    const router = Router.make({ routes: [componentOnlyRoute] })
+    const result = Router.resolve(router, "/component-only")
+
+    expect(Route.hasLoader(componentOnlyRoute)).toBe(false)
+    expect(Route.hasAction(componentOnlyRoute)).toBe(false)
+    expect(result._tag).toBe("LoomRouterResolveSuccess")
+
+    if (result._tag !== "LoomRouterResolveSuccess") {
+      throw new Error("expected a resolved component-only route module")
+    }
+
+    expect(result.route.identifier).toBe("component.only")
+    expect(render(router, "/component-only")).toBe(
+      '<div data-route-view="component-only"><span>component-only</span></div>',
+    )
+  })
+
   it("composes routed output through Html.ssr without changing hydration seams", () => {
     const router = Router.make({
       layout: Layout.make(({ child }) => Html.el("section", Html.attr("data-shell", "app"), Html.children(child))),
@@ -341,7 +373,7 @@ describe("@effectify/loom-router runtime", () => {
   })
 
   it("renders vNext view/component layout and fallback contracts through the router boundary", () => {
-    const appShell = Component.make("router-shell").pipe(
+    const appShell = Component.make("RouterShell").pipe(
       Component.slots({ default: Slot.required() }),
       Component.view(({ slots }) =>
         View.stack(
@@ -350,14 +382,14 @@ describe("@effectify/loom-router runtime", () => {
         ).pipe(Web.data("router-shell", "true"))
       ),
     )
-    const settingsPage = Component.make("settings-page").pipe(
+    const settingsPage = Component.make("SettingsPage").pipe(
       Component.view(() =>
         View.stack(
           View.text("settings-home"),
         ).pipe(Web.data("route-view", "settings"))
       ),
     )
-    const missingPage = Component.make("missing-page").pipe(
+    const missingPage = Component.make("MissingPage").pipe(
       Component.view(() =>
         View.stack(
           View.text("settings-missing"),
@@ -365,7 +397,7 @@ describe("@effectify/loom-router runtime", () => {
       ),
     )
     const router = Router.make({
-      layout: Layout.make(({ child }) => Component.use(appShell, undefined, { default: child })),
+      layout: Layout.make(({ child }) => Component.use(appShell, { default: child })),
       routes: [
         Route.make({
           path: "/settings",
@@ -378,10 +410,10 @@ describe("@effectify/loom-router runtime", () => {
     })
 
     expect(render(router, "/settings")).toBe(
-      '<div data-router-shell="true">shell<main><div data-route-view="settings">settings-home</div></main></div>',
+      '<div data-router-shell="true"><span>shell</span><main><div data-route-view="settings"><span>settings-home</span></div></main></div>',
     )
     expect(render(router, "/settings/unknown")).toBe(
-      '<div data-router-shell="true">shell<main><div data-route-view="missing">settings-missing</div></main></div>',
+      '<div data-router-shell="true"><span>shell</span><main><div data-route-view="missing"><span>settings-missing</span></div></main></div>',
     )
   })
 })

@@ -1,10 +1,12 @@
+import * as Effect from "effect/Effect"
 import { dual } from "effect/Function"
+import * as Schema from "effect/Schema"
 import type * as ServiceMap from "effect/ServiceMap"
-import type * as ActionInputDecode from "./action-input.js"
 import type * as Decode from "./decode.js"
 import type * as Fallback from "./fallback.js"
 import type * as Layout from "./layout.js"
 import type * as Router from "./router.js"
+import type * as SubmissionDecode from "./submission.js"
 import type { Annotations } from "./internal/annotations.js"
 import { emptyAnnotations, getAnnotation as getAnnotationValue } from "./internal/annotations.js"
 import { buildUrl, normalizePathname, validateHrefInput } from "./internal/path.js"
@@ -30,6 +32,49 @@ export interface DecodeOptions<ParamsOutput extends Params = Params, SearchOutpu
   readonly search?: Decode.DecoderLike<Search, SearchOutput>
 }
 
+export type RouteSchema<Value> = Schema.Schema<Value> & {
+  readonly DecodingServices: never
+}
+
+type DecodeOutputOf<Decoder, Fallback> = Decoder extends Decode.DecoderLike<any, infer Output> ? Output : Fallback
+
+type ParamsOutputOf<Decoder> = DecodeOutputOf<Decoder, Params> extends Params ? DecodeOutputOf<Decoder, Params> : Params
+
+type SearchOutputOf<Decoder> = DecodeOutputOf<Decoder, Search> extends Search ? DecodeOutputOf<Decoder, Search> : Search
+
+type ActionInputOutputOf<Decoder, Fallback> = Decoder extends SubmissionDecode.DecoderLike<infer Output> ? Output
+  : Fallback
+
+type SchemaOutputOf<SchemaValue, Fallback> = SchemaValue extends RouteSchema<any> ? Schema.Schema.Type<SchemaValue>
+  : Fallback
+
+type BivariantCallback<Args extends ReadonlyArray<any>, Return> = {
+  bivarianceHack(...args: Args): Return
+}["bivarianceHack"]
+
+type ExecuteEffectSuccessOf<Execute> = Execute extends
+  (...args: ReadonlyArray<any>) => Effect.Effect<infer Value, any, never> ? Value
+  : never
+
+type ExecuteEffectErrorOf<Execute> = Execute extends
+  (...args: ReadonlyArray<any>) => Effect.Effect<any, infer Value, never> ? Value
+  : never
+
+type ModuleLoaderServicesOfExecute<Execute> = Execute extends (
+  input: ModuleLoaderInput<any, any, infer Services>,
+) => Effect.Effect<any, any, never> ? Services
+  : never
+
+type ModuleActionInputOfExecute<Execute> = Execute extends (
+  input: ModuleActionInput<any, any, infer Input, any>,
+) => Effect.Effect<any, any, never> ? Input
+  : never
+
+type ModuleActionServicesOfExecute<Execute> = Execute extends (
+  input: ModuleActionInput<any, any, any, infer Services>,
+) => Effect.Effect<any, any, never> ? Services
+  : never
+
 export type Awaitable<Value> = Value | PromiseLike<Value>
 
 export interface LoaderInput<
@@ -49,11 +94,11 @@ export interface LoaderDescriptor<
   Services = never,
 > {
   readonly _tag?: "LoomRouterLoaderDescriptor"
-  readonly load: (input: LoaderInput<ParamsOutput, SearchOutput, Services>) => Awaitable<Data>
+  readonly load: BivariantCallback<[input: LoaderInput<ParamsOutput, SearchOutput, Services>], Awaitable<Data>>
   readonly mapError: (cause: unknown) => Error
 }
 
-export interface ActionInput<
+export interface ActionContext<
   ParamsOutput extends Params = Params,
   SearchOutput extends Search = Search,
   Input = unknown,
@@ -64,6 +109,13 @@ export interface ActionInput<
   readonly services: Services
 }
 
+export type ActionInput<
+  ParamsOutput extends Params = Params,
+  SearchOutput extends Search = Search,
+  Input = unknown,
+  Services = never,
+> = ActionContext<ParamsOutput, SearchOutput, Input, Services>
+
 export interface ActionDescriptor<
   ParamsOutput extends Params = Params,
   SearchOutput extends Search = Search,
@@ -73,14 +125,262 @@ export interface ActionDescriptor<
   Services = never,
 > {
   readonly _tag?: "LoomRouterActionDescriptor"
-  readonly decodeInput?: ActionInputDecode.DecoderLike<Input>
-  readonly handle: (input: ActionInput<ParamsOutput, SearchOutput, Input, Services>) => Awaitable<Result>
+  readonly input?: SubmissionDecode.DecoderLike<Input>
+  readonly decodeInput?: SubmissionDecode.DecoderLike<Input>
+  readonly handle: BivariantCallback<
+    [input: ActionContext<ParamsOutput, SearchOutput, Input, Services>],
+    Awaitable<Result>
+  >
   readonly mapError: (cause: unknown) => Error
 }
 
 export type AnyLoaderDescriptor = LoaderDescriptor<any, any, any, any, any>
 
 export type AnyActionDescriptor = ActionDescriptor<any, any, any, any, any, any>
+
+export interface ModuleLoaderInput<
+  ParamsOutput extends Params = Params,
+  SearchOutput extends Search = Search,
+  Services = never,
+> {
+  readonly context: Router.Context<ParamsOutput, SearchOutput>
+  readonly params: ParamsOutput
+  readonly search: SearchOutput
+  readonly services: Services
+}
+
+export interface ModuleLoaderOptions<
+  ParamsDecoder extends Decode.DecoderLike<Params, any> | undefined = undefined,
+  SearchDecoder extends Decode.DecoderLike<Search, any> | undefined = undefined,
+  OutputSchema extends RouteSchema<any> | undefined = undefined,
+  ErrorSchema extends RouteSchema<any> | undefined = undefined,
+> {
+  readonly params?: ParamsDecoder
+  readonly search?: SearchDecoder
+  readonly output?: OutputSchema
+  readonly error?: ErrorSchema
+}
+
+type ModuleLoaderExecute<
+  ParamsDecoder extends Decode.DecoderLike<Params, any> | undefined,
+  SearchDecoder extends Decode.DecoderLike<Search, any> | undefined,
+  Services,
+> = (
+  input: ModuleLoaderInput<ParamsOutputOf<ParamsDecoder>, SearchOutputOf<SearchDecoder>, Services>,
+) => Effect.Effect<any, any, never>
+
+export interface ModuleLoaderDefinition<
+  Services = never,
+  ParamsDecoder extends Decode.DecoderLike<Params, any> | undefined = undefined,
+  SearchDecoder extends Decode.DecoderLike<Search, any> | undefined = undefined,
+  OutputSchema extends RouteSchema<any> | undefined = undefined,
+  ErrorSchema extends RouteSchema<any> | undefined = undefined,
+  Execute extends ModuleLoaderExecute<ParamsDecoder, SearchDecoder, Services> = ModuleLoaderExecute<
+    ParamsDecoder,
+    SearchDecoder,
+    Services
+  >,
+> extends ModuleLoaderOptions<ParamsDecoder, SearchDecoder, OutputSchema, ErrorSchema> {
+  readonly load: Execute
+}
+
+export type ModuleLoaderContext<
+  Options extends ModuleLoaderOptions<any, any, any, any> = ModuleLoaderOptions,
+  Services = never,
+> = ModuleLoaderInput<
+  ParamsOutputOf<Options["params"]>,
+  SearchOutputOf<Options["search"]>,
+  Services
+>
+
+export interface ModuleLoader<
+  ParamsOutput extends Params = Params,
+  SearchOutput extends Search = Search,
+  Data = unknown,
+  Error = unknown,
+  Services = never,
+> {
+  readonly _tag: "LoomRouterModuleLoader"
+  readonly decode: DecodeOptions<ParamsOutput, SearchOutput>
+  readonly output?: RouteSchema<Data>
+  readonly error?: RouteSchema<Error>
+  readonly execute: BivariantCallback<
+    [input: ModuleLoaderInput<ParamsOutput, SearchOutput, Services>],
+    Effect.Effect<Data, Error, never>
+  >
+}
+
+export interface ModuleActionInput<
+  ParamsOutput extends Params = Params,
+  SearchOutput extends Search = Search,
+  Input = unknown,
+  Services = never,
+> {
+  readonly context: Router.Context<ParamsOutput, SearchOutput>
+  readonly input: Input
+  readonly params: ParamsOutput
+  readonly search: SearchOutput
+  readonly services: Services
+}
+
+export interface ModuleActionOptions<
+  ParamsDecoder extends Decode.DecoderLike<Params, any> | undefined = undefined,
+  SearchDecoder extends Decode.DecoderLike<Search, any> | undefined = undefined,
+  InputDecoder extends SubmissionDecode.DecoderLike<any> | undefined = undefined,
+  OutputSchema extends RouteSchema<any> | undefined = undefined,
+  ErrorSchema extends RouteSchema<any> | undefined = undefined,
+> {
+  readonly params?: ParamsDecoder
+  readonly search?: SearchDecoder
+  readonly input?: InputDecoder
+  readonly output?: OutputSchema
+  readonly error?: ErrorSchema
+}
+
+type ModuleActionExecute<
+  ParamsDecoder extends Decode.DecoderLike<Params, any> | undefined,
+  SearchDecoder extends Decode.DecoderLike<Search, any> | undefined,
+  InputDecoder extends SubmissionDecode.DecoderLike<any> | undefined,
+  Services,
+> = (
+  input: ModuleActionInput<
+    ParamsOutputOf<ParamsDecoder>,
+    SearchOutputOf<SearchDecoder>,
+    ActionInputOutputOf<InputDecoder, unknown>,
+    Services
+  >,
+) => Effect.Effect<any, any, never>
+
+export interface ModuleActionDefinition<
+  Services = never,
+  ParamsDecoder extends Decode.DecoderLike<Params, any> | undefined = undefined,
+  SearchDecoder extends Decode.DecoderLike<Search, any> | undefined = undefined,
+  InputDecoder extends SubmissionDecode.DecoderLike<any> | undefined = undefined,
+  OutputSchema extends RouteSchema<any> | undefined = undefined,
+  ErrorSchema extends RouteSchema<any> | undefined = undefined,
+  Execute extends ModuleActionExecute<ParamsDecoder, SearchDecoder, InputDecoder, Services> = ModuleActionExecute<
+    ParamsDecoder,
+    SearchDecoder,
+    InputDecoder,
+    Services
+  >,
+> extends ModuleActionOptions<ParamsDecoder, SearchDecoder, InputDecoder, OutputSchema, ErrorSchema> {
+  readonly handle: Execute
+}
+
+export type ModuleActionContext<
+  Options extends ModuleActionOptions<any, any, any, any, any> = ModuleActionOptions,
+  Services = never,
+> = ModuleActionInput<
+  ParamsOutputOf<Options["params"]>,
+  SearchOutputOf<Options["search"]>,
+  ActionInputOutputOf<Options["input"], unknown>,
+  Services
+>
+
+export interface ModuleAction<
+  ParamsOutput extends Params = Params,
+  SearchOutput extends Search = Search,
+  Input = unknown,
+  Result = unknown,
+  Error = unknown,
+  Services = never,
+> {
+  readonly _tag: "LoomRouterModuleAction"
+  readonly decode: DecodeOptions<ParamsOutput, SearchOutput>
+  readonly input?: SubmissionDecode.DecoderLike<Input>
+  readonly output?: RouteSchema<Result>
+  readonly error?: RouteSchema<Error>
+  readonly execute: BivariantCallback<
+    [input: ModuleActionInput<ParamsOutput, SearchOutput, Input, Services>],
+    Effect.Effect<Result, Error, never>
+  >
+}
+
+export type AnyModuleLoader = ModuleLoader<any, any, any, any, any>
+
+export type AnyModuleAction = ModuleAction<any, any, any, any, any, any>
+
+export interface RouteModule<
+  Content = unknown,
+  Loader extends AnyModuleLoader | undefined = undefined,
+  Action extends AnyModuleAction | undefined = undefined,
+> {
+  readonly component: Content
+  readonly loader?: Loader
+  readonly action?: Action
+}
+
+export type ModuleLoaderParamsOf<Self extends AnyModuleLoader> = Self extends
+  ModuleLoader<infer Value, any, any, any, any> ? Value
+  : Params
+
+export type ModuleLoaderSearchOf<Self extends AnyModuleLoader> = Self extends
+  ModuleLoader<any, infer Value, any, any, any> ? Value
+  : Search
+
+export type ModuleLoaderDataOf<Self extends AnyModuleLoader> = Self extends
+  ModuleLoader<any, any, infer Value, any, any> ? Value
+  : never
+
+export type ModuleLoaderErrorOf<Self extends AnyModuleLoader> = Self extends
+  ModuleLoader<any, any, any, infer Value, any> ? Value
+  : never
+
+export type ModuleLoaderServicesOf<Self extends AnyModuleLoader> = Self extends
+  ModuleLoader<any, any, any, any, infer Value> ? Value
+  : never
+
+export type ModuleActionParamsOf<Self extends AnyModuleAction> = Self extends
+  ModuleAction<infer Value, any, any, any, any, any> ? Value
+  : Params
+
+export type ModuleActionSearchOf<Self extends AnyModuleAction> = Self extends
+  ModuleAction<any, infer Value, any, any, any, any> ? Value
+  : Search
+
+export type ModuleActionInputOf<Self extends AnyModuleAction> = Self extends
+  ModuleAction<any, any, infer Value, any, any, any> ? Value
+  : never
+
+export type ModuleActionContextOf<Self extends AnyModuleAction> = ModuleActionInputOf<Self>
+
+export type ModuleActionResultOf<Self extends AnyModuleAction> = Self extends
+  ModuleAction<any, any, any, infer Value, any, any> ? Value
+  : never
+
+export type ModuleActionErrorOf<Self extends AnyModuleAction> = Self extends
+  ModuleAction<any, any, any, any, infer Value, any> ? Value
+  : never
+
+export type ModuleActionServicesOf<Self extends AnyModuleAction> = Self extends
+  ModuleAction<any, any, any, any, any, infer Value> ? Value
+  : never
+
+export type ModuleParamsOf<Loader extends AnyModuleLoader | undefined, Action extends AnyModuleAction | undefined> =
+  Loader extends AnyModuleLoader ? ModuleLoaderParamsOf<Loader>
+    : Action extends AnyModuleAction ? ModuleActionParamsOf<Action>
+    : Params
+
+export type ModuleSearchOf<Loader extends AnyModuleLoader | undefined, Action extends AnyModuleAction | undefined> =
+  Loader extends AnyModuleLoader ? ModuleLoaderSearchOf<Loader>
+    : Action extends AnyModuleAction ? ModuleActionSearchOf<Action>
+    : Search
+
+const isLoaderDescriptor = (value: unknown): value is AnyLoaderDescriptor =>
+  typeof value === "object" && value !== null && "load" in value && "mapError" in value
+
+const isActionDescriptor = (value: unknown): value is AnyActionDescriptor =>
+  typeof value === "object" && value !== null && "handle" in value && "mapError" in value
+
+const isModuleLoaderDefinition = (value: unknown): value is ModuleLoaderDefinition =>
+  typeof value === "object" && value !== null && "load" in value && typeof value.load === "function"
+
+const isModuleActionDefinition = (value: unknown): value is ModuleActionDefinition =>
+  typeof value === "object" && value !== null && "handle" in value && typeof value.handle === "function"
+
+const isRouteDefinition = (value: unknown): value is AnyDefinition =>
+  typeof value === "object" && value !== null && "_tag" in value && value._tag === "LoomRouterRoute"
 
 export type AnyDefinition = Definition<any, any, any, any, any, any, any>
 
@@ -221,6 +521,9 @@ export type LoaderErrorOf<Self extends AnyDefinition> = LoaderOf<Self> extends
 export type ActionInputOf<Self extends AnyDefinition> = ActionOf<Self> extends
   ActionDescriptor<any, any, infer Input, any, any, any> ? Input
   : never
+
+/** Alias that keeps route authoring focused on action context rather than transport terminology. */
+export type ActionContextOf<Self extends AnyDefinition> = ActionInputOf<Self>
 
 /** Extract the action success type stored on a route definition. */
 export type ActionResultOf<Self extends AnyDefinition> = ActionOf<Self> extends
@@ -441,48 +744,68 @@ export const annotateMerge: {
   internal.annotateRouteMerge(self, annotations))
 
 /** Attach a loader descriptor to a route without executing it during assembly. */
-export const loader: {
-  <ParamsOutput extends Params, SearchOutput extends Search, Data, Error, Services>(
-    descriptor: LoaderDescriptor<ParamsOutput, SearchOutput, Data, Error, Services>,
-  ): <
-    Content,
-    Identifier extends string | undefined,
-    Children extends ReadonlyArray<AnyDefinition>,
-    Action extends AnyActionDescriptor | undefined,
-  >(
-    self: Definition<Content, ParamsOutput, SearchOutput, Identifier, Children, any, Action>,
-  ) => Definition<
-    Content,
-    ParamsOutput,
-    SearchOutput,
-    Identifier,
-    Children,
-    LoaderDescriptor<ParamsOutput, SearchOutput, Data, Error, Services>,
-    Action
-  >
-  <
-    Content,
-    ParamsOutput extends Params,
-    SearchOutput extends Search,
-    Identifier extends string | undefined,
-    Children extends ReadonlyArray<AnyDefinition>,
-    Action extends AnyActionDescriptor | undefined,
-    Data,
-    Error,
-    Services,
-  >(
-    self: Definition<Content, ParamsOutput, SearchOutput, Identifier, Children, any, Action>,
-    descriptor: LoaderDescriptor<ParamsOutput, SearchOutput, Data, Error, Services>,
-  ): Definition<
-    Content,
-    ParamsOutput,
-    SearchOutput,
-    Identifier,
-    Children,
-    LoaderDescriptor<ParamsOutput, SearchOutput, Data, Error, Services>,
-    Action
-  >
-} = dual(2, <
+export function loader(): <Data, Error, Services>(
+  execute: (input: ModuleLoaderInput<Params, Search, Services>) => Effect.Effect<Data, Error, never>,
+) => ModuleLoader<Params, Search, Data, Error, Services>
+export function loader<
+  Services = never,
+  ParamsDecoder extends Decode.DecoderLike<Params, any> | undefined = undefined,
+  SearchDecoder extends Decode.DecoderLike<Search, any> | undefined = undefined,
+  OutputSchema extends RouteSchema<any> | undefined = undefined,
+  ErrorSchema extends RouteSchema<any> | undefined = undefined,
+  Execute extends ModuleLoaderExecute<ParamsDecoder, SearchDecoder, Services> = ModuleLoaderExecute<
+    ParamsDecoder,
+    SearchDecoder,
+    Services
+  >,
+>(
+  definition: ModuleLoaderDefinition<Services, ParamsDecoder, SearchDecoder, OutputSchema, ErrorSchema, Execute>,
+): ModuleLoader<
+  ParamsOutputOf<ParamsDecoder>,
+  SearchOutputOf<SearchDecoder>,
+  SchemaOutputOf<OutputSchema, ExecuteEffectSuccessOf<Execute>>,
+  SchemaOutputOf<ErrorSchema, ExecuteEffectErrorOf<Execute>>,
+  Services
+>
+export function loader<
+  ParamsDecoder extends Decode.DecoderLike<Params, any> | undefined = undefined,
+  SearchDecoder extends Decode.DecoderLike<Search, any> | undefined = undefined,
+  OutputSchema extends RouteSchema<any> | undefined = undefined,
+  ErrorSchema extends RouteSchema<any> | undefined = undefined,
+>(
+  options: ModuleLoaderOptions<ParamsDecoder, SearchDecoder, OutputSchema, ErrorSchema>,
+): <
+  Execute extends (
+    input: ModuleLoaderInput<ParamsOutputOf<ParamsDecoder>, SearchOutputOf<SearchDecoder>, any>,
+  ) => Effect.Effect<any, any, never>,
+>(
+  execute: Execute,
+) => ModuleLoader<
+  ParamsOutputOf<ParamsDecoder>,
+  SearchOutputOf<SearchDecoder>,
+  SchemaOutputOf<OutputSchema, ExecuteEffectSuccessOf<Execute>>,
+  SchemaOutputOf<ErrorSchema, ExecuteEffectErrorOf<Execute>>,
+  ModuleLoaderServicesOfExecute<Execute>
+>
+export function loader<ParamsOutput extends Params, SearchOutput extends Search, Data, Error, Services>(
+  descriptor: LoaderDescriptor<ParamsOutput, SearchOutput, Data, Error, Services>,
+): <
+  Content,
+  Identifier extends string | undefined,
+  Children extends ReadonlyArray<AnyDefinition>,
+  Action extends AnyActionDescriptor | undefined,
+>(
+  self: Definition<Content, ParamsOutput, SearchOutput, Identifier, Children, any, Action>,
+) => Definition<
+  Content,
+  ParamsOutput,
+  SearchOutput,
+  Identifier,
+  Children,
+  LoaderDescriptor<ParamsOutput, SearchOutput, Data, Error, Services>,
+  Action
+>
+export function loader<
   Content,
   ParamsOutput extends Params,
   SearchOutput extends Search,
@@ -503,52 +826,129 @@ export const loader: {
   Children,
   LoaderDescriptor<ParamsOutput, SearchOutput, Data, Error, Services>,
   Action
-> => internal.attachLoader(self, descriptor))
+>
+export function loader(
+  first?: AnyDefinition | AnyLoaderDescriptor | ModuleLoaderOptions | ModuleLoaderDefinition,
+  second?: AnyLoaderDescriptor,
+): any {
+  if (isRouteDefinition(first) && second !== undefined) {
+    return internal.attachLoader(first, second)
+  }
+
+  if (isLoaderDescriptor(first)) {
+    return (self: AnyDefinition) => internal.attachLoader(self, first)
+  }
+
+  if (isModuleLoaderDefinition(first)) {
+    return {
+      _tag: "LoomRouterModuleLoader",
+      decode: {
+        params: first.params,
+        search: first.search,
+      },
+      error: first.error,
+      output: first.output,
+      execute: first.load,
+    }
+  }
+
+  const options = isRouteDefinition(first) ? undefined : first
+
+  return <Data, Error, Services>(
+    execute: (input: ModuleLoaderInput<any, any, Services>) => Effect.Effect<Data, Error, never>,
+  ): ModuleLoader<any, any, Data, Error, Services> => ({
+    _tag: "LoomRouterModuleLoader",
+    decode: {
+      params: options?.params,
+      search: options?.search,
+    },
+    error: options?.error,
+    output: options?.output,
+    execute,
+  })
+}
 
 /** Attach an action descriptor to a route without executing it during assembly. */
-export const action: {
-  <ParamsOutput extends Params, SearchOutput extends Search, Input, Result, Error, Services>(
-    descriptor: ActionDescriptor<ParamsOutput, SearchOutput, Input, Result, Error, Services>,
-  ): <
-    Content,
-    Identifier extends string | undefined,
-    Children extends ReadonlyArray<AnyDefinition>,
-    Loader extends AnyLoaderDescriptor | undefined,
-  >(
-    self: Definition<Content, ParamsOutput, SearchOutput, Identifier, Children, Loader, any>,
-  ) => Definition<
-    Content,
-    ParamsOutput,
-    SearchOutput,
-    Identifier,
-    Children,
-    Loader,
-    ActionDescriptor<ParamsOutput, SearchOutput, Input, Result, Error, Services>
-  >
-  <
-    Content,
-    ParamsOutput extends Params,
-    SearchOutput extends Search,
-    Identifier extends string | undefined,
-    Children extends ReadonlyArray<AnyDefinition>,
-    Loader extends AnyLoaderDescriptor | undefined,
-    Input,
-    Result,
-    Error,
+export function action(): <Result, Error, Services>(
+  execute: (input: ModuleActionInput<Params, Search, unknown, Services>) => Effect.Effect<Result, Error, never>,
+) => ModuleAction<Params, Search, unknown, Result, Error, Services>
+export function action<
+  Services = never,
+  ParamsDecoder extends Decode.DecoderLike<Params, any> | undefined = undefined,
+  SearchDecoder extends Decode.DecoderLike<Search, any> | undefined = undefined,
+  InputDecoder extends SubmissionDecode.DecoderLike<any> | undefined = undefined,
+  OutputSchema extends RouteSchema<any> | undefined = undefined,
+  ErrorSchema extends RouteSchema<any> | undefined = undefined,
+  Execute extends ModuleActionExecute<ParamsDecoder, SearchDecoder, InputDecoder, Services> = ModuleActionExecute<
+    ParamsDecoder,
+    SearchDecoder,
+    InputDecoder,
+    Services
+  >,
+>(
+  definition: ModuleActionDefinition<
     Services,
-  >(
-    self: Definition<Content, ParamsOutput, SearchOutput, Identifier, Children, Loader, any>,
-    descriptor: ActionDescriptor<ParamsOutput, SearchOutput, Input, Result, Error, Services>,
-  ): Definition<
-    Content,
-    ParamsOutput,
-    SearchOutput,
-    Identifier,
-    Children,
-    Loader,
-    ActionDescriptor<ParamsOutput, SearchOutput, Input, Result, Error, Services>
-  >
-} = dual(2, <
+    ParamsDecoder,
+    SearchDecoder,
+    InputDecoder,
+    OutputSchema,
+    ErrorSchema,
+    Execute
+  >,
+): ModuleAction<
+  ParamsOutputOf<ParamsDecoder>,
+  SearchOutputOf<SearchDecoder>,
+  ActionInputOutputOf<InputDecoder, ModuleActionInputOfExecute<Execute>>,
+  SchemaOutputOf<OutputSchema, ExecuteEffectSuccessOf<Execute>>,
+  SchemaOutputOf<ErrorSchema, ExecuteEffectErrorOf<Execute>>,
+  Services
+>
+export function action<
+  ParamsDecoder extends Decode.DecoderLike<Params, any> | undefined = undefined,
+  SearchDecoder extends Decode.DecoderLike<Search, any> | undefined = undefined,
+  InputDecoder extends SubmissionDecode.DecoderLike<any> | undefined = undefined,
+  OutputSchema extends RouteSchema<any> | undefined = undefined,
+  ErrorSchema extends RouteSchema<any> | undefined = undefined,
+>(
+  options: ModuleActionOptions<ParamsDecoder, SearchDecoder, InputDecoder, OutputSchema, ErrorSchema>,
+): <
+  Execute extends (
+    input: ModuleActionInput<
+      ParamsOutputOf<ParamsDecoder>,
+      SearchOutputOf<SearchDecoder>,
+      ActionInputOutputOf<InputDecoder, unknown>,
+      any
+    >,
+  ) => Effect.Effect<any, any, never>,
+>(
+  execute: Execute,
+) => ModuleAction<
+  ParamsOutputOf<ParamsDecoder>,
+  SearchOutputOf<SearchDecoder>,
+  ActionInputOutputOf<InputDecoder, ModuleActionInputOfExecute<Execute>>,
+  SchemaOutputOf<OutputSchema, ExecuteEffectSuccessOf<Execute>>,
+  SchemaOutputOf<ErrorSchema, ExecuteEffectErrorOf<Execute>>,
+  ModuleActionServicesOfExecute<Execute>
+>
+export function action<ParamsOutput extends Params, SearchOutput extends Search, Input, Result, Error, Services>(
+  descriptor: ActionDescriptor<ParamsOutput, SearchOutput, Input, Result, Error, Services>,
+): <
+  Content,
+  Identifier extends string | undefined,
+  Children extends ReadonlyArray<AnyDefinition>,
+  Loader extends AnyLoaderDescriptor | undefined,
+>(
+  self: Definition<Content, ParamsOutput, SearchOutput, Identifier, Children, Loader, any>,
+) => Definition<
+  Content,
+  ParamsOutput,
+  SearchOutput,
+  Identifier,
+  Children,
+  Loader,
+  ActionDescriptor<ParamsOutput, SearchOutput, Input, Result, Error, Services>
+>
+export function action<
   Content,
   ParamsOutput extends Params,
   SearchOutput extends Search,
@@ -570,7 +970,49 @@ export const action: {
   Children,
   Loader,
   ActionDescriptor<ParamsOutput, SearchOutput, Input, Result, Error, Services>
-> => internal.attachAction(self, descriptor))
+>
+export function action(
+  first?: AnyDefinition | AnyActionDescriptor | ModuleActionOptions | ModuleActionDefinition,
+  second?: AnyActionDescriptor,
+): any {
+  if (isRouteDefinition(first) && second !== undefined) {
+    return internal.attachAction(first, second)
+  }
+
+  if (isActionDescriptor(first)) {
+    return (self: AnyDefinition) => internal.attachAction(self, first)
+  }
+
+  if (isModuleActionDefinition(first)) {
+    return {
+      _tag: "LoomRouterModuleAction",
+      decode: {
+        params: first.params,
+        search: first.search,
+      },
+      error: first.error,
+      input: first.input,
+      output: first.output,
+      execute: first.handle,
+    }
+  }
+
+  const options = isRouteDefinition(first) ? undefined : first
+
+  return <Result, Error, Services>(
+    execute: (input: ModuleActionInput<any, any, any, Services>) => Effect.Effect<Result, Error, never>,
+  ): ModuleAction<any, any, any, Result, Error, Services> => ({
+    _tag: "LoomRouterModuleAction",
+    decode: {
+      params: options?.params,
+      search: options?.search,
+    },
+    error: options?.error,
+    input: options?.input,
+    output: options?.output,
+    execute,
+  })
+}
 
 /** Read the stable route path. */
 export const path = <
@@ -579,8 +1021,10 @@ export const path = <
   SearchOutput extends Search,
   Identifier extends string | undefined,
   Children extends ReadonlyArray<AnyDefinition>,
+  Loader extends AnyLoaderDescriptor | undefined,
+  Action extends AnyActionDescriptor | undefined,
 >(
-  self: Definition<Content, ParamsOutput, SearchOutput, Identifier, Children>,
+  self: Definition<Content, ParamsOutput, SearchOutput, Identifier, Children, Loader, Action>,
 ): Path => self.path
 
 /** Read the optional stable route identifier. */
@@ -590,7 +1034,10 @@ export const identifier = <
   SearchOutput extends Search,
   Identifier extends string | undefined,
   Children extends ReadonlyArray<AnyDefinition>,
->(self: Definition<Content, ParamsOutput, SearchOutput, Identifier, Children>): Identifier => self.identifier
+  Loader extends AnyLoaderDescriptor | undefined,
+  Action extends AnyActionDescriptor | undefined,
+>(self: Definition<Content, ParamsOutput, SearchOutput, Identifier, Children, Loader, Action>): Identifier =>
+  self.identifier
 
 /** Read the route content payload. */
 export const content = <
@@ -599,8 +1046,10 @@ export const content = <
   SearchOutput extends Search,
   Identifier extends string | undefined,
   Children extends ReadonlyArray<AnyDefinition>,
+  Loader extends AnyLoaderDescriptor | undefined,
+  Action extends AnyActionDescriptor | undefined,
 >(
-  self: Definition<Content, ParamsOutput, SearchOutput, Identifier, Children>,
+  self: Definition<Content, ParamsOutput, SearchOutput, Identifier, Children, Loader, Action>,
 ): Content => self.content
 
 /** Read the route children. */
@@ -610,8 +1059,10 @@ export const children = <
   SearchOutput extends Search,
   Identifier extends string | undefined,
   Children extends ReadonlyArray<AnyDefinition>,
+  Loader extends AnyLoaderDescriptor | undefined,
+  Action extends AnyActionDescriptor | undefined,
 >(
-  self: Definition<Content, ParamsOutput, SearchOutput, Identifier, Children>,
+  self: Definition<Content, ParamsOutput, SearchOutput, Identifier, Children, Loader, Action>,
 ): Children => self.children
 
 /** Read the optional loader descriptor stored on a route. */
@@ -661,8 +1112,10 @@ export const href = <
   SearchOutput extends Search,
   Identifier extends string | undefined,
   Children extends ReadonlyArray<AnyDefinition>,
+  Loader extends AnyLoaderDescriptor | undefined,
+  Action extends AnyActionDescriptor | undefined,
 >(
-  self: Definition<Content, ParamsOutput, SearchOutput, Identifier, Children>,
+  self: Definition<Content, ParamsOutput, SearchOutput, Identifier, Children, Loader, Action>,
   options?: HrefOptions<ParamsOutput, SearchOutput>,
   base?: string | URL,
 ): string => {

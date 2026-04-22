@@ -2,9 +2,9 @@ import { Html, mount } from "@effectify/loom"
 import { LoomVite } from "@effectify/loom-vite"
 import { appBuildId, appPayloadElementId, appRootId } from "./app-config.js"
 import { prepareRouteRuntime } from "./router-runtime.js"
-import { bodyForResult, resolveAppRequest, titleForResult } from "./router.js"
-import { counterRoute } from "./routes/counter-route.js"
-import { todoRoute, todoRoutePath } from "./routes/todo-route.js"
+import { bodyForResult, resolveAppRequest, titleForResult, todoRoutePath } from "./router.js"
+import * as counterRouteModule from "./routes/counter-route.js"
+import * as todoRouteModule from "./routes/todo-route.js"
 
 export const bootstrapClient = (
   document: Document,
@@ -20,12 +20,12 @@ const defaultClientUrl = "https://effectify.dev/"
 
 const mountClientRoute = (pathname: string, root: HTMLElement): boolean => {
   if (pathname === "/") {
-    mount({ counterRoute }, { root })
+    mount({ counterRoute: counterRouteModule.component }, { root })
     return true
   }
 
   if (pathname === todoRoutePath) {
-    mount({ todoRoute }, { root })
+    mount({ todoRoute: todoRouteModule.component }, { root })
     return true
   }
 

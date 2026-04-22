@@ -161,6 +161,6 @@ export const decode = <Output>(options: {
 /** Build a standardized invalid-input failure when submit(...) lacks decoder metadata. */
 export const missingDecoderFailure = (input: Submission): Failure => ({
   _tag: "LoomRouterActionInputFailure",
-  message: "Action submission requires explicit decodeInput metadata on the route action descriptor",
+  message: "Action submission requires explicit input or decodeInput metadata on the route action descriptor",
   input,
 })

@@ -20,7 +20,6 @@
       "import": "./src/index.ts",
       "default": "./src/index.ts"
     },
-    "./ActionInput": "./src/action-input.ts",
     "./Decode": "./src/decode.ts",
     "./Fallback": "./src/fallback.ts",
     "./Layout": "./src/layout.ts",
@@ -28,9 +27,11 @@
     "./Match": "./src/match.ts",
     "./Navigation": "./src/navigation.ts",
     "./Route": "./src/route.ts",
+    "./RouteModule": "./src/route-module.ts",
     "./RouteGroup": "./src/route-group.ts",
     "./Router": "./src/router.ts",
-    "./Runtime": "./src/router-runtime.ts"
+    "./Runtime": "./src/router-runtime.ts",
+    "./Submission": "./src/submission.ts"
   },
   "dependencies": {
     "effect": "catalog:",

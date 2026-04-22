@@ -1,14 +1,16 @@
 import * as Result from "effect/Result"
-import * as ActionInput from "./action-input.js"
 import * as internal from "./internal/router-runtime.js"
 import type * as Route from "./route.js"
 import type * as Router from "./router.js"
+import * as SubmissionCodec from "./submission.js"
 
 type AnyLoaderRoute = Route.Definition<any, any, any, any, any, Route.AnyLoaderDescriptor, any>
 type AnyActionRoute = Route.Definition<any, any, any, any, any, any, Route.AnyActionDescriptor>
 type Resolved<Self extends Route.AnyDefinition> = Router.ResolveSuccess<Route.ParamsOf<Self>, Route.SearchOf<Self>> & {
   readonly route: Self
 }
+
+export type Submission = SubmissionCodec.Submission
 
 export type LoaderState<Self extends AnyLoaderRoute> =
   | { readonly _tag: "idle"; readonly route: Self }
@@ -24,7 +26,7 @@ export type LoaderState<Self extends AnyLoaderRoute> =
 
 export type ActionState<Self extends AnyActionRoute> =
   | { readonly _tag: "idle"; readonly route: Self }
-  | { readonly _tag: "submitting"; readonly route: Self; readonly input: Route.ActionInputOf<Self> }
+  | { readonly _tag: "submitting"; readonly route: Self; readonly input: Route.ActionContextOf<Self> }
   | {
     readonly _tag: "success"
     readonly route: Self
@@ -34,8 +36,8 @@ export type ActionState<Self extends AnyActionRoute> =
   | {
     readonly _tag: "invalid-input"
     readonly route: Self
-    readonly issues: readonly [ActionInput.Failure, ...ReadonlyArray<ActionInput.Failure>]
-    readonly submission: ActionInput.Normalized
+    readonly issues: readonly [SubmissionCodec.Failure, ...ReadonlyArray<SubmissionCodec.Failure>]
+    readonly submission: SubmissionCodec.Normalized
   }
   | { readonly _tag: "failure"; readonly route: Self; readonly error: Route.ActionErrorOf<Self> }
 
@@ -85,7 +87,7 @@ export const actionIdle = <Self extends AnyActionRoute>(route: Self): ActionStat
 
 export const submitting = <Self extends AnyActionRoute>(
   route: Self,
-  input: Route.ActionInputOf<Self>,
+  input: Route.ActionContextOf<Self>,
 ): ActionState<Self> => ({
   _tag: "submitting",
   input,
@@ -114,8 +116,8 @@ export const actionFailure = <Self extends AnyActionRoute>(
 
 export const invalidInput = <Self extends AnyActionRoute>(
   route: Self,
-  submission: ActionInput.Normalized,
-  issues: readonly [ActionInput.Failure, ...ReadonlyArray<ActionInput.Failure>],
+  submission: SubmissionCodec.Normalized,
+  issues: readonly [SubmissionCodec.Failure, ...ReadonlyArray<SubmissionCodec.Failure>],
 ): ActionState<Self> => ({
   _tag: "invalid-input",
   issues,
@@ -171,20 +173,21 @@ export const revalidate = async <Self extends AnyLoaderRoute>(options: {
 }
 
 export const submit = async <Self extends AnyActionRoute>(options: {
-  readonly input?: Route.ActionInputOf<Self>
+  readonly input?: Route.ActionContextOf<Self>
   readonly revalidated?: boolean
   readonly resolved: Resolved<Self>
-  readonly submission?: ActionInput.Submission
+  readonly submission?: SubmissionCodec.Submission
   readonly services: Route.ActionServicesOf<Self>
 }): Promise<ActionState<Self>> => {
   const descriptor: Route.ActionDescriptor<
     Route.ParamsOf<Self>,
     Route.SearchOf<Self>,
-    Route.ActionInputOf<Self>,
+    Route.ActionContextOf<Self>,
     Route.ActionResultOf<Self>,
     Route.ActionErrorOf<Self>,
     Route.ActionServicesOf<Self>
   > = options.resolved.route.action
+  const decoder = descriptor.input ?? descriptor.decodeInput
 
   const decodedInput = (() => {
     if (options.input !== undefined) {
@@ -192,21 +195,21 @@ export const submit = async <Self extends AnyActionRoute>(options: {
     }
 
     if (options.submission === undefined) {
-      return Result.fail(ActionInput.missingDecoderFailure({}))
+      return Result.fail(SubmissionCodec.missingDecoderFailure({}))
     }
 
-    if (descriptor.decodeInput === undefined) {
-      return Result.fail(ActionInput.missingDecoderFailure(options.submission))
+    if (decoder === undefined) {
+      return Result.fail(SubmissionCodec.missingDecoderFailure(options.submission))
     }
 
-    return ActionInput.decode({
-      decoder: descriptor.decodeInput,
+    return SubmissionCodec.decode({
+      decoder,
       submission: options.submission,
     })
   })()
 
   if (Result.isFailure(decodedInput)) {
-    const normalizedSubmission = ActionInput.normalize(options.submission ?? {})
+    const normalizedSubmission = SubmissionCodec.normalize(options.submission ?? {})
 
     return invalidInput(
       options.resolved.route,

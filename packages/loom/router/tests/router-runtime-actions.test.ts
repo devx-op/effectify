@@ -1,5 +1,14 @@
+import { Data, pipe } from "effect"
+import * as Effect from "effect/Effect"
+import * as Schema from "effect/Schema"
 import { describe, expect, it } from "vitest"
-import { ActionInput, Route, Router, Runtime } from "../src/index.js"
+import { Route, Router, Runtime, Submission } from "../src/index.js"
+import * as RouteErrors from "../src/internal/route-errors.js"
+import * as RouteModule from "../src/route-module.js"
+
+class SaveFailure extends Data.TaggedError("SaveFailure")<{
+  readonly message: string
+}> {}
 
 describe("@effectify/loom-router loaders/actions runtime", () => {
   it("stores loader/action descriptors on the route DSL without executing them during resolve", () => {
@@ -174,12 +183,12 @@ describe("@effectify/loom-router loaders/actions runtime", () => {
         content: "user-screen",
       }),
       {
-        decodeInput: ActionInput.make<{ readonly title: string }>((input) => {
+        input: Submission.make<{ readonly title: string }>((input) => {
           const title = Array.isArray(input.title) ? input.title[0] : input.title
 
           return typeof title === "string" && title.length > 0
-            ? ActionInput.succeed({ title })
-            : ActionInput.fail("title is required", input)
+            ? Submission.succeed({ title })
+            : Submission.fail("title is required", input)
         }),
         handle: async (
           { input, services }: {
@@ -246,12 +255,12 @@ describe("@effectify/loom-router loaders/actions runtime", () => {
         content: "user-screen",
       }),
       {
-        decodeInput: ActionInput.make<{ readonly title: string }>((input) => {
+        input: Submission.make<{ readonly title: string }>((input) => {
           const title = Array.isArray(input.title) ? input.title[0] : input.title
 
           return typeof title === "string" && title.trim().length > 0
-            ? ActionInput.succeed({ title: title.trim() })
-            : ActionInput.fail("title is required", input)
+            ? Submission.succeed({ title: title.trim() })
+            : Submission.fail("title is required", input)
         }),
         handle: async ({ input }: { readonly input: { readonly title: string } }) => {
           actionCalls += 1
@@ -282,5 +291,244 @@ describe("@effectify/loom-router loaders/actions runtime", () => {
       submission: { title: "   " },
     })
     expect(actionCalls).toBe(0)
+  })
+
+  it("executes compiled route-module loaders and actions through the runtime boundary", async () => {
+    const route = RouteModule.compile({
+      identifier: "users.detail",
+      module: {
+        component: "user-screen",
+        loader: Route.loader({
+          params: Schema.Struct({ userId: Schema.String }),
+          load: ({
+            params,
+            services,
+          }: {
+            readonly params: { readonly userId: string }
+            readonly services: { readonly prefix: string }
+          }) => Effect.succeed(`${services.prefix}:${params.userId}`),
+        }),
+        action: Route.action({
+          input: Submission.make((submission) =>
+            typeof submission.title === "string"
+              ? Submission.succeed({ title: submission.title })
+              : Submission.fail("title is required", submission)
+          ),
+          handle: ({
+            input,
+            services,
+          }: {
+            readonly input: { readonly title: string }
+            readonly services: { readonly suffix: string }
+          }) => Effect.succeed(`${input.title}:${services.suffix}`),
+        }),
+      },
+      path: "/users/:userId",
+    })
+    const router = Router.make({ routes: [route] })
+    const resolved = Router.resolve(router, "/users/42")
+
+    if (!Router.isResolveSuccess(resolved)) {
+      throw new Error("expected a resolved route")
+    }
+
+    const loaded = await Runtime.load({
+      resolved,
+      services: { prefix: "user" },
+    })
+    const submitted = await Runtime.submit({
+      resolved,
+      submission: { title: "save" },
+      services: { suffix: "done" },
+    })
+
+    expect(loaded).toEqual({
+      _tag: "success",
+      data: "user:42",
+      route,
+    })
+    expect(submitted).toEqual({
+      _tag: "success",
+      result: "save:done",
+      revalidated: false,
+      route,
+    })
+  })
+
+  it("maps Effect failures and defects into structured route boundary errors", async () => {
+    const failureRoute = RouteModule.compile({
+      identifier: "users.failure",
+      module: {
+        component: "user-screen",
+        loader: pipe(
+          () => Effect.fail(new SaveFailure({ message: "loader failed" })),
+          Route.loader(),
+        ),
+      },
+      path: "/users/:userId",
+    })
+    const defectRoute = RouteModule.compile({
+      identifier: "users.defect",
+      module: {
+        component: "user-screen",
+        action: pipe(
+          () => Effect.die("boom"),
+          Route.action({
+            input: Submission.make((submission) =>
+              typeof submission.title === "string"
+                ? Submission.succeed({ title: submission.title })
+                : Submission.fail("title is required", submission)
+            ),
+          }),
+        ),
+      },
+      path: "/users/:userId/defect",
+    })
+    const failureResolved = Router.resolve(Router.make({ routes: [failureRoute] }), "/users/42")
+    const defectResolved = Router.resolve(Router.make({ routes: [defectRoute] }), "/users/42/defect")
+
+    if (!Router.isResolveSuccess(failureResolved) || !Router.isResolveSuccess(defectResolved)) {
+      throw new Error("expected resolved routes")
+    }
+
+    const loadState = await Runtime.load({
+      resolved: failureResolved,
+      services: {},
+    })
+    const actionState = await Runtime.submit({
+      resolved: defectResolved,
+      submission: { title: "save" },
+      services: {},
+    })
+
+    expect(loadState).toMatchObject({
+      _tag: "failure",
+      error: new RouteErrors.RouteLoaderFailure({ error: new SaveFailure({ message: "loader failed" }) }),
+      route: failureRoute,
+    })
+    expect(actionState).toMatchObject({
+      _tag: "failure",
+      error: new RouteErrors.RouteActionDefect({ defect: "boom" }),
+      route: defectRoute,
+    })
+  })
+
+  it("validates module helper output and error values against their schemas", async () => {
+    const LoaderOutput = Schema.Struct({ id: Schema.String })
+    const ActionOutput = Schema.Struct({ savedTitle: Schema.String })
+    const SaveFailureSchema = Schema.TaggedStruct("SaveFailure", { message: Schema.String })
+
+    const schemaRoute = RouteModule.compile({
+      identifier: "users.schema",
+      module: {
+        component: "user-screen",
+        loader: Route.loader({
+          params: Schema.Struct({ userId: Schema.String }),
+          output: LoaderOutput,
+          load: ({ params }) => Effect.succeed({ id: params.userId }),
+        }),
+        action: Route.action({
+          input: Schema.Struct({ title: Schema.String }),
+          output: ActionOutput,
+          error: SaveFailureSchema,
+          handle: ({ input }) => Effect.fail(new SaveFailure({ message: input.title })),
+        }),
+      },
+      path: "/users/:userId",
+    })
+    const invalidLoaderRoute = RouteModule.compile({
+      identifier: "users.invalid-loader-output",
+      module: {
+        component: "user-screen",
+        loader: Route.loader({
+          output: LoaderOutput,
+          load: () => Effect.sync(() => JSON.parse('{"id":42}')),
+        }),
+      },
+      path: "/users/:userId/invalid-loader",
+    })
+    const invalidActionRoute = RouteModule.compile({
+      identifier: "users.invalid-action-error",
+      module: {
+        component: "user-screen",
+        action: Route.action({
+          input: Schema.Struct({ title: Schema.String }),
+          output: ActionOutput,
+          error: SaveFailureSchema,
+          handle: () => Effect.fail(JSON.parse('{"nope":true}')),
+        }),
+      },
+      path: "/users/:userId/invalid-action",
+    })
+
+    const schemaResolved = Router.resolve(Router.make({ routes: [schemaRoute] }), "/users/42")
+    const invalidLoaderResolved = Router.resolve(
+      Router.make({ routes: [invalidLoaderRoute] }),
+      "/users/42/invalid-loader",
+    )
+    const invalidActionResolved = Router.resolve(
+      Router.make({ routes: [invalidActionRoute] }),
+      "/users/42/invalid-action",
+    )
+
+    if (
+      !Router.isResolveSuccess(schemaResolved)
+      || !Router.isResolveSuccess(invalidLoaderResolved)
+      || !Router.isResolveSuccess(invalidActionResolved)
+    ) {
+      throw new Error("expected resolved routes")
+    }
+
+    const schemaLoaded = await Runtime.load({
+      resolved: schemaResolved,
+      services: {},
+    })
+    const schemaSubmitted = await Runtime.submit({
+      resolved: schemaResolved,
+      submission: { title: "typed failure" },
+      services: {},
+    })
+    const invalidLoaded = await Runtime.load({
+      resolved: invalidLoaderResolved,
+      services: {},
+    })
+    const invalidSubmitted = await Runtime.submit({
+      resolved: invalidActionResolved,
+      submission: { title: "typed failure" },
+      services: {},
+    })
+
+    expect(schemaLoaded).toEqual({
+      _tag: "success",
+      data: { id: "42" },
+      route: schemaRoute,
+    })
+    expect(schemaSubmitted).toEqual({
+      _tag: "failure",
+      error: new RouteErrors.RouteActionFailure({ error: { _tag: "SaveFailure", message: "typed failure" } }),
+      route: schemaRoute,
+    })
+    expect(invalidLoaded).toEqual({
+      _tag: "failure",
+      error: new RouteErrors.RouteLoaderDefect({
+        defect: new RouteErrors.RouteSchemaContractError({
+          issue: expect.anything(),
+          phase: "loader-output",
+          value: { id: 42 },
+        }),
+      }),
+      route: invalidLoaderRoute,
+    })
+    expect(invalidSubmitted).toEqual({
+      _tag: "failure",
+      error: new RouteErrors.RouteActionDefect({
+        defect: new RouteErrors.RouteSchemaContractError({
+          issue: expect.anything(),
+          phase: "action-error",
+          value: { nope: true },
+        }),
+      }),
+      route: invalidActionRoute,
+    })
   })
 })

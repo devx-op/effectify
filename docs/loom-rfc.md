@@ -28,7 +28,7 @@ The important correction in this revision is explicit: the earlier Loom directio
 - Atom is the reactive foundation.
 - Loom does **not** introduce a parallel Loom-native model primitive.
 - `Component.state(...)` is the primary seam for shared/materialized Atom values.
-- `Component.stateFactory(...)` is the explicit seam for per-instance/local factories.
+- `Component.state(...)` also accepts per-instance/local factory entries such as `() => Atom.make(...)`.
 - `Component.model(...)` remains a temporary compatibility bridge for older mixed call sites.
 - Directionally, that includes primitives such as `Atom.make(...)`, `Atom.family(...)`, and `Atom.serializable(...)`.
 - An integration surface like `@effectify/loom-atom` is acceptable as a future package direction, but it must remain an integration layer, not a replacement state model.
@@ -55,7 +55,7 @@ Component<Props, Err, Requirements>
 - `Component.actions(...)` is the main bridge from UI declarations to Effect services, HTTP APIs, and RPC APIs.
 - `Component.view(...)` should receive a read-friendly reactive facade over model state so authors are not forced into raw `.get()` everywhere.
 - `ViewChild` is the broad composition type for primitive content and ordinary unnamed composition.
-- `Component.children()` is the standard/default-content mechanism for ordinary composition.
+- `children` is always available in `Component.view(...)` for ordinary composition.
 - `Component.slots(...)` and `Slot` are for named structural composition such as layouts, shells, and route frames.
 - `Component.use(component, props?, childrenOrSlots?)` should support either children-based composition or named slot objects depending on the component declaration.
 - `View.vstack(...)` and `View.hstack(...)` are the preferred directional layout primitives.
@@ -188,7 +188,7 @@ The key rule is simple: **Loom integrates Atom directly rather than wrapping or 
 Directional target:
 
 ```ts
-Component.make("counter").pipe(
+Component.make("Counter").pipe(
   Component.state({
     count: Atom.make(0),
   }),
@@ -232,14 +232,13 @@ This is preferable to scattering Effect access across unrelated ad hoc handlers 
 Loom should document composition in three layers, not one:
 
 1. `ViewChild` is the broad content type for unnamed/default composition and primitive child content.
-2. `Component.children()` is the standard mechanism for ordinary/default composition.
+2. `children` is always available in `Component.view(...)` for ordinary/default composition.
 3. `Component.slots(...)` / `Slot` are for named structural composition.
 
 Directional target for children-based composition:
 
 ```ts
-const card = Component.make("card").pipe(
-  Component.children(),
+const Card = Component.make("Card").pipe(
   Component.view(({ children }) => View.box(children).pipe(Web.className("card"))),
 )
 ```
@@ -247,7 +246,7 @@ const card = Component.make("card").pipe(
 Directional target for slot-based composition:
 
 ```ts
-const appLayout = Component.make("app-layout").pipe(
+const AppLayout = Component.make("AppLayout").pipe(
   Component.slots({
     header: Slot.optional(),
     sidebar: Slot.optional(),
@@ -394,20 +393,22 @@ The router should be treated as a first-class companion package with API design 
 ### 7.2 Directional API target
 
 ```ts
-const appRouter = Router.make("app").pipe(
-  Router.add(
-    RouteGroup.make("marketing").add(
-      Route.make("home").path("/").view(homePage),
-      Route.make("about").path("/about").view(aboutPage),
-    ),
-    RouteGroup.make("app")
-      .prefix("/app")
-      .layout(appLayout)
-      .add(
-        Route.make("counter").path("/counter").view(counterPage),
-      ),
-  ),
-)
+export const loader = Route.loader({
+  output: CounterData,
+  load: Effect.fn(function*() {
+    return { count: 0 }
+  }),
+})
+
+export const counterPageRoute = RouteModule.compile({
+  identifier: "counter",
+  module: { component: CounterRoute, loader },
+  path: "/counter",
+})
+
+const appRouter = Router.make({
+  routes: [counterPageRoute],
+})
 ```
 
 ### 7.3 Reflection direction
@@ -458,7 +459,7 @@ This section captures the intended direction, not a finalized signature freeze.
 import * as Atom from "effect/unstable/reactivity/Atom"
 import { Component, mount, View, Web } from "@effectify/loom"
 
-export const counter = Component.make("counter").pipe(
+export const CounterRoute = Component.make("CounterRoute").pipe(
   Component.state({
     count: Atom.make(0),
   }),
@@ -480,14 +481,13 @@ export const counter = Component.make("counter").pipe(
   ),
 )
 
-mount({ counter })
+mount({ CounterRoute })
 ```
 
 ### 9.2 children-based component target DX
 
 ```ts
-const card = Component.make("card").pipe(
-  Component.children(),
+const Card = Component.make("Card").pipe(
   Component.view(({ children }) => View.box(children).pipe(Web.className("card"))),
 )
 ```
@@ -497,7 +497,7 @@ const card = Component.make("card").pipe(
 ```ts
 import { Component, Slot, View, Web } from "@effectify/loom"
 
-export const appLayout = Component.make("app-layout").pipe(
+export const AppLayout = Component.make("AppLayout").pipe(
   Component.slots({
     header: Slot.optional(),
     sidebar: Slot.optional(),
@@ -518,11 +518,11 @@ export const appLayout = Component.make("app-layout").pipe(
 ### 9.4 `Component.use(...)` target DX
 
 ```ts
-Component.use(card, { tone: "info" }, View.text("Saved"))
+Component.use(Card, { tone: "info" }, View.text("Saved"))
 
-Component.use(appLayout, {}, {
+Component.use(AppLayout, {}, {
   header: View.text("Dashboard"),
-  default: Component.use(card, {}, View.text("Body")),
+  default: Component.use(Card, {}, View.text("Body")),
 })
 ```
 
@@ -531,20 +531,22 @@ This is a directional API target: the third argument should match the declared c
 ### 9.5 Router target DX
 
 ```ts
-const appRouter = Router.make("app").pipe(
-  Router.add(
-    RouteGroup.make("marketing").add(
-      Route.make("home").path("/").view(homePage),
-      Route.make("about").path("/about").view(aboutPage),
-    ),
-    RouteGroup.make("app")
-      .prefix("/app")
-      .layout(appLayout)
-      .add(
-        Route.make("counter").path("/counter").view(counterPage),
-      ),
-  ),
-)
+export const loader = Route.loader({
+  output: CounterData,
+  load: Effect.fn(function*() {
+    return { count: 0 }
+  }),
+})
+
+export const counterPageRoute = RouteModule.compile({
+  identifier: "counter",
+  module: { component: CounterRoute, loader },
+  path: "/counter",
+})
+
+const appRouter = Router.make({
+  routes: [counterPageRoute],
+})
 ```
 
 ---
@@ -564,7 +566,7 @@ Loom should adopt a testing culture inspired by the Effect repository.
 
 Highest-value early coverage areas:
 
-1. `Component.state(...)` / `Component.stateFactory(...)` Atom-native integration semantics
+1. `Component.state(...)` Atom-native integration semantics for shared values and per-instance thunk entries
 2. `Component.actions(...)` typing and runtime behavior
 3. `Component.view(...)` state facade ergonomics and inference
 4. children-based composition, slot composition, and layout behavior

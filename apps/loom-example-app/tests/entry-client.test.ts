@@ -3,7 +3,7 @@
 import { beforeEach, describe, expect, it } from "vitest"
 import { bootstrapClient, startClientApp } from "../src/entry-client.js"
 import { createServerRenderer } from "../src/entry-server.js"
-import { resetTodoExampleState } from "../src/routes/todo-route.js"
+import { resetTodoExampleState } from "../src/router-runtime.js"
 
 const yieldToEventLoop = async (): Promise<void> => {
   await new Promise((resolve) => setTimeout(resolve, 0))
@@ -281,7 +281,7 @@ describe("loom example app client entry", () => {
     addButton.click()
     await yieldToEventLoop()
 
-    expect(document.querySelector('[data-todo-feedback="true"]')?.textContent).toContain("Todo title is required")
+    expect(document.querySelector('[data-todo-feedback="true"]')?.textContent).toContain("length of at least 1")
     expect(document.querySelector('[data-todo-open-count="true"]')?.textContent?.trim()).toBe("2")
     expect(document.querySelector('[data-todo-action-status="true"]')?.textContent?.trim()).toBe("invalid-input")
   })

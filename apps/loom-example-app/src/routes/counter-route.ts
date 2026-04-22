@@ -1,6 +1,5 @@
 import { Atom } from "effect/unstable/reactivity"
 import { Component, View, Web } from "@effectify/loom"
-import { Route } from "@effectify/loom-router"
 import { counterInitialCount } from "../app-config.js"
 
 export const counterRouteId = "counter"
@@ -47,10 +46,10 @@ const counterCueStyle = (count: number): Web.StyleRecord => {
   }
 }
 
-export const counterRoute = Component.make("counter-route").pipe(
-  Component.stateFactory(() => ({
-    count: Atom.make(counterInitialCount).pipe(Atom.keepAlive),
-  })),
+export const CounterRoute = Component.make("CounterRoute").pipe(
+  Component.state({
+    count: () => Atom.make(counterInitialCount).pipe(Atom.keepAlive),
+  }),
   Component.actions({
     decrement: ({ count }) => count.update((value) => value - 1),
     increment: ({ count }) => count.update((value) => value + 1),
@@ -121,8 +120,4 @@ export const counterRoute = Component.make("counter-route").pipe(
   ),
 )
 
-export const counterPageRoute = Route.make({
-  identifier: counterRouteId,
-  path: counterRoutePath,
-  content: counterRoute,
-})
+export const component = CounterRoute

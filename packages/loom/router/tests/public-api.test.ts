@@ -1,19 +1,9 @@
 import { readFileSync } from "node:fs"
+import * as Effect from "effect/Effect"
 import * as Result from "effect/Result"
+import * as Schema from "effect/Schema"
 import { describe, expect, it } from "vitest"
-import {
-  ActionInput,
-  Decode,
-  Fallback,
-  Layout,
-  Link,
-  Match,
-  Navigation,
-  Route,
-  RouteGroup,
-  Router,
-  Runtime,
-} from "../src/index.js"
+import * as LoomRouter from "../src/index.js"
 
 const manifestUrl = new URL("../package.json", import.meta.url)
 
@@ -21,26 +11,28 @@ describe("@effectify/loom-router public surface", () => {
   it("re-exports namespace modules from the package root and subpath exports", () => {
     const manifest = JSON.parse(readFileSync(manifestUrl, "utf8"))
 
-    expect(typeof Router.make).toBe("function")
-    expect(typeof Router.match).toBe("function")
-    expect(typeof Router.pathFor).toBe("function")
-    expect(typeof Router.href).toBe("function")
-    expect(typeof Route.make).toBe("function")
-    expect(typeof Route.identifier).toBe("function")
-    expect(typeof Match.isSuccess).toBe("function")
-    expect(typeof Decode.make).toBe("function")
-    expect(typeof Layout.make).toBe("function")
-    expect(typeof Fallback.make).toBe("function")
-    expect(typeof Route.href).toBe("function")
-    expect(typeof Navigation.memory).toBe("function")
-    expect(typeof Link.intercept).toBe("function")
-    expect(typeof RouteGroup.make).toBe("function")
-    expect(typeof Runtime.load).toBe("function")
-    expect(typeof ActionInput.normalize).toBe("function")
+    expect(typeof LoomRouter.Router.make).toBe("function")
+    expect(typeof LoomRouter.Router.match).toBe("function")
+    expect(typeof LoomRouter.Router.pathFor).toBe("function")
+    expect(typeof LoomRouter.Router.href).toBe("function")
+    expect(typeof LoomRouter.Route.make).toBe("function")
+    expect(typeof LoomRouter.Route.identifier).toBe("function")
+    expect(typeof LoomRouter.Match.isSuccess).toBe("function")
+    expect(typeof LoomRouter.Decode.make).toBe("function")
+    expect(typeof LoomRouter.Layout.make).toBe("function")
+    expect(typeof LoomRouter.Fallback.make).toBe("function")
+    expect(typeof LoomRouter.Route.href).toBe("function")
+    expect(typeof LoomRouter.RouteModule.compile).toBe("function")
+    expect(typeof LoomRouter.RouteModule.extract).toBe("function")
+    expect(typeof LoomRouter.Navigation.memory).toBe("function")
+    expect(typeof LoomRouter.Link.intercept).toBe("function")
+    expect(typeof LoomRouter.RouteGroup.make).toBe("function")
+    expect(typeof LoomRouter.Runtime.load).toBe("function")
+    expect(typeof LoomRouter.Submission.normalize).toBe("function")
+    expect("ActionInput" in LoomRouter).toBe(false)
 
     expect(Object.keys(manifest.exports)).toEqual([
       ".",
-      "./ActionInput",
       "./Decode",
       "./Fallback",
       "./Layout",
@@ -48,35 +40,37 @@ describe("@effectify/loom-router public surface", () => {
       "./Match",
       "./Navigation",
       "./Route",
+      "./RouteModule",
       "./RouteGroup",
       "./Router",
       "./Runtime",
+      "./Submission",
     ])
   })
 
   it("matches parameterized routes and preserves search, layout, and route content", () => {
-    const shell = Layout.make("shell")
-    const notFound = Fallback.make("missing")
-    const users = Route.make({
+    const shell = LoomRouter.Layout.make("shell")
+    const notFound = LoomRouter.Fallback.make("missing")
+    const users = LoomRouter.Route.make({
       path: "/users/:userId",
       content: "user-screen",
     })
-    const router = Router.make({
+    const router = LoomRouter.Router.make({
       routes: [users],
       layout: shell,
       fallback: notFound,
     })
 
-    const result = Router.match(router, "/users/42?tab=profile&tab=activity")
+    const result = LoomRouter.Router.match(router, "/users/42?tab=profile&tab=activity")
 
-    expect(Match.isSuccess(result)).toBe(true)
+    expect(LoomRouter.Match.isSuccess(result)).toBe(true)
 
-    if (!Match.isSuccess(result)) {
+    if (!LoomRouter.Match.isSuccess(result)) {
       throw new Error("expected a successful match")
     }
 
-    expect(Route.path(result.route)).toBe("/users/:userId")
-    expect(Route.content(result.route)).toBe("user-screen")
+    expect(LoomRouter.Route.path(result.route)).toBe("/users/:userId")
+    expect(LoomRouter.Route.content(result.route)).toBe("user-screen")
     expect(result.params).toEqual({ userId: "42" })
     expect(result.search).toEqual({
       tab: ["profile", "activity"],
@@ -85,45 +79,47 @@ describe("@effectify/loom-router public surface", () => {
   })
 
   it("returns a miss that carries the configured fallback boundary", () => {
-    const router = Router.make({
-      routes: [Route.make({ path: "/", content: "home" })],
-      fallback: Fallback.make("missing"),
+    const router = LoomRouter.Router.make({
+      routes: [LoomRouter.Route.make({ path: "/", content: "home" })],
+      fallback: LoomRouter.Fallback.make("missing"),
     })
 
-    const result = Router.match(router, "/settings")
+    const result = LoomRouter.Router.match(router, "/settings")
 
-    expect(Match.isMiss(result)).toBe(true)
+    expect(LoomRouter.Match.isMiss(result)).toBe(true)
 
-    if (!Match.isMiss(result)) {
+    if (!LoomRouter.Match.isMiss(result)) {
       throw new Error("expected a miss")
     }
 
     expect(result.pathname).toBe("/settings")
-    expect(result.fallback).toEqual(Fallback.make("missing"))
+    expect(result.fallback).toEqual(LoomRouter.Fallback.make("missing"))
   })
 
   it("surfaces structured decode issues for params and search boundaries", () => {
-    const route = Route.make({
+    const route = LoomRouter.Route.make({
       path: "/users/:userId",
       content: "user-screen",
       decode: {
-        params: Decode.make((params) =>
+        params: LoomRouter.Decode.make((params) =>
           /^\d+$/.test(params.userId ?? "")
             ? Result.succeed({ userId: params.userId })
-            : Decode.fail("userId must be numeric", params)
+            : LoomRouter.Decode.fail("userId must be numeric", params)
         ),
-        search: Decode.make((search) =>
-          typeof search.tab === "string" ? Result.succeed({ tab: search.tab }) : Decode.fail("tab is required", search)
+        search: LoomRouter.Decode.make((search) =>
+          typeof search.tab === "string"
+            ? Result.succeed({ tab: search.tab })
+            : LoomRouter.Decode.fail("tab is required", search)
         ),
       },
     })
-    const router = Router.make({ routes: [route] })
+    const router = LoomRouter.Router.make({ routes: [route] })
 
-    const result = Router.match(router, "/users/nope")
+    const result = LoomRouter.Router.match(router, "/users/nope")
 
-    expect(Match.isDecodeFailure(result)).toBe(true)
+    expect(LoomRouter.Match.isDecodeFailure(result)).toBe(true)
 
-    if (!Match.isDecodeFailure(result)) {
+    if (!LoomRouter.Match.isDecodeFailure(result)) {
       throw new Error("expected a decode failure")
     }
 
@@ -141,5 +137,19 @@ describe("@effectify/loom-router public surface", () => {
         input: {},
       },
     ])
+  })
+
+  it("creates Effect-first route-module helpers without attaching them to a route definition", () => {
+    const loader = LoomRouter.Route.loader({
+      params: Schema.Struct({ userId: Schema.String }),
+      load: ({ params }) => Effect.succeed({ id: params.userId }),
+    })
+    const action = LoomRouter.Route.action({
+      input: Schema.Struct({ title: Schema.String }),
+      handle: ({ input }) => Effect.succeed({ savedTitle: input.title }),
+    })
+
+    expect(loader).toMatchObject({ _tag: "LoomRouterModuleLoader" })
+    expect(action).toMatchObject({ _tag: "LoomRouterModuleAction" })
   })
 })

@@ -1,11 +1,30 @@
 import type * as Loom from "@effectify/loom"
 import { Component, View, Web } from "@effectify/loom"
-import { Fallback, Layout, Router, type Router as RouterTypes } from "@effectify/loom-router"
-import { counterPageRoute, counterRoutePath, counterRouteTitle } from "./routes/counter-route.js"
-import { todoPageRoute, todoRoutePath, todoRouteTitle } from "./routes/todo-route.js"
+import { Fallback, Layout, RouteModule, Router, type Router as RouterTypes } from "@effectify/loom-router"
+import { counterRouteId, counterRoutePath, counterRouteTitle } from "./routes/counter-route.js"
+import * as counterRouteModule from "./routes/counter-route.js"
+import * as todoRouteModule from "./routes/todo-route.js"
 
-const appShell = Component.make("app-shell").pipe(
-  Component.children(),
+export const todoRouteId = "todo"
+export const todoRoutePath = "/todos"
+export const todoRouteTitle = "Todo app"
+
+export const counterPageRoute = RouteModule.compile({
+  identifier: counterRouteId,
+  module: counterRouteModule,
+  path: counterRoutePath,
+})
+
+export const todoPageRoute = RouteModule.compile({
+  identifier: todoRouteId,
+  module: {
+    ...todoRouteModule,
+    component: () => Component.use(todoRouteModule.component),
+  },
+  path: todoRoutePath,
+})
+
+const AppShell = Component.make("AppShell").pipe(
   Component.view(({ children }) =>
     View.main(children).pipe(Web.className("container"), Web.data("app-shell", "loom-example-app"))
   ),
@@ -25,7 +44,7 @@ const notFoundView = (context: RouterTypes.Context): Loom.View.ViewChild =>
   ).pipe(Web.className("loom-example-card loom-example-not-found"), Web.data("route-view", "not-found"))
 
 export const appRouter = Router.make({
-  layout: Layout.make(({ child }) => Component.use(appShell, child)),
+  layout: Layout.make(({ child }) => Component.use(AppShell, child)),
   routes: [counterPageRoute, todoPageRoute] as const,
   fallback: {
     notFound: Fallback.make(notFoundView),
@@ -36,7 +55,7 @@ const matchedRouteTitle = (result: Router.ResolveSuccess): string => {
   switch (result.route.identifier) {
     case counterPageRoute.identifier:
       return counterRouteTitle
-    case todoPageRoute.identifier:
+    case todoRouteId:
       return todoRouteTitle
     default:
       return "Not Found"

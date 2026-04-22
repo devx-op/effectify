@@ -2,11 +2,14 @@ import * as internal from "./internal/component.js"
 import type * as Ast from "./ast.js"
 
 /** Internal-neutral component contract used by the public Loom package. */
-export interface Definition {
+export interface Component {
   readonly _tag: "Component"
   readonly node: Ast.Node
   readonly capabilities: ReadonlyArray<Capability>
 }
+
+/** Backwards-compatible alias kept while the public API settles. */
+export type Definition = Component
 
 export interface EffectCapability {
   readonly _tag: "ComponentEffect"
@@ -20,7 +23,7 @@ export interface EffectLike {
 }
 
 /** Create a component definition from a neutral AST node. */
-export const make = (node: Ast.Node): Definition => internal.makeDefinition(node)
+export const make = (node: Ast.Node): Component => internal.makeDefinition(node)
 
 /** Backwards-compatible alias kept while the public API settles. */
 export const fromNode = make
@@ -31,5 +34,5 @@ export const effect = (
 ): EffectCapability => internal.makeEffectCapability(componentEffect)
 
 /** Attach a capability to a component definition. */
-export const use = (definition: Definition, capability: Capability): Definition =>
+export const use = (definition: Component, capability: Capability): Component =>
   internal.appendCapability(definition, capability)

@@ -67,7 +67,7 @@ The package family must ship under the **`@effectify/loom`** brand, with **Compo
 
 Atom is the real state/reactivity model. Loom must integrate **real Atom primitives directly** rather than inventing a Loom-native replacement such as `Model.atom(...)`.
 
-`Component.state(...)` should accept real shared/materialized Atom values, while `Component.stateFactory(...)` should own per-instance/local factories such as `() => Atom.make(...)`. `Component.model(...)` remains compatibility-only during migration.
+`Component.state(...)` should accept real shared/materialized Atom values plus per-instance factory entries such as `() => Atom.make(...)`. `Component.model(...)` remains compatibility-only during migration.
 
 ### Goal 3: Preserve strong typing as a core value
 
@@ -93,7 +93,7 @@ That means concerns such as `className`, `style`, DOM attributes, and browser AP
 
 Loom should teach a two-lane composition model:
 
-- `children` is the standard/default mechanism for ordinary unnamed composition.
+- `children` is always available in `Component.view(...)` for ordinary unnamed composition.
 - `Component.slots(...)` and `Slot` are for named structural composition such as layouts, shells, and route frames.
 
 The docs should make this distinction explicit instead of teaching slots as the answer to every nesting case.
@@ -120,11 +120,11 @@ Tracing and observability must remain explicit product differentiators. Loom sho
 - **Component** as the central public abstraction.
 - A renderer-agnostic **View** DSL.
 - A **Web** namespace for CSS, DOM attributes, and browser-specific capabilities.
-- Atom-native state integration through `Component.state(...)` and `Component.stateFactory(...)` using real Atom primitives.
+- Atom-native state integration through `Component.state(...)` using real Atom primitives and local thunk entries.
 - A read-friendly reactive facade in `Component.view(...)`, so view code does not require raw `.get()` calls everywhere.
 - `Component.actions(...)` as the bridge to Effect services and remote APIs.
 - `ViewChild` as the broad composition type for unnamed content and primitive child content.
-- children-based composition through `Component.children()` for ordinary/default nesting.
+- implicit `children` availability inside `Component.view(...)` for ordinary/default nesting.
 - `Component.slots(...)` / `Slot` for named structural composition.
 - `Component.use(component, props?, childrenOrSlots?)` supporting both children-based and slot-based composition shapes.
 - `View.vstack` / `View.hstack` as the preferred directional layout primitives.
@@ -201,7 +201,7 @@ These are intentionally NOT goals for the first line of the initiative:
 ### Technical success
 
 - The internal architecture preserves a renderer-agnostic view/runtime boundary.
-- `Component.state(...)` and `Component.stateFactory(...)` accept real Atom constructs without a Loom-owned shadow abstraction.
+- `Component.state(...)` accepts real Atom constructs without a Loom-owned shadow abstraction.
 - `Component.view(...)` exposes a read-friendly state facade suitable for ergonomic rendering.
 - The API surface preserves strong component typing and type inference expectations.
 - Observability/tracing remain explicit in runtime architecture and documentation.
@@ -218,7 +218,7 @@ The examples below describe the **target DX direction**, not a claim that every 
 The target composition story should be documented this way:
 
 - `ViewChild` is the broad composition type for primitives and unnamed/default content.
-- `Component.children()` is the standard unnamed/default-content mechanism.
+- `children` is provided implicitly to `Component.view(...)` as the standard unnamed/default-content mechanism.
 - `Component.slots(...)` / `Slot` are for named structural composition.
 - `Component.use(component, props?, childrenOrSlots?)` should accept either plain children content or a named slot object depending on the component contract.
 - `Html.*` remains available as a lower-level or compatibility surface, but is not the main path used to teach Loom.
@@ -253,7 +253,7 @@ View.link(
 import * as Atom from "effect/unstable/reactivity/Atom"
 import { Component, mount, View, Web } from "@effectify/loom"
 
-export const counter = Component.make("counter").pipe(
+export const CounterRoute = Component.make("CounterRoute").pipe(
   Component.state({
     count: Atom.make(0),
   }),
@@ -276,14 +276,13 @@ export const counter = Component.make("counter").pipe(
   ),
 )
 
-mount({ counter })
+mount({ CounterRoute })
 ```
 
 ### children-based component target DX
 
 ```ts
-const card = Component.make("card").pipe(
-  Component.children(),
+const Card = Component.make("Card").pipe(
   Component.view(({ children }) => View.box(children).pipe(Web.className("card"))),
 )
 ```
@@ -293,7 +292,7 @@ const card = Component.make("card").pipe(
 ```ts
 import { Component, Slot, View, Web } from "@effectify/loom"
 
-export const appLayout = Component.make("app-layout").pipe(
+export const AppLayout = Component.make("AppLayout").pipe(
   Component.slots({
     header: Slot.optional(),
     sidebar: Slot.optional(),
@@ -314,11 +313,11 @@ export const appLayout = Component.make("app-layout").pipe(
 ### Component.use target DX
 
 ```ts
-Component.use(card, { tone: "info" }, View.text("Saved"))
+Component.use(Card, { tone: "info" }, View.text("Saved"))
 
-Component.use(appLayout, {}, {
+Component.use(AppLayout, {}, {
   header: View.text("Dashboard"),
-  default: Component.use(card, {}, View.text("Body")),
+  default: Component.use(Card, {}, View.text("Body")),
 })
 ```
 
@@ -329,20 +328,22 @@ Similarly, `Html.*` may still exist as a lower-level or compatibility layer, but
 ### Router target DX
 
 ```ts
-const appRouter = Router.make("app").pipe(
-  Router.add(
-    RouteGroup.make("marketing").add(
-      Route.make("home").path("/").view(homePage),
-      Route.make("about").path("/about").view(aboutPage),
-    ),
-    RouteGroup.make("app")
-      .prefix("/app")
-      .layout(appLayout)
-      .add(
-        Route.make("counter").path("/counter").view(counterPage),
-      ),
-  ),
-)
+export const loader = Route.loader({
+  output: CounterData,
+  load: Effect.fn(function*() {
+    return { count: 0 }
+  }),
+})
+
+export const counterPageRoute = RouteModule.compile({
+  identifier: "counter",
+  module: { component: CounterRoute, loader },
+  path: "/counter",
+})
+
+const appRouter = Router.make({
+  routes: [counterPageRoute],
+})
 ```
 
 ---
@@ -360,7 +361,7 @@ const appRouter = Router.make("app").pipe(
 ### Phase 1: Core interactive DX
 
 - Deliver `@effectify/loom` with initial `Component`, `View`, and `Web` direction.
-- Prove Atom-native `Component.state(...)` with shared values and `Component.stateFactory(...)` with per-instance factories.
+- Prove Atom-native `Component.state(...)` with shared values and per-instance thunk factories.
 - Prove `Component.actions(...)` as the bridge to Effectful behavior.
 - Prove read-friendly state access inside `Component.view(...)`.
 - Establish the composition split: `children` for ordinary/default content, `Slot` for named structural composition.

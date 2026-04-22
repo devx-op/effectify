@@ -14,15 +14,6 @@ const isCapability = (value) =>
 export const isActionEffect = (value) =>
   typeof value === "object" && value !== null && "_tag" in value && value._tag === "LoomActionEffect"
 const isModelFactory = (value) => typeof value === "function" && !Atom.isAtom(value)
-const assertNoStateFactories = (stateDefinition) => {
-  for (const [key, value] of Object.entries(stateDefinition)) {
-    if (typeof value === "function") {
-      throw new Error(
-        `Component.state(...) does not accept factory entry '${key}'. Use Component.stateFactory(...) instead.`,
-      )
-    }
-  }
-}
 const splitModelDefinition = (model) => {
   const sharedEntries = []
   const localEntries = []
@@ -54,15 +45,27 @@ const mergeStateFactory = (current, next) => {
 }
 const resolveSharedStateDefinition = (component) => {
   const compatibility = splitModelDefinition(component.model)
+  const authoredState = splitModelDefinition(component.state)
   return {
     ...compatibility.shared,
-    ...component.state,
+    ...authoredState.shared,
   }
 }
 const materializeStateFactoryDefinition = (component) => {
   const compatibility = splitModelDefinition(component.model)
-  return mergeStateFactory(compatibility.localFactory, component.stateFactory)?.() ?? {}
+  const authoredState = splitModelDefinition(component.state)
+  return mergeStateFactory(compatibility.localFactory, authoredState.localFactory)?.() ?? {}
 }
+const renderRegistryStack = []
+const withRenderRegistry = (registry, evaluate) => {
+  renderRegistryStack.push(registry)
+  try {
+    return evaluate()
+  } finally {
+    renderRegistryStack.pop()
+  }
+}
+const getCurrentRenderRegistry = () => renderRegistryStack.at(-1)
 const createState = (model, registry) => {
   const keys = Object.keys(model)
   return new Proxy({}, {
@@ -149,7 +152,6 @@ export const instantiate = (
   const actionContext = {
     model,
     state,
-    registry,
     component: {
       name: component.name,
     },
@@ -161,7 +163,7 @@ export const instantiate = (
     : isActionSpec(actionDefinition)
     ? bindActionSpec(actionDefinition, actionBindingContext)
     : (actionDefinition ?? emptyActions)
-  const children = component.children === true ? compositionInput?.children : undefined
+  const children = compositionInput?.children
   const slots = resolveSlots(component.slots, compositionInput?.slots)
   return {
     registry,
@@ -171,15 +173,16 @@ export const instantiate = (
     children,
     slots,
     render: (boundActions = actions) =>
-      component.render === undefined
-        ? component.node
-        : component.render({
-          ...actionContext,
-          props,
-          actions: boundActions,
-          children,
-          slots,
-        }),
+      withRenderRegistry(registry, () =>
+        component.render === undefined
+          ? component.node
+          : component.render({
+            ...actionContext,
+            props,
+            actions: boundActions,
+            children,
+            slots,
+          })),
   }
 }
 const materialize = (component) => {
@@ -187,7 +190,12 @@ const materialize = (component) => {
   return instance.render()
 }
 const renderComponentUse = (component, props, compositionInput) =>
-  instantiate(component, component.registry ?? AtomRegistry.make(), props, compositionInput).render()
+  instantiate(
+    component,
+    getCurrentRenderRegistry() ?? component.registry ?? AtomRegistry.make(),
+    props,
+    compositionInput,
+  ).render()
 const reconcile = (component) =>
   makePipeable({
     ...component,
@@ -222,7 +230,6 @@ export function state(selfOrState, stateDefinition) {
     if (isComponent(selfOrState)) {
       return selfOrState
     }
-    assertNoStateFactories(selfOrState)
     return (self) =>
       patch(self, {
         state: {
@@ -234,29 +241,11 @@ export function state(selfOrState, stateDefinition) {
   if (!isComponent(selfOrState)) {
     return make(LoomCore.Ast.text(""))
   }
-  assertNoStateFactories(stateDefinition)
   return patch(selfOrState, {
     state: {
       ...selfOrState.state,
       ...stateDefinition,
     },
-  })
-}
-export function stateFactory(selfOrFactory, factory) {
-  if (factory === undefined) {
-    if (isComponent(selfOrFactory)) {
-      return selfOrFactory
-    }
-    return (self) =>
-      patch(self, {
-        stateFactory: mergeStateFactory(self.stateFactory, selfOrFactory),
-      })
-  }
-  if (!isComponent(selfOrFactory)) {
-    return make(LoomCore.Ast.text(""))
-  }
-  return patch(selfOrFactory, {
-    stateFactory: mergeStateFactory(selfOrFactory.stateFactory, factory),
   })
 }
 export function model(selfOrModel, modelDefinition) {
@@ -266,28 +255,24 @@ export function model(selfOrModel, modelDefinition) {
     }
     const legacyModel = selfOrModel
     return (self) => {
-      const compatibility = splitModelDefinition(legacyModel)
       return patch(self, {
         model: legacyModel,
         state: {
           ...self.state,
-          ...compatibility.shared,
+          ...legacyModel,
         },
-        stateFactory: mergeStateFactory(self.stateFactory, compatibility.localFactory),
       })
     }
   }
   if (!isComponent(selfOrModel)) {
     return make(LoomCore.Ast.text(""))
   }
-  const compatibility = splitModelDefinition(modelDefinition)
   return patch(selfOrModel, {
     model: modelDefinition,
     state: {
       ...selfOrModel.state,
-      ...compatibility.shared,
+      ...modelDefinition,
     },
-    stateFactory: mergeStateFactory(selfOrModel.stateFactory, compatibility.localFactory),
   })
 }
 export function actions(selfOrActions, actionDefinition) {
@@ -328,18 +313,27 @@ export function children(self) {
 }
 const isPropsLikeObject = (value) =>
   typeof value === "object" && value !== null && !Array.isArray(value) && !("_tag" in value)
+const isSlotInputLike = (component, value) => {
+  if (!isPropsLikeObject(value)) {
+    return false
+  }
+  const slotKeys = Object.keys(component.slots ?? {})
+  const valueKeys = Object.keys(value)
+  return valueKeys.length > 0 && valueKeys.every((key) => slotKeys.includes(key)) &&
+    valueKeys.every((key) => viewChild.isViewChild(value[key]))
+}
 const resolveUseComposition = (component, propsOrComposition, composition) => {
-  if (component.children === true) {
+  if (component.slots !== undefined) {
     if (composition !== undefined) {
       return {
         props: propsOrComposition,
-        composition: { children: composition },
+        composition: { slots: composition },
       }
     }
-    if (viewChild.isViewChild(propsOrComposition) && !isPropsLikeObject(propsOrComposition)) {
+    if (isSlotInputLike(component, propsOrComposition)) {
       return {
         props: undefined,
-        composition: { children: propsOrComposition },
+        composition: { slots: propsOrComposition },
       }
     }
     return {
@@ -347,10 +341,16 @@ const resolveUseComposition = (component, propsOrComposition, composition) => {
       composition: undefined,
     }
   }
-  if (component.slots !== undefined) {
+  if (composition !== undefined) {
     return {
       props: propsOrComposition,
-      composition: composition === undefined ? undefined : { slots: composition },
+      composition: { children: composition },
+    }
+  }
+  if (viewChild.isViewChild(propsOrComposition) && !isPropsLikeObject(propsOrComposition)) {
+    return {
+      props: undefined,
+      composition: { children: propsOrComposition },
     }
   }
   return {
@@ -360,11 +360,10 @@ const resolveUseComposition = (component, propsOrComposition, composition) => {
 }
 export function use(selfOrCapability, capabilityOrProps, slotInput) {
   if (capabilityOrProps === undefined) {
-    if (selfOrCapability._tag === "Component" && slotInput !== undefined) {
+    if (selfOrCapability._tag === "Component") {
       const resolved = resolveUseComposition(selfOrCapability, undefined, slotInput)
       return renderComponentUse(selfOrCapability, resolved.props, resolved.composition)
     }
-
     if (selfOrCapability._tag === "ComponentEffect") {
       return (self) =>
         reconcile(makePipeable({

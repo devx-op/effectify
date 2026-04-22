@@ -12,18 +12,21 @@ export interface Options {
 
 type EntryOf<Components> = Extract<keyof Components, string>
 type MountedComponent<Components, Entry extends EntryOf<Components>> = Components[Entry]
+type RuntimeMountedComponent<Components, Entry extends EntryOf<Components>> = MountedComponent<Components, Entry> & {
+  readonly registry?: AtomRegistry.AtomRegistry
+}
 type MountedModel<Components, Entry extends EntryOf<Components>> = MountedComponent<Components, Entry> extends
-  Component.Type<any, any, any, infer Model, any, any> ? Model : {}
+  Component.Component<any, any, any, infer Model, any, any> ? Model : {}
 type MountedActions<Components, Entry extends EntryOf<Components>> = MountedComponent<Components, Entry> extends
-  Component.Type<any, any, any, any, infer Actions, any> ? Actions : {}
+  Component.Component<any, any, any, any, infer Actions, any> ? Actions : {}
 
 export interface Handle<
   Model extends Component.ModelShape = {},
   Actions extends Component.ActionShape = {},
 > {
-  readonly components: Readonly<Record<string, Component.Type<any, any, any, any, any, any>>>
+  readonly components: Readonly<Record<string, Component.Component<any, any, any, any, any, any>>>
   readonly entry: string
-  readonly component: Component.Type<any, any, any, Model, Actions, any>
+  readonly component: Component.Component<any, any, any, Model, Actions, any>
   readonly model: Component.WriteModel<Model>
   readonly state: Component.State<Model>
   readonly actions: Actions
@@ -35,7 +38,7 @@ export interface Handle<
   readonly dispose: () => void
 }
 
-export type ComponentRecord = Readonly<Record<string, Component.Type<any, any, any, any, any, any>>>
+export type ComponentRecord = Readonly<Record<string, Component.Component<any, any, any, any, any, any>>>
 
 export interface MountMetadata {
   readonly entry: string
@@ -74,7 +77,7 @@ type MutableActionObservation = {
  * This keeps the new public entrypoint additive while the full interactive DOM runtime lands later.
  */
 export const mount = <
-  const Components extends Readonly<Record<string, Component.Type<any, any, any, any, any, any>>>,
+  const Components extends Readonly<Record<string, Component.Component<any, any, any, any, any, any>>>,
   Entry extends EntryOf<Components> = EntryOf<Components>,
 >(
   components: Components,
@@ -92,7 +95,7 @@ export const mount = <
     throw new Error("mount could not resolve an entry component")
   }
 
-  const component = components[entry] as MountedComponent<Components, Entry>
+  const component = components[entry] as RuntimeMountedComponent<Components, Entry>
 
   if (component === undefined) {
     throw new Error(`mount could not find component '${entry}'`)

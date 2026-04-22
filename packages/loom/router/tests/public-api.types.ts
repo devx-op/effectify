@@ -1,9 +1,10 @@
 import type * as Loom from "@effectify/loom"
 import { Component, View } from "@effectify/loom"
+import * as Effect from "effect/Effect"
+import * as Schema from "effect/Schema"
 import { pipe, ServiceMap } from "effect"
 import * as Result from "effect/Result"
 import {
-  ActionInput,
   Decode,
   Fallback,
   Layout,
@@ -12,14 +13,17 @@ import {
   Navigation,
   Route,
   RouteGroup,
+  RouteModule,
   Router,
   Runtime,
+  Submission,
 } from "../src/index.js"
 
 type Equal<Left, Right> = (<Value>() => Value extends Left ? 1 : 2) extends <Value>() => Value extends Right ? 1 : 2
   ? true
   : false
 type Expect<Value extends true> = Value
+type RootHasActionInput = "ActionInput" extends keyof typeof import("../src/index.js") ? true : false
 
 const route = Route.make({
   identifier: "users.detail",
@@ -40,12 +44,14 @@ const routeWithLoader = Route.loader(route, {
   mapError: (cause: unknown) => ({ message: String(cause) }),
 })
 const routeWithAction = Route.action(routeWithLoader, {
-  decodeInput: ActionInput.make((input) =>
+  input: Submission.make((input) =>
     typeof input.title === "string"
-      ? ActionInput.succeed({ title: input.title })
-      : ActionInput.fail("title missing", input)
+      ? Submission.succeed({ title: input.title })
+      : Submission.fail("title missing", input)
   ),
-  handle: async ({ input }: { readonly input: { readonly title: string } }) => ({
+  handle: async (
+    { input }: Route.ActionContext<{ readonly userId: string }, { readonly tab: string }, { readonly title: string }>,
+  ) => ({
     savedTitle: input.title,
   }),
   mapError: (cause: unknown) => ({ message: String(cause) }),
@@ -53,7 +59,7 @@ const routeWithAction = Route.action(routeWithLoader, {
 const attachedLoader = Route.getLoader(routeWithAction)
 const attachedAction = Route.getAction(routeWithAction)
 
-const routeComponent = Component.make("router-page").pipe(
+const routeComponent = Component.make("RouterPage").pipe(
   Component.view(() => View.stack(View.text("router-page"))),
 )
 
@@ -163,6 +169,70 @@ const invalidActionState: Runtime.ActionState<typeof routeWithAction> = Runtime.
   { title: "" },
   [{ _tag: "LoomRouterActionInputFailure", input: { title: "" }, message: "title missing" }],
 )
+const moduleLoader = Route.loader({
+  params: Schema.Struct({ userId: Schema.String }),
+  output: Schema.Struct({ id: Schema.String }),
+  load: ({ params }) => Effect.succeed({ id: params.userId }),
+})
+const moduleLoaderWithServicesOptions = {
+  params: Schema.Struct({ userId: Schema.String }),
+  search: Schema.Struct({ tab: Schema.String }),
+  output: Schema.Struct({ id: Schema.String, tab: Schema.String, requestId: Schema.String }),
+} as const
+const moduleLoaderWithServices = pipe(
+  Effect.fn(function*({
+    params,
+    search,
+    services,
+  }: Route.ModuleLoaderContext<typeof moduleLoaderWithServicesOptions, { readonly requestId: string }>) {
+    return {
+      id: params.userId,
+      requestId: services.requestId,
+      tab: search.tab,
+    }
+  }),
+  Route.loader(moduleLoaderWithServicesOptions),
+)
+const moduleAction = Route.action({
+  input: Schema.Struct({ title: Schema.String }),
+  output: Schema.Struct({ savedTitle: Schema.String }),
+  error: Schema.TaggedStruct("SaveFailure", { message: Schema.String }),
+  handle: ({ input }) =>
+    Effect.fail({ _tag: "SaveFailure" as const, message: input.title.length > 0 ? "boom" : "empty" }),
+})
+const moduleActionWithServicesOptions = {
+  input: Schema.Struct({ title: Schema.String }),
+  output: Schema.Struct({ savedTitle: Schema.String }),
+  error: Schema.TaggedStruct("SaveFailure", { message: Schema.String }),
+} as const
+const moduleActionWithServices = pipe(
+  Effect.fn(function*({
+    input,
+    services,
+  }: Route.ModuleActionContext<typeof moduleActionWithServicesOptions, { readonly requestId: string }>) {
+    return yield* Effect.fail({
+      _tag: "SaveFailure" as const,
+      message: input.title.length > 0 ? services.requestId : "empty",
+    })
+  }),
+  Route.action(moduleActionWithServicesOptions),
+)
+const compiledRoute = RouteModule.compile({
+  identifier: "users.module",
+  module: {
+    component: "module-screen",
+    loader: moduleLoader,
+    action: moduleAction,
+  },
+  path: "/module/:userId",
+})
+const componentOnlyCompiledRoute = RouteModule.compile({
+  identifier: "users.component-only",
+  module: {
+    component: routeComponent,
+  },
+  path: "/component-only",
+})
 
 if (Match.isSuccess(result)) {
   const content: unknown = Route.content(result.route)
@@ -227,16 +297,80 @@ type AlgebraRouteHrefContract = Expect<Equal<typeof algebraRouteHref, string>>
 type NestedIndexHrefContract = Expect<Equal<typeof nestedIndexHref, string>>
 type NestedLeafHrefContract = Expect<Equal<typeof nestedLeafHref, string>>
 type NestedLeafHrefByRouteContract = Expect<Equal<typeof nestedLeafHrefByRoute, string>>
+type RootActionInputHiddenContract = Expect<Equal<RootHasActionInput, false>>
+type RouteActionContextContract = Expect<
+  Equal<Route.ActionContextOf<typeof routeWithAction>, { readonly title: string }>
+>
 type RouteHasLoaderContract = Expect<Equal<typeof attachedLoader extends undefined ? false : true, true>>
 type RouteHasActionContract = Expect<Equal<typeof attachedAction extends undefined ? false : true, true>>
-type RouteLoadedDataContract = Expect<Equal<Route.LoadedDataOf<typeof routeWithAction>, { id: string; tab: string }>>
+type RouteLoadedDataContract = Expect<
+  Route.LoadedDataOf<typeof routeWithAction> extends { id: string; tab: string } ? true : false
+>
 type RouteLoaderErrorContract = Expect<Equal<Route.LoaderErrorOf<typeof routeWithAction>, { message: string }>>
-type RouteActionInputContract = Expect<Equal<Route.ActionInputOf<typeof routeWithAction>, { title: string }>>
+type RouteActionInputContract = Expect<Equal<Route.ActionInputOf<typeof routeWithAction>, { readonly title: string }>>
 type RouteActionResultContract = Expect<Equal<Route.ActionResultOf<typeof routeWithAction>, { savedTitle: string }>>
 type RouteActionErrorContract = Expect<Equal<Route.ActionErrorOf<typeof routeWithAction>, { message: string }>>
 type LoaderStateContract = Expect<Equal<typeof loaderState, Runtime.LoaderState<typeof routeWithAction>>>
 type ActionStateContract = Expect<Equal<typeof actionState, Runtime.ActionState<typeof routeWithAction>>>
 type InvalidActionStateContract = Expect<Equal<typeof invalidActionState, Runtime.ActionState<typeof routeWithAction>>>
+type ModuleLoaderParamsContract = Expect<
+  Equal<Route.ModuleLoaderParamsOf<typeof moduleLoader>, { readonly userId: string }>
+>
+type ModuleLoaderDataContract = Expect<Equal<Route.ModuleLoaderDataOf<typeof moduleLoader>, { readonly id: string }>>
+type ModuleLoaderWithServicesParamsContract = Expect<
+  Equal<Route.ModuleLoaderParamsOf<typeof moduleLoaderWithServices>, { readonly userId: string }>
+>
+type ModuleLoaderWithServicesSearchContract = Expect<
+  Equal<Route.ModuleLoaderSearchOf<typeof moduleLoaderWithServices>, { readonly tab: string }>
+>
+type ModuleLoaderWithServicesDataContract = Expect<
+  Route.ModuleLoaderDataOf<typeof moduleLoaderWithServices> extends {
+    readonly id: string
+    readonly requestId: string
+    readonly tab: string
+  } ? true
+    : false
+>
+type ModuleLoaderWithServicesContract = Expect<
+  Equal<Route.ModuleLoaderServicesOf<typeof moduleLoaderWithServices>, { readonly requestId: string }>
+>
+type ModuleActionInputContract = Expect<
+  Equal<Route.ModuleActionInputOf<typeof moduleAction>, { readonly title: string }>
+>
+type ModuleActionContextContract = Expect<
+  Equal<Route.ModuleActionContextOf<typeof moduleAction>, { readonly title: string }>
+>
+type ModuleActionResultContract = Expect<
+  Equal<Route.ModuleActionResultOf<typeof moduleAction>, { readonly savedTitle: string }>
+>
+type ModuleActionErrorContract = Expect<
+  Equal<Route.ModuleActionErrorOf<typeof moduleAction>, { readonly _tag: "SaveFailure"; readonly message: string }>
+>
+type ModuleActionWithServicesInputContract = Expect<
+  Equal<Route.ModuleActionInputOf<typeof moduleActionWithServices>, { readonly title: string }>
+>
+type ModuleActionWithServicesResultContract = Expect<
+  Equal<Route.ModuleActionResultOf<typeof moduleActionWithServices>, { readonly savedTitle: string }>
+>
+type ModuleActionWithServicesErrorContract = Expect<
+  Route.ModuleActionErrorOf<typeof moduleActionWithServices> extends { _tag: "SaveFailure"; message: string } ? true
+    : false
+>
+type ModuleActionWithServicesContract = Expect<
+  Equal<Route.ModuleActionServicesOf<typeof moduleActionWithServices>, { readonly requestId: string }>
+>
+type CompiledRouteIdentifierContract = Expect<Equal<Route.IdentifierOf<typeof compiledRoute>, "users.module">>
+type CompiledRouteParamsContract = Expect<Equal<Route.ParamsOf<typeof compiledRoute>, { readonly userId: string }>>
+type CompiledRouteLoadedDataContract = Expect<Equal<Route.LoadedDataOf<typeof compiledRoute>, { readonly id: string }>>
+type CompiledRouteActionInputContract = Expect<
+  Equal<Route.ActionInputOf<typeof compiledRoute>, { readonly title: string }>
+>
+type ComponentOnlyCompiledRouteIdentifierContract = Expect<
+  Equal<Route.IdentifierOf<typeof componentOnlyCompiledRoute>, "users.component-only">
+>
+type ComponentOnlyCompiledRouteContentContract = Expect<
+  Equal<Route.Content<typeof componentOnlyCompiledRoute>, typeof routeComponent>
+>
 
 // @ts-expect-error route paths must start with a slash
 Route.make({ path: "users/:userId", content: "broken" })
@@ -293,7 +427,13 @@ export const typecheckSmoke = {
   nestedTypedRouter,
   loaderState,
   actionState,
+  compiledRoute,
+  componentOnlyCompiledRoute,
   invalidActionState,
+  moduleAction,
+  moduleActionWithServices,
+  moduleLoader,
+  moduleLoaderWithServices,
   attachedLoader,
   attachedAction,
 }
@@ -303,6 +443,12 @@ export type {
   AlgebraRouteHrefContract,
   AlgebraRoutePathContract,
   CompatRoutePathContract,
+  CompiledRouteActionInputContract,
+  CompiledRouteIdentifierContract,
+  CompiledRouteLoadedDataContract,
+  CompiledRouteParamsContract,
+  ComponentOnlyCompiledRouteContentContract,
+  ComponentOnlyCompiledRouteIdentifierContract,
   GroupedRoutesContract,
   IdentityContract,
   InvalidActionStateContract,
@@ -310,6 +456,20 @@ export type {
   LinkInterceptContract,
   LoaderStateContract,
   MatchResultContract,
+  ModuleActionContextContract,
+  ModuleActionErrorContract,
+  ModuleActionInputContract,
+  ModuleActionResultContract,
+  ModuleActionWithServicesContract,
+  ModuleActionWithServicesErrorContract,
+  ModuleActionWithServicesInputContract,
+  ModuleActionWithServicesResultContract,
+  ModuleLoaderDataContract,
+  ModuleLoaderParamsContract,
+  ModuleLoaderWithServicesContract,
+  ModuleLoaderWithServicesDataContract,
+  ModuleLoaderWithServicesParamsContract,
+  ModuleLoaderWithServicesSearchContract,
   NavigationSnapshotContract,
   NestedIndexHrefContract,
   NestedLeafHrefByRouteContract,
@@ -319,6 +479,8 @@ export type {
   NestedLeafSearchContract,
   ResolvedOutputContract,
   ResolveResultContract,
+  RootActionInputHiddenContract,
+  RouteActionContextContract,
   RouteActionErrorContract,
   RouteActionInputContract,
   RouteActionResultContract,

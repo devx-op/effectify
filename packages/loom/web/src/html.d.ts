@@ -1,9 +1,9 @@
 import type { Atom } from "effect/unstable/reactivity"
 import * as LoomCore from "@effectify/loom-core"
 import * as LoomRuntime from "@effectify/loom-runtime"
-import type * as Component from "./component.js"
 import type * as Diagnostics from "./diagnostics.js"
 import * as Hydration from "./hydration.js"
+import * as viewChild from "./internal/view-child.js"
 /**
  * Compatibility-focused Html DSL and low-level AST / SSR seam.
  *
@@ -32,7 +32,7 @@ export interface SsrOptions extends LoomRuntime.Runtime.SsrOptions {
 export interface SsrResult extends LoomRuntime.Runtime.SsrRenderResult {
   readonly diagnosticSummary: ReadonlyArray<Diagnostics.Summary>
 }
-export type Child = LoomCore.Ast.Node | Component.Type | string | ReadonlyArray<Child> | undefined | null | false
+export type Child = viewChild.ViewChild
 export interface AttributeModifier {
   readonly _tag: "AttributeModifier"
   readonly name: string

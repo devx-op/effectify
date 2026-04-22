@@ -16,11 +16,12 @@ export const element = (tagName, options) =>
 export const fragment = (children) => internal.makeFragmentNode(children)
 /** Create a structural control-flow branch node. */
 export const ifNode = (condition, thenNode, elseNode) => internal.makeIfNode(condition, thenNode, elseNode)
-/** Create a structural control-flow list node. */
-export const forEach = (each, renderOrOptions, fallback) =>
-  typeof renderOrOptions === "function"
-    ? internal.makeForNode(each, (_item, index) => index, renderOrOptions, fallback)
-    : internal.makeForNode(each, renderOrOptions.key, renderOrOptions.render, renderOrOptions.fallback)
+export function forEach(each, renderOrOptions, fallback) {
+  if (typeof renderOrOptions === "function") {
+    return internal.makeForNode(each, (_item, index) => index, renderOrOptions, fallback)
+  }
+  return internal.makeForNode(each, renderOrOptions.key, renderOrOptions.render, renderOrOptions.fallback)
+}
 /** Create a neutral component usage node. */
 export const componentUse = (component) => internal.makeComponentUseNode(component)
 /** Create a neutral live node placeholder. */

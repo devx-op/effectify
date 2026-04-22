@@ -1,7 +1,15 @@
 import type { Atom } from "effect/unstable/reactivity"
 import type * as Component from "./component.js"
 /** Neutral AST contracts for Loom renderers. */
-export type Node = TextNode | DynamicTextNode | ElementNode | FragmentNode | ComponentUseNode | LiveNode<unknown>
+export type Node =
+  | TextNode
+  | DynamicTextNode
+  | ElementNode
+  | FragmentNode
+  | IfNode
+  | ForNode<unknown>
+  | ComponentUseNode
+  | LiveNode<unknown>
 export interface TextNode {
   readonly _tag: "Text"
   readonly value: string
@@ -52,6 +60,32 @@ export interface FragmentNode {
   readonly _tag: "Fragment"
   readonly children: ReadonlyArray<Node>
 }
+export interface IfNode {
+  readonly _tag: "If"
+  readonly condition: () => boolean
+  readonly then: Node
+  readonly else: Node | undefined
+}
+interface ForKeySignature<Item, Key extends PropertyKey> {
+  bivarianceHack(item: Item, index: number): Key
+}
+export type ForKey<Item, Key extends PropertyKey = PropertyKey> = ForKeySignature<Item, Key>["bivarianceHack"]
+interface ForRenderSignature<Item> {
+  bivarianceHack(item: Item, index: number): Node
+}
+export type ForRender<Item> = ForRenderSignature<Item>["bivarianceHack"]
+export interface ForNode<Item, Key extends PropertyKey = PropertyKey> {
+  readonly _tag: "For"
+  readonly each: () => Iterable<Item>
+  readonly key: ForKey<Item, Key>
+  readonly render: ForRender<Item>
+  readonly fallback: Node | undefined
+}
+export interface KeyedForOptions<Item, Key extends PropertyKey = PropertyKey> {
+  readonly key: ForKey<Item, Key>
+  readonly render: ForRender<Item>
+  readonly fallback?: Node
+}
 export interface ComponentUseNode {
   readonly _tag: "ComponentUse"
   readonly component: Component.Definition
@@ -80,6 +114,18 @@ export declare const element: (tagName: string, options?: {
 }) => ElementNode
 /** Create a neutral fragment node. */
 export declare const fragment: (children: ReadonlyArray<Node>) => FragmentNode
+/** Create a structural control-flow branch node. */
+export declare const ifNode: (condition: () => boolean, thenNode: Node, elseNode?: Node) => IfNode
+/** Create a structural control-flow list node. */
+export declare function forEach<Item>(
+  each: () => Iterable<Item>,
+  render: ForRender<Item>,
+  fallback?: Node,
+): ForNode<Item, number>
+export declare function forEach<Item, Key extends PropertyKey>(
+  each: () => Iterable<Item>,
+  options: KeyedForOptions<Item, Key>,
+): ForNode<Item, Key>
 /** Create a neutral component usage node. */
 export declare const componentUse: (component: Component.Definition) => ComponentUseNode
 /** Create a neutral live node placeholder. */

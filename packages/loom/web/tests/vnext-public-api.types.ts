@@ -18,8 +18,7 @@ const loadRemote = (_count: number): Effect.Effect<string, SaveFailure, SaveGate
 const count = Atom.make(1)
 
 const stateCounter = Component.make("state-counter").pipe(
-  Component.state({ count, label: "ready" }),
-  Component.stateFactory(() => ({ local: Atom.make(0) })),
+  Component.state({ count, label: "ready", local: () => Atom.make(0) }),
   Component.actions({
     incrementShared: ({ count }) => count.update((value) => value + 1),
     incrementLocal: ({ local }) => local.update((value) => value + 1),
@@ -93,7 +92,6 @@ const layout = Component.make("layout").pipe(
 )
 
 const card = Component.make("card").pipe(
-  Component.children(),
   Component.view(({ children }) =>
     View.vstack(
       View.text("Card"),
@@ -108,7 +106,7 @@ const badge = Component.make("badge").pipe(
 
 const slottedPage = Component.make("slotted-page").pipe(
   Component.view(() =>
-    Component.use(layout, undefined, {
+    Component.use(layout, {
       default: View.text("content"),
       header: View.text("header"),
     })
@@ -119,10 +117,23 @@ const childrenPage = Component.make("children-page").pipe(
   Component.view(() =>
     View.fragment(
       Component.use(card, View.text("content")),
-      Component.use(card, undefined, ["nested ", 2, View.text("content")]),
+      Component.use(card, ["nested ", 2, View.text("content")]),
     )
   ),
 )
+
+const todoHero = Component.make("todo-hero").pipe(
+  Component.view(() => View.text("Tiny DX")),
+)
+
+const bareHeroUse: View.Node = Component.use(todoHero)
+const slottedUseWithoutProps: View.Node = Component.use(layout, {
+  default: View.text("content"),
+  header: View.text("header"),
+})
+const childrenUseWithoutModifier: View.Node = Component.use(card, View.text("content"))
+const publicComponentAlias: Component.Component<any, any, any, any, any, any, any> = counter
+const legacyComponentAlias: Component.Type<any, any, any, any, any, any, any> = counter
 
 const view = View.vstack(View.text("hello")).pipe(
   Web.className("stack"),
@@ -225,7 +236,7 @@ const mountedStateReadResult: string = instantiatedStateCounter.actions.read()
 const mountedObservabilityEntry: string = mounted.observability.mount.entry
 const mountedActionObservationCount: number = mounted.observability.actions.increment.invocations
 const stateCounterHasSharedState: boolean = stateCounter.state !== undefined
-const stateCounterHasFactory: boolean = typeof stateCounter.stateFactory === "function"
+const stateCounterHasLocalState: boolean = typeof stateCounter.state?.local === "function"
 const effectfulError: SaveFailure | undefined = effectfulCounter.__error
 const effectfulRequirements: SaveGateway | undefined = effectfulCounter.__requirements
 const mountedLoad = instantiatedEffectful.actions.load()
@@ -251,17 +262,15 @@ mountedStateCounter.model.local.update((value) => value + 1)
 Slot.required("default")
 
 // @ts-expect-error Required slots must be provided when using a slotted component.
-Component.use(layout, undefined, {
+Component.use(layout, {
   header: View.text("header"),
-})
-
-// @ts-expect-error Children components accept unnamed content, not slot objects.
-Component.use(card, {
-  default: View.text("content"),
 })
 
 // @ts-expect-error Slot-based components do not accept plain children content.
 Component.use(layout, View.text("content"))
+
+// @ts-expect-error Component definitions keep registry plumbing out of the public authoring surface.
+void counter.registry
 
 // @ts-expect-error mount requires named component records.
 mount(counter)
@@ -274,12 +283,6 @@ mountedStateCounter.state.local.set(0)
 
 // @ts-expect-error Mounted state accessors must be invoked to read their values.
 const _invalidMountedCount: number = mounted.state.count
-
-// @ts-expect-error Component.state rejects factory entries; use Component.stateFactory instead.
-Component.state({ invalid: () => Atom.make(0) })
-
-// @ts-expect-error Component.state rejects thunk values even when they do not return Atoms.
-Component.state({ invalid: () => 1 })
 
 // @ts-expect-error Non-Atom model values are not writable handles.
 mounted.model.label.update((value) => value)
@@ -325,10 +328,16 @@ export const typecheckSmoke = {
   counter,
   stateCounter,
   effectfulCounter,
+  todoHero,
+  bareHeroUse,
+  slottedUseWithoutProps,
+  childrenUseWithoutModifier,
+  publicComponentAlias,
+  legacyComponentAlias,
   counterName,
   counterModel,
   stateCounterHasSharedState,
-  stateCounterHasFactory,
+  stateCounterHasLocalState,
   layoutSlots,
   classNameValue,
   dataVariantValue,

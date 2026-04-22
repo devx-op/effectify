@@ -1,5 +1,4 @@
 import { MismatchedMountedRangeParentError, MissingMountedRangeParentError } from "./control-flow-error.js"
-
 const resolveParent = (owner, start, end) => {
   const parent = start.parentNode
   if (parent === null || end.parentNode === null) {
@@ -10,7 +9,6 @@ const resolveParent = (owner, start, end) => {
   }
   return parent
 }
-
 export const makeMountedRange = (owner, document = globalThis.document) => {
   const start = document.createComment(`loom-${owner}-start`)
   const end = document.createComment(`loom-${owner}-end`)
