@@ -2,7 +2,19 @@ import type * as Loom from "@effectify/loom"
 import { Component, View } from "@effectify/loom"
 import { pipe, ServiceMap } from "effect"
 import * as Result from "effect/Result"
-import { Decode, Fallback, Layout, Link, Match, Navigation, Route, RouteGroup, Router } from "../src/index.js"
+import {
+  ActionInput,
+  Decode,
+  Fallback,
+  Layout,
+  Link,
+  Match,
+  Navigation,
+  Route,
+  RouteGroup,
+  Router,
+  Runtime,
+} from "../src/index.js"
 
 type Equal<Left, Right> = (<Value>() => Value extends Left ? 1 : 2) extends <Value>() => Value extends Right ? 1 : 2
   ? true
@@ -18,6 +30,28 @@ const route = Route.make({
     search: Decode.make((search) => Result.succeed({ tab: typeof search.tab === "string" ? search.tab : "overview" })),
   },
 })
+const routeWithLoader = Route.loader(route, {
+  load: async (
+    { context }: { readonly context: Router.Context<{ readonly userId: string }, { readonly tab: string }> },
+  ) => ({
+    id: context.params.userId,
+    tab: context.query.tab,
+  }),
+  mapError: (cause: unknown) => ({ message: String(cause) }),
+})
+const routeWithAction = Route.action(routeWithLoader, {
+  decodeInput: ActionInput.make((input) =>
+    typeof input.title === "string"
+      ? ActionInput.succeed({ title: input.title })
+      : ActionInput.fail("title missing", input)
+  ),
+  handle: async ({ input }: { readonly input: { readonly title: string } }) => ({
+    savedTitle: input.title,
+  }),
+  mapError: (cause: unknown) => ({ message: String(cause) }),
+})
+const attachedLoader = Route.getLoader(routeWithAction)
+const attachedAction = Route.getAction(routeWithAction)
 
 const routeComponent = Component.make("router-page").pipe(
   Component.view(() => View.stack(View.text("router-page"))),
@@ -115,6 +149,20 @@ const nestedLeafHrefByRoute = Router.href(nestedTypedRouter, nestedLeafRoute, {
   params: { postId: "7" },
   query: { mode: "read" },
 })
+const loaderState: Runtime.LoaderState<typeof routeWithAction> = Runtime.success(routeWithAction, {
+  id: "42",
+  tab: "profile",
+})
+const actionState: Runtime.ActionState<typeof routeWithAction> = Runtime.actionSuccess(
+  routeWithAction,
+  { savedTitle: "hello" },
+  false,
+)
+const invalidActionState: Runtime.ActionState<typeof routeWithAction> = Runtime.invalidInput(
+  routeWithAction,
+  { title: "" },
+  [{ _tag: "LoomRouterActionInputFailure", input: { title: "" }, message: "title missing" }],
+)
 
 if (Match.isSuccess(result)) {
   const content: unknown = Route.content(result.route)
@@ -179,6 +227,16 @@ type AlgebraRouteHrefContract = Expect<Equal<typeof algebraRouteHref, string>>
 type NestedIndexHrefContract = Expect<Equal<typeof nestedIndexHref, string>>
 type NestedLeafHrefContract = Expect<Equal<typeof nestedLeafHref, string>>
 type NestedLeafHrefByRouteContract = Expect<Equal<typeof nestedLeafHrefByRoute, string>>
+type RouteHasLoaderContract = Expect<Equal<typeof attachedLoader extends undefined ? false : true, true>>
+type RouteHasActionContract = Expect<Equal<typeof attachedAction extends undefined ? false : true, true>>
+type RouteLoadedDataContract = Expect<Equal<Route.LoadedDataOf<typeof routeWithAction>, { id: string; tab: string }>>
+type RouteLoaderErrorContract = Expect<Equal<Route.LoaderErrorOf<typeof routeWithAction>, { message: string }>>
+type RouteActionInputContract = Expect<Equal<Route.ActionInputOf<typeof routeWithAction>, { title: string }>>
+type RouteActionResultContract = Expect<Equal<Route.ActionResultOf<typeof routeWithAction>, { savedTitle: string }>>
+type RouteActionErrorContract = Expect<Equal<Route.ActionErrorOf<typeof routeWithAction>, { message: string }>>
+type LoaderStateContract = Expect<Equal<typeof loaderState, Runtime.LoaderState<typeof routeWithAction>>>
+type ActionStateContract = Expect<Equal<typeof actionState, Runtime.ActionState<typeof routeWithAction>>>
+type InvalidActionStateContract = Expect<Equal<typeof invalidActionState, Runtime.ActionState<typeof routeWithAction>>>
 
 // @ts-expect-error route paths must start with a slash
 Route.make({ path: "users/:userId", content: "broken" })
@@ -205,6 +263,8 @@ export const typecheckSmoke = {
   nestedLeafRoute,
   nestedRoute,
   routeGroup,
+  routeWithAction,
+  routeWithLoader,
   resolveResult,
   result,
   routeContent,
@@ -231,16 +291,24 @@ export const typecheckSmoke = {
   nestedLeafHref,
   nestedLeafHrefByRoute,
   nestedTypedRouter,
+  loaderState,
+  actionState,
+  invalidActionState,
+  attachedLoader,
+  attachedAction,
 }
 
 export type {
+  ActionStateContract,
   AlgebraRouteHrefContract,
   AlgebraRoutePathContract,
   CompatRoutePathContract,
   GroupedRoutesContract,
   IdentityContract,
+  InvalidActionStateContract,
   LinkHrefContract,
   LinkInterceptContract,
+  LoaderStateContract,
   MatchResultContract,
   NavigationSnapshotContract,
   NestedIndexHrefContract,
@@ -251,6 +319,13 @@ export type {
   NestedLeafSearchContract,
   ResolvedOutputContract,
   ResolveResultContract,
+  RouteActionErrorContract,
+  RouteActionInputContract,
+  RouteActionResultContract,
+  RouteHasActionContract,
+  RouteHasLoaderContract,
   RouteHrefContract,
   RouteIdentifierContract,
+  RouteLoadedDataContract,
+  RouteLoaderErrorContract,
 }

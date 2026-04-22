@@ -44,7 +44,7 @@ export class HrefResolutionError extends Error {
   }
 }
 
-type KnownRoute = Route.Definition<any, any, any, any, any>
+type KnownRoute = Route.AnyDefinition
 
 export type RouterEntry = KnownRoute | RouteGroup.Definition<any>
 

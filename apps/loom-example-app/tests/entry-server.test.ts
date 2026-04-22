@@ -45,7 +45,7 @@ describe("loom example app server entry", () => {
     expect(result.html).toContain('data-todo-session-count="true"')
     expect(result.html).toContain('value=""')
     expect(result.html).toContain("Sketch the shared Atom shape")
-    expect(result.html).toContain("View.input() + Web.value() now cover the todo composer")
+    expect(result.html).toContain("durable todo state now comes from loader/action runtime boundaries")
   })
 
   it("returns a minimal not-found document for unknown paths", async () => {

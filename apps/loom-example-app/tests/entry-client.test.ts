@@ -259,4 +259,30 @@ describe("loom example app client entry", () => {
     expect(document.querySelector('[data-todo-item-id="2"]')).toBeNull()
     expect(document.title).toBe("Loom Example App · Todo app")
   })
+
+  it("shows invalid action feedback when the todo action input fails validation", async () => {
+    document.documentElement.innerHTML = `
+      <head><title>Loom Example App</title></head>
+      <body>
+        <div id="loom-root"></div>
+        <script type="application/json" id="__loom_payload__"></script>
+      </body>
+    `
+    window.history.replaceState({}, "", "/todos")
+
+    await startClientApp(document)
+
+    const addButton = document.querySelector('[data-todo-add-action="true"]')
+
+    if (!(addButton instanceof HTMLButtonElement)) {
+      throw new Error("expected add todo button")
+    }
+
+    addButton.click()
+    await yieldToEventLoop()
+
+    expect(document.querySelector('[data-todo-feedback="true"]')?.textContent).toContain("Todo title is required")
+    expect(document.querySelector('[data-todo-open-count="true"]')?.textContent?.trim()).toBe("2")
+    expect(document.querySelector('[data-todo-action-status="true"]')?.textContent?.trim()).toBe("invalid-input")
+  })
 })

@@ -14,6 +14,8 @@ export interface RouteDefinition<
   SearchOutput extends Route.Search = Route.Search,
   Identifier extends string | undefined = undefined,
   Children extends ReadonlyArray<Route.AnyDefinition> = readonly [],
+  Loader extends Route.AnyLoaderDescriptor | undefined = undefined,
+  Action extends Route.AnyActionDescriptor | undefined = undefined,
 > {
   readonly _tag: "LoomRouterRoute"
   readonly kind: "path" | "index"
@@ -29,6 +31,8 @@ export interface RouteDefinition<
   readonly annotations: Annotations
   readonly layout: Layout.Definition | undefined
   readonly fallback: Fallback.Boundaries
+  readonly loader: Loader
+  readonly action: Action
 }
 
 const validateSegments = (segments: ReadonlyArray<string>): void => {
@@ -49,6 +53,8 @@ const createRoute = <
   SearchOutput extends Route.Search = Route.Search,
   Identifier extends string | undefined = undefined,
   Children extends ReadonlyArray<Route.AnyDefinition> = readonly [],
+  Loader extends Route.AnyLoaderDescriptor | undefined = undefined,
+  Action extends Route.AnyActionDescriptor | undefined = undefined,
 >(options: {
   readonly kind: RouteDefinition["kind"]
   readonly identifier: Identifier
@@ -59,7 +65,9 @@ const createRoute = <
   readonly children: Children
   readonly layout: Layout.Definition | undefined
   readonly fallback: Fallback.Config | undefined
-}): RouteDefinition<Content, ParamsOutput, SearchOutput, Identifier, Children> => {
+  readonly loader: Loader
+  readonly action: Action
+}): RouteDefinition<Content, ParamsOutput, SearchOutput, Identifier, Children, Loader, Action> => {
   validateSegments(options.segments)
 
   return {
@@ -77,6 +85,8 @@ const createRoute = <
     annotations: emptyAnnotations(),
     layout: options.layout,
     fallback: normalizeFallbacks(options.fallback),
+    loader: options.loader,
+    action: options.action,
   }
 }
 
@@ -100,6 +110,8 @@ export const makeRoute = <
     children: options.children ?? ([] as unknown as Children),
     layout: options.layout,
     fallback: options.fallback,
+    loader: undefined,
+    action: undefined,
   })
 }
 
@@ -135,6 +147,8 @@ export const makeChildRoute = <
     children: options.children ?? ([] as unknown as Children),
     layout: options.layout,
     fallback: options.fallback,
+    loader: undefined,
+    action: undefined,
   })
 }
 
@@ -156,6 +170,8 @@ export const makeIndexRoute = <
     children: options.children ?? ([] as unknown as Children),
     layout: options.layout,
     fallback: options.fallback,
+    loader: undefined,
+    action: undefined,
   })
 
 const prefixChildren = <Children extends ReadonlyArray<Route.AnyDefinition>>(
@@ -163,16 +179,56 @@ const prefixChildren = <Children extends ReadonlyArray<Route.AnyDefinition>>(
   prefix: Route.AbsolutePath,
 ): Children => children.map((child) => prefixRoute(child, prefix)) as unknown as Children
 
+export const attachLoader = <
+  Content,
+  ParamsOutput extends Route.Params,
+  SearchOutput extends Route.Search,
+  Identifier extends string | undefined,
+  Children extends ReadonlyArray<Route.AnyDefinition>,
+  Loader extends Route.AnyLoaderDescriptor,
+  Action extends Route.AnyActionDescriptor | undefined,
+>(
+  self: RouteDefinition<Content, ParamsOutput, SearchOutput, Identifier, Children, any, Action>,
+  loader: Loader,
+): RouteDefinition<Content, ParamsOutput, SearchOutput, Identifier, Children, Loader, Action> => ({
+  ...self,
+  loader: {
+    ...loader,
+    _tag: "LoomRouterLoaderDescriptor",
+  },
+})
+
+export const attachAction = <
+  Content,
+  ParamsOutput extends Route.Params,
+  SearchOutput extends Route.Search,
+  Identifier extends string | undefined,
+  Children extends ReadonlyArray<Route.AnyDefinition>,
+  Loader extends Route.AnyLoaderDescriptor | undefined,
+  Action extends Route.AnyActionDescriptor,
+>(
+  self: RouteDefinition<Content, ParamsOutput, SearchOutput, Identifier, Children, Loader, any>,
+  action: Action,
+): RouteDefinition<Content, ParamsOutput, SearchOutput, Identifier, Children, Loader, Action> => ({
+  ...self,
+  action: {
+    ...action,
+    _tag: "LoomRouterActionDescriptor",
+  },
+})
+
 export const prefixRoute = <
   Content,
   ParamsOutput extends Route.Params,
   SearchOutput extends Route.Search,
   Identifier extends string | undefined,
   Children extends ReadonlyArray<Route.AnyDefinition>,
+  Loader extends Route.AnyLoaderDescriptor | undefined,
+  Action extends Route.AnyActionDescriptor | undefined,
 >(
-  self: RouteDefinition<Content, ParamsOutput, SearchOutput, Identifier, Children>,
+  self: RouteDefinition<Content, ParamsOutput, SearchOutput, Identifier, Children, Loader, Action>,
   prefix: Route.AbsolutePath,
-): RouteDefinition<Content, ParamsOutput, SearchOutput, Identifier, Children> => {
+): RouteDefinition<Content, ParamsOutput, SearchOutput, Identifier, Children, Loader, Action> => {
   const nextPath = self.kind === "path" && self.path.startsWith("/") ? joinPathnames(prefix, self.path) : self.path
 
   return {
@@ -189,13 +245,15 @@ export const annotateRoute = <
   SearchOutput extends Route.Search,
   Identifier extends string | undefined,
   Children extends ReadonlyArray<Route.AnyDefinition>,
+  Loader extends Route.AnyLoaderDescriptor | undefined,
+  Action extends Route.AnyActionDescriptor | undefined,
   I,
   S,
 >(
-  self: RouteDefinition<Content, ParamsOutput, SearchOutput, Identifier, Children>,
+  self: RouteDefinition<Content, ParamsOutput, SearchOutput, Identifier, Children, Loader, Action>,
   tag: ServiceMap.Key<I, S>,
   value: S,
-): RouteDefinition<Content, ParamsOutput, SearchOutput, Identifier, Children> => ({
+): RouteDefinition<Content, ParamsOutput, SearchOutput, Identifier, Children, Loader, Action> => ({
   ...self,
   annotations: annotateValue(self.annotations, tag, value),
 })
@@ -206,10 +264,12 @@ export const annotateRouteMerge = <
   SearchOutput extends Route.Search,
   Identifier extends string | undefined,
   Children extends ReadonlyArray<Route.AnyDefinition>,
+  Loader extends Route.AnyLoaderDescriptor | undefined,
+  Action extends Route.AnyActionDescriptor | undefined,
 >(
-  self: RouteDefinition<Content, ParamsOutput, SearchOutput, Identifier, Children>,
+  self: RouteDefinition<Content, ParamsOutput, SearchOutput, Identifier, Children, Loader, Action>,
   annotations: Route.Annotations,
-): RouteDefinition<Content, ParamsOutput, SearchOutput, Identifier, Children> => ({
+): RouteDefinition<Content, ParamsOutput, SearchOutput, Identifier, Children, Loader, Action> => ({
   ...self,
   annotations: mergeAnnotations(self.annotations, annotations),
 })

@@ -2,7 +2,7 @@ import type * as Loom from "@effectify/loom"
 import { Router } from "@effectify/loom-router"
 import { appRouter, bodyForResult, resolveAppRequest } from "../src/router.js"
 import { counterRouteId } from "../src/routes/counter-route.js"
-import { todoRouteId } from "../src/routes/todo-route.js"
+import { todoPageRoute, todoRouteId } from "../src/routes/todo-route.js"
 
 type Equal<Left, Right> = (<Value>() => Value extends Left ? 1 : 2) extends <Value>() => Value extends Right ? 1 : 2
   ? true
@@ -10,7 +10,7 @@ type Equal<Left, Right> = (<Value>() => Value extends Left ? 1 : 2) extends <Val
 type Expect<Value extends true> = Value
 
 const homeHref = Router.href(appRouter, counterRouteId)
-const todoHref = Router.href(appRouter, todoRouteId)
+const todoHref = Router.href(appRouter, todoPageRoute)
 const homeBody: Loom.View.Child = bodyForResult(resolveAppRequest("https://effectify.dev/"))
 const todoBody: Loom.View.Child = bodyForResult(resolveAppRequest("https://effectify.dev/todos"))
 

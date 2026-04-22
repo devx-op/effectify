@@ -12,7 +12,7 @@ import { mergeAnnotations } from "./internal/annotations.js"
 import { reflectRoutes } from "./internal/reflection.js"
 import * as internal from "./internal/router.js"
 
-type KnownRoute = Route.Definition<any, any, any, any, any>
+type KnownRoute = Route.AnyDefinition
 
 export interface Options<Routes extends ReadonlyArray<KnownRoute> = ReadonlyArray<KnownRoute>> {
   readonly routes: Routes
@@ -64,7 +64,7 @@ export interface ReflectOptions {
     | ((
       options: {
         readonly group: RouteGroup.Definition | undefined
-        readonly route: Route.Definition<any, any, any, any, any>
+        readonly route: Route.AnyDefinition
       },
     ) => boolean)
     | undefined
@@ -76,9 +76,9 @@ export interface ReflectOptions {
     | undefined
   readonly onRoute: (options: {
     readonly group: RouteGroup.Definition | undefined
-    readonly route: Route.Definition<any, any, any, any, any>
+    readonly route: Route.AnyDefinition
     readonly path: Route.AbsolutePath
-    readonly parents: ReadonlyArray<Route.Definition<any, any, any, any, any>>
+    readonly parents: ReadonlyArray<Route.AnyDefinition>
     readonly mergedAnnotations: Route.Annotations
     readonly layouts: ReadonlyArray<Layout.Definition>
     readonly fallback: Fallback.Boundaries
@@ -101,7 +101,7 @@ export interface InvalidInputContext {
 export interface ResolveSuccess<Params extends Route.Params = Route.Params, Query extends Route.Search = Route.Search> {
   readonly _tag: "LoomRouterResolveSuccess"
   readonly context: Context<Params, Query>
-  readonly route: Route.Definition<unknown, Params, Query, any, any>
+  readonly route: Route.Definition<unknown, Params, Query, any, any, any, any>
   readonly output: Renderable.Type
   readonly diagnostics: ReadonlyArray<Loom.Diagnostics.Report>
   readonly diagnosticSummary: ReadonlyArray<Loom.Diagnostics.Summary>
@@ -119,7 +119,7 @@ export interface ResolveNotFound {
 export interface ResolveInvalidInput {
   readonly _tag: "LoomRouterResolveInvalidInput"
   readonly context: Context
-  readonly route: Route.Definition<any, any, any, any, any> | undefined
+  readonly route: Route.AnyDefinition | undefined
   readonly issues: ReadonlyArray<Decode.Issue>
   readonly fallback: Fallback.Definition | undefined
   readonly output: Renderable.Type | undefined

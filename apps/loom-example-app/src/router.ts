@@ -26,7 +26,7 @@ const notFoundView = (context: RouterTypes.Context): Loom.View.ViewChild =>
 
 export const appRouter = Router.make({
   layout: Layout.make(({ child }) => Component.use(appShell, child)),
-  routes: [counterPageRoute, todoPageRoute],
+  routes: [counterPageRoute, todoPageRoute] as const,
   fallback: {
     notFound: Fallback.make(notFoundView),
   },

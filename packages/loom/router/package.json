@@ -20,6 +20,7 @@
       "import": "./src/index.ts",
       "default": "./src/index.ts"
     },
+    "./ActionInput": "./src/action-input.ts",
     "./Decode": "./src/decode.ts",
     "./Fallback": "./src/fallback.ts",
     "./Layout": "./src/layout.ts",
@@ -28,7 +29,8 @@
     "./Navigation": "./src/navigation.ts",
     "./Route": "./src/route.ts",
     "./RouteGroup": "./src/route-group.ts",
-    "./Router": "./src/router.ts"
+    "./Router": "./src/router.ts",
+    "./Runtime": "./src/router-runtime.ts"
   },
   "dependencies": {
     "effect": "catalog:",

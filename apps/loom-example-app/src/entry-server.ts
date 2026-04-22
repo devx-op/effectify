@@ -1,6 +1,7 @@
 import { LoomNitro } from "@effectify/loom-nitro"
 import { Resumability } from "@effectify/loom"
 import { appBuildId, appPayloadElementId, appRootId } from "./app-config.js"
+import { prepareRouteRuntime } from "./router-runtime.js"
 import { bodyForResult, resolveAppRequest, statusForResult, titleForResult } from "./router.js"
 import { createDocument } from "./document.js"
 
@@ -34,11 +35,15 @@ export const createServerRenderer = (): LoomNitro.LoomNitroRenderer => {
     buildId: appBuildId,
     rootId: appRootId,
     render: (request) => {
-      const result = resolveAppRequest(normalizeRequestUrl(request.url))
+      const requestUrl = normalizeRequestUrl(request.url)
 
-      return createDocument({
-        title: titleForResult(result),
-        body: bodyForResult(result),
+      return prepareRouteRuntime(requestUrl).then(() => {
+        const result = resolveAppRequest(requestUrl)
+
+        return createDocument({
+          title: titleForResult(result),
+          body: bodyForResult(result),
+        })
       })
     },
     response: (request) => {

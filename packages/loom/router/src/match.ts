@@ -4,7 +4,7 @@ import type * as Layout from "./layout.js"
 import type * as Route from "./route.js"
 
 export interface RouteMatch {
-  readonly route: Route.Definition<any, any, any, any>
+  readonly route: Route.AnyDefinition
   readonly pathname: string
   readonly params: Route.Params
 }
@@ -17,7 +17,7 @@ export interface Success<
   readonly _tag: "LoomRouterMatchSuccess"
   readonly url: URL
   readonly pathname: string
-  readonly route: Route.Definition<Content, Params, Search, any>
+  readonly route: Route.Definition<Content, Params, Search, any, any, any, any>
   readonly params: Params
   readonly search: Search
   readonly layout: Layout.Definition | undefined
@@ -29,7 +29,7 @@ export interface Miss<Content = unknown> {
   readonly url: URL
   readonly pathname: string
   readonly fallback: Fallback.Definition<Content> | undefined
-  readonly route: Route.Definition<any, any, any, any> | undefined
+  readonly route: Route.AnyDefinition | undefined
   readonly params: Route.Params
   readonly search: Route.Search
   readonly matches: ReadonlyArray<RouteMatch>
@@ -43,7 +43,7 @@ export interface DecodeFailure<
   readonly _tag: "LoomRouterMatchDecodeFailure"
   readonly url: URL
   readonly pathname: string
-  readonly route: Route.Definition<Content, Params, Search, any>
+  readonly route: Route.Definition<Content, Params, Search, any, any, any, any>
   readonly params: Route.Params
   readonly search: Route.Search
   readonly issues: ReadonlyArray<Decode.Issue>

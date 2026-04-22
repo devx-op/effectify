@@ -1,8 +1,10 @@
 import { dual } from "effect/Function"
 import type * as ServiceMap from "effect/ServiceMap"
+import type * as ActionInputDecode from "./action-input.js"
 import type * as Decode from "./decode.js"
 import type * as Fallback from "./fallback.js"
 import type * as Layout from "./layout.js"
+import type * as Router from "./router.js"
 import type { Annotations } from "./internal/annotations.js"
 import { emptyAnnotations, getAnnotation as getAnnotationValue } from "./internal/annotations.js"
 import { buildUrl, normalizePathname, validateHrefInput } from "./internal/path.js"
@@ -28,7 +30,59 @@ export interface DecodeOptions<ParamsOutput extends Params = Params, SearchOutpu
   readonly search?: Decode.DecoderLike<Search, SearchOutput>
 }
 
-export type AnyDefinition = Definition<any, any, any, any, any>
+export type Awaitable<Value> = Value | PromiseLike<Value>
+
+export interface LoaderInput<
+  ParamsOutput extends Params = Params,
+  SearchOutput extends Search = Search,
+  Services = never,
+> {
+  readonly context: Router.Context<ParamsOutput, SearchOutput>
+  readonly services: Services
+}
+
+export interface LoaderDescriptor<
+  ParamsOutput extends Params = Params,
+  SearchOutput extends Search = Search,
+  Data = unknown,
+  Error = unknown,
+  Services = never,
+> {
+  readonly _tag?: "LoomRouterLoaderDescriptor"
+  readonly load: (input: LoaderInput<ParamsOutput, SearchOutput, Services>) => Awaitable<Data>
+  readonly mapError: (cause: unknown) => Error
+}
+
+export interface ActionInput<
+  ParamsOutput extends Params = Params,
+  SearchOutput extends Search = Search,
+  Input = unknown,
+  Services = never,
+> {
+  readonly context: Router.Context<ParamsOutput, SearchOutput>
+  readonly input: Input
+  readonly services: Services
+}
+
+export interface ActionDescriptor<
+  ParamsOutput extends Params = Params,
+  SearchOutput extends Search = Search,
+  Input = unknown,
+  Result = unknown,
+  Error = unknown,
+  Services = never,
+> {
+  readonly _tag?: "LoomRouterActionDescriptor"
+  readonly decodeInput?: ActionInputDecode.DecoderLike<Input>
+  readonly handle: (input: ActionInput<ParamsOutput, SearchOutput, Input, Services>) => Awaitable<Result>
+  readonly mapError: (cause: unknown) => Error
+}
+
+export type AnyLoaderDescriptor = LoaderDescriptor<any, any, any, any, any>
+
+export type AnyActionDescriptor = ActionDescriptor<any, any, any, any, any, any>
+
+export type AnyDefinition = Definition<any, any, any, any, any, any, any>
 
 interface CommonOptions<
   Content,
@@ -89,7 +143,9 @@ export type Definition<
   SearchOutput extends Search = Search,
   Identifier extends string | undefined = undefined,
   Children extends ReadonlyArray<AnyDefinition> = readonly [],
-> = internal.RouteDefinition<Content, ParamsOutput, SearchOutput, Identifier, Children>
+  Loader extends AnyLoaderDescriptor | undefined = undefined,
+  Action extends AnyActionDescriptor | undefined = undefined,
+> = internal.RouteDefinition<Content, ParamsOutput, SearchOutput, Identifier, Children, Loader, Action>
 
 export interface ReflectOptions {
   readonly predicate?: ((options: { readonly route: Definition; readonly path: AbsolutePath }) => boolean) | undefined
@@ -110,8 +166,10 @@ export interface HrefOptions<ParamsOutput extends Params = Params, SearchOutput 
 }
 
 /** Extract the content type stored on a route definition. */
-export type Content<Self extends Definition<any, any, any, any, any>> = Self extends Definition<
+export type Content<Self extends AnyDefinition> = Self extends Definition<
   infer Value,
+  any,
+  any,
   any,
   any,
   any,
@@ -120,23 +178,68 @@ export type Content<Self extends Definition<any, any, any, any, any>> = Self ext
   : never
 
 /** Extract the decoded params type stored on a route definition. */
-export type ParamsOf<Self extends Definition<any, any, any, any, any>> = Self extends
-  Definition<any, infer Value, any, any, any> ? Value
+export type ParamsOf<Self extends AnyDefinition> = Self extends Definition<any, infer Value, any, any, any, any, any>
+  ? Value
   : never
 
 /** Extract the decoded search type stored on a route definition. */
-export type SearchOf<Self extends Definition<any, any, any, any, any>> = Self extends
-  Definition<any, any, infer Value, any, any> ? Value
+export type SearchOf<Self extends AnyDefinition> = Self extends Definition<any, any, infer Value, any, any, any, any>
+  ? Value
   : never
 
 /** Extract the identifier type stored on a route definition. */
-export type IdentifierOf<Self extends Definition<any, any, any, any, any>> = Self extends
-  Definition<any, any, any, infer Value, any> ? Value
+export type IdentifierOf<Self extends AnyDefinition> = Self extends
+  Definition<any, any, any, infer Value, any, any, any> ? Value
   : never
 
 /** Extract the concrete child route tuple stored on a route definition. */
 export type ChildrenOf<Self extends AnyDefinition> = Self extends Definition<any, any, any, any, infer Children>
   ? Children
+  : never
+
+/** Extract the loader descriptor stored on a route definition. */
+export type LoaderOf<Self extends AnyDefinition> = Self extends Definition<any, any, any, any, any, infer Loader, any>
+  ? Loader
+  : never
+
+/** Extract the action descriptor stored on a route definition. */
+export type ActionOf<Self extends AnyDefinition> = Self extends Definition<any, any, any, any, any, any, infer Action>
+  ? Action
+  : never
+
+/** Extract the loaded data type stored on a route definition. */
+export type LoadedDataOf<Self extends AnyDefinition> = LoaderOf<Self> extends
+  LoaderDescriptor<any, any, infer Data, any, any> ? Data
+  : never
+
+/** Extract the loader error type stored on a route definition. */
+export type LoaderErrorOf<Self extends AnyDefinition> = LoaderOf<Self> extends
+  LoaderDescriptor<any, any, any, infer Error, any> ? Error
+  : never
+
+/** Extract the action input type stored on a route definition. */
+export type ActionInputOf<Self extends AnyDefinition> = ActionOf<Self> extends
+  ActionDescriptor<any, any, infer Input, any, any, any> ? Input
+  : never
+
+/** Extract the action success type stored on a route definition. */
+export type ActionResultOf<Self extends AnyDefinition> = ActionOf<Self> extends
+  ActionDescriptor<any, any, any, infer Result, any, any> ? Result
+  : never
+
+/** Extract the action error type stored on a route definition. */
+export type ActionErrorOf<Self extends AnyDefinition> = ActionOf<Self> extends
+  ActionDescriptor<any, any, any, any, infer Error, any> ? Error
+  : never
+
+/** Extract the loader services type stored on a route definition. */
+export type LoaderServicesOf<Self extends AnyDefinition> = LoaderOf<Self> extends
+  LoaderDescriptor<any, any, any, any, infer Services> ? Services
+  : never
+
+/** Extract the action services type stored on a route definition. */
+export type ActionServicesOf<Self extends AnyDefinition> = ActionOf<Self> extends
+  ActionDescriptor<any, any, any, any, any, infer Services> ? Services
   : never
 
 type DescendantsFromChildren<Children extends ReadonlyArray<AnyDefinition>> = Children[number] extends infer Child
@@ -337,6 +440,138 @@ export const annotateMerge: {
 ): Definition<Content, ParamsOutput, SearchOutput, Identifier, Children> =>
   internal.annotateRouteMerge(self, annotations))
 
+/** Attach a loader descriptor to a route without executing it during assembly. */
+export const loader: {
+  <ParamsOutput extends Params, SearchOutput extends Search, Data, Error, Services>(
+    descriptor: LoaderDescriptor<ParamsOutput, SearchOutput, Data, Error, Services>,
+  ): <
+    Content,
+    Identifier extends string | undefined,
+    Children extends ReadonlyArray<AnyDefinition>,
+    Action extends AnyActionDescriptor | undefined,
+  >(
+    self: Definition<Content, ParamsOutput, SearchOutput, Identifier, Children, any, Action>,
+  ) => Definition<
+    Content,
+    ParamsOutput,
+    SearchOutput,
+    Identifier,
+    Children,
+    LoaderDescriptor<ParamsOutput, SearchOutput, Data, Error, Services>,
+    Action
+  >
+  <
+    Content,
+    ParamsOutput extends Params,
+    SearchOutput extends Search,
+    Identifier extends string | undefined,
+    Children extends ReadonlyArray<AnyDefinition>,
+    Action extends AnyActionDescriptor | undefined,
+    Data,
+    Error,
+    Services,
+  >(
+    self: Definition<Content, ParamsOutput, SearchOutput, Identifier, Children, any, Action>,
+    descriptor: LoaderDescriptor<ParamsOutput, SearchOutput, Data, Error, Services>,
+  ): Definition<
+    Content,
+    ParamsOutput,
+    SearchOutput,
+    Identifier,
+    Children,
+    LoaderDescriptor<ParamsOutput, SearchOutput, Data, Error, Services>,
+    Action
+  >
+} = dual(2, <
+  Content,
+  ParamsOutput extends Params,
+  SearchOutput extends Search,
+  Identifier extends string | undefined,
+  Children extends ReadonlyArray<AnyDefinition>,
+  Action extends AnyActionDescriptor | undefined,
+  Data,
+  Error,
+  Services,
+>(
+  self: Definition<Content, ParamsOutput, SearchOutput, Identifier, Children, any, Action>,
+  descriptor: LoaderDescriptor<ParamsOutput, SearchOutput, Data, Error, Services>,
+): Definition<
+  Content,
+  ParamsOutput,
+  SearchOutput,
+  Identifier,
+  Children,
+  LoaderDescriptor<ParamsOutput, SearchOutput, Data, Error, Services>,
+  Action
+> => internal.attachLoader(self, descriptor))
+
+/** Attach an action descriptor to a route without executing it during assembly. */
+export const action: {
+  <ParamsOutput extends Params, SearchOutput extends Search, Input, Result, Error, Services>(
+    descriptor: ActionDescriptor<ParamsOutput, SearchOutput, Input, Result, Error, Services>,
+  ): <
+    Content,
+    Identifier extends string | undefined,
+    Children extends ReadonlyArray<AnyDefinition>,
+    Loader extends AnyLoaderDescriptor | undefined,
+  >(
+    self: Definition<Content, ParamsOutput, SearchOutput, Identifier, Children, Loader, any>,
+  ) => Definition<
+    Content,
+    ParamsOutput,
+    SearchOutput,
+    Identifier,
+    Children,
+    Loader,
+    ActionDescriptor<ParamsOutput, SearchOutput, Input, Result, Error, Services>
+  >
+  <
+    Content,
+    ParamsOutput extends Params,
+    SearchOutput extends Search,
+    Identifier extends string | undefined,
+    Children extends ReadonlyArray<AnyDefinition>,
+    Loader extends AnyLoaderDescriptor | undefined,
+    Input,
+    Result,
+    Error,
+    Services,
+  >(
+    self: Definition<Content, ParamsOutput, SearchOutput, Identifier, Children, Loader, any>,
+    descriptor: ActionDescriptor<ParamsOutput, SearchOutput, Input, Result, Error, Services>,
+  ): Definition<
+    Content,
+    ParamsOutput,
+    SearchOutput,
+    Identifier,
+    Children,
+    Loader,
+    ActionDescriptor<ParamsOutput, SearchOutput, Input, Result, Error, Services>
+  >
+} = dual(2, <
+  Content,
+  ParamsOutput extends Params,
+  SearchOutput extends Search,
+  Identifier extends string | undefined,
+  Children extends ReadonlyArray<AnyDefinition>,
+  Loader extends AnyLoaderDescriptor | undefined,
+  Input,
+  Result,
+  Error,
+  Services,
+>(
+  self: Definition<Content, ParamsOutput, SearchOutput, Identifier, Children, Loader, any>,
+  descriptor: ActionDescriptor<ParamsOutput, SearchOutput, Input, Result, Error, Services>,
+): Definition<
+  Content,
+  ParamsOutput,
+  SearchOutput,
+  Identifier,
+  Children,
+  Loader,
+  ActionDescriptor<ParamsOutput, SearchOutput, Input, Result, Error, Services>
+> => internal.attachAction(self, descriptor))
+
 /** Read the stable route path. */
 export const path = <
   Content,
@@ -378,6 +613,42 @@ export const children = <
 >(
   self: Definition<Content, ParamsOutput, SearchOutput, Identifier, Children>,
 ): Children => self.children
+
+/** Read the optional loader descriptor stored on a route. */
+export const getLoader = <
+  Content,
+  ParamsOutput extends Params,
+  SearchOutput extends Search,
+  Identifier extends string | undefined,
+  Children extends ReadonlyArray<AnyDefinition>,
+  Loader extends AnyLoaderDescriptor | undefined,
+  Action extends AnyActionDescriptor | undefined,
+>(
+  self: Definition<Content, ParamsOutput, SearchOutput, Identifier, Children, Loader, Action>,
+): Loader => self.loader
+
+/** Read the optional action descriptor stored on a route. */
+export const getAction = <
+  Content,
+  ParamsOutput extends Params,
+  SearchOutput extends Search,
+  Identifier extends string | undefined,
+  Children extends ReadonlyArray<AnyDefinition>,
+  Loader extends AnyLoaderDescriptor | undefined,
+  Action extends AnyActionDescriptor | undefined,
+>(
+  self: Definition<Content, ParamsOutput, SearchOutput, Identifier, Children, Loader, Action>,
+): Action => self.action
+
+/** Check whether a route has a loader descriptor attached. */
+export const hasLoader = <Self extends AnyDefinition>(
+  self: Self,
+): self is Self & { readonly loader: Exclude<LoaderOf<Self>, undefined> } => self.loader !== undefined
+
+/** Check whether a route has an action descriptor attached. */
+export const hasAction = <Self extends AnyDefinition>(
+  self: Self,
+): self is Self & { readonly action: Exclude<ActionOf<Self>, undefined> } => self.action !== undefined
 
 /** Read a single annotation value from a merged annotation map. */
 export const getAnnotation = <I, S>(annotations: Annotations, tag: ServiceMap.Key<I, S>): unknown =>
