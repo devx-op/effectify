@@ -72,6 +72,14 @@
       "sessions": 0,
       "memories": 5,
       "prompts": 1
+    },
+    {
+      "id": "5f70b832",
+      "created_by": "andres",
+      "created_at": "2026-04-22T19:29:00Z",
+      "sessions": 194,
+      "memories": 618,
+      "prompts": 264
     }
   ]
 }
