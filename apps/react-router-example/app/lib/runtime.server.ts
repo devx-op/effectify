@@ -18,6 +18,8 @@ const prismaLayer = Prisma.layer({
   log: ["query", "info", "warn", "error"],
 })
 
+const resolveHatchetToken = () => process.env.HATCHET_CLIENT_TOKEN ?? process.env.HATCHET_TOKEN ?? ""
+
 export const BaseAppLayer = Layer.mergeAll(
   authLayer,
   prismaLayer,
@@ -25,7 +27,7 @@ export const BaseAppLayer = Layer.mergeAll(
 
 const hatchetConfig = {
   host: process.env.HATCHET_HOST ?? "localhost:7077",
-  token: process.env.HATCHET_TOKEN ?? "",
+  token: resolveHatchetToken(),
   namespace: process.env.HATCHET_NAMESPACE,
 } satisfies HatchetConfigType
 

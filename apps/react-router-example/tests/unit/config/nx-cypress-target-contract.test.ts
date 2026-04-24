@@ -30,6 +30,64 @@ describe("Nx Cypress target contract", () => {
     )
   })
 
+  it("adds an explicit opt-in Hatchet dev workflow instead of forcing Docker into the default dev target", () => {
+    const projectJson = readJson<{
+      targets?: Record<
+        string,
+        {
+          executor?: string
+          continuous?: boolean
+          cache?: boolean
+          dependsOn?: string[]
+          parallelism?: boolean
+          options?: Record<string, string | number | boolean>
+        }
+      >
+    }>(resolve(workspaceRoot, "apps/react-router-example/project.json"))
+
+    expect(projectJson.targets?.["hatchet:status"]?.options?.command).toBe(
+      "node ./scripts/ensure-hatchet.mjs status",
+    )
+    expect(projectJson.targets?.["hatchet:up"]?.options?.command).toBe(
+      "node ./scripts/ensure-hatchet.mjs up",
+    )
+    expect(projectJson.targets?.["hatchet:ensure"]?.options?.command).toBe(
+      "node ./scripts/ensure-hatchet.mjs ensure",
+    )
+    expect(projectJson.targets?.["hatchet:down"]?.options?.command).toBe(
+      "docker compose -f docker-compose.yml down",
+    )
+    expect(projectJson.targets?.["hatchet:ensure"]?.parallelism).toBe(false)
+    expect(projectJson.targets?.["hatchet:status"]?.cache).toBe(false)
+    expect(projectJson.targets?.["hatchet:status"]?.options?.env).toEqual({
+      HATCHET_GRPC_PORT: "7177",
+      HATCHET_UI_PORT: "8899",
+      HATCHET_HOST: "localhost:7177",
+      HATCHET_API_URL: "http://localhost:8899",
+      HATCHET_SERVER_URL: "http://localhost:8899",
+    })
+    expect(projectJson.targets?.["dev:hatchet"]?.executor).toBe("nx:run-commands")
+    expect(projectJson.targets?.["dev:hatchet"]?.continuous).toBe(true)
+    expect(projectJson.targets?.["dev:hatchet"]?.cache).toBe(false)
+    expect(projectJson.targets?.["dev:hatchet"]?.parallelism).toBe(false)
+    expect(projectJson.targets?.["dev:hatchet"]?.dependsOn).toEqual([
+      "hatchet:ensure",
+      "^build",
+    ])
+    expect(projectJson.targets?.["dev:hatchet"]?.options).toEqual({
+      command: "pnpm run dev",
+      cwd: "apps/react-router-example",
+      env: {
+        HATCHET_GRPC_PORT: "7177",
+        HATCHET_UI_PORT: "8899",
+        HATCHET_HOST: "localhost:7177",
+        HATCHET_API_URL: "http://localhost:8899",
+        HATCHET_SERVER_URL: "http://localhost:8899",
+      },
+      forwardAllArgs: false,
+    })
+  })
+
   it("uses the React Router build script as the single build artifact producer", () => {
     const projectJson = readJson<{
       targets?: {
