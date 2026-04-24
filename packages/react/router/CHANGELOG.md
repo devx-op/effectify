@@ -1,3 +1,13 @@
+## 1.0.0-alpha.1 (2026-04-24)
+
+### 🚀 Features
+
+- **hatchet:** complete Effect-first Hatchet integration slices
+
+### ❤️ Thank You
+
+- Andres David Jimenez @kattsushi
+
 ## 1.0.0-alpha.0 (2026-03-27)
 
 ### 🚀 Features
