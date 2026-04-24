@@ -1,6 +1,6 @@
 {
   "name": "@effectify/react-router",
-  "version": "1.0.0-alpha.0",
+  "version": "1.0.0-alpha.1",
   "description": "Integration of React Router with Effect for React applications",
   "repository": {
     "type": "git",
