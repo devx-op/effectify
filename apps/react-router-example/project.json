@@ -8,6 +8,7 @@
   "targets": {
     "test": {
       "executor": "nx:run-commands",
+      "dependsOn": ["prisma:generate"],
       "options": {
         "command": "vitest run",
         "cwd": "apps/react-router-example"
