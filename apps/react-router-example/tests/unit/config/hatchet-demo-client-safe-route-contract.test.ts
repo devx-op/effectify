@@ -1,10 +1,9 @@
 import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
 import { describe, expect, it } from "vitest"
+import process from "node:process"
 
-const appRoot = resolve(
-  "/home/andresdavid/devx-ops/effectify/apps/react-router-example",
-)
+const appRoot = resolve(process.cwd())
 
 const hatchetDemoFiles = [
   "app/routes/hatchet-demo/runs/route.tsx",
