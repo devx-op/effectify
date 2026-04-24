@@ -6,6 +6,14 @@
   "tags": [],
   "// targets": "to see all targets run: nx show project react-router-example --web",
   "targets": {
+    "test": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["prisma:generate"],
+      "options": {
+        "command": "vitest run",
+        "cwd": "apps/react-router-example"
+      }
+    },
     "typecheck": {
       "executor": "nx:run-commands",
       "options": {
@@ -29,20 +37,111 @@
         "cwd": "apps/react-router-example"
       }
     },
-    "build": {
-      "executor": "@nx/vite:build",
-      "outputs": ["{options.outputPath}"],
-      "defaultConfiguration": "production",
+    "hatchet:status": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "parallelism": false,
       "options": {
-        "outputPath": "dist/apps/react-router-example"
-      },
-      "configurations": {
-        "development": {
-          "mode": "development"
+        "command": "node ./scripts/ensure-hatchet.mjs status",
+        "cwd": "apps/react-router-example",
+        "env": {
+          "HATCHET_GRPC_PORT": "7177",
+          "HATCHET_UI_PORT": "8899",
+          "HATCHET_HOST": "localhost:7177",
+          "HATCHET_API_URL": "http://localhost:8899",
+          "HATCHET_SERVER_URL": "http://localhost:8899"
         },
-        "production": {
-          "mode": "production"
-        }
+        "forwardAllArgs": false
+      }
+    },
+    "hatchet:up": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "parallelism": false,
+      "options": {
+        "command": "node ./scripts/ensure-hatchet.mjs up",
+        "cwd": "apps/react-router-example",
+        "env": {
+          "HATCHET_GRPC_PORT": "7177",
+          "HATCHET_UI_PORT": "8899",
+          "HATCHET_HOST": "localhost:7177",
+          "HATCHET_API_URL": "http://localhost:8899",
+          "HATCHET_SERVER_URL": "http://localhost:8899"
+        },
+        "forwardAllArgs": false
+      }
+    },
+    "hatchet:down": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "parallelism": false,
+      "options": {
+        "command": "docker compose -f docker-compose.yml down",
+        "cwd": "apps/react-router-example",
+        "env": {
+          "HATCHET_GRPC_PORT": "7177",
+          "HATCHET_UI_PORT": "8899",
+          "HATCHET_HOST": "localhost:7177",
+          "HATCHET_API_URL": "http://localhost:8899",
+          "HATCHET_SERVER_URL": "http://localhost:8899"
+        },
+        "forwardAllArgs": false
+      }
+    },
+    "hatchet:ensure": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "parallelism": false,
+      "options": {
+        "command": "node ./scripts/ensure-hatchet.mjs ensure",
+        "cwd": "apps/react-router-example",
+        "env": {
+          "HATCHET_GRPC_PORT": "7177",
+          "HATCHET_UI_PORT": "8899",
+          "HATCHET_HOST": "localhost:7177",
+          "HATCHET_API_URL": "http://localhost:8899",
+          "HATCHET_SERVER_URL": "http://localhost:8899"
+        },
+        "forwardAllArgs": false
+      }
+    },
+    "dev:hatchet": {
+      "executor": "nx:run-commands",
+      "continuous": true,
+      "cache": false,
+      "parallelism": false,
+      "dependsOn": ["hatchet:ensure", "^build"],
+      "options": {
+        "command": "pnpm run dev",
+        "cwd": "apps/react-router-example",
+        "env": {
+          "HATCHET_GRPC_PORT": "7177",
+          "HATCHET_UI_PORT": "8899",
+          "HATCHET_HOST": "localhost:7177",
+          "HATCHET_API_URL": "http://localhost:8899",
+          "HATCHET_SERVER_URL": "http://localhost:8899"
+        },
+        "forwardAllArgs": false
+      }
+    },
+    "start": {
+      "executor": "nx:run-commands",
+      "continuous": true,
+      "dependsOn": ["build"],
+      "options": {
+        "command": "PORT={args.port} react-router-serve build/server/index.js",
+        "cwd": "apps/react-router-example",
+        "port": 3100,
+        "readyWhen": "[react-router-serve] http://localhost:3100",
+        "forwardAllArgs": false
+      }
+    },
+    "// build-contract": "React Router owns the build/server + build/client artifact tree consumed by the Nx start/e2e flow.",
+    "build": {
+      "executor": "nx:run-script",
+      "outputs": ["{projectRoot}/build"],
+      "options": {
+        "script": "build"
       },
       "dependsOn": ["typegen", "prisma:generate", "^build"]
     }

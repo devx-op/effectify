@@ -1,0 +1,41 @@
+{
+  "name": "@effectify/hatchet",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/hatchet/src",
+  "projectType": "library",
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "defaultConfiguration": "production",
+      "options": {
+        "outputPath": "packages/hatchet/dist",
+        "main": "packages/hatchet/src/index.ts",
+        "tsConfig": "packages/hatchet/tsconfig.lib.json",
+        "format": ["esm"],
+        "generatePackageJson": false,
+        "updateBuildableProjectDepsInPackageJson": false,
+        "additionalEntryPoints": []
+      },
+      "configurations": {
+        "development": {},
+        "production": {}
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "vitest run",
+        "cwd": "packages/hatchet"
+      }
+    },
+    "lint": {
+      "executor": "nx-oxlint:lint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["packages/hatchet/**/*.{ts,tsx,js,jsx}"]
+      }
+    }
+  },
+  "tags": ["node", "react", "hatchet"]
+}

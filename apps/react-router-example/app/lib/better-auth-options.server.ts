@@ -4,8 +4,10 @@ import type { BetterAuthOptions } from "better-auth/types"
 import type Database from "better-sqlite3"
 import { database } from "./prisma.js"
 
+const defaultBetterAuthUrl = process.env.BETTER_AUTH_URL ?? "http://localhost:4200"
+
 export const authOptions = {
-  baseURL: "http://localhost:3001", // Point to the actual auth server
+  baseURL: defaultBetterAuthUrl,
   secret: "hola",
   emailAndPassword: {
     enabled: true,

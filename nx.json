@@ -13,7 +13,10 @@
       "default",
       "!{projectRoot}/**/?(*.)+(spec|test).[jt]s?(x)?(.snap)",
       "!{projectRoot}/tsconfig.spec.json",
-      "!{projectRoot}/src/test-setup.[jt]s"
+      "!{projectRoot}/src/test-setup.[jt]s",
+      "!{projectRoot}/cypress/**/*",
+      "!{projectRoot}/**/*.cy.[jt]s?(x)",
+      "!{projectRoot}/cypress.config.[jt]s"
     ],
     "sharedGlobals": []
   },
@@ -77,6 +80,15 @@
         "apps/react-app-remix/**/*",
         "apps/minimal-example/**/*"
       ]
+    },
+    {
+      "plugin": "@nx/cypress/plugin",
+      "options": {
+        "targetName": "cypress:e2e",
+        "openTargetName": "open-cypress",
+        "componentTestingTargetName": "component-test",
+        "ciTargetName": "e2e-ci"
+      }
     }
   ],
   "release": {
@@ -88,7 +100,8 @@
       "packages/node/better-auth",
       "packages/solid/query",
       "packages/react/router-better-auth",
-      "packages/prisma"
+      "packages/prisma",
+      "packages/hatchet"
     ],
     "changelog": {
       "automaticFromRef": "HEAD~100",

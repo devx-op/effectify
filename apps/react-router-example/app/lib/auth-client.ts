@@ -1,8 +1,8 @@
 import { createAuthClient } from "better-auth/react"
 
-// Create auth client - now using proxy (same origin)
+// Empty baseURL keeps better-auth on the current app origin.
 export const authClient = createAuthClient({
-  baseURL: "", // Empty = same origin, requests go through Vite proxy to localhost:3001
+  baseURL: "",
 })
 
 // Simple wrapper functions

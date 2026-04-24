@@ -40,6 +40,38 @@
       "sessions": 15,
       "memories": 15,
       "prompts": 0
+    },
+    {
+      "id": "a5edc791",
+      "created_by": "andresdavid",
+      "created_at": "2026-03-28T14:48:36Z",
+      "sessions": 7,
+      "memories": 7,
+      "prompts": 36
+    },
+    {
+      "id": "93ab66ef",
+      "created_by": "andresdavid",
+      "created_at": "2026-04-13T14:22:20Z",
+      "sessions": 56,
+      "memories": 307,
+      "prompts": 173
+    },
+    {
+      "id": "7a4c6d32",
+      "created_by": "andresdavid",
+      "created_at": "2026-04-24T05:33:11Z",
+      "sessions": 51,
+      "memories": 242,
+      "prompts": 155
+    },
+    {
+      "id": "f0ba0a7e",
+      "created_by": "andresdavid",
+      "created_at": "2026-04-24T05:34:56Z",
+      "sessions": 0,
+      "memories": 5,
+      "prompts": 1
     }
   ]
 }

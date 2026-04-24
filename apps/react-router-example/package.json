@@ -4,11 +4,13 @@
   "type": "module",
   "scripts": {
     "typecheck": "react-router typegen && tsc",
+    "build": "react-router build",
     "dev": "react-router dev",
     "prisma:generate": "pnpm dlx prisma generate"
   },
   "sideEffects": false,
   "dependencies": {
+    "@effectify/hatchet": "workspace:*",
     "@effectify/node-better-auth": "workspace:*",
     "@effectify/react-query": "workspace:*",
     "@effectify/react-router": "workspace:*",
@@ -35,6 +37,8 @@
     "@types/better-sqlite3": "7.6.13",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
-    "prisma": "catalog:"
+    "@vitest/coverage-v8": "catalog:",
+    "prisma": "catalog:",
+    "vitest": "catalog:"
   }
 }

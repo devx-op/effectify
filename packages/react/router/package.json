@@ -16,10 +16,11 @@
   },
   "exports": {
     ".": {
-      "@effectify/source": "./src/index.ts",
       "types": "./dist/src/index.d.ts",
       "import": "./dist/src/index.js",
-      "default": "./dist/src/index.js"
+      "default": "./dist/src/index.js",
+      "node": "./dist/src/index.js",
+      "nodejs": "./dist/src/index.js"
     }
   },
   "files": [

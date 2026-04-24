@@ -27,25 +27,11 @@ export default defineConfig({
   root: __dirname,
   cacheDir: "../../node_modules/.vite/apps/react-app-router-fm",
   server: {
-    port: 3000,
+    port: 4200,
     host: "localhost",
-    proxy: {
-      "/api/auth": {
-        target: "http://localhost:3001",
-        changeOrigin: true,
-        configure: (proxy, options) => {
-          proxy.on("proxyReq", (proxyReq, req) => {
-            // Pass cookies from the original request
-            if (req.headers.cookie) {
-              proxyReq.setHeader("cookie", req.headers.cookie)
-            }
-          })
-        },
-      },
-    },
   },
   preview: {
-    port: 3000,
+    port: 4200,
     host: "localhost",
   },
   plugins: plugins as PluginOption[],
@@ -62,7 +48,6 @@ export default defineConfig({
   //  plugins: [ nxViteTsPaths() ],
   // },
   build: {
-    outDir: "../../dist/apps/react-app-router-example",
     emptyOutDir: true,
     reportCompressedSize: true,
     commonjsOptions: {

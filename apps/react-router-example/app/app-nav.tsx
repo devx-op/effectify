@@ -1,6 +1,15 @@
 import { NavLink, useNavigate } from "react-router"
 import { authClient } from "./lib/auth-client.js"
 
+export const NAV_ITEMS = [
+  { to: "/", label: "Home" },
+  { to: "/login", label: "Login" },
+  { to: "/signup", label: "Sign Up" },
+  { to: "/todo-app", label: "Todo App" },
+  { to: "/chat", label: "Chat Demo" },
+  { to: "/hatchet-demo", label: "Hatchet Demo" },
+] as const
+
 export function AppNav() {
   const navigate = useNavigate()
   return (
@@ -15,27 +24,19 @@ export function AppNav() {
     >
       <ul>
         <li>
-          <NavLink end to="/" style={{ fontWeight: 600 }}>
+          <NavLink discover="none" end to="/" style={{ fontWeight: 600 }}>
             Effectify
           </NavLink>
         </li>
       </ul>
       <ul>
-        <li>
-          <NavLink end to="/">
-            Home
-          </NavLink>
-        </li>
-        <li>
-          <NavLink end to="/todo-app">
-            Todo App
-          </NavLink>
-        </li>
-        <li>
-          <NavLink end to="/chat">
-            Chat Demo
-          </NavLink>
-        </li>
+        {NAV_ITEMS.map((item) => (
+          <li key={item.to}>
+            <NavLink discover="none" end to={item.to}>
+              {item.label}
+            </NavLink>
+          </li>
+        ))}
         <li>
           <button
             type="button"
