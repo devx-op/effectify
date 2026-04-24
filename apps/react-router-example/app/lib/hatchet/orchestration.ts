@@ -1,7 +1,7 @@
 import * as Cause from "effect/Cause"
 import * as Effect from "effect/Effect"
-import { getQueueMetrics, getRun, getRunStatus, getRunTaskId, getTaskMetrics, listTaskLogs } from "@effectify/hatchet"
 import { readSelectedRunId, readSelectedTaskId } from "./params.js"
+import { type HatchetModule, loadHatchetModule } from "./module.js"
 import type { HatchetWorkflowRunDetailsRecord, HatchetWorkflowRunRecord } from "./run-models.js"
 
 export interface HatchetDemoObservabilityFallback {
@@ -36,18 +36,18 @@ export interface HatchetDemoObservabilityRunData {
   readonly selectedTaskId: string
   readonly run: HatchetWorkflowRunRecord
   readonly status: string
-  readonly logs: Awaited<ReturnType<typeof listTaskLogs>> extends Effect.Effect<
+  readonly logs: Awaited<ReturnType<HatchetModule["listTaskLogs"]>> extends Effect.Effect<
     infer A,
     never,
     never
   > ? A
     : never
   readonly taskMetrics: Awaited<
-    ReturnType<typeof getTaskMetrics>
+    ReturnType<HatchetModule["getTaskMetrics"]>
   > extends Effect.Effect<infer A, never, never> ? A
     : never
   readonly queueMetrics: Awaited<
-    ReturnType<typeof getQueueMetrics>
+    ReturnType<HatchetModule["getQueueMetrics"]>
   > extends Effect.Effect<infer A, never, never> ? A
     : never
 }
@@ -55,18 +55,18 @@ export interface HatchetDemoObservabilityRunData {
 export interface HatchetDemoObservabilityTaskData {
   readonly selectedRunId?: string
   readonly selectedTaskId: string
-  readonly logs: Awaited<ReturnType<typeof listTaskLogs>> extends Effect.Effect<
+  readonly logs: Awaited<ReturnType<HatchetModule["listTaskLogs"]>> extends Effect.Effect<
     infer A,
     never,
     never
   > ? A
     : never
   readonly taskMetrics: Awaited<
-    ReturnType<typeof getTaskMetrics>
+    ReturnType<HatchetModule["getTaskMetrics"]>
   > extends Effect.Effect<infer A, never, never> ? A
     : never
   readonly queueMetrics: Awaited<
-    ReturnType<typeof getQueueMetrics>
+    ReturnType<HatchetModule["getQueueMetrics"]>
   > extends Effect.Effect<infer A, never, never> ? A
     : never
 }
@@ -75,11 +75,11 @@ export interface HatchetDemoObservabilityMetricsData {
   readonly selectedRunId?: string
   readonly selectedTaskId?: string
   readonly taskMetrics: Awaited<
-    ReturnType<typeof getTaskMetrics>
+    ReturnType<HatchetModule["getTaskMetrics"]>
   > extends Effect.Effect<infer A, never, never> ? A
     : never
   readonly queueMetrics: Awaited<
-    ReturnType<typeof getQueueMetrics>
+    ReturnType<HatchetModule["getQueueMetrics"]>
   > extends Effect.Effect<infer A, never, never> ? A
     : never
 }
@@ -110,26 +110,27 @@ export const defaultObservability = (input?: {
 
 export const loadObservability = (requestUrl: string) =>
   Effect.gen(function*() {
+    const hatchet = yield* loadHatchetModule()
     const selectedRunId = readSelectedRunId(requestUrl)
     const selectedTaskId = readSelectedTaskId(requestUrl)
-    const taskMetricsEffect = getTaskMetrics({
+    const taskMetricsEffect = hatchet.getTaskMetrics({
       since: new Date(0).toISOString(),
     })
-    const queueMetricsEffect = getQueueMetrics()
+    const queueMetricsEffect = hatchet.getQueueMetrics()
 
     if (selectedRunId) {
       const { run, status, taskId, taskMetrics, queueMetrics } = yield* Effect.all(
         {
-          run: getRun<HatchetWorkflowRunDetailsRecord>(selectedRunId),
-          status: getRunStatus(selectedRunId),
-          taskId: getRunTaskId(selectedRunId),
+          run: hatchet.getRun<HatchetWorkflowRunDetailsRecord>(selectedRunId),
+          status: hatchet.getRunStatus(selectedRunId),
+          taskId: hatchet.getRunTaskId(selectedRunId),
           taskMetrics: taskMetricsEffect,
           queueMetrics: queueMetricsEffect,
         },
         { concurrency: "unbounded" },
       )
 
-      const logs = yield* listTaskLogs(taskId)
+      const logs = yield* hatchet.listTaskLogs(taskId)
 
       return {
         selectedRunId,
@@ -145,7 +146,7 @@ export const loadObservability = (requestUrl: string) =>
     if (selectedTaskId) {
       const { logs, taskMetrics, queueMetrics } = yield* Effect.all(
         {
-          logs: listTaskLogs(selectedTaskId),
+          logs: hatchet.listTaskLogs(selectedTaskId),
           taskMetrics: taskMetricsEffect,
           queueMetrics: queueMetricsEffect,
         },

@@ -82,7 +82,7 @@ vi.mock("@effectify/hatchet", () => ({
   },
 }))
 
-vi.mock("../../../app/lib/runtime.server.js", () => ({
+vi.mock("../../../app/lib/runtime.route.js", () => ({
   withLoaderEffect: <A>(effect: A) => effect,
   withActionEffect: <A>(effect: A) => effect,
 }))

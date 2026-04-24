@@ -7,7 +7,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 const { adapterConfigMock, authHandlerMock, hatchetInitMock, prismaLayerMock } = vi.hoisted(() => {
   process.env.DATABASE_URL = "file:./runtime-contract.db"
   process.env.HATCHET_HOST = "hatchet.example:7077"
-  process.env.HATCHET_TOKEN = "runtime-token"
+  process.env.HATCHET_CLIENT_TOKEN = "runtime-client-token"
+  delete process.env.HATCHET_TOKEN
   process.env.HATCHET_NAMESPACE = "runtime-namespace"
 
   return {
@@ -231,7 +232,7 @@ describe("runtime.server runtime contract", () => {
     expect(hatchetInitMock).toHaveBeenCalledWith({
       host: "hatchet.example:7077",
       namespace: "runtime-namespace",
-      token: "runtime-token",
+      token: "runtime-client-token",
     })
   })
 })

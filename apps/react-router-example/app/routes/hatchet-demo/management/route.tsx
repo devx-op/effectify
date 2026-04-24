@@ -1,11 +1,11 @@
 import * as Effect from "effect/Effect"
 import { ActionArgsContext, httpFailure, httpRedirect, httpSuccess, LoaderArgsContext } from "@effectify/react-router"
-import { deleteWorkflow, listRuns } from "@effectify/hatchet"
 import { Form, useActionData, useLoaderData } from "react-router"
+import { loadHatchetModule } from "../../../lib/hatchet/module.js"
 import { parseDeleteWorkflowIntent, readRequestFormData } from "../../../lib/hatchet/parsers.js"
 import { readSelectedRunId } from "../../../lib/hatchet/params.js"
 import { buildRunRedirect } from "../../../lib/hatchet/redirects.js"
-import { withActionEffect, withLoaderEffect } from "../../../lib/runtime.server.js"
+import { withActionEffect, withLoaderEffect } from "../../../lib/runtime.route.js"
 import type { HatchetTaskSummaryRecord } from "../../../lib/hatchet/run-models.js"
 
 export interface HatchetDemoManagementRunRecord {
@@ -132,8 +132,9 @@ const getActionError = (actionData: unknown): string | undefined => {
 
 export const loadManagement = (request: Request) =>
   Effect.gen(function*() {
+    const hatchet = yield* loadHatchetModule()
     const selectedRunId = readSelectedRunId(request.url)
-    const runs = yield* listRuns<HatchetTaskSummaryRecord>()
+    const runs = yield* hatchet.listRuns<HatchetTaskSummaryRecord>()
     return yield* httpSuccess({
       selectedRunId,
       runs: runs.map(toManagementRunRecord),
@@ -147,6 +148,7 @@ export const loader = Effect.gen(function*() {
 
 export const handleManagementAction = (request: Request) =>
   Effect.gen(function*() {
+    const hatchet = yield* loadHatchetModule()
     const formData = yield* readRequestFormData(request)
     const intent = String(formData.get("intent") ?? "")
     if (intent !== "delete-workflow") {
@@ -164,7 +166,7 @@ export const handleManagementAction = (request: Request) =>
       )
     }
 
-    yield* deleteWorkflow(deleteIntent.workflowName)
+    yield* hatchet.deleteWorkflow(deleteIntent.workflowName)
     return yield* httpRedirect("/hatchet-demo/management")
   })
 

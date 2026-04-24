@@ -1,15 +1,5 @@
 import * as Effect from "effect/Effect"
 import { ActionArgsContext, httpFailure, httpRedirect, httpSuccess, LoaderArgsContext } from "@effectify/react-router"
-import {
-  cancelRun,
-  getEvent,
-  getRun,
-  getRunStatus,
-  listRuns,
-  pushEvent,
-  replayRun,
-  runWorkflow,
-} from "@effectify/hatchet"
 import { Form, useActionData, useLoaderData } from "react-router"
 import {
   type HatchetJsonObject,
@@ -17,9 +7,10 @@ import {
   parseReplayIntent,
   readRequestFormData,
 } from "../../../lib/hatchet/parsers.js"
+import { loadHatchetModule } from "../../../lib/hatchet/module.js"
 import { readSelectedEventId, readSelectedRunId } from "../../../lib/hatchet/params.js"
 import { buildEventRedirect, buildReplayRedirect, buildRunRedirect } from "../../../lib/hatchet/redirects.js"
-import { withActionEffect, withLoaderEffect } from "../../../lib/runtime.server.js"
+import { withActionEffect, withLoaderEffect } from "../../../lib/runtime.route.js"
 import type {
   HatchetTaskSummaryRecord,
   HatchetWorkflowRunDetailsRecord,
@@ -80,17 +71,18 @@ const toSelectedRun = (
 
 export const loadRuns = (request: Request) =>
   Effect.gen(function*() {
+    const hatchet = yield* loadHatchetModule()
     const selectedEventId = readSelectedEventId(request.url)
     const selectedRunId = readSelectedRunId(request.url)
-    const runs = yield* listRuns<HatchetTaskSummaryRecord>()
+    const runs = yield* hatchet.listRuns<HatchetTaskSummaryRecord>()
     const event = selectedEventId
-      ? yield* getEvent<HatchetJsonObject>(selectedEventId)
+      ? yield* hatchet.getEvent<HatchetJsonObject>(selectedEventId)
       : undefined
     const run = selectedRunId
-      ? yield* getRun<HatchetWorkflowRunDetailsRecord>(selectedRunId)
+      ? yield* hatchet.getRun<HatchetWorkflowRunDetailsRecord>(selectedRunId)
       : undefined
     const status = selectedRunId
-      ? yield* getRunStatus(selectedRunId)
+      ? yield* hatchet.getRunStatus(selectedRunId)
       : undefined
 
     return yield* httpSuccess({
@@ -111,6 +103,7 @@ export const loader = Effect.gen(function*() {
 
 export const handleRunsAction = (request: Request) =>
   Effect.gen(function*() {
+    const hatchet = yield* loadHatchetModule()
     const formData = yield* readRequestFormData(request)
     const intent = String(formData.get("intent") ?? "")
 
@@ -129,7 +122,7 @@ export const handleRunsAction = (request: Request) =>
         return yield* httpFailure("Invalid JSON input")
       }
 
-      yield* runWorkflow(workflowName, input)
+      yield* hatchet.runWorkflow(workflowName, input)
       return yield* httpRedirect("/hatchet-demo/runs")
     }
 
@@ -150,7 +143,7 @@ export const handleRunsAction = (request: Request) =>
         )
       }
 
-      const event = yield* pushEvent(eventKey, eventPayload, {
+      const event = yield* hatchet.pushEvent(eventKey, eventPayload, {
         additionalMetadata: { source: "react-router-example" },
         scope: "demo",
       })
@@ -169,7 +162,7 @@ export const handleRunsAction = (request: Request) =>
         )
       }
 
-      yield* replayRun(replayIntent.runId)
+      yield* hatchet.replayRun(replayIntent.runId)
       return yield* httpRedirect(buildReplayRedirect(replayIntent.runId))
     }
 
@@ -180,7 +173,7 @@ export const handleRunsAction = (request: Request) =>
         return yield* httpFailure("Run ID is required")
       }
 
-      yield* cancelRun(runId)
+      yield* hatchet.cancelRun(runId)
       return yield* httpRedirect(buildRunRedirect(runId))
     }
 

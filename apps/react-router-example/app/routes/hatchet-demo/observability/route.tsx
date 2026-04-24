@@ -3,7 +3,7 @@ import { httpSuccess, LoaderArgsContext } from "@effectify/react-router"
 import type { LogList, QueueMetrics, TaskMetrics } from "@effectify/hatchet"
 import { useLoaderData } from "react-router"
 import { loadObservabilityWithFallback } from "../../../lib/hatchet/orchestration.js"
-import { withLoaderEffect } from "../../../lib/runtime.server.js"
+import { withLoaderEffect } from "../../../lib/runtime.route.js"
 import type { HatchetWorkflowRunRecord } from "../../../lib/hatchet/run-models.js"
 
 export interface HatchetDemoObservabilityData {

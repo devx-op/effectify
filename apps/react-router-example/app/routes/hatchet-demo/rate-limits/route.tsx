@@ -1,11 +1,12 @@
 import * as Effect from "effect/Effect"
 import { ActionArgsContext, httpFailure, httpRedirect, httpSuccess, LoaderArgsContext } from "@effectify/react-router"
-import { type HatchetRateLimitRecord, listRateLimits, upsertRateLimit } from "@effectify/hatchet"
+import type { HatchetRateLimitRecord } from "@effectify/hatchet"
 import { Form, useActionData, useLoaderData } from "react-router"
+import { loadHatchetModule } from "../../../lib/hatchet/module.js"
 import { parseRateLimitDuration, rateLimitDurationOptions, readRequestFormData } from "../../../lib/hatchet/parsers.js"
 import { readSelectedRateLimitKey } from "../../../lib/hatchet/params.js"
 import { buildRateLimitRedirect } from "../../../lib/hatchet/redirects.js"
-import { withActionEffect, withLoaderEffect } from "../../../lib/runtime.server.js"
+import { withActionEffect, withLoaderEffect } from "../../../lib/runtime.route.js"
 
 export interface HatchetDemoRateLimitsSectionProps {
   readonly actionError?: string
@@ -143,8 +144,9 @@ const getActionError = (actionData: unknown): string | undefined => {
 
 export const loadRateLimits = (request: Request) =>
   Effect.gen(function*() {
+    const hatchet = yield* loadHatchetModule()
     const selectedRateLimitKey = readSelectedRateLimitKey(request.url)
-    const ratelimits = yield* listRateLimits()
+    const ratelimits = yield* hatchet.listRateLimits()
     return yield* httpSuccess({ ratelimits, selectedRateLimitKey })
   })
 
@@ -155,6 +157,7 @@ export const loader = Effect.gen(function*() {
 
 export const handleRateLimitsAction = (request: Request) =>
   Effect.gen(function*() {
+    const hatchet = yield* loadHatchetModule()
     const formData = yield* readRequestFormData(request)
     const intent = String(formData.get("intent") ?? "")
     if (intent !== "upsert-ratelimit") {
@@ -184,7 +187,7 @@ export const handleRateLimitsAction = (request: Request) =>
       )
     }
 
-    const key = yield* upsertRateLimit({ key: rateLimitKey, limit, duration })
+    const key = yield* hatchet.upsertRateLimit({ key: rateLimitKey, limit, duration })
     return yield* httpRedirect(buildRateLimitRedirect(key))
   })
 

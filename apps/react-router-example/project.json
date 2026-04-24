@@ -36,6 +36,93 @@
         "cwd": "apps/react-router-example"
       }
     },
+    "hatchet:status": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "parallelism": false,
+      "options": {
+        "command": "node ./scripts/ensure-hatchet.mjs status",
+        "cwd": "apps/react-router-example",
+        "env": {
+          "HATCHET_GRPC_PORT": "7177",
+          "HATCHET_UI_PORT": "8899",
+          "HATCHET_HOST": "localhost:7177",
+          "HATCHET_API_URL": "http://localhost:8899",
+          "HATCHET_SERVER_URL": "http://localhost:8899"
+        },
+        "forwardAllArgs": false
+      }
+    },
+    "hatchet:up": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "parallelism": false,
+      "options": {
+        "command": "node ./scripts/ensure-hatchet.mjs up",
+        "cwd": "apps/react-router-example",
+        "env": {
+          "HATCHET_GRPC_PORT": "7177",
+          "HATCHET_UI_PORT": "8899",
+          "HATCHET_HOST": "localhost:7177",
+          "HATCHET_API_URL": "http://localhost:8899",
+          "HATCHET_SERVER_URL": "http://localhost:8899"
+        },
+        "forwardAllArgs": false
+      }
+    },
+    "hatchet:down": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "parallelism": false,
+      "options": {
+        "command": "docker compose -f docker-compose.yml down",
+        "cwd": "apps/react-router-example",
+        "env": {
+          "HATCHET_GRPC_PORT": "7177",
+          "HATCHET_UI_PORT": "8899",
+          "HATCHET_HOST": "localhost:7177",
+          "HATCHET_API_URL": "http://localhost:8899",
+          "HATCHET_SERVER_URL": "http://localhost:8899"
+        },
+        "forwardAllArgs": false
+      }
+    },
+    "hatchet:ensure": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "parallelism": false,
+      "options": {
+        "command": "node ./scripts/ensure-hatchet.mjs ensure",
+        "cwd": "apps/react-router-example",
+        "env": {
+          "HATCHET_GRPC_PORT": "7177",
+          "HATCHET_UI_PORT": "8899",
+          "HATCHET_HOST": "localhost:7177",
+          "HATCHET_API_URL": "http://localhost:8899",
+          "HATCHET_SERVER_URL": "http://localhost:8899"
+        },
+        "forwardAllArgs": false
+      }
+    },
+    "dev:hatchet": {
+      "executor": "nx:run-commands",
+      "continuous": true,
+      "cache": false,
+      "parallelism": false,
+      "dependsOn": ["hatchet:ensure", "^build"],
+      "options": {
+        "command": "pnpm run dev",
+        "cwd": "apps/react-router-example",
+        "env": {
+          "HATCHET_GRPC_PORT": "7177",
+          "HATCHET_UI_PORT": "8899",
+          "HATCHET_HOST": "localhost:7177",
+          "HATCHET_API_URL": "http://localhost:8899",
+          "HATCHET_SERVER_URL": "http://localhost:8899"
+        },
+        "forwardAllArgs": false
+      }
+    },
     "start": {
       "executor": "nx:run-commands",
       "continuous": true,

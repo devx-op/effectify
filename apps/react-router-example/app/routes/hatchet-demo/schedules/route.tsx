@@ -1,11 +1,12 @@
 import * as Effect from "effect/Effect"
 import { ActionArgsContext, httpFailure, httpRedirect, httpSuccess, LoaderArgsContext } from "@effectify/react-router"
-import { createSchedule, getSchedule, type HatchetScheduleRecord, listSchedules } from "@effectify/hatchet"
+import type { HatchetScheduleRecord } from "@effectify/hatchet"
 import { Form, useActionData, useLoaderData } from "react-router"
+import { loadHatchetModule } from "../../../lib/hatchet/module.js"
 import { parseEventPayload, parseTriggerTime, readRequestFormData } from "../../../lib/hatchet/parsers.js"
 import { readSelectedScheduleId } from "../../../lib/hatchet/params.js"
 import { buildScheduleRedirect } from "../../../lib/hatchet/redirects.js"
-import { withActionEffect, withLoaderEffect } from "../../../lib/runtime.server.js"
+import { withActionEffect, withLoaderEffect } from "../../../lib/runtime.route.js"
 
 export interface HatchetDemoSchedulesSectionProps {
   readonly actionError?: string
@@ -108,10 +109,11 @@ const getActionError = (actionData: unknown): string | undefined => {
 
 export const loadSchedules = (request: Request) =>
   Effect.gen(function*() {
+    const hatchet = yield* loadHatchetModule()
     const selectedScheduleId = readSelectedScheduleId(request.url)
-    const schedules = yield* listSchedules()
+    const schedules = yield* hatchet.listSchedules()
     const schedule = selectedScheduleId
-      ? yield* getSchedule(selectedScheduleId)
+      ? yield* hatchet.getSchedule(selectedScheduleId)
       : undefined
 
     return yield* httpSuccess({ schedules, schedule })
@@ -124,6 +126,7 @@ export const loader = Effect.gen(function*() {
 
 export const handleSchedulesAction = (request: Request) =>
   Effect.gen(function*() {
+    const hatchet = yield* loadHatchetModule()
     const formData = yield* readRequestFormData(request)
     const intent = String(formData.get("intent") ?? "")
 
@@ -151,7 +154,7 @@ export const handleSchedulesAction = (request: Request) =>
       )
     }
 
-    const schedule = yield* createSchedule(workflowName, {
+    const schedule = yield* hatchet.createSchedule(workflowName, {
       triggerAt,
       input: scheduleInput,
       additionalMetadata: { source: "react-router-example" },

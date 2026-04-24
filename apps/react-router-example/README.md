@@ -35,6 +35,48 @@ pnpm install
 pnpm nx run @effectify/react-router-example:dev
 ```
 
+## Hatchet local development
+
+The default app dev flow stays Docker-free on purpose. Only the Hatchet demo slice needs
+the Hatchet Lite stack.
+
+Use the explicit Hatchet-aware targets when you want to test the UI and the
+`@effectify/hatchet` integration locally:
+
+```bash
+# Check whether Hatchet is already available on localhost:7177 / :8899
+pnpm nx run @effectify/react-router-example:hatchet:status
+
+# Ensure Hatchet is available, then start React Router dev
+pnpm nx run @effectify/react-router-example:dev:hatchet
+```
+
+Available helper targets:
+
+- `hatchet:status` — reports whether Hatchet is already reachable locally
+- `hatchet:ensure` — reuses an existing Hatchet instance if one is already running, otherwise starts this app's compose stack, and fails fast if `HATCHET_CLIENT_TOKEN` / `HATCHET_TOKEN` do not match the stack bound to `7177/8899`
+- `hatchet:up` — forces this app's compose stack to start and fails if another Hatchet instance already owns the ports
+- `hatchet:down` — stops this app's compose stack
+- `dev:hatchet` — runs `hatchet:ensure` first, then starts the normal React Router dev server
+
+This matters because Hatchet Lite publishes fixed ports:
+
+- UI: `http://localhost:8899`
+- gRPC: `localhost:7177`
+
+If another Hatchet stack is already using those ports, `hatchet:ensure` will only reuse it when the configured
+`HATCHET_CLIENT_TOKEN` (preferred) or `HATCHET_TOKEN` (legacy fallback) can actually authenticate against that stack. Otherwise it fails fast with a clear message,
+because booting the app against incompatible Hatchet credentials just leads to 403s and broken demo navigation.
+
+The Nx targets already inject the local Hatchet contract for this example:
+
+- `HATCHET_UI_PORT=8899`
+- `HATCHET_GRPC_PORT=7177`
+- `HATCHET_HOST=localhost:7177`
+- `HATCHET_API_URL=http://localhost:8899`
+
+So this app can coexist with another Hatchet project that still owns `8888` / `7077`.
+
 The example now bootstraps the local SQLite schema on startup for ergonomic local dev:
 
 - better-auth tables: `user`, `session`, `account`, `verification`

@@ -1,11 +1,12 @@
 import * as Effect from "effect/Effect"
 import { ActionArgsContext, httpFailure, httpRedirect, httpSuccess, LoaderArgsContext } from "@effectify/react-router"
-import { createCron, deleteCron, getCron, type HatchetCronRecord, listCrons } from "@effectify/hatchet"
+import type { HatchetCronRecord } from "@effectify/hatchet"
 import { Form, useActionData, useLoaderData } from "react-router"
+import { loadHatchetModule } from "../../../lib/hatchet/module.js"
 import { parseEventPayload, readRequestFormData } from "../../../lib/hatchet/parsers.js"
 import { readSelectedCronId } from "../../../lib/hatchet/params.js"
 import { buildCronRedirect } from "../../../lib/hatchet/redirects.js"
-import { withActionEffect, withLoaderEffect } from "../../../lib/runtime.server.js"
+import { withActionEffect, withLoaderEffect } from "../../../lib/runtime.route.js"
 
 export interface HatchetDemoCronsSectionProps {
   readonly actionError?: string
@@ -159,9 +160,10 @@ const getActionError = (actionData: unknown): string | undefined => {
 
 export const loadCrons = (request: Request) =>
   Effect.gen(function*() {
+    const hatchet = yield* loadHatchetModule()
     const selectedCronId = readSelectedCronId(request.url)
-    const crons = yield* listCrons()
-    const cron = selectedCronId ? yield* getCron(selectedCronId) : undefined
+    const crons = yield* hatchet.listCrons()
+    const cron = selectedCronId ? yield* hatchet.getCron(selectedCronId) : undefined
 
     return yield* httpSuccess({ crons, cron })
   })
@@ -173,6 +175,7 @@ export const loader = Effect.gen(function*() {
 
 export const handleCronsAction = (request: Request) =>
   Effect.gen(function*() {
+    const hatchet = yield* loadHatchetModule()
     const formData = yield* readRequestFormData(request)
     const intent = String(formData.get("intent") ?? "")
 
@@ -201,7 +204,7 @@ export const handleCronsAction = (request: Request) =>
         )
       }
 
-      const cron = yield* createCron(workflowName, {
+      const cron = yield* hatchet.createCron(workflowName, {
         name: cronName,
         expression: cronExpression,
         input: cronInput,
@@ -214,7 +217,7 @@ export const handleCronsAction = (request: Request) =>
     if (intent === "delete-cron") {
       const cronId = String(formData.get("cronId") ?? "").trim()
       if (!cronId) return yield* httpFailure("Cron ID is required")
-      yield* deleteCron(cronId)
+      yield* hatchet.deleteCron(cronId)
       return yield* httpRedirect("/hatchet-demo/crons")
     }
 

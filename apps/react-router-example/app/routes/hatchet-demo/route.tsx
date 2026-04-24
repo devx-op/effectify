@@ -1,8 +1,8 @@
 import * as Effect from "effect/Effect"
 import { httpRedirect, httpSuccess, LoaderArgsContext } from "@effectify/react-router"
-import { NavLink, Outlet, useLocation } from "react-router"
+import { Outlet, useLocation } from "react-router"
 import { redirectLegacyHatchetDemoRequest } from "../../lib/hatchet/legacy.js"
-import { withLoaderEffect } from "../../lib/runtime.server.js"
+import { withLoaderEffect } from "../../lib/runtime.route.js"
 
 export const hatchetDemoNavItems = [
   { to: "/hatchet-demo/runs", label: "Runs & Events" },
@@ -48,13 +48,13 @@ export default function HatchetDemoLayout() {
           <ul>
             {hatchetDemoNavItems.map((item) => (
               <li key={item.to}>
-                <NavLink
-                  to={item.to}
+                <a
+                  href={item.to}
                   aria-current={location.pathname === item.to ? "page" : undefined}
                   data-active={location.pathname === item.to ? "true" : "false"}
                 >
                   {item.label}
-                </NavLink>
+                </a>
               </li>
             ))}
           </ul>

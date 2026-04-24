@@ -1,11 +1,12 @@
 import * as Effect from "effect/Effect"
 import { ActionArgsContext, httpFailure, httpRedirect, httpSuccess, LoaderArgsContext } from "@effectify/react-router"
-import { createFilter, deleteFilter, getFilter, type HatchetFilterRecord, listFilters } from "@effectify/hatchet"
+import type { HatchetFilterRecord } from "@effectify/hatchet"
 import { Form, useActionData, useLoaderData } from "react-router"
+import { loadHatchetModule } from "../../../lib/hatchet/module.js"
 import { parseEventPayload, readRequestFormData } from "../../../lib/hatchet/parsers.js"
 import { readSelectedFilterId } from "../../../lib/hatchet/params.js"
 import { buildFilterRedirect } from "../../../lib/hatchet/redirects.js"
-import { withActionEffect, withLoaderEffect } from "../../../lib/runtime.server.js"
+import { withActionEffect, withLoaderEffect } from "../../../lib/runtime.route.js"
 
 export interface HatchetDemoFiltersSectionProps {
   readonly actionError?: string
@@ -146,10 +147,11 @@ const getActionError = (actionData: unknown): string | undefined => {
 
 export const loadFilters = (request: Request) =>
   Effect.gen(function*() {
+    const hatchet = yield* loadHatchetModule()
     const selectedFilterId = readSelectedFilterId(request.url)
-    const filters = yield* listFilters()
+    const filters = yield* hatchet.listFilters()
     const filter = selectedFilterId
-      ? yield* getFilter(selectedFilterId)
+      ? yield* hatchet.getFilter(selectedFilterId)
       : undefined
     return yield* httpSuccess({ filters, filter })
   })
@@ -161,6 +163,7 @@ export const loader = Effect.gen(function*() {
 
 export const handleFiltersAction = (request: Request) =>
   Effect.gen(function*() {
+    const hatchet = yield* loadHatchetModule()
     const formData = yield* readRequestFormData(request)
     const intent = String(formData.get("intent") ?? "")
 
@@ -187,7 +190,7 @@ export const handleFiltersAction = (request: Request) =>
         )
       }
 
-      const filter = yield* createFilter({
+      const filter = yield* hatchet.createFilter({
         workflowId,
         scope,
         expression,
@@ -199,7 +202,7 @@ export const handleFiltersAction = (request: Request) =>
     if (intent === "delete-filter") {
       const filterId = String(formData.get("filterId") ?? "").trim()
       if (!filterId) return yield* httpFailure("Filter ID is required")
-      yield* deleteFilter(filterId)
+      yield* hatchet.deleteFilter(filterId)
       return yield* httpRedirect("/hatchet-demo/filters")
     }
 

@@ -1,4 +1,3 @@
-import { Link } from "react-router"
 import { hatchetDemoNavItems } from "./route.js"
 
 const overviewItems = [
@@ -32,7 +31,7 @@ export default function HatchetDemoIndex() {
         {overviewItems.map((item) => (
           <li key={item.to}>
             <h4>
-              <Link to={item.to}>{item.title}</Link>
+              <a href={item.to}>{item.title}</a>
             </h4>
             <p>{item.description}</p>
           </li>

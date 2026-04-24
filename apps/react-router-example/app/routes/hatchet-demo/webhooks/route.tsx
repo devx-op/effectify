@@ -1,6 +1,6 @@
 import * as Effect from "effect/Effect"
 import { ActionArgsContext, httpFailure, httpRedirect, httpSuccess, LoaderArgsContext } from "@effectify/react-router"
-import { createWebhook, deleteWebhook, getWebhook, type HatchetWebhookRecord, listWebhooks } from "@effectify/hatchet"
+import type { HatchetWebhookRecord } from "@effectify/hatchet"
 import { Form, useActionData, useLoaderData } from "react-router"
 import {
   parseWebhookAuth,
@@ -8,9 +8,10 @@ import {
   parseWebhookStaticPayload,
   readRequestFormData,
 } from "../../../lib/hatchet/parsers.js"
+import { loadHatchetModule } from "../../../lib/hatchet/module.js"
 import { readSelectedWebhookName } from "../../../lib/hatchet/params.js"
 import { buildWebhookRedirect } from "../../../lib/hatchet/redirects.js"
-import { withActionEffect, withLoaderEffect } from "../../../lib/runtime.server.js"
+import { withActionEffect, withLoaderEffect } from "../../../lib/runtime.route.js"
 
 export interface HatchetDemoWebhooksSectionProps {
   readonly actionError?: string
@@ -230,10 +231,11 @@ const getActionError = (actionData: unknown): string | undefined => {
 
 export const loadWebhooks = (request: Request) =>
   Effect.gen(function*() {
+    const hatchet = yield* loadHatchetModule()
     const selectedWebhookName = readSelectedWebhookName(request.url)
-    const webhooks = yield* listWebhooks()
+    const webhooks = yield* hatchet.listWebhooks()
     const webhook = selectedWebhookName
-      ? yield* getWebhook(selectedWebhookName)
+      ? yield* hatchet.getWebhook(selectedWebhookName)
       : undefined
     return yield* httpSuccess({ webhooks, webhook })
   })
@@ -245,6 +247,7 @@ export const loader = Effect.gen(function*() {
 
 export const handleWebhooksAction = (request: Request) =>
   Effect.gen(function*() {
+    const hatchet = yield* loadHatchetModule()
     const formData = yield* readRequestFormData(request)
     const intent = String(formData.get("intent") ?? "")
 
@@ -279,7 +282,7 @@ export const handleWebhooksAction = (request: Request) =>
         )
       }
 
-      const webhook = yield* createWebhook({
+      const webhook = yield* hatchet.createWebhook({
         name: webhookName,
         sourceName,
         eventKeyExpression,
@@ -293,7 +296,7 @@ export const handleWebhooksAction = (request: Request) =>
     if (intent === "delete-webhook") {
       const webhookName = String(formData.get("webhookName") ?? "").trim()
       if (!webhookName) return yield* httpFailure("Webhook name is required")
-      yield* deleteWebhook(webhookName)
+      yield* hatchet.deleteWebhook(webhookName)
       return yield* httpRedirect("/hatchet-demo/webhooks")
     }
 
