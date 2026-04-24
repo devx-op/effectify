@@ -12,6 +12,7 @@ concurrency:
 
 env:
   DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/effectify"
+  NODE_OPTIONS: "--max-old-space-size=4096"
 
 jobs:
   # Lint and format check
@@ -45,7 +46,7 @@ jobs:
           else
             BASE="HEAD~1"
           fi
-          pnpm nx affected --target=lint --base=$BASE --head=HEAD --parallel=3
+          pnpm nx affected --target=lint --base=$BASE --head=HEAD --parallel=1
 
       - name: 🎨 Check code formatting with dprint
         run: pnpm exec dprint check || (echo "❌ Some files are not formatted. Run 'pnpm exec dprint fmt' to fix formatting." && exit 1)
@@ -81,7 +82,7 @@ jobs:
           else
             BASE="HEAD~1"
           fi
-          pnpm nx affected --target=typecheck --base=$BASE --head=HEAD --parallel=3 --verbose
+          pnpm nx affected --target=typecheck --base=$BASE --head=HEAD --parallel=1 --verbose
 
   # Build affected projects
   build:
@@ -115,7 +116,7 @@ jobs:
           BASE=$(git merge-base HEAD origin/dev)
 
           # Build affected projects with caching
-          pnpm nx affected --target=build --base=$BASE --head=HEAD --parallel=3 --verbose
+          pnpm nx affected --target=build --base=$BASE --head=HEAD --parallel=1 --verbose
 
           # Check if any projects were built
           AFFECTED_PROJECTS=$(pnpm nx show projects --affected --base=$BASE --head=HEAD --json | jq -r '.[]' | tr '\n' ' ')
@@ -176,7 +177,7 @@ jobs:
       - name: 🧪 Test affected projects
         run: |
           BASE=$(git merge-base HEAD origin/dev)
-          pnpm nx affected --target=test --base=$BASE --head=HEAD --parallel=3 --verbose --passWithNoTests
+          pnpm nx affected --target=test --base=$BASE --head=HEAD --parallel=1 --verbose --passWithNoTests
   # Summary job
   ci-summary:
     name: 📊 CI Summary
@@ -196,7 +197,7 @@ jobs:
 
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📈 Performance Metrics" >> $GITHUB_STEP_SUMMARY
-          echo "- 🔄 Parallel execution: 3x for lint/typecheck/build/test" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔄 Parallel execution: 1x for lint/typecheck/build/test" >> $GITHUB_STEP_SUMMARY
           echo "- 📦 Caching: Nx computation caching enabled" >> $GITHUB_STEP_SUMMARY
           echo "- 🎯 Affected projects only: Runs only on changed code" >> $GITHUB_STEP_SUMMARY
 
