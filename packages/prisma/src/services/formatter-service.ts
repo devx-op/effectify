@@ -1,4 +1,4 @@
-import * as ServiceMap from "effect/ServiceMap"
+import * as Context from "effect/Context"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import { createFromBuffer } from "@dprint/formatter"
@@ -14,7 +14,7 @@ export class FormatError extends Data.TaggedError("FormatError")<{
   }
 }
 
-export class FormatterService extends ServiceMap.Service<
+export class FormatterService extends Context.Service<
   FormatterService,
   {
     readonly format: (code: string) => Effect.Effect<string, Error>

@@ -1,13 +1,13 @@
 import * as FileSystem from "effect/FileSystem"
 import * as Path from "effect/Path"
 import type { DMMF, GeneratorOptions } from "@prisma/generator-helper"
+import * as Context from "effect/Context"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import { GeneratorContext } from "./generator-context.js"
 import { RenderService } from "./render-service.js"
 import { FormatterService } from "./formatter-service.js"
 import { GenerateSchemnaService } from "../schema-generator/index.js"
-import * as ServiceMap from "effect/ServiceMap"
 import { Data } from "effect"
 
 class GeneratorError extends Data.TaggedError("GeneratorError")<{
@@ -18,7 +18,7 @@ class GeneratorError extends Data.TaggedError("GeneratorError")<{
   }
 }
 
-export class GeneratorService extends ServiceMap.Service<
+export class GeneratorService extends Context.Service<
   GeneratorService,
   {
     readonly generate: Effect.Effect<undefined, never, GeneratorContext>
@@ -233,6 +233,7 @@ export class GeneratorService extends ServiceMap.Service<
   }),
 }) {
   static readonly layer = Layer.effect(GeneratorService, this.make).pipe(
+    Layer.provide(GenerateSchemnaService.layer),
     Layer.provide(RenderService.layer),
     Layer.provide(FormatterService.layer),
   )

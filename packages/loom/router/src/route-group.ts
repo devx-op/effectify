@@ -1,5 +1,5 @@
 import { dual } from "effect/Function"
-import type * as ServiceMap from "effect/ServiceMap"
+import type * as Context from "effect/Context"
 import type * as Fallback from "./fallback.js"
 import type * as Layout from "./layout.js"
 import { reflectRoutes } from "./internal/reflection.js"
@@ -58,19 +58,19 @@ export const prefix: {
   ): Definition<Routes>
 } = dual(2, internal.prefixRouteGroup)
 
-/** Add a single Effect ServiceMap annotation to a route group. */
+/** Add a single Effect Context annotation to a route group. */
 export const annotate: {
-  <I, S>(tag: ServiceMap.Key<I, S>, value: S): <Routes extends ReadonlyArray<Route.AnyDefinition>>(
+  <I, S>(tag: Context.Service<I, S>, value: S): <Routes extends ReadonlyArray<Route.AnyDefinition>>(
     self: Definition<Routes>,
   ) => Definition<Routes>
   <Routes extends ReadonlyArray<Route.AnyDefinition>, I, S>(
     self: Definition<Routes>,
-    tag: ServiceMap.Key<I, S>,
+    tag: Context.Service<I, S>,
     value: S,
   ): Definition<Routes>
 } = dual(3, internal.annotateRouteGroup)
 
-/** Merge multiple Effect ServiceMap annotations into a route group. */
+/** Merge multiple Effect Context annotations into a route group. */
 export const annotateMerge: {
   (
     annotations: Annotations,

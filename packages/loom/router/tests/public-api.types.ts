@@ -1,8 +1,9 @@
 import type * as Loom from "@effectify/loom"
 import { Component, View } from "@effectify/loom"
+import * as Context from "effect/Context"
 import * as Effect from "effect/Effect"
 import * as Schema from "effect/Schema"
-import { pipe, ServiceMap } from "effect"
+import { pipe } from "effect"
 import * as Result from "effect/Result"
 import {
   Decode,
@@ -99,7 +100,7 @@ const resolveResult: Router.ResolveResult = Router.resolve(
   new URL("https://effectify.dev/users/42?tab=profile"),
 )
 const resolvedOutput: Loom.View.Child | undefined = resolveResult.output
-const RouterTitle = ServiceMap.Service<{ readonly title: string }>("RouterTitle")
+const RouterTitle = Context.Service<{ readonly title: string }>("RouterTitle")
 const routeGroup = pipe(RouteGroup.make("users"), RouteGroup.add(route))
 const algebraRouter = pipe(
   Router.make("app"),

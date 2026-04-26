@@ -1,6 +1,7 @@
 import * as FileSystem from "effect/FileSystem"
 import * as Path from "effect/Path"
 import type { DMMF } from "@prisma/generator-helper"
+import * as Context from "effect/Context"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import { RenderError, RenderService } from "../services/render-service.js"
@@ -10,10 +11,9 @@ import * as EffectGenerator from "./effect/generator.js"
 import * as JoinTableGenerator from "./effect/join-table.js"
 import * as KyselyGenerator from "./kysely/generator.js"
 import * as PrismaGenerator from "./prisma/generator.js"
-import * as ServiceMap from "effect/ServiceMap"
 import * as PlatformError from "effect/PlatformError"
 
-export class GenerateSchemnaService extends ServiceMap.Service<
+export class GenerateSchemnaService extends Context.Service<
   GenerateSchemnaService,
   {
     generate: (

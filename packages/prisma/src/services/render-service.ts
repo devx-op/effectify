@@ -1,4 +1,4 @@
-import * as ServiceMap from "effect/ServiceMap"
+import * as Context from "effect/Context"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import { Eta } from "eta"
@@ -15,7 +15,7 @@ export class RenderError extends Data.TaggedError("RenderError")<{
   }
 }
 
-export class RenderService extends ServiceMap.Service<
+export class RenderService extends Context.Service<
   RenderService,
   {
     readonly render: (

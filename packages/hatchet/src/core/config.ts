@@ -1,11 +1,11 @@
 /**
  * @effectify/hatchet - Configuration
  *
- * Hatchet configuration using Effect v4 Config and ServiceMap.Service
+ * Hatchet configuration using Effect v4 Config and Context.Service
  */
 
 import * as Effect from "effect/Effect"
-import * as ServiceMap from "effect/ServiceMap"
+import * as Context from "effect/Context"
 import * as Layer from "effect/Layer"
 import * as Config from "effect/Config"
 import * as Schema from "effect/Schema"
@@ -26,10 +26,10 @@ const HatchetConfigSchema = Schema.Struct({
 export type HatchetConfigType = Schema.Schema.Type<typeof HatchetConfigSchema>
 
 /**
- * ServiceMap.Service for Hatchet configuration
+ * Context.Service for Hatchet configuration
  * This allows injecting config via Effect's dependency injection
  */
-export class HatchetConfig extends ServiceMap.Service<
+export class HatchetConfig extends Context.Service<
   HatchetConfig,
   HatchetConfigType
 >()("HatchetConfig") {}

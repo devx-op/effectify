@@ -16,9 +16,7 @@ export interface Decoder<Input, Output> {
   readonly decode: (input: Input) => Result.Result<Output, Failure>
 }
 
-export type SchemaDecoder<Output> = Schema.Schema<Output> & {
-  readonly DecodingServices: never
-}
+export type SchemaDecoder<Output> = Schema.Decoder<Output>
 
 export type DecoderLike<Input, Output> = Decoder<Input, Output> | SchemaDecoder<Output>
 

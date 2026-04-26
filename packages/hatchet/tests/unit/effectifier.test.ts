@@ -5,10 +5,10 @@
  */
 
 import { describe, expect, expectTypeOf, it } from "vitest"
+import * as Context from "effect/Context"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import * as ManagedRuntime from "effect/ManagedRuntime"
-import * as ServiceMap from "effect/ServiceMap"
 import { HatchetStepContext, type HatchetTaskContext } from "@effectify/hatchet"
 import { createMockContext } from "@effectify/hatchet"
 import {
@@ -17,8 +17,8 @@ import {
   effectifyTask,
 } from "../../src/effectifier/execute.js"
 
-// Sample service for testing using ServiceMap pattern
-class TestService extends ServiceMap.Service<TestService, string>()(
+// Sample service for testing using Context.Service pattern
+class TestService extends Context.Service<TestService, string>()(
   "TestService",
 ) {}
 
@@ -264,7 +264,7 @@ describe("createEffectifierFromLayer", () => {
 })
 
 describe("createEffectifierFromServiceMap", () => {
-  it("should create effectifier from ServiceMap (Layer)", async () => {
+  it("should create effectifier from the deprecated alias", async () => {
     const services = Layer.succeed(TestService, "from-service-map")
 
     const effect = Effect.gen(function*() {

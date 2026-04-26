@@ -25,9 +25,7 @@ export interface Decoder<Output> {
   readonly decode: (input: Normalized) => Result.Result<Output, Failure>
 }
 
-export type SchemaDecoder<Output> = Schema.Schema<Output> & {
-  readonly DecodingServices: never
-}
+export type SchemaDecoder<Output> = Schema.Decoder<Output>
 
 export type DecoderLike<Output> = Decoder<Output> | SchemaDecoder<Output>
 

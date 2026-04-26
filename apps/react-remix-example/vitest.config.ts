@@ -9,13 +9,13 @@ export default defineConfig({
   root: __dirname,
   resolve: {
     alias: {
-      "@effectify/hatchet": resolve(__dirname, "../../packages/hatchet/src/index.ts"),
+      "~": resolve(__dirname, "app"),
     },
     conditions: ["@effectify/source"],
   },
   test: {
     include: ["tests/**/*.{test,spec}.{ts,tsx}"],
-    exclude: ["**/node_modules/**", "**/dist/**", "tests/unit/e2e/**"],
+    exclude: ["**/node_modules/**", "**/build/**"],
     globals: true,
   },
   esbuild: {

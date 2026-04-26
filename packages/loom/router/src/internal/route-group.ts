@@ -1,4 +1,4 @@
-import type * as ServiceMap from "effect/ServiceMap"
+import type * as Context from "effect/Context"
 import type * as Route from "../route.js"
 import { annotateValue, emptyAnnotations, mergeAnnotations } from "./annotations.js"
 import { joinPathnames } from "./path.js"
@@ -52,7 +52,7 @@ export const prefixRouteGroup = <Routes extends ReadonlyArray<Route.AnyDefinitio
 
 export const annotateRouteGroup = <Routes extends ReadonlyArray<Route.AnyDefinition>, I, S>(
   self: RouteGroupDefinition<Routes>,
-  tag: ServiceMap.Key<I, S>,
+  tag: Context.Service<I, S>,
   value: S,
 ): RouteGroupDefinition<Routes> => ({
   ...self,

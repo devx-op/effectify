@@ -13,14 +13,14 @@ catalog:
   '@dprint/formatter': ^0.5.1
   '@dprint/typescript': ^0.95.15
   '@effect-atom/atom': 0.5.0
-  '@effect/atom-solid': 4.0.0-beta.33
+  '@effect/atom-solid': 4.0.0-beta.57
   '@effect/build-utils': 0.8.9
   '@effect/experimental': 0.59.0
   '@effect/language-service': 0.56.0
-  '@effect/platform': 4.0.0-beta.33
-  '@effect/platform-node': 4.0.0-beta.33
+  '@effect/platform': 4.0.0-beta.57
+  '@effect/platform-node': 4.0.0-beta.57
   '@effect/tsgo': 0.0.17
-  '@effect/vitest': 4.0.0-beta.33
+  '@effect/vitest': 4.0.0-beta.57
   '@hatchet-dev/typescript-sdk': 1.21.0
   '@kobalte/core': 0.13.11
   '@nx/js': 22.6.2
@@ -99,7 +99,7 @@ catalog:
   cross-env: 10.1.0
   dotenv: ^17.2.3
   dprint: 0.51.1
-  effect: 4.0.0-beta.33
+  effect: 4.0.0-beta.57
   effect-prisma-generator: ^0.4.0
   eta: ^4.5.0
   express: 5.1.0
