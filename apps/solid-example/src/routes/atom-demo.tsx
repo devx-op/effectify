@@ -26,7 +26,7 @@ const subscribeAtom = Atom.make(0)
 const mountAtom = Atom.make(0)
 
 function Counter() {
-  const [count, setCount] = useAtom(counterAtom)
+  const [count, setCount] = useAtom(() => counterAtom)
   return (
     <div class="p-6 bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl">
       <h3 class="text-xl font-semibold text-white mb-4">Counter (useAtom)</h3>
@@ -50,7 +50,7 @@ function Counter() {
 }
 
 function DoubledCounter() {
-  const doubled = useAtomValue(counterAtom, (n: number) => n * 2)
+  const doubled = useAtomValue(() => counterAtom, (n: number) => n * 2)
   return (
     <div class="p-6 bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl">
       <h3 class="text-xl font-semibold text-white mb-4">Doubled (useAtomValue)</h3>
@@ -62,7 +62,7 @@ function DoubledCounter() {
 
 function InitialValuesDemo() {
   useAtomInitialValues([[textAtom, "Overridden Initial Value"]])
-  const [text] = useAtom(textAtom)
+  const [text] = useAtom(() => textAtom)
 
   return (
     <div class="p-6 bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl">
@@ -74,7 +74,7 @@ function InitialValuesDemo() {
 }
 
 function RefreshDemo() {
-  const refresh = useAtomRefresh(counterAtom)
+  const refresh = useAtomRefresh(() => counterAtom)
   return (
     <div class="p-6 bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl">
       <h3 class="text-xl font-semibold text-white mb-4">Refresh Atom</h3>
@@ -90,7 +90,7 @@ function RefreshDemo() {
 }
 
 function AtomRefDemo() {
-  const state = useAtomRef(refAtom)
+  const state = useAtomRef(() => refAtom)
 
   return (
     <div class="p-6 bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl">
@@ -110,8 +110,8 @@ function AtomRefDemo() {
 }
 
 function SetOnlyDemo() {
-  const setCount = useAtomSet(setOnlyAtom)
-  const count = useAtomValue(setOnlyAtom)
+  const setCount = useAtomSet(() => setOnlyAtom)
+  const count = useAtomValue(() => setOnlyAtom)
 
   return (
     <div class="p-6 bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl">
@@ -130,11 +130,11 @@ function SetOnlyDemo() {
 function SubscribeDemo() {
   const [logs, setLogs] = createSignal<string[]>([])
 
-  useAtomSubscribe(subscribeAtom, (val: number) => {
+  useAtomSubscribe(() => subscribeAtom, (val: number) => {
     setLogs((prev) => [`Value changed to: ${val}`, ...prev].slice(0, 3))
   })
 
-  const setCount = useAtomSet(subscribeAtom)
+  const setCount = useAtomSet(() => subscribeAtom)
 
   return (
     <div class="p-6 bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl">
@@ -156,7 +156,7 @@ function SubscribeDemo() {
 function MountDemo() {
   // This atom will log when mounted/unmounted if we added effects to it
   // For this demo, we just show that useAtomMount can be called
-  useAtomMount(mountAtom)
+  useAtomMount(() => mountAtom)
 
   return (
     <div class="p-6 bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl">
