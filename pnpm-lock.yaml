@@ -323,6 +323,7 @@ catalogs:
       version: 4.3.6
 
 overrides:
+  '@effect/platform-node-shared': 4.0.0-beta.33
   '@types/react': 19.1.13
   '@types/react-dom': 19.1.9
 
@@ -743,7 +744,7 @@ importers:
     dependencies:
       '@effect-atom/atom':
         specifier: 'catalog:'
-        version: 0.5.0(@effect/experimental@0.59.0(@effect/platform@0.94.5(effect@4.0.0-beta.33))(effect@4.0.0-beta.33)(ioredis@5.10.1))(@effect/platform@0.94.5(effect@4.0.0-beta.33))(@effect/rpc@0.73.2(@effect/platform@0.94.5(effect@4.0.0-beta.33))(effect@4.0.0-beta.33))(effect@4.0.0-beta.33)
+        version: 0.5.0(@effect/experimental@0.59.0(@effect/platform@0.95.0(effect@4.0.0-beta.33))(effect@4.0.0-beta.33)(ioredis@5.10.1))(@effect/platform@0.95.0(effect@4.0.0-beta.33))(@effect/rpc@0.73.2(@effect/platform@0.95.0(effect@4.0.0-beta.33))(effect@4.0.0-beta.33))(effect@4.0.0-beta.33)
       '@effect/atom-solid':
         specifier: 'catalog:'
         version: 4.0.0-beta.33(effect@4.0.0-beta.33)(solid-js@1.9.12)
@@ -2280,11 +2281,11 @@ packages:
     resolution: {integrity: sha512-gvJaHoeXMHAoA6+Xyj9Vdq52yDCs+ECLbKpHvxHtdJP/C0D9b3JFEfLjdVuw37zoWcYS856um4rgEYHlW2LSEQ==}
     hasBin: true
 
-  '@effect/platform-node-shared@4.0.0-beta.57':
-    resolution: {integrity: sha512-C976X6f+qHUtLSqcqImuCrjhAHnJV17NC2RvvybsAuDfkyIWU4MyiO2XwgiBeijeNupyr1M/KPKnyjtkNxV9Hw==}
+  '@effect/platform-node-shared@4.0.0-beta.33':
+    resolution: {integrity: sha512-jaJnvYz1IiPZyN//fCJsvwnmujJS5KD8noCVVLhb4ZGCWKhQpt0x2iuax6HFzMlPEQSfl04GLU+PVKh0nkzPyA==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
-      effect: ^4.0.0-beta.57
+      effect: ^4.0.0-beta.33
 
   '@effect/platform-node@4.0.0-beta.33':
     resolution: {integrity: sha512-mw/zCuq4bSRP5nm3hPlfjX+veKlG6kC3NleuMhRuVSa8NzlHF08rXptd6S9ks9JuDz5F6dgzIf/beaGAYF8TmA==}
@@ -2292,11 +2293,6 @@ packages:
     peerDependencies:
       effect: ^4.0.0-beta.33
       ioredis: ^5.7.0
-
-  '@effect/platform@0.94.5':
-    resolution: {integrity: sha512-z05APUiDDPbodhTkH/RJqOLoCU11bU2IZLfcwLFrld03+ob1VeqRnELQlmueLIYm6NZifHAtjl32V+GRt34y4A==}
-    peerDependencies:
-      effect: ^3.19.17
 
   '@effect/platform@0.95.0':
     resolution: {integrity: sha512-WDlRiWRSWlmhCPq09bvAofK0qr5vM4yNklXjoJdZHmugKRRTpN/Okn3ODnjgM/Kb/4hjMrRyrsUeH/Brieq7KA==}
@@ -13377,11 +13373,11 @@ snapshots:
   '@dprint/win32-x64@0.51.1':
     optional: true
 
-  '@effect-atom/atom@0.5.0(@effect/experimental@0.59.0(@effect/platform@0.94.5(effect@4.0.0-beta.33))(effect@4.0.0-beta.33)(ioredis@5.10.1))(@effect/platform@0.94.5(effect@4.0.0-beta.33))(@effect/rpc@0.73.2(@effect/platform@0.94.5(effect@4.0.0-beta.33))(effect@4.0.0-beta.33))(effect@4.0.0-beta.33)':
+  '@effect-atom/atom@0.5.0(@effect/experimental@0.59.0(@effect/platform@0.95.0(effect@4.0.0-beta.33))(effect@4.0.0-beta.33)(ioredis@5.10.1))(@effect/platform@0.95.0(effect@4.0.0-beta.33))(@effect/rpc@0.73.2(@effect/platform@0.95.0(effect@4.0.0-beta.33))(effect@4.0.0-beta.33))(effect@4.0.0-beta.33)':
     dependencies:
-      '@effect/experimental': 0.59.0(@effect/platform@0.94.5(effect@4.0.0-beta.33))(effect@4.0.0-beta.33)(ioredis@5.10.1)
-      '@effect/platform': 0.94.5(effect@4.0.0-beta.33)
-      '@effect/rpc': 0.73.2(@effect/platform@0.94.5(effect@4.0.0-beta.33))(effect@4.0.0-beta.33)
+      '@effect/experimental': 0.59.0(@effect/platform@0.95.0(effect@4.0.0-beta.33))(effect@4.0.0-beta.33)(ioredis@5.10.1)
+      '@effect/platform': 0.95.0(effect@4.0.0-beta.33)
+      '@effect/rpc': 0.73.2(@effect/platform@0.95.0(effect@4.0.0-beta.33))(effect@4.0.0-beta.33)
       effect: 4.0.0-beta.33
 
   '@effect/atom-solid@4.0.0-beta.33(effect@4.0.0-beta.33)(solid-js@1.9.12)':
@@ -13394,14 +13390,6 @@ snapshots:
       micromatch: 4.0.8
       pkg-entry-points: 1.1.1
 
-  '@effect/experimental@0.59.0(@effect/platform@0.94.5(effect@4.0.0-beta.33))(effect@4.0.0-beta.33)(ioredis@5.10.1)':
-    dependencies:
-      '@effect/platform': 0.94.5(effect@4.0.0-beta.33)
-      effect: 4.0.0-beta.33
-      uuid: 11.1.0
-    optionalDependencies:
-      ioredis: 5.10.1
-
   '@effect/experimental@0.59.0(@effect/platform@0.95.0(effect@4.0.0-beta.33))(effect@4.0.0-beta.33)(ioredis@5.10.1)':
     dependencies:
       '@effect/platform': 0.95.0(effect@4.0.0-beta.33)
@@ -13412,7 +13400,7 @@ snapshots:
 
   '@effect/language-service@0.56.0': {}
 
-  '@effect/platform-node-shared@4.0.0-beta.57(effect@4.0.0-beta.33)':
+  '@effect/platform-node-shared@4.0.0-beta.33(effect@4.0.0-beta.33)':
     dependencies:
       '@types/ws': 8.18.1
       effect: 4.0.0-beta.33
@@ -13423,7 +13411,7 @@ snapshots:
 
   '@effect/platform-node@4.0.0-beta.33(effect@4.0.0-beta.33)(ioredis@5.10.1)':
     dependencies:
-      '@effect/platform-node-shared': 4.0.0-beta.57(effect@4.0.0-beta.33)
+      '@effect/platform-node-shared': 4.0.0-beta.33(effect@4.0.0-beta.33)
       effect: 4.0.0-beta.33
       ioredis: 5.10.1
       mime: 4.1.0
@@ -13432,13 +13420,6 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
-  '@effect/platform@0.94.5(effect@4.0.0-beta.33)':
-    dependencies:
-      effect: 4.0.0-beta.33
-      find-my-way-ts: 0.1.6
-      msgpackr: 1.11.10
-      multipasta: 0.2.7
-
   '@effect/platform@0.95.0(effect@4.0.0-beta.33)':
     dependencies:
       effect: 4.0.0-beta.33
@@ -13446,9 +13427,9 @@ snapshots:
       msgpackr: 1.11.10
       multipasta: 0.2.7
 
-  '@effect/rpc@0.73.2(@effect/platform@0.94.5(effect@4.0.0-beta.33))(effect@4.0.0-beta.33)':
+  '@effect/rpc@0.73.2(@effect/platform@0.95.0(effect@4.0.0-beta.33))(effect@4.0.0-beta.33)':
     dependencies:
-      '@effect/platform': 0.94.5(effect@4.0.0-beta.33)
+      '@effect/platform': 0.95.0(effect@4.0.0-beta.33)
       effect: 4.0.0-beta.33
       msgpackr: 1.11.10
 
