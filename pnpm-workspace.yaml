@@ -28,6 +28,7 @@ catalog:
   '@nx/react': 22.6.2
   '@nx/vite': 22.6.2
   '@nx/web': 22.6.2
+  '@nx/cypress': 22.6.2
   '@picocss/pico': ^2.1.1
   '@prisma/adapter-better-sqlite3': 7.3.0
   '@prisma/adapter-pg': 7.3.0
