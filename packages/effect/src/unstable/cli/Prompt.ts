@@ -2187,11 +2187,14 @@ const processSelection = Effect.fnUntraced(function*(state: FileState, options: 
 
 const handleFileProcess = (options: FileOptionsReq) => {
   return Effect.fnUntraced(function*(input: Terminal.UserInput, state: FileState) {
-    if (input.key.ctrl && input.key.name === "u") {
-      if (showConfirmation(state.confirm)) {
-        return Action.Beep()
+    if (input.key.ctrl) {
+      if (input.key.name === "u") {
+        if (showConfirmation(state.confirm)) {
+          return Action.Beep()
+        }
+        return yield* processFileClear(state)
       }
-      return yield* processFileClear(state)
+      return Action.Beep()
     }
     switch (input.key.name) {
       case "k":
@@ -2300,6 +2303,17 @@ const renderChoiceDescription = <A>(
 
 const metaOptionsCount = 2
 
+const renderMultiSelectTitle = (
+  title: string,
+  isHighlighted: boolean,
+  renderOptions?: RenderOptions | undefined
+) => {
+  if (renderOptions?.plain === true || !isHighlighted) {
+    return title
+  }
+  return Ansi.annotate(title, Ansi.combine(Ansi.underlined, Ansi.cyanBright))
+}
+
 const renderMultiSelectChoices = <A>(
   state: MultiSelectState,
   options: SelectOptionsReq<A> & MultiSelectOptionsReq,
@@ -2335,9 +2349,7 @@ const renderMultiSelectChoices = <A>(
     }
     if (index < metaOptions.length) {
       // Meta options
-      const title = isHighlighted && renderOptions?.plain !== true
-        ? Ansi.annotate(choice.title, Ansi.cyanBright)
-        : choice.title
+      const title = renderMultiSelectTitle(choice.title, isHighlighted, renderOptions)
       documents.push(prefix + " " + title)
     } else {
       // Regular choices
@@ -2347,7 +2359,7 @@ const renderMultiSelectChoices = <A>(
       const annotatedCheckbox = isHighlighted && renderOptions?.plain !== true
         ? Ansi.annotate(checkbox, Ansi.cyanBright)
         : checkbox
-      const title = choice.title
+      const title = renderMultiSelectTitle(choice.title, isHighlighted, renderOptions)
       const description = renderChoiceDescription(choice as SelectChoice<A>, isHighlighted, renderOptions)
       documents.push(prefix + " " + annotatedCheckbox + " " + title + " " + description)
     }
@@ -3154,8 +3166,11 @@ const handleSelectProcess = <A>(options: SelectOptionsReq<A>) => {
 
 const handleAutoCompleteProcess = <A>(options: AutoCompleteOptionsReq<A>) => {
   return (input: Terminal.UserInput, state: AutoCompleteState) => {
-    if (input.key.ctrl && input.key.name === "u") {
-      return processAutoCompleteClear(state, options)
+    if (input.key.ctrl) {
+      if (input.key.name === "u") {
+        return processAutoCompleteClear(state, options)
+      }
+      return Effect.succeed(Action.Beep())
     }
     switch (input.key.name) {
       case "k":
@@ -3416,6 +3431,9 @@ const handleTextProcess = (options: TextOptionsReq) => {
         }
         case "e": {
           return processTextCursorEnd(state)
+        }
+        default: {
+          return Effect.succeed(Action.Beep())
         }
       }
     }

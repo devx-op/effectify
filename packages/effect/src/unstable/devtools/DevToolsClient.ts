@@ -2,14 +2,15 @@
  * @since 4.0.0
  */
 import * as Cause from "../../Cause.ts"
+import * as Context from "../../Context.ts"
 import * as Deferred from "../../Deferred.ts"
 import * as Effect from "../../Effect.ts"
+import * as Fiber from "../../Fiber.ts"
 import * as Layer from "../../Layer.ts"
 import * as Metric from "../../Metric.ts"
 import * as Queue from "../../Queue.ts"
 import * as Schema from "../../Schema.ts"
 import type * as Scope from "../../Scope.ts"
-import * as ServiceMap from "../../ServiceMap.ts"
 import * as Stream from "../../Stream.ts"
 import * as Tracer from "../../Tracer.ts"
 import * as Ndjson from "../encoding/Ndjson.ts"
@@ -23,13 +24,18 @@ const ResponseSchema = Schema.toCodecJson(DevToolsSchema.Response)
  * @since 4.0.0
  * @category tags
  */
-export class DevToolsClient extends ServiceMap.Service<DevToolsClient, {
-  readonly sendUnsafe: (_: DevToolsSchema.Span | DevToolsSchema.SpanEvent) => void
-}>()("effect/devtools/DevToolsClient") {}
+export class DevToolsClient extends Context.Service<
+  DevToolsClient,
+  {
+    readonly sendUnsafe: (
+      _: DevToolsSchema.Span | DevToolsSchema.SpanEvent
+    ) => void
+  }
+>()("effect/devtools/DevToolsClient") {}
 
 const makeEffect = Effect.gen(function*() {
   const socket = yield* Socket.Socket
-  const services = yield* Effect.services<never>()
+  const services = yield* Effect.context<never>()
   const requests = yield* Queue.unbounded<DevToolsSchema.Request>()
   const connected = yield* Deferred.make<void>()
 
@@ -37,7 +43,9 @@ const makeEffect = Effect.gen(function*() {
     Queue.offerUnsafe(requests, toMetricsSnapshot(services))
   })
 
-  const handleResponse = (response: DevToolsSchema.Response): Effect.Effect<void> => {
+  const handleResponse = (
+    response: DevToolsSchema.Response
+  ): Effect.Effect<void> => {
     switch (response._tag) {
       case "MetricsRequest": {
         return offerMetricsSnapshot
@@ -48,7 +56,7 @@ const makeEffect = Effect.gen(function*() {
     }
   }
 
-  yield* Stream.fromQueue(requests).pipe(
+  const fiber = yield* Stream.fromQueue(requests).pipe(
     Stream.pipeThroughChannel(
       Ndjson.duplexSchemaString(Socket.toChannelString(socket), {
         inputSchema: RequestSchema,
@@ -57,12 +65,15 @@ const makeEffect = Effect.gen(function*() {
     ),
     Stream.onFirst(() => Deferred.completeWith(connected, Effect.void)),
     Stream.runForEach(handleResponse),
-    Effect.forkScoped
+    Effect.forkDetach
   )
 
   yield* Effect.addFinalizer(() =>
     offerMetricsSnapshot.pipe(
-      Effect.andThen(Effect.flatMap(Effect.fiberId, (id) => Queue.failCause(requests, Cause.interrupt(id))))
+      Effect.andThen(
+        Effect.flatMap(Effect.fiberId, (id) => Queue.failCause(requests, Cause.interrupt(id)))
+      ),
+      Effect.andThen(Fiber.await(fiber))
     )
   )
 
@@ -84,9 +95,11 @@ const makeEffect = Effect.gen(function*() {
   })
 })
 
-const toMetricsSnapshot = (services: ServiceMap.ServiceMap<never>): DevToolsSchema.MetricsSnapshot => ({
+const toMetricsSnapshot = (
+  context: Context.Context<never>
+): DevToolsSchema.MetricsSnapshot => ({
   _tag: "MetricsSnapshot",
-  metrics: Metric.snapshotUnsafe(services)
+  metrics: Metric.snapshotUnsafe(context)
 })
 
 /**
@@ -108,11 +121,7 @@ export const make: Effect.Effect<
  * @since 4.0.0
  * @category layers
  */
-export const layer: Layer.Layer<
-  DevToolsClient,
-  never,
-  Socket.Socket
-> = Layer.effect(DevToolsClient, make)
+export const layer: Layer.Layer<DevToolsClient, never, Socket.Socket> = Layer.effect(DevToolsClient, make)
 
 const makeTracerEffect = Effect.gen(function*() {
   const client = yield* DevToolsClient
@@ -162,10 +171,6 @@ export const makeTracer: Effect.Effect<Tracer.Tracer, never, DevToolsClient> = m
  * @since 4.0.0
  * @category layers
  */
-export const layerTracer: Layer.Layer<
-  never,
-  never,
-  Socket.Socket
-> = Layer.effect(Tracer.Tracer, makeTracer).pipe(
+export const layerTracer: Layer.Layer<never, never, Socket.Socket> = Layer.effect(Tracer.Tracer, makeTracer).pipe(
   Layer.provide(layer)
 )

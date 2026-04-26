@@ -2,6 +2,7 @@
  * @since 1.0.0
  */
 import * as Config from "effect/Config"
+import * as Context from "effect/Context"
 import * as Duration from "effect/Duration"
 import * as Effect from "effect/Effect"
 import { identity } from "effect/Function"
@@ -9,12 +10,22 @@ import * as Layer from "effect/Layer"
 import * as Pool from "effect/Pool"
 import * as Redacted from "effect/Redacted"
 import * as Scope from "effect/Scope"
-import * as ServiceMap from "effect/ServiceMap"
 import * as Stream from "effect/Stream"
 import * as Reactivity from "effect/unstable/reactivity/Reactivity"
 import * as Client from "effect/unstable/sql/SqlClient"
 import type { Connection } from "effect/unstable/sql/SqlConnection"
-import { SqlError } from "effect/unstable/sql/SqlError"
+import {
+  AuthenticationError,
+  AuthorizationError,
+  ConnectionError,
+  ConstraintError,
+  DeadlockError,
+  LockTimeoutError,
+  SerializationError,
+  SqlError,
+  SqlSyntaxError,
+  UnknownError
+} from "effect/unstable/sql/SqlError"
 import * as Statement from "effect/unstable/sql/Statement"
 import * as Tedious from "tedious"
 import type { ConnectionOptions } from "tedious/lib/connection.ts"
@@ -27,6 +38,57 @@ const ATTR_DB_SYSTEM_NAME = "db.system.name"
 const ATTR_DB_NAMESPACE = "db.namespace"
 const ATTR_SERVER_ADDRESS = "server.address"
 const ATTR_SERVER_PORT = "server.port"
+
+const mssqlNumberFromCause = (cause: unknown): number | undefined => {
+  if (typeof cause !== "object" || cause === null || !("number" in cause)) {
+    return undefined
+  }
+  const number = cause.number
+  return typeof number === "number" ? number : undefined
+}
+
+const mssqlConnectionErrorCodes = new Set([233, 10054])
+const mssqlAuthenticationErrorCodes = new Set([4060, 18452, 18456])
+const mssqlAuthorizationErrorCodes = new Set([229, 230, 262, 297, 300])
+const mssqlSyntaxErrorCodes = new Set([102, 207, 208, 2714])
+const mssqlConstraintErrorCodes = new Set([515, 547, 2601, 2627])
+
+const classifyError = (
+  cause: unknown,
+  message: string,
+  operation: string,
+  fallback: "connection" | "unknown" = "unknown"
+) => {
+  const props = { cause, message, operation }
+  const number = mssqlNumberFromCause(cause)
+  if (number !== undefined) {
+    if (mssqlConnectionErrorCodes.has(number)) {
+      return new ConnectionError(props)
+    }
+    if (mssqlAuthenticationErrorCodes.has(number)) {
+      return new AuthenticationError(props)
+    }
+    if (mssqlAuthorizationErrorCodes.has(number)) {
+      return new AuthorizationError(props)
+    }
+    if (mssqlSyntaxErrorCodes.has(number)) {
+      return new SqlSyntaxError(props)
+    }
+    if (mssqlConstraintErrorCodes.has(number)) {
+      return new ConstraintError(props)
+    }
+    if (number === 1205) {
+      return new DeadlockError(props)
+    }
+    if (number === 3960) {
+      return new SerializationError(props)
+    }
+    if (number === 1222) {
+      return new LockTimeoutError(props)
+    }
+  }
+  return fallback === "connection" ? new ConnectionError(props) : new UnknownError(props)
+}
 
 /**
  * @category type ids
@@ -68,7 +130,7 @@ export interface MssqlClient extends Client.SqlClient {
  * @category tags
  * @since 1.0.0
  */
-export const MssqlClient = ServiceMap.Service<MssqlClient>("@effect/sql-mssql/MssqlClient")
+export const MssqlClient = Context.Service<MssqlClient>("@effect/sql-mssql/MssqlClient")
 
 /**
  * @category models
@@ -111,10 +173,12 @@ interface MssqlConnection extends Connection {
   readonly rollback: (name?: string) => Effect.Effect<void, SqlError>
 }
 
-const TransactionConnection = Client.TransactionConnection as unknown as ServiceMap.Service<
+const TransactionConnection = Client.TransactionConnection as unknown as (clientId: number) => Context.Service<
   readonly [conn: MssqlConnection, counter: number],
   readonly [conn: MssqlConnection, counter: number]
 >
+
+let clientIdCounter = 0
 
 /**
  * @category constructors
@@ -174,7 +238,9 @@ export const make = (
       yield* Effect.callback<void, SqlError>((resume) => {
         conn.connect((cause) => {
           if (cause) {
-            resume(Effect.fail(new SqlError({ cause, message: "Failed to connect" })))
+            resume(
+              Effect.fail(new SqlError({ reason: classifyError(cause, "Failed to connect", "connect", "connection") }))
+            )
           } else {
             resume(Effect.void)
           }
@@ -189,7 +255,9 @@ export const make = (
         Effect.callback<any, SqlError>((resume) => {
           const req = new Tedious.Request(sql, (cause, _rowCount, result) => {
             if (cause) {
-              resume(Effect.fail(new SqlError({ cause, message: "Failed to execute statement" })))
+              resume(
+                Effect.fail(new SqlError({ reason: classifyError(cause, "Failed to execute statement", "execute") }))
+              )
               return
             }
 
@@ -232,7 +300,9 @@ export const make = (
             escape(procedure.name),
             (cause, _, rows) => {
               if (cause) {
-                resume(Effect.fail(new SqlError({ cause, message: "Failed to execute statement" })))
+                resume(
+                  Effect.fail(new SqlError({ reason: classifyError(cause, "Failed to execute statement", "execute") }))
+                )
               } else {
                 rows = rowsToObjects(rows)
                 if (transformRows) {
@@ -291,7 +361,13 @@ export const make = (
         begin: Effect.callback<void, SqlError>((resume) => {
           conn.beginTransaction((cause) => {
             if (cause) {
-              resume(Effect.fail(new SqlError({ cause, message: "Failed to begin transaction" })))
+              resume(
+                Effect.fail(
+                  new SqlError({
+                    reason: classifyError(cause, "Failed to begin transaction", "beginTransaction")
+                  })
+                )
+              )
             } else {
               resume(Effect.void)
             }
@@ -300,7 +376,13 @@ export const make = (
         commit: Effect.callback<void, SqlError>((resume) => {
           conn.commitTransaction((cause) => {
             if (cause) {
-              resume(Effect.fail(new SqlError({ cause, message: "Failed to commit transaction" })))
+              resume(
+                Effect.fail(
+                  new SqlError({
+                    reason: classifyError(cause, "Failed to commit transaction", "commitTransaction")
+                  })
+                )
+              )
             } else {
               resume(Effect.void)
             }
@@ -310,7 +392,11 @@ export const make = (
           Effect.callback<void, SqlError>((resume) => {
             conn.saveTransaction((cause) => {
               if (cause) {
-                resume(Effect.fail(new SqlError({ cause, message: "Failed to create savepoint" })))
+                resume(
+                  Effect.fail(
+                    new SqlError({ reason: classifyError(cause, "Failed to create savepoint", "createSavepoint") })
+                  )
+                )
               } else {
                 resume(Effect.void)
               }
@@ -320,7 +406,13 @@ export const make = (
           Effect.callback<void, SqlError>((resume) => {
             conn.rollbackTransaction((cause) => {
               if (cause) {
-                resume(Effect.fail(new SqlError({ cause, message: "Failed to rollback transaction" })))
+                resume(
+                  Effect.fail(
+                    new SqlError({
+                      reason: classifyError(cause, "Failed to rollback transaction", "rollbackTransaction")
+                    })
+                  )
+                )
               } else {
                 resume(Effect.void)
               }
@@ -349,22 +441,29 @@ export const make = (
 
     yield* Pool.get(pool).pipe(
       Effect.tap((connection) => connection.executeUnprepared("SELECT 1", [], undefined)),
-      Effect.mapError(({ cause }) => new SqlError({ cause, message: "MssqlClient: Failed to connect" })),
+      Effect.mapError((cause) =>
+        new SqlError({ reason: classifyError(cause, "MssqlClient: Failed to connect", "connect", "connection") })
+      ),
       Effect.scoped,
       Effect.timeoutOrElse({
         duration: options.connectTimeout ?? Duration.seconds(5),
-        onTimeout: () =>
+        orElse: () =>
           Effect.fail(
             new SqlError({
-              message: "MssqlClient: Connection timeout",
-              cause: new Error("connection timeout")
+              reason: new ConnectionError({
+                message: "MssqlClient: Connection timeout",
+                cause: new Error("connection timeout"),
+                operation: "connect"
+              })
             })
           )
       })
     )
 
+    const transactionService = TransactionConnection(clientIdCounter++)
+
     const withTransaction = Client.makeWithTransaction({
-      transactionService: TransactionConnection,
+      transactionService,
       spanAttributes,
       acquireConnection: Effect.gen(function*() {
         const scope = Scope.makeUnsafe()
@@ -382,6 +481,7 @@ export const make = (
       yield* Client.make({
         acquirer: Pool.get(pool),
         compiler,
+        transactionService: transactionService as any,
         spanAttributes,
         transformRows
       }),
@@ -434,12 +534,12 @@ export const layerConfig: (
 ) => Layer.Layer<Client.SqlClient | MssqlClient, Config.ConfigError | SqlError> = (
   config: Config.Wrap<MssqlClientConfig>
 ): Layer.Layer<Client.SqlClient | MssqlClient, Config.ConfigError | SqlError> =>
-  Layer.effectServices(
+  Layer.effectContext(
     Config.unwrap(config).asEffect().pipe(
       Effect.flatMap(make),
       Effect.map((client) =>
-        ServiceMap.make(MssqlClient, client).pipe(
-          ServiceMap.add(Client.SqlClient, client)
+        Context.make(MssqlClient, client).pipe(
+          Context.add(Client.SqlClient, client)
         )
       )
     )
@@ -452,10 +552,10 @@ export const layerConfig: (
 export const layer = (
   config: MssqlClientConfig
 ): Layer.Layer<Client.SqlClient | MssqlClient, never | SqlError> =>
-  Layer.effectServices(
+  Layer.effectContext(
     Effect.map(make(config), (client) =>
-      ServiceMap.make(MssqlClient, client).pipe(
-        ServiceMap.add(Client.SqlClient, client)
+      Context.make(MssqlClient, client).pipe(
+        Context.add(Client.SqlClient, client)
       ))
   ).pipe(Layer.provide(Reactivity.layer))
 

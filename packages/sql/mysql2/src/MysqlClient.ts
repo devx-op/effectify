@@ -2,17 +2,28 @@
  * @since 1.0.0
  */
 import * as Config from "effect/Config"
+import * as Context from "effect/Context"
 import * as Duration from "effect/Duration"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import * as Redacted from "effect/Redacted"
 import type { Scope } from "effect/Scope"
-import * as ServiceMap from "effect/ServiceMap"
 import * as Stream from "effect/Stream"
 import * as Reactivity from "effect/unstable/reactivity/Reactivity"
 import * as Client from "effect/unstable/sql/SqlClient"
 import type { Connection } from "effect/unstable/sql/SqlConnection"
-import { SqlError } from "effect/unstable/sql/SqlError"
+import {
+  AuthenticationError,
+  AuthorizationError,
+  ConnectionError,
+  ConstraintError,
+  DeadlockError,
+  LockTimeoutError,
+  SqlError,
+  SqlSyntaxError,
+  StatementTimeoutError,
+  UnknownError
+} from "effect/unstable/sql/SqlError"
 import { asyncPauseResume } from "effect/unstable/sql/SqlStream"
 import * as Statement from "effect/unstable/sql/Statement"
 import * as Mysql from "mysql2"
@@ -21,6 +32,55 @@ const ATTR_DB_SYSTEM_NAME = "db.system.name"
 const ATTR_DB_NAMESPACE = "db.namespace"
 const ATTR_SERVER_ADDRESS = "server.address"
 const ATTR_SERVER_PORT = "server.port"
+
+const mysqlErrnoFromCause = (cause: unknown): number | undefined => {
+  if (typeof cause !== "object" || cause === null || !("errno" in cause)) {
+    return undefined
+  }
+  const errno = cause.errno
+  return typeof errno === "number" ? errno : undefined
+}
+
+const mysqlConnectionErrorCodes = new Set([1040, 1042, 1043, 1129, 1130, 1203])
+const mysqlAuthorizationErrorCodes = new Set([1044, 1142, 1143, 1227])
+const mysqlSyntaxErrorCodes = new Set([1054, 1064, 1146])
+const mysqlConstraintErrorCodes = new Set([1022, 1048, 1062, 1169, 1216, 1217, 1451, 1452, 1557])
+
+const classifyError = (
+  cause: unknown,
+  message: string,
+  operation: string
+) => {
+  const props = { cause, message, operation }
+  const errno = mysqlErrnoFromCause(cause)
+  if (errno !== undefined) {
+    if (mysqlConnectionErrorCodes.has(errno)) {
+      return new ConnectionError(props)
+    }
+    if (errno === 1045) {
+      return new AuthenticationError(props)
+    }
+    if (mysqlAuthorizationErrorCodes.has(errno)) {
+      return new AuthorizationError(props)
+    }
+    if (mysqlSyntaxErrorCodes.has(errno)) {
+      return new SqlSyntaxError(props)
+    }
+    if (mysqlConstraintErrorCodes.has(errno)) {
+      return new ConstraintError(props)
+    }
+    if (errno === 1213) {
+      return new DeadlockError(props)
+    }
+    if (errno === 1205) {
+      return new LockTimeoutError(props)
+    }
+    if (errno === 3024) {
+      return new StatementTimeoutError(props)
+    }
+  }
+  return new UnknownError(props)
+}
 
 /**
  * @category type ids
@@ -47,7 +107,7 @@ export interface MysqlClient extends Client.SqlClient {
  * @category tags
  * @since 1.0.0
  */
-export const MysqlClient = ServiceMap.Service<MysqlClient>("@effect/sql-mysql2/MysqlClient")
+export const MysqlClient = Context.Service<MysqlClient>("@effect/sql-mysql2/MysqlClient")
 
 /**
  * @category models
@@ -104,13 +164,16 @@ export const make = (
         method: "execute" | "query" = "execute"
       ) {
         return Effect.callback<unknown, SqlError>((resume) => {
+          const operation = method === "query" ? "executeUnprepared" : "execute"
           ;(this.conn as any)[method]({
             sql,
             values,
             rowsAsArray
           }, (cause: unknown | null, results: unknown, _fields: any) => {
             if (cause) {
-              resume(Effect.fail(new SqlError({ cause, message: "Failed to execute statement" })))
+              resume(
+                Effect.fail(new SqlError({ reason: classifyError(cause, "Failed to execute statement", operation) }))
+              )
             } else {
               resume(Effect.succeed(results))
             }
@@ -198,8 +261,7 @@ export const make = (
           if (cause) {
             resume(Effect.fail(
               new SqlError({
-                cause,
-                message: "MysqlClient: Failed to connect"
+                reason: classifyError(cause, "MysqlClient: Failed to connect", "connect")
               })
             ))
           } else {
@@ -214,11 +276,14 @@ export const make = (
     ).pipe(
       Effect.timeoutOrElse({
         duration: Duration.seconds(5),
-        onTimeout: () =>
+        orElse: () =>
           Effect.fail(
             new SqlError({
-              message: "MysqlClient: Connection timeout",
-              cause: new Error("connection timeout")
+              reason: new ConnectionError({
+                message: "MysqlClient: Connection timeout",
+                cause: new Error("connection timeout"),
+                operation: "connect"
+              })
             })
           )
       })
@@ -230,7 +295,13 @@ export const make = (
       Effect.callback<Mysql.PoolConnection, SqlError>((resume) => {
         pool.getConnection((cause, conn) => {
           if (cause) {
-            resume(Effect.fail(new SqlError({ cause, message: "Failed to acquire connection" })))
+            resume(
+              Effect.fail(
+                new SqlError({
+                  reason: classifyError(cause, "Failed to acquire connection", "acquireConnection")
+                })
+              )
+            )
           } else {
             resume(Effect.succeed(conn))
           }
@@ -274,12 +345,12 @@ export const make = (
 export const layerConfig = (
   config: Config.Wrap<MysqlClientConfig>
 ): Layer.Layer<MysqlClient | Client.SqlClient, Config.ConfigError | SqlError> =>
-  Layer.effectServices(
+  Layer.effectContext(
     Config.unwrap(config).asEffect().pipe(
       Effect.flatMap(make),
       Effect.map((client) =>
-        ServiceMap.make(MysqlClient, client).pipe(
-          ServiceMap.add(Client.SqlClient, client)
+        Context.make(MysqlClient, client).pipe(
+          Context.add(Client.SqlClient, client)
         )
       )
     )
@@ -292,10 +363,10 @@ export const layerConfig = (
 export const layer = (
   config: MysqlClientConfig
 ): Layer.Layer<MysqlClient | Client.SqlClient, Config.ConfigError | SqlError> =>
-  Layer.effectServices(
+  Layer.effectContext(
     Effect.map(make(config), (client) =>
-      ServiceMap.make(MysqlClient, client).pipe(
-        ServiceMap.add(Client.SqlClient, client)
+      Context.make(MysqlClient, client).pipe(
+        Context.add(Client.SqlClient, client)
       ))
   ).pipe(Layer.provide(Reactivity.layer))
 
@@ -331,11 +402,15 @@ function queryStream(
 ) {
   return asyncPauseResume<any, SqlError>(Effect.fnUntraced(function*(emit) {
     const query = (conn as any).query(sql, params).stream()
-    yield* Effect.addFinalizer(() => Effect.sync(() => query.destroy()))
+    yield* Effect.addFinalizer(() => Effect.sync(() => query.destroy() as void))
 
     let buffer: Array<any> = []
     let taskPending = false
-    query.on("error", (cause: unknown) => emit.fail(new SqlError({ cause, message: "Failed to stream statement" })))
+    query.on(
+      "error",
+      (cause: unknown) =>
+        emit.fail(new SqlError({ reason: classifyError(cause, "Failed to stream statement", "stream") }))
+    )
     query.on("data", (row: any) => {
       buffer.push(row)
       if (!taskPending) {

@@ -1,6 +1,6 @@
 import { describe, test } from "@effect/vitest"
 import { deepStrictEqual, strictEqual } from "@effect/vitest/utils"
-import { Effect, References, ServiceMap, Stream } from "effect"
+import { Context, Effect, References, Stream } from "effect"
 import * as Layer from "effect/Layer"
 import { HttpEffect, HttpServerRequest, HttpServerResponse } from "effect/unstable/http"
 import {
@@ -86,7 +86,7 @@ describe("Http/App", () => {
       const handler = Effect.succeed(HttpServerResponse.stream(
         Stream.fromEffect(References.CurrentConcurrency.asEffect()).pipe(Stream.map(String), Stream.encodeText)
       )).pipe(
-        HttpEffect.toWebHandlerWith(References.CurrentConcurrency.serviceMap(420))
+        HttpEffect.toWebHandlerWith(References.CurrentConcurrency.context(420))
       )
       const response = await handler(new Request("http://localhost:3000/"))
       strictEqual(await response.text(), "420")
@@ -122,14 +122,14 @@ describe("Http/App", () => {
   })
 
   test("custom context", async () => {
-    const Env = ServiceMap.Reference<{ foo: string }>("Env", {
+    const Env = Context.Reference<{ foo: string }>("Env", {
       defaultValue: () => ({ foo: "bar" })
     })
     const handler = HttpEffect.toWebHandler(Effect.gen(function*() {
       const env = yield* Env
       return yield* HttpServerResponse.json(env)
     }))
-    const response = await handler(new Request("http://localhost:3000/"), Env.serviceMap({ foo: "baz" }))
+    const response = await handler(new Request("http://localhost:3000/"), Env.context({ foo: "baz" }))
     deepStrictEqual(await response.json(), {
       foo: "baz"
     })
@@ -220,6 +220,35 @@ describe("Http/App", () => {
 
       const response = await finalHandler(new Request("http://localhost:3000/"))
       deepStrictEqual(await response.json(), { source: "effect" })
+    })
+
+    test("json preserves content-type", async () => {
+      const handler = HttpEffect.toWebHandler(HttpServerResponse.json({ foo: "bar" }))
+      const response = await handler(new Request("http://localhost:3000/"))
+      strictEqual(response.headers.get("Content-Type"), "application/json")
+    })
+
+    test("preserves response content-type header", async () => {
+      const webHandler = async (_request: Request) => {
+        return Response.json({ message: "hello" })
+      }
+      const app = HttpEffect.fromWebHandler(webHandler)
+      const handler = HttpEffect.toWebHandler(app)
+      const response = await handler(new Request("http://localhost:3000/"))
+      strictEqual(response.headers.get("Content-Type"), "application/json")
+      deepStrictEqual(await response.json(), { message: "hello" })
+    })
+
+    test("preserves custom content-type header", async () => {
+      const webHandler = async (_request: Request) => {
+        return new Response("<html></html>", {
+          headers: { "Content-Type": "text/html; charset=utf-8" }
+        })
+      }
+      const app = HttpEffect.fromWebHandler(webHandler)
+      const handler = HttpEffect.toWebHandler(app)
+      const response = await handler(new Request("http://localhost:3000/"))
+      strictEqual(response.headers.get("Content-Type"), "text/html; charset=utf-8")
     })
   })
 })

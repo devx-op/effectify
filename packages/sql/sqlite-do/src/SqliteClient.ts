@@ -3,21 +3,24 @@
  */
 import type { SqlStorage } from "@cloudflare/workers-types"
 import * as Config from "effect/Config"
+import * as Context from "effect/Context"
 import * as Effect from "effect/Effect"
 import * as Fiber from "effect/Fiber"
 import { identity } from "effect/Function"
 import * as Layer from "effect/Layer"
 import * as Scope from "effect/Scope"
 import * as Semaphore from "effect/Semaphore"
-import * as ServiceMap from "effect/ServiceMap"
 import * as Stream from "effect/Stream"
 import * as Reactivity from "effect/unstable/reactivity/Reactivity"
 import * as Client from "effect/unstable/sql/SqlClient"
 import type { Connection } from "effect/unstable/sql/SqlConnection"
-import { SqlError } from "effect/unstable/sql/SqlError"
+import { classifySqliteError, SqlError } from "effect/unstable/sql/SqlError"
 import * as Statement from "effect/unstable/sql/Statement"
 
 const ATTR_DB_SYSTEM_NAME = "db.system.name"
+
+const classifyError = (cause: unknown, message: string, operation: string) =>
+  classifySqliteError(cause, { message, operation })
 
 /**
  * @category type ids
@@ -47,7 +50,7 @@ export interface SqliteClient extends Client.SqlClient {
  * @category tags
  * @since 1.0.0
  */
-export const SqliteClient = ServiceMap.Service<SqliteClient>("@effect/sql-sqlite-do/SqliteClient")
+export const SqliteClient = Context.Service<SqliteClient>("@effect/sql-sqlite-do/SqliteClient")
 
 /**
  * @category models
@@ -99,7 +102,7 @@ export const make = (
       ): Effect.Effect<ReadonlyArray<any>, SqlError, never> =>
         Effect.try({
           try: () => Array.from(runIterator(sql, params)),
-          catch: (cause) => new SqlError({ cause, message: `Failed to execute statement` })
+          catch: (cause) => new SqlError({ reason: classifyError(cause, "Failed to execute statement", "execute") })
         })
 
       const runValues = (
@@ -117,7 +120,7 @@ export const make = (
               }
               return row
             }),
-          catch: (cause) => new SqlError({ cause, message: `Failed to execute statement` })
+          catch: (cause) => new SqlError({ reason: classifyError(cause, "Failed to execute statement", "execute") })
         })
 
       return identity<Connection>({
@@ -156,7 +159,7 @@ export const make = (
     const acquirer = semaphore.withPermits(1)(Effect.succeed(connection))
     const transactionAcquirer = Effect.uninterruptibleMask((restore) => {
       const fiber = Fiber.getCurrent()!
-      const scope = ServiceMap.getUnsafe(fiber.services, Scope.Scope)
+      const scope = Context.getUnsafe(fiber.context, Scope.Scope)
       return Effect.as(
         Effect.tap(
           restore(semaphore.take(1)),
@@ -191,12 +194,12 @@ export const make = (
 export const layerConfig = (
   config: Config.Wrap<SqliteClientConfig>
 ): Layer.Layer<SqliteClient | Client.SqlClient, Config.ConfigError> =>
-  Layer.effectServices(
+  Layer.effectContext(
     Config.unwrap(config).asEffect().pipe(
       Effect.flatMap(make),
       Effect.map((client) =>
-        ServiceMap.make(SqliteClient, client).pipe(
-          ServiceMap.add(Client.SqlClient, client)
+        Context.make(SqliteClient, client).pipe(
+          Context.add(Client.SqlClient, client)
         )
       )
     )
@@ -209,9 +212,9 @@ export const layerConfig = (
 export const layer = (
   config: SqliteClientConfig
 ): Layer.Layer<SqliteClient | Client.SqlClient> =>
-  Layer.effectServices(
+  Layer.effectContext(
     Effect.map(make(config), (client) =>
-      ServiceMap.make(SqliteClient, client).pipe(
-        ServiceMap.add(Client.SqlClient, client)
+      Context.make(SqliteClient, client).pipe(
+        Context.add(Client.SqlClient, client)
       ))
   ).pipe(Layer.provide(Reactivity.layer))

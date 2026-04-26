@@ -4,6 +4,7 @@
 import Sqlite from "better-sqlite3"
 import * as Cache from "effect/Cache"
 import * as Config from "effect/Config"
+import * as Context from "effect/Context"
 import * as Duration from "effect/Duration"
 import * as Effect from "effect/Effect"
 import * as Fiber from "effect/Fiber"
@@ -11,15 +12,17 @@ import { identity } from "effect/Function"
 import * as Layer from "effect/Layer"
 import * as Scope from "effect/Scope"
 import * as Semaphore from "effect/Semaphore"
-import * as ServiceMap from "effect/ServiceMap"
 import * as Stream from "effect/Stream"
 import * as Reactivity from "effect/unstable/reactivity/Reactivity"
 import * as Client from "effect/unstable/sql/SqlClient"
 import type { Connection } from "effect/unstable/sql/SqlConnection"
-import { SqlError } from "effect/unstable/sql/SqlError"
+import { classifySqliteError, SqlError } from "effect/unstable/sql/SqlError"
 import * as Statement from "effect/unstable/sql/Statement"
 
 const ATTR_DB_SYSTEM_NAME = "db.system.name"
+
+const classifyError = (cause: unknown, message: string, operation: string) =>
+  classifySqliteError(cause, { message, operation })
 
 /**
  * @category type ids
@@ -61,7 +64,7 @@ export interface BackupMetadata {
  * @category tags
  * @since 1.0.0
  */
-export const SqliteClient = ServiceMap.Service<SqliteClient>("@effect/sql-sqlite-node/SqliteClient")
+export const SqliteClient = Context.Service<SqliteClient>("@effect/sql-sqlite-node/SqliteClient")
 
 /**
  * @category models
@@ -117,7 +120,7 @@ export const make = (
         lookup: (sql: string) =>
           Effect.try({
             try: () => db.prepare(sql),
-            catch: (cause) => new SqlError({ cause, message: "Failed to prepare statement " })
+            catch: (cause) => new SqlError({ reason: classifyError(cause, "Failed to prepare statement", "prepare") })
           })
       })
 
@@ -127,7 +130,7 @@ export const make = (
         raw: boolean
       ) =>
         Effect.withFiber<ReadonlyArray<any>, SqlError>((fiber) => {
-          if (ServiceMap.get(fiber.services, Client.SafeIntegers)) {
+          if (Context.get(fiber.context, Client.SafeIntegers)) {
             statement.safeIntegers(true)
           }
           try {
@@ -137,7 +140,7 @@ export const make = (
             const result = statement.run(...params)
             return Effect.succeed(raw ? result as unknown as ReadonlyArray<any> : [])
           } catch (cause) {
-            return Effect.fail(new SqlError({ cause, message: "Failed to execute statement" }))
+            return Effect.fail(new SqlError({ reason: classifyError(cause, "Failed to execute statement", "execute") }))
           }
         })
 
@@ -169,7 +172,7 @@ export const make = (
                 statement.run(...params)
                 return []
               },
-              catch: (cause) => new SqlError({ cause, message: "Failed to execute statement" })
+              catch: (cause) => new SqlError({ reason: classifyError(cause, "Failed to execute statement", "execute") })
             }),
           (statement) => Effect.sync(() => statement.reader && statement.raw(false))
         )
@@ -195,18 +198,19 @@ export const make = (
         },
         export: Effect.try({
           try: () => db.serialize(),
-          catch: (cause) => new SqlError({ cause, message: "Failed to export database" })
+          catch: (cause) => new SqlError({ reason: classifyError(cause, "Failed to export database", "export") })
         }),
         backup(destination) {
           return Effect.tryPromise({
             try: () => db.backup(destination),
-            catch: (cause) => new SqlError({ cause, message: "Failed to backup database" })
+            catch: (cause) => new SqlError({ reason: classifyError(cause, "Failed to backup database", "backup") })
           })
         },
         loadExtension(path) {
           return Effect.try({
             try: () => db.loadExtension(path),
-            catch: (cause) => new SqlError({ cause, message: "Failed to load extension" })
+            catch: (cause) =>
+              new SqlError({ reason: classifyError(cause, "Failed to load extension", "loadExtension") })
           })
         }
       })
@@ -218,7 +222,7 @@ export const make = (
     const acquirer = semaphore.withPermits(1)(Effect.succeed(connection))
     const transactionAcquirer = Effect.uninterruptibleMask((restore) => {
       const fiber = Fiber.getCurrent()!
-      const scope = ServiceMap.getUnsafe(fiber.services, Scope.Scope)
+      const scope = Context.getUnsafe(fiber.context, Scope.Scope)
       return Effect.as(
         Effect.tap(
           restore(semaphore.take(1)),
@@ -256,12 +260,12 @@ export const make = (
 export const layerConfig = (
   config: Config.Wrap<SqliteClientConfig>
 ): Layer.Layer<SqliteClient | Client.SqlClient, Config.ConfigError> =>
-  Layer.effectServices(
+  Layer.effectContext(
     Config.unwrap(config).asEffect().pipe(
       Effect.flatMap(make),
       Effect.map((client) =>
-        ServiceMap.make(SqliteClient, client).pipe(
-          ServiceMap.add(Client.SqlClient, client)
+        Context.make(SqliteClient, client).pipe(
+          Context.add(Client.SqlClient, client)
         )
       )
     )
@@ -274,9 +278,9 @@ export const layerConfig = (
 export const layer = (
   config: SqliteClientConfig
 ): Layer.Layer<SqliteClient | Client.SqlClient> =>
-  Layer.effectServices(
+  Layer.effectContext(
     Effect.map(make(config), (client) =>
-      ServiceMap.make(SqliteClient, client).pipe(
-        ServiceMap.add(Client.SqlClient, client)
+      Context.make(SqliteClient, client).pipe(
+        Context.add(Client.SqlClient, client)
       ))
   ).pipe(Layer.provide(Reactivity.layer))

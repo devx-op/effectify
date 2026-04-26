@@ -1,12 +1,12 @@
 import { PgClient } from "@effect/sql-pg"
 import { PostgreSqlContainer } from "@testcontainers/postgresql"
-import { Data, Effect, Layer, Redacted, ServiceMap, String } from "effect"
+import { Context, Data, Effect, Layer, Redacted, String } from "effect"
 
 export class ContainerError extends Data.TaggedError("ContainerError")<{
   cause: unknown
 }> {}
 
-export class PgContainer extends ServiceMap.Service<PgContainer>()("test/PgContainer", {
+export class PgContainer extends Context.Service<PgContainer>()("test/PgContainer", {
   make: Effect.acquireRelease(
     Effect.tryPromise({
       try: () => new PostgreSqlContainer("postgres:alpine").start(),
@@ -33,6 +33,16 @@ export class PgContainer extends ServiceMap.Service<PgContainer>()("test/PgConta
         url: Redacted.make(container.getConnectionUri()),
         transformResultNames: String.snakeToCamel,
         transformQueryNames: String.camelToSnake
+      })
+    })
+  ).pipe(Layer.provide(this.layer))
+
+  static layerClientSingleConnection = Layer.unwrap(
+    Effect.gen(function*() {
+      const container = yield* PgContainer
+      return PgClient.layer({
+        url: Redacted.make(container.getConnectionUri()),
+        maxConnections: 1
       })
     })
   ).pipe(Layer.provide(this.layer))

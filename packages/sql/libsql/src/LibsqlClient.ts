@@ -3,21 +3,24 @@
  */
 import * as Libsql from "@libsql/client"
 import * as Config from "effect/Config"
+import * as Context from "effect/Context"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import * as Option from "effect/Option"
 import * as Redacted from "effect/Redacted"
 import * as Scope from "effect/Scope"
 import * as Semaphore from "effect/Semaphore"
-import * as ServiceMap from "effect/ServiceMap"
 import * as Stream from "effect/Stream"
 import * as Reactivity from "effect/unstable/reactivity/Reactivity"
 import * as Client from "effect/unstable/sql/SqlClient"
 import type { Connection } from "effect/unstable/sql/SqlConnection"
-import { SqlError } from "effect/unstable/sql/SqlError"
+import { classifySqliteError, SqlError } from "effect/unstable/sql/SqlError"
 import * as Statement from "effect/unstable/sql/Statement"
 
 const ATTR_DB_SYSTEM_NAME = "db.system.name"
+
+const classifyError = (cause: unknown, message: string, operation: string) =>
+  classifySqliteError(cause, { message, operation })
 
 /**
  * @category type ids
@@ -44,9 +47,9 @@ export interface LibsqlClient extends Client.SqlClient {
  * @category tags
  * @since 1.0.0
  */
-export const LibsqlClient = ServiceMap.Service<LibsqlClient>("@effect/sql-libsql/LibsqlClient")
+export const LibsqlClient = Context.Service<LibsqlClient>("@effect/sql-libsql/LibsqlClient")
 
-const LibsqlTransaction = ServiceMap.Service<readonly [LibsqlConnection, counter: number]>(
+const LibsqlTransaction = Context.Service<readonly [LibsqlConnection, counter: number]>(
   "@effect/sql-libsql/LibsqlClient/LibsqlTransaction"
 )
 
@@ -163,7 +166,7 @@ export const make = (
         return Effect.map(
           Effect.tryPromise({
             try: () => this.sdk.execute({ sql, args: params as Array<any> }),
-            catch: (cause) => new SqlError({ cause, message: "Failed to execute statement" })
+            catch: (cause) => new SqlError({ reason: classifyError(cause, "Failed to execute statement", "execute") })
           }),
           (results) => results.rows
         )
@@ -175,7 +178,7 @@ export const make = (
       ) {
         return Effect.tryPromise({
           try: () => this.sdk.execute({ sql, args: params as Array<any> }),
-          catch: (cause) => new SqlError({ cause, message: "Failed to execute statement" })
+          catch: (cause) => new SqlError({ reason: classifyError(cause, "Failed to execute statement", "execute") })
         })
       }
 
@@ -208,7 +211,8 @@ export const make = (
         return Effect.map(
           Effect.tryPromise({
             try: () => (this.sdk as Libsql.Client).transaction("write"),
-            catch: (cause) => new SqlError({ cause, message: "Failed to begin transaction" })
+            catch: (cause) =>
+              new SqlError({ reason: classifyError(cause, "Failed to begin transaction", "beginTransaction") })
           }),
           (tx) => new LibsqlConnectionImpl(tx)
         )
@@ -216,13 +220,15 @@ export const make = (
       get commit() {
         return Effect.tryPromise({
           try: () => (this.sdk as Libsql.Transaction).commit(),
-          catch: (cause) => new SqlError({ cause, message: "Failed to commit transaction" })
+          catch: (cause) =>
+            new SqlError({ reason: classifyError(cause, "Failed to commit transaction", "commitTransaction") })
         })
       }
       get rollback() {
         return Effect.tryPromise({
           try: () => (this.sdk as Libsql.Transaction).rollback(),
-          catch: (cause) => new SqlError({ cause, message: "Failed to rollback transaction" })
+          catch: (cause) =>
+            new SqlError({ reason: classifyError(cause, "Failed to rollback transaction", "rollbackTransaction") })
         })
       }
     }
@@ -302,12 +308,12 @@ export const layerConfig: (
 ) => Layer.Layer<LibsqlClient | Client.SqlClient, Config.ConfigError> = (
   config: Config.Wrap<LibsqlClientConfig>
 ): Layer.Layer<LibsqlClient | Client.SqlClient, Config.ConfigError> =>
-  Layer.effectServices(
+  Layer.effectContext(
     Config.unwrap(config).asEffect().pipe(
       Effect.flatMap(make),
       Effect.map((client) =>
-        ServiceMap.make(LibsqlClient, client).pipe(
-          ServiceMap.add(Client.SqlClient, client)
+        Context.make(LibsqlClient, client).pipe(
+          Context.add(Client.SqlClient, client)
         )
       )
     )
@@ -320,9 +326,9 @@ export const layerConfig: (
 export const layer = (
   config: LibsqlClientConfig
 ): Layer.Layer<LibsqlClient | Client.SqlClient> =>
-  Layer.effectServices(
+  Layer.effectContext(
     Effect.map(make(config), (client) =>
-      ServiceMap.make(LibsqlClient, client).pipe(
-        ServiceMap.add(Client.SqlClient, client)
+      Context.make(LibsqlClient, client).pipe(
+        Context.add(Client.SqlClient, client)
       ))
   ).pipe(Layer.provide(Reactivity.layer))

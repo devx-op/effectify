@@ -1,5 +1,5 @@
 import { expect, it } from "@effect/vitest"
-import { Effect, Layer, Schema, ServiceMap, Stream, Struct } from "effect"
+import { Context, Effect, Layer, Schema, Stream, Struct } from "effect"
 import { TestClock } from "effect/testing"
 import { FetchHttpClient, HttpClient, HttpClientRequest, HttpClientResponse } from "effect/unstable/http"
 
@@ -30,7 +30,7 @@ const makeJsonPlaceholder = Effect.gen(function*() {
   } as const
 })
 interface JsonPlaceholder extends Effect.Success<typeof makeJsonPlaceholder> {}
-const JsonPlaceholder = ServiceMap.Service<JsonPlaceholder>("test/JsonPlaceholder")
+const JsonPlaceholder = Context.Service<JsonPlaceholder>("test/JsonPlaceholder")
 const JsonPlaceholderLive = Layer.effect(JsonPlaceholder)(makeJsonPlaceholder)
 ;[
   {
@@ -126,6 +126,6 @@ const flakyTest = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
   effect.pipe(
     Effect.timeoutOrElse({
       duration: "2 seconds",
-      onTimeout: () => Effect.void
+      orElse: () => Effect.void
     })
   )

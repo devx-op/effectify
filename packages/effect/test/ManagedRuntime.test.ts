@@ -1,6 +1,6 @@
-import { describe, it, test } from "@effect/vitest"
+import { assert, describe, it, test } from "@effect/vitest"
 import { strictEqual } from "@effect/vitest/utils"
-import { Effect, Layer, ManagedRuntime, ServiceMap } from "effect"
+import { Context, Effect, Exit, Layer, ManagedRuntime } from "effect"
 
 describe("ManagedRuntime", () => {
   test("memoizes the layer build", async () => {
@@ -16,7 +16,7 @@ describe("ManagedRuntime", () => {
   })
 
   test("provides context", async () => {
-    const tag = ServiceMap.Service<string>("string")
+    const tag = Context.Service<string>("string")
     const layer = Layer.succeed(tag)("test")
     const runtime = ManagedRuntime.make(layer)
     const result = await runtime.runPromise(tag.asEffect())
@@ -39,11 +39,20 @@ describe("ManagedRuntime", () => {
   })
 
   it("can be built synchronously", () => {
-    const tag = ServiceMap.Service<string>("string")
+    const tag = Context.Service<string>("string")
     const layer = Layer.succeed(tag)("test")
     const managedRuntime = ManagedRuntime.make(layer)
-    const services = Effect.runSync(managedRuntime.servicesEffect)
-    const result = ServiceMap.get(services, tag)
+    const services = Effect.runSync(managedRuntime.contextEffect)
+    const result = Context.get(services, tag)
     strictEqual(result, "test")
+  })
+
+  it("fibers are interrupted on dispose", async () => {
+    const runtime = ManagedRuntime.make(Layer.empty)
+    const fiber = runtime.runFork(Effect.never)
+    await runtime.dispose()
+    const exit = fiber.pollUnsafe()
+    assert(exit)
+    assert.isTrue(Exit.hasInterrupts(exit))
   })
 })
