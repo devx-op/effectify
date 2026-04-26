@@ -40,7 +40,7 @@
       "plugin": "@nx/vite/plugin",
       "exclude": [
         "apps/solid-app-start/**/*",
-        "apps/react-app-remix/**/*"
+        "apps/react-remix-example/**/*"
       ],
       "options": {
         "buildTargetName": "build",
@@ -77,7 +77,7 @@
       },
       "exclude": [
         "apps/solid-app-start/**/*",
-        "apps/react-app-remix/**/*",
+        "apps/react-remix-example/**/*",
         "apps/minimal-example/**/*"
       ]
     },
