@@ -114,20 +114,3 @@ export const deleteWorkflow = (
         }),
     })
   })
-
-export const deleteWorkflow = (
-  workflow: WorkflowTarget,
-): Effect.Effect<void, HatchetWorkflowError, HatchetClientService> =>
-  Effect.gen(function*() {
-    const client = yield* getHatchetClient()
-
-    yield* Effect.tryPromise({
-      try: () => client.workflows.delete(workflow),
-      catch: (error) =>
-        new HatchetWorkflowError({
-          message: `Failed to delete workflow "${typeof workflow === "string" ? workflow : "workflow"}"`,
-          workflowName: typeof workflow === "string" ? workflow : undefined,
-          cause: error,
-        }),
-    })
-  })

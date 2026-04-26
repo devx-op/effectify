@@ -95,40 +95,6 @@ type MockHatchetFiltersClient = {
   readonly delete: (filterId: string) => Promise<unknown>
 }
 
-type MockHatchetSchedulesClient = {
-  readonly create: (workflow: string, options: unknown) => Promise<unknown>
-  readonly get: (scheduleId: string) => Promise<unknown>
-  readonly list: (options?: unknown) => Promise<{ rows?: unknown[] }>
-  readonly delete: (scheduleId: string) => Promise<void>
-}
-
-type MockHatchetCronsClient = {
-  readonly create: (workflow: string, options: unknown) => Promise<unknown>
-  readonly get: (cronId: string) => Promise<unknown>
-  readonly list: (options?: unknown) => Promise<{ rows?: unknown[] }>
-  readonly delete: (cronId: string) => Promise<void>
-}
-
-type MockHatchetWebhooksClient = {
-  readonly list: (options?: unknown) => Promise<{ rows?: unknown[] }>
-  readonly get: (webhookName: string) => Promise<unknown>
-  readonly create: (options: unknown) => Promise<unknown>
-  readonly update: (webhookName: string, options?: unknown) => Promise<unknown>
-  readonly delete: (webhookName: string) => Promise<unknown>
-}
-
-type MockHatchetRateLimitsClient = {
-  readonly list: (options?: unknown) => Promise<{ rows?: unknown[] }>
-  readonly upsert: (options: unknown) => Promise<string>
-}
-
-type MockHatchetFiltersClient = {
-  readonly list: (options?: unknown) => Promise<{ rows?: unknown[] }>
-  readonly get: (filterId: string) => Promise<unknown>
-  readonly create: (options: unknown) => Promise<unknown>
-  readonly delete: (filterId: string) => Promise<unknown>
-}
-
 type MockWorkerInstance = {
   readonly registerWorkflows: (workflows?: unknown[]) => Promise<void>
   readonly start: () => Promise<void>

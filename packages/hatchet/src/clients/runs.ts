@@ -341,27 +341,6 @@ export const getRunTaskId = (
   })
 
 /**
- * Resolve the task external id for a workflow run.
- */
-export const getRunTaskId = (
-  runId: string,
-): Effect.Effect<string, HatchetRunError, HatchetClientService> =>
-  Effect.gen(function*() {
-    const client = yield* getHatchetClient()
-    const result = yield* Effect.tryPromise({
-      try: () => client.runs.getTaskExternalId(runId),
-      catch: (error) =>
-        new HatchetRunError({
-          message: `Failed to resolve task id for run "${runId}"`,
-          runId,
-          cause: error,
-        }),
-    })
-
-    return result as string
-  })
-
-/**
  * List workflow and task runs
  *
  * @param options - Options for filtering and paginating runs

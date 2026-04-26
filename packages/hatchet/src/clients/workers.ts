@@ -7,7 +7,7 @@
 import * as Effect from "effect/Effect"
 import type { HatchetClient, Worker as SdkWorker } from "@hatchet-dev/typescript-sdk"
 import type { HatchetClientService } from "../core/client.js"
-import { getHastchetClient } from "../core/client.js"
+import { getHatchetClient } from "../core/client.js"
 import { HatchetWorkerError } from "../core/error.js"
 
 /**
@@ -19,18 +19,6 @@ export type RegisterWorkerOpts = Exclude<
   Parameters<HatchetClient["worker"]>[1],
   number
 >
-
-export type WorkerRegistrationWorkflow = NonNullable<
-  Parameters<SdkWorker["registerWorkflows"]>[0]
->[number]
-
-export type WorkerRegistrationWorkflows = NonNullable<
-  Parameters<SdkWorker["registerWorkflows"]>[0]
->
-
-const toWorkerOptions = (
-  opts?: RegisterWorkerOpts,
-): RegisterWorkerOpts | undefined => opts
 
 export type WorkerRegistrationWorkflow = NonNullable<
   Parameters<SdkWorker["registerWorkflows"]>[0]
