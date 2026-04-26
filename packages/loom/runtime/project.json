@@ -1,0 +1,23 @@
+{
+  "name": "loom-runtime",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/loom/runtime/src",
+  "projectType": "library",
+  "tags": ["loom", "internal", "runtime"],
+  "targets": {
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit -p tsconfig.lib.json && tsc --noEmit -p tsconfig.spec.json",
+        "cwd": "packages/loom/runtime"
+      }
+    },
+    "lint": {
+      "executor": "nx-oxlint:lint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["packages/loom/runtime/**/*.{ts,tsx,js,jsx,mts,cts}"]
+      }
+    }
+  }
+}

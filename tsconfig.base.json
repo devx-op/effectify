@@ -17,7 +17,13 @@
     "paths": {
       "@effectify/solid-effect-atom": [
         "./packages/solid/effect-atom/src/index.ts"
-      ]
+      ],
+      "@effectify/loom-core": ["./packages/loom/core/src/index.ts"],
+      "@effectify/loom-runtime": ["./packages/loom/runtime/src/index.ts"],
+      "@effectify/loom": ["./packages/loom/web/src/index.ts"],
+      "@effectify/loom-router": ["./packages/loom/router/src/index.ts"],
+      "@effectify/loom-vite": ["./packages/loom/vite/src/index.ts"],
+      "@effectify/loom-nitro": ["./packages/loom/nitro/src/index.ts"]
     },
     "plugins": [
       {

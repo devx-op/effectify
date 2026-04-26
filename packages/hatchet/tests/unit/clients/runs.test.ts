@@ -153,6 +153,41 @@ describe("Runs Client - Type Exports", () => {
       expectTypeOf<RestoreTaskResult>().toMatchTypeOf<object>()
       expectTypeOf<BranchDurableTaskResult>().toMatchTypeOf<object>()
     })
+
+    it("should export ReplayRunOpts interface compatible with the SDK shape", () => {
+      const opts: ReplayRunOpts = {
+        ids: ["run-123"],
+        filters: {
+          workflowName: "orders.process",
+          statuses: ["FAILED"],
+        },
+      }
+
+      const sdkOpts: SdkReplayRunOpts = {
+        ids: opts.ids ? [...opts.ids] : undefined,
+        filters: opts.filters
+          ? {
+            workflowNames: opts.filters.workflowNames?.length
+              ? [...opts.filters.workflowNames]
+              : opts.filters.workflowName
+              ? [opts.filters.workflowName]
+              : undefined,
+            statuses: opts.filters.statuses?.length
+              ? [...opts.filters.statuses]
+              : opts.filters.status
+              ? [opts.filters.status]
+              : undefined,
+            since: opts.filters.since,
+            until: opts.filters.until,
+            additionalMetadata: opts.filters.additionalMetadata,
+          }
+          : undefined,
+      }
+
+      expect(opts.filters?.workflowName).toBe("orders.process")
+      expect(sdkOpts.filters?.workflowNames).toEqual(["orders.process"])
+      expect(sdkOpts.filters?.statuses).toEqual(["FAILED"])
+    })
   })
 })
 

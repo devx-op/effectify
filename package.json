@@ -44,8 +44,8 @@
     "@vitejs/plugin-react": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "@vitest/ui": "catalog:",
-    "dprint": "catalog:",
     "cypress": "catalog:",
+    "dprint": "catalog:",
     "husky": "catalog:",
     "jiti": "catalog:",
     "jsdom": "catalog:",
@@ -76,22 +76,23 @@
       }
     },
     "overrides": {
+      "@effect/platform-node-shared": "4.0.0-beta.33",
       "@types/react": "19.1.13",
       "@types/react-dom": "19.1.9"
     },
     "onlyBuiltDependencies": [
+      "@hatchet-dev/typescript-sdk",
       "@parcel/watcher",
-      "@prisma/engines",
       "@swc/core",
       "@tailwindcss/oxide",
       "better-sqlite3",
       "core-js",
-      "dprint",
+      "cypress",
       "esbuild",
       "msgpackr-extract",
       "nx",
-      "prisma",
-      "unrs-resolver"
+      "protobufjs",
+      "sharp"
     ],
     "ignoredBuiltDependencies": [
       "bun"

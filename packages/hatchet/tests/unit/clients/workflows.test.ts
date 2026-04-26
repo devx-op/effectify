@@ -270,4 +270,61 @@ describe("Workflows Client - SDK compatibility", () => {
       expect(error.cause).toBe(cause)
     }
   })
+
+  it("deleteWorkflow deletes a workflow by name and resolves void", async () => {
+    const result = await deleteWorkflow("orders.process").pipe(
+      provideHatchet({
+        workflows: {
+          delete: async (workflow: unknown) => {
+            expect(workflow).toBe("orders.process")
+          },
+        },
+      }),
+      Effect.runPromise,
+    )
+
+    expect(result).toBeUndefined()
+  })
+
+  it("deleteWorkflow forwards workflow ids or workflow objects to the SDK", async () => {
+    const workflowTarget = { name: "orders.process" } as WorkflowTarget
+
+    await deleteWorkflow(workflowTarget).pipe(
+      provideHatchet({
+        workflows: {
+          delete: async (workflow: unknown) => {
+            expect(workflow).toBe(workflowTarget)
+          },
+        },
+      }),
+      Effect.runPromise,
+    )
+  })
+
+  it("deleteWorkflow yields HatchetWorkflowError when the SDK delete request fails", async () => {
+    const cause = new Error("delete unavailable")
+
+    const exit = await deleteWorkflow("orders.process").pipe(
+      provideHatchet({
+        workflows: {
+          delete: async () => {
+            throw cause
+          },
+        },
+      }),
+      Effect.runPromiseExit,
+    )
+
+    expect(exit._tag).toBe("Failure")
+
+    if (exit._tag === "Failure") {
+      const error = Cause.squash(exit.cause) as HatchetWorkflowError
+      expect(error).toBeInstanceOf(HatchetWorkflowError)
+      expect(error.workflowName).toBe("orders.process")
+      expect(error.message).toContain(
+        'Failed to delete workflow "orders.process"',
+      )
+      expect(error.cause).toBe(cause)
+    }
+  })
 })
