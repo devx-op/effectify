@@ -1,6 +1,6 @@
 {
   "name": "@effectify/react-remix",
-  "version": "1.0.0-alpha.1",
+  "version": "1.0.0-alpha.2",
   "description": "Integration of Remix with Effect for React applications",
   "repository": {
     "type": "git",
