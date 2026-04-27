@@ -25,7 +25,7 @@ const runWithLogger = async <A, E, R>(
     Layer.build(Layer.mergeAll(Logger.layer([logger]), extraLayer)),
   ).pipe(Effect.runPromise)
 
-  return effect.pipe(Effect.provideServices(services), Effect.runPromise)
+  return effect.pipe(Effect.provideContext(services), Effect.runPromise)
 }
 
 const runWithLoggerCaptureConsole = async <E, R>(

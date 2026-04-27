@@ -1,11 +1,11 @@
 /**
  * @effectify/hatchet - Hatchet Client
  *
- * Hatchet SDK client as a ServiceMap.Service using Effect v4
+ * Hatchet SDK client as a Context.Service using Effect v4
  */
 
 import * as Effect from "effect/Effect"
-import * as ServiceMap from "effect/ServiceMap"
+import * as Context from "effect/Context"
 import * as Layer from "effect/Layer"
 import { Hatchet as HatchetClientSDK } from "@hatchet-dev/typescript-sdk"
 import { HatchetConfig } from "./config.js"
@@ -13,10 +13,10 @@ import { HatchetConfig } from "./config.js"
 type HatchetClientType = InstanceType<typeof HatchetClientSDK>
 
 /**
- * ServiceMap.Service for the Hatchet SDK client
+ * Context.Service for the Hatchet SDK client
  * Renamed to HatchetClientService to avoid conflict with SDK class name
  */
-export class HatchetClientService extends ServiceMap.Service<
+export class HatchetClientService extends Context.Service<
   HatchetClientService,
   HatchetClientType
 >()("HatchetClient") {}

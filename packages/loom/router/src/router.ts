@@ -1,6 +1,6 @@
 import type * as Loom from "@effectify/loom"
+import type * as EffectContext from "effect/Context"
 import { dual } from "effect/Function"
-import type * as ServiceMap from "effect/ServiceMap"
 import type * as Decode from "./decode.js"
 import type * as Fallback from "./fallback.js"
 import type * as Layout from "./layout.js"
@@ -183,19 +183,19 @@ export const prefix: {
   <Entries extends ReadonlyArray<RouterEntry>>(self: Definition<Entries>, path: Route.AbsolutePath): Definition<Entries>
 } = dual(2, internal.prefixRouter)
 
-/** Add a single Effect ServiceMap annotation to a router. */
+/** Add a single Effect Context annotation to a router. */
 export const annotate: {
-  <I, S>(tag: ServiceMap.Key<I, S>, value: S): <Entries extends ReadonlyArray<RouterEntry>>(
+  <I, S>(tag: EffectContext.Service<I, S>, value: S): <Entries extends ReadonlyArray<RouterEntry>>(
     self: Definition<Entries>,
   ) => Definition<Entries>
   <Entries extends ReadonlyArray<RouterEntry>, I, S>(
     self: Definition<Entries>,
-    tag: ServiceMap.Key<I, S>,
+    tag: EffectContext.Service<I, S>,
     value: S,
   ): Definition<Entries>
 } = dual(3, internal.annotateRouter)
 
-/** Merge multiple Effect ServiceMap annotations into a router. */
+/** Merge multiple Effect Context annotations into a router. */
 export const annotateMerge: {
   (
     annotations: Route.Annotations,

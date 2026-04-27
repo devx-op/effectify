@@ -2,7 +2,7 @@ import { Diagnostics, Html } from "@effectify/loom"
 import type * as Loom from "@effectify/loom"
 import * as Decode from "../decode.js"
 import * as Result from "effect/Result"
-import type * as ServiceMap from "effect/ServiceMap"
+import type * as Context from "effect/Context"
 import { buildUrl, validateHrefInput } from "./path.js"
 import type * as Fallback from "../fallback.js"
 import type * as Layout from "../layout.js"
@@ -400,7 +400,7 @@ export const prefixRouter = <Entries extends ReadonlyArray<RouterEntry>>(
 
 export const annotateRouter = <Entries extends ReadonlyArray<RouterEntry>, I, S>(
   self: RouterDefinition<Entries>,
-  tag: ServiceMap.Key<I, S>,
+  tag: Context.Service<I, S>,
   value: S,
 ): RouterDefinition<Entries> =>
   makeDefinition({

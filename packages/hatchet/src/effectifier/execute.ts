@@ -80,11 +80,12 @@ export const createEffectifierFromLayer = <R, ER>(
 }
 
 /**
- * createEffectifierFromServices creates an effectifier from a ServiceMap.
+ * createEffectifierFromLayer creates an effectifier from a Layer.
  *
- * @param services - The ServiceMap with dependencies
+ * @param services - The Layer with dependencies
  * @returns An effectifyTask function bound to that runtime
  */
+/** @deprecated Use createEffectifierFromLayer instead. */
 export const createEffectifierFromServiceMap = <R>(
   services: Layer.Layer<R, never, never>,
 ) => {

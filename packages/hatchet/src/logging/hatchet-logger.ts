@@ -6,9 +6,9 @@
  */
 
 import * as Effect from "effect/Effect"
+import * as Context from "effect/Context"
 import * as Logger from "effect/Logger"
 import * as Option from "effect/Option"
-import * as ServiceMap from "effect/ServiceMap"
 import { HatchetStepContext } from "../core/context.js"
 
 const defaultFormat = (level: string, message: string): string => `[${level}] ${message}`
@@ -34,10 +34,7 @@ const makeConfiguredHatchetLogger = (
       stringifyMessage(options.message),
     )
 
-    const hatchetCtx = ServiceMap.getOption(
-      options.fiber.services,
-      HatchetStepContext,
-    )
+    const hatchetCtx = Context.getOption(options.fiber.context, HatchetStepContext)
 
     if (Option.isSome(hatchetCtx)) {
       try {

@@ -1,8 +1,8 @@
 import * as Data from "effect/Data"
+import * as Context from "effect/Context"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import * as Ref from "effect/Ref"
-import * as ServiceMap from "effect/ServiceMap"
 
 export interface TodoItem {
   readonly id: number
@@ -38,14 +38,14 @@ export const initialTodoItems: ReadonlyArray<TodoItem> = [
 
 export const cloneInitialTodos = (): Array<TodoItem> => initialTodoItems.map((todo) => ({ ...todo }))
 
-export class TodoService extends ServiceMap.Service<TodoService, TodoServiceApi>()("LoomExampleTodoService", {
+export class TodoService extends Context.Service<TodoService>()("LoomExampleTodoService", {
   make: Effect.gen(function*() {
     const todosRef = yield* Ref.make(cloneInitialTodos())
     const nextIdRef = yield* Ref.make(initialTodoItems.length + 1)
 
     return {
       list: () => Ref.get(todosRef),
-      dispatch: (command) =>
+      dispatch: (command: TodoCommand) =>
         Effect.gen(function*() {
           switch (command.intent) {
             case "create": {
@@ -59,7 +59,7 @@ export class TodoService extends ServiceMap.Service<TodoService, TodoServiceApi>
               yield* Ref.update(todosRef, (current) => [...current, nextTodo])
               yield* Ref.set(nextIdRef, nextId + 1)
 
-              return { intent: command.intent }
+              return { intent: command.intent } satisfies TodoCommandResult
             }
             case "toggle": {
               const current = yield* Ref.get(todosRef)
@@ -71,7 +71,7 @@ export class TodoService extends ServiceMap.Service<TodoService, TodoServiceApi>
               yield* Ref.update(todosRef, (todos) =>
                 todos.map((todo) => todo.id === command.id ? { ...todo, completed: !todo.completed } : todo))
 
-              return { intent: command.intent }
+              return { intent: command.intent } satisfies TodoCommandResult
             }
             case "remove": {
               const current = yield* Ref.get(todosRef)
@@ -86,12 +86,12 @@ export class TodoService extends ServiceMap.Service<TodoService, TodoServiceApi>
 
               yield* Ref.update(todosRef, (todos) => todos.filter((todo) => todo.id !== command.id))
 
-              return { intent: command.intent }
+              return { intent: command.intent } satisfies TodoCommandResult
             }
             case "clear-completed": {
               yield* Ref.update(todosRef, (todos) => todos.filter((todo) => !todo.completed))
 
-              return { intent: command.intent }
+              return { intent: command.intent } satisfies TodoCommandResult
             }
           }
         }),
@@ -100,10 +100,10 @@ export class TodoService extends ServiceMap.Service<TodoService, TodoServiceApi>
           yield* Ref.set(todosRef, cloneInitialTodos())
           yield* Ref.set(nextIdRef, initialTodoItems.length + 1)
         }),
-    }
+    } satisfies TodoServiceApi
   }),
 }) {
-  static readonly layer = Layer.effect(TodoService, this.make)
+  static readonly layer = Layer.effect(this, this.make)
 }
 
 export const makeTodoService = (): TodoServiceApi => Effect.runSync(TodoService.make)

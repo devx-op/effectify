@@ -4,9 +4,7 @@ import * as Schema from "effect/Schema"
 
 export type RouteSchemaPhase = "loader-output" | "loader-error" | "action-output" | "action-error"
 
-type RouteSchema<Value> = Schema.Schema<Value> & {
-  readonly DecodingServices: never
-}
+type RouteSchema<Value> = Schema.Decoder<Value>
 
 export class RouteModuleExportError extends Data.TaggedError("LoomRouterRouteModuleExportError")<{
   readonly exportName: "component" | "loader" | "action"

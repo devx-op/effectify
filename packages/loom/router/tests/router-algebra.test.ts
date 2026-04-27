@@ -1,12 +1,12 @@
-import { pipe, ServiceMap } from "effect"
+import { Context, pipe } from "effect"
 import * as Schema from "effect/Schema"
 import { describe, expect, it } from "vitest"
 import * as Decode from "../src/decode.js"
 import { Fallback, Layout, Route, RouteGroup, Router } from "../src/index.js"
 
-const AppTitle = ServiceMap.Service<{ readonly value: string }>("AppTitle")
-const GroupTitle = ServiceMap.Service<{ readonly value: string }>("GroupTitle")
-const RouteTitle = ServiceMap.Service<{ readonly value: string }>("RouteTitle")
+const AppTitle = Context.Service<{ readonly value: string }>("AppTitle")
+const GroupTitle = Context.Service<{ readonly value: string }>("GroupTitle")
+const RouteTitle = Context.Service<{ readonly value: string }>("RouteTitle")
 
 const readValue = (annotation: unknown): unknown =>
   typeof annotation === "object" && annotation !== null && "value" in annotation ? annotation.value : annotation

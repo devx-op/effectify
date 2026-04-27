@@ -1,6 +1,6 @@
 import { betterAuth, type BetterAuthOptions, type Session, type User } from "better-auth"
 
-import * as ServiceMap from "effect/ServiceMap"
+import * as Context from "effect/Context"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import * as Data from "effect/Data"
@@ -10,10 +10,10 @@ export namespace AuthService {
   /**
    * AuthServiceContext provides access to the better-auth instance.
    *
-   * In Effect v4, services are created with ServiceMap.Service and have a .Layer property
+   * In Effect v4 beta57, services are created with Context.Service and still compose through Layers.
    * for easy Layer composition.
    */
-  export class AuthServiceContext extends ServiceMap.Service<AuthServiceContext>()(
+  export class AuthServiceContext extends Context.Service<AuthServiceContext>()(
     "AuthServiceContext",
     {
       make: (options: BetterAuthOptions) =>
@@ -55,7 +55,7 @@ export namespace AuthService {
    *
    * This is request-scoped context provided at runtime during request handling.
    */
-  export class AuthContext extends ServiceMap.Service<
+  export class AuthContext extends Context.Service<
     AuthContext,
     { readonly user: User; readonly session: Session }
   >()("AuthContext") {}

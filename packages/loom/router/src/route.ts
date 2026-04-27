@@ -1,7 +1,7 @@
 import * as Effect from "effect/Effect"
+import type * as Context from "effect/Context"
 import { dual } from "effect/Function"
 import * as Schema from "effect/Schema"
-import type * as ServiceMap from "effect/ServiceMap"
 import type * as Decode from "./decode.js"
 import type * as Fallback from "./fallback.js"
 import type * as Layout from "./layout.js"
@@ -32,9 +32,7 @@ export interface DecodeOptions<ParamsOutput extends Params = Params, SearchOutpu
   readonly search?: Decode.DecoderLike<Search, SearchOutput>
 }
 
-export type RouteSchema<Value> = Schema.Schema<Value> & {
-  readonly DecodingServices: never
-}
+export type RouteSchema<Value> = Schema.Decoder<Value>
 
 type DecodeOutputOf<Decoder, Fallback> = Decoder extends Decode.DecoderLike<any, infer Output> ? Output : Fallback
 
@@ -672,9 +670,9 @@ export const prefix: {
   path: AbsolutePath,
 ): Definition<Content, ParamsOutput, SearchOutput, Identifier, Children> => internal.prefixRoute(self, path))
 
-/** Add a single Effect ServiceMap annotation to a route. */
+/** Add a single Effect Context annotation to a route. */
 export const annotate: {
-  <I, S>(tag: ServiceMap.Key<I, S>, value: S): <
+  <I, S>(tag: Context.Service<I, S>, value: S): <
     Content,
     ParamsOutput extends Params,
     SearchOutput extends Search,
@@ -693,7 +691,7 @@ export const annotate: {
     S,
   >(
     self: Definition<Content, ParamsOutput, SearchOutput, Identifier, Children>,
-    tag: ServiceMap.Key<I, S>,
+    tag: Context.Service<I, S>,
     value: S,
   ): Definition<Content, ParamsOutput, SearchOutput, Identifier, Children>
 } = dual(3, <
@@ -706,11 +704,11 @@ export const annotate: {
   S,
 >(
   self: Definition<Content, ParamsOutput, SearchOutput, Identifier, Children>,
-  tag: ServiceMap.Key<I, S>,
+  tag: Context.Service<I, S>,
   value: S,
 ): Definition<Content, ParamsOutput, SearchOutput, Identifier, Children> => internal.annotateRoute(self, tag, value))
 
-/** Merge multiple Effect ServiceMap annotations into a route. */
+/** Merge multiple Effect Context annotations into a route. */
 export const annotateMerge: {
   (annotations: Annotations): <
     Content,
@@ -1102,7 +1100,7 @@ export const hasAction = <Self extends AnyDefinition>(
 ): self is Self & { readonly action: Exclude<ActionOf<Self>, undefined> } => self.action !== undefined
 
 /** Read a single annotation value from a merged annotation map. */
-export const getAnnotation = <I, S>(annotations: Annotations, tag: ServiceMap.Key<I, S>): unknown =>
+export const getAnnotation = <I, S>(annotations: Annotations, tag: Context.Service<I, S>): unknown =>
   getAnnotationValue(annotations, tag)
 
 /** Encode a stable href for an absolute route definition. */

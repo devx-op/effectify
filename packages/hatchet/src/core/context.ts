@@ -1,10 +1,10 @@
 /**
  * @effectify/hatchet - Hatchet Step Context
  *
- * ServiceMap.Service for injecting Hatchet context into Effect tasks
+ * Context.Service for injecting Hatchet context into Effect tasks
  */
 
-import * as ServiceMap from "effect/ServiceMap"
+import * as Context from "effect/Context"
 import type { Context as SdkContext } from "@hatchet-dev/typescript-sdk"
 
 export type HatchetTaskContext<
@@ -13,10 +13,10 @@ export type HatchetTaskContext<
 > = SdkContext<I, U>
 
 /**
- * ServiceMap.Service for the Hatchet step context
+ * Context.Service for the Hatchet step context
  * This is injected at runtime by the effectifier when executing a task
  */
-export class HatchetStepContext extends ServiceMap.Service<
+export class HatchetStepContext extends Context.Service<
   HatchetStepContext,
   HatchetTaskContext
 >()("HatchetStepContext") {}

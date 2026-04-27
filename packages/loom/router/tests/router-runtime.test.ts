@@ -1,3 +1,4 @@
+import * as Effect from "effect/Effect"
 import { SchemaGetter } from "effect"
 import * as Schema from "effect/Schema"
 import { Component, Html, Hydration, Slot, View, Web } from "@effectify/loom"
@@ -256,7 +257,7 @@ describe("@effectify/loom-router runtime", () => {
                 tab: Schema.optional(Schema.String),
                 page: Schema.optional(Schema.String).pipe(
                   Schema.decodeTo(Schema.String, {
-                    decode: SchemaGetter.withDefault(() => "1"),
+                    decode: SchemaGetter.withDefault(Effect.succeed("1")),
                     encode: SchemaGetter.required(),
                   }),
                 ),

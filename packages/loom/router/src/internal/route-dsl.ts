@@ -1,4 +1,4 @@
-import type * as ServiceMap from "effect/ServiceMap"
+import type * as Context from "effect/Context"
 import * as Decode from "../decode.js"
 import * as Fallback from "../fallback.js"
 import * as Layout from "../layout.js"
@@ -251,7 +251,7 @@ export const annotateRoute = <
   S,
 >(
   self: RouteDefinition<Content, ParamsOutput, SearchOutput, Identifier, Children, Loader, Action>,
-  tag: ServiceMap.Key<I, S>,
+  tag: Context.Service<I, S>,
   value: S,
 ): RouteDefinition<Content, ParamsOutput, SearchOutput, Identifier, Children, Loader, Action> => ({
   ...self,

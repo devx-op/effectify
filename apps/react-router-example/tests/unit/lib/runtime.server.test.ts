@@ -27,10 +27,10 @@ vi.mock("../../../app/lib/better-auth-options.server.js", () => ({
 }))
 
 vi.mock("@effectify/node-better-auth", async () => {
+  const Context = await import("effect/Context")
   const Layer = await import("effect/Layer")
-  const ServiceMap = await import("effect/ServiceMap")
 
-  class MockAuthServiceContext extends ServiceMap.Service<
+  class MockAuthServiceContext extends Context.Service<
     MockAuthServiceContext,
     {
       readonly auth: {
@@ -54,11 +54,11 @@ vi.mock("@effectify/node-better-auth", async () => {
 })
 
 vi.mock("@effectify/hatchet", async () => {
+  const Context = await import("effect/Context")
   const Effect = await import("effect/Effect")
   const Layer = await import("effect/Layer")
-  const ServiceMap = await import("effect/ServiceMap")
 
-  class MockHatchetConfig extends ServiceMap.Service<
+  class MockHatchetConfig extends Context.Service<
     MockHatchetConfig,
     {
       readonly host: string
@@ -67,7 +67,7 @@ vi.mock("@effectify/hatchet", async () => {
     }
   >()("HatchetConfig") {}
 
-  class MockHatchetClientService extends ServiceMap.Service<
+  class MockHatchetClientService extends Context.Service<
     MockHatchetClientService,
     {
       readonly initializedWith: {
@@ -97,10 +97,10 @@ vi.mock("@effectify/hatchet", async () => {
 })
 
 vi.mock("../../../prisma/generated/effect/index.js", async () => {
+  const Context = await import("effect/Context")
   const Layer = await import("effect/Layer")
-  const ServiceMap = await import("effect/ServiceMap")
 
-  class MockPrismaService extends ServiceMap.Service<
+  class MockPrismaService extends Context.Service<
     MockPrismaService,
     {
       readonly label: "prisma"
