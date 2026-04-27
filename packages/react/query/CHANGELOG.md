@@ -1,3 +1,7 @@
+## 1.0.0-alpha.4 (2026-04-27)
+
+This was a version bump only for @effectify/react-query to align it with other projects, there were no code changes.
+
 ## 1.0.0-alpha.3 (2026-04-24)
 
 This was a version bump only for @effectify/react-query to align it with other projects, there were no code changes.
