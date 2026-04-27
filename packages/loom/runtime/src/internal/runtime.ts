@@ -25,6 +25,8 @@ const collectHydrationAttributes = (
       return []
     case "DynamicText":
       return []
+    case "Computed":
+      return collectHydrationAttributes(node.render())
     case "If":
       return collectHydrationAttributes(node.condition() ? node.then : (node.else ?? LoomCore.Ast.fragment([])))
     case "For": {
@@ -37,6 +39,8 @@ const collectHydrationAttributes = (
     }
     case "ComponentUse":
       return collectHydrationAttributes(node.component.node)
+    case "Boundary":
+      return collectHydrationAttributes(node.node)
     case "Live":
       return []
     case "Fragment":
@@ -62,6 +66,8 @@ const collectRegisteredEvents = (
         return []
       case "DynamicText":
         return []
+      case "Computed":
+        return loop(current.render(), isBoundaryRoot)
       case "If":
         return loop(current.condition() ? current.then : (current.else ?? LoomCore.Ast.fragment([])), isBoundaryRoot)
       case "For": {
@@ -76,6 +82,8 @@ const collectRegisteredEvents = (
         return []
       case "ComponentUse":
         return loop(current.component.node, isBoundaryRoot)
+      case "Boundary":
+        return loop(current.node, isBoundaryRoot)
       case "Fragment":
         return current.children.flatMap((child) => loop(child, false))
       case "Element": {
@@ -242,6 +250,8 @@ const serializeNode = (
         return escapeText(current.value)
       case "DynamicText":
         return escapeText(String(current.render()))
+      case "Computed":
+        return serializeStaticNode(current.render())
       case "If":
         return serializeStaticNode(current.condition() ? current.then : (current.else ?? LoomCore.Ast.fragment([])))
       case "For": {
@@ -256,6 +266,8 @@ const serializeNode = (
         return current.children.map(serializeStaticNode).join("")
       case "ComponentUse":
         return serializeStaticNode(current.component.node)
+      case "Boundary":
+        return serializeStaticNode(current.node)
       case "Live":
         return serializeLiveNode(current, boundaryId)
       case "Element": {
@@ -320,6 +332,8 @@ const serializeNode = (
       return escapeText(node.value)
     case "DynamicText":
       return escapeText(String(node.render()))
+    case "Computed":
+      return serializeNode(node.render(), state, boundaryId, nextBoundaryNodeId, isBoundaryRoot)
     case "If":
       return serializeNode(
         node.condition() ? node.then : (node.else ?? LoomCore.Ast.fragment([])),
@@ -339,6 +353,8 @@ const serializeNode = (
       return node.children.map((child) => serializeNode(child, state, boundaryId, nextBoundaryNodeId)).join("")
     case "ComponentUse":
       return serializeNode(node.component.node, state, boundaryId, nextBoundaryNodeId, isBoundaryRoot)
+    case "Boundary":
+      return serializeNode(node.node, state, boundaryId, nextBoundaryNodeId, isBoundaryRoot)
     case "Live":
       return serializeLiveNode(node, boundaryId)
     case "Element": {

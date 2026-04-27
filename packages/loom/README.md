@@ -25,7 +25,7 @@ This is the primary documented/public contract for new Loom authoring.
 
 ```ts
 import { Atom } from "effect/unstable/reactivity"
-import { Component, mount, View, Web } from "@effectify/loom"
+import { Component, html, mount, Slot, View, Web } from "@effectify/loom"
 
 export const CounterRoute = Component.make("CounterRoute").pipe(
   Component.state({
@@ -47,6 +47,76 @@ export const CounterRoute = Component.make("CounterRoute").pipe(
 
 mount({ CounterRoute })
 ```
+
+### Template-first authoring path
+
+For new DOM-heavy authoring, prefer `html` inside `Component.view(...)` and keep `View` focused on composition.
+
+```ts
+import * as Result from "effect/Result"
+import { Atom } from "effect/unstable/reactivity"
+import { Component, html, Slot, View } from "@effectify/loom"
+
+const Card = Component.make("Card").pipe(
+  Component.view(({ children }) => html`<article class="card">${children}</article>`),
+)
+
+const Layout = Component.make("Layout").pipe(
+  Component.slots({
+    default: Slot.required(),
+    header: Slot.optional(),
+  }),
+  Component.view(({ slots }) =>
+    html`
+    <section>
+      ${slots.header}
+      <main>${slots.default}</main>
+    </section>
+  `
+  ),
+)
+
+export const TemplateCounter = Component.make("TemplateCounter").pipe(
+  Component.model({ count: Atom.make(0) }),
+  Component.actions({
+    increment: ({ count }) => count.update((value) => value + 1),
+  }),
+  Component.view(({ state, actions }) =>
+    html`
+    <section>
+      <button type="button" web:click=${actions.increment}>Increase</button>
+      <p>${() => state.count()}</p>
+      ${View.use(Card, html`<strong>Count card</strong>`)}
+      ${
+      View.use(Layout, {
+        header: html`<h2>Status</h2>`,
+        default: View.match(Result.succeed("ready"), {
+          onSuccess: (value) => html`<p>${value}</p>`,
+          onFailure: (error) => html`<p>${String(error)}</p>`,
+        }),
+      })
+    }
+    </section>
+  `
+  ),
+)
+```
+
+- Prefer `html` for ordinary DOM structure.
+- Use `View.use(...)` for component composition. Child shorthand is only for components without required props; slot components receive a slot object.
+- Use `View.match(...)` for `Result`, `AsyncResult`, and `_tag`-based branching instead of inline switches in templates.
+- Keep list rendering explicit with `View.for(...)`; direct array interpolation stays unsupported.
+
+### Phase-1 reactivity rule
+
+- `${() => state.count()}` is reactive because Loom can track the thunk boundary.
+- `${state.count()}` is an eager snapshot and does **not** update after the template is created.
+- Supported phase-1 directives are limited to `web:click`, `web:value` / `web:inputValue`, and `web:hydrate`.
+
+### Follow-ups intentionally out of scope
+
+- Accessor-style reactive sugar beyond the explicit lambda form.
+- `web:class` and `web:style` template directives.
 
 - Teach `Component.state(...)` as the ONLY public state seam.
 - Treat `Component.model(...)` as compatibility-only.

@@ -76,6 +76,8 @@ export const collectLiveNodes = (node: LoomCore.Ast.Node): ReadonlyArray<LoomCor
       return []
     case "DynamicText":
       return []
+    case "Computed":
+      return collectLiveNodes(node.render())
     case "If":
       return collectLiveNodes(node.condition() ? node.then : (node.else ?? { _tag: "Fragment", children: [] }))
     case "For": {
@@ -90,6 +92,8 @@ export const collectLiveNodes = (node: LoomCore.Ast.Node): ReadonlyArray<LoomCor
       return [node]
     case "ComponentUse":
       return collectLiveNodes(node.component.node)
+    case "Boundary":
+      return collectLiveNodes(node.node)
     case "Fragment":
       return node.children.flatMap(collectLiveNodes)
     case "Element":
@@ -109,6 +113,8 @@ export const serializeStaticNode = (node: LoomCore.Ast.Node): StaticSerializatio
         _tag: "Supported",
         html: escapeText(String(node.render())),
       }
+    case "Computed":
+      return serializeStaticNode(node.render())
     case "If":
       return serializeStaticNode(node.condition() ? node.then : (node.else ?? { _tag: "Fragment", children: [] }))
     case "For": {
@@ -135,6 +141,8 @@ export const serializeStaticNode = (node: LoomCore.Ast.Node): StaticSerializatio
     }
     case "ComponentUse":
       return serializeStaticNode(node.component.node)
+    case "Boundary":
+      return serializeStaticNode(node.node)
     case "Live":
       return {
         _tag: "Unsupported",

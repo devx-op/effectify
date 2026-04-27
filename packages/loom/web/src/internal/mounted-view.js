@@ -333,6 +333,40 @@ const mountIfNode = (node, registry, root) => {
     },
   }
 }
+const mountComputedNode = (node, registry, root) => {
+  const range = makeMountedRange("computed")
+  const subscriptions = new Map()
+  let disposed = false
+  let tracked = withStateTracking(() => node.render())
+  let mounted = mountNode(tracked.value, registry, root)
+  const render = () => {
+    if (disposed) {
+      return
+    }
+
+    const nextTracked = withStateTracking(() => node.render())
+    const nextMounted = mountNode(nextTracked.value, registry, root)
+
+    range.replace(nextMounted.nodes)
+    mounted.dispose()
+    mounted = nextMounted
+    tracked = nextTracked
+    syncTrackedSubscriptions(subscriptions, tracked.atoms, registry, render)
+  }
+  syncTrackedSubscriptions(subscriptions, tracked.atoms, registry, render)
+  return {
+    nodes: [range.start, ...mounted.nodes, range.end],
+    hasReactiveBindings: tracked.atoms.size > 0 || mounted.hasReactiveBindings,
+    dispose: () => {
+      disposed = true
+      for (const unsubscribe of subscriptions.values()) {
+        unsubscribe()
+      }
+      subscriptions.clear()
+      mounted.dispose()
+    },
+  }
+}
 const mountedForItemNodes = (entry) => [
   entry.range.start,
   ...entry.mounted.nodes,
@@ -493,8 +527,12 @@ const mountNode = (node, registry, root) => {
       return mountTextNode(node.value)
     case "DynamicText":
       return mountDynamicTextNode(node, registry)
+    case "Computed":
+      return mountComputedNode(node, registry, root)
     case "ComponentUse":
       return mountNode(node.component.node, registry, root)
+    case "Boundary":
+      return mountNode(node.node, registry, root)
     case "Live":
       return mountTextNode("")
     case "If":
