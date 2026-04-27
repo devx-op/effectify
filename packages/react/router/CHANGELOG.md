@@ -1,3 +1,13 @@
+## 1.0.0-alpha.2 (2026-04-27)
+
+### 🚀 Features
+
+- **effect:** upgrade beta57 and migrate Context services
+
+### ❤️ Thank You
+
+- Andres David Jimenez @kattsushi
+
 ## 1.0.0-alpha.1 (2026-04-24)
 
 ### 🚀 Features
