@@ -14,7 +14,25 @@ const toValueInput = (value) => {
   return String(value)
 }
 const toKebabCase = (value) => value.replace(/[A-Z]/g, (match) => `-${match.toLowerCase()}`)
-const serializeStyle = (value) => {
+const normalizeClassToken = (value) => {
+  if (typeof value !== "string") {
+    return undefined
+  }
+  const token = value.trim()
+  return token.length === 0 ? undefined : token
+}
+export const serializeClass = (value) => {
+  if (typeof value === "string") {
+    return value.trim()
+  }
+  return value
+    .flatMap((entry) => {
+      const token = normalizeClassToken(entry)
+      return token === undefined ? [] : [token]
+    })
+    .join(" ")
+}
+export const serializeStyle = (value) => {
   if (typeof value === "string") {
     return value.trim()
   }

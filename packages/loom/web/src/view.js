@@ -52,12 +52,18 @@ export const hstack = (...children) => internal.wrap(Html.el("div", Html.childre
 export const stack = vstack
 /** Compatibility alias for the preferred `View.hstack(...)` primitive. */
 export const row = hstack
-/** Create a button node with broad child content and click handler support. */
+/**
+ * @deprecated Prefer html`<button web:click=${handler}>...</button>` for DOM authoring. `View.button(...)` remains supported as a compatibility helper with the same runtime behavior.
+ */
 export const button = (content, handler) =>
   internal.wrap(Html.el("button", Html.on("click", handler), Html.children(content)))
-/** Create the first text-input primitive backed by a text input element. */
+/**
+ * @deprecated Prefer html`<input web:value={...}>` or `web:inputValue={...}` for DOM authoring. `View.input()` remains supported as a compatibility helper with the same runtime behavior.
+ */
 export const input = () => internal.wrap(Html.el("input", Html.attr("type", "text")))
-/** Create a router-neutral link node with broad child content. */
+/**
+ * @deprecated Prefer html`<a href="...">...</a>` for DOM authoring. `View.link(...)` remains supported as a compatibility helper with the same runtime behavior.
+ */
 export const link = (content, target) =>
   internal.wrap(Html.el("a", ...linkTargetModifiers(target), Html.children(content)))
 const renderIf = (condition, content, otherwise) => {

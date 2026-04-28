@@ -32,6 +32,7 @@ describe("loom example app server entry", () => {
     })
 
     expect(result.status).toBe(200)
+    expect(result.html).toContain("<title>Loom Example App · Counter</title>")
     expect(result.html).toContain("Loom vNext counter")
     expect(result.html).toContain('id="loom-root"')
     expect(result.html).toContain('data-route-view="counter"')
@@ -53,6 +54,7 @@ describe("loom example app server entry", () => {
     })
 
     expect(result.status).toBe(200)
+    expect(result.html).toContain("<title>Loom Example App · Todo app</title>")
     expect(result.html).toContain("Loom vNext todo app")
     expect(result.html).toContain('data-route-view="todo"')
     expect(result.html).toContain('data-todo-input="true"')
@@ -76,6 +78,7 @@ describe("loom example app server entry", () => {
     })
 
     expect(result.status).toBe(404)
+    expect(result.html).toContain("<title>Loom Example App · Not Found</title>")
     expect(result.html).toContain("Route not found")
     expect(result.html).toContain('data-route-view="not-found"')
     expect(result.html).toContain("/missing-route")

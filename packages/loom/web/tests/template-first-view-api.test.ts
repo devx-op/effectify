@@ -3,9 +3,43 @@
 import * as Result from "effect/Result"
 import { Atom } from "effect/unstable/reactivity"
 import { describe, expect, it } from "vitest"
-import { Component, html, Hydration, mount, Slot, View } from "../src/index.js"
+import { Component, Html, html, Hydration, mount, Slot, View } from "../src/index.js"
+
+const withDocumentRemoved = <Result>(run: () => Result): Result => {
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, "document")
+
+  Reflect.deleteProperty(globalThis, "document")
+
+  try {
+    return run()
+  } finally {
+    if (descriptor !== undefined) {
+      Object.defineProperty(globalThis, "document", descriptor)
+    }
+  }
+}
 
 describe("@effectify/loom template-first view API", () => {
+  it("renders SSR-safe hydration metadata and lambda values without a global document", () => {
+    const result = withDocumentRemoved(() =>
+      Html.renderToString(
+        html`
+          <section class="inventory" web:hydrate=${Hydration.strategy.visible()}>
+            <button type="button" web:click=${() => undefined}>increment</button>
+            <input type="text" value=${() => "count:1"} />
+            <p>${() => 1}</p>
+          </section>
+        `,
+      )
+    )
+
+    expect(result).toContain('data-loom-hydrate="visible"')
+    expect(result).toContain('data-loom-events="click"')
+    expect(result).toContain('value="count:1"')
+    expect(result).toContain("<p>1</p>")
+    expect(Reflect.has(globalThis, "document")).toBe(true)
+  })
+
   it("authors views through imported html with lambda reactivity, falsy normalization, View.for, and phase-1 web directives", () => {
     const root = document.createElement("div")
     const inventory = Component.make("template-inventory").pipe(
@@ -149,9 +183,95 @@ describe("@effectify/loom template-first view API", () => {
     handle.dispose()
   })
 
-  it("rejects unsupported web directives", () => {
-    expect(() => html`<div web:class=${() => "active"}></div>`).toThrowError(
-      /Unsupported template directive 'web:class'/,
+  it("accepts eager web:class and web:style values as snapshot attributes", () => {
+    const root = document.createElement("div")
+    const counter = Component.make("template-style-snapshot").pipe(
+      Component.model({ count: Atom.make(1) }),
+      Component.actions({
+        increment: ({ count }) => count.update((value) => value + 1),
+      }),
+      Component.view(({ state }) =>
+        html`
+          <section>
+            <div
+              class="counter-card"
+              style="border-color:black"
+              web:class=${["active", state.count() > 1 ? "armed" : undefined, "  ready  "]}
+              web:style=${{ opacity: 1, transform: `translateY(${state.count()}px)` }}
+              data-counter-card="true"
+            >
+              card
+            </div>
+          </section>
+        `
+      ),
+    )
+
+    const handle = mount({ counter }, { root })
+    const card = root.querySelector('[data-counter-card="true"]')
+
+    expect(card?.getAttribute("class")).toBe("counter-card active ready")
+    expect(card?.getAttribute("style")).toBe("border-color:black;opacity:1;transform:translateY(1px)")
+    ;(handle.actions as any).increment()
+
+    expect(card?.getAttribute("class")).toBe("counter-card active ready")
+    expect(card?.getAttribute("style")).toBe("border-color:black;opacity:1;transform:translateY(1px)")
+
+    handle.dispose()
+  })
+
+  it("updates reactive web:class and web:style thunks without recreating the element", () => {
+    const root = document.createElement("div")
+    const counter = Component.make("template-style-reactive").pipe(
+      Component.model({ count: Atom.make(0), enabled: Atom.make(false) }),
+      Component.actions({
+        increment: ({ count }) => count.update((value) => value + 1),
+        toggle: ({ enabled }) => enabled.update((value) => !value),
+      }),
+      Component.view(({ state }) =>
+        html`
+          <section>
+            <div
+              class="counter-card"
+              style="border-color:black"
+              web:class=${() => [state.enabled() ? "active" : undefined, `count-${state.count()}`]}
+              web:style=${() => ({ opacity: state.enabled() ? 1 : 0.25, transform: `translateY(${state.count()}px)` })}
+              data-counter-card="true"
+            >
+              card
+            </div>
+          </section>
+        `
+      ),
+    )
+
+    const handle = mount({ counter }, { root })
+    const cardBefore = root.querySelector('[data-counter-card="true"]')
+
+    expect(cardBefore?.getAttribute("class")).toBe("counter-card count-0")
+    expect(cardBefore?.getAttribute("style")).toBe("border-color:black;opacity:0.25;transform:translateY(0px)")
+    ;(handle.actions as any).toggle()
+    ;(handle.actions as any).increment()
+
+    const cardAfter = root.querySelector('[data-counter-card="true"]')
+
+    expect(cardAfter).toBe(cardBefore)
+    expect(cardAfter?.getAttribute("class")).toBe("counter-card active count-1")
+    expect(cardAfter?.getAttribute("style")).toBe("border-color:black;opacity:1;transform:translateY(1px)")
+
+    handle.dispose()
+  })
+
+  it("rejects invalid web:class and web:style value shapes", () => {
+    expect(() => html`<div web:class=${{ active: true } as never}></div>`).toThrowError(/web:class expects/)
+    expect(() => html`<div web:style=${["opacity:1"] as never}></div>`).toThrowError(/web:style expects/)
+    expect(() => html`<div web:class=${((value: string) => value) as never}></div>`).toThrowError(/web:class expects/)
+    expect(() => html`<div web:style=${((value: string) => value) as never}></div>`).toThrowError(/web:style expects/)
+  })
+
+  it("keeps rejecting unknown web directives", () => {
+    expect(() => html`<div web:foo=${() => "active"}></div>`).toThrowError(
+      /Unsupported template directive 'web:foo'/,
     )
   })
 
@@ -238,6 +358,81 @@ describe("@effectify/loom template-first view API", () => {
     handle.dispose()
   })
 
+  it("updates runtime-visible attr, class, reactive string style, click, and inputValue behavior through template directives", () => {
+    const root = document.createElement("div")
+    const templateDirectives = Component.make("template-directives-runtime").pipe(
+      Component.model({ count: Atom.make(1), draft: Atom.make("alpha") }),
+      Component.actions(({ model }) => ({
+        increment: () => model.count.update((value) => value + 1),
+        syncDraft: (value: string) => model.draft.set(value),
+      })),
+      Component.view(({ state, actions }) =>
+        html`
+          <section>
+            <button type="button" data-action="increment" web:click=${actions.increment}>Increment</button>
+            <input
+              type="text"
+              data-draft-input="true"
+              web:inputValue=${() => `${state.draft()}:${state.count()}`}
+              web:input=${({ currentTarget }) => {
+          if (currentTarget instanceof HTMLInputElement) {
+            actions.syncDraft(currentTarget.value)
+          }
+        }}
+            />
+            <div
+              data-runtime-card="true"
+              data-tone=${() => state.count() > 1 ? "active" : "idle"}
+              title=${() => `draft:${state.draft()}`}
+              web:class=${() => ["status-card", state.count() > 1 ? "status-card--active" : "status-card--idle"]}
+              web:style=${() => `transform:translateY(${state.count()}px);opacity:${state.count() > 1 ? 1 : 0.5}`}
+            >
+              ${() => `${state.draft()}#${state.count()}`}
+            </div>
+          </section>
+        `
+      ),
+    )
+
+    const handle = mount({ templateDirectives }, { root })
+    const button = root.querySelector('[data-action="increment"]')
+    const input = root.querySelector('[data-draft-input="true"]')
+    const card = root.querySelector('[data-runtime-card="true"]')
+
+    if (
+      !(button instanceof HTMLButtonElement) || !(input instanceof HTMLInputElement) ||
+      !(card instanceof HTMLDivElement)
+    ) {
+      throw new Error("expected template runtime elements")
+    }
+
+    expect(input.value).toBe("alpha:1")
+    expect(card.dataset.tone).toBe("idle")
+    expect(card.getAttribute("title")).toBe("draft:alpha")
+    expect(card.getAttribute("class")).toContain("status-card--idle")
+    expect(card.getAttribute("style")).toBe("transform:translateY(1px);opacity:0.5")
+    expect(card.style.transform).toBe("translateY(1px)")
+    expect(card.textContent).toBe("alpha#1")
+
+    button.click()
+
+    expect(input.value).toBe("alpha:2")
+    expect(card.dataset.tone).toBe("active")
+    expect(card.getAttribute("class")).toContain("status-card--active")
+    expect(card.getAttribute("style")).toBe("transform:translateY(2px);opacity:1")
+    expect(card.style.opacity).toBe("1")
+    expect(card.textContent).toBe("alpha#2")
+
+    input.value = "beta"
+    input.dispatchEvent(new Event("input", { bubbles: true }))
+
+    expect(input.value).toBe("beta:2")
+    expect(card.getAttribute("title")).toBe("draft:beta")
+    expect(card.textContent).toBe("beta#2")
+
+    handle.dispose()
+  })
+
   it("rejects invalid handlers for web:input and web:submit", () => {
     expect(() => html`<input web:input=${"hello"} />`).toThrowError(/web:input expects an event handler\./)
     expect(() => html`<form web:submit=${"hello"}></form>`).toThrowError(/web:submit expects an event handler\./)
@@ -314,6 +509,113 @@ describe("@effectify/loom template-first view API", () => {
 
     expect(eager?.textContent).toBe("1")
     expect(lazy?.textContent).toBe("2")
+
+    handle.dispose()
+  })
+
+  it("does not auto-track broad expressions or formatted helper results as accessor sugar", () => {
+    const root = document.createElement("div")
+    const formatTitle = (value: string) => `title:${value}`
+    const counter = Component.make("non-reactive-template-expression-counter").pipe(
+      Component.model({ count: Atom.make(1), title: Atom.make("Count 1") }),
+      Component.actions({
+        increment: ({ count, title }) => {
+          count.update((value) => value + 1)
+          title.set(`Count ${count.get()}`)
+        },
+      }),
+      Component.view(({ state }) =>
+        html`
+          <section>
+            <p data-kind="broad-expression">${state.count() + 1}</p>
+            <p data-kind="formatted-helper">${formatTitle(state.title())}</p>
+            <p data-kind="accessor">${state.count}</p>
+          </section>
+        `
+      ),
+    )
+
+    const handle = mount({ counter }, { root })
+    const broadExpression = root.querySelector('[data-kind="broad-expression"]')
+    const formattedHelper = root.querySelector('[data-kind="formatted-helper"]')
+    const accessor = root.querySelector('[data-kind="accessor"]')
+
+    expect(broadExpression?.textContent).toBe("2")
+    expect(formattedHelper?.textContent).toBe("title:Count 1")
+    expect(accessor?.textContent).toBe("1")
+    ;(handle.actions as any).increment()
+
+    expect(broadExpression?.textContent).toBe("2")
+    expect(formattedHelper?.textContent).toBe("title:Count 1")
+    expect(accessor?.textContent).toBe("2")
+
+    handle.dispose()
+  })
+
+  it("supports bare state accessors as reactive template sugar in text and approved bindings", () => {
+    const root = document.createElement("div")
+    const counter = Component.make("accessor-sugar-counter").pipe(
+      Component.model({ count: Atom.make(1), title: Atom.make("Count 1") }),
+      Component.actions({
+        increment: ({ count, title }) => {
+          count.update((value) => value + 1)
+          title.set(`Count ${count.get()}`)
+        },
+      }),
+      Component.view(({ state }) =>
+        html`
+          <section>
+            <p data-kind="accessor">${state.count}</p>
+            <p data-kind="snapshot">${state.count()}</p>
+            <input type="text" title=${state.title} web:value=${state.count} />
+          </section>
+        `
+      ),
+    )
+
+    const handle = mount({ counter }, { root })
+    const accessor = root.querySelector('[data-kind="accessor"]')
+    const snapshot = root.querySelector('[data-kind="snapshot"]')
+    const input = root.querySelector("input")
+
+    if (!(input instanceof HTMLInputElement)) {
+      throw new Error("expected html template input")
+    }
+
+    expect(accessor?.textContent).toBe("1")
+    expect(snapshot?.textContent).toBe("1")
+    expect(input.value).toBe("1")
+    expect(input.getAttribute("title")).toBe("Count 1")
+    ;(handle.actions as any).increment()
+
+    expect(accessor?.textContent).toBe("2")
+    expect(snapshot?.textContent).toBe("1")
+    expect(input.value).toBe("2")
+    expect(input.getAttribute("title")).toBe("Count 2")
+
+    handle.dispose()
+  })
+
+  it("keeps custom zero-arg functions as explicit reactive lambdas", () => {
+    const root = document.createElement("div")
+    const counter = Component.make("custom-lambda-counter").pipe(
+      Component.model({ count: Atom.make(1) }),
+      Component.actions({
+        increment: ({ count }) => count.update((value) => value + 1),
+      }),
+      Component.view(({ state }) => {
+        const plusOne = () => state.count() + 1
+
+        return html`<p data-kind="lambda">${plusOne}</p>`
+      }),
+    )
+
+    const handle = mount({ counter }, { root })
+    const lambda = root.querySelector('[data-kind="lambda"]')
+
+    expect(lambda?.textContent).toBe("2")
+    ;(handle.actions as any).increment()
+    expect(lambda?.textContent).toBe("3")
 
     handle.dispose()
   })

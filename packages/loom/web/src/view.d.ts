@@ -34,11 +34,17 @@ export declare const hstack: (...children: ReadonlyArray<MaybeChild>) => Type
 export declare const stack: (...children: ReadonlyArray<MaybeChild>) => Type
 /** Compatibility alias for the preferred `View.hstack(...)` primitive. */
 export declare const row: (...children: ReadonlyArray<MaybeChild>) => Type
-/** Create a button node with broad child content and click handler support. */
+/**
+ * @deprecated Prefer html`<button web:click=${handler}>...</button>` for DOM authoring. `View.button(...)` remains supported as a compatibility helper with the same runtime behavior.
+ */
 export declare const button: (content: ViewChild, handler: Html.EventHandler) => Type
-/** Create the first text-input primitive backed by a text input element. */
+/**
+ * @deprecated Prefer html`<input web:value={...}>` or `web:inputValue={...}` for DOM authoring. `View.input()` remains supported as a compatibility helper with the same runtime behavior.
+ */
 export declare const input: () => Type
-/** Create a router-neutral link node with broad child content. */
+/**
+ * @deprecated Prefer html`<a href="...">...</a>` for DOM authoring. `View.link(...)` remains supported as a compatibility helper with the same runtime behavior.
+ */
 export declare const link: (content: ViewChild, target: LinkTarget) => Type
 /** Render exactly one branch from an explicit boolean condition. */
 export declare function ifView(condition: boolean, content: MaybeChild, otherwise?: MaybeChild): Type

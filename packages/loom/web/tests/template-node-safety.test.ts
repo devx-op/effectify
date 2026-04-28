@@ -3,6 +3,16 @@
 import { describe, expect, it } from "vitest"
 import { Html, html, Hydration } from "../src/index.js"
 
+const expectParserErrorWithoutDocument = (
+  render: () => unknown,
+  message: RegExp,
+): void => {
+  Reflect.deleteProperty(globalThis, "document")
+
+  expect(render).toThrowError(message)
+  expect(Reflect.has(globalThis, "document")).toBe(false)
+}
+
 describe("@effectify/loom template parsing in node", () => {
   it("authors SSR-safe templates without installing a global document", () => {
     Reflect.deleteProperty(globalThis, "document")
@@ -24,21 +34,38 @@ describe("@effectify/loom template parsing in node", () => {
     expect(Reflect.has(globalThis, "document")).toBe(false)
   })
 
-  it("keeps unsupported directive errors stable when document is unavailable", () => {
+  it("serializes web:class and web:style during SSR without installing a global document", () => {
     Reflect.deleteProperty(globalThis, "document")
 
-    expect(() => html`<div web:class=${() => "active"}></div>`).toThrowError(
-      /Unsupported template directive 'web:class'/,
+    const result = Html.renderToString(
+      html`
+        <div
+          class="counter-card"
+          style="border-color:black"
+          web:class=${() => ["active", "ready"]}
+          web:style=${() => ({ opacity: 1, transform: "translateY(2px)" })}
+        >
+          card
+        </div>
+      `,
     )
+
+    expect(result).toContain('class="counter-card active ready"')
+    expect(result).toContain('style="border-color:black;opacity:1;transform:translateY(2px)"')
     expect(Reflect.has(globalThis, "document")).toBe(false)
   })
 
-  it("fails fast for malformed templates without installing a global document", () => {
-    Reflect.deleteProperty(globalThis, "document")
+  it("rejects unsupported template directives without installing a global document", () => {
+    expectParserErrorWithoutDocument(
+      () => html`<section web:foo=${() => ["active"]}></section>`,
+      /Unsupported template directive 'web:foo'/,
+    )
+  })
 
-    expect(() => html`<section><span>broken</section>`).toThrowError(
+  it("fails fast for malformed templates without installing a global document", () => {
+    expectParserErrorWithoutDocument(
+      () => html`<section><span>broken</section>`,
       /Invalid html template: expected <\/span> but found <\/section>\./,
     )
-    expect(Reflect.has(globalThis, "document")).toBe(false)
   })
 })

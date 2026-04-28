@@ -137,6 +137,64 @@ const applyValueBindingSnapshot = (node: LoomCore.Ast.ElementNode, attributes: R
   attributes.value = nextValue
 }
 
+const isPresent = (value: string | undefined): value is string => value !== undefined
+
+const serializeClassBindings = (values: ReadonlyArray<string | undefined>): string | undefined => {
+  const present = values.filter(isPresent)
+
+  if (present.length === 0) {
+    return undefined
+  }
+
+  if (present.every((value) => value === "")) {
+    return ""
+  }
+
+  return present.filter((value) => value.length > 0).join(" ")
+}
+
+const serializeStyleBindings = (values: ReadonlyArray<string | undefined>): string | undefined => {
+  const present = values.filter(isPresent).map((value) => value.trim().replace(/;+$/u, ""))
+
+  if (present.length === 0) {
+    return undefined
+  }
+
+  if (present.every((value) => value === "")) {
+    return ""
+  }
+
+  return present.filter((value) => value.length > 0).join(";")
+}
+
+const applyClassBindingSnapshot = (node: LoomCore.Ast.ElementNode, attributes: Record<string, string>): void => {
+  const nextClass = serializeClassBindings([
+    attributes.class,
+    ...node.bindings.flatMap((binding) => binding._tag === "ClassBinding" ? [binding.render()] : []),
+  ])
+
+  if (nextClass === undefined) {
+    delete attributes.class
+    return
+  }
+
+  attributes.class = nextClass
+}
+
+const applyStyleBindingSnapshot = (node: LoomCore.Ast.ElementNode, attributes: Record<string, string>): void => {
+  const nextStyle = serializeStyleBindings([
+    attributes.style,
+    ...node.bindings.flatMap((binding) => binding._tag === "StyleBinding" ? [binding.render()] : []),
+  ])
+
+  if (nextStyle === undefined) {
+    delete attributes.style
+    return
+  }
+
+  attributes.style = nextStyle
+}
+
 const commentNodeType = 8
 const documentNodeType = 9
 const showCommentNodeMask = 128
@@ -363,6 +421,8 @@ const serializeNode = (
       }
 
       const attributes: Record<string, string> = { ...node.attributes }
+      applyClassBindingSnapshot(node, attributes)
+      applyStyleBindingSnapshot(node, attributes)
       applyValueBindingSnapshot(node, attributes)
       const activeBoundaryId = isBoundaryRoot ? `b${state.nextBoundaryId++}` : boundaryId
       const activeBoundaryNodeId = isBoundaryRoot ? { current: 0 } : nextBoundaryNodeId

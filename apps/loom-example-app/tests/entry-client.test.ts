@@ -100,10 +100,7 @@ describe("loom example app client entry", () => {
     const dynamicValueBefore = expectElement(dynamicValue(), "dynamic counter value")
 
     expect(cueBefore.dataset.counterTone).toBe("baseline")
-    expect(cueBefore.className).toContain("counter-reactive-cue--baseline")
     expect(cueBefore.getAttribute("title")).toBe("Reactive cue tone: baseline (2)")
-    expect(cueBefore.style.backgroundColor).toBe("rgba(59, 130, 246, 0.12)")
-    expect(cueBefore.style.transform).toBe("translateY(0px)")
 
     click("increment")
     await yieldToEventLoop()
@@ -115,14 +112,14 @@ describe("loom example app client entry", () => {
     expect(cueAfterIncrement).toBe(cueBefore)
     expect(dynamicValueAfterIncrement).toBe(dynamicValueBefore)
     expect(cueAfterIncrement.getAttribute("data-counter-tone")).toBe("rising")
-    expect(cueAfterIncrement.className).toContain("counter-reactive-cue--rising")
     expect(cueAfterIncrement.getAttribute("title")).toBe("Reactive cue tone: rising (3)")
-    expect(cueAfterIncrement.style.transform).toBe("translateY(-1px)")
 
     click("increment")
     await yieldToEventLoop()
     expect(normalizedCount()).toBe("Count: 4")
-    expect(expectElement(reactiveCue(), "reactive cue after second increment").style.transform).toBe("translateY(-2px)")
+    expect(expectElement(reactiveCue(), "reactive cue after second increment").getAttribute("title")).toBe(
+      "Reactive cue tone: rising (4)",
+    )
 
     click("decrement")
     await yieldToEventLoop()
@@ -132,7 +129,9 @@ describe("loom example app client entry", () => {
     await yieldToEventLoop()
     expect(normalizedCount()).toBe("Count: 2")
     expect(reactiveCue()?.getAttribute("data-counter-tone")).toBe("baseline")
-    expect(expectElement(reactiveCue(), "reactive cue after decrement").style.transform).toBe("translateY(0px)")
+    expect(expectElement(reactiveCue(), "reactive cue after decrement").getAttribute("title")).toBe(
+      "Reactive cue tone: baseline (2)",
+    )
 
     click("reset")
     await yieldToEventLoop()

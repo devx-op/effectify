@@ -46,11 +46,6 @@ const counterCueStyle = (count: number): Web.StyleRecord => {
   }
 }
 
-const styleAttribute = (style: Web.StyleRecord): string =>
-  Object.entries(style)
-    .map(([key, value]) => `${key.replace(/[A-Z]/g, (character) => `-${character.toLowerCase()}`)}: ${String(value)}`)
-    .join("; ")
-
 export const CounterRoute = Component.make("CounterRoute").pipe(
   Component.state({
     count: () => Atom.make(counterInitialCount).pipe(Atom.keepAlive),
@@ -82,11 +77,12 @@ export const CounterRoute = Component.make("CounterRoute").pipe(
             <div class="counter-cue-row">
               <span class="counter-cue-label">Reactive cue</span>
               <span
-                class=${() => `counter-reactive-cue counter-reactive-cue--${counterCueTone(state.count())}`}
+                class="counter-reactive-cue"
                 data-counter-reactive-cue="true"
                 data-counter-tone=${() => counterCueTone(state.count())}
                 title=${() => `Reactive cue tone: ${counterCueTone(state.count())} (${state.count()})`}
-                style=${() => styleAttribute(counterCueStyle(state.count()))}
+                web:class=${() => [`counter-reactive-cue--${counterCueTone(state.count())}`]}
+                web:style=${() => counterCueStyle(state.count())}
               >
                 Loom attr/class/style in place
               </span>

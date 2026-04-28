@@ -1,4 +1,5 @@
 import * as Result from "effect/Result"
+import { Atom } from "effect/unstable/reactivity"
 import {
   Component,
   type ErrorOfRenderable,
@@ -104,6 +105,13 @@ const slotUse = View.use(layout, {
   header: ["head ", html`<span>slot</span>`],
 })
 
+const accessorSugar = Component.make("typed-accessor-sugar").pipe(
+  Component.model({ count: Atom.make(0), title: Atom.make("Count 0") }),
+  Component.view(({ state }) =>
+    html`<section title=${state.title}><p>${state.count}</p><input web:value=${state.count} /></section>`
+  ),
+)
+
 // @ts-expect-error child shorthand is only valid when required props are absent.
 const invalidChildShorthand = View.use(requiredPropsChild, html`<span>child</span>`)
 
@@ -162,6 +170,7 @@ export const typecheckSmoke = {
   taggedMatch,
   propUse,
   slotUse,
+  accessorSugar,
   invalidChildShorthand,
   handledSubject,
   recoveredSubject,

@@ -113,6 +113,49 @@ const applyValueBindingSnapshot = (node, attributes) => {
   }
   attributes.value = nextValue
 }
+const isPresent = (value) => value !== undefined
+const serializeClassBindings = (values) => {
+  const present = values.filter(isPresent)
+  if (present.length === 0) {
+    return undefined
+  }
+  if (present.every((value) => value === "")) {
+    return ""
+  }
+  return present.filter((value) => value.length > 0).join(" ")
+}
+const serializeStyleBindings = (values) => {
+  const present = values.filter(isPresent).map((value) => value.trim().replace(/;+$/u, ""))
+  if (present.length === 0) {
+    return undefined
+  }
+  if (present.every((value) => value === "")) {
+    return ""
+  }
+  return present.filter((value) => value.length > 0).join(";")
+}
+const applyClassBindingSnapshot = (node, attributes) => {
+  const nextClass = serializeClassBindings([
+    attributes.class,
+    ...node.bindings.flatMap((binding) => binding._tag === "ClassBinding" ? [binding.render()] : []),
+  ])
+  if (nextClass === undefined) {
+    delete attributes.class
+    return
+  }
+  attributes.class = nextClass
+}
+const applyStyleBindingSnapshot = (node, attributes) => {
+  const nextStyle = serializeStyleBindings([
+    attributes.style,
+    ...node.bindings.flatMap((binding) => binding._tag === "StyleBinding" ? [binding.render()] : []),
+  ])
+  if (nextStyle === undefined) {
+    delete attributes.style
+    return
+  }
+  attributes.style = nextStyle
+}
 const commentNodeType = 8
 const documentNodeType = 9
 const showCommentNodeMask = 128
@@ -274,6 +317,8 @@ const serializeNode = (node, state, boundaryId, nextBoundaryNodeId, isBoundaryRo
         return serializeNode(node, state, undefined, undefined, true)
       }
       const attributes = { ...node.attributes }
+      applyClassBindingSnapshot(node, attributes)
+      applyStyleBindingSnapshot(node, attributes)
       applyValueBindingSnapshot(node, attributes)
       const activeBoundaryId = isBoundaryRoot ? `b${state.nextBoundaryId++}` : boundaryId
       const activeBoundaryNodeId = isBoundaryRoot ? { current: 0 } : nextBoundaryNodeId

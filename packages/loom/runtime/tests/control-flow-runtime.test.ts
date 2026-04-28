@@ -78,4 +78,58 @@ describe("@effectify/loom-runtime control-flow foundations", () => {
     expect(ifNode._tag).toBe("If")
     expect(forNode._tag).toBe("For")
   })
+
+  it("keeps deferred and static branch composition observable through runtime render output", () => {
+    let items = ["alpha"]
+    let visible = false
+
+    const tree = LoomCore.Ast.fragment([
+      LoomCore.Ast.element("section", {
+        attributes: { "data-shell": "true" },
+        events: [],
+        children: [
+          LoomCore.Ast.text("before"),
+          LoomCore.Ast.ifNode(
+            () => visible,
+            LoomCore.Ast.element("strong", {
+              attributes: { "data-branch": "visible" },
+              children: [LoomCore.Ast.text("visible")],
+              events: [],
+            }),
+            LoomCore.Ast.element("em", {
+              attributes: { "data-branch": "fallback" },
+              children: [LoomCore.Ast.text("fallback")],
+              events: [],
+            }),
+          ),
+          LoomCore.Ast.forEach(
+            () => items,
+            (item, index) =>
+              LoomCore.Ast.element("span", {
+                attributes: { "data-item": `${index}` },
+                children: [LoomCore.Ast.text(item)],
+                events: [],
+              }),
+            LoomCore.Ast.element("p", {
+              attributes: { "data-empty": "true" },
+              children: [LoomCore.Ast.text("empty")],
+              events: [],
+            }),
+          ),
+          LoomCore.Ast.text("after"),
+        ],
+      }),
+    ])
+
+    expect(Runtime.renderToHtml(tree).html).toBe(
+      '<section data-shell="true">before<em data-branch="fallback">fallback</em><span data-item="0">alpha</span>after</section>',
+    )
+
+    visible = true
+    items = []
+
+    expect(Runtime.renderToHtml(tree).html).toBe(
+      '<section data-shell="true">before<strong data-branch="visible">visible</strong><p data-empty="true">empty</p>after</section>',
+    )
+  })
 })

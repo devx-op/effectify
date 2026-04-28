@@ -36,12 +36,14 @@ export const CounterRoute = Component.make("CounterRoute").pipe(
     increment: ({ count }) => count.update((value) => value + 1),
   }),
   Component.view(({ state, actions, children }) =>
-    View.vstack(
-      View.text("Counter").pipe(Web.as("h1")),
-      View.text(() => `Count: ${state.count()}`),
-      View.main(children),
-      View.button("Increase", actions.increment),
-    )
+    html`
+    <section>
+      <h1>Counter</h1>
+      <p>${() => state.count()}</p>
+      <main>${children}</main>
+      <button type="button" web:click=${actions.increment}>Increase</button>
+    </section>
+  `
   ),
 )
 
@@ -85,7 +87,13 @@ export const TemplateCounter = Component.make("TemplateCounter").pipe(
     html`
     <section>
       <button type="button" web:click=${actions.increment}>Increase</button>
-      <p>${() => state.count()}</p>
+      <p
+        class="counter-value"
+        web:class=${() => [state.count() > 0 ? "counter-value--active" : undefined]}
+        web:style=${() => ({ opacity: state.count() > 0 ? 1 : 0.6 })}
+      >
+        ${state.count}
+      </p>
       ${View.use(Card, html`<strong>Count card</strong>`)}
       ${
       View.use(Layout, {
@@ -107,16 +115,36 @@ export const TemplateCounter = Component.make("TemplateCounter").pipe(
 - Use `View.match(...)` for `Result`, `AsyncResult`, and `_tag`-based branching instead of inline switches in templates.
 - Keep list rendering explicit with `View.for(...)`; direct array interpolation stays unsupported.
 
+### Legacy View DOM helpers are compatibility-only
+
+`View.button(...)`, `View.input()`, and `View.link(...)` are still supported, but they are compatibility-only helpers now. New DOM authoring should prefer `html` plus `web:*` directives.
+
+Migration pairs:
+
+- `View.button(...)` → `html` + `<button type="button" web:click=${handler}>...</button>`
+- `View.input()` → `html` + `<input web:value=${value}>` or `<input web:inputValue=${value}>`
+- `View.link(...)` → `html` + `<a href="/docs">...</a>`
+
+There is no scheduled removal in the current package line. Any future removal requires a separate approved proposal and a breaking-release plan.
+
 ### Phase-1 reactivity rule
 
-- `${() => state.count()}` is reactive because Loom can track the thunk boundary.
+- `${state.count}` is reactive template sugar for the common Loom-owned accessor case.
+- `${() => state.count()}` is still reactive and remains the explicit escape hatch for computed expressions.
 - `${state.count()}` is an eager snapshot and does **not** update after the template is created.
-- Supported phase-1 directives are limited to `web:click`, `web:value` / `web:inputValue`, and `web:hydrate`.
+- Only Loom-branded accessors created by `Component.state(...)` / `Component.model(...)` get the bare-accessor sugar. Arbitrary zero-argument helpers are still supported when you pass them intentionally as `${() => ...}` / `${helper}`, but Loom does **not** auto-track plain expressions like `${state.count() + 1}` or `${format(state.title)}` unless you wrap them in an explicit function boundary.
+- Supported phase-1 directives are limited to `web:click`, `web:input`, `web:submit`, `web:value` / `web:inputValue`, `web:hydrate`, `web:class`, and `web:style`.
+
+### Template class/style directives
+
+- `web:class` accepts a `string`, or a flat array of `string | false | null | undefined` tokens.
+- `web:style` accepts a CSS declaration string or a Loom `Web.StyleRecord` object.
+- Thunks stay reactive; eager values stay snapshot-only, just like text interpolation.
+- Static `class` / `style` attributes remain the base layer and `web:class` / `web:style` append on top.
 
 ### Follow-ups intentionally out of scope
 
 - Accessor-style reactive sugar beyond the explicit lambda form.
-- `web:class` and `web:style` template directives.
 
 - Teach `Component.state(...)` as the ONLY public state seam.
 - Treat `Component.model(...)` as compatibility-only.

@@ -147,6 +147,9 @@ const semanticTextView = View.text("paragraph copy").pipe(Web.as("p"))
 const inputView = View.input().pipe(Web.value("hello"))
 const reactiveInputView = View.input().pipe(Web.inputValue(() => "next"))
 const aliasView = View.stack(View.text("hello"))
+const legacyButtonCompatibilityView = View.button("Legacy save", effectLike)
+const legacyInputCompatibilityView = View.input().pipe(Web.inputValue(() => "legacy"))
+const legacyLinkCompatibilityView = View.link("Legacy docs", { href: "/docs", rel: "noreferrer" })
 let isPositive = true
 let hasMany = false
 const conditionalView = View.if(true, View.text("ready"), View.text("waiting"))
@@ -250,8 +253,11 @@ const keyedListNode: View.Node = keyedListView
 const reactiveNode: View.Node = reactiveView
 const inputNode: View.Node = inputView
 const buttonView: View.Node = actionView
+const legacyButtonNode: View.Node = legacyButtonCompatibilityView
+const legacyInputNode: View.Node = legacyInputCompatibilityView
 const plainLinkNode: View.Node = stringLinkView
 const objectLinkNode: View.Node = objectLinkView
+const legacyLinkNode: View.Node = legacyLinkCompatibilityView
 
 mounted.model.count.set(0)
 mounted.model.local.update((value) => value + 1)
@@ -375,8 +381,11 @@ export const typecheckSmoke = {
   reactiveBindings,
   inputBindings,
   buttonView,
+  legacyButtonNode,
+  legacyInputNode,
   plainLinkNode,
   objectLinkNode,
+  legacyLinkNode,
   mounted,
   mountedStateCounter,
   mountedEffectful,

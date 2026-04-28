@@ -2,7 +2,9 @@ import * as LoomCore from "@effectify/loom-core"
 import * as Hydration from "./hydration.js"
 import type * as Html from "./html.js"
 import * as internalApi from "./internal/api.js"
+import { isStateAccessor, type StateAccessor } from "./internal/tracked-state.js"
 import * as viewNode from "./internal/view-node.js"
+import * as Web from "./web.js"
 
 export type Renderable<E = never, R = never> = viewNode.Type & {
   readonly __error?: E
@@ -15,12 +17,19 @@ export type RequirementsOfRenderable<Value> = Value extends { readonly __require
   : never
 
 export type PrimitiveInterpolation = string | number | bigint | null | undefined | false
+export type TemplateDirectiveValue = Web.ClassInput | Web.StyleInput
 export type TemplateValue =
   | LoomCore.Ast.Node
   | LoomCore.Component.Definition
   | PrimitiveInterpolation
   | ReadonlyArray<unknown>
-export type TemplateInterpolation = TemplateValue | Hydration.Strategy | Html.EventHandler | (() => TemplateValue)
+export type TemplateInterpolation =
+  | TemplateValue
+  | TemplateDirectiveValue
+  | Hydration.Strategy
+  | Html.EventHandler
+  | StateAccessor<TemplateValue | TemplateDirectiveValue>
+  | (() => TemplateValue | TemplateDirectiveValue)
 
 type InterpolationError<Value> = Value extends ReadonlyArray<infer Item> ? InterpolationError<Item>
   : Value extends () => infer Produced ? InterpolationError<Produced>
@@ -92,6 +101,12 @@ const isEventHandler = (value: unknown): value is Html.EventHandler =>
 const isTemplateThunk = (value: TemplateInterpolation): value is () => TemplateValue =>
   typeof value === "function" && value.length === 0
 
+const isTemplateAccessor = (
+  value: TemplateInterpolation,
+): value is StateAccessor<TemplateValue | TemplateDirectiveValue> => isStateAccessor(value)
+
+const isZeroArgFunction = (value: unknown): value is () => unknown => typeof value === "function" && value.length === 0
+
 const isHydrationStrategy = (value: unknown): value is Hydration.Strategy =>
   typeof value === "object" && value !== null && "strategy" in value && "attributeName" in value &&
   "attributeValue" in value
@@ -108,6 +123,8 @@ const pushEventDirective = (
 
   events.push(internalApi.makeEventBinding(eventName, interpolation))
 }
+
+type TemplateClassInput = Web.ClassInput
 
 const asRenderable = <E = never, R = never>(node: LoomCore.Ast.Node): Renderable<E, R> => viewNode.wrap(node)
 
@@ -135,7 +152,133 @@ const normalizeStaticInterpolation = (value: TemplateValue): ReadonlyArray<LoomC
   return []
 }
 
+const templateDirectiveError = (name: "class" | "style", detail: string): Error =>
+  new Error(`web:${name} expects ${detail}.`)
+
+const normalizeClassDirectiveValue = (value: unknown): string | undefined => {
+  if (value === null || value === undefined || value === false) {
+    return undefined
+  }
+
+  if (typeof value === "string") {
+    return Web.serializeClass(value)
+  }
+
+  if (Array.isArray(value)) {
+    if (
+      !value.every((entry) => entry === false || entry === null || entry === undefined || typeof entry === "string")
+    ) {
+      throw templateDirectiveError("class", "a string or a flat readonly array of string | false | null | undefined")
+    }
+
+    return Web.serializeClass(value as TemplateClassInput)
+  }
+
+  throw templateDirectiveError("class", "a string or a flat readonly array of string | false | null | undefined")
+}
+
+const isStyleRecord = (value: unknown): value is Web.StyleRecord =>
+  typeof value === "object" && value !== null && !Array.isArray(value) &&
+  Object.values(value).every((entry) =>
+    entry === null || entry === undefined || typeof entry === "string" || typeof entry === "number"
+  )
+
+const normalizeStyleDirectiveValue = (value: unknown): string | undefined => {
+  if (value === null || value === undefined || value === false) {
+    return undefined
+  }
+
+  if (typeof value === "string") {
+    return Web.serializeStyle(value)
+  }
+
+  if (isStyleRecord(value)) {
+    return Web.serializeStyle(value)
+  }
+
+  throw templateDirectiveError("style", "a string or a style object record")
+}
+
+const validateDirectiveThunk = (name: "class" | "style", value: unknown): (() => unknown) | undefined => {
+  if (value === null || value === undefined || value === false) {
+    return undefined
+  }
+
+  if (isStateAccessor(value)) {
+    return value
+  }
+
+  if (isZeroArgFunction(value)) {
+    return value
+  }
+
+  if (typeof value === "function") {
+    throw templateDirectiveError(name, "a string or a zero-arg thunk")
+  }
+
+  return undefined
+}
+
+const applyClassDirective = (
+  interpolation: TemplateInterpolation,
+  attributes: Record<string, string>,
+  bindings: Array<LoomCore.Ast.ElementBinding>,
+): void => {
+  const thunk = validateDirectiveThunk("class", interpolation)
+
+  if (thunk !== undefined) {
+    bindings.push({
+      _tag: "ClassBinding",
+      render: () => normalizeClassDirectiveValue(thunk()),
+    })
+    return
+  }
+
+  const nextClass = normalizeClassDirectiveValue(interpolation)
+
+  if (nextClass === undefined) {
+    return
+  }
+
+  attributes.class = attributes.class === undefined
+    ? nextClass
+    : Web.serializeClass([attributes.class, nextClass])
+}
+
+const applyStyleDirective = (
+  interpolation: TemplateInterpolation,
+  attributes: Record<string, string>,
+  bindings: Array<LoomCore.Ast.ElementBinding>,
+): void => {
+  const thunk = validateDirectiveThunk("style", interpolation)
+
+  if (thunk !== undefined) {
+    bindings.push({
+      _tag: "StyleBinding",
+      render: () => normalizeStyleDirectiveValue(thunk()),
+    })
+    return
+  }
+
+  const nextStyle = normalizeStyleDirectiveValue(interpolation)
+
+  if (nextStyle === undefined) {
+    return
+  }
+
+  attributes.style = attributes.style === undefined
+    ? nextStyle
+    : [attributes.style, nextStyle]
+      .map((value) => value.trim().replace(/;+$/u, ""))
+      .filter((value) => value.length > 0)
+      .join(";")
+}
+
 const normalizeInterpolationValue = (value: TemplateInterpolation): ReadonlyArray<LoomCore.Ast.Node> => {
+  if (isTemplateAccessor(value)) {
+    return [LoomCore.Ast.computed(() => collapseNodes(normalizeStaticInterpolation(value() as TemplateValue)))]
+  }
+
   if (isTemplateThunk(value)) {
     return [LoomCore.Ast.computed(() => collapseNodes(normalizeStaticInterpolation(value())))]
   }
@@ -357,7 +500,7 @@ const applyAttributeInterpolation = (
 ): void => {
   assertTemplateValue(interpolation, "Direct array/component interpolation")
 
-  if (isTemplateThunk(interpolation)) {
+  if (isTemplateAccessor(interpolation) || isTemplateThunk(interpolation)) {
     if (name === "value") {
       bindings.push({
         _tag: "ValueBinding",
@@ -437,6 +580,14 @@ const applyWebDirective = (
     case "value":
     case "inputValue": {
       applyAttributeInterpolation("value", interpolation, attributes, bindings)
+      return undefined
+    }
+    case "class": {
+      applyClassDirective(interpolation, attributes, bindings)
+      return undefined
+    }
+    case "style": {
+      applyStyleDirective(interpolation, attributes, bindings)
       return undefined
     }
     case "hydrate": {
@@ -532,10 +683,6 @@ export const html = <const Values extends ReadonlyArray<TemplateInterpolation>>(
   strings: TemplateStringsArray,
   ...values: Values
 ): Renderable<InterpolationError<Values[number]>, InterpolationRequirements<Values[number]>> => {
-  for (const value of values) {
-    assertTemplateValue(value, "Direct array/component interpolation")
-  }
-
   const source = strings.reduce((current, segment, index) => {
     if (index >= values.length) {
       return current + segment

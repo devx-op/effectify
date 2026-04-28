@@ -9,10 +9,14 @@ export type ReactiveAttrValue = ReactiveInput<AttrValue>
 export type ValueInput = string | number | null | undefined
 export type ReactiveValueInput = ReactiveInput<ValueInput>
 export type AttrRecord = Readonly<Record<string, ReactiveAttrValue>>
+export type ClassToken = string | false | null | undefined
+export type ClassInput = string | ReadonlyArray<ClassToken>
 export type StyleValue = string | number | null | undefined
 export type StyleRecord = Readonly<Record<string, StyleValue>>
 export type StyleInput = string | StyleRecord
 export type ReactiveStyleInput = ReactiveInput<StyleInput>
+export declare const serializeClass: (value: ClassInput) => string
+export declare const serializeStyle: (value: string | StyleRecord) => string
 /** Override the root element tag for an element-backed view. Non-element nodes pass through unchanged. */
 export declare const as: (tagName: RootTagName) => Modifier
 /** Attach a CSS class to a view element. Non-element nodes pass through unchanged. */

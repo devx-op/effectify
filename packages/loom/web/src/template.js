@@ -2,6 +2,7 @@ import * as LoomCore from "@effectify/loom-core"
 import * as Hydration from "./hydration.js"
 import * as internalApi from "./internal/api.js"
 import * as viewNode from "./internal/view-node.js"
+import * as Web from "./web.js"
 
 const childMarkerPrefix = "loom-child:"
 const attributeMarkerPrefix = "__loom_attr_"
@@ -29,6 +30,7 @@ const isRenderable = (value) =>
 const isComponentDefinition = (value) => typeof value === "object" && value !== null && value._tag === "Component"
 const isEventHandler = (value) => typeof value === "function" || (typeof value === "object" && value !== null)
 const isTemplateThunk = (value) => typeof value === "function" && value.length === 0
+const isZeroArgFunction = (value) => typeof value === "function" && value.length === 0
 const isHydrationStrategy = (value) =>
   typeof value === "object" && value !== null && "strategy" in value && "attributeName" in value &&
   "attributeValue" in value
@@ -63,6 +65,97 @@ const normalizeStaticInterpolation = (value) => {
   }
 
   return []
+}
+
+const templateDirectiveError = (name, detail) => new Error(`web:${name} expects ${detail}.`)
+
+const normalizeClassDirectiveValue = (value) => {
+  if (value === null || value === undefined || value === false) {
+    return undefined
+  }
+  if (typeof value === "string") {
+    return Web.serializeClass(value)
+  }
+  if (Array.isArray(value)) {
+    if (
+      !value.every((entry) => entry === false || entry === null || entry === undefined || typeof entry === "string")
+    ) {
+      throw templateDirectiveError("class", "a string or a flat readonly array of string | false | null | undefined")
+    }
+    return Web.serializeClass(value)
+  }
+  throw templateDirectiveError("class", "a string or a flat readonly array of string | false | null | undefined")
+}
+
+const isStyleRecord = (value) =>
+  typeof value === "object" && value !== null && !Array.isArray(value) &&
+  Object.values(value).every((entry) =>
+    entry === null || entry === undefined || typeof entry === "string" || typeof entry === "number"
+  )
+
+const normalizeStyleDirectiveValue = (value) => {
+  if (value === null || value === undefined || value === false) {
+    return undefined
+  }
+  if (typeof value === "string") {
+    return Web.serializeStyle(value)
+  }
+  if (isStyleRecord(value)) {
+    return Web.serializeStyle(value)
+  }
+  throw templateDirectiveError("style", "a string or a style object record")
+}
+
+const validateDirectiveThunk = (name, value) => {
+  if (value === null || value === undefined || value === false) {
+    return undefined
+  }
+  if (isZeroArgFunction(value)) {
+    return value
+  }
+  if (typeof value === "function") {
+    throw templateDirectiveError(name, "a string or a zero-arg thunk")
+  }
+  return undefined
+}
+
+const applyClassDirective = (interpolation, attributes, bindings) => {
+  const thunk = validateDirectiveThunk("class", interpolation)
+  if (thunk !== undefined) {
+    bindings.push({
+      _tag: "ClassBinding",
+      render: () => normalizeClassDirectiveValue(thunk()),
+    })
+    return
+  }
+  const nextClass = normalizeClassDirectiveValue(interpolation)
+  if (nextClass === undefined) {
+    return
+  }
+  attributes.class = attributes.class === undefined
+    ? nextClass
+    : Web.serializeClass([attributes.class, nextClass])
+}
+
+const applyStyleDirective = (interpolation, attributes, bindings) => {
+  const thunk = validateDirectiveThunk("style", interpolation)
+  if (thunk !== undefined) {
+    bindings.push({
+      _tag: "StyleBinding",
+      render: () => normalizeStyleDirectiveValue(thunk()),
+    })
+    return
+  }
+  const nextStyle = normalizeStyleDirectiveValue(interpolation)
+  if (nextStyle === undefined) {
+    return
+  }
+  attributes.style = attributes.style === undefined
+    ? nextStyle
+    : [attributes.style, nextStyle]
+      .map((value) => value.trim().replace(/;+$/u, ""))
+      .filter((value) => value.length > 0)
+      .join(";")
 }
 
 const normalizeInterpolationValue = (value) => {
@@ -342,6 +435,14 @@ const applyWebDirective = (name, interpolation, attributes, bindings, events) =>
       applyAttributeInterpolation("value", interpolation, attributes, bindings)
       return undefined
     }
+    case "class": {
+      applyClassDirective(interpolation, attributes, bindings)
+      return undefined
+    }
+    case "style": {
+      applyStyleDirective(interpolation, attributes, bindings)
+      return undefined
+    }
     case "hydrate": {
       if (!isHydrationStrategy(interpolation)) {
         throw new Error("web:hydrate expects an explicit Hydration.strategy helper value.")
@@ -427,10 +528,6 @@ const convertParsedNode = (node, values) => {
 export const renderable = (node) => viewNode.wrap(node)
 
 export const html = (strings, ...values) => {
-  for (const value of values) {
-    assertTemplateValue(value, "Direct array/component interpolation")
-  }
-
   const source = strings.reduce((current, segment, index) => {
     if (index >= values.length) {
       return current + segment

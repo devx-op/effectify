@@ -4,7 +4,7 @@ import type * as Effect from "effect/Effect"
 import type * as Pipeable from "effect/Pipeable"
 import type * as Diagnostics from "./diagnostics.js"
 import * as pipeable from "./internal/pipeable.js"
-import { trackStateAtomRead } from "./internal/tracked-state.js"
+import { brandStateAccessor, type StateAccessor, trackStateAtomRead } from "./internal/tracked-state.js"
 import * as viewChild from "./internal/view-child.js"
 import type * as Slot from "./slot.js"
 import * as Template from "./template.js"
@@ -70,7 +70,9 @@ type WritableValue<Value> = MaterializedValue<Value> extends Atom.Writable<infer
   : MaterializedValue<Value>
 
 export type State<Model extends ModelShape> = {
-  readonly [Key in keyof Model]: () => StateValue<Model[Key]>
+  readonly [Key in keyof Model]: MaterializedValue<Model[Key]> extends Atom.Atom<infer AtomValue>
+    ? StateAccessor<AtomValue>
+    : () => StateValue<Model[Key]>
 }
 
 export type WriteModel<Model extends ModelShape> = {
@@ -301,10 +303,10 @@ const createState = <Model extends ModelShape>(
 
       const value = model[property as keyof Model]
       return Atom.isAtom(value)
-        ? () => {
+        ? brandStateAccessor(() => {
           trackStateAtomRead(value)
           return registry.get(value)
-        }
+        })
         : () => value
     },
     has(_target, property) {
