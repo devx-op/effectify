@@ -1,7 +1,10 @@
-import { Component, View, Web } from "@effectify/loom"
+import { Component, html, View } from "@effectify/loom"
 import { todoActionStatusAtom, todoItemsAtom } from "../todo-route-state.js"
 import { submitTodoRouteSubmission } from "../todo-route-submission.js"
 import { hasCompletedTodos, TodoPanel } from "./todo-route-shared.js"
+import { ensureTemplateDocument } from "../../template-dom-support.js"
+
+ensureTemplateDocument()
 
 export const TodoList = Component.make("TodoList").pipe(
   Component.state({
@@ -20,57 +23,77 @@ export const TodoList = Component.make("TodoList").pipe(
     },
   })),
   Component.view(({ state, actions }) =>
-    Component.use(TodoPanel, [
-      View.hstack(
-        View.vstack(
-          View.text("Todo list").pipe(Web.as("h2"), Web.className("todo-section-title")),
-          View.text(
-            "Secondary buttons also dispatch through the same route action instead of mutating atoms in place.",
-          ).pipe(
-            Web.className("todo-copy"),
-          ),
-        ),
-        View.button("Clear completed", () => actions.clearCompleted()).pipe(
-          Web.className("outline secondary"),
-          Web.attr("disabled", () => !hasCompletedTodos(state.todos()) || state.actionStatus() === "submitting"),
-          Web.data("todo-clear-completed", "true"),
-        ),
-      ).pipe(Web.className("todo-list-header")),
-      View.if(
-        () => state.todos().length === 0,
-        View.text("No todos left. Add another one from the composer above.").pipe(
-          Web.className("todo-empty-state"),
-          Web.data("todo-empty-state", "true"),
-        ),
-        View.vstack(
-          View.for(() => state.todos(), {
-            key: (todo) => todo.id,
-            render: (todo) =>
-              View.hstack(
-                View.button(todo.completed ? "Re-open" : "Done", () => actions.toggleTodo(todo.id)).pipe(
-                  Web.className(todo.completed ? "outline secondary" : "secondary"),
-                  Web.attr("disabled", () => state.actionStatus() === "submitting"),
-                  Web.data("todo-toggle-id", `${todo.id}`),
-                ),
-                View.vstack(
-                  View.text(todo.title).pipe(
-                    Web.className(todo.completed ? "todo-item-title todo-item-title--completed" : "todo-item-title"),
-                  ),
-                  View.text(todo.completed ? "Completed task" : "Open task").pipe(Web.className("todo-item-status")),
-                ).pipe(Web.className("todo-item-copy")),
-                View.button("Remove", () => actions.removeTodo(todo.id)).pipe(
-                  Web.className("outline contrast"),
-                  Web.attr("disabled", () => state.actionStatus() === "submitting"),
-                  Web.data("todo-remove-id", `${todo.id}`),
-                ),
-              ).pipe(
-                Web.as("li"),
-                Web.className(todo.completed ? "todo-item todo-item--completed" : "todo-item"),
-                Web.data("todo-item-id", `${todo.id}`),
-              ),
-          }),
-        ).pipe(Web.as("ul"), Web.className("todo-item-list"), Web.data("todo-list", "true")),
-      ),
-    ])
+    View.use(
+      TodoPanel,
+      html`
+      <div class="todo-list-header">
+        <div>
+          <h2 class="todo-section-title">Todo list</h2>
+          <span class="todo-copy">
+            Secondary buttons also dispatch through the same route action instead of mutating atoms in place.
+          </span>
+        </div>
+
+        <button
+          type="button"
+          class="outline secondary"
+          data-todo-clear-completed="true"
+          disabled=${() => !hasCompletedTodos(state.todos()) || state.actionStatus() === "submitting"}
+          web:click=${() => actions.clearCompleted()}
+        >
+          Clear completed
+        </button>
+      </div>
+
+      ${
+        View.if(
+          () => state.todos().length === 0,
+          html`<span class="todo-empty-state" data-todo-empty-state="true">No todos left. Add another one from the composer above.</span>`,
+          html`
+          <ul class="todo-item-list" data-todo-list="true">
+            ${
+            View.for(() => state.todos(), {
+              key: (todo) => todo.id,
+              render: (todo) =>
+                html`
+                  <li class=${
+                  todo.completed ? "todo-item todo-item--completed" : "todo-item"
+                } data-todo-item-id=${`${todo.id}`}>
+                    <button
+                      type="button"
+                      class=${todo.completed ? "outline secondary" : "secondary"}
+                      data-todo-toggle-id=${`${todo.id}`}
+                      disabled=${() => state.actionStatus() === "submitting"}
+                      web:click=${() => actions.toggleTodo(todo.id)}
+                    >
+                      ${todo.completed ? "Re-open" : "Done"}
+                    </button>
+
+                    <div class="todo-item-copy">
+                      <span class=${todo.completed ? "todo-item-title todo-item-title--completed" : "todo-item-title"}>
+                        ${todo.title}
+                      </span>
+                      <span class="todo-item-status">${todo.completed ? "Completed task" : "Open task"}</span>
+                    </div>
+
+                    <button
+                      type="button"
+                      class="outline contrast"
+                      data-todo-remove-id=${`${todo.id}`}
+                      disabled=${() => state.actionStatus() === "submitting"}
+                      web:click=${() => actions.removeTodo(todo.id)}
+                    >
+                      Remove
+                    </button>
+                  </li>
+                `,
+            })
+          }
+          </ul>
+        `,
+        )
+      }
+    `,
+    )
   ),
 )

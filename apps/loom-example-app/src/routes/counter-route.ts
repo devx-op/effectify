@@ -1,6 +1,9 @@
 import { Atom } from "effect/unstable/reactivity"
-import { Component, View, Web } from "@effectify/loom"
+import { Component, html, Web } from "@effectify/loom"
 import { counterInitialCount } from "../app-config.js"
+import { ensureTemplateDocument } from "../template-dom-support.js"
+
+ensureTemplateDocument()
 
 export const counterRouteId = "counter"
 export const counterRoutePath = "/"
@@ -46,6 +49,11 @@ const counterCueStyle = (count: number): Web.StyleRecord => {
   }
 }
 
+const styleAttribute = (style: Web.StyleRecord): string =>
+  Object.entries(style)
+    .map(([key, value]) => `${key.replace(/[A-Z]/g, (character) => `-${character.toLowerCase()}`)}: ${String(value)}`)
+    .join("; ")
+
 export const CounterRoute = Component.make("CounterRoute").pipe(
   Component.state({
     count: () => Atom.make(counterInitialCount).pipe(Atom.keepAlive),
@@ -56,67 +64,58 @@ export const CounterRoute = Component.make("CounterRoute").pipe(
     reset: ({ count }) => count.set(counterInitialCount),
   }),
   Component.view(({ state, actions }) =>
-    View.vstack(
-      View.vstack(
-        View.text("Example app only").pipe(Web.className("loom-example-eyebrow")),
-        View.text("Loom vNext counter").pipe(
-          Web.as("h1"),
-          Web.className("counter-title"),
-        ),
-        View.text(
-          "This example keeps a single route and teaches the current Loom happy path first: Component.state/actions/view with View.text + Web modifiers.",
-        ).pipe(Web.className("counter-copy")),
-        View.link("Open the todo app example", "/todos").pipe(Web.className("outline secondary todo-link")),
-      ).pipe(Web.className("loom-example-hero")),
-      View.vstack(
-        View.vstack(
-          View.text("Counter state").pipe(Web.className("counter-value-label")),
-          View.hstack(
-            View.text("Count: ").pipe(Web.className("counter-value-prefix")),
-            View.text(() => `${state.count()}`).pipe(
-              Web.className("counter-dynamic-value"),
-              Web.data("counter-dynamic-value", "true"),
-            ),
-          ).pipe(Web.className("counter-value"), Web.data("counter-value", "true")),
-          View.hstack(
-            View.text("Reactive cue").pipe(Web.className("counter-cue-label")),
-            View.text("Loom attr/class/style in place").pipe(
-              Web.className("counter-reactive-cue"),
-              Web.data("counter-reactive-cue", "true"),
-              Web.attr("title", () => `Reactive cue tone: ${counterCueTone(state.count())} (${state.count()})`),
-              Web.data("counter-tone", () => counterCueTone(state.count())),
-              Web.className(() => `counter-reactive-cue--${counterCueTone(state.count())}`),
-              Web.style(() => counterCueStyle(state.count())),
-            ),
-          ).pipe(Web.className("counter-cue-row")),
-        ).pipe(Web.className("counter-value-card")),
-        View.hstack(
-          View.button(View.fragment("-", 1), actions.decrement).pipe(
-            Web.className("secondary"),
-            Web.data("counter-action", "decrement"),
-          ),
-          View.button(View.fragment("+", 1), actions.increment).pipe(
-            Web.className("contrast"),
-            Web.data("counter-action", "increment"),
-          ),
-          View.button("Reset", actions.reset).pipe(
-            Web.className("outline secondary"),
-            Web.data("counter-action", "reset"),
-          ),
-        ).pipe(Web.className("counter-actions"), Web.data("counter-controls", "true")),
-      ).pipe(Web.className("loom-example-card")),
-      View.vstack(
-        View.text(
-          "Html stays at the document/resume boundary only, not in the main authoring path developers copy from this example.",
-        ).pipe(Web.className("compat-seam-note"), Web.data("compat-seam-note", "true")),
-        View.text(
-          "Reactive cue: the badge now uses Loom-native attr/class/style bindings, while the numeric text stays on the span-backed dynamic-text seam.",
-        ).pipe(Web.className("counter-debug-note"), Web.data("counter-debug-note", "true")),
-        View.text(
-          "Dev caveat: in plain Vite dev the browser uses mount(...) to fill the empty root when no payload is present. That fallback is honest DX, not fake full SSR.",
-        ).pipe(Web.className("dev-mode-note"), Web.data("dev-mode-note", "true")),
-      ).pipe(Web.className("loom-example-note-stack")),
-    ).pipe(Web.className("loom-example-layout"), Web.data("route-view", "counter"))
+    html`
+      <div class="loom-example-layout" data-route-view="counter">
+        <div class="loom-example-hero">
+          <span class="loom-example-eyebrow">Example app only</span>
+          <h1 class="counter-title">Loom vNext counter</h1>
+          <span class="counter-copy">
+            This example keeps a single route and teaches the current Loom happy path first: Component.state/actions/view expressed through html templates.
+          </span>
+          <a href="/todos" class="outline secondary todo-link">Open the todo app example</a>
+        </div>
+
+        <div class="loom-example-card">
+          <div class="counter-value-card">
+            <span class="counter-value-label">Counter state</span>
+            <div class="counter-value" data-counter-value="true">
+              <span class="counter-value-prefix">Count: </span>
+              <span class="counter-dynamic-value" data-counter-dynamic-value="true">${() => `${state.count()}`}</span>
+            </div>
+            <div class="counter-cue-row">
+              <span class="counter-cue-label">Reactive cue</span>
+              <span
+                class=${() => `counter-reactive-cue counter-reactive-cue--${counterCueTone(state.count())}`}
+                data-counter-reactive-cue="true"
+                data-counter-tone=${() => counterCueTone(state.count())}
+                title=${() => `Reactive cue tone: ${counterCueTone(state.count())} (${state.count()})`}
+                style=${() => styleAttribute(counterCueStyle(state.count()))}
+              >
+                Loom attr/class/style in place
+              </span>
+            </div>
+          </div>
+
+          <div class="counter-actions" data-counter-controls="true">
+            <button type="button" class="secondary" data-counter-action="decrement" web:click=${actions.decrement}>-1</button>
+            <button type="button" class="contrast" data-counter-action="increment" web:click=${actions.increment}>+1</button>
+            <button type="button" class="outline secondary" data-counter-action="reset" web:click=${actions.reset}>Reset</button>
+          </div>
+        </div>
+
+        <div class="loom-example-note-stack">
+          <span class="compat-seam-note" data-compat-seam-note="true">
+            Templates author this route now; Html.el stays at the full document boundary only.
+          </span>
+          <span class="counter-debug-note" data-counter-debug-note="true">
+            Reactive cue: templates drive the count text plus Loom-native attr/class/style bindings from Loom state.
+          </span>
+          <span class="dev-mode-note" data-dev-mode-note="true">
+            Dev caveat: in plain Vite dev the browser uses mount(...) to fill the empty root when no payload is present. That fallback is honest DX, not fake full SSR.
+          </span>
+        </div>
+      </div>
+    `
   ),
 )
 

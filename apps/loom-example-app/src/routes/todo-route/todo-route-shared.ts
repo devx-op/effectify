@@ -1,6 +1,9 @@
 import * as Schema from "effect/Schema"
-import { Component, View, Web } from "@effectify/loom"
+import { Component, html } from "@effectify/loom"
 import { type TodoItem, TodoNotFoundError, type TodoServiceApi } from "../../todo-service.js"
+import { ensureTemplateDocument } from "../../template-dom-support.js"
+
+ensureTemplateDocument()
 
 export type TodoRouteServices = Readonly<{
   todoService: TodoServiceApi
@@ -47,24 +50,24 @@ export const completedTodoCount = (todos: ReadonlyArray<TodoItem>): number =>
 export const hasCompletedTodos = (todos: ReadonlyArray<TodoItem>): boolean => todos.some((todo) => todo.completed)
 
 export const TodoPanel = Component.make("TodoPanel").pipe(
-  Component.view(({ children }) => View.vstack(children).pipe(Web.className("loom-example-card todo-panel"))),
+  Component.view(({ children }) => html`<div class="loom-example-card todo-panel">${children}</div>`),
 )
 
 export const TodoNotes = Component.make("TodoNotes").pipe(
   Component.view(() =>
-    View.vstack(
-      View.text(
-        "View.input() + Web.value() still cover the composer, but the durable todo state now comes from loader/action runtime boundaries.",
-      ).pipe(Web.className("compat-seam-note"), Web.data("todo-dx-caveat", "true")),
-      View.text(
-        "The point of this example is architecture: Effect-backed service first, Loom route runtime second, and UI atoms as the projected view state.",
-      ).pipe(Web.className("dev-mode-note")),
-    ).pipe(Web.className("loom-example-note-stack"))
+    html`
+      <div class="loom-example-note-stack">
+        <span class="compat-seam-note" data-todo-dx-caveat="true">
+          The composer keeps one explicit View.input() seam for input and Enter-key parity, but the rest of the route now teaches html templates + View.use first.
+        </span>
+        <span class="dev-mode-note">
+          The point of this example is architecture: Effect-backed service first, Loom route runtime second, and UI atoms as the projected view state.
+        </span>
+      </div>
+    `
   ),
 )
 
 export const TodoPageShell = Component.make("TodoPageShell").pipe(
-  Component.view(({ children }) =>
-    View.vstack(children).pipe(Web.className("loom-example-layout"), Web.data("route-view", "todo"))
-  ),
+  Component.view(({ children }) => html`<div class="loom-example-layout" data-route-view="todo">${children}</div>`),
 )

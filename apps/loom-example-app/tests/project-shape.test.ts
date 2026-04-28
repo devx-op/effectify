@@ -47,6 +47,7 @@ describe("loom example app project shape", () => {
 
   it("authors the example through the vNext root surface first and uses mount for the dev fallback", () => {
     const counterRouteSource = readFileSync(new URL("../src/routes/counter-route.ts", import.meta.url), "utf8")
+    const documentSource = readFileSync(new URL("../src/document.ts", import.meta.url), "utf8")
     const todoRouteSource = readFileSync(new URL("../src/routes/todo-route.ts", import.meta.url), "utf8")
     const todoRouteComponentSource = readFileSync(
       new URL("../src/routes/todo-route/todo-route-component.ts", import.meta.url),
@@ -72,10 +73,14 @@ describe("loom example app project shape", () => {
     expect(counterRouteSource).not.toContain("Component.stateFactory")
     expect(counterRouteSource).toContain("Component.actions")
     expect(counterRouteSource).toContain("Component.view")
-    expect(counterRouteSource).toContain("Web.as")
-    expect(counterRouteSource).toContain("View.vstack")
-    expect(counterRouteSource).toContain("View.hstack")
-    expect(counterRouteSource).toContain("Web.data")
+    expect(counterRouteSource).toContain('from "@effectify/loom"')
+    expect(counterRouteSource).toContain("html`")
+    expect(counterRouteSource).toContain('data-counter-reactive-cue="true"')
+    expect(counterRouteSource).toContain("web:click")
+    expect(counterRouteSource).not.toContain("View.button")
+    expect(counterRouteSource).not.toContain("View.link")
+    expect(counterRouteSource).not.toContain("View.vstack")
+    expect(counterRouteSource).not.toContain("View.hstack")
     expect(counterRouteSource).not.toContain("Html.el(")
     expect(counterRouteSource).not.toContain("Route.make({")
     expect(counterRouteSource).not.toContain("counterPageRoute")
@@ -101,8 +106,11 @@ describe("loom example app project shape", () => {
     expect(todoRouteSource).not.toContain("todoActionDecoder")
     expect(todoRouteSource).not.toContain("toTodoRouteFailure")
     expect(todoRouteComponentSource).toContain('Component.make("TodoRoute").pipe(')
-    expect(todoRouteComponentSource).toContain("Component.use(TodoHero")
-    expect(todoRouteComponentSource).toContain("Component.use(TodoList")
+    expect(todoRouteComponentSource).toContain("html`")
+    expect(todoRouteComponentSource).toContain("${View.use(TodoPageShell,")
+    expect(todoRouteComponentSource).toContain("View.use(TodoHero)")
+    expect(todoRouteComponentSource).toContain("View.use(TodoList)")
+    expect(todoRouteComponentSource).not.toContain("View.use(TodoPageShell, [")
     expect(todoRouteComponentSource).not.toContain("attachTodoRegistry")
     expect(todoRouteComponentSource).not.toContain("View.fragment()")
     expect(todoRouteComponentSource).not.toContain("todoRegistry")
@@ -113,18 +121,24 @@ describe("loom example app project shape", () => {
     expect(todoHeroSource).not.toContain("Component.children()")
     expect(todoHeroSource).not.toContain("attachTodoRegistry")
     expect(todoHeroSource).not.toContain("withTodoRouteRegistry")
-    expect(todoHeroSource).toContain("View.link")
+    expect(todoHeroSource).toContain('from "@effectify/loom"')
+    expect(todoHeroSource).toContain("html`")
+    expect(todoHeroSource).not.toContain("View.link")
     expect(todoHeroSource).not.toContain("registry: todoRegistry")
     expect(todoComposerSource).toContain('export const TodoComposer = Component.make("TodoComposer").pipe(')
     expect(todoComposerSource).toContain('Component.make("TodoComposer").pipe(')
     expect(todoComposerSource).not.toContain("Component.stateFactory")
     expect(todoComposerSource).not.toContain("attachTodoRegistry")
-    expect(todoComposerSource).toContain("View.button")
+    expect(todoComposerSource).toContain("html`")
     expect(todoComposerSource).toContain("View.input()")
-    expect(todoComposerSource).toContain("Web.value(")
+    expect(todoComposerSource).toContain("TodoComposerInputSeam")
+    expect(todoComposerSource).toContain('<div class="todo-composer-row">')
+    expect(todoComposerSource).not.toContain("View.button")
+    expect(todoComposerSource).not.toContain("View.hstack(")
     expect(todoComposerSource).not.toContain("registry: todoRegistry")
     expect(todoListSource).toContain('export const TodoList = Component.make("TodoList").pipe(')
-    expect(todoListSource).toContain("View.button")
+    expect(todoListSource).toContain("html`")
+    expect(todoListSource).not.toContain("View.button")
     expect(todoListSource).not.toContain("attachTodoRegistry")
     expect(todoListSource).not.toContain("withTodoRouteRegistry")
     expect(todoListSource).not.toContain("registry: todoRegistry")
@@ -138,17 +152,38 @@ describe("loom example app project shape", () => {
     expect(routerSource).toContain("module: counterRouteModule,")
     expect(routerSource).not.toContain("Component.children()")
     expect(routerSource).toContain('Component.make("AppShell")')
-    expect(routerSource).toContain("Component.use(AppShell")
+    expect(routerSource).toContain('from "@effectify/loom"')
+    expect(routerSource).toContain("html`")
+    expect(routerSource).toContain("View.use(AppShell")
+    expect(routerSource).toContain('children ?? ""')
+    expect(routerSource).toContain('Component.make("ShellBody")')
+    expect(routerSource).toContain("View.use(AppShell, View.use(ShellBody, { content: child }))")
     expect(routerSource).toContain("Fallback.make(notFoundView)")
     expect(routerSource).toContain("RouteModule.compile({")
-    expect(routerSource).toContain("component: () => Component.use(todoRouteModule.component)")
+    expect(routerSource).toContain("component: () => View.use(todoRouteModule.component)")
+    expect(routerSource).not.toContain("View.main(")
+    expect(routerSource).not.toContain("Component.use(AppShell")
     expect(routerSource).not.toContain("internal/route-modules")
-    expect(routerSource).not.toContain("Html.el(")
     expect(routerSource).not.toContain("registry: todoRegistry")
     expect(entryClientSource).toContain('import * as counterRouteModule from "./routes/counter-route.js"')
     expect(entryClientSource).toContain('import * as todoRouteModule from "./routes/todo-route.js"')
     expect(entryClientSource).toContain("mount({ counterRoute: counterRouteModule.component }, { root })")
     expect(entryClientSource).toContain("mount({ todoRoute: todoRouteModule.component }, { root })")
+    expect(documentSource).toContain("Html.el(")
+
+    for (
+      const routeSource of [
+        counterRouteSource,
+        todoRouteSource,
+        todoRouteComponentSource,
+        todoHeroSource,
+        todoComposerSource,
+        todoListSource,
+        routerSource,
+      ]
+    ) {
+      expect(routeSource).not.toContain("Html.el(")
+    }
 
     for (const docSource of [loomReadmeSource, loomPrdSource, loomRfcSource]) {
       expect(docSource).not.toContain("Component.stateFactory")

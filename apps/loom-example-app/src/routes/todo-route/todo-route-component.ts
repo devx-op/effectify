@@ -1,20 +1,30 @@
-import { Component, View, Web } from "@effectify/loom"
+import { Component, html, View } from "@effectify/loom"
+import { ensureTemplateDocument } from "../../template-dom-support.js"
 import { TodoComposer } from "./todo-composer.js"
 import { TodoHero } from "./todo-hero.js"
 import { TodoInsights } from "./todo-insights.js"
 import { TodoList } from "./todo-list.js"
 import { TodoNotes, TodoPageShell } from "./todo-route-shared.js"
 
+ensureTemplateDocument()
+
 export const TodoRoute = Component.make("TodoRoute").pipe(
   Component.view(() =>
-    Component.use(TodoPageShell, [
-      Component.use(TodoHero),
-      View.hstack(
-        Component.use(TodoInsights),
-        Component.use(TodoComposer),
-      ).pipe(Web.className("todo-top-row")),
-      Component.use(TodoList),
-      Component.use(TodoNotes),
-    ])
+    html`
+      ${
+      View.use(
+        TodoPageShell,
+        html`
+        ${View.use(TodoHero)}
+        <div class="todo-top-row">
+          ${View.use(TodoInsights)}
+          ${View.use(TodoComposer)}
+        </div>
+        ${View.use(TodoList)}
+        ${View.use(TodoNotes)}
+      `,
+      )
+    }
+    `
   ),
 )

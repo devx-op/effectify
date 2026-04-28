@@ -24,7 +24,7 @@ describe("loom example app server entry", () => {
     expect(result.html).toContain('data-counter-value="true"')
     expect(result.html).toContain('data-counter-dynamic-value="true"')
     expect(result.html).toContain('data-counter-reactive-cue="true"')
-    expect(result.html).toContain("Loom-native attr/class/style bindings")
+    expect(result.html).toContain("Templates author this route now")
     expect(result.html).toContain("mount(...) to fill the empty root")
   })
 
@@ -45,7 +45,8 @@ describe("loom example app server entry", () => {
     expect(result.html).toContain('data-todo-session-count="true"')
     expect(result.html).toContain('value=""')
     expect(result.html).toContain("Sketch the shared Atom shape")
-    expect(result.html).toContain("durable todo state now comes from loader/action runtime boundaries")
+    expect(result.html).toContain("authored with Loom templates and View.use composition")
+    expect(result.html).toContain("View.input() seam")
   })
 
   it("returns a minimal not-found document for unknown paths", async () => {

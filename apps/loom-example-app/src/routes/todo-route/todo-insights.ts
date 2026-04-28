@@ -1,6 +1,9 @@
-import { Component, View, Web } from "@effectify/loom"
+import { Component, html, View } from "@effectify/loom"
 import { todoActionStatusAtom, todoFeedbackAtom, todoItemsAtom } from "../todo-route-state.js"
 import { completedTodoCount, remainingTodoCount, TodoPanel } from "./todo-route-shared.js"
+import { ensureTemplateDocument } from "../../template-dom-support.js"
+
+ensureTemplateDocument()
 
 export const TodoInsights = Component.make("TodoInsights").pipe(
   Component.state({
@@ -9,42 +12,40 @@ export const TodoInsights = Component.make("TodoInsights").pipe(
     todos: todoItemsAtom,
   }),
   Component.view(({ state }) =>
-    Component.use(TodoPanel, [
-      View.text("Runtime snapshot").pipe(Web.as("h2"), Web.className("todo-section-title")),
-      View.text(
-        "The route loader owns the initial list, and every button funnels through the route action plus self-revalidation.",
-      ).pipe(Web.className("todo-copy")),
-      View.hstack(
-        View.vstack(
-          View.text("Open").pipe(Web.className("todo-stat-label")),
-          View.text(() => `${remainingTodoCount(state.todos())}`).pipe(
-            Web.className("todo-stat-value"),
-            Web.data("todo-open-count", "true"),
-          ),
-        ).pipe(Web.className("todo-stat")),
-        View.vstack(
-          View.text("Completed").pipe(Web.className("todo-stat-label")),
-          View.text(() => `${completedTodoCount(state.todos())}`).pipe(
-            Web.className("todo-stat-value"),
-            Web.data("todo-completed-count", "true"),
-          ),
-        ).pipe(Web.className("todo-stat")),
-        View.vstack(
-          View.text("Action status").pipe(Web.className("todo-stat-label")),
-          View.text(() => state.actionStatus()).pipe(
-            Web.className("todo-stat-value"),
-            Web.data("todo-action-status", "true"),
-          ),
-        ).pipe(Web.className("todo-stat")),
-      ).pipe(Web.className("todo-stat-grid")),
-      View.if(
-        () => state.feedback() !== undefined,
-        View.text(() => state.feedback() ?? "").pipe(
-          Web.className("todo-copy"),
-          Web.data("todo-feedback", "true"),
-        ),
-        View.fragment(),
-      ),
-    ])
+    View.use(
+      TodoPanel,
+      html`
+      <h2 class="todo-section-title">Runtime snapshot</h2>
+      <span class="todo-copy">
+        The route loader owns the initial list, and every button funnels through the route action plus self-revalidation.
+      </span>
+
+      <div class="todo-stat-grid">
+        <div class="todo-stat">
+          <span class="todo-stat-label">Open</span>
+          <span class="todo-stat-value" data-todo-open-count="true">${() =>
+        `${remainingTodoCount(state.todos())}`}</span>
+        </div>
+        <div class="todo-stat">
+          <span class="todo-stat-label">Completed</span>
+          <span class="todo-stat-value" data-todo-completed-count="true">
+            ${() => `${completedTodoCount(state.todos())}`}
+          </span>
+        </div>
+        <div class="todo-stat">
+          <span class="todo-stat-label">Action status</span>
+          <span class="todo-stat-value" data-todo-action-status="true">${() => state.actionStatus()}</span>
+        </div>
+      </div>
+
+      ${
+        View.if(
+          () => state.feedback() !== undefined,
+          html`<span class="todo-copy" data-todo-feedback="true">${() => state.feedback() ?? ""}</span>`,
+          html``,
+        )
+      }
+    `,
+    )
   ),
 )

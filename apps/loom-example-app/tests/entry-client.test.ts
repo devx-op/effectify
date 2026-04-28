@@ -94,7 +94,7 @@ describe("loom example app client entry", () => {
     expect(result.status).toBe("missing-payload")
     expect(document.querySelectorAll('[data-app-shell="loom-example-app"]')).toHaveLength(1)
     expect(normalizedCount()).toBe("Count: 2")
-    expect(document.body.textContent).toContain("Loom-native attr/class/style bindings")
+    expect(document.body.textContent).toContain("Templates author this route now")
 
     const cueBefore = expectElement(reactiveCue(), "reactive cue")
     const dynamicValueBefore = expectElement(dynamicValue(), "dynamic counter value")
@@ -258,6 +258,37 @@ describe("loom example app client entry", () => {
     expect(completedCount()).toBe("0")
     expect(document.querySelector('[data-todo-item-id="2"]')).toBeNull()
     expect(document.title).toBe("Loom Example App · Todo app")
+  })
+
+  it("submits the composer from the Enter key and preserves the same runtime behavior as the Add button", async () => {
+    document.documentElement.innerHTML = `
+      <head><title>Loom Example App</title></head>
+      <body>
+        <div id="loom-root"></div>
+        <script type="application/json" id="__loom_payload__"></script>
+      </body>
+    `
+    window.history.replaceState({}, "", "/todos")
+
+    await startClientApp(document)
+
+    const input = expectInputElement(document.querySelector('[data-todo-input="true"]'), "todo input")
+
+    input.focus()
+    input.value = "Ship Enter-key parity"
+    input.dispatchEvent(new Event("input", { bubbles: true }))
+    input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Enter" }))
+    await yieldToEventLoop()
+
+    expect(document.querySelector('[data-todo-open-count="true"]')?.textContent?.trim()).toBe("3")
+    expect(document.querySelector('[data-todo-session-count="true"]')?.textContent?.trim()).toBe(
+      "Added from this mounted composer: 1",
+    )
+    expect(expectInputElement(document.querySelector('[data-todo-input="true"]'), "todo input after enter").value).toBe(
+      "",
+    )
+    expect(document.querySelector('[data-todo-item-id="4"]')?.textContent).toContain("Ship Enter-key parity")
+    expect(document.querySelector('[data-todo-action-status="true"]')?.textContent?.trim()).toBe("success")
   })
 
   it("shows invalid action feedback when the todo action input fails validation", async () => {
