@@ -199,20 +199,19 @@ const moduleLoaderWithServicesOptions = {
   search: Schema.Struct({ tab: Schema.String }),
   output: Schema.Struct({ id: Schema.String, tab: Schema.String, requestId: Schema.String }),
 } as const
-const moduleLoaderWithServices = pipe(
-  Effect.fn(function*({
+const moduleLoaderWithServices = Route.loader({
+  ...moduleLoaderWithServicesOptions,
+  load: ({
     params,
     search,
     services,
-  }: Route.ModuleLoaderContext<typeof moduleLoaderWithServicesOptions, { readonly requestId: string }>) {
-    return {
+  }: Route.ModuleLoaderContext<typeof moduleLoaderWithServicesOptions, { readonly requestId: string }>) =>
+    Effect.succeed({
       id: params.userId,
       requestId: services.requestId,
       tab: search.tab,
-    }
-  }),
-  Route.loader(moduleLoaderWithServicesOptions),
-)
+    }),
+})
 const moduleAction = Route.action({
   input: Schema.Struct({ title: Schema.String }),
   output: Schema.Struct({ savedTitle: Schema.String }),
@@ -222,25 +221,28 @@ const moduleAction = Route.action({
 })
 const moduleActionWithServicesOptions = {
   input: Schema.Struct({ title: Schema.String }),
+  params: Schema.Struct({ userId: Schema.String }),
+  search: Schema.Struct({ tab: Schema.String }),
   output: Schema.Struct({ savedTitle: Schema.String }),
   error: Schema.TaggedStruct("SaveFailure", { message: Schema.String }),
 } as const
-const moduleActionWithServices = pipe(
-  Effect.fn(function*({
+const moduleActionWithServices = Route.action({
+  ...moduleActionWithServicesOptions,
+  handle: ({
     input,
+    params,
+    search,
     services,
-  }: Route.ModuleActionContext<typeof moduleActionWithServicesOptions, { readonly requestId: string }>) {
-    return yield* Effect.fail({
+  }: Route.ModuleActionContext<typeof moduleActionWithServicesOptions, { readonly requestId: string }>) =>
+    Effect.fail({
       _tag: "SaveFailure" as const,
-      message: input.title.length > 0 ? services.requestId : "empty",
-    })
-  }),
-  Route.action(moduleActionWithServicesOptions),
-)
+      message: input.title.length > 0 ? `${params.userId}:${search.tab}:${services.requestId}` : "empty",
+    }),
+})
 const compiledRoute = RouteModule.compile({
   identifier: "users.module",
   module: {
-    component: "module-screen",
+    default: "module-screen",
     loader: moduleLoader,
     action: moduleAction,
   },
@@ -249,9 +251,17 @@ const compiledRoute = RouteModule.compile({
 const componentOnlyCompiledRoute = RouteModule.compile({
   identifier: "users.component-only",
   module: {
-    component: routeComponent,
+    default: routeComponent,
   },
   path: "/component-only",
+})
+const explicitComponentCompiledRoute = RouteModule.compile({
+  identifier: "users.component-explicit",
+  module: {
+    component: "explicit-screen",
+    default: "fallback-screen",
+  },
+  path: "/component-explicit",
 })
 
 if (Match.isSuccess(result)) {
@@ -373,6 +383,12 @@ type ModuleActionErrorContract = Expect<
 type ModuleActionWithServicesInputContract = Expect<
   Equal<Route.ModuleActionInputOf<typeof moduleActionWithServices>, { readonly title: string }>
 >
+export type ModuleActionWithServicesParamsContract = Expect<
+  Equal<Route.ModuleActionParamsOf<typeof moduleActionWithServices>, { readonly userId: string }>
+>
+export type ModuleActionWithServicesSearchContract = Expect<
+  Equal<Route.ModuleActionSearchOf<typeof moduleActionWithServices>, { readonly tab: string }>
+>
 type ModuleActionWithServicesResultContract = Expect<
   Equal<Route.ModuleActionResultOf<typeof moduleActionWithServices>, { readonly savedTitle: string }>
 >
@@ -394,6 +410,9 @@ type ComponentOnlyCompiledRouteIdentifierContract = Expect<
 >
 type ComponentOnlyCompiledRouteContentContract = Expect<
   Equal<Route.Content<typeof componentOnlyCompiledRoute>, typeof routeComponent>
+>
+export type ExplicitComponentCompiledRouteContentContract = Expect<
+  Route.Content<typeof explicitComponentCompiledRoute> extends string ? true : false
 >
 export type BuilderLayoutContract = Expect<Equal<typeof builderLayoutRouter, Router.Definition<readonly []>>>
 export type BuilderFallbackContract = Expect<Equal<typeof builderFallbackRouter, Router.Definition<readonly []>>>

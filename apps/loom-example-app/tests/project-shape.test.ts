@@ -81,9 +81,9 @@ describe("loom example app project shape", () => {
       }),
     )
 
-    expect(counterRouteModule.component).toBe(counterRouteModule.CounterRoute)
+    expect(counterRouteModule.default).toBe(counterRouteModule.CounterRoute)
     expect(counterRouteModule.counterRoutePath).toBe("/")
-    expect(todoRouteModule.component.registry).toBe(todoRouteStateModule.todoRegistry)
+    expect(todoRouteModule.default.registry).toBe(todoRouteStateModule.todoRegistry)
     expect(Router.isResolveSuccess(counterResult)).toBe(true)
     expect(Router.isResolveSuccess(todoResult)).toBe(true)
     expect(Router.isResolveNotFound(missingResult)).toBe(true)

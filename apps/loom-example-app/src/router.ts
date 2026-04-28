@@ -26,7 +26,7 @@ export const todoPageRoute = RouteModule.compile({
   identifier: todoRouteId,
   module: {
     ...todoRouteModule,
-    component: () => View.use(todoRouteModule.component),
+    default: () => View.use(todoRouteModule.default),
   },
   path: todoRoutePath,
 })

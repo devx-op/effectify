@@ -162,6 +162,8 @@ import { CounterRoute } from "./counter-route.js"
 
 const TodoItem = Schema.Struct({ id: Schema.Number, title: Schema.String, completed: Schema.Boolean })
 
+export default CounterRoute
+
 export const loader = Route.loader({
   output: Schema.Array(TodoItem),
   load: Effect.fn(function*() {
@@ -171,7 +173,7 @@ export const loader = Route.loader({
 
 export const counterPageRoute = RouteModule.compile({
   identifier: "counter",
-  module: { component: CounterRoute, loader },
+  module: { default: CounterRoute, loader },
   path: "/",
 })
 
@@ -181,10 +183,17 @@ export const appRouter = pipe(
 )
 ```
 
-- Teach route modules through `component` / optional `loader` / optional `action` exports.
+- Teach route modules through `export default` plus optional named `loader` / `action` exports.
+- `component` remains fully supported for legacy modules and still wins if a module exports both `component` and `default`.
 - Teach router assembly through `Router.make("app")` plus incremental operators like `Router.route(...)`, `Router.layout(...)`, and `Router.notFound(...)`.
-- Prefer `Route.loader({...})` and `Route.action({...})` inline schema-first helpers.
+- Prefer `Route.loader({...})` and `Route.action({...})` inline schema-first helpers, with `Route.ModuleLoaderContext<typeof options, Services>` / `Route.ModuleActionContext<typeof options, Services>` when you only need to add service typing.
 - Keep descriptor-style route assembly and manual registry propagation out of the public examples.
+
+Migration checklist:
+
+- New modules: prefer `export default` for route content.
+- Existing modules: keep `export const component = ...` if changing exports is noisy.
+- Mixed modules: if both `component` and `default` exist, Loom will use `component` for backward-compatible resolution.
 
 Compatibility note: `Router.from({ routes, layout, fallback })` and `Router.make({ ... })` remain available for existing code, but builder-first composition is the primary public story.
 

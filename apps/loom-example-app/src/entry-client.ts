@@ -20,12 +20,12 @@ const defaultClientUrl = "https://effectify.dev/"
 
 const mountClientRoute = (pathname: string, root: HTMLElement): boolean => {
   if (pathname === "/") {
-    mount({ counterRoute: counterRouteModule.component }, { root })
+    mount({ counterRoute: counterRouteModule.default }, { root })
     return true
   }
 
   if (pathname === todoRoutePath) {
-    mount({ todoRoute: todoRouteModule.component }, { root })
+    mount({ todoRoute: todoRouteModule.default }, { root })
     return true
   }
 

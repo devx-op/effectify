@@ -328,22 +328,27 @@ describe("@effectify/loom-router loaders/actions runtime", () => {
     })
   })
 
-  it("executes compiled route-module loaders and actions through the runtime boundary", async () => {
+  it("executes compiled default-export route-module loaders and actions through the runtime boundary", async () => {
     const route = RouteModule.compile({
       identifier: "users.detail",
       module: {
-        component: "user-screen",
+        default: "user-screen",
         loader: Route.loader({
           params: Schema.Struct({ userId: Schema.String }),
+          search: Schema.Struct({ tab: Schema.String }),
           load: ({
             params,
+            search,
             services,
           }: {
             readonly params: { readonly userId: string }
+            readonly search: { readonly tab: string }
             readonly services: { readonly prefix: string }
-          }) => Effect.succeed(`${services.prefix}:${params.userId}`),
+          }) => Effect.succeed(`${services.prefix}:${params.userId}:${search.tab}`),
         }),
         action: Route.action({
+          params: Schema.Struct({ userId: Schema.String }),
+          search: Schema.Struct({ tab: Schema.String }),
           input: Submission.make((submission) =>
             typeof submission.title === "string"
               ? Submission.succeed({ title: submission.title })
@@ -351,17 +356,21 @@ describe("@effectify/loom-router loaders/actions runtime", () => {
           ),
           handle: ({
             input,
+            params,
+            search,
             services,
           }: {
             readonly input: { readonly title: string }
+            readonly params: { readonly userId: string }
+            readonly search: { readonly tab: string }
             readonly services: { readonly suffix: string }
-          }) => Effect.succeed(`${input.title}:${services.suffix}`),
+          }) => Effect.succeed(`${input.title}:${params.userId}:${search.tab}:${services.suffix}`),
         }),
       },
       path: "/users/:userId",
     })
     const router = Router.make({ routes: [route] })
-    const resolved = Router.resolve(router, "/users/42")
+    const resolved = Router.resolve(router, "/users/42?tab=profile")
 
     if (!Router.isResolveSuccess(resolved)) {
       throw new Error("expected a resolved route")
@@ -379,12 +388,12 @@ describe("@effectify/loom-router loaders/actions runtime", () => {
 
     expect(loaded).toEqual({
       _tag: "success",
-      data: "user:42",
+      data: "user:42:profile",
       route,
     })
     expect(submitted).toEqual({
       _tag: "success",
-      result: "save:done",
+      result: "save:42:profile:done",
       revalidated: false,
       route,
     })

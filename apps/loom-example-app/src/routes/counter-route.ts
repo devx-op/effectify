@@ -112,4 +112,4 @@ export const CounterRoute = Component.make("CounterRoute").pipe(
   ),
 )
 
-export const component = CounterRoute
+export default CounterRoute
