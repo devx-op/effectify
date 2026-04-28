@@ -107,7 +107,7 @@ describe("loom example app project shape", () => {
     expect(todoRouteSource).not.toContain("toTodoRouteFailure")
     expect(todoRouteComponentSource).toContain('Component.make("TodoRoute").pipe(')
     expect(todoRouteComponentSource).toContain("html`")
-    expect(todoRouteComponentSource).toContain("${View.use(TodoPageShell,")
+    expect(todoRouteComponentSource).toMatch(/View\.use\(\s*TodoPageShell/s)
     expect(todoRouteComponentSource).toContain("View.use(TodoHero)")
     expect(todoRouteComponentSource).toContain("View.use(TodoList)")
     expect(todoRouteComponentSource).not.toContain("View.use(TodoPageShell, [")
