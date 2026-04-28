@@ -46,7 +46,7 @@ export const completedTodoCount = (todos: ReadonlyArray<TodoItem>): number =>
 
 export const hasCompletedTodos = (todos: ReadonlyArray<TodoItem>): boolean => todos.some((todo) => todo.completed)
 
-export const TodoPanel = Component.make("TodoPanel").pipe(
+export const TodoPanel = Component.make().pipe(
   Component.view(({ children }) => html`<div class="loom-example-card todo-panel">${children}</div>`),
 )
 
@@ -65,6 +65,6 @@ export const TodoNotes = Component.make().pipe(
   ),
 )
 
-export const TodoPageShell = Component.make("TodoPageShell").pipe(
+export const TodoPageShell = Component.make().pipe(
   Component.view(({ children }) => html`<div class="loom-example-layout" data-route-view="todo">${children}</div>`),
 )

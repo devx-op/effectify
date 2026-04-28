@@ -10,7 +10,7 @@ export const todoRouteId = "todo"
 export const todoRoutePath = "/todos"
 export const todoRouteTitle = "Todo app"
 
-const ShellBody = Component.make("ShellBody").pipe(
+const ShellBody = Component.make().pipe(
   Component.view(({ props }: { readonly props: Readonly<{ content: Loom.View.ViewChild | undefined }> | undefined }) =>
     View.fragment(props?.content ?? "")
   ),
@@ -31,7 +31,7 @@ export const todoPageRoute = RouteModule.compile({
   path: todoRoutePath,
 })
 
-const AppShell = Component.make("AppShell").pipe(
+const AppShell = Component.make().pipe(
   Component.view(({ children }) =>
     html`<main class="container" data-app-shell="loom-example-app">${children ?? ""}</main>`
   ),

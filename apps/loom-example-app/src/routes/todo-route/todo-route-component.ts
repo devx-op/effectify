@@ -5,7 +5,7 @@ import { TodoInsights } from "./todo-insights.js"
 import { TodoList } from "./todo-list.js"
 import { TodoNotes, TodoPageShell } from "./todo-route-shared.js"
 
-export const TodoRoute = Component.make("TodoRoute").pipe(
+export const TodoRoute = Component.make().pipe(
   Component.view(() =>
     html`
       ${

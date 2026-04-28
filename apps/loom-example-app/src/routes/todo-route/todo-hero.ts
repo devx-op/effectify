@@ -2,7 +2,7 @@ import { Component, html } from "@effectify/loom"
 import { counterRoutePath } from "../counter-route.js"
 import { todoDraftAtom, todoItemsAtom, todoLoaderStatusAtom } from "../todo-route-state.js"
 
-export const TodoHero = Component.make("TodoHero").pipe(
+export const TodoHero = Component.make().pipe(
   Component.state({
     draft: todoDraftAtom,
     todos: todoItemsAtom,

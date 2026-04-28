@@ -3,7 +3,7 @@ import { todoActionStatusAtom, todoItemsAtom } from "../todo-route-state.js"
 import { submitTodoRouteSubmission } from "../todo-route-submission.js"
 import { hasCompletedTodos, TodoPanel } from "./todo-route-shared.js"
 
-export const TodoList = Component.make("TodoList").pipe(
+export const TodoList = Component.make().pipe(
   Component.state({
     actionStatus: todoActionStatusAtom,
     todos: todoItemsAtom,

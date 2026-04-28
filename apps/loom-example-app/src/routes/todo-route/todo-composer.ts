@@ -9,7 +9,7 @@ const readTodoTitleInput = (form: HTMLFormElement): string | undefined => {
   return titleInput instanceof HTMLInputElement ? titleInput.value : undefined
 }
 
-export const TodoComposer = Component.make("TodoComposer").pipe(
+export const TodoComposer = Component.make().pipe(
   Component.state({
     actionStatus: todoActionStatusAtom,
     draft: todoDraftAtom,

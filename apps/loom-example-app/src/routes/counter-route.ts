@@ -46,7 +46,7 @@ const counterCueStyle = (count: number): Web.StyleRecord => {
   }
 }
 
-export const CounterRoute = Component.make("CounterRoute").pipe(
+export const CounterRoute = Component.make().pipe(
   Component.state({
     count: () => Atom.make(counterInitialCount).pipe(Atom.keepAlive),
   }),

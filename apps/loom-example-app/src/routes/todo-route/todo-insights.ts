@@ -2,7 +2,7 @@ import { Component, html, View } from "@effectify/loom"
 import { todoActionStatusAtom, todoFeedbackAtom, todoItemsAtom } from "../todo-route-state.js"
 import { completedTodoCount, remainingTodoCount, TodoPanel } from "./todo-route-shared.js"
 
-export const TodoInsights = Component.make("TodoInsights").pipe(
+export const TodoInsights = Component.make().pipe(
   Component.state({
     actionStatus: todoActionStatusAtom,
     feedback: todoFeedbackAtom,
