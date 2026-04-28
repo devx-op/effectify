@@ -159,6 +159,7 @@ export const provide = (_provided) => (self) => wrapBoundary(self, { requirement
 export const provideService = (_service) => (self) => wrapBoundary(self, { requirementsHandled: true })
 export const use = (component, propsOrComposition, composition) =>
   Template.renderable(Component.use(component, propsOrComposition, composition))
+export const of = (component) => use(component)
 /** Create a semantic main region. */
 export const main = (content) => internal.wrap(Html.el("main", Html.children(content)))
 /** Create a semantic aside region. */

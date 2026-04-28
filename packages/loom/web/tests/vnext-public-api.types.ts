@@ -12,10 +12,21 @@ interface SaveGateway {
   readonly save: (count: number) => Effect.Effect<string, SaveFailure>
 }
 
+interface RequiredTitleProps {
+  readonly title: string
+}
+
+declare const requiredPropsChild: Component.Type<RequiredTitleProps, never, never, {}, {}, {}, true>
+
 const loadRemote = (_count: number): Effect.Effect<string, SaveFailure, SaveGateway> =>
   Effect.fail(new SaveFailure("boom"))
 
 const count = Atom.make(1)
+
+const anonymousCounter = Component.make().pipe(
+  Component.state({ count: Atom.make(0) }),
+  Component.view(({ state }) => View.text(() => `Anonymous: ${state.count()}`)),
+)
 
 const stateCounter = Component.make("state-counter").pipe(
   Component.state({ count, label: "ready", local: () => Atom.make(0) }),
@@ -126,6 +137,8 @@ const todoHero = Component.make("todo-hero").pipe(
   Component.view(() => View.text("Tiny DX")),
 )
 
+const bareAnonymousUse: View.Node = Component.use(anonymousCounter)
+const simpleHeroUse = View.of(todoHero)
 const bareHeroUse: View.Node = Component.use(todoHero)
 const slottedUseWithoutProps: View.Node = Component.use(layout, {
   default: View.text("content"),
@@ -207,6 +220,7 @@ const textTag = textView._tag === "Element" ? textView.tagName : undefined
 const semanticTextTag = semanticTextView._tag === "Element" ? semanticTextView.tagName : undefined
 const reactiveBindings = reactiveView._tag === "Element" ? reactiveView.bindings : []
 const inputBindings = reactiveInputView._tag === "Element" ? reactiveInputView.bindings : []
+const anonymousName: string | undefined = anonymousCounter.name
 const counterName: string | undefined = counter.name
 const counterModel:
   | {
@@ -275,6 +289,12 @@ Component.use(layout, {
 // @ts-expect-error Slot-based components do not accept plain children content.
 Component.use(layout, View.text("content"))
 
+// @ts-expect-error View.of only supports components without required props.
+View.of(requiredPropsChild)
+
+// @ts-expect-error View.of does not accept slot-based composition.
+View.of(layout)
+
 // @ts-expect-error Component definitions keep registry plumbing out of the public authoring surface.
 void counter.registry
 
@@ -331,10 +351,13 @@ if (Component.isActionEffect(mountedLoad)) {
 }
 
 export const typecheckSmoke = {
+  anonymousCounter,
   counter,
   stateCounter,
   effectfulCounter,
   todoHero,
+  bareAnonymousUse,
+  simpleHeroUse,
   bareHeroUse,
   slottedUseWithoutProps,
   childrenUseWithoutModifier,
@@ -380,6 +403,7 @@ export const typecheckSmoke = {
   inputNode,
   reactiveBindings,
   inputBindings,
+  anonymousName,
   buttonView,
   legacyButtonNode,
   legacyInputNode,

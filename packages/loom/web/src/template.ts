@@ -288,7 +288,9 @@ const normalizeInterpolationValue = (value: TemplateInterpolation): ReadonlyArra
 
 const assertTemplateValue = (value: unknown, owner: string): void => {
   if (isComponentDefinition(value)) {
-    throw new Error(`${owner} is invalid in html templates. Use View.use(...) instead.`)
+    throw new Error(
+      `${owner} is invalid in html templates. Use View.of(...) for simple components or View.use(...) for props, children, or slots.`,
+    )
   }
 
   if (Array.isArray(value)) {

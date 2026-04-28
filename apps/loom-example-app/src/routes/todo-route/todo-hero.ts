@@ -15,7 +15,7 @@ export const TodoHero = Component.make("TodoHero").pipe(
           <span class="loom-example-eyebrow">Example app only</span>
           <h1 class="todo-title">Loom vNext todo app</h1>
           <span class="todo-copy">
-            This route now reads through a loader and writes through an action runtime, while the UI is authored with Loom templates and View.use composition.
+            This route now reads through a loader and writes through an action runtime, while the UI is authored with Loom templates plus View.of and View.use composition.
           </span>
         </div>
 

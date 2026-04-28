@@ -542,10 +542,11 @@ const patch = <
   }))
 
 /** Create a component from a neutral AST node or a named vNext component seam. */
+export function make(): Type
 export function make(name: string): Type
 export function make(node: LoomCore.Ast.Node): Type
-export function make(input: string | LoomCore.Ast.Node): Type {
-  const definition = LoomCore.Component.make(isNode(input) ? input : emptyNode)
+export function make(input?: string | LoomCore.Ast.Node): Type {
+  const definition = LoomCore.Component.make(input !== undefined && isNode(input) ? input : emptyNode)
 
   return reconcile(
     makePipeable({

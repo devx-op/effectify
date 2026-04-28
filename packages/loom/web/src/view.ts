@@ -437,6 +437,15 @@ export function use(component: Component.Type, propsOrComposition?: unknown, com
   return Component.use(component as never, propsOrComposition as never, composition as never) as Renderable
 }
 
+export const of = <
+  Props,
+  Err,
+  Requirements,
+  Model extends Component.ModelShape,
+  Actions extends Component.ActionShape,
+>(component: ChildShorthandComponent<Props, Err, Requirements, Model, Actions>): Renderable<Err, Requirements> =>
+  use(component)
+
 /** Create a semantic main region. */
 export const main = (content: MaybeChild): Renderable => asRenderable(Html.el("main", Html.children(content)))
 

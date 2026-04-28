@@ -146,6 +146,16 @@ describe("@effectify/loom template-first view API", () => {
     handle.dispose()
   })
 
+  it("guides simple component interpolation toward View.of and advanced composition toward View.use", () => {
+    const child = Component.make().pipe(
+      Component.view(() => html`<span>child</span>`),
+    )
+
+    expect(() => html`<article>${child}</article>`).toThrowError(
+      /Use View\.of\(\.\.\.\) for simple components or View\.use\(\.\.\.\) for props, children, or slots\./,
+    )
+  })
+
   it("interpolates array-shaped children and slots inside html through View.use", () => {
     const card = Component.make("html-card").pipe(
       Component.view(({ children }) => html`<article>${children}</article>`),

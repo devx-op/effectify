@@ -65,7 +65,7 @@ describe("loom example app server entry", () => {
     expect(result.html).toContain("<form")
     expect(result.html).toContain('name="title"')
     expect(result.html).toContain("Sketch the shared Atom shape")
-    expect(result.html).toContain("authored with Loom templates and View.use composition")
+    expect(result.html).toContain("authored with Loom templates plus View.of and View.use composition")
     expect(result.html).toContain("template-authored form")
   })
 

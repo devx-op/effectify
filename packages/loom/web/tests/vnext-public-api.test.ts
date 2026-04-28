@@ -107,6 +107,23 @@ describe("@effectify/loom vNext public surface", () => {
     registry.dispose()
   })
 
+  it("supports unnamed component definitions and View.of simple composition", () => {
+    const badge = Component.make().pipe(
+      Component.view(() => View.text("Docs")),
+    )
+
+    const simplePage = Component.make("simple-page").pipe(
+      Component.view(() => View.fragment(View.of(badge), View.use(badge))),
+    )
+
+    const handle = mount({ simplePage })
+
+    expect(badge.name).toBeUndefined()
+    expect(handle.html).toContain("<span>Docs</span><span>Docs</span>")
+
+    handle.dispose()
+  })
+
   it("materializes Atom factories per mount and keeps read-friendly state isolated per instance", () => {
     const counter = Component.make("counter").pipe(
       Component.model({
@@ -624,6 +641,8 @@ describe("@effectify/loom vNext public surface", () => {
     const rfc = readFileSync(resolve(workspaceRoot, "docs/loom-rfc.md"), "utf8")
 
     expect(readme).toContain("compatibility-only")
+    expect(readme).toContain("Component.make()")
+    expect(readme).toContain("View.of(...)")
     expect(readme).toContain("View.button(...)")
     expect(readme).toContain('<button type="button" web:click=')
     expect(readme).toContain("View.input()")

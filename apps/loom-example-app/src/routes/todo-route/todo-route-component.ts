@@ -12,13 +12,13 @@ export const TodoRoute = Component.make("TodoRoute").pipe(
       View.use(
         TodoPageShell,
         html`
-        ${View.use(TodoHero)}
+        ${View.of(TodoHero)}
         <div class="todo-top-row">
-          ${View.use(TodoInsights)}
-          ${View.use(TodoComposer)}
+          ${View.of(TodoInsights)}
+          ${View.of(TodoComposer)}
         </div>
-        ${View.use(TodoList)}
-        ${View.use(TodoNotes)}
+        ${View.of(TodoList)}
+        ${View.of(TodoNotes)}
       `,
       )
     }

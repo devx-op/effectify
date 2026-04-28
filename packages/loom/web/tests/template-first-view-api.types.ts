@@ -75,10 +75,10 @@ const layout = Component.make("typed-layout").pipe(
 )
 
 const parent = Component.make("typed-parent").pipe(
-  Component.view(() => View.use(child)),
+  Component.view(() => View.of(child)),
 )
 
-const used = View.use(child)
+const used = View.of(child)
 const handled = View.catchTag("SaveFailure", () => html`<span>handled</span>`)(used)
 const recovered = View.catchAll(() => html`<span>fallback</span>`)(handled)
 const provided = View.provideService({ save: (value: string) => value } satisfies SaveGateway)(recovered)
@@ -114,6 +114,9 @@ const accessorSugar = Component.make("typed-accessor-sugar").pipe(
 
 // @ts-expect-error child shorthand is only valid when required props are absent.
 const invalidChildShorthand = View.use(requiredPropsChild, html`<span>child</span>`)
+
+// @ts-expect-error View.of only supports components without required props.
+const invalidSimpleUse = View.of(requiredPropsChild)
 
 const usedError: ErrorOfRenderable<typeof used> | undefined = used.__error
 const usedRequirements: RequirementsOfRenderable<typeof used> | undefined = used.__requirements
@@ -172,6 +175,7 @@ export const typecheckSmoke = {
   slotUse,
   accessorSugar,
   invalidChildShorthand,
+  invalidSimpleUse,
   handledSubject,
   recoveredSubject,
   providedSubject,

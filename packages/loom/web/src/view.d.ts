@@ -1,4 +1,5 @@
 import * as LoomCore from "@effectify/loom-core"
+import type * as Component from "./component.js"
 import * as Html from "./html.js"
 import * as Slot from "./slot.js"
 import * as internal from "./internal/view-node.js"
@@ -9,6 +10,13 @@ export type ViewChild = viewChild.ViewChild
 export type Child = ViewChild
 export type MaybeChild = ViewChild
 export type SlotDefinition = Slot.Definition
+type RequiredPropKeys<Props> = [Props] extends [never] ? never
+  : [NonNullable<Props>] extends [never] ? never
+  : NonNullable<Props> extends object ? {
+      readonly [Key in keyof NonNullable<Props>]-?: undefined extends NonNullable<Props>[Key] ? never : Key
+    }[keyof NonNullable<Props>]
+  : never
+type NoRequiredProps<Props> = [RequiredPropKeys<Props>] extends [never] ? true : false
 export interface ForOptions<Item, Key extends PropertyKey = PropertyKey> {
   readonly key: (item: Item, index: number) => Key
   readonly render: (item: Item, index: number) => MaybeChild
@@ -62,6 +70,16 @@ export declare function forView<Item, Key extends PropertyKey>(
   options: ForOptions<Item, Key>,
 ): Type
 export { forView as for, ifView as if, whenView as when }
+export declare function of<
+  Props,
+  Err,
+  Requirements,
+  Model extends Component.ModelShape,
+  Actions extends Component.ActionShape,
+>(
+  component: NoRequiredProps<Props> extends true ? Component.Type<Props, Err, Requirements, Model, Actions, {}, true>
+    : never,
+): Type
 /** Create a semantic main region. */
 export declare const main: (content: MaybeChild) => Type
 /** Create a semantic aside region. */

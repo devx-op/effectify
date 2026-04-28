@@ -50,7 +50,7 @@ export const TodoPanel = Component.make("TodoPanel").pipe(
   Component.view(({ children }) => html`<div class="loom-example-card todo-panel">${children}</div>`),
 )
 
-export const TodoNotes = Component.make("TodoNotes").pipe(
+export const TodoNotes = Component.make().pipe(
   Component.view(() =>
     html`
       <div class="loom-example-note-stack">

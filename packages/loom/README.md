@@ -27,7 +27,7 @@ This is the primary documented/public contract for new Loom authoring.
 import { Atom } from "effect/unstable/reactivity"
 import { Component, html, mount, Slot, View, Web } from "@effectify/loom"
 
-export const CounterRoute = Component.make("CounterRoute").pipe(
+export const CounterRoute = Component.make().pipe(
   Component.state({
     count: Atom.make(0),
     draft: () => Atom.make(""),
@@ -50,6 +50,8 @@ export const CounterRoute = Component.make("CounterRoute").pipe(
 mount({ CounterRoute })
 ```
 
+Use `Component.make()` as the default authoring path. Keep `Component.make("Name")` for observability, diagnostics, or any place where authored metadata matters.
+
 ### Template-first authoring path
 
 For new DOM-heavy authoring, prefer `html` inside `Component.view(...)` and keep `View` focused on composition.
@@ -59,8 +61,8 @@ import * as Result from "effect/Result"
 import { Atom } from "effect/unstable/reactivity"
 import { Component, html, Slot, View } from "@effectify/loom"
 
-const Card = Component.make("Card").pipe(
-  Component.view(({ children }) => html`<article class="card">${children}</article>`),
+const Card = Component.make().pipe(
+  Component.view(() => html`<article class="card">Count card</article>`),
 )
 
 const Layout = Component.make("Layout").pipe(
@@ -78,7 +80,7 @@ const Layout = Component.make("Layout").pipe(
   ),
 )
 
-export const TemplateCounter = Component.make("TemplateCounter").pipe(
+export const TemplateCounter = Component.make().pipe(
   Component.model({ count: Atom.make(0) }),
   Component.actions({
     increment: ({ count }) => count.update((value) => value + 1),
@@ -94,7 +96,7 @@ export const TemplateCounter = Component.make("TemplateCounter").pipe(
       >
         ${state.count}
       </p>
-      ${View.use(Card, html`<strong>Count card</strong>`)}
+      ${View.of(Card)}
       ${
       View.use(Layout, {
         header: html`<h2>Status</h2>`,
@@ -111,9 +113,16 @@ export const TemplateCounter = Component.make("TemplateCounter").pipe(
 ```
 
 - Prefer `html` for ordinary DOM structure.
-- Use `View.use(...)` for component composition. Child shorthand is only for components without required props; slot components receive a slot object.
+- Use `View.of(...)` for trivial no-props/no-slots composition.
+- Use `View.use(...)` for props, children, and slot objects. Child shorthand is only for components without required props; slot components receive a slot object.
 - Use `View.match(...)` for `Result`, `AsyncResult`, and `_tag`-based branching instead of inline switches in templates.
 - Keep list rendering explicit with `View.for(...)`; direct array interpolation stays unsupported.
+
+Migration checklist for explicit APIs:
+
+- Keep `Component.make("Name")` when observability or diagnostics need stable authored names.
+- Keep `View.use(...)` when the component needs props, children, or slots.
+- Prefer `View.of(...)` only for trivial leaf usage with no required props and no slot inputs.
 
 ### Legacy View DOM helpers are compatibility-only
 

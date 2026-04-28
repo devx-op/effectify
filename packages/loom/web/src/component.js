@@ -213,7 +213,7 @@ const patch = (component, update) =>
     ...update,
   }))
 export function make(input) {
-  const definition = LoomCore.Component.make(isNode(input) ? input : emptyNode)
+  const definition = LoomCore.Component.make(input !== undefined && isNode(input) ? input : emptyNode)
   return reconcile(makePipeable({
     ...definition,
     name: typeof input === "string" ? input : undefined,
