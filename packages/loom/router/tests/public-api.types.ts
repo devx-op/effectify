@@ -198,8 +198,19 @@ const moduleLoaderWithServicesOptions = {
   params: Schema.Struct({ userId: Schema.String }),
   search: Schema.Struct({ tab: Schema.String }),
   output: Schema.Struct({ id: Schema.String, tab: Schema.String, requestId: Schema.String }),
+  services: Route.services<{ readonly requestId: string }>(),
 } as const
 const moduleLoaderWithServices = Route.loader({
+  ...moduleLoaderWithServicesOptions,
+  load: ({ params, search, services }) =>
+    Effect.succeed({
+      id: params.userId,
+      requestId: services.requestId,
+      tab: search.tab,
+    }),
+})
+
+const moduleLoaderWithServicesExplicit = Route.loader({
   ...moduleLoaderWithServicesOptions,
   load: ({
     params,
@@ -225,8 +236,18 @@ const moduleActionWithServicesOptions = {
   search: Schema.Struct({ tab: Schema.String }),
   output: Schema.Struct({ savedTitle: Schema.String }),
   error: Schema.TaggedStruct("SaveFailure", { message: Schema.String }),
+  services: Route.services<{ readonly requestId: string }>(),
 } as const
 const moduleActionWithServices = Route.action({
+  ...moduleActionWithServicesOptions,
+  handle: ({ input, params, search, services }) =>
+    Effect.fail({
+      _tag: "SaveFailure" as const,
+      message: input.title.length > 0 ? `${params.userId}:${search.tab}:${services.requestId}` : "empty",
+    }),
+})
+
+const moduleActionWithServicesExplicit = Route.action({
   ...moduleActionWithServicesOptions,
   handle: ({
     input,
@@ -238,6 +259,15 @@ const moduleActionWithServices = Route.action({
       _tag: "SaveFailure" as const,
       message: input.title.length > 0 ? `${params.userId}:${search.tab}:${services.requestId}` : "empty",
     }),
+})
+const compiledRouteWithServices = RouteModule.compile({
+  identifier: "users.module-with-services",
+  module: {
+    default: "module-screen-with-services",
+    loader: moduleLoaderWithServices,
+    action: moduleActionWithServices,
+  },
+  path: "/module-with-services/:userId",
 })
 const compiledRoute = RouteModule.compile({
   identifier: "users.module",
@@ -368,6 +398,12 @@ type ModuleLoaderWithServicesDataContract = Expect<
 type ModuleLoaderWithServicesContract = Expect<
   Equal<Route.ModuleLoaderServicesOf<typeof moduleLoaderWithServices>, { readonly requestId: string }>
 >
+type ModuleLoaderWithServicesExplicitContract = Expect<
+  Equal<Route.ModuleLoaderServicesOf<typeof moduleLoaderWithServicesExplicit>, { readonly requestId: string }>
+>
+type CompiledRouteLoaderServicesContract = Expect<
+  Equal<Route.LoaderServicesOf<typeof compiledRouteWithServices>, { readonly requestId: string }>
+>
 type ModuleActionInputContract = Expect<
   Equal<Route.ModuleActionInputOf<typeof moduleAction>, { readonly title: string }>
 >
@@ -398,6 +434,12 @@ type ModuleActionWithServicesErrorContract = Expect<
 >
 type ModuleActionWithServicesContract = Expect<
   Equal<Route.ModuleActionServicesOf<typeof moduleActionWithServices>, { readonly requestId: string }>
+>
+type ModuleActionWithServicesExplicitContract = Expect<
+  Equal<Route.ModuleActionServicesOf<typeof moduleActionWithServicesExplicit>, { readonly requestId: string }>
+>
+type CompiledRouteActionServicesContract = Expect<
+  Equal<Route.ActionServicesOf<typeof compiledRouteWithServices>, { readonly requestId: string }>
 >
 type CompiledRouteIdentifierContract = Expect<Equal<Route.IdentifierOf<typeof compiledRoute>, "users.module">>
 type CompiledRouteParamsContract = Expect<Equal<Route.ParamsOf<typeof compiledRoute>, { readonly userId: string }>>
@@ -434,6 +476,20 @@ Router.href(nestedTypedRouter, "posts.detail", { query: { mode: 1 } })
 
 // @ts-expect-error href query cannot include unknown keys for typed routes
 Router.href(nestedTypedRouter, "posts.detail", { query: { tab: "oops" } })
+
+const conflictingModuleLoaderOptions = {
+  services: Route.services<{ readonly requestId: string }>(),
+} as const
+
+const conflictingModuleLoader = Route.loader({
+  ...conflictingModuleLoaderOptions,
+  load: ({ services }) => Effect.succeed({ requestId: services.requestId }),
+})
+
+// @ts-expect-error inferred services stay aligned to the bound route services contract
+type ConflictingModuleLoaderServicesContract = Expect<
+  Equal<Route.ModuleLoaderServicesOf<typeof conflictingModuleLoader>, { readonly traceId: string }>
+>
 
 export const typecheckSmoke = {
   fallback,
@@ -476,10 +532,12 @@ export const typecheckSmoke = {
   loaderState,
   actionState,
   compiledRoute,
+  compiledRouteWithServices,
   componentOnlyCompiledRoute,
   invalidActionState,
   moduleAction,
   moduleActionWithServices,
+  conflictingModuleLoader,
   moduleLoader,
   moduleLoaderWithServices,
   attachedLoader,
@@ -492,8 +550,10 @@ export type {
   AlgebraRoutePathContract,
   CompatRoutePathContract,
   CompiledRouteActionInputContract,
+  CompiledRouteActionServicesContract,
   CompiledRouteIdentifierContract,
   CompiledRouteLoadedDataContract,
+  CompiledRouteLoaderServicesContract,
   CompiledRouteParamsContract,
   ComponentOnlyCompiledRouteContentContract,
   ComponentOnlyCompiledRouteIdentifierContract,
@@ -510,12 +570,14 @@ export type {
   ModuleActionResultContract,
   ModuleActionWithServicesContract,
   ModuleActionWithServicesErrorContract,
+  ModuleActionWithServicesExplicitContract,
   ModuleActionWithServicesInputContract,
   ModuleActionWithServicesResultContract,
   ModuleLoaderDataContract,
   ModuleLoaderParamsContract,
   ModuleLoaderWithServicesContract,
   ModuleLoaderWithServicesDataContract,
+  ModuleLoaderWithServicesExplicitContract,
   ModuleLoaderWithServicesParamsContract,
   ModuleLoaderWithServicesSearchContract,
   NavigationSnapshotContract,

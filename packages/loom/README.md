@@ -186,7 +186,8 @@ export const appRouter = pipe(
 - Teach route modules through `export default` plus optional named `loader` / `action` exports.
 - `component` remains fully supported for legacy modules and still wins if a module exports both `component` and `default`.
 - Teach router assembly through `Router.make("app")` plus incremental operators like `Router.route(...)`, `Router.layout(...)`, and `Router.notFound(...)`.
-- Prefer `Route.loader({...})` and `Route.action({...})` inline schema-first helpers, with `Route.ModuleLoaderContext<typeof options, Services>` / `Route.ModuleActionContext<typeof options, Services>` when you only need to add service typing.
+- Prefer `Route.loader({...})` and `Route.action({...})` inline, passing service requirements via `services: Route.services<...>()` so `params`, `search`, `input`, and `services` infer automatically.
+- Keep `Route.ModuleLoaderContext<typeof options, Services>` / `Route.ModuleActionContext<typeof options, Services>` as explicit compatibility escapes when you prefer to annotate handler params.
 - Keep descriptor-style route assembly and manual registry propagation out of the public examples.
 
 Migration checklist:
