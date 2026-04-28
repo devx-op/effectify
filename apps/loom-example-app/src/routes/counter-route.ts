@@ -1,9 +1,6 @@
 import { Atom } from "effect/unstable/reactivity"
 import { Component, html, Web } from "@effectify/loom"
 import { counterInitialCount } from "../app-config.js"
-import { ensureTemplateDocument } from "../template-dom-support.js"
-
-ensureTemplateDocument()
 
 export const counterRouteId = "counter"
 export const counterRoutePath = "/"

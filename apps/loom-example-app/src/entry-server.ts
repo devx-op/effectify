@@ -4,7 +4,6 @@ import { appBuildId, appPayloadElementId, appRootId } from "./app-config.js"
 import { prepareRouteRuntime } from "./router-runtime.js"
 import { bodyForResult, resolveAppRequest, statusForResult, titleForResult } from "./router.js"
 import { createDocument } from "./document.js"
-import { withTemplateDocument } from "./template-dom-support.js"
 
 const applicationBaseUrl = "https://effectify.dev"
 
@@ -38,25 +37,22 @@ export const createServerRenderer = (): LoomNitro.LoomNitroRenderer => {
     render: (request) => {
       const requestUrl = normalizeRequestUrl(request.url)
 
-      return withTemplateDocument(() =>
-        prepareRouteRuntime(requestUrl).then(() => {
-          const result = resolveAppRequest(requestUrl)
+      return prepareRouteRuntime(requestUrl).then(() => {
+        const result = resolveAppRequest(requestUrl)
 
-          return createDocument({
-            title: titleForResult(result),
-            body: bodyForResult(result),
-          })
+        return createDocument({
+          title: titleForResult(result),
+          body: bodyForResult(result),
         })
-      )
+      })
     },
-    response: (request) =>
-      withTemplateDocument(() => {
-        const result = resolveAppRequest(normalizeRequestUrl(request.url))
+    response: (request) => {
+      const result = resolveAppRequest(normalizeRequestUrl(request.url))
 
-        return {
-          status: statusForResult(result),
-        }
-      }),
+      return {
+        status: statusForResult(result),
+      }
+    },
   })
 
   return {

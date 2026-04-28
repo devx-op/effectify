@@ -1,9 +1,6 @@
 import { Component, html, View } from "@effectify/loom"
 import { todoActionStatusAtom, todoFeedbackAtom, todoItemsAtom } from "../todo-route-state.js"
 import { completedTodoCount, remainingTodoCount, TodoPanel } from "./todo-route-shared.js"
-import { ensureTemplateDocument } from "../../template-dom-support.js"
-
-ensureTemplateDocument()
 
 export const TodoInsights = Component.make("TodoInsights").pipe(
   Component.state({

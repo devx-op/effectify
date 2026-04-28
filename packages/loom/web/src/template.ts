@@ -35,10 +35,48 @@ type InterpolationRequirements<Value> = Value extends ReadonlyArray<infer Item> 
 const childMarkerPrefix = "loom-child:"
 const attributeMarkerPrefix = "__loom_attr_"
 const attributeMarkerPattern = /^__loom_attr_(\d+)__$/u
-const commentNodeType = 8
-const textNodeType = 3
-const elementNodeType = 1
 const attributeContextPattern = /[A-Za-z0-9_:-]+\s*=\s*$/u
+
+type ParsedAttribute = {
+  readonly name: string
+  readonly value: string
+}
+
+type ParsedCommentNode = {
+  readonly kind: "comment"
+  readonly data: string
+}
+
+type ParsedTextNode = {
+  readonly kind: "text"
+  readonly data: string
+}
+
+type ParsedElementNode = {
+  readonly kind: "element"
+  readonly tagName: string
+  readonly attributes: ReadonlyArray<ParsedAttribute>
+  readonly children: ReadonlyArray<ParsedNode>
+}
+
+type ParsedNode = ParsedCommentNode | ParsedTextNode | ParsedElementNode
+
+const htmlVoidElements = new Set([
+  "area",
+  "base",
+  "br",
+  "col",
+  "embed",
+  "hr",
+  "img",
+  "input",
+  "link",
+  "meta",
+  "param",
+  "source",
+  "track",
+  "wbr",
+])
 
 const isRenderable = (value: unknown): value is Renderable<any, any> =>
   typeof value === "object" && value !== null && "_tag" in value &&
@@ -118,6 +156,194 @@ const assertTemplateValue = (value: unknown, owner: string): void => {
 const parseAttributeMarker = (value: string): number | undefined => {
   const match = value.match(attributeMarkerPattern)
   return match === null ? undefined : Number(match[1])
+}
+
+const isWhitespace = (character: string | undefined): boolean => character !== undefined && /\s/u.test(character)
+
+const skipWhitespace = (source: string, start: number): number => {
+  let cursor = start
+
+  while (isWhitespace(source[cursor])) {
+    cursor += 1
+  }
+
+  return cursor
+}
+
+const readName = (source: string, start: number, owner: string): readonly [string, number] => {
+  let cursor = start
+
+  while (cursor < source.length) {
+    const character = source[cursor]
+
+    if (
+      character === undefined ||
+      isWhitespace(character) ||
+      character === "/" ||
+      character === ">" ||
+      character === "="
+    ) {
+      break
+    }
+
+    cursor += 1
+  }
+
+  if (cursor === start) {
+    throw new Error(`Invalid html template: expected ${owner}.`)
+  }
+
+  return [source.slice(start, cursor), cursor]
+}
+
+const readAttributeValue = (source: string, start: number): readonly [string, number] => {
+  const quote = source[start]
+
+  if (quote === '"' || quote === "'") {
+    const end = source.indexOf(quote, start + 1)
+
+    if (end === -1) {
+      throw new Error("Invalid html template: unterminated quoted attribute value.")
+    }
+
+    return [source.slice(start + 1, end), end + 1]
+  }
+
+  let cursor = start
+
+  while (cursor < source.length) {
+    const character = source[cursor]
+
+    if (character === undefined || isWhitespace(character) || character === "/" || character === ">") {
+      break
+    }
+
+    cursor += 1
+  }
+
+  return [source.slice(start, cursor), cursor]
+}
+
+const parseStartTag = (
+  source: string,
+  start: number,
+): readonly [ParsedElementNode, number, boolean] => {
+  const [tagName, tagCursor] = readName(source, start + 1, "an element tag name")
+  let cursor = tagCursor
+  const attributes: Array<ParsedAttribute> = []
+  let selfClosing = false
+
+  while (cursor < source.length) {
+    cursor = skipWhitespace(source, cursor)
+
+    if (source.startsWith("/>", cursor)) {
+      selfClosing = true
+      cursor += 2
+      break
+    }
+
+    if (source[cursor] === ">") {
+      cursor += 1
+      break
+    }
+
+    const [attributeName, attributeCursor] = readName(source, cursor, "an attribute name")
+    cursor = skipWhitespace(source, attributeCursor)
+    let value = ""
+
+    if (source[cursor] === "=") {
+      cursor = skipWhitespace(source, cursor + 1)
+      ;[value, cursor] = readAttributeValue(source, cursor)
+    }
+
+    attributes.push({
+      name: attributeName,
+      value,
+    })
+  }
+
+  return [{ kind: "element", tagName: tagName.toLowerCase(), attributes, children: [] }, cursor, selfClosing]
+}
+
+const parseTemplateSource = (source: string): ReadonlyArray<ParsedNode> => {
+  const root: { readonly children: Array<ParsedNode> } = { children: [] }
+  const stack: Array<{ readonly tagName: string; readonly children: Array<ParsedNode> }> = [{
+    tagName: "#root",
+    children: root.children,
+  }]
+  let cursor = 0
+
+  while (cursor < source.length) {
+    const current = stack[stack.length - 1]
+
+    if (source.startsWith("<!--", cursor)) {
+      const commentEnd = source.indexOf("-->", cursor + 4)
+
+      if (commentEnd === -1) {
+        throw new Error("Invalid html template: unterminated comment.")
+      }
+
+      current.children.push({
+        kind: "comment",
+        data: source.slice(cursor + 4, commentEnd),
+      })
+      cursor = commentEnd + 3
+      continue
+    }
+
+    if (source[cursor] === "<") {
+      if (source.startsWith("</", cursor)) {
+        const [tagName, tagCursor] = readName(source, cursor + 2, "a closing tag name")
+        cursor = skipWhitespace(source, tagCursor)
+
+        if (source[cursor] !== ">") {
+          throw new Error("Invalid html template: malformed closing tag.")
+        }
+
+        if (stack.length === 1) {
+          throw new Error(`Invalid html template: unexpected closing tag </${tagName}>.`)
+        }
+
+        const closingTagName = tagName.toLowerCase()
+        const openElement = stack[stack.length - 1]
+
+        if (openElement.tagName !== closingTagName) {
+          throw new Error(`Invalid html template: expected </${openElement.tagName}> but found </${closingTagName}>.`)
+        }
+
+        stack.pop()
+        cursor += 1
+        continue
+      }
+
+      const [element, nextCursor, explicitSelfClosing] = parseStartTag(source, cursor)
+      current.children.push(element)
+      cursor = nextCursor
+
+      if (!explicitSelfClosing && !htmlVoidElements.has(element.tagName)) {
+        stack.push({
+          tagName: element.tagName,
+          children: element.children as Array<ParsedNode>,
+        })
+      }
+
+      continue
+    }
+
+    const nextTagIndex = source.indexOf("<", cursor)
+    const textEnd = nextTagIndex === -1 ? source.length : nextTagIndex
+    current.children.push({
+      kind: "text",
+      data: source.slice(cursor, textEnd),
+    })
+    cursor = textEnd
+  }
+
+  if (stack.length !== 1) {
+    throw new Error(`Invalid html template: missing closing tag for <${stack[stack.length - 1].tagName}>.`)
+  }
+
+  return root.children
 }
 
 const textToNode = (value: string): LoomCore.Ast.Node | undefined =>
@@ -227,17 +453,11 @@ const applyWebDirective = (
   }
 }
 
-const isCommentNode = (node: ChildNode): node is Comment => node.nodeType === commentNodeType
-
-const isTextNode = (node: ChildNode): node is Text => node.nodeType === textNodeType
-
-const isElementNode = (node: ChildNode): node is HTMLElement => node.nodeType === elementNodeType
-
-const convertDomNode = (
-  node: ChildNode,
+const convertParsedNode = (
+  node: ParsedNode,
   values: ReadonlyArray<TemplateInterpolation>,
 ): ReadonlyArray<LoomCore.Ast.Node> => {
-  if (isCommentNode(node)) {
+  if (node.kind === "comment") {
     if (!node.data.startsWith(childMarkerPrefix)) {
       return []
     }
@@ -253,13 +473,9 @@ const convertDomNode = (
     return normalizeInterpolationValue(interpolation)
   }
 
-  if (isTextNode(node)) {
+  if (node.kind === "text") {
     const textNode = textToNode(node.data)
     return textNode === undefined ? [] : [textNode]
-  }
-
-  if (!isElementNode(node)) {
-    return []
   }
 
   const attributes: Record<string, string> = {}
@@ -267,7 +483,7 @@ const convertDomNode = (
   const events: Array<LoomCore.Ast.EventBinding> = []
   let hydration: LoomCore.Ast.HydrationMetadata | undefined
 
-  for (const attribute of Array.from(node.attributes)) {
+  for (const attribute of node.attributes) {
     const interpolationIndex = parseAttributeMarker(attribute.value)
 
     if (attribute.name.startsWith("web:")) {
@@ -303,19 +519,11 @@ const convertDomNode = (
     LoomCore.Ast.element(node.tagName.toLowerCase(), {
       attributes,
       bindings,
-      children: Array.from(node.childNodes).flatMap((child) => convertDomNode(child, values)),
+      children: node.children.flatMap((child) => convertParsedNode(child, values)),
       events,
       hydration,
     }),
   ]
-}
-
-const createTemplateElement = (): HTMLTemplateElement => {
-  if (typeof document === "undefined") {
-    throw new Error("html template authoring currently requires DOM template parsing support.")
-  }
-
-  return document.createElement("template")
 }
 
 export const renderable = <E = never, R = never>(node: LoomCore.Ast.Node): Renderable<E, R> => asRenderable(node)
@@ -340,10 +548,7 @@ export const html = <const Values extends ReadonlyArray<TemplateInterpolation>>(
     return current + segment + marker
   }, "")
 
-  const template = createTemplateElement()
-  template.innerHTML = source
-
   return asRenderable(
-    collapseNodes(Array.from(template.content.childNodes).flatMap((child) => convertDomNode(child, values))),
+    collapseNodes(parseTemplateSource(source).flatMap((child) => convertParsedNode(child, values))),
   )
 }

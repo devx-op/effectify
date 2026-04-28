@@ -7,9 +7,22 @@ const childMarkerPrefix = "loom-child:"
 const attributeMarkerPrefix = "__loom_attr_"
 const attributeMarkerPattern = /^__loom_attr_(\d+)__$/u
 const attributeContextPattern = /[A-Za-z0-9_:-]+\s*=\s*$/u
-const commentNodeType = 8
-const textNodeType = 3
-const elementNodeType = 1
+const htmlVoidElements = new Set([
+  "area",
+  "base",
+  "br",
+  "col",
+  "embed",
+  "hr",
+  "img",
+  "input",
+  "link",
+  "meta",
+  "param",
+  "source",
+  "track",
+  "wbr",
+])
 
 const isRenderable = (value) =>
   typeof value === "object" && value !== null && "_tag" in value && value._tag !== "Component"
@@ -73,6 +86,179 @@ const assertTemplateValue = (value, owner) => {
 const parseAttributeMarker = (value) => {
   const match = value.match(attributeMarkerPattern)
   return match === null ? undefined : Number(match[1])
+}
+
+const isWhitespace = (character) => character !== undefined && /\s/u.test(character)
+
+const skipWhitespace = (source, start) => {
+  let cursor = start
+
+  while (isWhitespace(source[cursor])) {
+    cursor += 1
+  }
+
+  return cursor
+}
+
+const readName = (source, start, owner) => {
+  let cursor = start
+
+  while (cursor < source.length) {
+    const character = source[cursor]
+
+    if (
+      character === undefined ||
+      isWhitespace(character) ||
+      character === "/" ||
+      character === ">" ||
+      character === "="
+    ) {
+      break
+    }
+
+    cursor += 1
+  }
+
+  if (cursor === start) {
+    throw new Error(`Invalid html template: expected ${owner}.`)
+  }
+
+  return [source.slice(start, cursor), cursor]
+}
+
+const readAttributeValue = (source, start) => {
+  const quote = source[start]
+
+  if (quote === '"' || quote === "'") {
+    const end = source.indexOf(quote, start + 1)
+
+    if (end === -1) {
+      throw new Error("Invalid html template: unterminated quoted attribute value.")
+    }
+
+    return [source.slice(start + 1, end), end + 1]
+  }
+
+  let cursor = start
+
+  while (cursor < source.length) {
+    const character = source[cursor]
+
+    if (character === undefined || isWhitespace(character) || character === "/" || character === ">") {
+      break
+    }
+
+    cursor += 1
+  }
+
+  return [source.slice(start, cursor), cursor]
+}
+
+const parseStartTag = (source, start) => {
+  const [tagName, tagCursor] = readName(source, start + 1, "an element tag name")
+  let cursor = tagCursor
+  const attributes = []
+  let selfClosing = false
+
+  while (cursor < source.length) {
+    cursor = skipWhitespace(source, cursor)
+
+    if (source.startsWith("/>", cursor)) {
+      selfClosing = true
+      cursor += 2
+      break
+    }
+
+    if (source[cursor] === ">") {
+      cursor += 1
+      break
+    }
+
+    const [attributeName, attributeCursor] = readName(source, cursor, "an attribute name")
+    cursor = skipWhitespace(source, attributeCursor)
+    let value = ""
+
+    if (source[cursor] === "=") {
+      cursor = skipWhitespace(source, cursor + 1)
+      ;[value, cursor] = readAttributeValue(source, cursor)
+    }
+
+    attributes.push({ name: attributeName, value })
+  }
+
+  return [{ kind: "element", tagName: tagName.toLowerCase(), attributes, children: [] }, cursor, selfClosing]
+}
+
+const parseTemplateSource = (source) => {
+  const root = { children: [] }
+  const stack = [{ tagName: "#root", children: root.children }]
+  let cursor = 0
+
+  while (cursor < source.length) {
+    const current = stack[stack.length - 1]
+
+    if (source.startsWith("<!--", cursor)) {
+      const commentEnd = source.indexOf("-->", cursor + 4)
+
+      if (commentEnd === -1) {
+        throw new Error("Invalid html template: unterminated comment.")
+      }
+
+      current.children.push({
+        kind: "comment",
+        data: source.slice(cursor + 4, commentEnd),
+      })
+      cursor = commentEnd + 3
+      continue
+    }
+
+    if (source[cursor] === "<") {
+      if (source.startsWith("</", cursor)) {
+        const [tagName, tagCursor] = readName(source, cursor + 2, "a closing tag name")
+        cursor = skipWhitespace(source, tagCursor)
+
+        if (source[cursor] !== ">") {
+          throw new Error("Invalid html template: malformed closing tag.")
+        }
+
+        if (stack.length === 1) {
+          throw new Error(`Invalid html template: unexpected closing tag </${tagName}>.`)
+        }
+
+        const closingTagName = tagName.toLowerCase()
+        const openElement = stack[stack.length - 1]
+
+        if (openElement.tagName !== closingTagName) {
+          throw new Error(`Invalid html template: expected </${openElement.tagName}> but found </${closingTagName}>.`)
+        }
+
+        stack.pop()
+        cursor += 1
+        continue
+      }
+
+      const [element, nextCursor, explicitSelfClosing] = parseStartTag(source, cursor)
+      current.children.push(element)
+      cursor = nextCursor
+
+      if (!explicitSelfClosing && !htmlVoidElements.has(element.tagName)) {
+        stack.push({ tagName: element.tagName, children: element.children })
+      }
+
+      continue
+    }
+
+    const nextTagIndex = source.indexOf("<", cursor)
+    const textEnd = nextTagIndex === -1 ? source.length : nextTagIndex
+    current.children.push({ kind: "text", data: source.slice(cursor, textEnd) })
+    cursor = textEnd
+  }
+
+  if (stack.length !== 1) {
+    throw new Error(`Invalid html template: missing closing tag for <${stack[stack.length - 1].tagName}>.`)
+  }
+
+  return root.children
 }
 
 const textToNode = (value) => value.trim().length === 0 ? undefined : LoomCore.Ast.text(value)
@@ -170,12 +356,8 @@ const applyWebDirective = (name, interpolation, attributes, bindings, events) =>
   }
 }
 
-const isCommentNode = (node) => node.nodeType === commentNodeType
-const isTextNode = (node) => node.nodeType === textNodeType
-const isElementNode = (node) => node.nodeType === elementNodeType
-
-const convertDomNode = (node, values) => {
-  if (isCommentNode(node)) {
+const convertParsedNode = (node, values) => {
+  if (node.kind === "comment") {
     if (!node.data.startsWith(childMarkerPrefix)) {
       return []
     }
@@ -191,13 +373,9 @@ const convertDomNode = (node, values) => {
     return normalizeInterpolationValue(interpolation)
   }
 
-  if (isTextNode(node)) {
+  if (node.kind === "text") {
     const textNode = textToNode(node.data)
     return textNode === undefined ? [] : [textNode]
-  }
-
-  if (!isElementNode(node)) {
-    return []
   }
 
   const attributes = {}
@@ -205,7 +383,7 @@ const convertDomNode = (node, values) => {
   const events = []
   let hydration
 
-  for (const attribute of Array.from(node.attributes)) {
+  for (const attribute of node.attributes) {
     const interpolationIndex = parseAttributeMarker(attribute.value)
 
     if (attribute.name.startsWith("web:")) {
@@ -240,18 +418,10 @@ const convertDomNode = (node, values) => {
   return [LoomCore.Ast.element(node.tagName.toLowerCase(), {
     attributes,
     bindings,
-    children: Array.from(node.childNodes).flatMap((child) => convertDomNode(child, values)),
+    children: node.children.flatMap((child) => convertParsedNode(child, values)),
     events,
     hydration,
   })]
-}
-
-const createTemplateElement = () => {
-  if (typeof document === "undefined") {
-    throw new Error("html template authoring currently requires DOM template parsing support.")
-  }
-
-  return document.createElement("template")
 }
 
 export const renderable = (node) => viewNode.wrap(node)
@@ -273,10 +443,7 @@ export const html = (strings, ...values) => {
     return current + segment + marker
   }, "")
 
-  const template = createTemplateElement()
-  template.innerHTML = source
-
   return renderable(
-    collapseNodes(Array.from(template.content.childNodes).flatMap((child) => convertDomNode(child, values))),
+    collapseNodes(parseTemplateSource(source).flatMap((child) => convertParsedNode(child, values))),
   )
 }

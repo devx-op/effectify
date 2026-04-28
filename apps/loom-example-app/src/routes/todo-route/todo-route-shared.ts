@@ -1,9 +1,6 @@
 import * as Schema from "effect/Schema"
 import { Component, html } from "@effectify/loom"
 import { type TodoItem, TodoNotFoundError, type TodoServiceApi } from "../../todo-service.js"
-import { ensureTemplateDocument } from "../../template-dom-support.js"
-
-ensureTemplateDocument()
 
 export type TodoRouteServices = Readonly<{
   todoService: TodoServiceApi

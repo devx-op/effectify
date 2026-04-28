@@ -4,7 +4,23 @@ import { resetTodoExampleState } from "../src/router-runtime.js"
 
 describe("loom example app server entry", () => {
   beforeEach(() => {
+    Reflect.deleteProperty(globalThis, "document")
     resetTodoExampleState()
+  })
+
+  it("renders without requiring or mutating a global document", async () => {
+    expect(Reflect.has(globalThis, "document")).toBe(false)
+
+    const renderer = createServerRenderer()
+    const result = await renderer.render({
+      method: "GET",
+      url: "/",
+      headers: {},
+    })
+
+    expect(result.status).toBe(200)
+    expect(result.html).toContain('data-route-view="counter"')
+    expect(Reflect.has(globalThis, "document")).toBe(false)
   })
 
   it("renders the single counter route inside the shared document shell", async () => {

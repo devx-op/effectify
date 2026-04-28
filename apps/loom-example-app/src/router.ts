@@ -4,9 +4,6 @@ import { Fallback, Layout, RouteModule, Router, type Router as RouterTypes } fro
 import { counterRouteId, counterRoutePath, counterRouteTitle } from "./routes/counter-route.js"
 import * as counterRouteModule from "./routes/counter-route.js"
 import * as todoRouteModule from "./routes/todo-route.js"
-import { ensureTemplateDocument } from "./template-dom-support.js"
-
-ensureTemplateDocument()
 
 export const todoRouteId = "todo"
 export const todoRoutePath = "/todos"

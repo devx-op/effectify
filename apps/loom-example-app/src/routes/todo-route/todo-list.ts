@@ -2,9 +2,6 @@ import { Component, html, View } from "@effectify/loom"
 import { todoActionStatusAtom, todoItemsAtom } from "../todo-route-state.js"
 import { submitTodoRouteSubmission } from "../todo-route-submission.js"
 import { hasCompletedTodos, TodoPanel } from "./todo-route-shared.js"
-import { ensureTemplateDocument } from "../../template-dom-support.js"
-
-ensureTemplateDocument()
 
 export const TodoList = Component.make("TodoList").pipe(
   Component.state({

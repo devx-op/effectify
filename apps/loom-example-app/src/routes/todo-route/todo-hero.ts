@@ -1,9 +1,6 @@
 import { Component, html } from "@effectify/loom"
 import { counterRoutePath } from "../counter-route.js"
 import { todoDraftAtom, todoItemsAtom, todoLoaderStatusAtom } from "../todo-route-state.js"
-import { ensureTemplateDocument } from "../../template-dom-support.js"
-
-ensureTemplateDocument()
 
 export const TodoHero = Component.make("TodoHero").pipe(
   Component.state({

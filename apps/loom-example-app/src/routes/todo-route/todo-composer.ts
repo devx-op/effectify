@@ -3,9 +3,6 @@ import { Component, html, View } from "@effectify/loom"
 import { todoActionStatusAtom, todoDraftAtom } from "../todo-route-state.js"
 import { submitTodoRouteSubmission } from "../todo-route-submission.js"
 import { TodoPanel } from "./todo-route-shared.js"
-import { ensureTemplateDocument } from "../../template-dom-support.js"
-
-ensureTemplateDocument()
 
 const readTodoTitleInput = (form: HTMLFormElement): string | undefined => {
   const titleInput = form.elements.namedItem("title")
