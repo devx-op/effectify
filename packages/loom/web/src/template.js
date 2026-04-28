@@ -20,6 +20,14 @@ const isHydrationStrategy = (value) =>
   typeof value === "object" && value !== null && "strategy" in value && "attributeName" in value &&
   "attributeValue" in value
 
+const pushEventDirective = (directive, eventName, interpolation, events) => {
+  if (!isEventHandler(interpolation)) {
+    throw new Error(`${directive} expects an event handler.`)
+  }
+
+  events.push(internalApi.makeEventBinding(eventName, interpolation))
+}
+
 const collapseNodes = (nodes) => {
   if (nodes.length === 0) {
     return LoomCore.Ast.fragment([])
@@ -132,11 +140,15 @@ const applyAttributeInterpolation = (name, interpolation, attributes, bindings) 
 const applyWebDirective = (name, interpolation, attributes, bindings, events) => {
   switch (name) {
     case "click": {
-      if (!isEventHandler(interpolation)) {
-        throw new Error("web:click expects an event handler.")
-      }
-
-      events.push(internalApi.makeEventBinding("click", interpolation))
+      pushEventDirective("web:click", "click", interpolation, events)
+      return undefined
+    }
+    case "input": {
+      pushEventDirective("web:input", "input", interpolation, events)
+      return undefined
+    }
+    case "submit": {
+      pushEventDirective("web:submit", "submit", interpolation, events)
       return undefined
     }
     case "value":

@@ -273,11 +273,16 @@ describe("loom example app client entry", () => {
     await startClientApp(document)
 
     const input = expectInputElement(document.querySelector('[data-todo-input="true"]'), "todo input")
+    const form = document.querySelector("form")
+
+    if (!(form instanceof HTMLFormElement)) {
+      throw new Error("expected todo composer form")
+    }
 
     input.focus()
     input.value = "Ship Enter-key parity"
     input.dispatchEvent(new Event("input", { bubbles: true }))
-    input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Enter" }))
+    form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }))
     await yieldToEventLoop()
 
     expect(document.querySelector('[data-todo-open-count="true"]')?.textContent?.trim()).toBe("3")
@@ -291,7 +296,7 @@ describe("loom example app client entry", () => {
     expect(document.querySelector('[data-todo-action-status="true"]')?.textContent?.trim()).toBe("success")
   })
 
-  it("shows invalid action feedback when the todo action input fails validation", async () => {
+  it("shows invalid action feedback when the template-authored submit path fails validation", async () => {
     document.documentElement.innerHTML = `
       <head><title>Loom Example App</title></head>
       <body>
@@ -303,13 +308,13 @@ describe("loom example app client entry", () => {
 
     await startClientApp(document)
 
-    const addButton = document.querySelector('[data-todo-add-action="true"]')
+    const form = document.querySelector("form")
 
-    if (!(addButton instanceof HTMLButtonElement)) {
-      throw new Error("expected add todo button")
+    if (!(form instanceof HTMLFormElement)) {
+      throw new Error("expected todo composer form")
     }
 
-    addButton.click()
+    form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }))
     await yieldToEventLoop()
 
     expect(document.querySelector('[data-todo-feedback="true"]')?.textContent).toContain("length of at least 1")

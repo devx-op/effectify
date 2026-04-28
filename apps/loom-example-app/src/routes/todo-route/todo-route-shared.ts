@@ -58,7 +58,7 @@ export const TodoNotes = Component.make("TodoNotes").pipe(
     html`
       <div class="loom-example-note-stack">
         <span class="compat-seam-note" data-todo-dx-caveat="true">
-          The composer keeps one explicit View.input() seam for input and Enter-key parity, but the rest of the route now teaches html templates + View.use first.
+          The composer now uses a template-authored form so input sync and submit parity stay inside html directives with no imperative seam.
         </span>
         <span class="dev-mode-note">
           The point of this example is architecture: Effect-backed service first, Loom route runtime second, and UI atoms as the projected view state.

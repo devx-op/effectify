@@ -1,5 +1,5 @@
 import { Atom } from "effect/unstable/reactivity"
-import { Component, html, View, Web } from "@effectify/loom"
+import { Component, html, View } from "@effectify/loom"
 import { todoActionStatusAtom, todoDraftAtom } from "../todo-route-state.js"
 import { submitTodoRouteSubmission } from "../todo-route-submission.js"
 import { TodoPanel } from "./todo-route-shared.js"
@@ -7,34 +7,10 @@ import { ensureTemplateDocument } from "../../template-dom-support.js"
 
 ensureTemplateDocument()
 
-const renderTodoComposerInputSeam = (
-  actionStatus: () => string,
-  draft: () => string,
-  onSubmit: (titleInput?: string) => Promise<void>,
-  onSync: (value: string) => void,
-) =>
-  View.input().pipe(
-    Web.className("todo-input"),
-    Web.attr("placeholder", "What should we ship next?"),
-    Web.attr("aria-label", "Todo title"),
-    Web.data("todo-input", "true"),
-    Web.attr("disabled", () => actionStatus() === "submitting"),
-    Web.value(() => draft()),
-    Web.on("input", ({ currentTarget }) => {
-      if (currentTarget instanceof HTMLInputElement) {
-        onSync(currentTarget.value)
-      }
-    }),
-    Web.on("keydown", ({ event, currentTarget }) => {
-      if (event instanceof KeyboardEvent && event.key === "Enter") {
-        event.preventDefault()
-
-        if (currentTarget instanceof HTMLInputElement) {
-          void onSubmit(currentTarget.value)
-        }
-      }
-    }),
-  )
+const readTodoTitleInput = (form: HTMLFormElement): string | undefined => {
+  const titleInput = form.elements.namedItem("title")
+  return titleInput instanceof HTMLInputElement ? titleInput.value : undefined
+}
 
 export const TodoComposer = Component.make("TodoComposer").pipe(
   Component.state({
@@ -69,16 +45,41 @@ export const TodoComposer = Component.make("TodoComposer").pipe(
       `,
       html`
         <div class="todo-composer-row">
-          ${renderTodoComposerInputSeam(state.actionStatus, state.draft, actions.submitDraft, actions.syncDraft)}
-          <button
-            type="button"
-            class="contrast"
-            data-todo-add-action="true"
-            disabled=${() => state.actionStatus() === "submitting"}
-            web:click=${() => actions.submitDraft()}
+          <form
+            class="todo-composer-form"
+            web:submit=${({ currentTarget, event }) => {
+        event.preventDefault()
+
+        if (currentTarget instanceof HTMLFormElement) {
+          void actions.submitDraft(readTodoTitleInput(currentTarget))
+        }
+      }}
           >
-            Add todo
-          </button>
+            <input
+              type="text"
+              class="todo-input"
+              placeholder="What should we ship next?"
+              aria-label="Todo title"
+              data-todo-input="true"
+              name="title"
+              disabled=${() => state.actionStatus() === "submitting"}
+              web:value=${() => state.draft()}
+              web:input=${({ currentTarget }) => {
+        if (currentTarget instanceof HTMLInputElement) {
+          actions.syncDraft(currentTarget.value)
+        }
+      }}
+            />
+            <button
+              type="button"
+              class="contrast"
+              data-todo-add-action="true"
+              disabled=${() => state.actionStatus() === "submitting"}
+              web:click=${() => actions.submitDraft()}
+            >
+              Add todo
+            </button>
+          </form>
         </div>
       `,
       html`

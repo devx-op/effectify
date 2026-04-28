@@ -44,9 +44,11 @@ describe("loom example app server entry", () => {
     expect(result.html).toContain('data-todo-list="true"')
     expect(result.html).toContain('data-todo-session-count="true"')
     expect(result.html).toContain('value=""')
+    expect(result.html).toContain("<form")
+    expect(result.html).toContain('name="title"')
     expect(result.html).toContain("Sketch the shared Atom shape")
     expect(result.html).toContain("authored with Loom templates and View.use composition")
-    expect(result.html).toContain("View.input() seam")
+    expect(result.html).toContain("template-authored form")
   })
 
   it("returns a minimal not-found document for unknown paths", async () => {

@@ -155,6 +155,94 @@ describe("@effectify/loom template-first view API", () => {
     )
   })
 
+  it("binds web:input through the same event context path as Web.on", () => {
+    const root = document.createElement("div")
+    const draftInput = Component.make("draft-input").pipe(
+      Component.model({ draft: Atom.make("") }),
+      Component.actions(({ model }) => ({
+        syncDraft: (value: string) => model.draft.set(value),
+      })),
+      Component.view(({ state, actions }) =>
+        html`
+          <label>
+            <span>${() => state.draft()}</span>
+            <input
+              type="text"
+              web:value=${() => state.draft()}
+              web:input=${({ currentTarget }) => {
+          if (currentTarget instanceof HTMLInputElement) {
+            actions.syncDraft(currentTarget.value)
+          }
+        }}
+            />
+          </label>
+        `
+      ),
+    )
+
+    const handle = mount({ draftInput }, { root })
+    const input = root.querySelector("input")
+
+    if (!(input instanceof HTMLInputElement)) {
+      throw new Error("expected input element")
+    }
+
+    input.value = "Ship template input parity"
+    input.dispatchEvent(new Event("input", { bubbles: true }))
+
+    expect(root.querySelector("span")?.textContent).toBe("Ship template input parity")
+    expect(input.value).toBe("Ship template input parity")
+
+    handle.dispose()
+  })
+
+  it("binds web:submit through the same submit runtime path as Web.on", () => {
+    const root = document.createElement("div")
+    const formEvents = Component.make("submit-form").pipe(
+      Component.model({ submits: Atom.make(0), tagName: Atom.make("idle") }),
+      Component.actions(({ model }) => ({
+        submit: (element: EventTarget | null) => {
+          model.submits.update((value) => value + 1)
+          model.tagName.set(element instanceof HTMLFormElement ? element.tagName : "invalid")
+        },
+      })),
+      Component.view(({ state, actions }) =>
+        html`
+          <form
+            web:submit=${({ currentTarget, event }) => {
+          event.preventDefault()
+          actions.submit(currentTarget)
+        }}
+          >
+            <button type="submit">Save</button>
+            <output data-submit-count="true">${() => state.submits()}</output>
+            <output data-submit-tag="true">${() => state.tagName()}</output>
+          </form>
+        `
+      ),
+    )
+
+    const handle = mount({ formEvents }, { root })
+    const form = root.querySelector("form")
+
+    if (!(form instanceof HTMLFormElement)) {
+      throw new Error("expected form element")
+    }
+
+    const submitted = form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }))
+
+    expect(submitted).toBe(false)
+    expect(root.querySelector('[data-submit-count="true"]')?.textContent).toBe("1")
+    expect(root.querySelector('[data-submit-tag="true"]')?.textContent).toBe("FORM")
+
+    handle.dispose()
+  })
+
+  it("rejects invalid handlers for web:input and web:submit", () => {
+    expect(() => html`<input web:input=${"hello"} />`).toThrowError(/web:input expects an event handler\./)
+    expect(() => html`<form web:submit=${"hello"}></form>`).toThrowError(/web:submit expects an event handler\./)
+  })
+
   it("matches async result sources across waiting, success, failure, error, and defect branches", () => {
     const root = document.createElement("div")
     const loader = Component.make("template-loader").pipe(
