@@ -1,6 +1,7 @@
 import type * as Loom from "@effectify/loom"
 import { Component, html, View } from "@effectify/loom"
 import { Fallback, Layout, RouteModule, Router, type Router as RouterTypes } from "@effectify/loom-router"
+import { pipe } from "effect"
 import { counterRouteId, counterRoutePath, counterRouteTitle } from "./routes/counter-route.js"
 import * as counterRouteModule from "./routes/counter-route.js"
 import * as todoRouteModule from "./routes/todo-route.js"
@@ -45,13 +46,13 @@ const notFoundView = (context: RouterTypes.Context): Loom.View.ViewChild =>
     </div>
   `
 
-export const appRouter = Router.make({
-  layout: Layout.make(({ child }) => View.use(AppShell, View.use(ShellBody, { content: child }))),
-  routes: [counterPageRoute, todoPageRoute] as const,
-  fallback: {
-    notFound: Fallback.make(notFoundView),
-  },
-})
+export const appRouter = pipe(
+  Router.make("app"),
+  Router.layout(Layout.make(({ child }) => View.use(AppShell, View.use(ShellBody, { content: child })))),
+  Router.notFound(Fallback.make(notFoundView)),
+  Router.route(counterPageRoute),
+  Router.route(todoPageRoute),
+)
 
 const matchedRouteTitle = (result: Router.ResolveSuccess): string => {
   switch (result.route.identifier) {

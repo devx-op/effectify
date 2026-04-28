@@ -1,5 +1,6 @@
 import * as Effect from "effect/Effect"
 import { SchemaGetter } from "effect"
+import { pipe } from "effect"
 import * as Schema from "effect/Schema"
 import { Component, Html, Hydration, Slot, View, Web } from "@effectify/loom"
 import { describe, expect, it } from "vitest"
@@ -278,6 +279,45 @@ describe("@effectify/loom-router runtime", () => {
     expect(result.context.params).toEqual({ postId: "42" })
     expect(result.context.query).toEqual({ page: "1" })
     expect(render(router, "/posts/42")).toBe("<main>42:none:1</main>")
+  })
+
+  it("keeps builder and compatibility constructors runtime-equivalent", () => {
+    const postsRoute = Route.make({
+      path: "/posts/:postId",
+      content: (context: Router.Context) => Html.el("main", Html.children(context.params.postId)),
+      fallback: {
+        notFound: Fallback.make(() => Html.el("p", Html.children("route-missing"))),
+      },
+    })
+    const shell = Layout.make(({ child }) => Html.el("section", Html.attr("data-shell", "app"), Html.children(child)))
+    const appMissing = Fallback.make(() => Html.el("p", Html.children("app-missing")))
+    const builder = pipe(
+      Router.make("app"),
+      Router.layout(shell),
+      Router.notFound(appMissing),
+      Router.route(postsRoute),
+    )
+    const compat = Router.from({
+      layout: shell,
+      routes: [postsRoute],
+      fallback: {
+        notFound: appMissing,
+      },
+    })
+    const legacyCompat = Router.make({
+      layout: shell,
+      routes: [postsRoute],
+      fallback: {
+        notFound: appMissing,
+      },
+    })
+
+    expect(Router.resolve(builder, "/posts/42")).toEqual(Router.resolve(compat, "/posts/42"))
+    expect(Router.resolve(builder, "/posts/42")).toEqual(Router.resolve(legacyCompat, "/posts/42"))
+    expect(render(builder, "/missing")).toBe(render(compat, "/missing"))
+    expect(render(builder, "/missing")).toBe(render(legacyCompat, "/missing"))
+    expect(render(builder, "/posts/42/unknown")).toBe(render(compat, "/posts/42/unknown"))
+    expect(render(builder, "/posts/42/unknown")).toBe(render(legacyCompat, "/posts/42/unknown"))
   })
 
   it("renders component-only route modules without requiring loader or action hooks", () => {

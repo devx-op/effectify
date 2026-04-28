@@ -156,6 +156,7 @@ There is no scheduled removal in the current package line. Any future removal re
 ```ts
 import * as Effect from "effect/Effect"
 import * as Schema from "effect/Schema"
+import { pipe } from "effect"
 import { Route, RouteModule, Router } from "@effectify/loom-router"
 import { CounterRoute } from "./counter-route.js"
 
@@ -174,14 +175,18 @@ export const counterPageRoute = RouteModule.compile({
   path: "/",
 })
 
-export const appRouter = Router.make({
-  routes: [counterPageRoute],
-})
+export const appRouter = pipe(
+  Router.make("app"),
+  Router.route(counterPageRoute),
+)
 ```
 
 - Teach route modules through `component` / optional `loader` / optional `action` exports.
+- Teach router assembly through `Router.make("app")` plus incremental operators like `Router.route(...)`, `Router.layout(...)`, and `Router.notFound(...)`.
 - Prefer `Route.loader({...})` and `Route.action({...})` inline schema-first helpers.
 - Keep descriptor-style route assembly and manual registry propagation out of the public examples.
+
+Compatibility note: `Router.from({ routes, layout, fallback })` and `Router.make({ ... })` remain available for existing code, but builder-first composition is the primary public story.
 
 ## Compatibility and advanced seams
 

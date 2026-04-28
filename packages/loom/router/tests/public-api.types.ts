@@ -83,11 +83,27 @@ const nestedRoute = Route.make({
 const renderable: Loom.View.Child = View.stack(View.text("router-renderable"))
 const layout = Layout.make(({ child }) => View.main(child))
 const fallback = Fallback.make(({ pathname }: { readonly pathname: string }) => View.stack(View.text(pathname)))
-const router = Router.make({
-  routes: [route, Route.make({ path: "/component", content: routeComponent })],
+const routeOnlyRouter = Router.make("app")
+const componentRoute = Route.make({ path: "/component", content: routeComponent })
+const router = pipe(
+  routeOnlyRouter,
+  Router.layout(layout),
+  Router.notFound(fallback),
+  Router.route(route),
+  Router.route(componentRoute),
+)
+const compatRouter = Router.from({
+  routes: [route, componentRoute],
   layout,
   fallback,
 })
+const legacyCompatRouter = Router.make({
+  routes: [route, componentRoute],
+  layout,
+  fallback,
+})
+const builderLayoutRouter = Router.layout(layout)(routeOnlyRouter)
+const builderFallbackRouter = Router.notFound(fallback)(routeOnlyRouter)
 const result = Router.match(router, new URL("https://effectify.dev/users/42?tab=profile"))
 const identityDecoder = Decode.identity<Route.Params>()
 const routeContent: Route.Content<typeof route> = "user-screen"
@@ -129,6 +145,8 @@ const linkIntercepted = Link.intercept({
 })
 const algebraRoute = Router.find(algebraRouter, "users.detail")
 const compatRoutePath = Router.pathFor(router, route)
+const compatRoutePathFrom = Router.pathFor(compatRouter, route)
+const compatRoutePathFromLegacy = Router.pathFor(legacyCompatRouter, route)
 const algebraRoutePath = Router.pathFor(algebraRouter, "users.detail")
 const algebraRouteHref = Router.href(algebraRouter, "users.detail", {
   params: { userId: "42" },
@@ -147,6 +165,7 @@ const nestedTypedRouter = Router.make({
     }),
   ],
 })
+const typedRouteBuilder = pipe(Router.make("typed"), Router.route(route), Router.add(routeGroup))
 const nestedIndexHref = Router.href(nestedTypedRouter, "posts.index")
 const nestedLeafHref = Router.href(nestedTypedRouter, "posts.detail", {
   params: { postId: "42" },
@@ -293,6 +312,10 @@ type RouteHrefContract = Expect<Equal<typeof routeHref, string>>
 type LinkHrefContract = Expect<Equal<typeof linkHref, string>>
 type LinkInterceptContract = Expect<Equal<typeof linkIntercepted, boolean>>
 type CompatRoutePathContract = Expect<Equal<typeof compatRoutePath, Route.AbsolutePath | undefined>>
+export type CompatRoutePathFromContract = Expect<Equal<typeof compatRoutePathFrom, Route.AbsolutePath | undefined>>
+export type CompatRoutePathFromLegacyContract = Expect<
+  Equal<typeof compatRoutePathFromLegacy, Route.AbsolutePath | undefined>
+>
 type AlgebraRoutePathContract = Expect<Equal<typeof algebraRoutePath, Route.AbsolutePath | undefined>>
 type AlgebraRouteHrefContract = Expect<Equal<typeof algebraRouteHref, string>>
 type NestedIndexHrefContract = Expect<Equal<typeof nestedIndexHref, string>>
@@ -371,6 +394,11 @@ type ComponentOnlyCompiledRouteIdentifierContract = Expect<
 >
 type ComponentOnlyCompiledRouteContentContract = Expect<
   Equal<Route.Content<typeof componentOnlyCompiledRoute>, typeof routeComponent>
+>
+export type BuilderLayoutContract = Expect<Equal<typeof builderLayoutRouter, Router.Definition<readonly []>>>
+export type BuilderFallbackContract = Expect<Equal<typeof builderFallbackRouter, Router.Definition<readonly []>>>
+export type BuilderRouteContract = Expect<
+  Equal<typeof typedRouteBuilder, Router.Definition<[typeof route, typeof routeGroup]>>
 >
 
 // @ts-expect-error route paths must start with a slash

@@ -154,12 +154,19 @@ export type Definition<Entries extends ReadonlyArray<RouterEntry> = ReadonlyArra
 export type HrefResolutionError = internal.HrefResolutionError
 export const HrefResolutionError = internal.HrefResolutionError
 
-/** Create either a compatibility router or an algebra-first empty router. */
+/**
+ * Create a builder-first router with `make("app")`, or normalize legacy object-literal input.
+ * New code should prefer `make(identifier)` plus incremental operators.
+ */
 export function make<Routes extends ReadonlyArray<KnownRoute>>(options: Options<Routes>): Definition<Routes>
-export function make(identifier: string): Definition
+export function make(identifier: string): Definition<readonly []>
 export function make(input: string | Options): Definition {
-  return (typeof input === "string" ? internal.makeEmptyRouter(input) : internal.makeRouter(input)) as Definition
+  return (typeof input === "string" ? internal.makeEmptyRouter(input) : from(input)) as Definition
 }
+
+/** Normalize the compatibility object-literal router shape through the builder core. */
+export const from = <Routes extends ReadonlyArray<KnownRoute>>(options: Options<Routes>): Definition<Routes> =>
+  internal.makeRouter(options) as Definition<Routes>
 
 /** Add a route or route group to a Loom router in data-first or pipeable form. */
 export const add: {
@@ -174,6 +181,53 @@ export const add: {
     Entry,
   ]>
 } = dual(2, internal.addEntryToRouter)
+
+/** Add a single route to a Loom router in data-first or pipeable form. */
+export const route: {
+  <CurrentRoute extends KnownRoute>(route: CurrentRoute): <Entries extends ReadonlyArray<RouterEntry>>(
+    self: Definition<Entries>,
+  ) => Definition<[...Entries, CurrentRoute]>
+  <Entries extends ReadonlyArray<RouterEntry>, CurrentRoute extends KnownRoute>(
+    self: Definition<Entries>,
+    route: CurrentRoute,
+  ): Definition<[
+    ...Entries,
+    CurrentRoute,
+  ]>
+} = dual(2, internal.addEntryToRouter)
+
+/** Set or replace the app-level layout without changing known route entries. */
+export const layout: {
+  (
+    value: Layout.Definition,
+  ): <Entries extends ReadonlyArray<RouterEntry>>(self: Definition<Entries>) => Definition<Entries>
+  <Entries extends ReadonlyArray<RouterEntry>>(self: Definition<Entries>, value: Layout.Definition): Definition<Entries>
+} = dual(2, internal.withLayout)
+
+/** Set or replace app-level fallback boundaries without changing known route entries. */
+export const fallback: {
+  (
+    value: Fallback.Config,
+  ): <Entries extends ReadonlyArray<RouterEntry>>(self: Definition<Entries>) => Definition<Entries>
+  <Entries extends ReadonlyArray<RouterEntry>>(self: Definition<Entries>, value: Fallback.Config): Definition<Entries>
+} = dual(2, internal.withFallback)
+
+/** Set or replace the app-level not-found boundary without changing known route entries. */
+export const notFound: {
+  (
+    value: Fallback.Definition,
+  ): <Entries extends ReadonlyArray<RouterEntry>>(self: Definition<Entries>) => Definition<Entries>
+  <Entries extends ReadonlyArray<RouterEntry>>(
+    self: Definition<Entries>,
+    value: Fallback.Definition,
+  ): Definition<Entries>
+} = dual(
+  2,
+  <Entries extends ReadonlyArray<RouterEntry>>(
+    self: Definition<Entries>,
+    value: Fallback.Definition,
+  ): Definition<Entries> => internal.withFallback(self, { ...self.fallback, notFound: value }) as Definition<Entries>,
+)
 
 /** Prefix all routes already known to the router, and future additions. */
 export const prefix: {
