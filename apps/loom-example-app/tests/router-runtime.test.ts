@@ -2,8 +2,8 @@ import * as Effect from "effect/Effect"
 import { Html } from "@effectify/loom"
 import { Router } from "@effectify/loom-router"
 import { describe, expect, it } from "vitest"
-import { bodyForResult, resolveAppRequest, statusForResult, titleForResult } from "../src/router.js"
-import { createTodoRouteRuntime } from "../src/router-runtime.js"
+import { createTodoRouteRuntime } from "../src/routes/todo-route.js"
+import { bodyForResult, resetExampleState, resolveAppRequest, statusForResult, titleForResult } from "../src/router.js"
 import { type TodoItem, TodoNotFoundError, type TodoServiceApi } from "../src/todo-service.js"
 
 const makeTestTodoService = (seed: ReadonlyArray<TodoItem>) => {
@@ -62,6 +62,7 @@ const makeTestTodoService = (seed: ReadonlyArray<TodoItem>) => {
 
 describe("loom example app todo router runtime", () => {
   it("resolves / and /todos through the public router contract instead of source-shape assertions", () => {
+    resetExampleState()
     const counterResult = resolveAppRequest("/")
     const todoResult = resolveAppRequest("/todos")
 
@@ -74,7 +75,7 @@ describe("loom example app todo router runtime", () => {
     expect(Html.renderToString(bodyForResult(counterResult))).toContain('data-route-view="counter"')
     expect(Html.renderToString(bodyForResult(todoResult))).toContain('data-route-view="todo"')
     expect(Html.renderToString(bodyForResult(todoResult))).toContain('data-todo-add-action="true"')
-    expect(Html.renderToString(bodyForResult(todoResult))).toContain('data-todo-empty-state="true"')
+    expect(Html.renderToString(bodyForResult(todoResult))).toContain('data-todo-runtime-status="true"')
   })
 
   it("executes the initial loader through the route runtime", async () => {

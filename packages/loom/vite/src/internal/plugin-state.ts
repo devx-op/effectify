@@ -1,7 +1,7 @@
 import type * as Loom from "@effectify/loom"
 
 export const defaultLoomBuildId = "loom-dev"
-export const defaultLoomClientEntry = "/src/entry-browser.ts"
+export const defaultLoomClientEntry = "/src/entry-client.ts"
 export const defaultLoomPayloadElementId = "__loom_payload__"
 export const defaultLoomRootId = "loom-root"
 

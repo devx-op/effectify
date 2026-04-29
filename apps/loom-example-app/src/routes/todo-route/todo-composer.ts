@@ -1,7 +1,7 @@
 import { Atom } from "effect/unstable/reactivity"
 import { Component, html, View } from "@effectify/loom"
 import { todoActionStatusAtom, todoDraftAtom } from "../todo-route-state.js"
-import { submitTodoRouteSubmission } from "../todo-route-submission.js"
+import { submitTodoRoute } from "../todo-route.js"
 import { TodoPanel } from "./todo-route-shared.js"
 
 const readTodoTitleInput = (form: HTMLFormElement): string | undefined => {
@@ -18,7 +18,7 @@ export const TodoComposer = Component.make().pipe(
   Component.actions(({ model }) => ({
     submitDraft: async (titleInput?: string): Promise<void> => {
       const title = titleInput ?? model.draft.get()
-      const result = await submitTodoRouteSubmission({
+      const result = await submitTodoRoute({
         intent: "create",
         title,
       })

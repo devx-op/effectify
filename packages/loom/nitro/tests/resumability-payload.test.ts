@@ -92,6 +92,6 @@ describe("@effectify/loom-nitro resumability payload", () => {
     expect(result.html).toContain("<title>Broken route</title>")
     expect(result.html).toContain('<div id="loom-root"></div>')
     expect(result.html).toContain('id="__loom_payload__"')
-    expect(result.html).toContain('src="/src/entry-browser.ts"')
+    expect(result.html).toContain('src="/src/entry-client.ts"')
   })
 })

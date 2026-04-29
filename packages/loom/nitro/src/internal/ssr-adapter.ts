@@ -6,7 +6,7 @@ import { createLoomResumabilityPayload, type LoomResumabilityPayload, renderLoom
 export const defaultLoomNitroRootId = "loom-root"
 export const defaultLoomNitroBuildId = "loom-dev"
 export const defaultLoomNitroPayloadElementId = "__loom_payload__"
-export const defaultLoomNitroClientEntry = "/src/entry-browser.ts"
+export const defaultLoomNitroClientEntry = "/src/entry-client.ts"
 
 export interface LoomNitroRequest {
   readonly method: string

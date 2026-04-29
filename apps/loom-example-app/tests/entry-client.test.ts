@@ -1,9 +1,14 @@
 // @vitest-environment jsdom
 
-import { beforeEach, describe, expect, it } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import { bootstrapClient, startClientApp } from "../src/entry-client.js"
 import { createServerRenderer } from "../src/entry-server.js"
-import { resetTodoExampleState } from "../src/router-runtime.js"
+import { resetExampleState } from "../src/router.js"
+
+const importFresh = async <Module>(relativePath: string): Promise<Module> => {
+  const moduleUrl = new URL(relativePath, import.meta.url)
+  return import(`${moduleUrl.href}?t=${Date.now()}`) as Promise<Module>
+}
 
 const yieldToEventLoop = async (): Promise<void> => {
   await new Promise((resolve) => setTimeout(resolve, 0))
@@ -27,7 +32,7 @@ const expectInputElement = (value: Element | null, name: string): HTMLInputEleme
 
 describe("loom example app client entry", () => {
   beforeEach(() => {
-    resetTodoExampleState()
+    resetExampleState()
   })
 
   it("reports a missing payload while leaving the SSR shell untouched", async () => {
@@ -339,5 +344,25 @@ describe("loom example app client entry", () => {
     expect(document.querySelector('[data-todo-feedback="true"]')?.textContent).toContain("length of at least 1")
     expect(document.querySelector('[data-todo-open-count="true"]')?.textContent?.trim()).toBe("2")
     expect(document.querySelector('[data-todo-action-status="true"]')?.textContent?.trim()).toBe("invalid-input")
+  })
+
+  it("self-starts from the browser entry module without requiring entry-browser.ts", async () => {
+    vi.resetModules()
+    document.documentElement.innerHTML = `
+      <head><title>Loom Example App</title></head>
+      <body>
+        <div id="loom-root"></div>
+        <script type="application/json" id="__loom_payload__"></script>
+      </body>
+    `
+    window.history.replaceState({}, "", "/")
+
+    await importFresh("../src/entry-client.ts")
+    await yieldToEventLoop()
+
+    expect(document.querySelector('[data-app-shell="loom-example-app"]')).not.toBeNull()
+    expect(document.querySelector('[data-counter-value="true"]')?.textContent?.replace(/\s+/g, " ").trim()).toBe(
+      "Count: 2",
+    )
   })
 })

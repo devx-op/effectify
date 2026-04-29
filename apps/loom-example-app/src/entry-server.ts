@@ -1,6 +1,5 @@
 import { LoomNitro } from "@effectify/loom-nitro"
-import { prepareRouteRuntime } from "./router-runtime.js"
-import { bodyForResult, resolveAppRequest, statusForResult, titleForResult } from "./router.js"
+import { bodyForResult, prepareAppRequest, resolveAppRequest, statusForResult, titleForResult } from "./router.js"
 
 const applicationBaseUrl = "https://effectify.dev"
 
@@ -11,7 +10,7 @@ export const createServerRenderer = (): LoomNitro.LoomNitroRenderer =>
     render: (request) => {
       const requestUrl = normalizeRequestUrl(request.url)
 
-      return prepareRouteRuntime(requestUrl).then(() => {
+      return prepareAppRequest(requestUrl).then(() => {
         const result = resolveAppRequest(requestUrl)
 
         return {

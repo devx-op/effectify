@@ -4,11 +4,16 @@ import { Fallback, Layout, RouteModule, Router, type Router as RouterTypes } fro
 import { pipe } from "effect"
 import { counterRouteId, counterRoutePath, counterRouteTitle } from "./routes/counter-route.js"
 import * as counterRouteModule from "./routes/counter-route.js"
-import * as todoRouteModule from "./routes/todo-route.js"
+import {
+  prepareTodoRoute,
+  resetTodoRouteExampleState,
+  todoPageRoute,
+  todoRouteId,
+  todoRoutePath,
+  todoRouteTitle,
+} from "./routes/todo-route.js"
 
-export const todoRouteId = "todo"
-export const todoRoutePath = "/todos"
-export const todoRouteTitle = "Todo app"
+export { todoPageRoute, todoRouteId, todoRoutePath, todoRouteTitle } from "./routes/todo-route.js"
 
 const ShellBody = Component.make().pipe(
   Component.view(({ props }: { readonly props: Readonly<{ content: Loom.View.ViewChild | undefined }> | undefined }) =>
@@ -20,15 +25,6 @@ export const counterPageRoute = RouteModule.compile({
   identifier: counterRouteId,
   module: counterRouteModule,
   path: counterRoutePath,
-})
-
-export const todoPageRoute = RouteModule.compile({
-  identifier: todoRouteId,
-  module: {
-    ...todoRouteModule,
-    default: () => View.use(todoRouteModule.default),
-  },
-  path: todoRoutePath,
 })
 
 const AppShell = Component.make().pipe(
@@ -66,6 +62,14 @@ const matchedRouteTitle = (result: Router.ResolveSuccess): string => {
 }
 
 export const resolveAppRequest = (input: string | URL): Router.ResolveResult => Router.resolve(appRouter, input)
+
+export const prepareAppRequest = async (input: URL): Promise<void> => {
+  await prepareTodoRoute(input)
+}
+
+export const resetExampleState = (): void => {
+  resetTodoRouteExampleState()
+}
 
 export const titleForResult = (result: Router.ResolveResult): string =>
   Router.isResolveSuccess(result) ? matchedRouteTitle(result) : "Not Found"

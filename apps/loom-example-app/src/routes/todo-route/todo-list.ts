@@ -1,6 +1,6 @@
 import { Component, html, View } from "@effectify/loom"
 import { todoActionStatusAtom, todoItemsAtom } from "../todo-route-state.js"
-import { submitTodoRouteSubmission } from "../todo-route-submission.js"
+import { submitTodoRoute } from "../todo-route.js"
 import { hasCompletedTodos, TodoPanel } from "./todo-route-shared.js"
 
 export const TodoList = Component.make().pipe(
@@ -10,13 +10,13 @@ export const TodoList = Component.make().pipe(
   }),
   Component.actions(() => ({
     clearCompleted: async (): Promise<void> => {
-      await submitTodoRouteSubmission({ intent: "clear-completed" })
+      await submitTodoRoute({ intent: "clear-completed" })
     },
     removeTodo: async (id: number): Promise<void> => {
-      await submitTodoRouteSubmission({ intent: "remove", id: String(id) })
+      await submitTodoRoute({ intent: "remove", id: String(id) })
     },
     toggleTodo: async (id: number): Promise<void> => {
-      await submitTodoRouteSubmission({ intent: "toggle", id: String(id) })
+      await submitTodoRoute({ intent: "toggle", id: String(id) })
     },
   })),
   Component.view(({ state, actions }) =>

@@ -15,7 +15,7 @@ const descriptor = LoomNitro.renderer({
 
 LoomNitro.renderer({
   bootstrap: {
-    clientEntry: "/src/entry-browser.ts",
+    clientEntry: "/src/entry-client.ts",
     payloadElementId: "loom-payload",
     rootId: "loom-root",
   },

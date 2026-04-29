@@ -1,7 +1,7 @@
+import "./app.css"
 import { Html, mount } from "@effectify/loom"
 import { LoomVite } from "@effectify/loom-vite"
-import { prepareRouteRuntime } from "./router-runtime.js"
-import { bodyForResult, resolveAppRequest, titleForResult, todoRoutePath } from "./router.js"
+import { bodyForResult, prepareAppRequest, resolveAppRequest, titleForResult, todoRoutePath } from "./router.js"
 import * as counterRouteModule from "./routes/counter-route.js"
 import * as todoRouteModule from "./routes/todo-route.js"
 
@@ -34,7 +34,7 @@ const renderClientFallback = async (document: Document): Promise<boolean> => {
   }
 
   const requestUrl = new URL(document.location?.href ?? defaultClientUrl, defaultClientUrl)
-  await prepareRouteRuntime(requestUrl)
+  await prepareAppRequest(requestUrl)
   const result = resolveAppRequest(requestUrl)
 
   if (requestUrl.pathname === "/" || requestUrl.pathname === todoRoutePath) {
@@ -64,4 +64,8 @@ export const startClientApp = async (
   }
 
   return result
+}
+
+if (typeof window !== "undefined" && typeof document !== "undefined") {
+  void startClientApp(document)
 }

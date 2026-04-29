@@ -69,7 +69,7 @@ describe("@effectify/loom-vite", () => {
             subject: "loom-root",
             details: {
               buildId: "loom-dev",
-              clientEntry: "/src/entry-browser.ts",
+              clientEntry: "/src/entry-client.ts",
               payloadElementId: "__loom_payload__",
               rootId: "loom-root",
             },
