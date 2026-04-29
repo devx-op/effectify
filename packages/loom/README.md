@@ -214,6 +214,62 @@ Compatibility note: `Router.from({ routes, layout, fallback })` and `Router.make
 - `Hydration` — advanced hydration helpers layered after the primary interactive path
 - `Resumability` — advanced resumability helpers layered after the primary interactive path
 
+## Zero-extra-file Loom bootstrap
+
+For the default SSR/browser path, start with the adapters and DO NOT create app-local `document.ts` or bootstrap-constants files up front.
+
+```ts
+// entry-server.ts
+import { LoomNitro } from "@effectify/loom-nitro"
+
+export const server = LoomNitro.renderer({
+  render: () => ({
+    title: "Counter",
+    body: CounterRoute,
+  }),
+})
+
+// vite.config.mts
+import { LoomVite } from "@effectify/loom-vite"
+
+export default defineConfig({
+  plugins: [LoomVite.loom()],
+})
+```
+
+Default ownership now lives in the framework adapters:
+
+- Nitro renders the HTML shell, root container, payload marker, and browser entry script.
+- Vite injects the default root container / payload placeholder / browser module script in dev HTML.
+- Browser bootstrap reads `__loom_payload__`, expects `loom-root`, and uses the default build id unless you override them.
+
+### Advanced bootstrap overrides
+
+If you need a custom shell or marker ids, keep the overrides explicit instead of reintroducing global app-local ceremony:
+
+```ts
+LoomNitro.renderer({
+  bootstrap: {
+    rootId: "custom-root",
+    payloadElementId: "custom-payload",
+    clientEntry: "/src/custom-entry.ts",
+  },
+  document: {
+    render: ({ bodyHtml, payloadHtml, title }) =>
+      `<!DOCTYPE html><html><head><title>${title}</title></head><body><main>${bodyHtml}</main>${payloadHtml}</body></html>`,
+  },
+  render: () => ({ title: "Custom", body: CounterRoute }),
+})
+
+LoomVite.loom({
+  rootId: "custom-root",
+  payloadElementId: "custom-payload",
+  clientEntry: "/src/custom-entry.ts",
+})
+```
+
+Teach the simple path first. Reach for the overrides only when the default document shell or marker ids are genuinely insufficient.
+
 ## Internal-only packages
 
 - `@effectify/loom-core` — neutral AST and composition contracts

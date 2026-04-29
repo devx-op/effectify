@@ -1,6 +1,5 @@
 import { Html, mount } from "@effectify/loom"
 import { LoomVite } from "@effectify/loom-vite"
-import { appBuildId, appPayloadElementId, appRootId } from "./app-config.js"
 import { prepareRouteRuntime } from "./router-runtime.js"
 import { bodyForResult, resolveAppRequest, titleForResult, todoRoutePath } from "./router.js"
 import * as counterRouteModule from "./routes/counter-route.js"
@@ -9,12 +8,7 @@ import * as todoRouteModule from "./routes/todo-route.js"
 export const bootstrapClient = (
   document: Document,
   options?: LoomVite.LoomBootstrapOptions,
-): Promise<LoomVite.LoomBootstrapResult> =>
-  LoomVite.bootstrap(document, {
-    ...options,
-    expectedBuildId: options?.expectedBuildId ?? appBuildId,
-    payloadElementId: options?.payloadElementId ?? appPayloadElementId,
-  })
+): Promise<LoomVite.LoomBootstrapResult> => LoomVite.bootstrap(document, options)
 
 const defaultClientUrl = "https://effectify.dev/"
 
@@ -33,7 +27,7 @@ const mountClientRoute = (pathname: string, root: HTMLElement): boolean => {
 }
 
 const renderClientFallback = async (document: Document): Promise<boolean> => {
-  const root = document.getElementById(appRootId)
+  const root = document.getElementById(LoomVite.defaultLoomRootId)
 
   if (!(root instanceof HTMLElement) || root.innerHTML.trim() !== "") {
     return false

@@ -48,13 +48,33 @@ describe("loom example app client entry", () => {
       headers: {},
     })
 
-    document.documentElement.innerHTML = result.html
+    document.open()
+    document.write(result.html)
+    document.close()
     const before = document.body.innerHTML
 
     const bootstrap = await startClientApp(document)
 
     expect(bootstrap.status).toBe("missing-payload")
     expect(document.body.innerHTML).toBe(before)
+  })
+
+  it("uses the default server payload marker without requiring explicit bootstrap overrides", async () => {
+    const renderer = createServerRenderer()
+    const result = await renderer.render({
+      method: "GET",
+      url: "/",
+      headers: {},
+    })
+
+    document.documentElement.innerHTML = result.html
+
+    const bootstrap = await bootstrapClient(document)
+
+    expect(result.html).toContain('id="__loom_payload__"')
+    expect(bootstrap.status).toBe("missing-payload")
+    expect(bootstrap.diagnostics[0]?.issues[0]?.subject).toBe("__loom_payload__")
+    expect(document.body.textContent).toContain("Loom vNext counter")
   })
 
   it("accepts explicit bootstrap options for missing payload diagnostics", async () => {

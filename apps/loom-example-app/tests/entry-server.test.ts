@@ -37,6 +37,7 @@ describe("loom example app server entry", () => {
     expect(result.html).toContain('id="loom-root"')
     expect(result.html).toContain('data-route-view="counter"')
     expect(result.html).toContain('id="__loom_payload__"')
+    expect(result.html).toContain('src="/src/entry-browser.ts"')
     expect(result.html).toContain('data-counter-action="increment"')
     expect(result.html).toContain('data-counter-value="true"')
     expect(result.html).toContain('data-counter-dynamic-value="true"')
@@ -67,6 +68,7 @@ describe("loom example app server entry", () => {
     expect(result.html).toContain("Sketch the shared Atom shape")
     expect(result.html).toContain("authored with Loom templates plus View.of and View.use composition")
     expect(result.html).toContain("template-authored form")
+    expect(result.html.match(/src="\/src\/entry-browser.ts"/g)).toHaveLength(1)
   })
 
   it("returns a minimal not-found document for unknown paths", async () => {

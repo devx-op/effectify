@@ -7,12 +7,18 @@ type Equal<Left, Right> = (<Value>() => Value extends Left ? 1 : 2) extends <Val
 type Expect<Value extends true> = Value
 
 const descriptor = LoomNitro.renderer({
-  rootId: "loom-root",
-  render: (request) => Html.el("main", Html.children(request.url)),
+  render: (request) => ({
+    title: request.url,
+    body: Html.el("main", Html.children(request.url)),
+  }),
 })
 
 LoomNitro.renderer({
-  rootId: "loom-root",
+  bootstrap: {
+    clientEntry: "/src/entry-browser.ts",
+    payloadElementId: "loom-payload",
+    rootId: "loom-root",
+  },
   render: (request) => Html.el("main", Html.children(request.url)),
   // @ts-expect-error non-web renderers remain out of scope for this web-only adapter
   renderer: "native",

@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs"
+import { existsSync, readFileSync } from "node:fs"
 import { pathToFileURL } from "node:url"
 import { Html } from "@effectify/loom"
 import { Router } from "@effectify/loom-router"
@@ -55,7 +55,7 @@ describe("loom example app project shape", () => {
     )
   })
 
-  it("exports behavior-first route/document contracts through public entry points", async () => {
+  it("exports behavior-first route contracts through public entry points without extra bootstrap files", async () => {
     const counterRouteModule = await import(
       pathToFileURL(new URL("../src/routes/counter-route.ts", import.meta.url).pathname).href
     )
@@ -66,7 +66,9 @@ describe("loom example app project shape", () => {
       pathToFileURL(new URL("../src/routes/todo-route-state.ts", import.meta.url).pathname).href
     )
     const routerModule = await import(pathToFileURL(new URL("../src/router.ts", import.meta.url).pathname).href)
-    const documentModule = await import(pathToFileURL(new URL("../src/document.ts", import.meta.url).pathname).href)
+    const entryServerModule = await import(
+      pathToFileURL(new URL("../src/entry-server.ts", import.meta.url).pathname).href
+    )
 
     const counterResult = routerModule.resolveAppRequest("/")
     const todoResult = routerModule.resolveAppRequest("/todos")
@@ -74,12 +76,8 @@ describe("loom example app project shape", () => {
     const counterHtml = Html.renderToString(routerModule.bodyForResult(counterResult))
     const todoHtml = Html.renderToString(routerModule.bodyForResult(todoResult))
     const missingHtml = Html.renderToString(routerModule.bodyForResult(missingResult))
-    const documentHtml = Html.renderToString(
-      documentModule.createDocument({
-        body: routerModule.bodyForResult(counterResult),
-        title: routerModule.titleForResult(counterResult),
-      }),
-    )
+    const renderer = entryServerModule.createServerRenderer()
+    const documentResult = await renderer.render({ method: "GET", url: "/", headers: {} })
 
     expect(counterRouteModule.default).toBe(counterRouteModule.CounterRoute)
     expect(counterRouteModule.counterRoutePath).toBe("/")
@@ -101,8 +99,11 @@ describe("loom example app project shape", () => {
     expect(todoHtml).toContain('data-todo-empty-state="true"')
     expect(missingHtml).toContain('data-route-view="not-found"')
     expect(missingHtml).toContain("Requested path: /missing")
-    expect(documentHtml).toContain('<html lang="en">')
-    expect(documentHtml).toContain('id="loom-root"')
-    expect(documentHtml).toContain('id="__loom_payload__"')
+    expect(documentResult.html).toContain('<html lang="en">')
+    expect(documentResult.html).toContain('id="loom-root"')
+    expect(documentResult.html).toContain('id="__loom_payload__"')
+    expect(documentResult.html).toContain('src="/src/entry-browser.ts"')
+    expect(existsSync(new URL("../src/document.ts", import.meta.url))).toBe(false)
+    expect(existsSync(new URL("../src/app-config.ts", import.meta.url))).toBe(false)
   })
 })

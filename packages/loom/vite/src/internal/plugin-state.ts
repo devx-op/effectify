@@ -1,21 +1,26 @@
 import type * as Loom from "@effectify/loom"
 
-export const defaultLoomClientEntry = "/src/loom-client.ts"
+export const defaultLoomBuildId = "loom-dev"
+export const defaultLoomClientEntry = "/src/entry-browser.ts"
 export const defaultLoomPayloadElementId = "__loom_payload__"
+export const defaultLoomRootId = "loom-root"
 
 export type LoomResumabilityPayload = Loom.Resumability.LoomResumabilityContract
 export type LoomActivationPayload = LoomResumabilityPayload
 
 export interface LoomViteOptions {
+  readonly buildId?: string
   readonly root?: string
+  readonly rootId?: string
   readonly clientEntry?: string
   readonly payloadElementId?: string
 }
 
 export interface ResolvedLoomViteOptions {
-  readonly root: string | undefined
+  readonly buildId: string
   readonly clientEntry: string
   readonly payloadElementId: string
+  readonly rootId: string
 }
 
 export interface LoomViteState {
@@ -30,9 +35,10 @@ const normalizeOptionalString = (value: string | undefined): string | undefined 
 }
 
 export const normalizeLoomViteOptions = (options: LoomViteOptions = {}): ResolvedLoomViteOptions => ({
-  root: normalizeOptionalString(options.root),
+  buildId: normalizeOptionalString(options.buildId) ?? defaultLoomBuildId,
   clientEntry: normalizeOptionalString(options.clientEntry) ?? defaultLoomClientEntry,
   payloadElementId: normalizeOptionalString(options.payloadElementId) ?? defaultLoomPayloadElementId,
+  rootId: normalizeOptionalString(options.rootId) ?? normalizeOptionalString(options.root) ?? defaultLoomRootId,
 })
 
 export const resolveLoomViteState = (
@@ -45,7 +51,7 @@ export const resolveLoomViteState = (
 
   return {
     configRoot: config.root,
-    enabled: normalized.root !== undefined,
+    enabled: true,
     options: normalized,
   }
 }
