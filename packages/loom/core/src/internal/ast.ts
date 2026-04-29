@@ -12,6 +12,11 @@ export const makeDynamicTextNode = (render: () => string): Ast.DynamicTextNode =
   render,
 })
 
+export const makeComputedNode = (render: () => Ast.Node): Ast.ComputedNode => ({
+  _tag: "Computed",
+  render,
+})
+
 export const makeElementNode = (
   tagName: string,
   options: {
@@ -63,6 +68,18 @@ export const makeForNode = <Item, Key extends PropertyKey = PropertyKey>(
 export const makeComponentUseNode = (component: Component.Definition): Ast.ComponentUseNode => ({
   _tag: "ComponentUse",
   component,
+})
+
+export const makeBoundaryNode = (
+  node: Ast.Node,
+  scope: {
+    readonly errors?: ReadonlyArray<string> | "all"
+    readonly requirementsHandled?: boolean
+  },
+): Ast.BoundaryNode => ({
+  _tag: "Boundary",
+  node,
+  scope,
 })
 
 export const makeLiveNode = <Value>(

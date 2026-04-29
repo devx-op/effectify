@@ -195,7 +195,7 @@ These are intentionally NOT goals for the first line of the initiative:
 - Developers can build a small interactive application with plain TypeScript and real Atom state using only documented public APIs.
 - Developers understand that Loom is not replacing Atom; it is building above it.
 - Developers can distinguish when to use `children` versus named `Slot` composition without needing JSX/TSX mental models.
-- Developers can compose primitive controls such as `View.button(...)` and `View.link(...)` with broad `ViewChild` content, not only string labels.
+- Developers can migrate legacy compatibility helpers such as `View.button(...)`, `View.input()`, and `View.link(...)` toward `html` + `web:*` without losing support for existing call sites.
 - Developers encounter `View.vstack` / `View.hstack` as the default layout vocabulary.
 
 ### Technical success
@@ -222,36 +222,29 @@ The target composition story should be documented this way:
 - `Component.slots(...)` / `Slot` are for named structural composition.
 - `Component.use(component, props?, childrenOrSlots?)` should accept either plain children content or a named slot object depending on the component contract.
 - `Html.*` remains available as a lower-level or compatibility surface, but is not the main path used to teach Loom.
+- `View.button(...)`, `View.input()`, and `View.link(...)` are legacy compatibility helpers; docs should steer new DOM authoring to `html` + `web:*`.
 
 Directional examples:
 
 ```ts
-View.button("Increase", actions.increment)
+html`<button type="button" web:click=${actions.increment}>Increase</button>`
 
-View.button(
-  View.hstack(
-    Icon.plus(),
-    View.text("Increase"),
-  ),
-  actions.increment,
-)
+html`
+  <button type="button" web:click=${actions.increment}>
+    ${View.hstack(Icon.plus(), View.text("Increase"))}
+  </button>
+`
 
-View.link("Open settings", "/settings")
+html`<input web:value=${state.search()} />`
 
-View.link(
-  View.hstack(
-    Icon.externalLink(),
-    View.text("Docs"),
-  ),
-  { href: "/docs" },
-)
+html`<a href="/docs">${View.hstack(Icon.externalLink(), View.text("Docs"))}</a>`
 ```
 
 ### Counter target DX
 
 ```ts
 import * as Atom from "effect/unstable/reactivity/Atom"
-import { Component, mount, View, Web } from "@effectify/loom"
+import { Component, html, mount, View, Web } from "@effectify/loom"
 
 export const CounterRoute = Component.make("CounterRoute").pipe(
   Component.state({
@@ -263,16 +256,18 @@ export const CounterRoute = Component.make("CounterRoute").pipe(
     reset: ({ count }) => count.set(0),
   }),
   Component.view(({ state, actions }) =>
-    View.vstack(
-      View.text("Counter").pipe(Web.as("h1")),
-      View.text(() => `Count: ${state.count()}`),
-      View.text(() => `Doubled: ${state.count() * 2}`),
-      View.hstack(
-        View.button("Decrease", actions.decrement),
-        View.button("Increase", actions.increment),
-        View.button("Reset", actions.reset),
-      ),
-    ).pipe(Web.className("gap-2"))
+    html`
+      <section class="gap-2">
+        <h1>Counter</h1>
+        <p>${() => state.count()}</p>
+        <p>${() => state.count() * 2}</p>
+        <div>
+          <button type="button" web:click=${actions.decrement}>Decrease</button>
+          <button type="button" web:click=${actions.increment}>Increase</button>
+          <button type="button" web:click=${actions.reset}>Reset</button>
+        </div>
+      </section>
+    `
   ),
 )
 
@@ -324,6 +319,8 @@ Component.use(AppLayout, {}, {
 `View.stack(...)` may continue to exist as a compatibility alias or directional bridge, but the docs should teach `View.vstack(...)` and `View.hstack(...)` first.
 
 Similarly, `Html.*` may still exist as a lower-level or compatibility layer, but product-facing Loom docs should present `View` + `Web` as the primary authoring path.
+
+`View.button(...)`, `View.input()`, and `View.link(...)` are legacy compatibility helpers. Keep them callable, but teach `html` + `web:click`, `web:value` / `web:inputValue`, and `<a href="...">` first.
 
 ### Router target DX
 

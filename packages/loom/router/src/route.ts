@@ -58,20 +58,42 @@ type ExecuteEffectErrorOf<Execute> = Execute extends
   (...args: ReadonlyArray<any>) => Effect.Effect<any, infer Value, never> ? Value
   : never
 
-type ModuleLoaderServicesOfExecute<Execute> = Execute extends (
-  input: ModuleLoaderInput<any, any, infer Services>,
-) => Effect.Effect<any, any, never> ? Services
-  : never
+type ExecuteInputOf<Execute> = Execute extends (input: infer Input) => Effect.Effect<any, any, never> ? Input : never
 
-type ModuleActionInputOfExecute<Execute> = Execute extends (
-  input: ModuleActionInput<any, any, infer Input, any>,
-) => Effect.Effect<any, any, never> ? Input
-  : never
+type ServicesOfInput<Input> = Input extends { readonly services: infer Services } ? Services : never
 
-type ModuleActionServicesOfExecute<Execute> = Execute extends (
-  input: ModuleActionInput<any, any, any, infer Services>,
-) => Effect.Effect<any, any, never> ? Services
-  : never
+type ActionValueOfInput<Input> = Input extends { readonly input: infer Value } ? Value : never
+
+export interface ServiceBinding<Services = never> {
+  readonly _tag: "LoomRouterServiceBinding"
+  readonly _services?: Services
+}
+
+export const services = <Services>(): ServiceBinding<Services> => ({
+  _tag: "LoomRouterServiceBinding",
+} as ServiceBinding<Services>)
+
+type IsNever<Value> = [Value] extends [never] ? true : false
+
+type ModuleLoaderServicesFromExecute<Execute> = ServicesOfInput<ExecuteInputOf<Execute>>
+
+type ModuleLoaderServicesFromOptions<Options extends ModuleLoaderOptions<any, any, any, any, any>> =
+  Options["services"] extends ServiceBinding<infer Services> ? Services : never
+
+type ModuleLoaderInferredServices<Execute, Options extends ModuleLoaderOptions<any, any, any, any, any>> =
+  IsNever<ModuleLoaderServicesFromOptions<Options>> extends true ? ModuleLoaderServicesFromExecute<Execute>
+    : ModuleLoaderServicesFromOptions<Options>
+
+type ModuleActionInputOfExecute<Execute> = ActionValueOfInput<ExecuteInputOf<Execute>>
+
+type ModuleActionServicesFromExecute<Execute> = ServicesOfInput<ExecuteInputOf<Execute>>
+
+type ModuleActionServicesFromOptions<Options extends ModuleActionOptions<any, any, any, any, any, any>> =
+  Options["services"] extends ServiceBinding<infer Services> ? Services : never
+
+type ModuleActionInferredServices<Execute, Options extends ModuleActionOptions<any, any, any, any, any, any>> =
+  IsNever<ModuleActionServicesFromOptions<Options>> extends true ? ModuleActionServicesFromExecute<Execute>
+    : ModuleActionServicesFromOptions<Options>
 
 export type Awaitable<Value> = Value | PromiseLike<Value>
 
@@ -152,20 +174,14 @@ export interface ModuleLoaderOptions<
   SearchDecoder extends Decode.DecoderLike<Search, any> | undefined = undefined,
   OutputSchema extends RouteSchema<any> | undefined = undefined,
   ErrorSchema extends RouteSchema<any> | undefined = undefined,
+  Services = never,
 > {
   readonly params?: ParamsDecoder
   readonly search?: SearchDecoder
   readonly output?: OutputSchema
   readonly error?: ErrorSchema
+  readonly services?: ServiceBinding<Services>
 }
-
-type ModuleLoaderExecute<
-  ParamsDecoder extends Decode.DecoderLike<Params, any> | undefined,
-  SearchDecoder extends Decode.DecoderLike<Search, any> | undefined,
-  Services,
-> = (
-  input: ModuleLoaderInput<ParamsOutputOf<ParamsDecoder>, SearchOutputOf<SearchDecoder>, Services>,
-) => Effect.Effect<any, any, never>
 
 export interface ModuleLoaderDefinition<
   Services = never,
@@ -173,17 +189,14 @@ export interface ModuleLoaderDefinition<
   SearchDecoder extends Decode.DecoderLike<Search, any> | undefined = undefined,
   OutputSchema extends RouteSchema<any> | undefined = undefined,
   ErrorSchema extends RouteSchema<any> | undefined = undefined,
-  Execute extends ModuleLoaderExecute<ParamsDecoder, SearchDecoder, Services> = ModuleLoaderExecute<
-    ParamsDecoder,
-    SearchDecoder,
-    Services
-  >,
-> extends ModuleLoaderOptions<ParamsDecoder, SearchDecoder, OutputSchema, ErrorSchema> {
-  readonly load: Execute
+> extends ModuleLoaderOptions<ParamsDecoder, SearchDecoder, OutputSchema, ErrorSchema, Services> {
+  readonly load: (
+    input: ModuleLoaderInput<ParamsOutputOf<ParamsDecoder>, SearchOutputOf<SearchDecoder>, Services>,
+  ) => Effect.Effect<any, any, never>
 }
 
 export type ModuleLoaderContext<
-  Options extends ModuleLoaderOptions<any, any, any, any> = ModuleLoaderOptions,
+  Options extends ModuleLoaderOptions<any, any, any, any, any> = ModuleLoaderOptions,
   Services = never,
 > = ModuleLoaderInput<
   ParamsOutputOf<Options["params"]>,
@@ -227,27 +240,15 @@ export interface ModuleActionOptions<
   InputDecoder extends SubmissionDecode.DecoderLike<any> | undefined = undefined,
   OutputSchema extends RouteSchema<any> | undefined = undefined,
   ErrorSchema extends RouteSchema<any> | undefined = undefined,
+  Services = never,
 > {
   readonly params?: ParamsDecoder
   readonly search?: SearchDecoder
   readonly input?: InputDecoder
   readonly output?: OutputSchema
   readonly error?: ErrorSchema
+  readonly services?: ServiceBinding<Services>
 }
-
-type ModuleActionExecute<
-  ParamsDecoder extends Decode.DecoderLike<Params, any> | undefined,
-  SearchDecoder extends Decode.DecoderLike<Search, any> | undefined,
-  InputDecoder extends SubmissionDecode.DecoderLike<any> | undefined,
-  Services,
-> = (
-  input: ModuleActionInput<
-    ParamsOutputOf<ParamsDecoder>,
-    SearchOutputOf<SearchDecoder>,
-    ActionInputOutputOf<InputDecoder, unknown>,
-    Services
-  >,
-) => Effect.Effect<any, any, never>
 
 export interface ModuleActionDefinition<
   Services = never,
@@ -256,18 +257,19 @@ export interface ModuleActionDefinition<
   InputDecoder extends SubmissionDecode.DecoderLike<any> | undefined = undefined,
   OutputSchema extends RouteSchema<any> | undefined = undefined,
   ErrorSchema extends RouteSchema<any> | undefined = undefined,
-  Execute extends ModuleActionExecute<ParamsDecoder, SearchDecoder, InputDecoder, Services> = ModuleActionExecute<
-    ParamsDecoder,
-    SearchDecoder,
-    InputDecoder,
-    Services
-  >,
-> extends ModuleActionOptions<ParamsDecoder, SearchDecoder, InputDecoder, OutputSchema, ErrorSchema> {
-  readonly handle: Execute
+> extends ModuleActionOptions<ParamsDecoder, SearchDecoder, InputDecoder, OutputSchema, ErrorSchema, Services> {
+  readonly handle: (
+    input: ModuleActionInput<
+      ParamsOutputOf<ParamsDecoder>,
+      SearchOutputOf<SearchDecoder>,
+      ActionInputOutputOf<InputDecoder, unknown>,
+      Services
+    >,
+  ) => Effect.Effect<any, any, never>
 }
 
 export type ModuleActionContext<
-  Options extends ModuleActionOptions<any, any, any, any, any> = ModuleActionOptions,
+  Options extends ModuleActionOptions<any, any, any, any, any, any> = ModuleActionOptions,
   Services = never,
 > = ModuleActionInput<
   ParamsOutputOf<Options["params"]>,
@@ -751,39 +753,35 @@ export function loader<
   SearchDecoder extends Decode.DecoderLike<Search, any> | undefined = undefined,
   OutputSchema extends RouteSchema<any> | undefined = undefined,
   ErrorSchema extends RouteSchema<any> | undefined = undefined,
-  Execute extends ModuleLoaderExecute<ParamsDecoder, SearchDecoder, Services> = ModuleLoaderExecute<
-    ParamsDecoder,
-    SearchDecoder,
-    Services
-  >,
 >(
-  definition: ModuleLoaderDefinition<Services, ParamsDecoder, SearchDecoder, OutputSchema, ErrorSchema, Execute>,
+  definition: ModuleLoaderDefinition<Services, ParamsDecoder, SearchDecoder, OutputSchema, ErrorSchema>,
 ): ModuleLoader<
   ParamsOutputOf<ParamsDecoder>,
   SearchOutputOf<SearchDecoder>,
-  SchemaOutputOf<OutputSchema, ExecuteEffectSuccessOf<Execute>>,
-  SchemaOutputOf<ErrorSchema, ExecuteEffectErrorOf<Execute>>,
+  SchemaOutputOf<OutputSchema, ExecuteEffectSuccessOf<typeof definition.load>>,
+  SchemaOutputOf<ErrorSchema, ExecuteEffectErrorOf<typeof definition.load>>,
   Services
 >
 export function loader<
-  ParamsDecoder extends Decode.DecoderLike<Params, any> | undefined = undefined,
-  SearchDecoder extends Decode.DecoderLike<Search, any> | undefined = undefined,
-  OutputSchema extends RouteSchema<any> | undefined = undefined,
-  ErrorSchema extends RouteSchema<any> | undefined = undefined,
+  Options extends ModuleLoaderOptions<any, any, any, any, any>,
 >(
-  options: ModuleLoaderOptions<ParamsDecoder, SearchDecoder, OutputSchema, ErrorSchema>,
+  options: Options,
 ): <
   Execute extends (
-    input: ModuleLoaderInput<ParamsOutputOf<ParamsDecoder>, SearchOutputOf<SearchDecoder>, any>,
+    input: ModuleLoaderInput<
+      ParamsOutputOf<Options["params"]>,
+      SearchOutputOf<Options["search"]>,
+      ModuleLoaderInferredServices<Execute, Options>
+    >,
   ) => Effect.Effect<any, any, never>,
 >(
   execute: Execute,
 ) => ModuleLoader<
-  ParamsOutputOf<ParamsDecoder>,
-  SearchOutputOf<SearchDecoder>,
-  SchemaOutputOf<OutputSchema, ExecuteEffectSuccessOf<Execute>>,
-  SchemaOutputOf<ErrorSchema, ExecuteEffectErrorOf<Execute>>,
-  ModuleLoaderServicesOfExecute<Execute>
+  ParamsOutputOf<Options["params"]>,
+  SearchOutputOf<Options["search"]>,
+  SchemaOutputOf<Options["output"], ExecuteEffectSuccessOf<Execute>>,
+  SchemaOutputOf<Options["error"], ExecuteEffectErrorOf<Execute>>,
+  ModuleLoaderInferredServices<Execute, Options>
 >
 export function loader<ParamsOutput extends Params, SearchOutput extends Search, Data, Error, Services>(
   descriptor: LoaderDescriptor<ParamsOutput, SearchOutput, Data, Error, Services>,
@@ -826,8 +824,8 @@ export function loader<
   Action
 >
 export function loader(
-  first?: AnyDefinition | AnyLoaderDescriptor | ModuleLoaderOptions | ModuleLoaderDefinition,
-  second?: AnyLoaderDescriptor,
+  first?: any,
+  second?: any,
 ): any {
   if (isRouteDefinition(first) && second !== undefined) {
     return internal.attachLoader(first, second)
@@ -877,12 +875,6 @@ export function action<
   InputDecoder extends SubmissionDecode.DecoderLike<any> | undefined = undefined,
   OutputSchema extends RouteSchema<any> | undefined = undefined,
   ErrorSchema extends RouteSchema<any> | undefined = undefined,
-  Execute extends ModuleActionExecute<ParamsDecoder, SearchDecoder, InputDecoder, Services> = ModuleActionExecute<
-    ParamsDecoder,
-    SearchDecoder,
-    InputDecoder,
-    Services
-  >,
 >(
   definition: ModuleActionDefinition<
     Services,
@@ -890,43 +882,38 @@ export function action<
     SearchDecoder,
     InputDecoder,
     OutputSchema,
-    ErrorSchema,
-    Execute
+    ErrorSchema
   >,
 ): ModuleAction<
   ParamsOutputOf<ParamsDecoder>,
   SearchOutputOf<SearchDecoder>,
-  ActionInputOutputOf<InputDecoder, ModuleActionInputOfExecute<Execute>>,
-  SchemaOutputOf<OutputSchema, ExecuteEffectSuccessOf<Execute>>,
-  SchemaOutputOf<ErrorSchema, ExecuteEffectErrorOf<Execute>>,
+  ActionInputOutputOf<InputDecoder, ModuleActionInputOfExecute<typeof definition.handle>>,
+  SchemaOutputOf<OutputSchema, ExecuteEffectSuccessOf<typeof definition.handle>>,
+  SchemaOutputOf<ErrorSchema, ExecuteEffectErrorOf<typeof definition.handle>>,
   Services
 >
 export function action<
-  ParamsDecoder extends Decode.DecoderLike<Params, any> | undefined = undefined,
-  SearchDecoder extends Decode.DecoderLike<Search, any> | undefined = undefined,
-  InputDecoder extends SubmissionDecode.DecoderLike<any> | undefined = undefined,
-  OutputSchema extends RouteSchema<any> | undefined = undefined,
-  ErrorSchema extends RouteSchema<any> | undefined = undefined,
+  Options extends ModuleActionOptions<any, any, any, any, any, any>,
 >(
-  options: ModuleActionOptions<ParamsDecoder, SearchDecoder, InputDecoder, OutputSchema, ErrorSchema>,
+  options: Options,
 ): <
   Execute extends (
     input: ModuleActionInput<
-      ParamsOutputOf<ParamsDecoder>,
-      SearchOutputOf<SearchDecoder>,
-      ActionInputOutputOf<InputDecoder, unknown>,
-      any
+      ParamsOutputOf<Options["params"]>,
+      SearchOutputOf<Options["search"]>,
+      ActionInputOutputOf<Options["input"], unknown>,
+      ModuleActionInferredServices<Execute, Options>
     >,
   ) => Effect.Effect<any, any, never>,
 >(
   execute: Execute,
 ) => ModuleAction<
-  ParamsOutputOf<ParamsDecoder>,
-  SearchOutputOf<SearchDecoder>,
-  ActionInputOutputOf<InputDecoder, ModuleActionInputOfExecute<Execute>>,
-  SchemaOutputOf<OutputSchema, ExecuteEffectSuccessOf<Execute>>,
-  SchemaOutputOf<ErrorSchema, ExecuteEffectErrorOf<Execute>>,
-  ModuleActionServicesOfExecute<Execute>
+  ParamsOutputOf<Options["params"]>,
+  SearchOutputOf<Options["search"]>,
+  ActionInputOutputOf<Options["input"], ModuleActionInputOfExecute<Execute>>,
+  SchemaOutputOf<Options["output"], ExecuteEffectSuccessOf<Execute>>,
+  SchemaOutputOf<Options["error"], ExecuteEffectErrorOf<Execute>>,
+  ModuleActionInferredServices<Execute, Options>
 >
 export function action<ParamsOutput extends Params, SearchOutput extends Search, Input, Result, Error, Services>(
   descriptor: ActionDescriptor<ParamsOutput, SearchOutput, Input, Result, Error, Services>,
@@ -970,8 +957,8 @@ export function action<
   ActionDescriptor<ParamsOutput, SearchOutput, Input, Result, Error, Services>
 >
 export function action(
-  first?: AnyDefinition | AnyActionDescriptor | ModuleActionOptions | ModuleActionDefinition,
-  second?: AnyActionDescriptor,
+  first?: any,
+  second?: any,
 ): any {
   if (isRouteDefinition(first) && second !== undefined) {
     return internal.attachAction(first, second)

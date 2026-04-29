@@ -3,6 +3,8 @@ import * as internal from "./internal/ast.js"
 export const text = (value) => internal.makeTextNode(value)
 /** Create a neutral dynamic text node. */
 export const dynamicText = (render) => internal.makeDynamicTextNode(render)
+/** Create a neutral computed subtree node. */
+export const computed = (render) => internal.makeComputedNode(render)
 /** Create a neutral element node. */
 export const element = (tagName, options) =>
   internal.makeElementNode(tagName, {
@@ -24,6 +26,8 @@ export function forEach(each, renderOrOptions, fallback) {
 }
 /** Create a neutral component usage node. */
 export const componentUse = (component) => internal.makeComponentUseNode(component)
+/** Create a neutral scoped boundary node for local composition handling. */
+export const boundary = (node, scope) => internal.makeBoundaryNode(node, scope)
 /** Create a neutral live node placeholder. */
 export const live = (atom, render) => internal.makeLiveNode(atom, render)
 /** Create hydration metadata for later renderer/runtime use. */

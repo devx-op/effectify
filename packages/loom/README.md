@@ -25,9 +25,9 @@ This is the primary documented/public contract for new Loom authoring.
 
 ```ts
 import { Atom } from "effect/unstable/reactivity"
-import { Component, mount, View, Web } from "@effectify/loom"
+import { Component, html, mount, Slot, View, Web } from "@effectify/loom"
 
-export const CounterRoute = Component.make("CounterRoute").pipe(
+export const CounterRoute = Component.make().pipe(
   Component.state({
     count: Atom.make(0),
     draft: () => Atom.make(""),
@@ -36,17 +36,124 @@ export const CounterRoute = Component.make("CounterRoute").pipe(
     increment: ({ count }) => count.update((value) => value + 1),
   }),
   Component.view(({ state, actions, children }) =>
-    View.vstack(
-      View.text("Counter").pipe(Web.as("h1")),
-      View.text(() => `Count: ${state.count()}`),
-      View.main(children),
-      View.button("Increase", actions.increment),
-    )
+    html`
+    <section>
+      <h1>Counter</h1>
+      <p>${() => state.count()}</p>
+      <main>${children}</main>
+      <button type="button" web:click=${actions.increment}>Increase</button>
+    </section>
+  `
   ),
 )
 
 mount({ CounterRoute })
 ```
+
+Use `Component.make()` as the default authoring path. Keep `Component.make("Name")` for observability, diagnostics, or any place where authored metadata matters.
+
+### Template-first authoring path
+
+For new DOM-heavy authoring, prefer `html` inside `Component.view(...)` and keep `View` focused on composition.
+
+```ts
+import * as Result from "effect/Result"
+import { Atom } from "effect/unstable/reactivity"
+import { Component, html, Slot, View } from "@effectify/loom"
+
+const Card = Component.make().pipe(
+  Component.view(() => html`<article class="card">Count card</article>`),
+)
+
+const Layout = Component.make("Layout").pipe(
+  Component.slots({
+    default: Slot.required(),
+    header: Slot.optional(),
+  }),
+  Component.view(({ slots }) =>
+    html`
+    <section>
+      ${slots.header}
+      <main>${slots.default}</main>
+    </section>
+  `
+  ),
+)
+
+export const TemplateCounter = Component.make().pipe(
+  Component.model({ count: Atom.make(0) }),
+  Component.actions({
+    increment: ({ count }) => count.update((value) => value + 1),
+  }),
+  Component.view(({ state, actions }) =>
+    html`
+    <section>
+      <button type="button" web:click=${actions.increment}>Increase</button>
+      <p
+        class="counter-value"
+        web:class=${() => [state.count() > 0 ? "counter-value--active" : undefined]}
+        web:style=${() => ({ opacity: state.count() > 0 ? 1 : 0.6 })}
+      >
+        ${state.count}
+      </p>
+      ${View.of(Card)}
+      ${
+      View.use(Layout, {
+        header: html`<h2>Status</h2>`,
+        default: View.match(Result.succeed("ready"), {
+          onSuccess: (value) => html`<p>${value}</p>`,
+          onFailure: (error) => html`<p>${String(error)}</p>`,
+        }),
+      })
+    }
+    </section>
+  `
+  ),
+)
+```
+
+- Prefer `html` for ordinary DOM structure.
+- Use `View.of(...)` for trivial no-props/no-slots composition.
+- Use `View.use(...)` for props, children, and slot objects. Child shorthand is only for components without required props; slot components receive a slot object.
+- Use `View.match(...)` for `Result`, `AsyncResult`, and `_tag`-based branching instead of inline switches in templates.
+- Keep list rendering explicit with `View.for(...)`; direct array interpolation stays unsupported.
+
+Migration checklist for explicit APIs:
+
+- Keep `Component.make("Name")` when observability or diagnostics need stable authored names.
+- Keep `View.use(...)` when the component needs props, children, or slots.
+- Prefer `View.of(...)` only for trivial leaf usage with no required props and no slot inputs.
+
+### Legacy View DOM helpers are compatibility-only
+
+`View.button(...)`, `View.input()`, and `View.link(...)` are still supported, but they are compatibility-only helpers now. New DOM authoring should prefer `html` plus `web:*` directives.
+
+Migration pairs:
+
+- `View.button(...)` → `html` + `<button type="button" web:click=${handler}>...</button>`
+- `View.input()` → `html` + `<input web:value=${value}>` or `<input web:inputValue=${value}>`
+- `View.link(...)` → `html` + `<a href="/docs">...</a>`
+
+There is no scheduled removal in the current package line. Any future removal requires a separate approved proposal and a breaking-release plan.
+
+### Phase-1 reactivity rule
+
+- `${state.count}` is reactive template sugar for the common Loom-owned accessor case.
+- `${() => state.count()}` is still reactive and remains the explicit escape hatch for computed expressions.
+- `${state.count()}` is an eager snapshot and does **not** update after the template is created.
+- Only Loom-branded accessors created by `Component.state(...)` / `Component.model(...)` get the bare-accessor sugar. Arbitrary zero-argument helpers are still supported when you pass them intentionally as `${() => ...}` / `${helper}`, but Loom does **not** auto-track plain expressions like `${state.count() + 1}` or `${format(state.title)}` unless you wrap them in an explicit function boundary.
+- Supported phase-1 directives are limited to `web:click`, `web:input`, `web:submit`, `web:value` / `web:inputValue`, `web:hydrate`, `web:class`, and `web:style`.
+
+### Template class/style directives
+
+- `web:class` accepts a `string`, or a flat array of `string | false | null | undefined` tokens.
+- `web:style` accepts a CSS declaration string or a Loom `Web.StyleRecord` object.
+- Thunks stay reactive; eager values stay snapshot-only, just like text interpolation.
+- Static `class` / `style` attributes remain the base layer and `web:class` / `web:style` append on top.
+
+### Follow-ups intentionally out of scope
+
+- Accessor-style reactive sugar beyond the explicit lambda form.
 
 - Teach `Component.state(...)` as the ONLY public state seam.
 - Treat `Component.model(...)` as compatibility-only.
@@ -58,10 +165,13 @@ mount({ CounterRoute })
 ```ts
 import * as Effect from "effect/Effect"
 import * as Schema from "effect/Schema"
+import { pipe } from "effect"
 import { Route, RouteModule, Router } from "@effectify/loom-router"
 import { CounterRoute } from "./counter-route.js"
 
 const TodoItem = Schema.Struct({ id: Schema.Number, title: Schema.String, completed: Schema.Boolean })
+
+export default CounterRoute
 
 export const loader = Route.loader({
   output: Schema.Array(TodoItem),
@@ -72,18 +182,30 @@ export const loader = Route.loader({
 
 export const counterPageRoute = RouteModule.compile({
   identifier: "counter",
-  module: { component: CounterRoute, loader },
+  module: { default: CounterRoute, loader },
   path: "/",
 })
 
-export const appRouter = Router.make({
-  routes: [counterPageRoute],
-})
+export const appRouter = pipe(
+  Router.make("app"),
+  Router.route(counterPageRoute),
+)
 ```
 
-- Teach route modules through `component` / optional `loader` / optional `action` exports.
-- Prefer `Route.loader({...})` and `Route.action({...})` inline schema-first helpers.
+- Teach route modules through `export default` plus optional named `loader` / `action` exports.
+- `component` remains fully supported for legacy modules and still wins if a module exports both `component` and `default`.
+- Teach router assembly through `Router.make("app")` plus incremental operators like `Router.route(...)`, `Router.layout(...)`, and `Router.notFound(...)`.
+- Prefer `Route.loader({...})` and `Route.action({...})` inline, passing service requirements via `services: Route.services<...>()` so `params`, `search`, `input`, and `services` infer automatically.
+- Keep `Route.ModuleLoaderContext<typeof options, Services>` / `Route.ModuleActionContext<typeof options, Services>` as explicit compatibility escapes when you prefer to annotate handler params.
 - Keep descriptor-style route assembly and manual registry propagation out of the public examples.
+
+Migration checklist:
+
+- New modules: prefer `export default` for route content.
+- Existing modules: keep `export const component = ...` if changing exports is noisy.
+- Mixed modules: if both `component` and `default` exist, Loom will use `component` for backward-compatible resolution.
+
+Compatibility note: `Router.from({ routes, layout, fallback })` and `Router.make({ ... })` remain available for existing code, but builder-first composition is the primary public story.
 
 ## Compatibility and advanced seams
 
@@ -91,6 +213,62 @@ export const appRouter = Router.make({
 - `Diagnostics` — advanced runtime visibility helpers
 - `Hydration` — advanced hydration helpers layered after the primary interactive path
 - `Resumability` — advanced resumability helpers layered after the primary interactive path
+
+## Zero-extra-file Loom bootstrap
+
+For the default SSR/browser path, start with the adapters and DO NOT create app-local `document.ts` or bootstrap-constants files up front.
+
+```ts
+// entry-server.ts
+import { LoomNitro } from "@effectify/loom-nitro"
+
+export const server = LoomNitro.renderer({
+  render: () => ({
+    title: "Counter",
+    body: CounterRoute,
+  }),
+})
+
+// vite.config.mts
+import { LoomVite } from "@effectify/loom-vite"
+
+export default defineConfig({
+  plugins: [LoomVite.loom()],
+})
+```
+
+Default ownership now lives in the framework adapters:
+
+- Nitro renders the HTML shell, root container, payload marker, and browser entry script.
+- Vite injects the default root container / payload placeholder / browser module script in dev HTML.
+- Browser bootstrap reads `__loom_payload__`, expects `loom-root`, and uses the default build id unless you override them.
+
+### Advanced bootstrap overrides
+
+If you need a custom shell or marker ids, keep the overrides explicit instead of reintroducing global app-local ceremony:
+
+```ts
+LoomNitro.renderer({
+  bootstrap: {
+    rootId: "custom-root",
+    payloadElementId: "custom-payload",
+    clientEntry: "/src/custom-entry.ts",
+  },
+  document: {
+    render: ({ bodyHtml, payloadHtml, title }) =>
+      `<!DOCTYPE html><html><head><title>${title}</title></head><body><main>${bodyHtml}</main>${payloadHtml}</body></html>`,
+  },
+  render: () => ({ title: "Custom", body: CounterRoute }),
+})
+
+LoomVite.loom({
+  rootId: "custom-root",
+  payloadElementId: "custom-payload",
+  clientEntry: "/src/custom-entry.ts",
+})
+```
+
+Teach the simple path first. Reach for the overrides only when the default document shell or marker ids are genuinely insufficient.
 
 ## Internal-only packages
 

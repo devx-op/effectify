@@ -38,15 +38,35 @@ type CompiledRouteModule<
   CompiledAction<Action>
 >
 
-export type Exports<
+export const ROUTE_MODULE_EXPORTS_GUIDANCE = InternalRouteModules.ROUTE_MODULE_EXPORTS_GUIDANCE
+
+type ExplicitComponentExports<
   Content = unknown,
   Loader extends Route.AnyModuleLoader | undefined = undefined,
   Action extends Route.AnyModuleAction | undefined = undefined,
 > = {
   readonly component: Content
+  readonly default?: unknown
   readonly loader?: Loader
   readonly action?: Action
 }
+
+type DefaultComponentExports<
+  Content = unknown,
+  Loader extends Route.AnyModuleLoader | undefined = undefined,
+  Action extends Route.AnyModuleAction | undefined = undefined,
+> = {
+  readonly default: Content
+  readonly component?: undefined
+  readonly loader?: Loader
+  readonly action?: Action
+}
+
+export type Exports<
+  Content = unknown,
+  Loader extends Route.AnyModuleLoader | undefined = undefined,
+  Action extends Route.AnyModuleAction | undefined = undefined,
+> = ExplicitComponentExports<Content, Loader, Action> | DefaultComponentExports<Content, Loader, Action>
 
 export const extract = InternalRouteModules.extractRouteModule
 
@@ -58,7 +78,17 @@ export function compile<
 >(options: {
   readonly path: Route.AbsolutePath
   readonly identifier?: Identifier
-  readonly module: Exports<Content, Loader, Action>
+  readonly module: ExplicitComponentExports<Content, Loader, Action>
+}): CompiledRouteModule<Content, Loader, Action, Identifier>
+export function compile<
+  Content,
+  Loader extends Route.AnyModuleLoader | undefined = undefined,
+  Action extends Route.AnyModuleAction | undefined = undefined,
+  Identifier extends string | undefined = undefined,
+>(options: {
+  readonly path: Route.AbsolutePath
+  readonly identifier?: Identifier
+  readonly module: DefaultComponentExports<Content, Loader, Action>
 }): CompiledRouteModule<Content, Loader, Action, Identifier>
 export function compile<Content, Identifier extends string | undefined = undefined>(options: {
   readonly path: Route.AbsolutePath

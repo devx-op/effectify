@@ -81,20 +81,17 @@ export const makeMissingRootDiagnostics = (input: {
 ]
 
 export const makeEnabledStateDiagnostics = (state: LoomViteState): ReadonlyArray<Loom.Diagnostics.Report> => {
-  if (state.options.root === undefined) {
-    return []
-  }
-
   return [
     makeAdapterReport({
       severity: "info",
       code: "loom.adapter.vite.enabled",
       message: "Loom Vite is enabled for the configured browser entry.",
-      subject: state.options.root,
+      subject: state.options.rootId,
       details: {
-        root: state.options.root,
+        buildId: state.options.buildId,
         clientEntry: state.options.clientEntry,
         payloadElementId: state.options.payloadElementId,
+        rootId: state.options.rootId,
       },
     }),
   ]

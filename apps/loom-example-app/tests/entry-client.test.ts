@@ -1,9 +1,14 @@
 // @vitest-environment jsdom
 
-import { beforeEach, describe, expect, it } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import { bootstrapClient, startClientApp } from "../src/entry-client.js"
 import { createServerRenderer } from "../src/entry-server.js"
-import { resetTodoExampleState } from "../src/router-runtime.js"
+import { resetExampleState } from "../src/router.js"
+
+const importFresh = async <Module>(relativePath: string): Promise<Module> => {
+  const moduleUrl = new URL(relativePath, import.meta.url)
+  return import(`${moduleUrl.href}?t=${Date.now()}`) as Promise<Module>
+}
 
 const yieldToEventLoop = async (): Promise<void> => {
   await new Promise((resolve) => setTimeout(resolve, 0))
@@ -27,7 +32,7 @@ const expectInputElement = (value: Element | null, name: string): HTMLInputEleme
 
 describe("loom example app client entry", () => {
   beforeEach(() => {
-    resetTodoExampleState()
+    resetExampleState()
   })
 
   it("reports a missing payload while leaving the SSR shell untouched", async () => {
@@ -48,13 +53,33 @@ describe("loom example app client entry", () => {
       headers: {},
     })
 
-    document.documentElement.innerHTML = result.html
+    document.open()
+    document.write(result.html)
+    document.close()
     const before = document.body.innerHTML
 
     const bootstrap = await startClientApp(document)
 
     expect(bootstrap.status).toBe("missing-payload")
     expect(document.body.innerHTML).toBe(before)
+  })
+
+  it("uses the default server payload marker without requiring explicit bootstrap overrides", async () => {
+    const renderer = createServerRenderer()
+    const result = await renderer.render({
+      method: "GET",
+      url: "/",
+      headers: {},
+    })
+
+    document.documentElement.innerHTML = result.html
+
+    const bootstrap = await bootstrapClient(document)
+
+    expect(result.html).toContain('id="__loom_payload__"')
+    expect(bootstrap.status).toBe("missing-payload")
+    expect(bootstrap.diagnostics[0]?.issues[0]?.subject).toBe("__loom_payload__")
+    expect(document.body.textContent).toContain("Loom vNext counter")
   })
 
   it("accepts explicit bootstrap options for missing payload diagnostics", async () => {
@@ -94,16 +119,13 @@ describe("loom example app client entry", () => {
     expect(result.status).toBe("missing-payload")
     expect(document.querySelectorAll('[data-app-shell="loom-example-app"]')).toHaveLength(1)
     expect(normalizedCount()).toBe("Count: 2")
-    expect(document.body.textContent).toContain("Loom-native attr/class/style bindings")
+    expect(document.body.textContent).toContain("Templates author this route now")
 
     const cueBefore = expectElement(reactiveCue(), "reactive cue")
     const dynamicValueBefore = expectElement(dynamicValue(), "dynamic counter value")
 
     expect(cueBefore.dataset.counterTone).toBe("baseline")
-    expect(cueBefore.className).toContain("counter-reactive-cue--baseline")
     expect(cueBefore.getAttribute("title")).toBe("Reactive cue tone: baseline (2)")
-    expect(cueBefore.style.backgroundColor).toBe("rgba(59, 130, 246, 0.12)")
-    expect(cueBefore.style.transform).toBe("translateY(0px)")
 
     click("increment")
     await yieldToEventLoop()
@@ -115,14 +137,14 @@ describe("loom example app client entry", () => {
     expect(cueAfterIncrement).toBe(cueBefore)
     expect(dynamicValueAfterIncrement).toBe(dynamicValueBefore)
     expect(cueAfterIncrement.getAttribute("data-counter-tone")).toBe("rising")
-    expect(cueAfterIncrement.className).toContain("counter-reactive-cue--rising")
     expect(cueAfterIncrement.getAttribute("title")).toBe("Reactive cue tone: rising (3)")
-    expect(cueAfterIncrement.style.transform).toBe("translateY(-1px)")
 
     click("increment")
     await yieldToEventLoop()
     expect(normalizedCount()).toBe("Count: 4")
-    expect(expectElement(reactiveCue(), "reactive cue after second increment").style.transform).toBe("translateY(-2px)")
+    expect(expectElement(reactiveCue(), "reactive cue after second increment").getAttribute("title")).toBe(
+      "Reactive cue tone: rising (4)",
+    )
 
     click("decrement")
     await yieldToEventLoop()
@@ -132,7 +154,9 @@ describe("loom example app client entry", () => {
     await yieldToEventLoop()
     expect(normalizedCount()).toBe("Count: 2")
     expect(reactiveCue()?.getAttribute("data-counter-tone")).toBe("baseline")
-    expect(expectElement(reactiveCue(), "reactive cue after decrement").style.transform).toBe("translateY(0px)")
+    expect(expectElement(reactiveCue(), "reactive cue after decrement").getAttribute("title")).toBe(
+      "Reactive cue tone: baseline (2)",
+    )
 
     click("reset")
     await yieldToEventLoop()
@@ -260,7 +284,7 @@ describe("loom example app client entry", () => {
     expect(document.title).toBe("Loom Example App · Todo app")
   })
 
-  it("shows invalid action feedback when the todo action input fails validation", async () => {
+  it("submits the composer from the Enter key and preserves the same runtime behavior as the Add button", async () => {
     document.documentElement.innerHTML = `
       <head><title>Loom Example App</title></head>
       <body>
@@ -272,17 +296,73 @@ describe("loom example app client entry", () => {
 
     await startClientApp(document)
 
-    const addButton = document.querySelector('[data-todo-add-action="true"]')
+    const input = expectInputElement(document.querySelector('[data-todo-input="true"]'), "todo input")
+    const form = document.querySelector("form")
 
-    if (!(addButton instanceof HTMLButtonElement)) {
-      throw new Error("expected add todo button")
+    if (!(form instanceof HTMLFormElement)) {
+      throw new Error("expected todo composer form")
     }
 
-    addButton.click()
+    input.focus()
+    input.value = "Ship Enter-key parity"
+    input.dispatchEvent(new Event("input", { bubbles: true }))
+    form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }))
+    await yieldToEventLoop()
+
+    expect(document.querySelector('[data-todo-open-count="true"]')?.textContent?.trim()).toBe("3")
+    expect(document.querySelector('[data-todo-session-count="true"]')?.textContent?.trim()).toBe(
+      "Added from this mounted composer: 1",
+    )
+    expect(expectInputElement(document.querySelector('[data-todo-input="true"]'), "todo input after enter").value).toBe(
+      "",
+    )
+    expect(document.querySelector('[data-todo-item-id="4"]')?.textContent).toContain("Ship Enter-key parity")
+    expect(document.querySelector('[data-todo-action-status="true"]')?.textContent?.trim()).toBe("success")
+  })
+
+  it("shows invalid action feedback when the template-authored submit path fails validation", async () => {
+    document.documentElement.innerHTML = `
+      <head><title>Loom Example App</title></head>
+      <body>
+        <div id="loom-root"></div>
+        <script type="application/json" id="__loom_payload__"></script>
+      </body>
+    `
+    window.history.replaceState({}, "", "/todos")
+
+    await startClientApp(document)
+
+    const form = document.querySelector("form")
+
+    if (!(form instanceof HTMLFormElement)) {
+      throw new Error("expected todo composer form")
+    }
+
+    form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }))
     await yieldToEventLoop()
 
     expect(document.querySelector('[data-todo-feedback="true"]')?.textContent).toContain("length of at least 1")
     expect(document.querySelector('[data-todo-open-count="true"]')?.textContent?.trim()).toBe("2")
     expect(document.querySelector('[data-todo-action-status="true"]')?.textContent?.trim()).toBe("invalid-input")
+  })
+
+  it("self-starts from the browser entry module without requiring entry-browser.ts", async () => {
+    vi.resetModules()
+    document.documentElement.innerHTML = `
+      <head><title>Loom Example App</title></head>
+      <body>
+        <div id="loom-root"></div>
+        <script type="application/json" id="__loom_payload__"></script>
+      </body>
+    `
+    window.history.replaceState({}, "", "/")
+
+    await importFresh("../src/entry-client.ts")
+    await yieldToEventLoop()
+
+    expect(document.querySelector('[data-app-shell="loom-example-app"]')).not.toBeNull()
+    expect(document.querySelector('[data-counter-value="true"]')?.textContent?.replace(/\s+/g, " ").trim()).toBe(
+      "Count: 2",
+    )
   })
 })

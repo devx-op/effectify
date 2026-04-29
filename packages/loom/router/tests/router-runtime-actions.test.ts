@@ -10,6 +10,24 @@ class SaveFailure extends Data.TaggedError("SaveFailure")<{
   readonly message: string
 }> {}
 
+const expectResolveSuccess = <Self extends Router.ResolveResult>(result: Self): Self & Router.ResolveSuccess => {
+  if (!Router.isResolveSuccess(result)) {
+    throw new Error("expected a resolved route")
+  }
+
+  return result as Self & Router.ResolveSuccess
+}
+
+const expectInvalidInput = <Self extends Route.AnyDefinition>(
+  state: Runtime.ActionState<Self>,
+): Extract<Runtime.ActionState<Self>, { _tag: "invalid-input" }> => {
+  if (state._tag !== "invalid-input") {
+    throw new Error("expected invalid-input action state")
+  }
+
+  return state as Extract<Runtime.ActionState<Self>, { _tag: "invalid-input" }>
+}
+
 describe("@effectify/loom-router loaders/actions runtime", () => {
   it("stores loader/action descriptors on the route DSL without executing them during resolve", () => {
     const calls = {
@@ -74,11 +92,7 @@ describe("@effectify/loom-router loaders/actions runtime", () => {
       },
     )
     const router = Router.make({ routes: [route] })
-    const resolved = Router.resolve(router, "/users/42")
-
-    if (!Router.isResolveSuccess(resolved)) {
-      throw new Error("expected a resolved route")
-    }
+    const resolved = expectResolveSuccess(Router.resolve(router, "/users/42"))
 
     expect(Runtime.loading(route)).toEqual({
       _tag: "loading",
@@ -144,11 +158,7 @@ describe("@effectify/loom-router loaders/actions runtime", () => {
       },
     )
     const router = Router.make({ routes: [route] })
-    const resolved = Router.resolve(router, "/users/42")
-
-    if (!Router.isResolveSuccess(resolved)) {
-      throw new Error("expected a resolved route")
-    }
+    const resolved = expectResolveSuccess(Router.resolve(router, "/users/42"))
 
     const initialFailure = await Runtime.load({
       resolved,
@@ -208,11 +218,7 @@ describe("@effectify/loom-router loaders/actions runtime", () => {
       },
     )
     const router = Router.make({ routes: [route] })
-    const resolved = Router.resolve(router, "/users/42")
-
-    if (!Router.isResolveSuccess(resolved)) {
-      throw new Error("expected a resolved route")
-    }
+    const resolved = expectResolveSuccess(Router.resolve(router, "/users/42"))
 
     expect(Runtime.submitting(route, { title: "draft" })).toEqual({
       _tag: "submitting",
@@ -284,7 +290,7 @@ describe("@effectify/loom-router loaders/actions runtime", () => {
       services: {},
     })
 
-    expect(invalid).toEqual({
+    expect(expectInvalidInput(invalid)).toEqual({
       _tag: "invalid-input",
       issues: [{ _tag: "LoomRouterActionInputFailure", input: { title: "   " }, message: "title is required" }],
       route,
@@ -293,22 +299,56 @@ describe("@effectify/loom-router loaders/actions runtime", () => {
     expect(actionCalls).toBe(0)
   })
 
-  it("executes compiled route-module loaders and actions through the runtime boundary", async () => {
+  it("supports direct action input and preserves the revalidated success flag", async () => {
+    const route = Route.action(
+      Route.make({
+        identifier: "users.detail",
+        path: "/users/:userId",
+        content: "user-screen",
+      }),
+      {
+        handle: async ({ input }: { readonly input: { readonly title: string } }) => input.title,
+        mapError: (cause: unknown) => ({ message: String(cause) }),
+      },
+    )
+    const resolved = expectResolveSuccess(Router.resolve(Router.make({ routes: [route] }), "/users/42"))
+
+    const submitted = await Runtime.submit({
+      input: { title: "save" },
+      revalidated: true,
+      resolved,
+      services: {},
+    })
+
+    expect(submitted).toEqual({
+      _tag: "success",
+      result: "save",
+      revalidated: true,
+      route,
+    })
+  })
+
+  it("executes compiled default-export route-module loaders and actions through the runtime boundary", async () => {
     const route = RouteModule.compile({
       identifier: "users.detail",
       module: {
-        component: "user-screen",
+        default: "user-screen",
         loader: Route.loader({
           params: Schema.Struct({ userId: Schema.String }),
+          search: Schema.Struct({ tab: Schema.String }),
           load: ({
             params,
+            search,
             services,
           }: {
             readonly params: { readonly userId: string }
+            readonly search: { readonly tab: string }
             readonly services: { readonly prefix: string }
-          }) => Effect.succeed(`${services.prefix}:${params.userId}`),
+          }) => Effect.succeed(`${services.prefix}:${params.userId}:${search.tab}`),
         }),
         action: Route.action({
+          params: Schema.Struct({ userId: Schema.String }),
+          search: Schema.Struct({ tab: Schema.String }),
           input: Submission.make((submission) =>
             typeof submission.title === "string"
               ? Submission.succeed({ title: submission.title })
@@ -316,17 +356,21 @@ describe("@effectify/loom-router loaders/actions runtime", () => {
           ),
           handle: ({
             input,
+            params,
+            search,
             services,
           }: {
             readonly input: { readonly title: string }
+            readonly params: { readonly userId: string }
+            readonly search: { readonly tab: string }
             readonly services: { readonly suffix: string }
-          }) => Effect.succeed(`${input.title}:${services.suffix}`),
+          }) => Effect.succeed(`${input.title}:${params.userId}:${search.tab}:${services.suffix}`),
         }),
       },
       path: "/users/:userId",
     })
     const router = Router.make({ routes: [route] })
-    const resolved = Router.resolve(router, "/users/42")
+    const resolved = Router.resolve(router, "/users/42?tab=profile")
 
     if (!Router.isResolveSuccess(resolved)) {
       throw new Error("expected a resolved route")
@@ -344,12 +388,12 @@ describe("@effectify/loom-router loaders/actions runtime", () => {
 
     expect(loaded).toEqual({
       _tag: "success",
-      data: "user:42",
+      data: "user:42:profile",
       route,
     })
     expect(submitted).toEqual({
       _tag: "success",
-      result: "save:done",
+      result: "save:42:profile:done",
       revalidated: false,
       route,
     })
