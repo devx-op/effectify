@@ -43,7 +43,8 @@ export type CreatedRenderContractResult =
   | EmptyCreatedRenderContractResult
 
 /** Create a stable executable ref (<module>#<export>) for resumable handlers/live regions. */
-export const makeExecutableRef = LoomRuntime.Resumability.makeExecutableRef
+export const makeExecutableRef: (moduleId: string, exportName: string) => ExecutableRef =
+  LoomRuntime.Resumability.makeExecutableRef
 
 /** Attach a stable resumability ref to an event handler used by `Html.on(...)`. */
 export const handler = LoomRuntime.Resumability.handler
@@ -67,10 +68,11 @@ export const resolveHandler = LoomRuntime.Resumability.resolveHandler
 export const resolveLiveRegion = LoomRuntime.Resumability.resolveLiveRegion
 
 /** Encode a validated resumability contract into a JSON payload. */
-export const encodeContract = LoomRuntime.Resumability.encodeContract
+export const encodeContract: (contract: LoomResumabilityContract) => string = LoomRuntime.Resumability.encodeContract
 
 /** Decode and validate a resumability payload JSON string. */
-export const decodeContract = LoomRuntime.Resumability.decodeContract
+export const decodeContract: (json: string, options?: ContractValidationOptions) => Promise<ContractValidationResult> =
+  LoomRuntime.Resumability.decodeContract
 
 /** Materialize a resumability contract from SSR render output plus build/root identity. */
 export const createRenderContract = async (
