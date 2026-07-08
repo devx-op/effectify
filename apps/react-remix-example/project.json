@@ -49,7 +49,7 @@
       "executor": "nx:run-commands",
       "dependsOn": ["^build"],
       "options": {
-        "command": "pnpm dlx prisma generate",
+        "command": "pnpm exec prisma generate",
         "cwd": "apps/react-remix-example"
       }
     }

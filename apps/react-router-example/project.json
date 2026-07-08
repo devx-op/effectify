@@ -32,7 +32,7 @@
     "prisma:generate": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "pnpm dlx prisma generate",
+        "command": "pnpm exec prisma generate",
         "cwd": "apps/react-router-example"
       }
     },
