@@ -8,10 +8,9 @@ const workspaceRoot = join(
   "../../../..",
 )
 
-const EFFECT_BETA57_VERSION = "4.0.0-beta.57"
+const EFFECT_BETA_VERSION = "4.0.0-beta.94"
 const catalogEffectFamilyPackages = [
   "effect",
-  "@effect/platform",
   "@effect/platform-node",
   "@effect/vitest",
   "@effect/atom-solid",
@@ -24,17 +23,17 @@ const readWorkspaceFile = async (relativePath: string) => {
 const yamlKeys = (key: string) => [key, `"${key}"`, `'${key}'`] as const
 
 const hasCatalogPin = (source: string, packageName: string) =>
-  yamlKeys(packageName).some((key) => source.includes(`${key}: ${EFFECT_BETA57_VERSION}`))
+  yamlKeys(packageName).some((key) => source.includes(`${key}: ${EFFECT_BETA_VERSION}`))
 
 const hasLockfilePackageBaseline = (source: string, packageName: string) =>
   yamlKeys(packageName).some((key) =>
     source.includes(
-      `${key}:\n      specifier: ${EFFECT_BETA57_VERSION}\n      version: ${EFFECT_BETA57_VERSION}`,
+      `${key}:\n      specifier: ${EFFECT_BETA_VERSION}\n      version: ${EFFECT_BETA_VERSION}`,
     )
   )
 
 const hasLockfileOverride = (source: string, packageName: string) =>
-  yamlKeys(packageName).some((key) => source.includes(`${key}: ${EFFECT_BETA57_VERSION}`))
+  yamlKeys(packageName).some((key) => source.includes(`${key}: ${EFFECT_BETA_VERSION}`))
 
 const readPackageJson = async () => {
   try {
@@ -48,8 +47,8 @@ const readPackageJson = async () => {
   }
 }
 
-describe("Effect beta57 dependency baseline", () => {
-  it("pins the full Effect family to beta57 in the workspace catalog", async () => {
+describe("Effect beta dependency baseline", () => {
+  it("pins the full Effect family to the current beta in the workspace catalog", async () => {
     const workspaceYaml = await readWorkspaceFile("pnpm-workspace.yaml")
 
     for (const packageName of catalogEffectFamilyPackages) {
@@ -57,22 +56,28 @@ describe("Effect beta57 dependency baseline", () => {
     }
   })
 
-  it("keeps the root pnpm override aligned with the beta57 platform-node-shared package", async () => {
+  it("keeps the root pnpm override aligned with the beta platform-node-shared package", async () => {
     const packageJson = await readPackageJson()
 
     expect(packageJson.pnpm.overrides["@effect/platform-node-shared"]).toBe(
-      EFFECT_BETA57_VERSION,
+      EFFECT_BETA_VERSION,
     )
   })
 
-  it("refreshes the lockfile to the same beta57 Effect family baseline", async () => {
+  it("refreshes the lockfile to the same beta Effect family baseline", async () => {
     const lockfile = await readWorkspaceFile("pnpm-lock.yaml")
 
-    expect(lockfile).not.toContain("4.0.0-beta.33")
-    expect(hasLockfilePackageBaseline(lockfile, "@effect/atom-solid")).toBe(true)
-    expect(hasLockfilePackageBaseline(lockfile, "@effect/platform-node")).toBe(true)
+    expect(lockfile).not.toContain("4.0.0-beta.57")
+    expect(hasLockfilePackageBaseline(lockfile, "@effect/atom-solid")).toBe(
+      true,
+    )
+    expect(hasLockfilePackageBaseline(lockfile, "@effect/platform-node")).toBe(
+      true,
+    )
     expect(hasLockfilePackageBaseline(lockfile, "@effect/vitest")).toBe(true)
     expect(hasLockfilePackageBaseline(lockfile, "effect")).toBe(true)
-    expect(hasLockfileOverride(lockfile, "@effect/platform-node-shared")).toBe(true)
+    expect(hasLockfileOverride(lockfile, "@effect/platform-node-shared")).toBe(
+      true,
+    )
   })
 })

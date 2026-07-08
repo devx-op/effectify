@@ -297,7 +297,7 @@ export class Prisma extends Context.Service<Prisma>()("Prisma", {
         options?: TransactionOptions
       ) =>
         Effect.flatMap(
-          PrismaClient.asEffect(),
+          PrismaClient,
           ({ client, tx }): Effect.Effect<A, E | PrismaError, R> => {
             const isRootClient = "$transaction" in tx
             if (!isRootClient) {
@@ -323,7 +323,7 @@ export class Prisma extends Context.Service<Prisma>()("Prisma", {
         options?: TransactionOptions
       ) =>
         Effect.flatMap(
-          PrismaClient.asEffect(),
+          PrismaClient,
           ({ client }): Effect.Effect<A, E | PrismaError, R> => {
             return Effect.acquireUseRelease(
               $begin(client, options),
