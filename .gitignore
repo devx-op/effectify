@@ -75,3 +75,8 @@ generated/
 .claude/worktrees
 .claude/settings.local.json
 .nx/polygraph
+# Local Pi runtime state
+.atl/
+.pi/
+.alt/
+.codegraph/
