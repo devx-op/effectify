@@ -6,6 +6,10 @@ export const makeDynamicTextNode = (render) => ({
   _tag: "DynamicText",
   render,
 })
+export const makeComputedNode = (render) => ({
+  _tag: "Computed",
+  render,
+})
 export const makeElementNode = (tagName, options) => ({
   _tag: "Element",
   tagName,
@@ -35,6 +39,11 @@ export const makeForNode = (each, key, render, fallback) => ({
 export const makeComponentUseNode = (component) => ({
   _tag: "ComponentUse",
   component,
+})
+export const makeBoundaryNode = (node, scope) => ({
+  _tag: "Boundary",
+  node,
+  scope,
 })
 export const makeLiveNode = (atom, render) => ({
   _tag: "Live",

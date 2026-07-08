@@ -1,13 +1,25 @@
 import type * as Loom from "@effectify/loom"
-import { Component, View, Web } from "@effectify/loom"
+import { Component, html, View } from "@effectify/loom"
 import { Fallback, Layout, RouteModule, Router, type Router as RouterTypes } from "@effectify/loom-router"
+import { pipe } from "effect"
 import { counterRouteId, counterRoutePath, counterRouteTitle } from "./routes/counter-route.js"
 import * as counterRouteModule from "./routes/counter-route.js"
-import * as todoRouteModule from "./routes/todo-route.js"
+import {
+  prepareTodoRoute,
+  resetTodoRouteExampleState,
+  todoPageRoute,
+  todoRouteId,
+  todoRoutePath,
+  todoRouteTitle,
+} from "./routes/todo-route.js"
 
-export const todoRouteId = "todo"
-export const todoRoutePath = "/todos"
-export const todoRouteTitle = "Todo app"
+export { todoPageRoute, todoRouteId, todoRoutePath, todoRouteTitle } from "./routes/todo-route.js"
+
+const ShellBody = Component.make().pipe(
+  Component.view(({ props }: { readonly props: Readonly<{ content: Loom.View.ViewChild | undefined }> | undefined }) =>
+    View.fragment(props?.content ?? "")
+  ),
+)
 
 export const counterPageRoute = RouteModule.compile({
   identifier: counterRouteId,
@@ -15,41 +27,28 @@ export const counterPageRoute = RouteModule.compile({
   path: counterRoutePath,
 })
 
-export const todoPageRoute = RouteModule.compile({
-  identifier: todoRouteId,
-  module: {
-    ...todoRouteModule,
-    component: () => Component.use(todoRouteModule.component),
-  },
-  path: todoRoutePath,
-})
-
-const AppShell = Component.make("AppShell").pipe(
+const AppShell = Component.make().pipe(
   Component.view(({ children }) =>
-    View.main(children).pipe(Web.className("container"), Web.data("app-shell", "loom-example-app"))
+    html`<main class="container" data-app-shell="loom-example-app">${children ?? ""}</main>`
   ),
 )
 
 const notFoundView = (context: RouterTypes.Context): Loom.View.ViewChild =>
-  View.vstack(
-    View.vstack(View.text("Route not found")).pipe(
-      Web.className("loom-example-not-found-title"),
-      Web.attr("role", "heading"),
-      Web.aria("level", 1),
-    ),
-    View.vstack(View.text(`The Loom example serves ${counterRoutePath} and ${todoRoutePath}.`)).pipe(
-      Web.className("loom-example-copy"),
-    ),
-    View.vstack(View.text(`Requested path: ${context.pathname}`)).pipe(Web.className("loom-example-copy")),
-  ).pipe(Web.className("loom-example-card loom-example-not-found"), Web.data("route-view", "not-found"))
+  html`
+    <div class="loom-example-card loom-example-not-found" data-route-view="not-found">
+      <h1 class="loom-example-not-found-title" role="heading" aria-level="1">Route not found</h1>
+      <span class="loom-example-copy">The Loom example serves ${counterRoutePath} and ${todoRoutePath}.</span>
+      <span class="loom-example-copy">Requested path: ${context.pathname}</span>
+    </div>
+  `
 
-export const appRouter = Router.make({
-  layout: Layout.make(({ child }) => Component.use(AppShell, child)),
-  routes: [counterPageRoute, todoPageRoute] as const,
-  fallback: {
-    notFound: Fallback.make(notFoundView),
-  },
-})
+export const appRouter = pipe(
+  Router.make("app"),
+  Router.layout(Layout.make(({ child }) => View.use(AppShell, View.use(ShellBody, { content: child })))),
+  Router.notFound(Fallback.make(notFoundView)),
+  Router.route(counterPageRoute),
+  Router.route(todoPageRoute),
+)
 
 const matchedRouteTitle = (result: Router.ResolveSuccess): string => {
   switch (result.route.identifier) {
@@ -63,6 +62,14 @@ const matchedRouteTitle = (result: Router.ResolveSuccess): string => {
 }
 
 export const resolveAppRequest = (input: string | URL): Router.ResolveResult => Router.resolve(appRouter, input)
+
+export const prepareAppRequest = async (input: URL): Promise<void> => {
+  await prepareTodoRoute(input)
+}
+
+export const resetExampleState = (): void => {
+  resetTodoRouteExampleState()
+}
 
 export const titleForResult = (result: Router.ResolveResult): string =>
   Router.isResolveSuccess(result) ? matchedRouteTitle(result) : "Not Found"
@@ -80,4 +87,4 @@ export const statusForResult = (result: Router.ResolveResult): number => {
 }
 
 export const bodyForResult = (result: Router.ResolveResult): Loom.View.ViewChild =>
-  result.output ?? View.vstack(View.text("Loom example route output is unavailable."))
+  result.output ?? html`<div class="loom-example-card"><span>Loom example route output is unavailable.</span></div>`

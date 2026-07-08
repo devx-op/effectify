@@ -1,7 +1,9 @@
 import * as Effect from "effect/Effect"
-import { readFileSync } from "node:fs"
+import { Html } from "@effectify/loom"
+import { Router } from "@effectify/loom-router"
 import { describe, expect, it } from "vitest"
-import { createTodoRouteRuntime } from "../src/router-runtime.js"
+import { createTodoRouteRuntime } from "../src/routes/todo-route.js"
+import { bodyForResult, resetExampleState, resolveAppRequest, statusForResult, titleForResult } from "../src/router.js"
 import { type TodoItem, TodoNotFoundError, type TodoServiceApi } from "../src/todo-service.js"
 
 const makeTestTodoService = (seed: ReadonlyArray<TodoItem>) => {
@@ -59,49 +61,21 @@ const makeTestTodoService = (seed: ReadonlyArray<TodoItem>) => {
 }
 
 describe("loom example app todo router runtime", () => {
-  it("authors the /todos route as a route module and compiles it at the router boundary", () => {
-    const counterRouteSource = readFileSync(new URL("../src/routes/counter-route.ts", import.meta.url), "utf8")
-    const todoRouteSource = readFileSync(new URL("../src/routes/todo-route.ts", import.meta.url), "utf8")
-    const todoRouteComponentSource = readFileSync(
-      new URL("../src/routes/todo-route/todo-route-component.ts", import.meta.url),
-      "utf8",
-    )
-    const routerSource = readFileSync(new URL("../src/router.ts", import.meta.url), "utf8")
+  it("resolves / and /todos through the public router contract instead of source-shape assertions", () => {
+    resetExampleState()
+    const counterResult = resolveAppRequest("/")
+    const todoResult = resolveAppRequest("/todos")
 
-    expect(counterRouteSource).toContain('export const CounterRoute = Component.make("CounterRoute").pipe(')
-    expect(counterRouteSource).toContain("export const component = CounterRoute")
-    expect(counterRouteSource).not.toContain("Route.make({")
-    expect(counterRouteSource).not.toContain("counterPageRoute")
-    expect(todoRouteSource).toContain("export const component = Object.assign(TodoRoute, { registry: todoRegistry })")
-    expect(todoRouteSource).toContain("export const loader = pipe(")
-    expect(todoRouteSource).toContain("Route.loader({")
-    expect(todoRouteSource).toContain("Effect.fn(function*({ services }: { readonly services: TodoRouteServices }) {")
-    expect(todoRouteSource).toContain("export const action = pipe(")
-    expect(todoRouteSource).toContain("Route.action({")
-    expect(todoRouteSource).toContain(
-      "}: { readonly input: typeof TodoCommandSchema.Type; readonly services: TodoRouteServices }) {",
-    )
-    expect(todoRouteSource).toContain("input: TodoCommandSchema,")
-    expect(todoRouteSource).toContain("output: TodoCommandResultSchema,")
-    expect(todoRouteSource).toContain("error: TodoRouteErrorSchema,")
-    expect(todoRouteSource).not.toContain("const todoLoaderOptions = {")
-    expect(todoRouteSource).not.toContain("const todoActionOptions = {")
-    expect(todoRouteSource).not.toContain("Route.ModuleLoader<")
-    expect(todoRouteSource).not.toContain("Route.ModuleAction<")
-    expect(todoRouteSource).not.toContain("todoActionDecoder")
-    expect(todoRouteSource).not.toContain("todoPageRoute")
-    expect(todoRouteSource).not.toContain("Route.make({")
-    expect(todoRouteComponentSource).toContain('Component.make("TodoRoute").pipe(')
-    expect(todoRouteComponentSource).toContain("Component.use(TodoHero")
-    expect(todoRouteComponentSource).toContain("Component.use(TodoList")
-    expect(todoRouteComponentSource).not.toContain("attachTodoRegistry")
-    expect(todoRouteComponentSource).not.toContain("withTodoRouteRegistry")
-    expect(todoRouteComponentSource).not.toContain("todoRegistry")
-    expect(routerSource).toContain('import * as counterRouteModule from "./routes/counter-route.js"')
-    expect(routerSource).toContain("module: counterRouteModule,")
-    expect(routerSource).toContain("RouteModule.compile({")
-    expect(routerSource).toContain("component: () => Component.use(todoRouteModule.component)")
-    expect(routerSource).not.toContain("internal/route-modules")
+    expect(Router.isResolveSuccess(counterResult)).toBe(true)
+    expect(Router.isResolveSuccess(todoResult)).toBe(true)
+    expect(statusForResult(counterResult)).toBe(200)
+    expect(statusForResult(todoResult)).toBe(200)
+    expect(titleForResult(counterResult)).toBe("Counter")
+    expect(titleForResult(todoResult)).toBe("Todo app")
+    expect(Html.renderToString(bodyForResult(counterResult))).toContain('data-route-view="counter"')
+    expect(Html.renderToString(bodyForResult(todoResult))).toContain('data-route-view="todo"')
+    expect(Html.renderToString(bodyForResult(todoResult))).toContain('data-todo-add-action="true"')
+    expect(Html.renderToString(bodyForResult(todoResult))).toContain('data-todo-runtime-status="true"')
   })
 
   it("executes the initial loader through the route runtime", async () => {

@@ -4,6 +4,10 @@ export * as Component from "./component.js"
 /** Primary renderer-neutral view surface for new Loom authoring. */
 export * as View from "./view.js"
 
+/** Template-first DOM authoring surface. */
+export { html, renderable } from "./template.js"
+export type { ErrorOfRenderable, Renderable, RequirementsOfRenderable } from "./template.js"
+
 /** Primary Web modifier surface for DOM and browser-specific behavior. */
 export * as Web from "./web.js"
 

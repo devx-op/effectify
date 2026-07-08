@@ -6,11 +6,13 @@ import type * as Component from "./component.js"
 export type Node =
   | TextNode
   | DynamicTextNode
+  | ComputedNode
   | ElementNode
   | FragmentNode
   | IfNode
   | ForNode<unknown>
   | ComponentUseNode
+  | BoundaryNode
   | LiveNode<unknown>
 
 export interface TextNode {
@@ -21,6 +23,11 @@ export interface TextNode {
 export interface DynamicTextNode {
   readonly _tag: "DynamicText"
   readonly render: () => string
+}
+
+export interface ComputedNode {
+  readonly _tag: "Computed"
+  readonly render: () => Node
 }
 
 export interface HydrationMetadata {
@@ -112,6 +119,15 @@ export interface ComponentUseNode {
   readonly component: Component.Definition
 }
 
+export interface BoundaryNode {
+  readonly _tag: "Boundary"
+  readonly node: Node
+  readonly scope: {
+    readonly errors?: ReadonlyArray<string> | "all"
+    readonly requirementsHandled?: boolean
+  }
+}
+
 export interface LiveNode<Value> {
   readonly _tag: "Live"
   readonly atom: Atom.Atom<Value>
@@ -130,6 +146,9 @@ export const text = (value: string): TextNode => internal.makeTextNode(value)
 
 /** Create a neutral dynamic text node. */
 export const dynamicText = (render: () => string): DynamicTextNode => internal.makeDynamicTextNode(render)
+
+/** Create a neutral computed subtree node. */
+export const computed = (render: () => Node): ComputedNode => internal.makeComputedNode(render)
 
 /** Create a neutral element node. */
 export const element = (
@@ -182,6 +201,15 @@ export function forEach<Item, Key extends PropertyKey>(
 /** Create a neutral component usage node. */
 export const componentUse = (component: Component.Definition): ComponentUseNode =>
   internal.makeComponentUseNode(component)
+
+/** Create a neutral scoped boundary node for local composition handling. */
+export const boundary = (
+  node: Node,
+  scope: {
+    readonly errors?: ReadonlyArray<string> | "all"
+    readonly requirementsHandled?: boolean
+  },
+): BoundaryNode => internal.makeBoundaryNode(node, scope)
 
 /** Create a neutral live node placeholder. */
 export const live = <Value>(atom: Atom.Atom<Value>, render: LiveRender<Value>): LiveNode<Value> =>

@@ -6,7 +6,7 @@ import {
   encodeLoomResumabilityPayload,
   renderLoomPayloadElement,
 } from "../src/internal/payload.js"
-import { renderLoomNitroResponse } from "../src/internal/ssr-adapter.js"
+import { defaultLoomNitroClientEntry, renderLoomNitroResponse } from "../src/internal/ssr-adapter.js"
 import { renderer } from "../src/loom-nitro.js"
 
 describe("@effectify/loom-nitro", () => {
@@ -39,12 +39,13 @@ describe("@effectify/loom-nitro", () => {
       .toBeUndefined()
   })
 
-  it("renders the Nitro handoff shape with request metadata and activation payload", async () => {
+  it("renders the default Nitro document shell with request metadata and activation payload", async () => {
     const result = await renderLoomNitroResponse(
       {
-        rootId: "loom-root",
-        render: (request) =>
-          Html.el("main", Html.hydrate(Hydration.visible()), Html.children(`${request.method}:${request.url}`)),
+        render: (request) => ({
+          title: `Page ${request.url}`,
+          body: Html.el("main", Html.hydrate(Hydration.visible()), Html.children(`${request.method}:${request.url}`)),
+        }),
         response: () => ({
           status: 201,
           headers: { "x-loom": "ready" },
@@ -67,6 +68,13 @@ describe("@effectify/loom-nitro", () => {
         rootId: "loom-root",
       }),
     })
+    expect(result.html).toContain("<!DOCTYPE html>")
+    expect(result.html).toContain('<html lang="en">')
+    expect(result.html).toContain("<title>Page /demo</title>")
+    expect(result.html).toContain('<div id="loom-root">')
+    expect(result.html).toContain("GET:/demo")
+    expect(result.html).toContain('id="__loom_payload__"')
+    expect(result.html).toContain(`<script type="module" src="${defaultLoomNitroClientEntry}"></script>`)
   })
 
   it("surfaces canonical resumability diagnostics through the Nitro adapter result", async () => {
@@ -112,8 +120,39 @@ describe("@effectify/loom-nitro", () => {
         headers: {},
       }),
     ).resolves.toMatchObject({
-      html: "<main>/static</main>",
+      html: expect.stringContaining("<main>/static</main>"),
       resumability: undefined,
     })
+  })
+
+  it("uses an explicit custom document override while keeping bootstrap metadata configurable", async () => {
+    const result = await renderLoomNitroResponse(
+      {
+        bootstrap: {
+          rootId: "custom-root",
+          payloadElementId: "custom-payload",
+          clientEntry: "/src/custom-entry.ts",
+        },
+        document: {
+          render: ({ bodyHtml, payloadHtml, bootstrap, title }) =>
+            `<!DOCTYPE html><html><head><title>${title}</title></head><body><aside data-client-entry="${bootstrap.clientEntry}">custom-shell</aside><div id="${bootstrap.rootId}">${bodyHtml}</div>${payloadHtml}</body></html>`,
+        },
+        render: () => ({
+          title: "Custom shell",
+          body: Html.el("section", Html.hydrate(Hydration.visible()), Html.children("body")),
+        }),
+      },
+      {
+        method: "GET",
+        url: "/custom",
+        headers: {},
+      },
+    )
+
+    expect(result.html).toContain("custom-shell")
+    expect(result.html).toContain('id="custom-root"')
+    expect(result.html).toContain('id="custom-payload"')
+    expect(result.html).toContain('data-client-entry="/src/custom-entry.ts"')
+    expect(result.resumability?.rootId).toBe("custom-root")
   })
 })

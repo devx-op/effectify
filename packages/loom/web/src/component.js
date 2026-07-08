@@ -1,5 +1,6 @@
 import { Atom, AtomRegistry } from "effect/unstable/reactivity"
 import * as LoomCore from "@effectify/loom-core"
+import * as Template from "./template.js"
 import * as pipeable from "./internal/pipeable.js"
 import { trackStateAtomRead } from "./internal/tracked-state.js"
 import * as viewChild from "./internal/view-child.js"
@@ -114,7 +115,7 @@ const createWriteModel = (model, registry) => {
 }
 const resolveSlots = (slots, values) => {
   const entries = Object.entries(slots ?? {}).map(([key, definition]) => {
-    const slotValue = values?.[key]
+    const slotValue = normalizeComposedViewChild(values?.[key])
     if (definition.required && values !== undefined && slotValue === undefined) {
       throw new Error(`missing required slot '${key}'`)
     }
@@ -122,6 +123,10 @@ const resolveSlots = (slots, values) => {
   })
   return Object.fromEntries(entries)
 }
+const normalizeComposedViewChild = (child) =>
+  Array.isArray(child)
+    ? Template.renderable(LoomCore.Ast.fragment(viewChild.normalizeViewChild(child)))
+    : child
 const isActionSpec = (value) => {
   if (typeof value !== "object" || value === null) {
     return false
@@ -163,7 +168,7 @@ export const instantiate = (
     : isActionSpec(actionDefinition)
     ? bindActionSpec(actionDefinition, actionBindingContext)
     : (actionDefinition ?? emptyActions)
-  const children = compositionInput?.children
+  const children = normalizeComposedViewChild(compositionInput?.children)
   const slots = resolveSlots(component.slots, compositionInput?.slots)
   return {
     registry,
@@ -208,7 +213,7 @@ const patch = (component, update) =>
     ...update,
   }))
 export function make(input) {
-  const definition = LoomCore.Component.make(isNode(input) ? input : emptyNode)
+  const definition = LoomCore.Component.make(input !== undefined && isNode(input) ? input : emptyNode)
   return reconcile(makePipeable({
     ...definition,
     name: typeof input === "string" ? input : undefined,

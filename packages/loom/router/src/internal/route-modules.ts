@@ -2,6 +2,9 @@ import * as Effect from "effect/Effect"
 import * as Route from "../route.js"
 import * as RouteErrors from "./route-errors.js"
 
+export const ROUTE_MODULE_EXPORTS_GUIDANCE =
+  "Route modules must export either `component` or `default` alongside optional `loader` and `action` helpers. Prefer `export default` for new modules."
+
 type CompiledLoader<Loader extends Route.AnyModuleLoader | undefined> = Loader extends Route.AnyModuleLoader
   ? Route.LoaderDescriptor<
     Route.ModuleLoaderParamsOf<Loader>,
@@ -155,24 +158,39 @@ export function extractRouteModule<
   Action extends Route.AnyModuleAction | undefined = undefined,
 >(exports: {
   readonly component: Content
+  readonly default?: unknown
+  readonly loader?: Loader
+  readonly action?: Action
+}): Route.RouteModule<Content, Loader, Action>
+export function extractRouteModule<
+  Content,
+  Loader extends Route.AnyModuleLoader | undefined = undefined,
+  Action extends Route.AnyModuleAction | undefined = undefined,
+>(exports: {
+  readonly default: Content
+  readonly component?: undefined
   readonly loader?: Loader
   readonly action?: Action
 }): Route.RouteModule<Content, Loader, Action>
 export function extractRouteModule<Content>(exports: {
   readonly component?: Content
+  readonly default?: Content
   readonly loader?: unknown
   readonly action?: unknown
 }): Route.RouteModule<Content, Route.AnyModuleLoader | undefined, Route.AnyModuleAction | undefined>
 export function extractRouteModule<Content>(exports: {
   readonly component?: Content
+  readonly default?: Content
   readonly loader?: unknown
   readonly action?: unknown
 }): Route.RouteModule<Content, Route.AnyModuleLoader | undefined, Route.AnyModuleAction | undefined> {
-  if (!("component" in exports) || exports.component === undefined) {
+  const component = exports.component ?? exports.default
+
+  if (component === undefined) {
     throw new RouteErrors.RouteModuleExportError({
       exportName: "component",
       input: exports,
-      message: "Route modules must export `component` alongside optional `loader` and `action` helpers.",
+      message: ROUTE_MODULE_EXPORTS_GUIDANCE,
     })
   }
 
@@ -196,7 +214,7 @@ export function extractRouteModule<Content>(exports: {
   const action = exports.action
 
   return {
-    component: exports.component,
+    component,
     loader,
     action,
   }

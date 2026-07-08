@@ -6,7 +6,7 @@ export type ViewChild =
   | string
   | number
   | bigint
-  | ReadonlyArray<ViewChild>
+  | ReadonlyArray<unknown>
   | undefined
   | null
   | false

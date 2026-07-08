@@ -108,6 +108,28 @@ const makeDefinition = <Entries extends ReadonlyArray<RouterEntry>>(options: {
   fallback: normalizeFallbacks(options.fallback),
 })
 
+const copyRouter = <
+  Entries extends ReadonlyArray<RouterEntry>,
+  NextEntries extends ReadonlyArray<RouterEntry> = Entries,
+>(
+  self: RouterDefinition<Entries>,
+  options: {
+    readonly entries?: NextEntries
+    readonly annotations?: Route.Annotations
+    readonly pathPrefix?: Route.AbsolutePath
+    readonly layout?: Layout.Definition
+    readonly fallback?: Fallback.Config
+  },
+): RouterDefinition<NextEntries> =>
+  makeDefinition({
+    identifier: self.identifier,
+    entries: options.entries ?? (self.entries as unknown as NextEntries),
+    annotations: options.annotations ?? self.annotations,
+    pathPrefix: options.pathPrefix ?? self.pathPrefix,
+    layout: options.layout ?? self.layout,
+    fallback: options.fallback ?? self.fallback,
+  })
+
 const isResolver = <Input>(value: unknown): value is Renderable.Resolver<Input> => typeof value === "function"
 
 const isObjectChild = (value: unknown): value is Exclude<Html.Child, string | ReadonlyArray<Html.Child>> =>
@@ -358,13 +380,11 @@ const resolveHrefTarget = (
 
 export const makeRouter = <Routes extends ReadonlyArray<KnownRoute>>(
   options: Router.Options<Routes>,
-): RouterDefinition<Routes> =>
-  makeDefinition({
-    identifier: "compat",
-    entries: options.routes,
-    layout: options.layout,
-    fallback: options.fallback,
-  })
+): RouterDefinition<Routes> => {
+  const withMetadata = withFallback(withLayout(makeEmptyRouter("compat"), options.layout), options.fallback)
+
+  return withEntries(withMetadata, options.routes)
+}
 
 export const makeEmptyRouter = (identifier: string): RouterDefinition =>
   makeDefinition({
@@ -376,26 +396,42 @@ export const addEntryToRouter = <Entries extends ReadonlyArray<RouterEntry>, Ent
   self: RouterDefinition<Entries>,
   entry: Entry,
 ): RouterDefinition<[...Entries, Entry]> =>
-  makeDefinition({
-    identifier: self.identifier,
-    entries: [...self.entries, self.pathPrefix === undefined ? entry : applyPrefixToEntry(entry, self.pathPrefix)],
-    annotations: self.annotations,
-    pathPrefix: self.pathPrefix,
-    layout: self.layout,
-    fallback: self.fallback,
+  withEntries(self, [
+    ...self.entries,
+    self.pathPrefix === undefined ? entry : applyPrefixToEntry(entry, self.pathPrefix),
+  ])
+
+export const withEntries = <Entries extends ReadonlyArray<RouterEntry>, NextEntries extends ReadonlyArray<RouterEntry>>(
+  self: RouterDefinition<Entries>,
+  entries: NextEntries,
+): RouterDefinition<NextEntries> =>
+  copyRouter(self, {
+    entries,
+  })
+
+export const withLayout = <Entries extends ReadonlyArray<RouterEntry>>(
+  self: RouterDefinition<Entries>,
+  layout: Layout.Definition | undefined,
+): RouterDefinition<Entries> =>
+  copyRouter(self, {
+    layout,
+  })
+
+export const withFallback = <Entries extends ReadonlyArray<RouterEntry>>(
+  self: RouterDefinition<Entries>,
+  fallback: Fallback.Config | undefined,
+): RouterDefinition<Entries> =>
+  copyRouter(self, {
+    fallback,
   })
 
 export const prefixRouter = <Entries extends ReadonlyArray<RouterEntry>>(
   self: RouterDefinition<Entries>,
   prefix: Route.AbsolutePath,
 ): RouterDefinition<Entries> =>
-  makeDefinition({
-    identifier: self.identifier,
+  copyRouter(self, {
     entries: self.entries.map((entry) => applyPrefixToEntry(entry, prefix)) as unknown as Entries,
-    annotations: self.annotations,
     pathPrefix: self.pathPrefix === undefined ? prefix : joinPathnames(self.pathPrefix, prefix),
-    layout: self.layout,
-    fallback: self.fallback,
   })
 
 export const annotateRouter = <Entries extends ReadonlyArray<RouterEntry>, I, S>(
@@ -403,26 +439,16 @@ export const annotateRouter = <Entries extends ReadonlyArray<RouterEntry>, I, S>
   tag: Context.Service<I, S>,
   value: S,
 ): RouterDefinition<Entries> =>
-  makeDefinition({
-    identifier: self.identifier,
-    entries: self.entries,
+  copyRouter(self, {
     annotations: annotateValue(self.annotations, tag, value),
-    pathPrefix: self.pathPrefix,
-    layout: self.layout,
-    fallback: self.fallback,
   })
 
 export const annotateRouterMerge = <Entries extends ReadonlyArray<RouterEntry>>(
   self: RouterDefinition<Entries>,
   annotations: Route.Annotations,
 ): RouterDefinition<Entries> =>
-  makeDefinition({
-    identifier: self.identifier,
-    entries: self.entries,
+  copyRouter(self, {
     annotations: mergeAnnotations(self.annotations, annotations),
-    pathPrefix: self.pathPrefix,
-    layout: self.layout,
-    fallback: self.fallback,
   })
 
 export const findRouteByIdentifier = <Entries extends ReadonlyArray<RouterEntry>>(

@@ -25,6 +25,8 @@ const collectHydrationAttributes = (
       return []
     case "DynamicText":
       return []
+    case "Computed":
+      return collectHydrationAttributes(node.render())
     case "If":
       return collectHydrationAttributes(node.condition() ? node.then : (node.else ?? LoomCore.Ast.fragment([])))
     case "For": {
@@ -37,6 +39,8 @@ const collectHydrationAttributes = (
     }
     case "ComponentUse":
       return collectHydrationAttributes(node.component.node)
+    case "Boundary":
+      return collectHydrationAttributes(node.node)
     case "Live":
       return []
     case "Fragment":
@@ -62,6 +66,8 @@ const collectRegisteredEvents = (
         return []
       case "DynamicText":
         return []
+      case "Computed":
+        return loop(current.render(), isBoundaryRoot)
       case "If":
         return loop(current.condition() ? current.then : (current.else ?? LoomCore.Ast.fragment([])), isBoundaryRoot)
       case "For": {
@@ -76,6 +82,8 @@ const collectRegisteredEvents = (
         return []
       case "ComponentUse":
         return loop(current.component.node, isBoundaryRoot)
+      case "Boundary":
+        return loop(current.node, isBoundaryRoot)
       case "Fragment":
         return current.children.flatMap((child) => loop(child, false))
       case "Element": {
@@ -127,6 +135,64 @@ const applyValueBindingSnapshot = (node: LoomCore.Ast.ElementNode, attributes: R
   }
 
   attributes.value = nextValue
+}
+
+const isPresent = (value: string | undefined): value is string => value !== undefined
+
+const serializeClassBindings = (values: ReadonlyArray<string | undefined>): string | undefined => {
+  const present = values.filter(isPresent)
+
+  if (present.length === 0) {
+    return undefined
+  }
+
+  if (present.every((value) => value === "")) {
+    return ""
+  }
+
+  return present.filter((value) => value.length > 0).join(" ")
+}
+
+const serializeStyleBindings = (values: ReadonlyArray<string | undefined>): string | undefined => {
+  const present = values.filter(isPresent).map((value) => value.trim().replace(/;+$/u, ""))
+
+  if (present.length === 0) {
+    return undefined
+  }
+
+  if (present.every((value) => value === "")) {
+    return ""
+  }
+
+  return present.filter((value) => value.length > 0).join(";")
+}
+
+const applyClassBindingSnapshot = (node: LoomCore.Ast.ElementNode, attributes: Record<string, string>): void => {
+  const nextClass = serializeClassBindings([
+    attributes.class,
+    ...node.bindings.flatMap((binding) => binding._tag === "ClassBinding" ? [binding.render()] : []),
+  ])
+
+  if (nextClass === undefined) {
+    delete attributes.class
+    return
+  }
+
+  attributes.class = nextClass
+}
+
+const applyStyleBindingSnapshot = (node: LoomCore.Ast.ElementNode, attributes: Record<string, string>): void => {
+  const nextStyle = serializeStyleBindings([
+    attributes.style,
+    ...node.bindings.flatMap((binding) => binding._tag === "StyleBinding" ? [binding.render()] : []),
+  ])
+
+  if (nextStyle === undefined) {
+    delete attributes.style
+    return
+  }
+
+  attributes.style = nextStyle
 }
 
 const commentNodeType = 8
@@ -242,6 +308,8 @@ const serializeNode = (
         return escapeText(current.value)
       case "DynamicText":
         return escapeText(String(current.render()))
+      case "Computed":
+        return serializeStaticNode(current.render())
       case "If":
         return serializeStaticNode(current.condition() ? current.then : (current.else ?? LoomCore.Ast.fragment([])))
       case "For": {
@@ -256,6 +324,8 @@ const serializeNode = (
         return current.children.map(serializeStaticNode).join("")
       case "ComponentUse":
         return serializeStaticNode(current.component.node)
+      case "Boundary":
+        return serializeStaticNode(current.node)
       case "Live":
         return serializeLiveNode(current, boundaryId)
       case "Element": {
@@ -320,6 +390,8 @@ const serializeNode = (
       return escapeText(node.value)
     case "DynamicText":
       return escapeText(String(node.render()))
+    case "Computed":
+      return serializeNode(node.render(), state, boundaryId, nextBoundaryNodeId, isBoundaryRoot)
     case "If":
       return serializeNode(
         node.condition() ? node.then : (node.else ?? LoomCore.Ast.fragment([])),
@@ -339,6 +411,8 @@ const serializeNode = (
       return node.children.map((child) => serializeNode(child, state, boundaryId, nextBoundaryNodeId)).join("")
     case "ComponentUse":
       return serializeNode(node.component.node, state, boundaryId, nextBoundaryNodeId, isBoundaryRoot)
+    case "Boundary":
+      return serializeNode(node.node, state, boundaryId, nextBoundaryNodeId, isBoundaryRoot)
     case "Live":
       return serializeLiveNode(node, boundaryId)
     case "Element": {
@@ -347,6 +421,8 @@ const serializeNode = (
       }
 
       const attributes: Record<string, string> = { ...node.attributes }
+      applyClassBindingSnapshot(node, attributes)
+      applyStyleBindingSnapshot(node, attributes)
       applyValueBindingSnapshot(node, attributes)
       const activeBoundaryId = isBoundaryRoot ? `b${state.nextBoundaryId++}` : boundaryId
       const activeBoundaryNodeId = isBoundaryRoot ? { current: 0 } : nextBoundaryNodeId

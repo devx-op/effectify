@@ -11,6 +11,8 @@ export type ReactiveAttrValue = ReactiveInput<AttrValue>
 export type ValueInput = string | number | null | undefined
 export type ReactiveValueInput = ReactiveInput<ValueInput>
 export type AttrRecord = Readonly<Record<string, ReactiveAttrValue>>
+export type ClassToken = string | false | null | undefined
+export type ClassInput = string | ReadonlyArray<ClassToken>
 export type StyleValue = string | number | null | undefined
 export type StyleRecord = Readonly<Record<string, StyleValue>>
 export type StyleInput = string | StyleRecord
@@ -36,7 +38,29 @@ const toValueInput = (value: ValueInput): string | undefined => {
 
 const toKebabCase = (value: string): string => value.replace(/[A-Z]/g, (match) => `-${match.toLowerCase()}`)
 
-const serializeStyle = (value: string | StyleRecord): string => {
+const normalizeClassToken = (value: ClassToken): string | undefined => {
+  if (typeof value !== "string") {
+    return undefined
+  }
+
+  const token = value.trim()
+  return token.length === 0 ? undefined : token
+}
+
+export const serializeClass = (value: ClassInput): string => {
+  if (typeof value === "string") {
+    return value.trim()
+  }
+
+  return value
+    .flatMap((entry) => {
+      const token = normalizeClassToken(entry)
+      return token === undefined ? [] : [token]
+    })
+    .join(" ")
+}
+
+export const serializeStyle = (value: string | StyleRecord): string => {
   if (typeof value === "string") {
     return value.trim()
   }

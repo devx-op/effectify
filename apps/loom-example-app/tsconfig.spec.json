@@ -2,6 +2,7 @@
   "extends": "./tsconfig.app.json",
   "include": [
     "vite.config.mts",
+    "tests/**/*.d.ts",
     "tests/**/*.ts"
   ],
   "compilerOptions": {

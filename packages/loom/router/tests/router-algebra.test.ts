@@ -74,7 +74,7 @@ describe("@effectify/loom-router algebra", () => {
 
   it("keeps the legacy Router.make({ routes }) seam working while exposing reflection", () => {
     const compatRoute = Route.make({ path: "/users/:userId", content: "user-screen" })
-    const compatRouter = Router.make({
+    const compatRouter = Router.from({
       routes: [compatRoute],
     })
     const reflectedPaths: Array<string> = []
@@ -89,6 +89,41 @@ describe("@effectify/loom-router algebra", () => {
     expect(reflectedPaths).toEqual(["/users/:userId"])
     expect(Router.pathFor(compatRouter, compatRoute)).toBe("/users/:userId")
     expect(Router.find(compatRouter, "missing")).toBeUndefined()
+  })
+
+  it("supports builder-first route and metadata operators without widening entries", () => {
+    const homeRoute = Route.make({ path: "/", content: "home-screen" })
+    const settingsRoute = Route.make({ path: "/settings", content: "settings-screen" })
+    const rootLayout = Layout.make("app-layout")
+    const appMissing = Fallback.make("app-missing")
+    const routeMissing = Fallback.make("route-missing")
+    const router = pipe(
+      Router.make("app"),
+      Router.layout(rootLayout),
+      Router.notFound(appMissing),
+      Router.prefix("/app"),
+      Router.route(homeRoute),
+      Router.route(settingsRoute),
+    )
+    const replaced = pipe(router, Router.fallback({ notFound: routeMissing }))
+
+    expect(Router.routes(router).map((route) => route.path)).toEqual(["/app", "/app/settings"])
+    expect(Router.pathFor(router, Router.routes(router)[0]!)).toBe("/app")
+    expect(Router.pathFor(router, Router.routes(router)[1]!)).toBe("/app/settings")
+    expect(Router.render(router, "/app/missing")).toEqual({
+      _tag: "Fragment",
+      children: [
+        { _tag: "Text", value: "app-layout" },
+        { _tag: "Text", value: "app-missing" },
+      ],
+    })
+    expect(Router.render(replaced, "/app/missing")).toEqual({
+      _tag: "Fragment",
+      children: [
+        { _tag: "Text", value: "app-layout" },
+        { _tag: "Text", value: "route-missing" },
+      ],
+    })
   })
 
   it("tracks optional route identifiers and resolves effective paths through the router seam", () => {

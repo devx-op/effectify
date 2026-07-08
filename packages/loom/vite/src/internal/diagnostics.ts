@@ -1,5 +1,14 @@
-import * as Loom from "@effectify/loom"
+import type * as Loom from "@effectify/loom"
 import type { LoomViteState } from "./plugin-state.js"
+
+const hasErrors = (report: Loom.Diagnostics.Report): boolean => report.counts.error > 0 || report.counts.fatal > 0
+
+const summarizeReport = (report: Loom.Diagnostics.Report): Loom.Diagnostics.Summary => ({
+  phase: report.phase,
+  total: report.issues.length,
+  highestSeverity: report.highestSeverity,
+  hasErrors: hasErrors(report),
+})
 
 const makeCounts = (severity: Loom.Diagnostics.Severity): Loom.Diagnostics.Counts => ({
   info: severity === "info" ? 1 : 0,
@@ -81,20 +90,17 @@ export const makeMissingRootDiagnostics = (input: {
 ]
 
 export const makeEnabledStateDiagnostics = (state: LoomViteState): ReadonlyArray<Loom.Diagnostics.Report> => {
-  if (state.options.root === undefined) {
-    return []
-  }
-
   return [
     makeAdapterReport({
       severity: "info",
       code: "loom.adapter.vite.enabled",
       message: "Loom Vite is enabled for the configured browser entry.",
-      subject: state.options.root,
+      subject: state.options.rootId,
       details: {
-        root: state.options.root,
+        buildId: state.options.buildId,
         clientEntry: state.options.clientEntry,
         payloadElementId: state.options.payloadElementId,
+        rootId: state.options.rootId,
       },
     }),
   ]
@@ -102,7 +108,7 @@ export const makeEnabledStateDiagnostics = (state: LoomViteState): ReadonlyArray
 
 export const summarizeDiagnostics = (
   reports: ReadonlyArray<Loom.Diagnostics.Report>,
-): ReadonlyArray<Loom.Diagnostics.Summary> => reports.map(Loom.Diagnostics.summarize)
+): ReadonlyArray<Loom.Diagnostics.Summary> => reports.map(summarizeReport)
 
 export const renderDiagnosticsLogMessage = (reports: ReadonlyArray<Loom.Diagnostics.Report>): string => {
   const [report] = reports
@@ -114,6 +120,6 @@ export const renderDiagnosticsLogMessage = (reports: ReadonlyArray<Loom.Diagnost
   return JSON.stringify({
     scope: "loom",
     report,
-    summary: Loom.Diagnostics.summarize(report),
+    summary: summarizeReport(report),
   })
 }

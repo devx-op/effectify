@@ -13,15 +13,15 @@ describe("@effectify/loom-vite resumability bootstrap", () => {
     const dispatched: Array<string> = []
 
     const nitro = LoomNitro.renderer({
-      buildId: "build-123",
-      rootId: "loom-root",
-      render: () =>
-        Html.el(
+      render: () => ({
+        title: "Ready",
+        body: Html.el(
           "section",
           Html.hydrate(Hydration.visible()),
           Html.on("click", Resumability.handler(clickRef, effectLike)),
           Html.children("ready"),
         ),
+      }),
     })
 
     const result = await nitro.render({
@@ -36,20 +36,9 @@ describe("@effectify/loom-vite resumability bootstrap", () => {
 
     Resumability.registerHandler(localRegistry, clickRef, effectLike)
 
-    const dom = new JSDOM(
-      `<div id="loom-root">${result.html}</div><script type="application/json" id="loom-payload"></script>`,
-    )
-    const payloadElement = dom.window.document.getElementById("loom-payload")
-
-    if (payloadElement === null) {
-      throw new Error("expected payload element")
-    }
-
-    payloadElement.textContent = JSON.stringify(result.resumability)
+    const dom = new JSDOM(result.html)
 
     const bootstrapResult = await bootstrap(dom.window.document, {
-      payloadElementId: "loom-payload",
-      expectedBuildId: "build-123",
       localRegistry,
       onEffect: (effect) => {
         dispatched.push(effect._tag)
@@ -76,15 +65,15 @@ describe("@effectify/loom-vite resumability bootstrap", () => {
     const clickRef = Resumability.makeExecutableRef("app/counter", "onClick")
 
     const nitro = LoomNitro.renderer({
-      buildId: "build-123",
-      rootId: "loom-root",
-      render: () =>
-        Html.el(
+      render: () => ({
+        title: "Fresh start",
+        body: Html.el(
           "section",
           Html.hydrate(Hydration.visible()),
           Html.on("click", Resumability.handler(clickRef, effectLike)),
           Html.children("ready"),
         ),
+      }),
     })
 
     const result = await nitro.render({
@@ -97,20 +86,10 @@ describe("@effectify/loom-vite resumability bootstrap", () => {
       throw new Error("expected resumability payload")
     }
 
-    const dom = new JSDOM(
-      `<div id="loom-root">${result.html}</div><script type="application/json" id="loom-payload"></script>`,
-    )
-    const payloadElement = dom.window.document.getElementById("loom-payload")
-
-    if (payloadElement === null) {
-      throw new Error("expected payload element")
-    }
-
-    payloadElement.textContent = JSON.stringify(result.resumability)
+    const dom = new JSDOM(result.html)
 
     const bootstrapResult = await bootstrap(dom.window.document, {
-      payloadElementId: "loom-payload",
-      expectedBuildId: "build-123",
+      expectedBuildId: "mismatched-build-id",
       localRegistry: Resumability.makeLocalRegistry(),
     })
 
@@ -132,11 +111,11 @@ describe("@effectify/loom-vite resumability bootstrap", () => {
             severity: "warn",
             code: "loom.adapter.bootstrap.fresh-start",
             message: "Loom bootstrap fell back to a fresh client start instead of resumability.",
-            subject: "loom-root",
+            subject: "__loom_payload__",
             details: {
-              payloadElementId: "loom-payload",
-              rootId: "loom-root",
-              validationStatus: "fresh-start",
+              payloadElementId: "__loom_payload__",
+              rootId: null,
+              validationStatus: "invalid",
               issueCount: 1,
             },
           },
@@ -152,12 +131,11 @@ describe("@effectify/loom-vite resumability bootstrap", () => {
       },
     ])
     expect(bootstrapResult.validation).toEqual({
-      status: "fresh-start",
-      contract: result.resumability,
+      status: "invalid",
       issues: [
         expect.objectContaining({
-          path: "handlers[0].ref",
-          reason: "missing-local-handler-ref",
+          path: "buildId",
+          reason: "build-id-mismatch",
         }),
       ],
     })
@@ -167,15 +145,15 @@ describe("@effectify/loom-vite resumability bootstrap", () => {
     const clickRef = Resumability.makeExecutableRef("app/counter", "onClick")
     const localRegistry = Resumability.makeLocalRegistry()
     const nitro = LoomNitro.renderer({
-      buildId: "build-123",
-      rootId: "loom-root",
-      render: () =>
-        Html.el(
+      render: () => ({
+        title: "Diagnostics",
+        body: Html.el(
           "section",
           Html.hydrate(Hydration.visible()),
           Html.on("click", Resumability.handler(clickRef, effectLike)),
           Html.children("ready"),
         ),
+      }),
     })
     const result = await nitro.render({
       method: "GET",
@@ -189,20 +167,9 @@ describe("@effectify/loom-vite resumability bootstrap", () => {
 
     Resumability.registerHandler(localRegistry, clickRef, effectLike)
 
-    const dom = new JSDOM(
-      `<div id="loom-root">${result.html}</div><script type="application/json" id="loom-payload"></script>`,
-    )
-    const payloadElement = dom.window.document.getElementById("loom-payload")
-
-    if (payloadElement === null) {
-      throw new Error("expected payload element")
-    }
-
-    payloadElement.textContent = JSON.stringify(result.resumability)
+    const dom = new JSDOM(result.html)
 
     const bootstrapResult = await bootstrap(dom.window.document, {
-      payloadElementId: "loom-payload",
-      expectedBuildId: "build-123",
       localRegistry,
     })
 

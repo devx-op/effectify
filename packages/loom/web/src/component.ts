@@ -4,9 +4,10 @@ import type * as Effect from "effect/Effect"
 import type * as Pipeable from "effect/Pipeable"
 import type * as Diagnostics from "./diagnostics.js"
 import * as pipeable from "./internal/pipeable.js"
-import { trackStateAtomRead } from "./internal/tracked-state.js"
+import { brandStateAccessor, type StateAccessor, trackStateAtomRead } from "./internal/tracked-state.js"
 import * as viewChild from "./internal/view-child.js"
 import type * as Slot from "./slot.js"
+import * as Template from "./template.js"
 import type * as View from "./view.js"
 
 export type ModelValueInput = unknown | Atom.Atom<unknown> | (() => unknown)
@@ -69,7 +70,9 @@ type WritableValue<Value> = MaterializedValue<Value> extends Atom.Writable<infer
   : MaterializedValue<Value>
 
 export type State<Model extends ModelShape> = {
-  readonly [Key in keyof Model]: () => StateValue<Model[Key]>
+  readonly [Key in keyof Model]: MaterializedValue<Model[Key]> extends Atom.Atom<infer AtomValue>
+    ? StateAccessor<AtomValue>
+    : () => StateValue<Model[Key]>
 }
 
 export type WriteModel<Model extends ModelShape> = {
@@ -151,7 +154,7 @@ export interface Component<
   readonly actions?: ActionsInput<Model, Actions>
   readonly children?: true
   readonly slots?: Slots
-  readonly render?: (context: ViewContext<Props, Model, Actions, Slots>) => View.Node
+  readonly render?: (context: ViewContext<Props, Model, Actions, Slots>) => Template.Renderable<any, any>
   readonly __props?: Props
   readonly __error?: Err
   readonly __requirements?: Requirements
@@ -300,10 +303,10 @@ const createState = <Model extends ModelShape>(
 
       const value = model[property as keyof Model]
       return Atom.isAtom(value)
-        ? () => {
+        ? brandStateAccessor(() => {
           trackStateAtomRead(value)
           return registry.get(value)
-        }
+        })
         : () => value
     },
     has(_target, property) {
@@ -349,7 +352,7 @@ const resolveSlots = <Slots extends SlotShape>(
   values?: RuntimeSlotInput,
 ): SlotAssignments<Slots> => {
   const entries = Object.entries(slots ?? {}).map(([key, definition]) => {
-    const slotValue = values?.[key]
+    const slotValue = normalizeComposedViewChild(values?.[key])
 
     if (definition.required && values !== undefined && slotValue === undefined) {
       throw new Error(`missing required slot '${key}'`)
@@ -360,6 +363,11 @@ const resolveSlots = <Slots extends SlotShape>(
 
   return Object.fromEntries(entries) as SlotAssignments<Slots>
 }
+
+const normalizeComposedViewChild = (child: View.ViewChild | undefined): View.ViewChild | undefined =>
+  Array.isArray(child)
+    ? Template.renderable(LoomCore.Ast.fragment(viewChild.normalizeViewChild(child)))
+    : child
 
 const isActionSpec = <Model extends ModelShape>(value: unknown): value is ActionSpec<Model> => {
   if (typeof value !== "object" || value === null) {
@@ -441,7 +449,7 @@ export const instantiate = <
     : isActionSpec(actionDefinition)
     ? bindActionSpec(actionDefinition, actionBindingContext)
     : (actionDefinition ?? emptyActions)) as Actions
-  const children = compositionInput?.children
+  const children = normalizeComposedViewChild(compositionInput?.children)
   const slots = resolveSlots(component.slots, compositionInput?.slots)
 
   return {
@@ -487,13 +495,15 @@ const renderComponentUse = (
   component: RuntimeType<any, any, any, any, any, any, any>,
   props?: unknown,
   compositionInput?: InstanceCompositionInput,
-): View.Node =>
-  instantiate(
-    component,
-    getCurrentRenderRegistry() ?? component.registry ?? AtomRegistry.make(),
-    props,
-    compositionInput,
-  ).render()
+): Template.Renderable<any, any> =>
+  Template.renderable(
+    instantiate(
+      component,
+      getCurrentRenderRegistry() ?? component.registry ?? AtomRegistry.make(),
+      props,
+      compositionInput,
+    ).render(),
+  )
 
 const reconcile = <
   Props,
@@ -532,10 +542,11 @@ const patch = <
   }))
 
 /** Create a component from a neutral AST node or a named vNext component seam. */
+export function make(): Type
 export function make(name: string): Type
 export function make(node: LoomCore.Ast.Node): Type
-export function make(input: string | LoomCore.Ast.Node): Type {
-  const definition = LoomCore.Component.make(isNode(input) ? input : emptyNode)
+export function make(input?: string | LoomCore.Ast.Node): Type {
+  const definition = LoomCore.Component.make(input !== undefined && isNode(input) ? input : emptyNode)
 
   return reconcile(
     makePipeable({
@@ -774,27 +785,52 @@ export function actions<
 }
 
 /** Attach a renderer-neutral view renderer to a component definition. */
-export function view<Model extends ModelShape, Actions extends ActionShape, Slots extends SlotShape>(
-  render: (context: ViewContext<never, Model, Actions, Slots>) => View.Node,
-): <Props, Err, Requirements, AcceptsChildren extends ChildrenFlag>(
-  self: Type<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren>,
-) => Type<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren>
-export function view<
-  Props,
-  Err,
-  Requirements,
-  Model extends ModelShape,
-  Actions extends ActionShape,
-  Slots extends SlotShape,
-  AcceptsChildren extends ChildrenFlag,
->(
-  self: Type<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren>,
-  render: (context: ViewContext<Props, Model, Actions, Slots>) => View.Node,
-): Type<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren>
-export function view(
-  selfOrRender: Type | ((context: ViewContext<never, ModelShape, ActionShape, SlotShape>) => View.Node),
-  render?: (context: ViewContext<never, ModelShape, ActionShape, SlotShape>) => View.Node,
-) {
+export const view: {
+  <
+    Model extends ModelShape,
+    Actions extends ActionShape,
+    Slots extends SlotShape,
+    Return extends Template.Renderable<any, any>,
+  >(
+    render: (context: ViewContext<any, Model, Actions, Slots>) => Return,
+  ): <Props, Err, Requirements, AcceptsChildren extends ChildrenFlag>(
+    self: Type<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren>,
+  ) => Type<
+    Props,
+    Err | Template.ErrorOfRenderable<Return>,
+    Requirements | Template.RequirementsOfRenderable<Return>,
+    Model,
+    Actions,
+    Slots,
+    AcceptsChildren
+  >
+  <
+    Props,
+    Err,
+    Requirements,
+    Model extends ModelShape,
+    Actions extends ActionShape,
+    Slots extends SlotShape,
+    AcceptsChildren extends ChildrenFlag,
+    Return extends Template.Renderable<any, any>,
+  >(
+    self: Type<Props, Err, Requirements, Model, Actions, Slots, AcceptsChildren>,
+    render: (context: ViewContext<Props, Model, Actions, Slots>) => Return,
+  ): Type<
+    Props,
+    Err | Template.ErrorOfRenderable<Return>,
+    Requirements | Template.RequirementsOfRenderable<Return>,
+    Model,
+    Actions,
+    Slots,
+    AcceptsChildren
+  >
+} = ((
+  selfOrRender:
+    | Type
+    | ((context: ViewContext<any, ModelShape, ActionShape, SlotShape>) => Template.Renderable<any, any>),
+  render?: (context: ViewContext<any, ModelShape, ActionShape, SlotShape>) => Template.Renderable<any, any>,
+) => {
   if (render === undefined) {
     if (isComponent(selfOrRender)) {
       return selfOrRender
@@ -808,7 +844,7 @@ export function view(
   }
 
   return patch(selfOrRender, { render })
-}
+}) as never
 
 /** Attach slot contracts to a component definition. */
 export function slots<Slots extends SlotShape>(
@@ -949,78 +985,35 @@ const resolveUseComposition = (
  * Attach a capability to a component or render a component use with props/slots.
  * Supports both legacy capability usage and vNext layout composition.
  */
-export function use(capability: Capability): (self: Type) => Type
-export function use(self: Type, capability: Capability): Type
-export function use<
-  Props,
-  Err,
-  Requirements,
-  Model extends ModelShape,
-  Actions extends ActionShape,
->(
-  component: Type<Props, Err, Requirements, Model, Actions, {}, true>,
-): View.Node
-export function use<
-  Props,
-  Err,
-  Requirements,
-  Model extends ModelShape,
-  Actions extends ActionShape,
->(
-  component: Type<Props, Err, Requirements, Model, Actions, {}, true>,
-  children: View.ViewChild,
-): View.Node
-export function use<
-  Props,
-  Err,
-  Requirements,
-  Model extends ModelShape,
-  Actions extends ActionShape,
->(
-  component: Type<Props, Err, Requirements, Model, Actions, {}, true>,
-  props: Props,
-  children: View.ViewChild,
-): View.Node
-export function use<
-  Props,
-  Err,
-  Requirements,
-  Model extends ModelShape,
-  Actions extends ActionShape,
-  Slots extends SlotShape,
->(
-  component: Type<Props, Err, Requirements, Model, Actions, Slots, false>,
-  slots: SlotInput<Slots>,
-): View.Node
-export function use<
-  Props,
-  Err,
-  Requirements,
-  Model extends ModelShape,
-  Actions extends ActionShape,
-  Slots extends SlotShape,
->(
-  component: Type<Props, Err, Requirements, Model, Actions, Slots, false>,
-  props: Props,
-  slots: SlotInput<Slots>,
-): View.Node
-export function use<
-  Props,
-  Err,
-  Requirements,
-  Model extends ModelShape,
-  Actions extends ActionShape,
-  Slots extends SlotShape,
->(
-  component: Type<Props, Err, Requirements, Model, Actions, Slots, false>,
-  props?: Props,
-  slots?: SlotInput<Slots>,
-): View.Node
-export function use(
+export const use: {
+  (capability: Capability): (self: Type) => Type
+  (self: Type, capability: Capability): Type
+  <Props, Err, Requirements, Model extends ModelShape, Actions extends ActionShape>(
+    component: Type<Props, Err, Requirements, Model, Actions, {}, true>,
+  ): Template.Renderable<Err, Requirements>
+  <Props, Err, Requirements, Model extends ModelShape, Actions extends ActionShape>(
+    component: Type<Props, Err, Requirements, Model, Actions, {}, true>,
+    children: View.ViewChild,
+  ): Template.Renderable<Err, Requirements>
+  <Props, Err, Requirements, Model extends ModelShape, Actions extends ActionShape>(
+    component: Type<Props, Err, Requirements, Model, Actions, {}, true>,
+    props: Props,
+    children: View.ViewChild,
+  ): Template.Renderable<Err, Requirements>
+  <Props, Err, Requirements, Model extends ModelShape, Actions extends ActionShape, Slots extends SlotShape>(
+    component: Type<Props, Err, Requirements, Model, Actions, Slots, false>,
+    slots: SlotInput<Slots>,
+  ): Template.Renderable<Err, Requirements>
+  <Props, Err, Requirements, Model extends ModelShape, Actions extends ActionShape, Slots extends SlotShape>(
+    component: Type<Props, Err, Requirements, Model, Actions, Slots, false>,
+    props: Props,
+    slots: SlotInput<Slots>,
+  ): Template.Renderable<Err, Requirements>
+} = ((
   selfOrCapability: Type | Capability,
   capabilityOrProps?: Capability | unknown,
   slotInput?: unknown,
-) {
+) => {
   if (capabilityOrProps === undefined) {
     if (selfOrCapability._tag === "Component") {
       const resolved = resolveUseComposition(selfOrCapability, undefined, slotInput)
@@ -1055,4 +1048,4 @@ export function use(
   }
 
   return make(LoomCore.Ast.text(""))
-}
+}) as never

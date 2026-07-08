@@ -259,30 +259,22 @@ This avoids over-teaching slots for everyday unnamed composition while keeping n
 
 ### 5.6 Primitive content model
 
-Interactive primitives should accept broad `ViewChild` content, not only string labels.
+Interactive primitives should accept broad `ViewChild` content, not only string labels. `View.button(...)`, `View.input()`, and `View.link(...)` remain legacy compatibility helpers, but new DOM authoring should prefer `html` plus `web:*` modifiers.
 
 Directional targets:
 
 ```ts
-View.button("Increase", actions.increment)
+html`<button type="button" web:click=${actions.increment}>Increase</button>`
 
-View.button(
-  View.hstack(
-    Icon.plus(),
-    View.text("Increase"),
-  ),
-  actions.increment,
-)
+html`
+  <button type="button" web:click=${actions.increment}>
+    ${View.hstack(Icon.plus(), View.text("Increase"))}
+  </button>
+`
 
-View.link("Open settings", "/settings")
+html`<input web:value=${state.search()} />`
 
-View.link(
-  View.hstack(
-    Icon.externalLink(),
-    View.text("Docs"),
-  ),
-  { href: "/docs" },
-)
+html`<a href="/docs">${View.hstack(Icon.externalLink(), View.text("Docs"))}</a>`
 ```
 
 String sugar is valuable and should stay ergonomic, but the type contract should be broad enough to support composed child content directly.
@@ -330,6 +322,7 @@ Directional teaching guidance:
 - Prefer `View.vstack(...)` and `View.hstack(...)` in docs and examples.
 - Treat `View.stack(...)` as compatibility vocabulary only.
 - Prefer `ViewChild`-accepting primitives for content-bearing controls such as buttons and links.
+- Treat `View.button(...)`, `View.input()`, and `View.link(...)` as legacy compatibility helpers in docs; the default DOM path is `html` + `web:*`.
 
 Directional examples:
 
@@ -340,7 +333,7 @@ View.text("hello")
 View.text("Title").pipe(Web.as("h1"))
 View.when(condition, content)
 View.main(slot)
-View.button(View.text("Save"), save)
+html`<button type="button" web:click=${save}>${View.text("Save")}</button>`
 ```
 
 ### 6.3 `Web`
@@ -457,7 +450,7 @@ This section captures the intended direction, not a finalized signature freeze.
 
 ```ts
 import * as Atom from "effect/unstable/reactivity/Atom"
-import { Component, mount, View, Web } from "@effectify/loom"
+import { Component, html, mount, View, Web } from "@effectify/loom"
 
 export const CounterRoute = Component.make("CounterRoute").pipe(
   Component.state({
@@ -469,15 +462,17 @@ export const CounterRoute = Component.make("CounterRoute").pipe(
     reset: ({ count }) => count.set(0),
   }),
   Component.view(({ state, actions }) =>
-    View.vstack(
-      View.text(() => `Count: ${state.count()}`),
-      View.text(() => `Doubled: ${state.count() * 2}`),
-      View.hstack(
-        View.button("Decrease", actions.decrement),
-        View.button("Increase", actions.increment),
-        View.button("Reset", actions.reset),
-      ),
-    ).pipe(Web.className("gap-2"))
+    html`
+      <section class="gap-2">
+        <p>${() => state.count()}</p>
+        <p>${() => state.count() * 2}</p>
+        <div>
+          <button type="button" web:click=${actions.decrement}>Decrease</button>
+          <button type="button" web:click=${actions.increment}>Increase</button>
+          <button type="button" web:click=${actions.reset}>Reset</button>
+        </div>
+      </section>
+    `
   ),
 )
 

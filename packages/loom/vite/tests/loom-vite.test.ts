@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from "vitest"
 import {
+  defaultLoomBuildId,
   defaultLoomClientEntry,
   defaultLoomPayloadElementId,
+  defaultLoomRootId,
   normalizeLoomViteOptions,
   resolveLoomViteState,
 } from "../src/internal/plugin-state.js"
@@ -9,42 +11,44 @@ import { logLoomDevDiagnostics, transformLoomIndexHtml } from "../src/internal/h
 import { bootstrap, loom } from "../src/loom-vite.js"
 
 describe("@effectify/loom-vite", () => {
-  it("normalizes options without enabling Loom for unrelated projects", () => {
+  it("normalizes default bootstrap options for the zero-config Loom path", () => {
     expect(normalizeLoomViteOptions({})).toEqual({
-      root: undefined,
+      buildId: defaultLoomBuildId,
       clientEntry: defaultLoomClientEntry,
       payloadElementId: defaultLoomPayloadElementId,
+      rootId: defaultLoomRootId,
     })
   })
 
-  it("injects a client entry and payload marker for Loom-owned html", () => {
+  it("injects the default root container, client entry, and payload marker for Loom html", () => {
     const state = resolveLoomViteState({ root: "/workspace" }, {
-      root: "src/app.ts",
       clientEntry: "/src/entry-client.ts",
       payloadElementId: "loom-payload",
+      rootId: "custom-root",
     })
 
     expect(transformLoomIndexHtml("<html><body><main>ready</main></body></html>", state)).toBe(
-      '<html><body><main>ready</main><script type="module" src="/src/entry-client.ts" data-loom-client-entry="src/app.ts"></script><script type="application/json" id="loom-payload" data-loom-payload="src/app.ts"></script></body></html>',
+      '<html><body><main>ready</main><div id="custom-root"></div><script type="application/json" id="loom-payload" data-loom-payload="custom-root"></script><script type="module" src="/src/entry-client.ts"></script></body></html>',
     )
   })
 
-  it("preserves unrelated html when no Loom root is configured", () => {
+  it("preserves an existing root container instead of duplicating it", () => {
     const state = resolveLoomViteState({ root: "/workspace" }, {})
-    const html = "<html><body><main>static</main></body></html>"
+    const html = '<html><body><div id="loom-root"><main>static</main></div></body></html>'
 
-    expect(transformLoomIndexHtml(html, state)).toBe(html)
+    expect(transformLoomIndexHtml(html, state)).toContain('<div id="loom-root"><main>static</main></div>')
+    expect(transformLoomIndexHtml(html, state).match(/id="loom-root"/g)).toHaveLength(1)
   })
 
   it("emits dev diagnostics only for enabled Loom state", () => {
     const info = vi.fn()
-    const enabled = resolveLoomViteState({ root: "/workspace" }, { root: "src/app.ts" })
-    const disabled = resolveLoomViteState({ root: "/workspace" }, {})
+    const enabled = resolveLoomViteState({ root: "/workspace" }, {})
+    const aliased = resolveLoomViteState({ root: "/workspace" }, { root: "legacy-root" })
 
     logLoomDevDiagnostics(info, enabled)
-    logLoomDevDiagnostics(info, disabled)
+    logLoomDevDiagnostics(info, aliased)
 
-    expect(info).toHaveBeenCalledTimes(1)
+    expect(info).toHaveBeenCalledTimes(2)
     expect(JSON.parse(info.mock.calls[0]?.[0] ?? "{}")).toEqual({
       scope: "loom",
       report: {
@@ -62,11 +66,12 @@ describe("@effectify/loom-vite", () => {
             severity: "info",
             code: "loom.adapter.vite.enabled",
             message: "Loom Vite is enabled for the configured browser entry.",
-            subject: "src/app.ts",
+            subject: "loom-root",
             details: {
-              root: "src/app.ts",
-              clientEntry: "/src/loom-client.ts",
+              buildId: "loom-dev",
+              clientEntry: "/src/entry-client.ts",
               payloadElementId: "__loom_payload__",
+              rootId: "loom-root",
             },
           },
         ],
@@ -82,9 +87,9 @@ describe("@effectify/loom-vite", () => {
 
   it("runs the Vite hook callbacks end to end for a Loom-owned project", () => {
     const plugin = loom({
-      root: "src/app.ts",
       clientEntry: "/src/entry-client.ts",
       payloadElementId: "loom-payload",
+      rootId: "custom-root",
     })
     const info = vi.fn()
     const configResolved = typeof plugin.configResolved === "function"
@@ -117,7 +122,7 @@ describe("@effectify/loom-vite", () => {
       },
     ])
 
-    expect(transformed).toContain('data-loom-client-entry="src/app.ts"')
+    expect(transformed).toContain('id="custom-root"')
     expect(transformed).toContain('id="loom-payload"')
     expect(JSON.parse(info.mock.calls[0]?.[0] ?? "{}")).toEqual({
       scope: "loom",
@@ -136,11 +141,12 @@ describe("@effectify/loom-vite", () => {
             severity: "info",
             code: "loom.adapter.vite.enabled",
             message: "Loom Vite is enabled for the configured browser entry.",
-            subject: "src/app.ts",
+            subject: "custom-root",
             details: {
-              root: "src/app.ts",
+              buildId: "loom-dev",
               clientEntry: "/src/entry-client.ts",
               payloadElementId: "loom-payload",
+              rootId: "custom-root",
             },
           },
         ],
@@ -155,7 +161,7 @@ describe("@effectify/loom-vite", () => {
   })
 
   it("rejects unsupported renderer options at the Vite adapter boundary", () => {
-    const invalidOptions = { root: "src/app.ts", renderer: "native" }
+    const invalidOptions = { rootId: "loom-root", renderer: "native" }
 
     expect(() => Reflect.apply(loom, undefined, [invalidOptions])).toThrow(
       "Loom Vite only supports the web renderer in this slice",
@@ -163,7 +169,7 @@ describe("@effectify/loom-vite", () => {
   })
 
   it("exposes the initial Vite plugin hook surface", () => {
-    const plugin = loom({ root: "src/app.ts" })
+    const plugin = loom()
 
     expect(typeof bootstrap).toBe("function")
     expect(plugin.name).toBe("effectify:loom-vite")

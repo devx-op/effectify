@@ -1,5 +1,12 @@
 import {
+  defaultLoomNitroBuildId,
+  defaultLoomNitroClientEntry,
+  defaultLoomNitroPayloadElementId,
+  defaultLoomNitroRootId,
+  type LoomBootstrapDefaults,
+  type LoomNitroDocumentOptions,
   type LoomNitroOptions,
+  type LoomNitroRenderOutput,
   type LoomNitroRenderResult,
   type LoomNitroRequest,
   renderLoomNitroResponse,
@@ -16,10 +23,20 @@ export interface LoomNitroRenderer {
 
 export type {
   LoomActivationPayload,
+  LoomBootstrapDefaults,
+  LoomNitroDocumentOptions,
   LoomNitroOptions,
+  LoomNitroRenderOutput,
   LoomNitroRenderResult,
   LoomNitroRequest,
   LoomResumabilityPayload,
+}
+
+export {
+  defaultLoomNitroBuildId,
+  defaultLoomNitroClientEntry,
+  defaultLoomNitroPayloadElementId,
+  defaultLoomNitroRootId,
 }
 
 /** Create the initial Loom Nitro adapter surface. */

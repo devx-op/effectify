@@ -8,17 +8,30 @@ import { Html, Hydration, Resumability } from "@effectify/loom"
 import { LoomNitro } from "../../nitro/src/index.js"
 import { LoomVite } from "../src/index.js"
 
+const effectLike = { _tag: "EffectLike" } as const
+
 const makeSerializableTextAtom = (key: string, value: string) =>
   Atom.serializable(Atom.make(value), {
     key,
     schema: Schema.String,
   })
 
-const writePayloadDocument = (html: string, payload: unknown, payloadElementId = "loom-payload"): void => {
-  document.body.innerHTML =
-    `<div id="loom-root">${html}</div><script type="application/json" id="${payloadElementId}">${
-      JSON.stringify(payload)
-    }</script><div id="outside-root"><p>outside</p></div>`
+const writePayloadDocument = (html: string): void => {
+  document.documentElement.innerHTML = html
+  document.body.insertAdjacentHTML("beforeend", '<div id="outside-root"><p>outside</p></div>')
+}
+
+const writePayloadContract = (
+  contract: LoomRuntime.Resumability.LoomResumabilityContract,
+  payloadElementId = "__loom_payload__",
+): void => {
+  const payloadElement = document.getElementById(payloadElementId)
+
+  if (!(payloadElement instanceof HTMLScriptElement)) {
+    throw new Error(`expected payload element ${payloadElementId}`)
+  }
+
+  payloadElement.textContent = JSON.stringify(contract)
 }
 
 const recreateContract = (
@@ -55,10 +68,9 @@ describe("loom web integrations browser bootstrap", () => {
     )
 
     const nitro = LoomNitro.renderer({
-      buildId: "build-123",
-      rootId: "loom-root",
-      render: () =>
-        Html.el(
+      render: () => ({
+        title: "Demo",
+        body: Html.el(
           "section",
           Html.hydrate(Hydration.visible()),
           Html.children(
@@ -71,6 +83,7 @@ describe("loom web integrations browser bootstrap", () => {
             ),
           ),
         ),
+      }),
       ssr: { registry: serverRegistry },
     })
 
@@ -84,11 +97,9 @@ describe("loom web integrations browser bootstrap", () => {
       throw new Error("expected Nitro activation payload")
     }
 
-    writePayloadDocument(result.html, result.resumability)
+    writePayloadDocument(result.html)
 
     const bootstrap = await LoomVite.bootstrap(document, {
-      payloadElementId: "loom-payload",
-      expectedBuildId: "build-123",
       localRegistry,
       registry: clientRegistry,
     })
@@ -115,8 +126,6 @@ describe("loom web integrations browser bootstrap", () => {
 
   it("reports root drift without mutating the DOM when the payload root cannot be found", async () => {
     const nitro = LoomNitro.renderer({
-      buildId: "build-123",
-      rootId: "loom-root",
       render: () => Html.el("section", Html.hydrate(Hydration.visible()), Html.children("ready")),
     })
 
@@ -130,12 +139,11 @@ describe("loom web integrations browser bootstrap", () => {
       throw new Error("expected Nitro activation payload")
     }
 
-    writePayloadDocument(result.html, await recreateContract(result.resumability, { rootId: "missing-root" }))
+    writePayloadDocument(result.html)
+    writePayloadContract(await recreateContract(result.resumability, { rootId: "missing-root" }))
     const before = document.body.innerHTML
 
     const bootstrap = await LoomVite.bootstrap(document, {
-      payloadElementId: "loom-payload",
-      expectedBuildId: "build-123",
       localRegistry: Resumability.makeLocalRegistry(),
     })
 
@@ -146,8 +154,6 @@ describe("loom web integrations browser bootstrap", () => {
 
   it("surfaces boundary drift issues from a stale payload manifest", async () => {
     const nitro = LoomNitro.renderer({
-      buildId: "build-123",
-      rootId: "loom-root",
       render: () => Html.el("section", Html.hydrate(Hydration.visible()), Html.children("ready")),
     })
 
@@ -161,19 +167,16 @@ describe("loom web integrations browser bootstrap", () => {
       throw new Error("expected Nitro activation payload")
     }
 
-    writePayloadDocument(
-      result.html,
-      await recreateContract(result.resumability, {
-        boundaries: result.resumability.boundaries.map((boundary) => ({
-          ...boundary,
-          id: `${boundary.id}-stale`,
-        })),
-      }),
-    )
+    const staleContract = await recreateContract(result.resumability, {
+      boundaries: result.resumability.boundaries.map((boundary) => ({
+        ...boundary,
+        id: `${boundary.id}-stale`,
+      })),
+    })
+    writePayloadDocument(result.html)
+    writePayloadContract(staleContract)
 
     const bootstrap = await LoomVite.bootstrap(document, {
-      payloadElementId: "loom-payload",
-      expectedBuildId: "build-123",
       localRegistry: Resumability.makeLocalRegistry(),
     })
 
@@ -184,5 +187,48 @@ describe("loom web integrations browser bootstrap", () => {
       event: "",
       reason: "missing-runtime-boundary",
     })
+  })
+
+  it("keeps custom shell and custom marker overrides working through the explicit adapter seams", async () => {
+    const localRegistry = Resumability.makeLocalRegistry()
+    const clickRef = Resumability.makeExecutableRef("app/custom", "onClick")
+
+    Resumability.registerHandler(localRegistry, clickRef, effectLike)
+
+    const nitro = LoomNitro.renderer({
+      bootstrap: {
+        buildId: "custom-build",
+        rootId: "custom-root",
+        payloadElementId: "custom-payload",
+        clientEntry: "/src/custom-entry.ts",
+      },
+      document: {
+        render: ({ bodyHtml, payloadHtml }) =>
+          `<!DOCTYPE html><html><body><main data-shell="custom">shell</main><div id="custom-root">${bodyHtml}</div>${payloadHtml}</body></html>`,
+      },
+      render: () => ({
+        title: "Custom",
+        body: Html.el(
+          "section",
+          Html.hydrate(Hydration.visible()),
+          Html.on("click", Resumability.handler(clickRef, effectLike)),
+          Html.children("ready"),
+        ),
+      }),
+    })
+
+    const result = await nitro.render({ method: "GET", url: "/custom", headers: {} })
+
+    writePayloadDocument(result.html)
+
+    const bootstrap = await LoomVite.bootstrap(document, {
+      expectedBuildId: "custom-build",
+      localRegistry,
+      payloadElementId: "custom-payload",
+    })
+
+    expect(document.querySelector('[data-shell="custom"]')?.textContent).toContain("shell")
+    expect(bootstrap.status).toBe("resumed")
+    expect(bootstrap.payload?.rootId).toBe("custom-root")
   })
 })

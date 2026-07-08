@@ -2,6 +2,10 @@ import type { Plugin } from "vite"
 import { bootstrapLoomBrowser, type LoomBootstrapOptions, type LoomBootstrapResult } from "./internal/bootstrap.js"
 import { logLoomDevDiagnostics, transformLoomIndexHtml } from "./internal/html-transform.js"
 import {
+  defaultLoomBuildId,
+  defaultLoomClientEntry,
+  defaultLoomPayloadElementId,
+  defaultLoomRootId,
   type LoomActivationPayload,
   type LoomResumabilityPayload,
   type LoomViteOptions,
@@ -18,6 +22,8 @@ export type {
   LoomResumabilityPayload,
   LoomViteOptions,
 }
+
+export { defaultLoomBuildId, defaultLoomClientEntry, defaultLoomPayloadElementId, defaultLoomRootId }
 
 const assertWebOnlyRenderer = (options: Options): void => {
   if (!("renderer" in options)) {

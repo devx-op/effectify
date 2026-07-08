@@ -7,34 +7,34 @@ const injectBeforeClosingTag = (html: string, closingTag: string, fragment: stri
 }
 
 const renderClientEntryTag = (state: LoomViteState): string => {
-  if (state.options.root === undefined) {
-    return ""
-  }
-
-  return `<script type="module" src="${state.options.clientEntry}" data-loom-client-entry="${state.options.root}"></script>`
+  return `<script type="module" src="${state.options.clientEntry}"></script>`
 }
 
 const renderPayloadMarkerTag = (state: LoomViteState): string => {
-  if (state.options.root === undefined) {
-    return ""
-  }
-
-  return `<script type="application/json" id="${state.options.payloadElementId}" data-loom-payload="${state.options.root}"></script>`
+  return `<script type="application/json" id="${state.options.payloadElementId}" data-loom-payload="${state.options.rootId}"></script>`
 }
 
+const renderRootContainer = (state: LoomViteState): string => `<div id="${state.options.rootId}"></div>`
+
+const hasRootContainer = (html: string, state: LoomViteState): boolean => html.includes(`id="${state.options.rootId}"`)
+
 export const transformLoomIndexHtml = (html: string, state: LoomViteState): string => {
+  const withRoot = hasRootContainer(html, state)
+    ? html
+    : injectBeforeClosingTag(html, "</body>", renderRootContainer(state))
+
   if (!state.enabled) {
-    return html
+    return withRoot
   }
 
-  return injectBeforeClosingTag(html, "</body>", `${renderClientEntryTag(state)}${renderPayloadMarkerTag(state)}`)
+  return injectBeforeClosingTag(withRoot, "</body>", `${renderPayloadMarkerTag(state)}${renderClientEntryTag(state)}`)
 }
 
 export const logLoomDevDiagnostics = (
   info: (message: string) => void,
   state: LoomViteState,
 ): void => {
-  if (!state.enabled || state.options.root === undefined) {
+  if (!state.enabled) {
     return
   }
 

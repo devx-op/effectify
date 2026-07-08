@@ -1,4 +1,4 @@
-import * as Loom from "@effectify/loom"
+import type * as Loom from "@effectify/loom"
 import {
   makeFreshStartDiagnostics,
   makeMissingPayloadDiagnostics,
@@ -28,6 +28,8 @@ type ScriptLikeElement = Element & {
   readonly textContent: string | null
 }
 
+const loadLoom = (): Promise<typeof import("@effectify/loom")> => import("@effectify/loom")
+
 const readPayloadElement = (document: Document, payloadElementId: string): ScriptLikeElement | undefined => {
   const element = document.getElementById(payloadElementId)
 
@@ -55,6 +57,8 @@ export const bootstrapLoomBrowser = async (
       diagnosticSummary: summarizeDiagnostics(diagnostics),
     }
   }
+
+  const Loom = await loadLoom()
 
   const validation = await Loom.Resumability.decodeContract(serializedPayload, {
     expectedBuildId: options.expectedBuildId,

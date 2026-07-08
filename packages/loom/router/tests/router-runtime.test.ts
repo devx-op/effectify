@@ -1,5 +1,6 @@
 import * as Effect from "effect/Effect"
 import { SchemaGetter } from "effect"
+import { pipe } from "effect"
 import * as Schema from "effect/Schema"
 import { Component, Html, Hydration, Slot, View, Web } from "@effectify/loom"
 import { describe, expect, it } from "vitest"
@@ -10,6 +11,24 @@ const render = (router: Router.Definition, input: string | URL): string => {
   const output = Router.render(router, input)
 
   return output === undefined ? "" : Html.renderToString(output)
+}
+
+const expectResolveSuccess = <Self extends Router.ResolveResult>(result: Self): Self & Router.ResolveSuccess => {
+  if (!Router.isResolveSuccess(result)) {
+    throw new Error("expected a resolved route")
+  }
+
+  return result as Self & Router.ResolveSuccess
+}
+
+const expectResolveInvalidInput = <Self extends Router.ResolveResult>(
+  result: Self,
+): Self & Router.ResolveInvalidInput => {
+  if (!Router.isResolveInvalidInput(result)) {
+    throw new Error("expected invalid-input router result")
+  }
+
+  return result as Self & Router.ResolveInvalidInput
 }
 
 describe("@effectify/loom-router runtime", () => {
@@ -28,13 +47,7 @@ describe("@effectify/loom-router runtime", () => {
       ],
     })
 
-    const result = Router.resolve(router, "/posts/42?page=2")
-
-    expect(result._tag).toBe("LoomRouterResolveSuccess")
-
-    if (result._tag !== "LoomRouterResolveSuccess") {
-      throw new Error("expected a resolved route")
-    }
+    const result = expectResolveSuccess(Router.resolve(router, "/posts/42?page=2"))
 
     expect(result.context.params).toEqual({ postId: "42" })
     expect(result.context.query).toEqual({ page: "2" })
@@ -165,13 +178,7 @@ describe("@effectify/loom-router runtime", () => {
       ],
     })
 
-    const paramsResult = Router.resolve(router, "/posts/nope?page=2")
-
-    expect(paramsResult._tag).toBe("LoomRouterResolveInvalidInput")
-
-    if (paramsResult._tag !== "LoomRouterResolveInvalidInput") {
-      throw new Error("expected invalid-input router result")
-    }
+    const paramsResult = expectResolveInvalidInput(Router.resolve(router, "/posts/nope?page=2"))
 
     expect(paramsResult.diagnosticSummary).toEqual([
       {
@@ -198,13 +205,7 @@ describe("@effectify/loom-router runtime", () => {
       }),
     ])
 
-    const searchResult = Router.resolve(router, "/posts/42?page=nope")
-
-    expect(searchResult._tag).toBe("LoomRouterResolveInvalidInput")
-
-    if (searchResult._tag !== "LoomRouterResolveInvalidInput") {
-      throw new Error("expected invalid-input router result")
-    }
+    const searchResult = expectResolveInvalidInput(Router.resolve(router, "/posts/42?page=nope"))
 
     expect(searchResult.diagnostics[0]?.issues).toEqual([
       expect.objectContaining({
@@ -273,17 +274,50 @@ describe("@effectify/loom-router runtime", () => {
       ],
     })
 
-    const result = Router.resolve(router, "/posts/42")
-
-    expect(result._tag).toBe("LoomRouterResolveSuccess")
-
-    if (result._tag !== "LoomRouterResolveSuccess") {
-      throw new Error("expected omitted optional/default search params to decode successfully")
-    }
+    const result = expectResolveSuccess(Router.resolve(router, "/posts/42"))
 
     expect(result.context.params).toEqual({ postId: "42" })
     expect(result.context.query).toEqual({ page: "1" })
     expect(render(router, "/posts/42")).toBe("<main>42:none:1</main>")
+  })
+
+  it("keeps builder and compatibility constructors runtime-equivalent", () => {
+    const postsRoute = Route.make({
+      path: "/posts/:postId",
+      content: (context: Router.Context) => Html.el("main", Html.children(context.params.postId)),
+      fallback: {
+        notFound: Fallback.make(() => Html.el("p", Html.children("route-missing"))),
+      },
+    })
+    const shell = Layout.make(({ child }) => Html.el("section", Html.attr("data-shell", "app"), Html.children(child)))
+    const appMissing = Fallback.make(() => Html.el("p", Html.children("app-missing")))
+    const builder = pipe(
+      Router.make("app"),
+      Router.layout(shell),
+      Router.notFound(appMissing),
+      Router.route(postsRoute),
+    )
+    const compat = Router.from({
+      layout: shell,
+      routes: [postsRoute],
+      fallback: {
+        notFound: appMissing,
+      },
+    })
+    const legacyCompat = Router.make({
+      layout: shell,
+      routes: [postsRoute],
+      fallback: {
+        notFound: appMissing,
+      },
+    })
+
+    expect(Router.resolve(builder, "/posts/42")).toEqual(Router.resolve(compat, "/posts/42"))
+    expect(Router.resolve(builder, "/posts/42")).toEqual(Router.resolve(legacyCompat, "/posts/42"))
+    expect(render(builder, "/missing")).toBe(render(compat, "/missing"))
+    expect(render(builder, "/missing")).toBe(render(legacyCompat, "/missing"))
+    expect(render(builder, "/posts/42/unknown")).toBe(render(compat, "/posts/42/unknown"))
+    expect(render(builder, "/posts/42/unknown")).toBe(render(legacyCompat, "/posts/42/unknown"))
   })
 
   it("renders component-only route modules without requiring loader or action hooks", () => {
@@ -301,15 +335,10 @@ describe("@effectify/loom-router runtime", () => {
       path: "/component-only",
     })
     const router = Router.make({ routes: [componentOnlyRoute] })
-    const result = Router.resolve(router, "/component-only")
+    const result = expectResolveSuccess(Router.resolve(router, "/component-only"))
 
     expect(Route.hasLoader(componentOnlyRoute)).toBe(false)
     expect(Route.hasAction(componentOnlyRoute)).toBe(false)
-    expect(result._tag).toBe("LoomRouterResolveSuccess")
-
-    if (result._tag !== "LoomRouterResolveSuccess") {
-      throw new Error("expected a resolved component-only route module")
-    }
 
     expect(result.route.identifier).toBe("component.only")
     expect(render(router, "/component-only")).toBe(

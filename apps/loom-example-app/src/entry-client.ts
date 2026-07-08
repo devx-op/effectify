@@ -1,31 +1,25 @@
+import "./app.css"
 import { Html, mount } from "@effectify/loom"
 import { LoomVite } from "@effectify/loom-vite"
-import { appBuildId, appPayloadElementId, appRootId } from "./app-config.js"
-import { prepareRouteRuntime } from "./router-runtime.js"
-import { bodyForResult, resolveAppRequest, titleForResult, todoRoutePath } from "./router.js"
+import { bodyForResult, prepareAppRequest, resolveAppRequest, titleForResult, todoRoutePath } from "./router.js"
 import * as counterRouteModule from "./routes/counter-route.js"
 import * as todoRouteModule from "./routes/todo-route.js"
 
 export const bootstrapClient = (
   document: Document,
   options?: LoomVite.LoomBootstrapOptions,
-): Promise<LoomVite.LoomBootstrapResult> =>
-  LoomVite.bootstrap(document, {
-    ...options,
-    expectedBuildId: options?.expectedBuildId ?? appBuildId,
-    payloadElementId: options?.payloadElementId ?? appPayloadElementId,
-  })
+): Promise<LoomVite.LoomBootstrapResult> => LoomVite.bootstrap(document, options)
 
 const defaultClientUrl = "https://effectify.dev/"
 
 const mountClientRoute = (pathname: string, root: HTMLElement): boolean => {
   if (pathname === "/") {
-    mount({ counterRoute: counterRouteModule.component }, { root })
+    mount({ counterRoute: counterRouteModule.default }, { root })
     return true
   }
 
   if (pathname === todoRoutePath) {
-    mount({ todoRoute: todoRouteModule.component }, { root })
+    mount({ todoRoute: todoRouteModule.default }, { root })
     return true
   }
 
@@ -33,14 +27,14 @@ const mountClientRoute = (pathname: string, root: HTMLElement): boolean => {
 }
 
 const renderClientFallback = async (document: Document): Promise<boolean> => {
-  const root = document.getElementById(appRootId)
+  const root = document.getElementById(LoomVite.defaultLoomRootId)
 
   if (!(root instanceof HTMLElement) || root.innerHTML.trim() !== "") {
     return false
   }
 
   const requestUrl = new URL(document.location?.href ?? defaultClientUrl, defaultClientUrl)
-  await prepareRouteRuntime(requestUrl)
+  await prepareAppRequest(requestUrl)
   const result = resolveAppRequest(requestUrl)
 
   if (requestUrl.pathname === "/" || requestUrl.pathname === todoRoutePath) {
@@ -70,4 +64,8 @@ export const startClientApp = async (
   }
 
   return result
+}
+
+if (typeof window !== "undefined" && typeof document !== "undefined") {
+  void startClientApp(document)
 }

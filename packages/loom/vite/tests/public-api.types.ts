@@ -8,9 +8,10 @@ type Equal<Left, Right> = (<Value>() => Value extends Left ? 1 : 2) extends <Val
 type Expect<Value extends true> = Value
 
 const options: LoomVite.Options = {
-  root: "src/app.ts",
+  buildId: "build-123",
   clientEntry: "/src/entry-client.ts",
   payloadElementId: "loom-payload",
+  rootId: "loom-root",
 }
 
 const plugin: Plugin = LoomVite.loom(options)
@@ -20,7 +21,7 @@ const bootstrap = LoomVite.bootstrap(document, {
 })
 
 const unsupportedRendererOptions: LoomVite.Options = {
-  root: "src/app.ts",
+  rootId: "loom-root",
   // @ts-expect-error non-web renderers remain out of scope for this web-only adapter
   renderer: "native",
 }

@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 
+import { readFileSync } from "node:fs"
+import { resolve } from "node:path"
 import * as Effect from "effect/Effect"
 import { Atom, AtomRegistry } from "effect/unstable/reactivity"
 import { describe, expect, it } from "vitest"
@@ -7,6 +9,7 @@ import { DuplicateControlFlowKeyError } from "../src/internal/control-flow-error
 import { Component, Html, Hydration, mount, Slot, View, Web } from "../src/index.js"
 
 const effectLike = { _tag: "EffectLike" } as const
+const workspaceRoot = resolve(import.meta.dirname, "../../../../")
 
 describe("@effectify/loom vNext public surface", () => {
   it("re-exports the vNext namespaces and mount seam from the package root", () => {
@@ -102,6 +105,23 @@ describe("@effectify/loom vNext public surface", () => {
 
     handle.dispose()
     registry.dispose()
+  })
+
+  it("supports unnamed component definitions and View.of simple composition", () => {
+    const badge = Component.make().pipe(
+      Component.view(() => View.text("Docs")),
+    )
+
+    const simplePage = Component.make("simple-page").pipe(
+      Component.view(() => View.fragment(View.of(badge), View.use(badge))),
+    )
+
+    const handle = mount({ simplePage })
+
+    expect(badge.name).toBeUndefined()
+    expect(handle.html).toContain("<span>Docs</span><span>Docs</span>")
+
+    handle.dispose()
   })
 
   it("materializes Atom factories per mount and keeps read-friendly state isolated per instance", () => {
@@ -589,6 +609,58 @@ describe("@effectify/loom vNext public surface", () => {
     expect(root.textContent).toContain("Count: 2")
 
     handle.dispose()
+  })
+
+  it("marks legacy View DOM helpers as deprecated in public source surfaces while keeping them callable", () => {
+    const viewSource = readFileSync(resolve(workspaceRoot, "packages/loom/web/src/view.ts"), "utf8")
+    const viewRuntime = readFileSync(resolve(workspaceRoot, "packages/loom/web/src/view.js"), "utf8")
+    const viewDeclarations = readFileSync(resolve(workspaceRoot, "packages/loom/web/src/view.d.ts"), "utf8")
+
+    expect(viewSource).toContain("@deprecated Prefer html`<button web:click=${handler}>...</button>`")
+    expect(viewSource).toContain("@deprecated Prefer html`<input web:value={...}>` or `web:inputValue={...}`")
+    expect(viewSource).toContain('@deprecated Prefer html`<a href="...">...</a>`')
+    expect(viewRuntime).toContain("@deprecated Prefer html`<button web:click=${handler}>...</button>`")
+    expect(viewRuntime).toContain("@deprecated Prefer html`<input web:value={...}>` or `web:inputValue={...}`")
+    expect(viewRuntime).toContain('@deprecated Prefer html`<a href="...">...</a>`')
+    expect(viewDeclarations).toContain("@deprecated Prefer html`<button web:click=${handler}>...</button>`")
+    expect(viewDeclarations).toContain("@deprecated Prefer html`<input web:value={...}>` or `web:inputValue={...}`")
+    expect(viewDeclarations).toContain('@deprecated Prefer html`<a href="...">...</a>`')
+
+    const deprecatedButton = View.button("Legacy", effectLike)
+    const deprecatedInput = View.input()
+    const deprecatedLink = View.link("Docs", "/docs")
+
+    expect(deprecatedButton).toMatchObject({ _tag: "Element", tagName: "button" })
+    expect(deprecatedInput).toMatchObject({ _tag: "Element", tagName: "input" })
+    expect(deprecatedLink).toMatchObject({ _tag: "Element", tagName: "a" })
+  })
+
+  it("teaches template-first DOM authoring and migration guidance in public docs", () => {
+    const readme = readFileSync(resolve(workspaceRoot, "packages/loom/README.md"), "utf8")
+    const prd = readFileSync(resolve(workspaceRoot, "docs/loom-prd.md"), "utf8")
+    const rfc = readFileSync(resolve(workspaceRoot, "docs/loom-rfc.md"), "utf8")
+
+    expect(readme).toContain("compatibility-only")
+    expect(readme).toContain("Component.make()")
+    expect(readme).toContain("View.of(...)")
+    expect(readme).toContain("View.button(...)")
+    expect(readme).toContain('<button type="button" web:click=')
+    expect(readme).toContain("View.input()")
+    expect(readme).toContain("web:value")
+    expect(readme).toContain("View.link(...)")
+    expect(readme).toContain("<a href=")
+
+    expect(prd).toContain("legacy compatibility helpers")
+    expect(prd).toContain("html`")
+    expect(prd).toContain("web:click")
+    expect(prd).toContain("web:value")
+    expect(prd).toContain("<a href=")
+
+    expect(rfc).toContain("legacy compatibility helpers")
+    expect(rfc).toContain("html`")
+    expect(rfc).toContain("web:click")
+    expect(rfc).toContain("web:value")
+    expect(rfc).toContain("<a href=")
   })
 
   it("normalizes broad ViewChild content for fragments, buttons, links, and layout aliases", () => {

@@ -167,6 +167,7 @@ export declare const instantiate: <
   compositionInput?: InstanceCompositionInput,
 ) => Instance<Model, Actions, Slots>
 /** Create a component from a neutral AST node or a named vNext component seam. */
+export declare function make(): Type
 export declare function make(name: string): Type
 export declare function make(node: LoomCore.Ast.Node): Type
 /** Backwards-compatible alias kept while the public API settles. */
