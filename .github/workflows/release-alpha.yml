@@ -111,13 +111,11 @@ jobs:
           echo "Building: ${{ steps.affected.outputs.projects }}"
           pnpm nx run-many -t build --projects=${{ steps.affected.outputs.projects }} --parallel=3
 
-      # Optional: Test affected projects
       - name: 🧪 Test Affected Projects
         if: ${{ steps.affected.outputs.has_projects == 'true' }}
-        continue-on-error: true
         run: |
           echo "Testing: ${{ steps.affected.outputs.projects }}"
-          pnpm nx run-many -t test --projects=${{ steps.affected.outputs.projects }} --parallel=3 --passWithNoTests || true
+          pnpm nx run-many -t test --projects=${{ steps.affected.outputs.projects }} --parallel=3 --passWithNoTests
 
       # Release: version bump + publish (skipped if no affected projects)
       - name: 🚀 Version & Publish Alpha
