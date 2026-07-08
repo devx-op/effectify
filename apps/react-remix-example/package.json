@@ -30,7 +30,7 @@
     "@prisma/client-runtime-utils": "catalog:",
 
     "better-auth": "catalog:",
-    "better-sqlite3": "12.4.6",
+    "better-sqlite3": "catalog:",
     "dotenv": "catalog:",
     "kysely": "catalog:"
   },

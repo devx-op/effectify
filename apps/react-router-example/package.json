@@ -23,7 +23,7 @@
     "@react-router/serve": "catalog:",
     "@tanstack/react-query": "catalog:",
     "better-auth": "catalog:",
-    "better-sqlite3": "12.4.6",
+    "better-sqlite3": "catalog:",
     "dotenv": "catalog:",
     "effect": "catalog:",
     "kysely": "catalog:",
