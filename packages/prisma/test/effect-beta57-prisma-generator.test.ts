@@ -61,7 +61,7 @@ const makeGeneratorOptions = async (
       },
     },
     schemaPath,
-  } as GeneratorOptions
+  } as unknown as GeneratorOptions
 }
 
 const generatorLayer = Layer.mergeAll(

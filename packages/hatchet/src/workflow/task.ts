@@ -5,7 +5,7 @@
  * Mirrors Hatchet API but uses Effect instead of async functions.
  */
 
-import * as Effect from "effect/Effect"
+import type * as Effect from "effect/Effect"
 import type { TaskOptions } from "./types.js"
 import type { HatchetStepContext } from "../core/context.js"
 
@@ -49,13 +49,11 @@ export const task = <A, E, R>(
 
 /**
  * Type for a task definition that can be added to a workflow.
- * Preserves the original Effect types A (value), E (error), and R (requirements).
+ * Keeps workflow registration focused on requirements; task errors are converted to thrown Hatchet failures.
  */
 export type TaskDefinition<R> = {
   readonly options: TaskOptions
-  // Use a type that preserves the effect's type parameters
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  readonly effect: Effect.Effect<any, any, R | HatchetStepContext>
+  readonly effect: Effect.Effect<unknown, never, R | HatchetStepContext>
 }
 
 /**

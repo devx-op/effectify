@@ -11,6 +11,7 @@
     }
   ],
   "compilerOptions": {
+    "declaration": true,
     "paths": {
       "@prisma/client": ["./node_modules/@prisma/client"],
       "@prisma/effect": ["./prisma/generated/effect/index.ts"],
