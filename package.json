@@ -76,7 +76,7 @@
       },
       "@effect/vitest": {
         "dependencies": {
-          "@vitest/runner": "4.1.2"
+          "@vitest/runner": "4.1.10"
         }
       }
     },

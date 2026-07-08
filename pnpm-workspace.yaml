@@ -52,8 +52,8 @@ catalog:
   "@swc/helpers": 0.5.19
   "@tailwindcss/postcss": 4.1.17
   "@tailwindcss/typography": 0.5.19
-  "@tailwindcss/vite": 4.1.18
-  "@tanstack/devtools-vite": ^0.3.11
+  "@tailwindcss/vite": 4.3.2
+  "@tanstack/devtools-vite": ^0.8.1
   "@tanstack/query-core": 5.90.20
   "@tanstack/react-form": 1.25.0
   "@tanstack/react-query": 5.90.10
@@ -80,12 +80,12 @@ catalog:
   "@types/react-dom": 19.2.3
   "@types/validator": 13.15.10
   "@typescript/native-preview": 7.0.0-dev.20260322.1
-  "@vitejs/plugin-react": 5.1.1
+  "@vitejs/plugin-react": 6.0.3
   "@vitejs/plugin-rsc": 0.5.1
-  "@vitest/browser": 4.1.2
-  "@vitest/browser-webdriverio": 4.1.2
-  "@vitest/coverage-v8": 4.1.2
-  "@vitest/ui": ^4.1.0
+  "@vitest/browser": 4.1.10
+  "@vitest/browser-webdriverio": 4.1.10
+  "@vitest/coverage-v8": 4.1.10
+  "@vitest/ui": ^4.1.10
   astro: 5.17.1
   autoprefixer: 10.4.22
   better-auth: 1.4.10
@@ -93,7 +93,7 @@ catalog:
   class-variance-authority: 0.7.1
   clsx: 2.1.1
   compression: 1.8.1
-  cypress: 15.13.1
+  cypress: 15.18.1
   cross-env: 10.1.0
   dotenv: ^17.2.3
   dprint: 0.51.1
@@ -106,7 +106,7 @@ catalog:
   husky: 9.1.7
   isbot: 5.1.32
   jiti: 2.6.1
-  jsdom: 27.2.0
+  jsdom: 29.1.1
   kysely: 0.28.11
   lint-staged: 16.2.7
   lucide-react: ^0.554.0
@@ -136,15 +136,15 @@ catalog:
   ultracite: 6.3.6
   validator: 13.15.23
   verdaccio: 6.2.2
-  vite: 8.0.3
+  vite: 8.1.3
   vite-plugin-devtools-json: 0.4.1
   vite-plugin-dts: 4.5.4
-  vite-plugin-lucide-preprocess: 1.4.8
-  vite-plugin-solid: 2.11.11
+  vite-plugin-lucide-preprocess: 1.5.0
+  vite-plugin-solid: 2.11.12
   vite-tsconfig-paths: 6.1.1
-  vitest: 4.1.2
+  vitest: 4.1.10
   web-vitals: 5.1.0
-  webdriverio: 9.27.0
+  webdriverio: 9.29.2
   zod: 4.3.6
 
 catalogMode: prefer
