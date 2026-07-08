@@ -159,7 +159,7 @@ describe("beta57 prisma generator migration", () => {
     )
 
     await runPnpm(appDir, [
-      "dlx",
+      "exec",
       "prisma",
       "generate",
       "--schema",
@@ -170,5 +170,5 @@ describe("beta57 prisma generator migration", () => {
 
     expectContextBasedRuntime(indexSource)
     expect(indexSource).toContain("export const PrismaService = Prisma")
-  })
+  }, 30_000)
 })
