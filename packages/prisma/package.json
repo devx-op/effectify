@@ -25,7 +25,7 @@
     "access": "public"
   },
   "scripts": {
-    "prisma:generate": "pnpm dlx prisma generate",
+    "prisma:generate": "pnpm exec prisma generate",
     "build": "effect-build",
     "test": "vitest",
     "dev": "tsx src/messaround.ts",
