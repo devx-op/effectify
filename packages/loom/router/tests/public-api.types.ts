@@ -104,17 +104,20 @@ const legacyCompatRouter = Router.make({
 })
 const builderLayoutRouter = Router.layout(layout)(routeOnlyRouter)
 const builderFallbackRouter = Router.notFound(fallback)(routeOnlyRouter)
-const result = Router.match(router, new URL("https://effectify.dev/users/42?tab=profile"))
+const matchedUserUrl = URL.parse("https://effectify.dev/users/42?tab=profile")
+
+if (matchedUserUrl === null) {
+  throw new Error("Expected public API smoke-test URL to parse")
+}
+
+const result = Router.match(router, matchedUserUrl)
 const identityDecoder = Decode.identity<Route.Params>()
 const routeContent: Route.Content<typeof route> = "user-screen"
 const routeParams: Route.ParamsOf<typeof route> = { userId: "42" }
 const routeSearch: Route.SearchOf<typeof route> = { tab: "profile" }
 const nestedLeafParams: Route.ParamsOf<typeof nestedLeafRoute> = { postId: "42" }
 const nestedLeafSearch: Route.SearchOf<typeof nestedLeafRoute> = { mode: "preview" }
-const resolveResult: Router.ResolveResult = Router.resolve(
-  router,
-  new URL("https://effectify.dev/users/42?tab=profile"),
-)
+const resolveResult: Router.ResolveResult = Router.resolve(router, matchedUserUrl)
 const resolvedOutput: Loom.View.Child | undefined = resolveResult.output
 const RouterTitle = Context.Service<{ readonly title: string }>("RouterTitle")
 const routeGroup = pipe(RouteGroup.make("users"), RouteGroup.add(route))
@@ -486,8 +489,8 @@ const conflictingModuleLoader = Route.loader({
   load: ({ services }) => Effect.succeed({ requestId: services.requestId }),
 })
 
-// @ts-expect-error inferred services stay aligned to the bound route services contract
-type ConflictingModuleLoaderServicesContract = Expect<
+export type ConflictingModuleLoaderServicesContract = Expect<
+  // @ts-expect-error inferred services stay aligned to the bound route services contract
   Equal<Route.ModuleLoaderServicesOf<typeof conflictingModuleLoader>, { readonly traceId: string }>
 >
 
