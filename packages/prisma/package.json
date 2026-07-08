@@ -48,7 +48,6 @@
   },
   "devDependencies": {
     "@effect/build-utils": "catalog:",
-    "@effect/experimental": "catalog:",
     "@effect/language-service": "catalog:",
     "@effect/vitest": "catalog:",
     "@prisma/adapter-better-sqlite3": "catalog:",

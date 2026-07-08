@@ -22,26 +22,23 @@ catalogs:
       specifier: 0.5.0
       version: 0.5.0
     '@effect/atom-solid':
-      specifier: 4.0.0-beta.57
-      version: 4.0.0-beta.57
+      specifier: 4.0.0-beta.94
+      version: 4.0.0-beta.94
     '@effect/build-utils':
       specifier: 0.8.9
       version: 0.8.9
-    '@effect/experimental':
-      specifier: 0.59.0
-      version: 0.59.0
     '@effect/language-service':
-      specifier: 0.56.0
-      version: 0.56.0
+      specifier: 0.86.4
+      version: 0.86.4
     '@effect/platform-node':
-      specifier: 4.0.0-beta.57
-      version: 4.0.0-beta.57
+      specifier: 4.0.0-beta.94
+      version: 4.0.0-beta.94
     '@effect/tsgo':
-      specifier: 0.0.17
-      version: 0.0.17
+      specifier: 0.16.2
+      version: 0.16.2
     '@effect/vitest':
-      specifier: 4.0.0-beta.57
-      version: 4.0.0-beta.57
+      specifier: 4.0.0-beta.94
+      version: 4.0.0-beta.94
     '@hatchet-dev/typescript-sdk':
       specifier: 1.21.0
       version: 1.21.0
@@ -202,8 +199,8 @@ catalogs:
       specifier: 0.51.1
       version: 0.51.1
     effect:
-      specifier: 4.0.0-beta.57
-      version: 4.0.0-beta.57
+      specifier: 4.0.0-beta.94
+      version: 4.0.0-beta.94
     eta:
       specifier: ^4.5.0
       version: 4.6.0
@@ -323,19 +320,16 @@ catalogs:
       version: 4.3.6
 
 overrides:
-  '@effect/platform-node-shared': 4.0.0-beta.57
+  '@effect/platform-node-shared': 4.0.0-beta.94
   '@types/react': 19.1.13
   '@types/react-dom': 19.1.9
 
-packageExtensionsChecksum: sha256-sdDPjHTEWmwx8zMLH9wR4Q1GIwaObDHU9P9tbhLNldI=
+packageExtensionsChecksum: sha256-V45DTx0jjI/U0uQpAW8B/VMRpwH8HWcOiS46/8rRmWE=
 
 importers:
 
   .:
     dependencies:
-      '@effect/experimental':
-        specifier: 'catalog:'
-        version: 0.59.0(@effect/platform@0.95.0(effect@4.0.0-beta.57))(effect@4.0.0-beta.57)(ioredis@5.10.1)
       '@prisma/client':
         specifier: 'catalog:'
         version: 7.3.0(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.9.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(typescript@5.9.3)
@@ -363,10 +357,10 @@ importers:
     devDependencies:
       '@effect/language-service':
         specifier: 'catalog:'
-        version: 0.56.0
+        version: 0.86.4
       '@effect/tsgo':
         specifier: 'catalog:'
-        version: 0.0.17
+        version: 0.16.2
       '@nx/cypress':
         specifier: 'catalog:'
         version: 23.0.1(09945344449dd3a0aa4051eb8530979b)
@@ -462,7 +456,7 @@ importers:
         version: 5.9.3
       ultracite:
         specifier: 'catalog:'
-        version: 6.3.6(effect@4.0.0-beta.57)(typescript@5.9.3)(valibot@1.3.1(typescript@5.9.3))
+        version: 6.3.6(effect@3.18.4)(typescript@5.9.3)(valibot@1.3.1(typescript@5.9.3))
       verdaccio:
         specifier: 'catalog:'
         version: 6.2.2(encoding@0.1.13)(typanion@3.14.0)
@@ -522,7 +516,7 @@ importers:
         version: 2.1.1
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.57
+        version: 4.0.0-beta.94
     devDependencies:
       '@nx/vite':
         specifier: 'catalog:'
@@ -544,7 +538,7 @@ importers:
     dependencies:
       '@effect/platform-node':
         specifier: 'catalog:'
-        version: 4.0.0-beta.57(effect@4.0.0-beta.57)(ioredis@5.10.1)
+        version: 4.0.0-beta.94(effect@4.0.0-beta.94)(ioredis@5.10.1)
       '@effectify/node-better-auth':
         specifier: workspace:*
         version: link:../../packages/node/better-auth
@@ -556,7 +550,7 @@ importers:
         version: 12.6.2
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.57
+        version: 4.0.0-beta.94
       tslib:
         specifier: 'catalog:'
         version: 2.8.1
@@ -569,7 +563,7 @@ importers:
     dependencies:
       '@effect/platform-node':
         specifier: 'catalog:'
-        version: 4.0.0-beta.57(effect@4.0.0-beta.57)(ioredis@5.10.1)
+        version: 4.0.0-beta.94(effect@4.0.0-beta.94)(ioredis@5.10.1)
       '@effectify/node-better-auth':
         specifier: workspace:*
         version: link:../../packages/node/better-auth
@@ -605,7 +599,7 @@ importers:
         version: 17.4.2
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.57
+        version: 4.0.0-beta.94
       isbot:
         specifier: ^4.4.0
         version: 4.4.0
@@ -699,7 +693,7 @@ importers:
         version: 17.4.2
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.57
+        version: 4.0.0-beta.94
       kysely:
         specifier: 'catalog:'
         version: 0.28.11
@@ -744,10 +738,10 @@ importers:
     dependencies:
       '@effect-atom/atom':
         specifier: 'catalog:'
-        version: 0.5.0(@effect/experimental@0.59.0(@effect/platform@0.95.0(effect@4.0.0-beta.57))(effect@4.0.0-beta.57)(ioredis@5.10.1))(@effect/platform@0.95.0(effect@4.0.0-beta.57))(@effect/rpc@0.73.2(@effect/platform@0.95.0(effect@4.0.0-beta.57))(effect@4.0.0-beta.57))(effect@4.0.0-beta.57)
+        version: 0.5.0(@effect/experimental@0.59.0(@effect/platform@0.95.0(effect@4.0.0-beta.94))(effect@4.0.0-beta.94)(ioredis@5.10.1))(@effect/platform@0.95.0(effect@4.0.0-beta.94))(@effect/rpc@0.73.2(@effect/platform@0.95.0(effect@4.0.0-beta.94))(effect@4.0.0-beta.94))(effect@4.0.0-beta.94)
       '@effect/atom-solid':
         specifier: 'catalog:'
-        version: 4.0.0-beta.57(effect@4.0.0-beta.57)(solid-js@1.9.12)
+        version: 4.0.0-beta.94(effect@4.0.0-beta.94)(solid-js@1.9.12)
       '@tailwindcss/vite':
         specifier: 'catalog:'
         version: 4.1.18(vite@8.0.3(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.6.1)(terser@5.46.2)(tsx@4.20.6)(yaml@2.9.0))
@@ -768,7 +762,7 @@ importers:
         version: 1.167.45(solid-js@1.9.12)(vite-plugin-solid@2.11.11(solid-js@1.9.12)(vite@8.0.3(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.6.1)(terser@5.46.2)(tsx@4.20.6)(yaml@2.9.0)))(vite@8.0.3(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.6.1)(terser@5.46.2)(tsx@4.20.6)(yaml@2.9.0))(webpack@5.106.2(@swc/core@1.15.8(@swc/helpers@0.5.21))(esbuild@0.27.7))
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.57
+        version: 4.0.0-beta.94
       lucide-solid:
         specifier: 'catalog:'
         version: 0.554.0(solid-js@1.9.12)
@@ -805,7 +799,7 @@ importers:
         version: link:../../shared/domain
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.57
+        version: 4.0.0-beta.94
       tslib:
         specifier: 'catalog:'
         version: 2.8.1
@@ -832,7 +826,7 @@ importers:
         version: 5.90.10(react@19.2.0)
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.57
+        version: 4.0.0-beta.94
       react:
         specifier: 'catalog:'
         version: 19.2.0
@@ -881,7 +875,7 @@ importers:
         version: 5.90.23(solid-js@1.9.12)
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.57
+        version: 4.0.0-beta.94
       lucide-solid:
         specifier: 'catalog:'
         version: 0.554.0(solid-js@1.9.12)
@@ -896,11 +890,11 @@ importers:
         version: 1.21.0
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.57
+        version: 4.0.0-beta.94
     devDependencies:
       '@effect/vitest':
         specifier: 'catalog:'
-        version: 4.0.0-beta.57(effect@4.0.0-beta.57)(vitest@4.1.2(@opentelemetry/api@1.9.1)(@types/node@20.19.25)(@vitest/ui@4.1.5(vitest@4.1.2))(jsdom@27.2.0)(vite@8.0.3(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@types/node@20.19.25)(esbuild@0.27.7)(jiti@2.6.1)(terser@5.46.2)(tsx@4.20.6)(yaml@2.9.0)))
+        version: 4.0.0-beta.94(effect@4.0.0-beta.94)(vitest@4.1.2(@opentelemetry/api@1.9.1)(@types/node@20.19.25)(@vitest/ui@4.1.5(vitest@4.1.2))(jsdom@27.2.0)(vite@8.0.3(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@types/node@20.19.25)(esbuild@0.27.7)(jiti@2.6.1)(terser@5.46.2)(tsx@4.20.6)(yaml@2.9.0)))
       '@types/node':
         specifier: 'catalog:'
         version: 20.19.25
@@ -921,7 +915,7 @@ importers:
     dependencies:
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.57
+        version: 4.0.0-beta.94
       tslib:
         specifier: 'catalog:'
         version: 2.8.1
@@ -933,7 +927,7 @@ importers:
         version: link:../web
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.57
+        version: 4.0.0-beta.94
       tslib:
         specifier: 'catalog:'
         version: 2.8.1
@@ -945,7 +939,7 @@ importers:
         version: link:../web
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.57
+        version: 4.0.0-beta.94
       tslib:
         specifier: 'catalog:'
         version: 2.8.1
@@ -957,7 +951,7 @@ importers:
         version: link:../core
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.57
+        version: 4.0.0-beta.94
       tslib:
         specifier: 'catalog:'
         version: 2.8.1
@@ -982,7 +976,7 @@ importers:
         version: link:../web
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.57
+        version: 4.0.0-beta.94
       tslib:
         specifier: 'catalog:'
         version: 2.8.1
@@ -1000,7 +994,7 @@ importers:
         version: link:../runtime
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.57
+        version: 4.0.0-beta.94
       tslib:
         specifier: 'catalog:'
         version: 2.8.1
@@ -1031,10 +1025,10 @@ importers:
     devDependencies:
       '@effect/platform-node':
         specifier: 'catalog:'
-        version: 4.0.0-beta.57(effect@4.0.0-beta.57)(ioredis@5.10.1)
+        version: 4.0.0-beta.94(effect@4.0.0-beta.94)(ioredis@5.10.1)
       '@effect/vitest':
         specifier: 'catalog:'
-        version: 4.0.0-beta.57(effect@4.0.0-beta.57)(vitest@4.1.2(@opentelemetry/api@1.9.1)(@types/node@20.19.25)(@vitest/ui@4.1.5(vitest@4.1.2))(jsdom@27.2.0)(vite@8.0.3(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@types/node@20.19.25)(esbuild@0.27.7)(jiti@2.6.1)(terser@5.46.2)(tsx@4.20.6)(yaml@2.9.0)))
+        version: 4.0.0-beta.94(effect@4.0.0-beta.94)(vitest@4.1.2(@opentelemetry/api@1.9.1)(@types/node@20.19.25)(@vitest/ui@4.1.5(vitest@4.1.2))(jsdom@27.2.0)(vite@8.0.3(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@types/node@20.19.25)(esbuild@0.27.7)(jiti@2.6.1)(terser@5.46.2)(tsx@4.20.6)(yaml@2.9.0)))
       '@types/better-sqlite3':
         specifier: 'catalog:'
         version: 7.6.13
@@ -1046,7 +1040,7 @@ importers:
         version: 12.6.2
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.57
+        version: 4.0.0-beta.94
       vitest:
         specifier: 'catalog:'
         version: 4.1.2(@opentelemetry/api@1.9.1)(@types/node@20.19.25)(@vitest/ui@4.1.5(vitest@4.1.2))(jsdom@27.2.0)(vite@8.0.3(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@types/node@20.19.25)(esbuild@0.27.7)(jiti@2.6.1)(terser@5.46.2)(tsx@4.20.6)(yaml@2.9.0))
@@ -1061,7 +1055,7 @@ importers:
         version: 0.95.15
       '@effect/platform-node':
         specifier: 'catalog:'
-        version: 4.0.0-beta.57(effect@4.0.0-beta.57)(ioredis@5.10.1)
+        version: 4.0.0-beta.94(effect@4.0.0-beta.94)(ioredis@5.10.1)
       '@prisma/client':
         specifier: 'catalog:'
         version: 7.3.0(prisma@7.3.0(@types/react@19.1.13)(better-sqlite3@12.6.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3))(typescript@5.9.3)
@@ -1070,7 +1064,7 @@ importers:
         version: 7.3.0
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.57
+        version: 4.0.0-beta.94
       eta:
         specifier: 'catalog:'
         version: 4.6.0
@@ -1081,15 +1075,12 @@ importers:
       '@effect/build-utils':
         specifier: 'catalog:'
         version: 0.8.9
-      '@effect/experimental':
-        specifier: 'catalog:'
-        version: 0.59.0(@effect/platform@0.95.0(effect@4.0.0-beta.57))(effect@4.0.0-beta.57)(ioredis@5.10.1)
       '@effect/language-service':
         specifier: 'catalog:'
-        version: 0.56.0
+        version: 0.86.4
       '@effect/vitest':
         specifier: 'catalog:'
-        version: 4.0.0-beta.57(effect@4.0.0-beta.57)(vitest@4.1.2(@opentelemetry/api@1.9.1)(@types/node@20.19.25)(@vitest/ui@4.1.5(vitest@4.1.2))(jsdom@27.2.0)(vite@8.0.3(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@types/node@20.19.25)(esbuild@0.27.7)(jiti@2.6.1)(terser@5.46.2)(tsx@4.20.6)(yaml@2.9.0)))
+        version: 4.0.0-beta.94(effect@4.0.0-beta.94)(vitest@4.1.2(@opentelemetry/api@1.9.1)(@types/node@20.19.25)(@vitest/ui@4.1.5(vitest@4.1.2))(jsdom@27.2.0)(vite@8.0.3(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@types/node@20.19.25)(esbuild@0.27.7)(jiti@2.6.1)(terser@5.46.2)(tsx@4.20.6)(yaml@2.9.0)))
       '@prisma/adapter-better-sqlite3':
         specifier: 'catalog:'
         version: 7.3.0
@@ -1149,7 +1140,7 @@ importers:
         version: 5.90.10(react@19.2.0)
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.57
+        version: 4.0.0-beta.94
       react:
         specifier: 'catalog:'
         version: 19.2.0
@@ -1174,13 +1165,13 @@ importers:
         version: 2.17.4(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3)
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.57
+        version: 4.0.0-beta.94
 
   packages/react/router:
     dependencies:
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.57
+        version: 4.0.0-beta.94
       react-router:
         specifier: 'catalog:'
         version: 7.12.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
@@ -1195,7 +1186,7 @@ importers:
         version: link:../router
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.57
+        version: 4.0.0-beta.94
 
   packages/react/ui:
     dependencies:
@@ -1268,7 +1259,7 @@ importers:
         version: 13.15.10
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.57
+        version: 4.0.0-beta.94
       tslib:
         specifier: 'catalog:'
         version: 2.8.1
@@ -1290,7 +1281,7 @@ importers:
         version: 5.90.23(solid-js@1.9.12)
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.57
+        version: 4.0.0-beta.94
       solid-js:
         specifier: 'catalog:'
         version: 1.9.12
@@ -2253,10 +2244,10 @@ packages:
       '@effect/rpc': ^0.73.0
       effect: ^3.19.15
 
-  '@effect/atom-solid@4.0.0-beta.57':
-    resolution: {integrity: sha512-DfjciO5E5ohv8sxyqihelKx9jzwdFmsLx3j6QiF5IuFyduZmn/qAzqflBEY0cdYP4pXHIsdE9ArJ0eBQ5IW+iQ==}
+  '@effect/atom-solid@4.0.0-beta.94':
+    resolution: {integrity: sha512-+lSn6iItUv7HvmcWmbf+RIGgvhD7Xrdrgftve9bVnxBokj6UOxNL2EmU6asSobvxppn96gim9i3+TDF3igNXhw==}
     peerDependencies:
-      effect: ^4.0.0-beta.57
+      effect: ^4.0.0-beta.94
       solid-js: '>=1 <2'
 
   '@effect/build-utils@0.8.9':
@@ -2277,21 +2268,21 @@ packages:
       lmdb:
         optional: true
 
-  '@effect/language-service@0.56.0':
-    resolution: {integrity: sha512-gvJaHoeXMHAoA6+Xyj9Vdq52yDCs+ECLbKpHvxHtdJP/C0D9b3JFEfLjdVuw37zoWcYS856um4rgEYHlW2LSEQ==}
+  '@effect/language-service@0.86.4':
+    resolution: {integrity: sha512-XzAPsbwCdm0gRh0E8wJu3wXECb00QraE3LnbObA4RgHn8u2TEbwAjmBadRnwSgOIElfzZjbsRqNR706/V54hDg==}
     hasBin: true
 
-  '@effect/platform-node-shared@4.0.0-beta.57':
-    resolution: {integrity: sha512-C976X6f+qHUtLSqcqImuCrjhAHnJV17NC2RvvybsAuDfkyIWU4MyiO2XwgiBeijeNupyr1M/KPKnyjtkNxV9Hw==}
+  '@effect/platform-node-shared@4.0.0-beta.94':
+    resolution: {integrity: sha512-8mCen8dhL4ockkkxevKdFOXqR8sksuZcPwyqkKZv3w30TIdj4TKXG5sQODmpPFI0+/quwm5T78kodqf/QlZwoA==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
-      effect: ^4.0.0-beta.57
+      effect: ^4.0.0-beta.94
 
-  '@effect/platform-node@4.0.0-beta.57':
-    resolution: {integrity: sha512-la0xxPSAYOsY0d+uVxEBxok3jYB31iPQmIaZZRUj2SNWqcGGHJc6KorKtI8guqSLuv9FGZ255kBWXRbG6hMeeg==}
+  '@effect/platform-node@4.0.0-beta.94':
+    resolution: {integrity: sha512-3WhV5ZN2pTPcOtEQlM66Ve0/B4EzF88sYBml97NnRV7BA5Kx0FYLSslc/4aWoaXj6XwuWOxmoXeGGeFzw4gbMQ==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
-      effect: ^4.0.0-beta.57
+      effect: ^4.0.0-beta.94
       ioredis: ^5.7.0
 
   '@effect/platform@0.95.0':
@@ -2305,49 +2296,49 @@ packages:
       '@effect/platform': ^0.94.5
       effect: ^3.19.18
 
-  '@effect/tsgo-darwin-arm64@0.0.17':
-    resolution: {integrity: sha512-mdHPrEwUq0/b+byBmVlOVXGaIT0M4OWaeUj2Fu4xJILD6XOll6nSlNhznbloPiRv92On/yQTLkGheo6fk6Cqsw==}
+  '@effect/tsgo-darwin-arm64@0.16.2':
+    resolution: {integrity: sha512-ChJ4fUKPaKIU+qcq3KHnxLG3LpqZB9W3WRqpEeI9eHbBAnLKjo3y6jul6luGVjxGznGc/z3mYzHai3OCoC7Lew==}
     cpu: [arm64]
     os: [darwin]
 
-  '@effect/tsgo-darwin-x64@0.0.17':
-    resolution: {integrity: sha512-U97UFOyRJ9QuuNOXaD8pLikaC4cIWwzGE80l+ZAcplSUKxNeXrE8wlk+4FhWN7SDAufcoXzXJl+MKMrNmt0vhQ==}
+  '@effect/tsgo-darwin-x64@0.16.2':
+    resolution: {integrity: sha512-8ZSJzRF/HZRS64bmgj5bzOE39snc0K7ik0eMOCpEWYL++Z1LhT6U2lR+Cd9s5zSmPQocqyoVc/iykevbOGRzQw==}
     cpu: [x64]
     os: [darwin]
 
-  '@effect/tsgo-linux-arm64@0.0.17':
-    resolution: {integrity: sha512-jw5/+LwETt8AYE3uEKnTJy+adm8Q58M5zsnQrgXer27DieHh8LudEF7S2pRjN5RRv24wwwkwQEbjCWBjQbE5+w==}
+  '@effect/tsgo-linux-arm64@0.16.2':
+    resolution: {integrity: sha512-lUJnvzW7jRFP0EIVj4mxfPzcjszSSJxUizcXHsaOSbWuA3MAfKZItKZEerZgfJu8GMdwMoZJAECnkwOyyH7WkQ==}
     cpu: [arm64]
     os: [linux]
 
-  '@effect/tsgo-linux-arm@0.0.17':
-    resolution: {integrity: sha512-ruMktzvFJyxAE/dabaL3VO3PS0QUJ3sLcvmB0Ez4Fv2679LM/+pS51EXLVnwEArRi1fdXNlaGAaPDEvHFm+6lA==}
+  '@effect/tsgo-linux-arm@0.16.2':
+    resolution: {integrity: sha512-zGlSwwJqf4EhyDIPy0PoZTEnBNJeyAL2T9BOCuAT2L6DfZVhv3BfXfOPfVRJp4rCR50uSBmq2+8vfQYJ6wN36A==}
     cpu: [arm]
     os: [linux]
 
-  '@effect/tsgo-linux-x64@0.0.17':
-    resolution: {integrity: sha512-57aa9KuO+tuRUHiRCYkZJHb2JOkaRBGFamre0iFk1x2iuiMg39qcOesUnvQhpIrX02v9AFzV1qaEuXJDory4Lg==}
+  '@effect/tsgo-linux-x64@0.16.2':
+    resolution: {integrity: sha512-DYQyYu1xxwrGgAYhNqnJ/3oFwfNfhBjrcXyJCr9LvvAcFOvLotCdWG8KGCZ1MAXxA3TXuOaZliRFZCAcpGU4nA==}
     cpu: [x64]
     os: [linux]
 
-  '@effect/tsgo-win32-arm64@0.0.17':
-    resolution: {integrity: sha512-dP7Mte0QBn7YlfM9uSC/me7GAge56vFQLXtizN8SuOPXcuX6XOn70kxTNfYZMb0IvN4I+qcwpgQ2bZoz9GQw4A==}
+  '@effect/tsgo-win32-arm64@0.16.2':
+    resolution: {integrity: sha512-LOar36BHv165lroDk86BrhDalxOPsIbn0+tG+bMgsap3E2P5pnPbOvZFz27QyZFuXqe1m0JOtQGknpHssR5XcA==}
     cpu: [arm64]
     os: [win32]
 
-  '@effect/tsgo-win32-x64@0.0.17':
-    resolution: {integrity: sha512-LNp4zPGK18JfvYW0U7xXkWDcDZleo4JIxFTmfod9YviyUmLO/IxEvFYHO3kVI4i6WVZHMKmeMLgzfFpSIRmlnQ==}
+  '@effect/tsgo-win32-x64@0.16.2':
+    resolution: {integrity: sha512-roR6wiKQUHpUhVaQmmx65zM6JsPBMHRd1jzQ8N+dGQjw5VLt1LmpjkQLxZskz3jSB9kZBM75Mom7JyI8pc8Khw==}
     cpu: [x64]
     os: [win32]
 
-  '@effect/tsgo@0.0.17':
-    resolution: {integrity: sha512-lolef3DCZq9fSMXZQjHOFBfiR67oGtdvWX4umb11SsHRJDIYleizAMZRiGI9T9Tp6jRTqsiqa8XFO5MANnoC0g==}
+  '@effect/tsgo@0.16.2':
+    resolution: {integrity: sha512-eQAKeFdYIWyjTLAN2Mge81Wf4KLNSyi/oRYo1gAMaX4dcI1VEgBWnqlc+47K389klHcdR0q8eZdnrdlhYDtaEw==}
     hasBin: true
 
-  '@effect/vitest@4.0.0-beta.57':
-    resolution: {integrity: sha512-XyGYv1zisrdP/N8+r4qaegyHZK4WS/1xBGlLPWqEoggBhgW7rD48cGUXDLEP7TlHcIJQiIlHtJlQUIwgVx3zWg==}
+  '@effect/vitest@4.0.0-beta.94':
+    resolution: {integrity: sha512-pCjcUMTBizn2wibiyP9Tl3VvGEkplvIA33iCvmK3y/toi54IWE3PNL7d0JkZvEaKV2OoaKVTaH1dOybRtpBuQw==}
     peerDependencies:
-      effect: ^4.0.0-beta.57
+      effect: ^4.0.0-beta.94
       vitest: ^3.0.0 || ^4.0.0
 
   '@electric-sql/pglite-socket@0.0.20':
@@ -3445,33 +3436,33 @@ packages:
     resolution: {integrity: sha512-XyroGQXcHrZdvmrGJvsA9KNeOOgGMg1Vg9OlheUsBOSKznLMDl+YChxbkboRHvtFYJEMRYmlV3uoo/njCw05iw==}
     engines: {node: '>=16'}
 
-  '@msgpackr-extract/msgpackr-extract-darwin-arm64@3.0.3':
-    resolution: {integrity: sha512-QZHtlVgbAdy2zAqNA9Gu1UpIuI8Xvsd1v8ic6B2pZmeFnFcMWiPLfWXh7TVw4eGEZ/C9TH281KwhVoeQUKbyjw==}
+  '@msgpackr-extract/msgpackr-extract-darwin-arm64@3.0.4':
+    resolution: {integrity: sha512-LCkGo6JDfaBhgST7UpPWgNgLINpcpabaHfyz5OBx75nUYxBsaEPxjnyNjWpeb/xBup/682QnBfRBy2/LvPutZQ==}
     cpu: [arm64]
     os: [darwin]
 
-  '@msgpackr-extract/msgpackr-extract-darwin-x64@3.0.3':
-    resolution: {integrity: sha512-mdzd3AVzYKuUmiWOQ8GNhl64/IoFGol569zNRdkLReh6LRLHOXxU4U8eq0JwaD8iFHdVGqSy4IjFL4reoWCDFw==}
+  '@msgpackr-extract/msgpackr-extract-darwin-x64@3.0.4':
+    resolution: {integrity: sha512-zExlW9zUJKZH/tOtVMttwjKa4Xm/3KcNjnE3dPN92uCktwavMxpgCA3MoJK/DOnTWsQgo224OaST27/mPNAf+w==}
     cpu: [x64]
     os: [darwin]
 
-  '@msgpackr-extract/msgpackr-extract-linux-arm64@3.0.3':
-    resolution: {integrity: sha512-YxQL+ax0XqBJDZiKimS2XQaf+2wDGVa1enVRGzEvLLVFeqa5kx2bWbtcSXgsxjQB7nRqqIGFIcLteF/sHeVtQg==}
+  '@msgpackr-extract/msgpackr-extract-linux-arm64@3.0.4':
+    resolution: {integrity: sha512-dgX0P/9wGPJeHFBG+ZmhgE6bmtMt7NP5CRBGyyktpopdk/mW4POnrpQsSLtKI1dwpc+pPLuXHDh6vvskyQE/sw==}
     cpu: [arm64]
     os: [linux]
 
-  '@msgpackr-extract/msgpackr-extract-linux-arm@3.0.3':
-    resolution: {integrity: sha512-fg0uy/dG/nZEXfYilKoRe7yALaNmHoYeIoJuJ7KJ+YyU2bvY8vPv27f7UKhGRpY6euFYqEVhxCFZgAUNQBM3nw==}
+  '@msgpackr-extract/msgpackr-extract-linux-arm@3.0.4':
+    resolution: {integrity: sha512-Tg3yX65f5GbtXLkrYEHE5oibZG9epyYWas7FogTTEJeDEF9JlXJzKgXaNhT3UXlTOeA+AfZpYZYZ0uPj7Cfquw==}
     cpu: [arm]
     os: [linux]
 
-  '@msgpackr-extract/msgpackr-extract-linux-x64@3.0.3':
-    resolution: {integrity: sha512-cvwNfbP07pKUfq1uH+S6KJ7dT9K8WOE4ZiAcsrSes+UY55E/0jLYc+vq+DO7jlmqRb5zAggExKm0H7O/CBaesg==}
+  '@msgpackr-extract/msgpackr-extract-linux-x64@3.0.4':
+    resolution: {integrity: sha512-8TNXMEjJc3QEy7R/x1INhgiU+XakDAFUzBhaz7+Rbrs8NH5UQeHQxxmzsSBJGyV6I1jW79undiQm8tOI+D+8FQ==}
     cpu: [x64]
     os: [linux]
 
-  '@msgpackr-extract/msgpackr-extract-win32-x64@3.0.3':
-    resolution: {integrity: sha512-x0fWaQtYp4E6sktbsdAqnehxDgEc/VwM7uLsRCYWaiGu0ykYdZPiS8zCWdnjHwyiumousxfBm4SO31eXqwEZhQ==}
+  '@msgpackr-extract/msgpackr-extract-win32-x64@3.0.4':
+    resolution: {integrity: sha512-CmCXPQrkbwExx3j946/PtHWHbYJiCRBRDl4BlkRQcJB/YOwQxJRTpoo7aTsortjgoJ1x7opzTSxn7C+ASSLVjQ==}
     cpu: [x64]
     os: [win32]
 
@@ -7237,8 +7228,8 @@ packages:
   effect@3.18.4:
     resolution: {integrity: sha512-b1LXQJLe9D11wfnOKAk3PKxuqYshQ0Heez+y5pnkd3jLj1yx9QhM72zZ9uUrOQyNvrs2GZZd/3maL0ZV18YuDA==}
 
-  effect@4.0.0-beta.57:
-    resolution: {integrity: sha512-rg32VgXnLKaPRs9tbRDaZ5jxmzNY7ojXt85gSHGUTwdlbWH5Ik+OCUY2q14TXliygPGoHwCAvNWS4bQJOqf00g==}
+  effect@4.0.0-beta.94:
+    resolution: {integrity: sha512-Q8BrCNbp/3Uh+7xQYHphZBkNfm2SJnl1frQ+8yWfd/j3SU3cL13D38cBMLcnULupwza2Nt4DrjZoMzHWL3CoxQ==}
 
   ejs@3.1.10:
     resolution: {integrity: sha512-UeJmFfOrAQS8OJWPZ4qtgHyWExa088/MtK5UEyoJGFH67cDEXkZSviOiKRCZ4Xij0zxI3JECgYs3oKx+AizQBA==}
@@ -7601,8 +7592,8 @@ packages:
     resolution: {integrity: sha512-h5+1OzzfCC3Ef7VbtKdcv7zsstUQwUDlYpUTvjeUsJAssPgLn7QzbboPtL5ro04Mq0rPOsMzl7q5hIbRs2wD1A==}
     engines: {node: '>=8.0.0'}
 
-  fast-check@4.7.0:
-    resolution: {integrity: sha512-NsZRtqvSSoCP0HbNjUD+r1JH8zqZalyp6gLY9e7OYs7NK9b6AHOs2baBFeBG7bVNsuoukh89x2Yg3rPsul8ziQ==}
+  fast-check@4.8.0:
+    resolution: {integrity: sha512-GOJ158CUMnN6cSahsv4+ExARvIDuzzinFjkp0E9WtiBa5zcVeLozVkWaE4IzFcc+Y48Wp1EDlUZsXRyAztQcSg==}
     engines: {node: '>=12.17.0'}
 
   fast-deep-equal@3.1.3:
@@ -8234,9 +8225,9 @@ packages:
     resolution: {integrity: sha512-X7rqawQBvfdjS10YU1y1YVreA3SsLrW9dX2CewP2EbBJM4ypVNLDkO5y04gejPwKIY9lR+7r9gn3rFPt/kmWFg==}
     engines: {node: ^14.17.0 || ^16.13.0 || >=18.0.0}
 
-  ini@6.0.0:
-    resolution: {integrity: sha512-IBTdIkzZNOpqm7q3dRqJvMaldXjDHWkEDfrwGEQTs5eaQMWV+djAhR+wahyNNMAa+qpbDUhBMVt4ZKNwpPm7xQ==}
-    engines: {node: ^20.17.0 || >=22.9.0}
+  ini@7.0.0:
+    resolution: {integrity: sha512-ifK0CgjALofS5bkrcTy4RaQ9Vx2Knf/eLeIO+NaswQEpH1UblrtTSCIvN71qQDMq0PeQ/SSPojvEJp9vvvfr+w==}
+    engines: {node: ^22.22.2 || ^24.15.0 || >=26.0.0}
 
   inline-style-parser@0.1.1:
     resolution: {integrity: sha512-7NXolsK4CAS5+xvdj5OMMbI962hU/wvwoxk+LWR9Ek9bVtyuuYScDN6eS0rUm6TxApFpw7CX1o4uJzcd4AyD3Q==}
@@ -9542,12 +9533,15 @@ packages:
   ms@2.1.3:
     resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==}
 
-  msgpackr-extract@3.0.3:
-    resolution: {integrity: sha512-P0efT1C9jIdVRefqjzOQ9Xml57zpOXnIuS+csaB4MdZbTdmGDLo8XhzBG1N7aO11gKDDkJvBLULeFTo46wwreA==}
+  msgpackr-extract@3.0.4:
+    resolution: {integrity: sha512-4kmO/MdyUIkLIvTPr8VHLil4AtoKIoniWPIEk5+CDy0xnWC84azhSFmuJ7PxZdsYtiP5kEeQsORAVIeMgxT+Hw==}
     hasBin: true
 
   msgpackr@1.11.10:
     resolution: {integrity: sha512-iCZNq+HszvF+fC3anCm4nBmWEnbeIAfpDs6IStAEKhQ2YSgkjzVG2FF9XJqwwQh5bH3N9OUTUt4QwVN6MLMLtA==}
+
+  msgpackr@2.0.4:
+    resolution: {integrity: sha512-o1C5KRmuRt+apqMr1HuGSqWStZoRBUpEsCsl15uM9VdAF1qHLtvMOU2En747EnTyEl6c4pzPewRMFF31s1CNbA==}
 
   multipasta@0.2.7:
     resolution: {integrity: sha512-KPA58d68KgGil15oDqXjkUBEBYc00XvbPj5/X+dyzeo/lWm9Nc25pQRlf1D+gv4OpK7NM0J1odrbu9JNNGvynA==}
@@ -11381,8 +11375,8 @@ packages:
     resolution: {integrity: sha512-xXnp4kTyor2Zq+J1FfPI6Eq3ew5h6Vl0F/8d9XU5zZQf1tX9s2Su1/3PiMmUANFULpmksxkClamIZcaUqryHsQ==}
     engines: {node: '>=20.18.1'}
 
-  undici@8.1.0:
-    resolution: {integrity: sha512-E9MkTS4xXLnRPYqxH2e6Hr2/49e7WFDKczKcCaFH4VaZs2iNvHMqeIkyUAD9vM8kujy9TjVrRlQ5KkdEJxB2pw==}
+  undici@8.7.0:
+    resolution: {integrity: sha512-N7iQtfyLhIMOFgQubvmLV26svHpO0bqKnAiWotTQCVKCmWrcGbBotPuW1x+xwYZ2VHdSTVUfPQQnlEt1/LouTQ==}
     engines: {node: '>=22.19.0'}
 
   unicode-canonical-property-names-ecmascript@2.0.1:
@@ -11595,8 +11589,8 @@ packages:
     resolution: {integrity: sha512-0/A9rDy9P7cJ+8w1c9WD9V//9Wj15Ce2MPz8Ri6032usz+NfePxx5AcN3bN+r6ZL6jEo066/yNYB3tn4pQEx+A==}
     hasBin: true
 
-  uuid@13.0.0:
-    resolution: {integrity: sha512-XQegIaBTVUjSHliKqcnFqYypAd4S+WCYt5NIeRs6w/UAry7z8Y9j5ZwRRL4kzq9U3sD6v+85er9FvkEaBpji2w==}
+  uuid@14.0.1:
+    resolution: {integrity: sha512-6ZxzVpzDXDa3bJWaHilVayA+BH/1zmxCJoVgvmqJnid/gPoKHxUrS/aC/T6LGQtNHT+XHG9fXPJB4d+IrU30Ew==}
     hasBin: true
 
   uuid@8.3.2:
@@ -13459,16 +13453,16 @@ snapshots:
   '@dprint/win32-x64@0.51.1':
     optional: true
 
-  '@effect-atom/atom@0.5.0(@effect/experimental@0.59.0(@effect/platform@0.95.0(effect@4.0.0-beta.57))(effect@4.0.0-beta.57)(ioredis@5.10.1))(@effect/platform@0.95.0(effect@4.0.0-beta.57))(@effect/rpc@0.73.2(@effect/platform@0.95.0(effect@4.0.0-beta.57))(effect@4.0.0-beta.57))(effect@4.0.0-beta.57)':
+  '@effect-atom/atom@0.5.0(@effect/experimental@0.59.0(@effect/platform@0.95.0(effect@4.0.0-beta.94))(effect@4.0.0-beta.94)(ioredis@5.10.1))(@effect/platform@0.95.0(effect@4.0.0-beta.94))(@effect/rpc@0.73.2(@effect/platform@0.95.0(effect@4.0.0-beta.94))(effect@4.0.0-beta.94))(effect@4.0.0-beta.94)':
     dependencies:
-      '@effect/experimental': 0.59.0(@effect/platform@0.95.0(effect@4.0.0-beta.57))(effect@4.0.0-beta.57)(ioredis@5.10.1)
-      '@effect/platform': 0.95.0(effect@4.0.0-beta.57)
-      '@effect/rpc': 0.73.2(@effect/platform@0.95.0(effect@4.0.0-beta.57))(effect@4.0.0-beta.57)
-      effect: 4.0.0-beta.57
+      '@effect/experimental': 0.59.0(@effect/platform@0.95.0(effect@4.0.0-beta.94))(effect@4.0.0-beta.94)(ioredis@5.10.1)
+      '@effect/platform': 0.95.0(effect@4.0.0-beta.94)
+      '@effect/rpc': 0.73.2(@effect/platform@0.95.0(effect@4.0.0-beta.94))(effect@4.0.0-beta.94)
+      effect: 4.0.0-beta.94
 
-  '@effect/atom-solid@4.0.0-beta.57(effect@4.0.0-beta.57)(solid-js@1.9.12)':
+  '@effect/atom-solid@4.0.0-beta.94(effect@4.0.0-beta.94)(solid-js@1.9.12)':
     dependencies:
-      effect: 4.0.0-beta.57
+      effect: 4.0.0-beta.94
       solid-js: 1.9.12
 
   '@effect/build-utils@0.8.9':
@@ -13476,83 +13470,84 @@ snapshots:
       micromatch: 4.0.8
       pkg-entry-points: 1.1.1
 
-  '@effect/experimental@0.59.0(@effect/platform@0.95.0(effect@4.0.0-beta.57))(effect@4.0.0-beta.57)(ioredis@5.10.1)':
+  '@effect/experimental@0.59.0(@effect/platform@0.95.0(effect@4.0.0-beta.94))(effect@4.0.0-beta.94)(ioredis@5.10.1)':
     dependencies:
-      '@effect/platform': 0.95.0(effect@4.0.0-beta.57)
-      effect: 4.0.0-beta.57
+      '@effect/platform': 0.95.0(effect@4.0.0-beta.94)
+      effect: 4.0.0-beta.94
       uuid: 11.1.0
     optionalDependencies:
       ioredis: 5.10.1
 
-  '@effect/language-service@0.56.0': {}
+  '@effect/language-service@0.86.4': {}
 
-  '@effect/platform-node-shared@4.0.0-beta.57(effect@4.0.0-beta.57)':
+  '@effect/platform-node-shared@4.0.0-beta.94(effect@4.0.0-beta.94)':
     dependencies:
       '@types/ws': 8.18.1
-      effect: 4.0.0-beta.57
+      effect: 4.0.0-beta.94
       ws: 8.20.0
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
 
-  '@effect/platform-node@4.0.0-beta.57(effect@4.0.0-beta.57)(ioredis@5.10.1)':
+  '@effect/platform-node@4.0.0-beta.94(effect@4.0.0-beta.94)(ioredis@5.10.1)':
     dependencies:
-      '@effect/platform-node-shared': 4.0.0-beta.57(effect@4.0.0-beta.57)
-      effect: 4.0.0-beta.57
+      '@effect/platform-node-shared': 4.0.0-beta.94(effect@4.0.0-beta.94)
+      effect: 4.0.0-beta.94
       ioredis: 5.10.1
       mime: 4.1.0
-      undici: 8.1.0
+      undici: 8.7.0
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
 
-  '@effect/platform@0.95.0(effect@4.0.0-beta.57)':
+  '@effect/platform@0.95.0(effect@4.0.0-beta.94)':
     dependencies:
-      effect: 4.0.0-beta.57
+      effect: 4.0.0-beta.94
       find-my-way-ts: 0.1.6
       msgpackr: 1.11.10
       multipasta: 0.2.7
 
-  '@effect/rpc@0.73.2(@effect/platform@0.95.0(effect@4.0.0-beta.57))(effect@4.0.0-beta.57)':
+  '@effect/rpc@0.73.2(@effect/platform@0.95.0(effect@4.0.0-beta.94))(effect@4.0.0-beta.94)':
     dependencies:
-      '@effect/platform': 0.95.0(effect@4.0.0-beta.57)
-      effect: 4.0.0-beta.57
+      '@effect/platform': 0.95.0(effect@4.0.0-beta.94)
+      effect: 4.0.0-beta.94
       msgpackr: 1.11.10
 
-  '@effect/tsgo-darwin-arm64@0.0.17':
+  '@effect/tsgo-darwin-arm64@0.16.2':
     optional: true
 
-  '@effect/tsgo-darwin-x64@0.0.17':
+  '@effect/tsgo-darwin-x64@0.16.2':
     optional: true
 
-  '@effect/tsgo-linux-arm64@0.0.17':
+  '@effect/tsgo-linux-arm64@0.16.2':
     optional: true
 
-  '@effect/tsgo-linux-arm@0.0.17':
+  '@effect/tsgo-linux-arm@0.16.2':
     optional: true
 
-  '@effect/tsgo-linux-x64@0.0.17':
+  '@effect/tsgo-linux-x64@0.16.2':
     optional: true
 
-  '@effect/tsgo-win32-arm64@0.0.17':
+  '@effect/tsgo-win32-arm64@0.16.2':
     optional: true
 
-  '@effect/tsgo-win32-x64@0.0.17':
+  '@effect/tsgo-win32-x64@0.16.2':
     optional: true
 
-  '@effect/tsgo@0.0.17':
+  '@effect/tsgo@0.16.2':
     optionalDependencies:
-      '@effect/tsgo-darwin-arm64': 0.0.17
-      '@effect/tsgo-darwin-x64': 0.0.17
-      '@effect/tsgo-linux-arm': 0.0.17
-      '@effect/tsgo-linux-arm64': 0.0.17
-      '@effect/tsgo-linux-x64': 0.0.17
-      '@effect/tsgo-win32-arm64': 0.0.17
-      '@effect/tsgo-win32-x64': 0.0.17
+      '@effect/tsgo-darwin-arm64': 0.16.2
+      '@effect/tsgo-darwin-x64': 0.16.2
+      '@effect/tsgo-linux-arm': 0.16.2
+      '@effect/tsgo-linux-arm64': 0.16.2
+      '@effect/tsgo-linux-x64': 0.16.2
+      '@effect/tsgo-win32-arm64': 0.16.2
+      '@effect/tsgo-win32-x64': 0.16.2
 
-  '@effect/vitest@4.0.0-beta.57(effect@4.0.0-beta.57)(vitest@4.1.2(@opentelemetry/api@1.9.1)(@types/node@20.19.25)(@vitest/ui@4.1.5(vitest@4.1.2))(jsdom@27.2.0)(vite@8.0.3(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@types/node@20.19.25)(esbuild@0.27.7)(jiti@2.6.1)(terser@5.46.2)(tsx@4.20.6)(yaml@2.9.0)))':
+  '@effect/vitest@4.0.0-beta.94(effect@4.0.0-beta.94)(vitest@4.1.2(@opentelemetry/api@1.9.1)(@types/node@20.19.25)(@vitest/ui@4.1.5(vitest@4.1.2))(jsdom@27.2.0)(vite@8.0.3(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@types/node@20.19.25)(esbuild@0.27.7)(jiti@2.6.1)(terser@5.46.2)(tsx@4.20.6)(yaml@2.9.0)))':
     dependencies:
-      effect: 4.0.0-beta.57
+      '@vitest/runner': 4.1.2
+      effect: 4.0.0-beta.94
       vitest: 4.1.2(@opentelemetry/api@1.9.1)(@types/node@20.19.25)(@vitest/ui@4.1.5(vitest@4.1.2))(jsdom@27.2.0)(vite@8.0.3(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@types/node@20.19.25)(esbuild@0.27.7)(jiti@2.6.1)(terser@5.46.2)(tsx@4.20.6)(yaml@2.9.0))
 
   '@electric-sql/pglite-socket@0.0.20(@electric-sql/pglite@0.3.15)':
@@ -14601,22 +14596,22 @@ snapshots:
       chevrotain: 10.5.0
       lilconfig: 2.1.0
 
-  '@msgpackr-extract/msgpackr-extract-darwin-arm64@3.0.3':
+  '@msgpackr-extract/msgpackr-extract-darwin-arm64@3.0.4':
     optional: true
 
-  '@msgpackr-extract/msgpackr-extract-darwin-x64@3.0.3':
+  '@msgpackr-extract/msgpackr-extract-darwin-x64@3.0.4':
     optional: true
 
-  '@msgpackr-extract/msgpackr-extract-linux-arm64@3.0.3':
+  '@msgpackr-extract/msgpackr-extract-linux-arm64@3.0.4':
     optional: true
 
-  '@msgpackr-extract/msgpackr-extract-linux-arm@3.0.3':
+  '@msgpackr-extract/msgpackr-extract-linux-arm@3.0.4':
     optional: true
 
-  '@msgpackr-extract/msgpackr-extract-linux-x64@3.0.3':
+  '@msgpackr-extract/msgpackr-extract-linux-x64@3.0.4':
     optional: true
 
-  '@msgpackr-extract/msgpackr-extract-win32-x64@3.0.3':
+  '@msgpackr-extract/msgpackr-extract-win32-x64@3.0.4':
     optional: true
 
   '@napi-rs/wasm-runtime@0.2.12':
@@ -19410,18 +19405,18 @@ snapshots:
       '@standard-schema/spec': 1.1.0
       fast-check: 3.23.2
 
-  effect@4.0.0-beta.57:
+  effect@4.0.0-beta.94:
     dependencies:
       '@standard-schema/spec': 1.1.0
-      fast-check: 4.7.0
+      fast-check: 4.8.0
       find-my-way-ts: 0.1.6
-      ini: 6.0.0
+      ini: 7.0.0
       kubernetes-types: 1.30.0
-      msgpackr: 1.11.10
+      msgpackr: 2.0.4
       multipasta: 0.2.7
       toml: 4.1.1
-      uuid: 13.0.0
-      yaml: 2.8.3
+      uuid: 14.0.1
+      yaml: 2.9.0
 
   ejs@3.1.10:
     dependencies:
@@ -19969,7 +19964,7 @@ snapshots:
     dependencies:
       pure-rand: 6.1.0
 
-  fast-check@4.7.0:
+  fast-check@4.8.0:
     dependencies:
       pure-rand: 8.4.0
 
@@ -20812,7 +20807,7 @@ snapshots:
 
   ini@4.1.3: {}
 
-  ini@6.0.0: {}
+  ini@7.0.0: {}
 
   inline-style-parser@0.1.1: {}
 
@@ -22694,21 +22689,25 @@ snapshots:
 
   ms@2.1.3: {}
 
-  msgpackr-extract@3.0.3:
+  msgpackr-extract@3.0.4:
     dependencies:
       node-gyp-build-optional-packages: 5.2.2
     optionalDependencies:
-      '@msgpackr-extract/msgpackr-extract-darwin-arm64': 3.0.3
-      '@msgpackr-extract/msgpackr-extract-darwin-x64': 3.0.3
-      '@msgpackr-extract/msgpackr-extract-linux-arm': 3.0.3
-      '@msgpackr-extract/msgpackr-extract-linux-arm64': 3.0.3
-      '@msgpackr-extract/msgpackr-extract-linux-x64': 3.0.3
-      '@msgpackr-extract/msgpackr-extract-win32-x64': 3.0.3
+      '@msgpackr-extract/msgpackr-extract-darwin-arm64': 3.0.4
+      '@msgpackr-extract/msgpackr-extract-darwin-x64': 3.0.4
+      '@msgpackr-extract/msgpackr-extract-linux-arm': 3.0.4
+      '@msgpackr-extract/msgpackr-extract-linux-arm64': 3.0.4
+      '@msgpackr-extract/msgpackr-extract-linux-x64': 3.0.4
+      '@msgpackr-extract/msgpackr-extract-win32-x64': 3.0.4
     optional: true
 
   msgpackr@1.11.10:
     optionalDependencies:
-      msgpackr-extract: 3.0.3
+      msgpackr-extract: 3.0.4
+
+  msgpackr@2.0.4:
+    optionalDependencies:
+      msgpackr-extract: 3.0.4
 
   multipasta@0.2.7: {}
 
@@ -24990,12 +24989,12 @@ snapshots:
 
   trough@2.2.0: {}
 
-  trpc-cli@0.12.4(@trpc/server@11.16.0(typescript@5.9.3))(effect@4.0.0-beta.57)(valibot@1.3.1(typescript@5.9.3))(zod@4.3.6):
+  trpc-cli@0.12.4(@trpc/server@11.16.0(typescript@5.9.3))(effect@3.18.4)(valibot@1.3.1(typescript@5.9.3))(zod@4.3.6):
     dependencies:
       commander: 14.0.3
     optionalDependencies:
       '@trpc/server': 11.16.0(typescript@5.9.3)
-      effect: 4.0.0-beta.57
+      effect: 3.18.4
       valibot: 1.3.1(typescript@5.9.3)
       zod: 4.3.6
 
@@ -25079,7 +25078,7 @@ snapshots:
   uglify-js@3.19.3:
     optional: true
 
-  ultracite@6.3.6(effect@4.0.0-beta.57)(typescript@5.9.3)(valibot@1.3.1(typescript@5.9.3)):
+  ultracite@6.3.6(effect@3.18.4)(typescript@5.9.3)(valibot@1.3.1(typescript@5.9.3)):
     dependencies:
       '@clack/prompts': 0.11.0
       '@trpc/server': 11.16.0(typescript@5.9.3)
@@ -25087,7 +25086,7 @@ snapshots:
       glob: 12.0.0
       jsonc-parser: 3.3.1
       nypm: 0.6.6
-      trpc-cli: 0.12.4(@trpc/server@11.16.0(typescript@5.9.3))(effect@4.0.0-beta.57)(valibot@1.3.1(typescript@5.9.3))(zod@4.3.6)
+      trpc-cli: 0.12.4(@trpc/server@11.16.0(typescript@5.9.3))(effect@3.18.4)(valibot@1.3.1(typescript@5.9.3))(zod@4.3.6)
       zod: 4.3.6
     transitivePeerDependencies:
       - '@orpc/server'
@@ -25113,7 +25112,7 @@ snapshots:
 
   undici@7.25.0: {}
 
-  undici@8.1.0: {}
+  undici@8.7.0: {}
 
   unicode-canonical-property-names-ecmascript@2.0.1: {}
 
@@ -25328,7 +25327,7 @@ snapshots:
 
   uuid@11.1.0: {}
 
-  uuid@13.0.0: {}
+  uuid@14.0.1: {}
 
   uuid@8.3.2: {}
 
