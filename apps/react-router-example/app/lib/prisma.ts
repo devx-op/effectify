@@ -1,17 +1,73 @@
 import "dotenv/config"
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3"
-import Database from "better-sqlite3"
-import { PrismaClient } from "../../prisma/generated/client.js"
+import Database, { Database as DatabaseType } from "better-sqlite3"
 
-const connectionString = process.env.DATABASE_URL
-if (!connectionString || connectionString.trim().length === 0) {
-  throw new Error("Missing DATABASE_URL environment variable")
-}
+const localDevBootstrapSql = `
+  CREATE TABLE IF NOT EXISTS "user" (
+    "id" TEXT PRIMARY KEY,
+    "email" TEXT NOT NULL UNIQUE,
+    "emailVerified" INTEGER NOT NULL DEFAULT 0,
+    "name" TEXT,
+    "image" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
 
-// better-sqlite3 expects just the file path, not the full connection string
+  CREATE TABLE IF NOT EXISTS "session" (
+    "id" TEXT PRIMARY KEY,
+    "userId" TEXT NOT NULL REFERENCES "user"("id") ON DELETE CASCADE,
+    "token" TEXT NOT NULL UNIQUE,
+    "expiresAt" DATETIME NOT NULL,
+    "ipAddress" TEXT,
+    "userAgent" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS "account" (
+    "id" TEXT PRIMARY KEY,
+    "userId" TEXT NOT NULL REFERENCES "user"("id") ON DELETE CASCADE,
+    "accountId" TEXT NOT NULL,
+    "providerId" TEXT NOT NULL,
+    "accessToken" TEXT,
+    "refreshToken" TEXT,
+    "accessTokenExpiresAt" DATETIME,
+    "refreshTokenExpiresAt" DATETIME,
+    "scope" TEXT,
+    "idToken" TEXT,
+    "password" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE("providerId", "accountId")
+  );
+
+  CREATE TABLE IF NOT EXISTS "verification" (
+    "id" TEXT PRIMARY KEY,
+    "identifier" TEXT NOT NULL,
+    "value" TEXT NOT NULL,
+    "expiresAt" DATETIME NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE INDEX IF NOT EXISTS "idx_session_user_id" ON "session"("userId");
+  CREATE INDEX IF NOT EXISTS "idx_session_token" ON "session"("token");
+  CREATE INDEX IF NOT EXISTS "idx_account_user_id" ON "account"("userId");
+  CREATE INDEX IF NOT EXISTS "idx_verification_identifier" ON "verification"("identifier");
+
+  CREATE TABLE IF NOT EXISTS "Todo" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "title" TEXT NOT NULL,
+    "content" TEXT,
+    "published" BOOLEAN NOT NULL DEFAULT false,
+    "status" TEXT NOT NULL DEFAULT 'PENDING'
+  );
+`
+
+const connectionString = process.env.DATABASE_URL ?? "file:./dev.db"
+
 const dbPath = connectionString.replace("file:", "")
-export const database: Database.Database = new Database(dbPath)
-const adapter = new PrismaBetterSqlite3(database)
-const prisma = new PrismaClient({ adapter })
+export const database = new Database(dbPath) as DatabaseType
 
-export { adapter, prisma }
+database.exec(localDevBootstrapSql)
+
+export { localDevBootstrapSql }

@@ -10,7 +10,7 @@
       "path": "./packages/node/better-auth"
     },
     {
-      "path": "./apps/node-auth-app"
+      "path": "./apps/node-auth-example"
     }
   ],
   "compilerOptions": {

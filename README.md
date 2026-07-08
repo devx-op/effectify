@@ -1,8 +1,11 @@
 # Effectify
 
-[Documentation](https://devx-op.github.io/effectify/)
+[![Alpha Release](https://img.shields.io/badge/alpha-v4%20alpha-blue)](https://www.npmjs.com/search?q=%40effectify)
+[![Documentation](https://img.shields.io/badge/docs-effectify.dev-00C853)](https://devx-op.github.io/effectify/)
 
 Monorepo of utilities for integrating [Effect](https://effect.website/) with different frameworks and libraries.
+
+> **🚀 Effect v4 Alpha Support**: We are currently migrating packages to support Effect v4 beta. Alpha versions are available on npm with the `@alpha` tag.
 
 ## Packages
 
@@ -16,6 +19,47 @@ Monorepo of utilities for integrating [Effect](https://effect.website/) with dif
 | [@effectify/react-router-better-auth](https://www.npmjs.com/package/@effectify/react-router-better-auth) | [![npm version](https://img.shields.io/npm/v/@effectify/react-router-better-auth.svg)](https://www.npmjs.com/package/@effectify/react-router-better-auth) | [Docs](./packages/react/router-better-auth/)   | Integration of React Router + better-auth with Effect for React applications |
 | [@effectify/prisma](https://www.npmjs.com/package/@effectify/prisma)                                     | [![npm version](https://img.shields.io/npm/v/@effectify/prisma.svg)](https://www.npmjs.com/package/@effectify/prisma)                                     | [Docs](./packages/prisma/README.md)            | Prisma generator and runtime utilities for Effect                            |
 | [@effectify/solid-effect-atom](https://www.npmjs.com/package/@effectify/solid-effect-atom)               | [![npm version](https://img.shields.io/npm/v/@effectify/solid-effect-atom.svg)](https://www.npmjs.com/package/@effectify/solid-effect-atom)               | [Docs](./packages/solid/effect-atom/README.md) | Reactive toolkit for Effect with SolidJS                                     |
+
+## Alpha Installation (Effect v4)
+
+We are actively migrating packages to support Effect v4 beta. You can install alpha versions using the `@alpha` npm tag:
+
+```bash
+# npm
+npm install @effectify/react-query@alpha
+npm install @effectify/solid-query@alpha
+npm install @effectify/react-router@alpha
+npm install @effectify/node-better-auth@alpha
+npm install @effectify/react-remix@alpha
+npm install @effectify/prisma@alpha
+
+# pnpm
+pnpm add @effectify/react-query@alpha
+
+# yarn
+yarn add @effectify/react-query@alpha
+```
+
+### Migration Status
+
+| Package                     | v4 Alpha Status | Stable Version |
+| --------------------------- | --------------- | -------------- |
+| @effectify/react-query      | 🚧 In Progress  | ✅ v3          |
+| @effectify/solid-query      | 🚧 In Progress  | ✅ v3          |
+| @effectify/react-router     | 🚧 In Progress  | ✅ v3          |
+| @effectify/node-better-auth | 🚧 In Progress  | ✅ v3          |
+| @effectify/react-remix      | 🚧 In Progress  | ✅ v3          |
+| @effectify/prisma           | 🚧 In Progress  | ✅ v3          |
+
+**Legend**: ✅ Available | 🚧 Migrating | ⏳ Pending
+
+### Effect v3 vs v4
+
+- **Stable releases** (v3.x) continue to work with Effect v3.19.x
+- **Alpha releases** (v4.x) require Effect v4 beta
+- Both versions maintain the same API where possible
+
+For migration details, see the [Effect v4 Migration Guide](https://effect.website/docs/migration/v4).
 
 ## Development
 

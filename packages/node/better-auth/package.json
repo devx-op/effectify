@@ -1,7 +1,12 @@
 {
   "name": "@effectify/node-better-auth",
-  "version": "0.5.11",
+  "version": "1.0.0-alpha.2",
   "description": "Integration of better-auth with Effect for Node.js applications",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/devx-op/effectify",
+    "directory": "packages/node/better-auth"
+  },
   "type": "module",
   "main": "./dist/src/index.js",
   "module": "./dist/src/index.js",
@@ -25,21 +30,20 @@
     "test": "vitest run"
   },
   "peerDependencies": {
-    "@effect/platform": "catalog:",
-    "@effect/platform-node": "catalog:",
     "better-auth": "catalog:",
     "effect": "catalog:"
   },
   "devDependencies": {
+    "@effect/platform-node": "catalog:",
     "@effect/vitest": "catalog:",
-    "vitest": "catalog:",
-    "better-sqlite3": "catalog:",
     "@types/better-sqlite3": "catalog:",
-    "@types/node": "catalog:"
+    "@types/node": "catalog:",
+    "better-sqlite3": "catalog:",
+    "effect": "catalog:",
+    "vitest": "catalog:"
   },
   "dependenciesMeta": {},
   "dependencies": {
     "zod": "catalog:"
-  },
-  "optionalDependencies": {}
+  }
 }

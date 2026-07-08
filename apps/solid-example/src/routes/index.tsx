@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/solid-router"
 import { For } from "solid-js"
-import { Route as RouteIcon, Server, Shield, Sparkles, Waves, Zap } from "lucide-solid"
+import { Dynamic } from "solid-js/web"
+import { Route as RouteIcon, Server, Shield, Sparkles, WavesLadder, Zap } from "lucide-solid"
 
 export const Route = createFileRoute("/")({ component: App })
 
@@ -29,7 +30,7 @@ function App() {
       description: "End-to-end type safety from server to client. Catch errors before they reach production.",
     },
     {
-      icon: <Waves class="w-12 h-12 text-cyan-400" />,
+      icon: <WavesLadder class="w-12 h-12 text-cyan-400" />,
       title: "Full Streaming Support",
       description:
         "Stream data from server to client progressively. Perfect for AI applications and real-time updates.",
@@ -67,14 +68,15 @@ function App() {
             functions, streaming, and type safety.
           </p>
           <div class="flex flex-col items-center gap-4">
-            <a
+            <Dynamic
+              component="a"
               href="https://tanstack.com/start"
               target="_blank"
               rel="noopener noreferrer"
               class="px-8 py-3 bg-cyan-500 hover:bg-cyan-600 text-white font-semibold rounded-lg transition-colors shadow-lg shadow-cyan-500/50"
             >
               Documentation
-            </a>
+            </Dynamic>
             <p class="text-gray-400 text-sm mt-2">
               Begin your TanStack Start journey by editing{" "}
               <code class="px-2 py-1 bg-slate-700 rounded text-cyan-400">

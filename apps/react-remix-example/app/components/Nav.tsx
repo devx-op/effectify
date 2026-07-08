@@ -1,6 +1,9 @@
 import { NavLink } from "@remix-run/react"
+import { authClient } from "../lib/auth-client.js"
+import { useNavigate } from "@remix-run/react"
 
 export function Nav() {
+  const navigate = useNavigate()
   return (
     <nav
       className="container-fluid"
@@ -28,6 +31,21 @@ export function Nav() {
           <NavLink end to="/todos">
             Todos
           </NavLink>
+        </li>
+        <li>
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                await authClient.signOut()
+                navigate("/login")
+              } catch {
+                navigate("/login")
+              }
+            }}
+          >
+            Sign Out
+          </button>
         </li>
       </ul>
     </nav>

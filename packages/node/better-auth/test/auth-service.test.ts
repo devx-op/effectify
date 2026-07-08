@@ -25,7 +25,7 @@ describe("AuthService", () => {
     await run()
   }
 
-  const AuthLayer = AuthService.layer(authOptions)
+  const AuthLayer = AuthService.AuthServiceContext.layer(authOptions)
 
   it.effect("should create the layer and provide the service", () =>
     Effect.gen(function*() {

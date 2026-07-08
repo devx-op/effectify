@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url"
 import { nxCopyAssetsPlugin } from "@nx/vite/plugins/nx-copy-assets.plugin"
 import { nxViteTsPaths } from "@nx/vite/plugins/nx-tsconfig-paths.plugin"
 import { reactRouter } from "@react-router/dev/vite"
-import { defineConfig, Plugin } from "vite"
+import { defineConfig, PluginOption } from "vite"
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -27,20 +27,27 @@ export default defineConfig({
   root: __dirname,
   cacheDir: "../../node_modules/.vite/apps/react-app-router-fm",
   server: {
-    port: 3000,
+    port: 4200,
     host: "localhost",
   },
   preview: {
-    port: 3000,
+    port: 4200,
     host: "localhost",
   },
-  plugins,
+  plugins: plugins as PluginOption[],
+  ssr: {
+    external: [
+      "better-sqlite3",
+      "better-auth",
+      "@prisma/client",
+      "@prisma/adapter-better-sqlite3",
+    ],
+  },
   // Uncomment this if you are using workers.
   // worker: {
   //  plugins: [ nxViteTsPaths() ],
   // },
   build: {
-    outDir: "../../dist/apps/react-app-router-fm",
     emptyOutDir: true,
     reportCompressedSize: true,
     commonjsOptions: {

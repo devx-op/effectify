@@ -1,0 +1,209 @@
+/**
+ * @effectify/hatchet - Crons Client
+ *
+ * Effect-first wrappers around the Hatchet SDK crons surface.
+ */
+
+import * as Effect from "effect/Effect"
+import type { CreateCronInput as SdkCreateCronOptions, CronClient } from "@hatchet-dev/typescript-sdk"
+import type { HatchetClientService } from "../core/client.js"
+import { getHatchetClient } from "../core/client.js"
+import { HatchetCronError } from "../core/error.js"
+
+type HatchetCronWorkflow = Awaited<ReturnType<CronClient["get"]>>
+
+type HatchetCronWorkflowList = Awaited<ReturnType<CronClient["list"]>>
+
+export type CreateCronOptions = SdkCreateCronOptions
+
+export type ListCronsOptions =
+  & Omit<
+    Parameters<CronClient["list"]>[0],
+    "workflow" | "orderByField" | "orderByDirection"
+  >
+  & {
+    readonly workflowName?: string
+  }
+
+export interface HatchetCronRecord<TInput = Record<string, unknown>> {
+  readonly cronId: string
+  readonly workflowName: string
+  readonly cron: string
+  readonly name?: string
+  readonly input?: TInput
+  readonly additionalMetadata?: Record<string, unknown>
+  readonly enabled: boolean
+  readonly method: "DEFAULT" | "API"
+  readonly priority?: number
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value)
+
+const normalizeCron = <TInput = Record<string, unknown>>(
+  cron: HatchetCronWorkflow,
+  context: { readonly cronId?: string; readonly workflowName?: string },
+): Effect.Effect<HatchetCronRecord<TInput>, HatchetCronError> =>
+  Effect.gen(function*() {
+    const cronId = cron.metadata?.id ?? context.cronId
+
+    if (!cronId) {
+      return yield* new HatchetCronError({
+        message: `Cron workflow response did not include an id for workflow "${
+          context.workflowName ?? cron.workflowName ?? "unknown"
+        }"`,
+        workflowName: context.workflowName ?? cron.workflowName,
+      })
+    }
+
+    const workflowName = cron.workflowName ?? context.workflowName
+
+    if (!workflowName) {
+      return yield* new HatchetCronError({
+        message: `Cron workflow "${cronId}" did not include a workflow name`,
+        cronId,
+      })
+    }
+
+    if (!cron.cron) {
+      return yield* new HatchetCronError({
+        message: `Cron workflow "${cronId}" did not include a cron expression`,
+        cronId,
+        workflowName,
+      })
+    }
+
+    if (typeof cron.enabled !== "boolean") {
+      return yield* new HatchetCronError({
+        message: `Cron workflow "${cronId}" did not include enabled status`,
+        cronId,
+        workflowName,
+      })
+    }
+
+    if (cron.method !== "DEFAULT" && cron.method !== "API") {
+      return yield* new HatchetCronError({
+        message: `Cron workflow "${cronId}" did not include a supported method`,
+        cronId,
+        workflowName,
+      })
+    }
+
+    return {
+      cronId,
+      workflowName,
+      cron: cron.cron,
+      name: cron.name,
+      input: cron.input as TInput | undefined,
+      additionalMetadata: isRecord(cron.additionalMetadata)
+        ? cron.additionalMetadata
+        : undefined,
+      enabled: cron.enabled,
+      method: cron.method,
+      priority: cron.priority,
+    }
+  })
+
+export const createCron = <TInput = Record<string, unknown>>(
+  workflowName: string,
+  options: CreateCronOptions,
+): Effect.Effect<
+  HatchetCronRecord<TInput>,
+  HatchetCronError,
+  HatchetClientService
+> =>
+  Effect.gen(function*() {
+    const client = yield* getHatchetClient()
+    const cron = yield* Effect.tryPromise({
+      try: () => client.crons.create(workflowName, options),
+      catch: (error) =>
+        new HatchetCronError({
+          message: `Failed to create cron for workflow "${workflowName}"`,
+          workflowName,
+          cause: error,
+        }),
+    })
+
+    return yield* normalizeCron<TInput>(cron as HatchetCronWorkflow, {
+      workflowName,
+    })
+  })
+
+export const getCron = <TInput = Record<string, unknown>>(
+  cronId: string,
+): Effect.Effect<
+  HatchetCronRecord<TInput>,
+  HatchetCronError,
+  HatchetClientService
+> =>
+  Effect.gen(function*() {
+    const client = yield* getHatchetClient()
+    const cron = yield* Effect.tryPromise({
+      try: () => client.crons.get(cronId),
+      catch: (error) =>
+        new HatchetCronError({
+          message: `Failed to get cron "${cronId}"`,
+          cronId,
+          cause: error,
+        }),
+    })
+
+    return yield* normalizeCron<TInput>(cron as HatchetCronWorkflow, {
+      cronId,
+    })
+  })
+
+export const listCrons = <TInput = Record<string, unknown>>(
+  options?: ListCronsOptions,
+): Effect.Effect<
+  readonly HatchetCronRecord<TInput>[],
+  HatchetCronError,
+  HatchetClientService
+> =>
+  Effect.gen(function*() {
+    const client = yield* getHatchetClient()
+    const workflowName = options?.workflowName
+    const query: Parameters<typeof client.crons.list>[0] = {
+      workflowName,
+      cronName: options?.cronName,
+      offset: options?.offset,
+      limit: options?.limit,
+      orderByField: "createdAt" as Parameters<
+        typeof client.crons.list
+      >[0]["orderByField"],
+      orderByDirection: "DESC" as Parameters<
+        typeof client.crons.list
+      >[0]["orderByDirection"],
+    }
+    const response = yield* Effect.tryPromise({
+      try: () => client.crons.list(query),
+      catch: (error) =>
+        new HatchetCronError({
+          message: workflowName
+            ? `Failed to list crons for workflow "${workflowName}"`
+            : "Failed to list crons",
+          workflowName,
+          cause: error,
+        }),
+    })
+
+    const rows = (response as HatchetCronWorkflowList).rows ?? []
+
+    return yield* Effect.forEach(rows, (cron) => normalizeCron<TInput>(cron, { workflowName }))
+  })
+
+export const deleteCron = (
+  cronId: string,
+): Effect.Effect<void, HatchetCronError, HatchetClientService> =>
+  Effect.gen(function*() {
+    const client = yield* getHatchetClient()
+    yield* Effect.tryPromise({
+      try: () => client.crons.delete(cronId),
+      catch: (error) =>
+        new HatchetCronError({
+          message: `Failed to delete cron "${cronId}"`,
+          cronId,
+          cause: error,
+        }),
+    })
+  })

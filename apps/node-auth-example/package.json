@@ -10,7 +10,6 @@
     }
   },
   "dependencies": {
-    "@effect/platform": "catalog:",
     "@effect/platform-node": "catalog:",
     "@effectify/node-better-auth": "workspace:*",
     "better-auth": "catalog:",

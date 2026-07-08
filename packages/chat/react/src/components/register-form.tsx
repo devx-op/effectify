@@ -1,4 +1,4 @@
-import { RegisterSchema } from "@effectify/chat-domain/auth.ts"
+import { RegisterSchema } from "@effectify/chat-domain/auth.js"
 import { Button } from "@effectify/react-ui/components/primitives/button"
 import {
   Card,
@@ -14,7 +14,12 @@ import * as Schema from "effect/Schema"
 import type * as React from "react"
 
 type RegisterFormProps = {
-  handleSubmit: (values: { name: string; email: string; password: string; confirmPassword: string }) => Promise<void>
+  handleSubmit: (values: {
+    name: string
+    email: string
+    password: string
+    confirmPassword: string
+  }) => Promise<void>
   children?: React.ReactNode
 }
 
@@ -27,7 +32,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = (props) => {
       confirmPassword: "",
     },
     validators: {
-      onBlur: Schema.standardSchemaV1(RegisterSchema),
+      onBlur: Schema.toStandardSchemaV1(RegisterSchema),
     },
     onSubmit: ({ value }) => {
       // Do something with form data
@@ -36,7 +41,10 @@ export const RegisterForm: React.FC<RegisterFormProps> = (props) => {
   })
 
   return (
-    <VStack className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]" gap="6">
+    <VStack
+      className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]"
+      gap="6"
+    >
       <VStack className="mt-auto">
         <Card>
           <CardHeader>
@@ -47,7 +55,9 @@ export const RegisterForm: React.FC<RegisterFormProps> = (props) => {
                 </a>
               </Center>
               <CardTitle>Create Account</CardTitle>
-              <CardDescription>Enter your information to create a new account.</CardDescription>
+              <CardDescription>
+                Enter your information to create a new account.
+              </CardDescription>
             </Stack>
           </CardHeader>
           <CardContent>
@@ -68,7 +78,9 @@ export const RegisterForm: React.FC<RegisterFormProps> = (props) => {
                           <field.TextField
                             name={field.name}
                             onBlur={field.handleBlur}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => field.handleChange(e.target.value)}
+                            onChange={(
+                              e: React.ChangeEvent<HTMLInputElement>,
+                            ) => field.handleChange(e.target.value)}
                             placeholder="Your full name"
                             value={field.state.value as string}
                           />
@@ -97,7 +109,9 @@ export const RegisterForm: React.FC<RegisterFormProps> = (props) => {
                           <field.TextField
                             name={field.name}
                             onBlur={field.handleBlur}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => field.handleChange(e.target.value)}
+                            onChange={(
+                              e: React.ChangeEvent<HTMLInputElement>,
+                            ) => field.handleChange(e.target.value)}
                             placeholder="email@example.com"
                             type="email"
                             value={field.state.value as string}
@@ -127,7 +141,9 @@ export const RegisterForm: React.FC<RegisterFormProps> = (props) => {
                           <field.TextField
                             name={field.name}
                             onBlur={field.handleBlur}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => field.handleChange(e.target.value)}
+                            onChange={(
+                              e: React.ChangeEvent<HTMLInputElement>,
+                            ) => field.handleChange(e.target.value)}
                             placeholder="password"
                             type="password"
                             value={field.state.value as string}
@@ -157,7 +173,9 @@ export const RegisterForm: React.FC<RegisterFormProps> = (props) => {
                           <field.TextField
                             name={field.name}
                             onBlur={field.handleBlur}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => field.handleChange(e.target.value)}
+                            onChange={(
+                              e: React.ChangeEvent<HTMLInputElement>,
+                            ) => field.handleChange(e.target.value)}
                             placeholder="Confirm your password"
                             type="password"
                             value={field.state.value as string}

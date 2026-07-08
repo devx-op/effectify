@@ -3,7 +3,7 @@ import { PassThrough } from "node:stream"
 import type { EntryContext } from "@remix-run/node"
 import { createReadableStreamFromReadable } from "@remix-run/node"
 import { RemixServer } from "@remix-run/react"
-import * as isbotModule from "isbot"
+import { isbot } from "isbot"
 import { renderToPipeableStream } from "react-dom/server"
 
 const ABORT_DELAY = 5000
@@ -18,8 +18,18 @@ export default function handleRequest(
   const prohibitOutOfOrderStreaming = isBotRequest(request.headers.get("user-agent")) || remixContext.isSpaMode
 
   return prohibitOutOfOrderStreaming
-    ? handleBotRequest(request, responseStatusCode, responseHeaders, remixContext)
-    : handleBrowserRequest(request, responseStatusCode, responseHeaders, remixContext)
+    ? handleBotRequest(
+      request,
+      responseStatusCode,
+      responseHeaders,
+      remixContext,
+    )
+    : handleBrowserRequest(
+      request,
+      responseStatusCode,
+      responseHeaders,
+      remixContext,
+    )
 }
 
 // We have some Remix apps in the wild already running with isbot@3 so we need
@@ -30,22 +40,7 @@ function isBotRequest(userAgent: string | null) {
     return false
   }
 
-  // isbot >= 4.0.0
-  if (typeof isbotModule === "function") {
-    return (isbotModule as any)(userAgent)
-  }
-
-  // isbot >= 3.8.0, <4
-  if ("isbot" in isbotModule && typeof isbotModule.isbot === "function") {
-    return isbotModule.isbot(userAgent)
-  }
-
-  // isbot < 3.8.0
-  if ("default" in isbotModule && typeof isbotModule.default === "function") {
-    return (isbotModule.default as any)(userAgent)
-  }
-
-  return false
+  return isbot(userAgent)
 }
 
 function handleBotRequest(
@@ -57,7 +52,11 @@ function handleBotRequest(
   return new Promise((resolve, reject) => {
     let shellRendered = false
     const { pipe, abort } = renderToPipeableStream(
-      <RemixServer abortDelay={ABORT_DELAY} context={remixContext} url={request.url} />,
+      <RemixServer
+        abortDelay={ABORT_DELAY}
+        context={remixContext}
+        url={request.url}
+      />,
       {
         onAllReady() {
           shellRendered = true
@@ -103,7 +102,11 @@ function handleBrowserRequest(
   return new Promise((resolve, reject) => {
     let shellRendered = false
     const { pipe, abort } = renderToPipeableStream(
-      <RemixServer abortDelay={ABORT_DELAY} context={remixContext} url={request.url} />,
+      <RemixServer
+        abortDelay={ABORT_DELAY}
+        context={remixContext}
+        url={request.url}
+      />,
       {
         onShellReady() {
           shellRendered = true

@@ -1,0 +1,26 @@
+{
+  "name": "@effectify/react-router-example-e2e",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "root": "apps/react-router-example-e2e",
+  "sourceRoot": "apps/react-router-example-e2e/src",
+  "projectType": "application",
+  "tags": ["npm:private", "type:e2e"],
+  "implicitDependencies": ["@effectify/react-router-example"],
+  "targets": {
+    "e2e": {
+      "executor": "@nx/cypress:cypress",
+      "options": {
+        "cypressConfig": "apps/react-router-example-e2e/cypress.config.ts",
+        "devServerTarget": "@effectify/react-router-example:start",
+        "port": 3100,
+        "testingType": "e2e"
+      },
+      "configurations": {
+        "manual": {
+          "skipServe": true,
+          "baseUrl": "http://localhost:3100"
+        }
+      }
+    }
+  }
+}

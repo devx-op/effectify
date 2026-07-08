@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { authClient } from "./../lib/auth-client.js"
+import { handleSignIn } from "./../lib/auth-client.js"
 import { Link, useNavigate } from "react-router"
 
 export default function Login() {
@@ -11,22 +11,13 @@ export default function Login() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
-    await authClient.signIn.email(
-      {
-        email,
-        password,
-      },
-      {
-        onSuccess: (ctx) => {
-          console.log("Login successful")
-          console.dir(ctx, { depth: null })
-          navigate("/")
-        },
-        onError: (ctx) => {
-          setError(ctx.error.message)
-        },
-      },
-    )
+    try {
+      const result = await handleSignIn(email, password)
+      console.log("Login result:", result)
+      navigate("/")
+    } catch (err: any) {
+      setError(err?.message || "Login failed")
+    }
   }
 
   return (
@@ -61,7 +52,13 @@ export default function Login() {
             />
           </div>
           {error && (
-            <small role="alert" aria-live="polite" style={{ color: "var(--pico-color-red-500)" }}>{error}</small>
+            <small
+              role="alert"
+              aria-live="polite"
+              style={{ color: "var(--pico-color-red-500)" }}
+            >
+              {error}
+            </small>
           )}
           <button type="submit">Sign in</button>
         </form>

@@ -5,7 +5,7 @@
   "scripts": {
     "lint-staged": "lint-staged --allow-empty",
     "clean": "rm -rf node_modules dist pnpm-lock.yaml && pnpm store prune & find . -type d \\( -name 'node_modules' -o -name 'dist' -o -name '.output' -o -name '.vinxi' -o -name '.cache' -o -name '.expo' -o -name '.nx' \\) -prune -exec rm -rf {} + & wait",
-    "prepare": "husky && ts-patch install -s",
+    "prepare": "husky && ts-patch install -s && effect-tsgo patch",
     "build:affected": "pnpm nx affected --target=build",
     "test:affected": "pnpm nx affected --target=test",
     "typecheck:affected": "pnpm nx affected --target=typecheck",
@@ -25,11 +25,13 @@
   },
   "devDependencies": {
     "@effect/language-service": "catalog:",
+    "@effect/tsgo": "catalog:",
+    "@nx/cypress": "catalog:",
     "@nx/js": "catalog:",
     "@nx/node": "catalog:",
     "@nx/react": "catalog:",
     "@nx/vite": "catalog:",
-    "@nx/vitest": "22.5.4",
+    "@nx/vitest": "23.0.1",
     "@nx/web": "catalog:",
     "@react-router/dev": "catalog:",
     "@swc-node/register": "catalog:",
@@ -38,14 +40,17 @@
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
+    "@typescript/native-preview": "catalog:",
     "@vitejs/plugin-react": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
     "@vitest/ui": "catalog:",
+    "cypress": "catalog:",
     "dprint": "catalog:",
     "husky": "catalog:",
     "jiti": "catalog:",
     "jsdom": "catalog:",
     "lint-staged": "catalog:",
-    "nx": "22.5.4",
+    "nx": "23.0.1",
     "nx-oxlint": "catalog:",
     "oxlint": "1.42.0",
     "prettier": "catalog:",
@@ -66,28 +71,33 @@
       },
       "better-auth": {
         "dependencies": {
-          "zod": "^4.3.6"
+          "zod": "^4.4.3"
+        }
+      },
+      "@effect/vitest": {
+        "dependencies": {
+          "@vitest/runner": "4.1.10"
         }
       }
     },
     "overrides": {
-      "@types/react": "19.1.13",
-      "@types/react-dom": "19.1.9"
+      "@effect/platform-node-shared": "4.0.0-beta.94",
+      "@types/react": "19.2.17",
+      "@types/react-dom": "19.2.3"
     },
     "onlyBuiltDependencies": [
+      "@hatchet-dev/typescript-sdk",
       "@parcel/watcher",
-      "@prisma/client",
-      "@prisma/engines",
       "@swc/core",
       "@tailwindcss/oxide",
       "better-sqlite3",
       "core-js",
-      "dprint",
+      "cypress",
       "esbuild",
       "msgpackr-extract",
       "nx",
-      "prisma",
-      "unrs-resolver"
+      "protobufjs",
+      "sharp"
     ],
     "ignoredBuiltDependencies": [
       "bun"
@@ -95,10 +105,11 @@
   },
   "packageManager": "pnpm@10.14.0",
   "dependencies": {
-    "@effect/experimental": "catalog:",
+    "@prisma/client": "catalog:",
     "@react-router/node": "catalog:",
     "@react-router/serve": "catalog:",
     "isbot": "catalog:",
+    "prisma": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
     "react-router": "catalog:"
