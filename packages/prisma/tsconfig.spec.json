@@ -7,7 +7,7 @@
     "module": "esnext",
     "moduleResolution": "bundler",
     "paths": {
-      "@prisma/client": ["./node_modules/@prisma/client"],
+      "@prisma/client": ["./prisma/generated/client.d.ts"],
       "@prisma/effect": ["./prisma/generated/effect/index.ts"],
       "@prisma/effect/*": ["./prisma/generated/effect/*"],
       "@prisma/*": ["./prisma/generated/*"],

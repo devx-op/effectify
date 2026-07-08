@@ -6,13 +6,17 @@
   "targets": {
     "build": {
       "executor": "@nx/js:tsc",
-      "outputs": ["{options.outputPath}"],
+      "outputs": [
+        "{options.outputPath}"
+      ],
       "defaultConfiguration": "production",
       "options": {
         "outputPath": "packages/prisma/dist",
         "main": "packages/prisma/src/cli.ts",
         "tsConfig": "packages/prisma/tsconfig.lib.json",
-        "format": ["esm"],
+        "format": [
+          "esm"
+        ],
         "generatePackageJson": false,
         "updateBuildableProjectDepsInPackageJson": false,
         "additionalEntryPoints": [],
@@ -32,9 +36,10 @@
     "prisma:generate": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "pnpm dlx prisma generate",
+        "command": "pnpm exec prisma generate",
         "cwd": "packages/prisma"
-      }
+      },
+      "cache": false
     },
     "dev": {
       "executor": "nx:run-commands",
@@ -56,15 +61,32 @@
         "command": "vitest run",
         "cwd": "packages/prisma"
       },
-      "dependsOn": ["prisma:generate"]
+      "dependsOn": [
+        "prisma:generate"
+      ]
     },
     "lint": {
       "executor": "nx-oxlint:lint",
-      "outputs": ["{options.outputFile}"],
+      "outputs": [
+        "{options.outputFile}"
+      ],
       "options": {
-        "lintFilePatterns": ["packages/prisma/**/*.{ts,tsx,js,jsx}"]
+        "lintFilePatterns": [
+          "packages/prisma/**/*.{ts,tsx,js,jsx}"
+        ]
       }
+    },
+    "typecheck": {
+      "dependsOn": [
+        "build",
+        "prisma:generate",
+        "^typecheck"
+      ]
     }
   },
-  "tags": ["node", "react", "prisma"]
+  "tags": [
+    "node",
+    "react",
+    "prisma"
+  ]
 }

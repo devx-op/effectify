@@ -22,7 +22,11 @@ const makeTempDir = async () => {
 }
 
 afterEach(async () => {
-  await Promise.all(createdDirs.splice(0).map((dir) => rm(dir, { force: true, recursive: true })))
+  await Promise.all(
+    createdDirs
+      .splice(0)
+      .map((dir) => rm(dir, { force: true, recursive: true })),
+  )
 })
 
 const baseSchema = `
@@ -61,7 +65,7 @@ const makeGeneratorOptions = async (
       },
     },
     schemaPath,
-  } as GeneratorOptions
+  } as unknown as GeneratorOptions
 }
 
 const generatorLayer = Layer.mergeAll(
@@ -101,7 +105,11 @@ const runPnpm = (cwd: string, args: Array<string>) =>
         resolve()
         return
       }
-      reject(new Error(stderr || `pnpm ${args.join(" ")} failed with exit code ${code}`))
+      reject(
+        new Error(
+          stderr || `pnpm ${args.join(" ")} failed with exit code ${code}`,
+        ),
+      )
     })
   })
 
@@ -116,7 +124,9 @@ describe("beta57 prisma generator migration", () => {
 
     expectContextBasedRuntime(indexSource)
     expect(indexSource).toContain("export class PrismaClient")
-    expect(indexSource).toContain("export class Prisma extends Context.Service<Prisma>()")
+    expect(indexSource).toContain(
+      "export class Prisma extends Context.Service<Prisma>()",
+    )
   })
 
   it("generates the custom-error runtime with Context services", async () => {
@@ -130,14 +140,31 @@ describe("beta57 prisma generator migration", () => {
     const indexSource = await readGeneratedIndex(outputDir)
 
     expectContextBasedRuntime(indexSource)
-    expect(indexSource).toContain('import { AppPrismaError, mapPrismaError } from "../errors/prisma-error.js"')
+    expect(indexSource).toContain(
+      'import { AppPrismaError, mapPrismaError } from "../errors/prisma-error.js"',
+    )
   })
 
   it("regenerates the react-router example runtime without the dist CLI build", async () => {
-    const appDir = path.resolve(import.meta.dirname, "../../../apps/react-router-example")
-    const generatedIndexPath = path.join(appDir, "prisma", "generated", "effect", "index.ts")
+    const appDir = path.resolve(
+      import.meta.dirname,
+      "../../../apps/react-router-example",
+    )
+    const generatedIndexPath = path.join(
+      appDir,
+      "prisma",
+      "generated",
+      "effect",
+      "index.ts",
+    )
 
-    await runPnpm(appDir, ["dlx", "prisma", "generate", "--schema", "prisma/schema.prisma"])
+    await runPnpm(appDir, [
+      "dlx",
+      "prisma",
+      "generate",
+      "--schema",
+      "prisma/schema.prisma",
+    ])
 
     const indexSource = await readFile(generatedIndexPath, "utf8")
 
