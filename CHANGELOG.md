@@ -5,12 +5,12 @@ All notable changes to this project will be documented in this file.
 This changelog summarizes releases for the following packages:
 
 - @@effectify/hatchet
-- @@effectify/node-better-auth
-- @@effectify/react-router-better-auth
 - @@effectify/prisma
-- @@effectify/react-remix
+- @@effectify/react-router-better-auth
+- @@effectify/node-better-auth
 - @@effectify/react-router
 - @@effectify/react-query
+- @@effectify/react-remix
 - @@effectify/solid-query
 
 ## @@effectify/hatchet
