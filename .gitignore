@@ -80,3 +80,6 @@ generated/
 .pi/
 .alt/
 .codegraph/
+
+.nx/self-healing
+.nx/migrate-runs

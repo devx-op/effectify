@@ -135,7 +135,6 @@
         "forwardAllArgs": false
       }
     },
-    "// build-contract": "React Router owns the build/server + build/client artifact tree consumed by the Nx start/e2e flow.",
     "build": {
       "executor": "nx:run-script",
       "outputs": ["{projectRoot}/build"],
