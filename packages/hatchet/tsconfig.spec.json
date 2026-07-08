@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "outDir": "./dist/out-tsc",
+    "types": ["vitest/globals", "node"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "paths": {
+      "@effectify/hatchet": ["./src/index.ts"]
+    }
+  },
+  "include": ["test/**/*.ts", "src/**/*.ts"]
+}

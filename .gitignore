@@ -28,7 +28,8 @@ node_modules
 # misc
 /.sass-cache
 /connect.lock
-/coverage
+coverage
+coverage-json/
 /libpeerconnection.log
 npm-debug.log
 yarn-error.log
@@ -70,3 +71,21 @@ count.txt
 .secrets
 generated/
 .wrangler
+
+.claude/worktrees
+.claude/settings.local.json
+.nx/polygraph
+# Local Pi runtime state
+.atl/
+.pi/
+.alt/
+.codegraph/
+
+.nx/self-healing
+.nx/migrate-runs
+# Local agent/runtime state (not committed to master)
+.effect-reference
+.opencode/
+.github/agents/
+.github/prompts/
+.github/skills/

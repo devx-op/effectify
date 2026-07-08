@@ -1,6 +1,11 @@
+import "dotenv/config"
 import { Runtime } from "@effectify/react-remix"
+import { AuthService } from "@effectify/node-better-auth"
 import * as Layer from "effect/Layer"
+import { authOptions } from "./better-auth-options.server.js"
 
-const layers = Layer.empty
+const Authlayer = AuthService.AuthServiceContext.layer(authOptions)
 
-export const { withLoaderEffect, withActionEffect } = Runtime.make(layers)
+const AppLayer = Layer.mergeAll(Authlayer)
+
+export const { withLoaderEffect, withActionEffect } = Runtime.make(AppLayer)

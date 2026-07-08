@@ -3,48 +3,108 @@ import { ActionArgsContext, type HttpResponse, LoaderArgsContext } from "@effect
 import * as Effect from "effect/Effect"
 import { redirect } from "react-router"
 
-const mapHeaders = (args: { request: Request }) => args.request.headers
+const getRequestOrigin = (request: Request) => new URL(request.url).origin
+
+const mapHeaders = (args: { request: Request }) => {
+  const headers = new Headers(args.request.headers)
+  if (!headers.has("origin")) {
+    headers.set("origin", getRequestOrigin(args.request))
+  }
+  return headers
+}
+
+const getAuthServerOrigin = (request: Request) =>
+  process.env.BETTER_AUTH_URL?.replace(/\/api\/auth\/?$/, "") ||
+  getRequestOrigin(request)
+
+const failUnauthorized = (details: string) =>
+  Effect.fail(
+    new AuthService.Unauthorized({
+      details,
+    }),
+  )
 
 const verifySessionWithContext = (context: typeof LoaderArgsContext) =>
   Effect.gen(function*() {
     const args = yield* context
-    const { auth } = yield* AuthService.AuthServiceContext
     const forwardedHeaders = mapHeaders(args)
+    const cookieValue = forwardedHeaders.get("cookie") || ""
+    const requestOrigin = getRequestOrigin(args.request)
+    const authOrigin = getAuthServerOrigin(args.request)
 
-    const session = yield* Effect.tryPromise({
-      try: () => auth.api.getSession({ headers: forwardedHeaders }),
-      catch: (cause) => {
-        const errorMessage = cause instanceof Error ? cause.message : String(cause)
-        return new AuthService.Unauthorized({ details: errorMessage })
-      },
+    // Make direct fetch call to auth server
+    const response = yield* Effect.tryPromise({
+      try: () =>
+        fetch(`${authOrigin}/api/auth/get-session`, {
+          headers: {
+            cookie: cookieValue,
+            "Content-Type": "application/json",
+            origin: requestOrigin,
+          },
+        }),
+      catch: (cause) =>
+        new AuthService.Unauthorized({
+          details: `Auth server unreachable: ${String(cause)}`,
+        }),
     })
 
-    if (!session) {
-      return yield* Effect.fail(new AuthService.Unauthorized({ details: "Missing or invalid authentication" }))
+    const fetchResult = yield* Effect.tryPromise({
+      try: () => response.json(),
+      catch: (cause) =>
+        new AuthService.Unauthorized({
+          details: `Failed to parse session: ${String(cause)}`,
+        }),
+    })
+
+    if (fetchResult?.session) {
+      return {
+        user: fetchResult.user,
+        session: fetchResult.session,
+      } as const
     }
 
-    return yield* Effect.succeed({ user: session.user, session: session.session } as const)
+    return yield* failUnauthorized("Missing or invalid authentication")
   })
 
 const verifySessionWithActionContext = (context: typeof ActionArgsContext) =>
   Effect.gen(function*() {
     const args = yield* context
-    const { auth } = yield* AuthService.AuthServiceContext
     const forwardedHeaders = mapHeaders(args)
+    const cookieValue = forwardedHeaders.get("cookie") || ""
+    const requestOrigin = getRequestOrigin(args.request)
+    const authOrigin = getAuthServerOrigin(args.request)
 
-    const session = yield* Effect.tryPromise({
-      try: () => auth.api.getSession({ headers: forwardedHeaders }),
-      catch: (cause) => {
-        const errorMessage = cause instanceof Error ? cause.message : String(cause)
-        return new AuthService.Unauthorized({ details: errorMessage })
-      },
+    const response = yield* Effect.tryPromise({
+      try: () =>
+        fetch(`${authOrigin}/api/auth/get-session`, {
+          headers: {
+            cookie: cookieValue,
+            "Content-Type": "application/json",
+            origin: requestOrigin,
+          },
+        }),
+      catch: (cause) =>
+        new AuthService.Unauthorized({
+          details: `Auth server unreachable: ${String(cause)}`,
+        }),
     })
 
-    if (!session) {
-      return yield* Effect.fail(new AuthService.Unauthorized({ details: "Missing or invalid authentication" }))
+    const fetchResult = yield* Effect.tryPromise({
+      try: () => response.json(),
+      catch: (cause) =>
+        new AuthService.Unauthorized({
+          details: `Failed to parse session: ${String(cause)}`,
+        }),
+    })
+
+    if (fetchResult?.session) {
+      return {
+        user: fetchResult.user,
+        session: fetchResult.session,
+      } as const
     }
 
-    return yield* Effect.succeed({ user: session.user, session: session.session } as const)
+    return yield* failUnauthorized("Missing or invalid authentication")
   })
 
 const verifySession = () => verifySessionWithContext(LoaderArgsContext)
@@ -56,13 +116,14 @@ export type AuthGuardOptions = {
 }
 
 type WithBetterAuthGuard = {
-  // Use generic R and Exclude<R, AuthService.AuthContext>
   <A, E, R>(
     eff: Effect.Effect<A, E, R>,
   ): Effect.Effect<
     A,
     E | AuthService.Unauthorized,
-    Exclude<R, AuthService.AuthContext> | AuthService.AuthServiceContext | LoaderArgsContext
+    | Exclude<R, AuthService.AuthContext>
+    | AuthService.AuthServiceContext
+    | LoaderArgsContext
   >
   with: (
     options: AuthGuardOptions,
@@ -71,7 +132,9 @@ type WithBetterAuthGuard = {
   ) => Effect.Effect<
     HttpResponse<A> | Response,
     E,
-    Exclude<R, AuthService.AuthContext> | AuthService.AuthServiceContext | LoaderArgsContext
+    | Exclude<R, AuthService.AuthContext>
+    | AuthService.AuthServiceContext
+    | LoaderArgsContext
   >
 }
 
@@ -81,11 +144,17 @@ export const withBetterAuthGuard: WithBetterAuthGuard = Object.assign(
   ): Effect.Effect<
     A,
     E | AuthService.Unauthorized,
-    Exclude<R, AuthService.AuthContext> | AuthService.AuthServiceContext | LoaderArgsContext
+    | Exclude<R, AuthService.AuthContext>
+    | AuthService.AuthServiceContext
+    | LoaderArgsContext
   > =>
     Effect.gen(function*() {
       const authResult = yield* verifySession()
-      return yield* Effect.provideService(eff, AuthService.AuthContext, authResult)
+      return yield* Effect.provideService(
+        eff,
+        AuthService.AuthContext,
+        authResult,
+      )
     }),
   {
     with: (opts: AuthGuardOptions) =>
@@ -94,27 +163,27 @@ export const withBetterAuthGuard: WithBetterAuthGuard = Object.assign(
     ): Effect.Effect<
       HttpResponse<A> | Response,
       E,
-      Exclude<R, AuthService.AuthContext> | AuthService.AuthServiceContext | LoaderArgsContext
+      | Exclude<R, AuthService.AuthContext>
+      | AuthService.AuthServiceContext
+      | LoaderArgsContext
     > =>
-      Effect.gen(function*() {
-        return yield* verifySession().pipe(
-          Effect.flatMap((authResult) => Effect.provideService(eff, AuthService.AuthContext, authResult)),
-          Effect.catchTag("Unauthorized", () => Effect.sync(() => redirect(opts.redirectOnFail!, opts.redirectInit))),
-        )
-      }),
+      verifySession().pipe(
+        Effect.flatMap((authResult) => Effect.provideService(eff, AuthService.AuthContext, authResult)),
+        Effect.catchTag("Unauthorized", () => Effect.sync(() => redirect(opts.redirectOnFail!, opts.redirectInit))),
+      ),
   },
 )
 
 type WithBetterAuthGuardAction = {
-  // Use generic R and Exclude<R, AuthService.AuthContext>
   <A, E, R>(
     eff: Effect.Effect<A, E, R>,
   ): Effect.Effect<
     A,
     E | AuthService.Unauthorized,
-    Exclude<R, AuthService.AuthContext> | AuthService.AuthServiceContext | ActionArgsContext
+    | Exclude<R, AuthService.AuthContext>
+    | AuthService.AuthServiceContext
+    | ActionArgsContext
   >
-
   with: (
     options: AuthGuardOptions,
   ) => <A, E, R>(
@@ -122,7 +191,9 @@ type WithBetterAuthGuardAction = {
   ) => Effect.Effect<
     HttpResponse<A> | Response,
     E,
-    Exclude<R, AuthService.AuthContext> | AuthService.AuthServiceContext | ActionArgsContext
+    | Exclude<R, AuthService.AuthContext>
+    | AuthService.AuthServiceContext
+    | ActionArgsContext
   >
 }
 
@@ -132,11 +203,17 @@ export const withBetterAuthGuardAction: WithBetterAuthGuardAction = Object.assig
   ): Effect.Effect<
     A,
     E | AuthService.Unauthorized,
-    Exclude<R, AuthService.AuthContext> | AuthService.AuthServiceContext | ActionArgsContext
+    | Exclude<R, AuthService.AuthContext>
+    | AuthService.AuthServiceContext
+    | ActionArgsContext
   > =>
     Effect.gen(function*() {
       const authResult = yield* verifySessionFromAction()
-      return yield* Effect.provideService(eff, AuthService.AuthContext, authResult)
+      return yield* Effect.provideService(
+        eff,
+        AuthService.AuthContext,
+        authResult,
+      )
     }),
   {
     with: (opts: AuthGuardOptions) =>
@@ -145,13 +222,13 @@ export const withBetterAuthGuardAction: WithBetterAuthGuardAction = Object.assig
     ): Effect.Effect<
       HttpResponse<A> | Response,
       E,
-      Exclude<R, AuthService.AuthContext> | AuthService.AuthServiceContext | ActionArgsContext
+      | Exclude<R, AuthService.AuthContext>
+      | AuthService.AuthServiceContext
+      | ActionArgsContext
     > =>
-      Effect.gen(function*() {
-        return yield* verifySessionFromAction().pipe(
-          Effect.flatMap((authResult) => Effect.provideService(eff, AuthService.AuthContext, authResult)),
-          Effect.catchTag("Unauthorized", () => Effect.sync(() => redirect(opts.redirectOnFail!, opts.redirectInit))),
-        )
-      }),
+      verifySessionFromAction().pipe(
+        Effect.flatMap((authResult) => Effect.provideService(eff, AuthService.AuthContext, authResult)),
+        Effect.catchTag("Unauthorized", () => Effect.sync(() => redirect(opts.redirectOnFail!, opts.redirectInit))),
+      ),
   },
 )

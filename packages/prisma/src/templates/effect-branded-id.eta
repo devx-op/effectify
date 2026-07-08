@@ -1,2 +1,2 @@
 export const <%= it.name %>Id = <%~ it.baseType %>.pipe(Schema.brand("<%= it.name %>Id"));
-export type <%= it.name %>Id = typeof <%= it.name %>Id.Type;
+export type <%= it.name %>Id = Schema.Schema.Type<typeof <%= it.name %>Id>;

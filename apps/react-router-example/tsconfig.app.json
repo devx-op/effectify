@@ -5,12 +5,12 @@
     "app/**/*.tsx",
     "app/**/*.js",
     "app/**/*.jsx",
+    "prisma/generated/**/*.ts",
     "**/.server/**/*.ts",
     "**/.server/**/*.tsx",
     "**/.client/**/*.ts",
     "**/.client/**/*.tsx",
-    ".react-router/types/**/*",
-    "prisma/generated/**/*"
+    ".react-router/types/**/*"
   ],
   "exclude": [
     "tests/**/*.spec.ts",
@@ -24,12 +24,6 @@
   ],
   "compilerOptions": {
     "composite": true,
-    "baseUrl": ".",
-    "outDir": "dist/out-tsc",
-    "paths": {
-      "@prisma/*": [
-        "./prisma/generated/*"
-      ]
-    }
+    "outDir": "./dist/out-tsc"
   }
 }

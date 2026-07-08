@@ -5,35 +5,12 @@
   "projectType": "application",
   "targets": {
     "build": {
-      "executor": "@nx/js:tsc",
-      "outputs": ["{options.outputPath}"],
-      "defaultConfiguration": "production",
+      "executor": "nx:run-commands",
       "options": {
-        "outputPath": "apps/node-auth-example/dist",
-        "main": "apps/node-auth-example/src/main.ts",
-        "tsConfig": "apps/node-auth-example/tsconfig.app.json",
-        "format": ["esm"],
-        "generatePackageJson": false,
-        "updateBuildableProjectDepsInPackageJson": false,
-        "additionalEntryPoints": [],
-        "assets": [
-          "apps/node-auth-example/src/assets",
-          {
-            "input": "node_modules/better-sqlite3/build/Release",
-            "glob": "better_sqlite3.node",
-            "output": "./"
-          },
-          {
-            "input": "apps/node-auth-example",
-            "glob": "sqlite.db",
-            "output": "./"
-          }
-        ]
+        "command": "tsc --build tsconfig.app.json",
+        "cwd": "apps/node-auth-example"
       },
-      "configurations": {
-        "development": {},
-        "production": {}
-      }
+      "outputs": ["{projectRoot}/dist"]
     },
     "serve": {
       "executor": "@nx/js:node",

@@ -13,7 +13,10 @@
       "default",
       "!{projectRoot}/**/?(*.)+(spec|test).[jt]s?(x)?(.snap)",
       "!{projectRoot}/tsconfig.spec.json",
-      "!{projectRoot}/src/test-setup.[jt]s"
+      "!{projectRoot}/src/test-setup.[jt]s",
+      "!{projectRoot}/cypress/**/*",
+      "!{projectRoot}/**/*.cy.[jt]s?(x)",
+      "!{projectRoot}/cypress.config.[jt]s"
     ],
     "sharedGlobals": []
   },
@@ -21,6 +24,7 @@
     {
       "plugin": "@nx/js/typescript",
       "options": {
+        "compiler": "tsgo",
         "typecheck": {
           "targetName": "typecheck"
         },
@@ -36,7 +40,7 @@
       "plugin": "@nx/vite/plugin",
       "exclude": [
         "apps/solid-app-start/**/*",
-        "apps/react-app-remix/**/*"
+        "apps/react-remix-example/**/*"
       ],
       "options": {
         "buildTargetName": "build",
@@ -73,8 +77,18 @@
       },
       "exclude": [
         "apps/solid-app-start/**/*",
-        "apps/react-app-remix/**/*"
+        "apps/react-remix-example/**/*",
+        "apps/minimal-example/**/*"
       ]
+    },
+    {
+      "plugin": "@nx/cypress/plugin",
+      "options": {
+        "targetName": "cypress:e2e",
+        "openTargetName": "open-cypress",
+        "componentTestingTargetName": "component-test",
+        "ciTargetName": "e2e-ci"
+      }
     }
   ],
   "release": {
@@ -82,11 +96,12 @@
     "projects": [
       "packages/react/remix",
       "packages/react/router",
+      "packages/react/query",
       "packages/node/better-auth",
       "packages/solid/query",
       "packages/react/router-better-auth",
       "packages/prisma",
-      "packages/solid/effect-atom"
+      "packages/hatchet"
     ],
     "changelog": {
       "automaticFromRef": "HEAD~100",
@@ -204,5 +219,6 @@
         "linter": "none"
       }
     }
-  }
+  },
+  "analytics": true
 }

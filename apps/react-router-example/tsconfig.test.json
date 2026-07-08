@@ -1,10 +1,12 @@
 {
   "extends": "./tsconfig.app.json",
   "include": [
-    "tests/**/*.ts",
-    "tests/**/*.tsx",
-    "tests/**/*.js",
-    "tests/**/*.jsx"
+    "./tests/**/*.d.ts",
+    "./tests/**/*.ts",
+    "./tests/**/*.tsx",
+    "./tests/**/*.mts",
+    "./tests/**/*.js",
+    "./tests/**/*.jsx"
   ],
   "compilerOptions": {
     "types": [

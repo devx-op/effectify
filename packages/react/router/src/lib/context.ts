@@ -1,5 +1,12 @@
-import * as Context from "effect/Context"
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router"
+import * as Context from "effect/Context"
 
-export class ActionArgsContext extends Context.Tag("ActionArgsContext")<ActionArgsContext, ActionFunctionArgs>() {}
-export class LoaderArgsContext extends Context.Tag("LoaderArgsContext")<LoaderArgsContext, LoaderFunctionArgs>() {}
+export class ActionArgsContext extends Context.Service<
+  ActionArgsContext,
+  ActionFunctionArgs
+>()("ActionArgsContext") {}
+
+export class LoaderArgsContext extends Context.Service<
+  LoaderArgsContext,
+  LoaderFunctionArgs
+>()("LoaderArgsContext") {}

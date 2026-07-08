@@ -1,15 +1,28 @@
-import path from "node:path"
-import { fileURLToPath } from "node:url"
 import { betterAuth } from "better-auth"
-import Database from "better-sqlite3"
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
+import { database } from "./database.js"
 
 export const auth = betterAuth({
+  baseURL: "http://localhost:3001",
   emailAndPassword: {
     enabled: true,
   },
-  database: new Database(path.join(__dirname, "../sqlite.db")) as any,
-  trustedOrigins: ["http://localhost:3000"],
+  database: database as any,
+  trustedOrigins: ["http://localhost:3000", "http://localhost:3001"],
+  advanced: {
+    defaultCookieAttributes: {
+      sameSite: "lax" as const,
+      secure: false,
+      path: "/",
+    },
+    cookies: {
+      session_token: {
+        attributes: {
+          sameSite: "lax" as const,
+          secure: false,
+          path: "/",
+          domain: undefined, // dejar que el browser maneje el dominio
+        },
+      },
+    },
+  },
 })

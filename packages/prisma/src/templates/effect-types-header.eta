@@ -1,6 +1,6 @@
 <%~ it.header %>
 
-import { Schema } from "effect";
+import * as Schema from "effect/Schema";
 import { generated } from "@effectify/prisma";
 <% if (it.enumImports) { %>
 import { <%~ it.enumImports %> } from "./enums.js";

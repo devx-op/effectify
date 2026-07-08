@@ -1,6 +1,8 @@
 {
   "nxConsole.generateAiAgentRules": true,
-  "typescript.tsdk": "node_modules/typescript/lib",
+  "terminal.integrated.env.linux": {
+    "PATH": "/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:${env:PATH}"
+  },
   "[javascript]": {
     "editor.defaultFormatter": "dprint.dprint"
   },
@@ -54,10 +56,12 @@
   "files.readonlyInclude": {
     "**/routeTree.gen.ts": true
   },
-  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.defaultFormatter": "dprint.dprint",
   "[javascript][typescript][javascriptreact][typescriptreact][json][jsonc][css][graphql]": {
     "editor.defaultFormatter": "dprint.dprint"
   },
   "editor.formatOnPaste": true,
-  "emmet.showExpandedAbbreviation": "never"
+  "emmet.showExpandedAbbreviation": "never",
+  "typescript.native-preview.tsdk": "node_modules/@typescript/native-preview",
+  "js/ts.experimental.useTsgo": true
 }

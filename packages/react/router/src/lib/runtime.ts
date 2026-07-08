@@ -1,31 +1,30 @@
 import * as Effect from "effect/Effect"
 import * as Exit from "effect/Exit"
 import { pipe } from "effect/Function"
-import type * as Layer from "effect/Layer"
-import * as Logger from "effect/Logger"
+import * as Layer from "effect/Layer"
 import * as ManagedRuntime from "effect/ManagedRuntime"
 import { type ActionFunctionArgs, data, type LoaderFunctionArgs, redirect } from "react-router"
-import { ActionArgsContext, LoaderArgsContext } from "../lib/context.js"
-import { type HttpResponse, matchHttpResponse } from "../lib/http-response.js"
+import { ActionArgsContext, LoaderArgsContext } from "./context.js"
+import { type HttpResponse, matchHttpResponse } from "./http-response.js"
 
 export const make = <R, E>(layer: Layer.Layer<R, E, never>) => {
   const runtime = ManagedRuntime.make(layer)
 
   const withLoaderEffect =
-    <A, B, R0 extends R | LoaderArgsContext>(self: Effect.Effect<HttpResponse<A> | Response, B, R0>) =>
-    (args: LoaderFunctionArgs) => {
+    <A, B, R0>(self: Effect.Effect<HttpResponse<A> | Response, B, R0>) => (args: LoaderFunctionArgs) => {
+      // Create a layer that provides the LoaderArgsContext with the runtime args
+      const argsLayer = Layer.succeed(LoaderArgsContext)(args)
       const runnable = pipe(
         self,
-        Effect.provide(Logger.pretty),
-        Effect.provideService(LoaderArgsContext, args),
+        Effect.provide(argsLayer),
         Effect.tapError((cause) => Effect.logError("Loader effect failed", cause)),
-      )
+      ) as Effect.Effect<HttpResponse<A> | Response, B, R>
       return runtime.runPromiseExit(runnable).then(
         Exit.match({
           onFailure: (cause) => {
-            if (cause._tag === "Fail") {
+            if (cause.reasons[0]._tag === "Fail") {
               // Preserve the original error for ErrorBoundary
-              const error = cause.error
+              const error = cause.reasons[0].error
               if (error instanceof Response) {
                 throw error
               }
@@ -40,8 +39,14 @@ export const make = <R, E>(layer: Layer.Layer<R, E, never>) => {
               })
             }
             // Handle other types of failures (interrupts, defects, etc.)
-            console.error("Runtime execution failed with defect:", JSON.stringify(cause, null, 2))
-            const errorData = { ok: false as const, errors: ["Internal server error"] }
+            console.error(
+              "Runtime execution failed with defect:",
+              JSON.stringify(cause, null, 2),
+            )
+            const errorData = {
+              ok: false as const,
+              errors: ["Internal server error"],
+            }
             throw new Response(JSON.stringify(errorData), {
               status: 500,
               headers: { "Content-Type": "application/json" },
@@ -55,11 +60,17 @@ export const make = <R, E>(layer: Layer.Layer<R, E, never>) => {
             }
             // Otherwise, match the HttpResponse types
             return matchHttpResponse<A>()({
-              HttpResponseSuccess: ({ data: response }) => ({ ok: true as const, data: response }),
+              HttpResponseSuccess: ({ data: response }) => ({
+                ok: true as const,
+                data: response,
+              }),
               HttpResponseFailure: ({ cause }) => {
                 // Convert HttpResponseFailure to Response for ErrorBoundary with ok: false
                 const errorMessage = typeof cause === "string" ? cause : String(cause)
-                const errorData = { ok: false as const, errors: [errorMessage] }
+                const errorData = {
+                  ok: false as const,
+                  errors: [errorMessage],
+                }
                 throw new Response(JSON.stringify(errorData), {
                   status: 500,
                   headers: { "Content-Type": "application/json" },
@@ -75,14 +86,13 @@ export const make = <R, E>(layer: Layer.Layer<R, E, never>) => {
       )
     }
 
-  // Don't throw the Error requests, handle them in the normal UI. No ErrorBoundary
   const withActionEffect =
-    <A, B, R0 extends R | ActionArgsContext>(self: Effect.Effect<HttpResponse<A> | Response, B, R0>) =>
-    (args: ActionFunctionArgs) => {
+    <A, B, R0>(self: Effect.Effect<HttpResponse<A> | Response, B, R0>) => (args: ActionFunctionArgs) => {
+      // Create a layer that provides the ActionArgsContext with the runtime args
+      const argsLayer = Layer.succeed(ActionArgsContext)(args)
       const runnable = pipe(
         self,
-        Effect.provide(Logger.pretty),
-        Effect.provideService(ActionArgsContext, args),
+        Effect.provide(argsLayer),
         Effect.tapError((cause) => {
           // Don't log if it's a Response - that's expected behavior
           if (!(cause instanceof Response)) {
@@ -90,20 +100,26 @@ export const make = <R, E>(layer: Layer.Layer<R, E, never>) => {
           }
           return Effect.void
         }),
-      )
+      ) as Effect.Effect<HttpResponse<A> | Response, B, R>
       return runtime.runPromiseExit(runnable).then(
         Exit.match({
           onFailure: (cause) => {
-            if (cause._tag === "Fail") {
-              const error = cause.error
+            if (cause.reasons[0]._tag === "Fail") {
+              const error = cause.reasons[0].error
               // If the error is a Response, throw it directly to preserve headers
               if (error instanceof Response) {
                 throw error
               }
-              return data({ ok: false as const, errors: [String(error)] }, { status: 400 })
+              return data(
+                { ok: false as const, errors: [String(error)] },
+                { status: 400 },
+              )
             }
-            // Handle other types of failures
-            return data({ ok: false as const, errors: ["Internal server error"] }, { status: 400 })
+            // Handle other types of failures (interrupts, defects, etc.)
+            return data(
+              { ok: false as const, errors: ["Internal server error"] },
+              { status: 400 },
+            )
           },
           onSuccess: (result) => {
             // If the result is a Response, throw it directly to preserve headers (including Set-Cookie)
@@ -113,9 +129,15 @@ export const make = <R, E>(layer: Layer.Layer<R, E, never>) => {
             }
             // Otherwise, match the HttpResponse types
             return matchHttpResponse<A>()({
-              HttpResponseSuccess: ({ data: response }) => ({ ok: true as const, response }),
+              HttpResponseSuccess: ({ data: response }) => ({
+                ok: true as const,
+                response,
+              }),
               HttpResponseFailure: ({ cause }) =>
-                data({ ok: false as const, errors: [String(cause)] }, { status: 400 }),
+                data(
+                  { ok: false as const, errors: [String(cause)] },
+                  { status: 400 },
+                ),
               HttpResponseRedirect: ({ to, init = {} }) => redirect(to, init),
             })(result)
           },

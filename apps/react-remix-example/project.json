@@ -4,6 +4,13 @@
   "projectType": "application",
   "sourceRoot": "apps/react-remix-example/src",
   "targets": {
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "vitest run",
+        "cwd": "apps/react-remix-example"
+      }
+    },
     "build": {
       "executor": "nx:run-script",
       "outputs": ["{projectRoot}/build"],
@@ -33,8 +40,17 @@
     "typecheck": {
       "executor": "nx:run-script",
       "cache": true,
+      "dependsOn": ["prisma:generate"],
       "options": {
         "script": "typecheck"
+      }
+    },
+    "prisma:generate": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["^build"],
+      "options": {
+        "command": "pnpm exec prisma generate",
+        "cwd": "apps/react-remix-example"
       }
     }
   },

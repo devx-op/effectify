@@ -11,10 +11,14 @@
     "lib": ["DOM", "DOM.Iterable", "ES2022"],
     "skipLibCheck": true,
     "rootDirs": [".", "./.react-router/types"],
-    "types": ["node", "vite/client", "@react-router/node", "vitest/globals", "react", "react-dom"],
-    "paths": {
-      "@prisma/*": ["./prisma/generated/*"]
-    }
+    "types": [
+      "node",
+      "vite/client",
+      "@react-router/node",
+      "vitest/globals",
+      "react",
+      "react-dom"
+    ]
   },
   "include": [],
   "references": [

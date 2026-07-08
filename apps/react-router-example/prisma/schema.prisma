@@ -5,16 +5,12 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client"
-  output   = "./generated"
+  provider = "prisma-client-js"
 }
 
 generator effect {
-  provider         = "node ../../packages/prisma/dist/src/cli.js"
-  output           = "./generated/effect" // relative to the schema.prisma file, e.g. prisma/generated/effect
-  clientImport     = "../client/index.js"
-  clientImportPath = "../client.js" // relative to the output path ^here (defaults to "@prisma/client")
-  importFileExtension = "js"
+  provider = "node ../../packages/prisma/bin/effect-prisma.mjs"
+  output   = "./generated/effect"
 }
 
 datasource db {
@@ -34,5 +30,4 @@ model Todo {
   content   String?
   published Boolean    @default(false)
   status    TodoStatus @default(PENDING)
-  authorId  Int
 }

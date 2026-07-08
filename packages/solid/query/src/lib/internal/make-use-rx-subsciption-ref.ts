@@ -1,84 +1,45 @@
-import * as Effect from "effect/Effect"
-import * as Fiber from "effect/Fiber"
+import { type Context, useContext } from "solid-js"
 import type * as ManagedRuntime from "effect/ManagedRuntime"
-import * as Stream from "effect/Stream"
-import * as SubscriptionRef from "effect/SubscriptionRef"
-import { type Context, createEffect, createSignal, onCleanup, useContext } from "solid-js"
 import type { Subscribable, SubscriptionOptions } from "../types.js"
+import type * as Effect from "effect/Effect"
 
+/**
+ * ⚠️ TEMPORARILY DISABLED - Effect v4 Migration
+ *
+ * This hook is temporarily disabled due to significant API changes in Effect v4:
+ * - SubscriptionRef.SubscriptionRefTypeId was removed
+ * - Stream APIs reorganized under effect/unstable/*
+ * - Migration documentation is incomplete (see Effect-TS/effect-smol#1378)
+ *
+ * The core functionality (useEffectQuery, useEffectMutation) works with v4.
+ * This advanced subscription feature will be revisited when v4 documentation
+ * is complete or when the beta stabilizes.
+ *
+ * TODO: Re-enable after Effect v4 stable release and documentation update
+ * @deprecated Temporarily disabled during Effect v4 beta migration
+ */
 export const makeUseRxSubscriptionRef =
   <R, E>(RuntimeContext: Context<ManagedRuntime.ManagedRuntime<R, E> | null>) =>
   <A, E2>(
-    subscribable:
+    _subscribable:
       | Subscribable<A, E2>
       | Effect.Effect<Subscribable<A, E2>, never, R>
-      | Effect.Effect<SubscriptionRef.SubscriptionRef<A>, never, R>,
-    onNext: (value: A) => void,
-    opts?: SubscriptionOptions,
-  ): A => {
-    const options: SubscriptionOptions = {
-      skipInitial: opts?.skipInitial ?? true,
-    }
+      | Effect.Effect<unknown, never, R>,
+    _onNext: (value: A) => void,
+    _opts?: SubscriptionOptions,
+  ): () => A => {
     const runtime = useContext(RuntimeContext)
     if (!runtime) {
-      throw new Error("Runtime context not found. Make sure to wrap your app with RuntimeProvider")
+      throw new Error(
+        "Runtime context not found. Make sure to wrap your app with RuntimeProvider",
+      )
     }
 
-    const setInitialValue = () => {
-      const initialValue = Effect.gen(function*() {
-        const resolved = Effect.isEffect(subscribable) ? yield* subscribable : subscribable
-
-        const resolvedValue = SubscriptionRef.SubscriptionRefTypeId in resolved
-          ? yield* SubscriptionRef.get(resolved)
-          : resolved.get()
-
-        if (!options?.skipInitial) {
-          onNext(resolvedValue)
-        }
-
-        return resolvedValue as A
-      })
-      const newVal = runtime.runSync(initialValue)
-      return newVal
+    return () => {
+      throw new Error(
+        "useRxSubscriptionRef is temporarily disabled during Effect v4 beta migration. " +
+          "Please use useEffectQuery or useEffectMutation instead, or wait for v4 stable release. " +
+          "See: https://github.com/Effect-TS/effect-smol/issues/1378",
+      )
     }
-    const [value, setValue] = createSignal(setInitialValue())
-
-    createEffect(() => {
-      const fiber = Effect.gen(function*() {
-        const resolved = Effect.isEffect(subscribable) ? yield* subscribable : subscribable
-
-        const adaptedSubscribable: Subscribable<A, E2> = SubscriptionRef.SubscriptionRefTypeId in resolved
-          ? {
-            changes: resolved.changes,
-            get: () => runtime.runSync(SubscriptionRef.get(resolved)),
-          }
-          : resolved
-
-        const currentValue = adaptedSubscribable.get()
-        setValue(() => currentValue)
-
-        let hasEmittedInitial = false
-        return yield* adaptedSubscribable.changes.pipe(
-          Stream.tap((val) =>
-            Effect.sync(() => {
-              setValue(() => val)
-              if (options?.skipInitial && !hasEmittedInitial) {
-                hasEmittedInitial = true
-                return
-              }
-              onNext(val)
-            })
-          ),
-          Stream.runDrain,
-          Effect.forever,
-          Effect.forkDaemon,
-        )
-      }).pipe(runtime.runSync)
-
-      onCleanup(() => {
-        runtime.runCallback(Fiber.interrupt(fiber))
-      })
-    })
-
-    return value()
   }

@@ -1,4 +1,4 @@
-import { LoginSchema } from "@effectify/chat-domain/auth.ts"
+import { LoginSchema } from "@effectify/chat-domain/auth.js"
 import { Button } from "@effectify/react-ui/components/primitives/button"
 import {
   Card,
@@ -25,7 +25,7 @@ export const LoginForm: React.FC<LoginFormProps> = (props) => {
       password: "",
     },
     validators: {
-      onBlur: Schema.standardSchemaV1(LoginSchema),
+      onBlur: Schema.toStandardSchemaV1(LoginSchema),
     },
     onSubmit: ({ value }: { value: { email: string; password: string } }) => {
       // Do something with form data
@@ -33,7 +33,10 @@ export const LoginForm: React.FC<LoginFormProps> = (props) => {
     },
   })
   return (
-    <VStack className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]" gap="6">
+    <VStack
+      className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]"
+      gap="6"
+    >
       <VStack className="mt-auto">
         <Card>
           <CardHeader>
@@ -45,7 +48,9 @@ export const LoginForm: React.FC<LoginFormProps> = (props) => {
               </Center>
 
               <CardTitle>Sign In</CardTitle>
-              <CardDescription>Use your email address or social account to sign in.</CardDescription>
+              <CardDescription>
+                Use your email address or social account to sign in.
+              </CardDescription>
             </Stack>
           </CardHeader>
           <CardContent>
@@ -66,7 +71,9 @@ export const LoginForm: React.FC<LoginFormProps> = (props) => {
                           <field.TextField
                             name={field.name}
                             onBlur={field.handleBlur}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => field.handleChange(e.target.value)}
+                            onChange={(
+                              e: React.ChangeEvent<HTMLInputElement>,
+                            ) => field.handleChange(e.target.value)}
                             placeholder={"email"}
                             value={field.state.value as string}
                           />
@@ -84,7 +91,9 @@ export const LoginForm: React.FC<LoginFormProps> = (props) => {
                           <field.TextField
                             name={field.name}
                             onBlur={field.handleBlur}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => field.handleChange(e.target.value)}
+                            onChange={(
+                              e: React.ChangeEvent<HTMLInputElement>,
+                            ) => field.handleChange(e.target.value)}
                             placeholder={"password"}
                             type="password"
                             value={field.state.value as string}

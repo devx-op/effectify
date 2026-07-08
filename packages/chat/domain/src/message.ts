@@ -1,12 +1,7 @@
-import * as Schema from "effect/Schema"
-
-export const MessageId = Schema.String.pipe(Schema.brand("MessageId"))
-
-export const Message = Schema.Struct({
-  id: MessageId,
-  body: Schema.String,
-  createdAt: Schema.DateTimeUtc,
-  readAt: Schema.NullOr(Schema.DateTimeUtc),
-})
-
-export type Message = typeof Message.Type
+// Stub for message types - Effect v4 migration deferred
+export interface Message {
+  id: string
+  body: string
+  createdAt: Date
+  readAt: Date | null
+}

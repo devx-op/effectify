@@ -1,0 +1,171 @@
+import type { AtomRegistry, Hydration as ReactivityHydration } from "effect/unstable/reactivity"
+import type * as LoomCore from "@effectify/loom-core"
+import type * as Diagnostics from "./diagnostics.js"
+import type * as Resumability from "./resumability.js"
+/** Minimal runtime boundary for future DOM/SSR executors. */
+export interface Handle {
+  readonly root: Element | DocumentFragment | null
+}
+export interface EventContext<CurrentTarget extends EventTarget = EventTarget, EventType extends Event = Event> {
+  readonly event: EventType
+  readonly target: EventTarget
+  readonly currentTarget: CurrentTarget
+  readonly runtime: Handle
+}
+export interface EventBinding<Handler = unknown> extends LoomCore.Ast.EventBinding<Handler> {
+}
+export interface RegisteredEventBinding {
+  readonly nodeId: string
+  readonly event: string
+  readonly mode: LoomCore.Ast.EventBinding["mode"]
+  readonly handler: LoomCore.Ast.EventBinding["handler"]
+  readonly ref?: Resumability.ExecutableRef
+}
+export interface HydrationBoundary {
+  readonly id: string
+  readonly strategy: string
+  readonly attributes: Readonly<Record<string, string>>
+  readonly eventBindings: ReadonlyArray<RegisteredEventBinding>
+}
+export interface ActivationEventBinding {
+  readonly nodeId: string
+  readonly event: string
+  readonly mode: LoomCore.Ast.EventBinding["mode"]
+  readonly handlerId: string
+}
+export interface ActivationBoundary {
+  readonly id: string
+  readonly strategy: string
+  readonly eventBindings: ReadonlyArray<ActivationEventBinding>
+}
+export interface ActivationManifest {
+  readonly boundaries: ReadonlyArray<ActivationBoundary>
+  readonly deferred: ReadonlyArray<DeferredNode>
+}
+export interface ActivationSource {
+  readonly manifest: ActivationManifest
+  readonly handlers: Readonly<Record<string, LoomCore.Ast.EventBinding["handler"]>>
+}
+export interface DeferredNode {
+  readonly id: string
+  readonly kind: "live"
+  readonly reason: "activation-pending"
+}
+export interface LiveRegionPlan {
+  readonly id: string
+  readonly boundaryId: string | undefined
+  readonly startMarker: string
+  readonly endMarker: string
+}
+export interface RenderPlan {
+  readonly root: LoomCore.Ast.Node
+  readonly hydrationAttributes: ReadonlyArray<readonly [key: string, value: string]>
+  readonly boundaries: ReadonlyArray<HydrationBoundary>
+  readonly liveRegions: ReadonlyArray<LiveRegionPlan>
+  readonly deferred: ReadonlyArray<DeferredNode>
+}
+export interface SsrOptions {
+  readonly registry?: AtomRegistry.AtomRegistry
+  readonly dehydrate?: {
+    readonly encodeInitialAs?: "ignore" | "promise" | "value-only"
+  }
+}
+export interface SsrRenderResult {
+  readonly html: string
+  readonly plan: RenderPlan
+  readonly activation: ActivationSource
+  readonly dehydratedAtoms: ReadonlyArray<ReactivityHydration.DehydratedAtom>
+  readonly resumability: Resumability.RenderResumabilityResult
+  readonly diagnostics: ReadonlyArray<Diagnostics.DiagnosticReport>
+}
+export type ResumabilityActivationSource = Resumability.ResumabilityActivationSource
+export type CreatedRenderContractResult = Resumability.CreatedRenderContractResult
+export interface ResumabilityIdentity {
+  readonly buildId: string
+  readonly rootId: string
+}
+export interface HydrationBoundaryHandle {
+  readonly id: string
+  readonly strategy: string
+  readonly element: Element
+  readonly eventNames: ReadonlyArray<string>
+  readonly startMarker: Comment | undefined
+  readonly endMarker: Comment | undefined
+}
+export interface HydrationMismatch {
+  readonly id: string
+  readonly reason: "missing-strategy" | "missing-start-marker" | "missing-end-marker"
+  readonly element: Element
+}
+export interface HydrationBootstrapResult {
+  readonly boundaries: ReadonlyArray<HydrationBoundaryHandle>
+  readonly mismatches: ReadonlyArray<HydrationMismatch>
+  readonly diagnostics: ReadonlyArray<Diagnostics.DiagnosticReport>
+}
+export interface ActivatedEventBinding {
+  readonly nodeId: string
+  readonly event: string
+  readonly mode: LoomCore.Ast.EventBinding["mode"]
+  readonly element: Element
+}
+export interface ActivatedBoundary extends HydrationBoundaryHandle {
+  readonly eventBindings: ReadonlyArray<ActivatedEventBinding>
+}
+export interface HydrationActivationIssue {
+  readonly boundaryId: string
+  readonly liveRegionId?: string
+  readonly nodeId: string
+  readonly event: string
+  readonly reason:
+    | "missing-runtime-boundary"
+    | "missing-event-target"
+    | "missing-handler"
+    | "missing-effect-dispatcher"
+    | "missing-live-start-marker"
+    | "missing-live-end-marker"
+    | "unsupported-live-content"
+    | "live-plan-mismatch"
+}
+export interface HydrationActivationOptions {
+  readonly onEffect?: (effect: LoomCore.Component.EffectLike, context: EventContext) => void
+  readonly registry?: AtomRegistry.AtomRegistry
+  readonly dehydratedState?: Iterable<ReactivityHydration.DehydratedAtom>
+}
+export interface ActivatedLiveRegion {
+  readonly id: string
+  readonly boundaryId: string | undefined
+  readonly startMarker: Comment
+  readonly endMarker: Comment
+  readonly unsubscribe: () => void
+}
+export interface HydrationActivationResult {
+  readonly boundaries: ReadonlyArray<ActivatedBoundary>
+  readonly liveRegions: ReadonlyArray<ActivatedLiveRegion>
+  readonly mismatches: ReadonlyArray<HydrationMismatch>
+  readonly issues: ReadonlyArray<HydrationActivationIssue>
+  readonly deferred: ReadonlyArray<DeferredNode>
+  readonly registry: AtomRegistry.AtomRegistry
+  readonly diagnostics: ReadonlyArray<Diagnostics.DiagnosticReport>
+  readonly dispose: () => void
+}
+/** Normalize a handler into a runtime-aware event binding descriptor. */
+export declare const eventBinding: <Handler>(event: string, handler: Handler) => EventBinding<Handler>
+/** Create a render plan without executing runtime semantics yet. */
+export declare const plan: (root: LoomCore.Ast.Node, options?: SsrOptions) => RenderPlan
+/** Render the current neutral tree to SSR HTML plus explicit hydration metadata. */
+export declare const renderToHtml: (root: LoomCore.Ast.Node, options?: SsrOptions) => SsrRenderResult
+/** Materialize a serialized resumability contract from the latest SSR render output. */
+export declare const createResumabilityContract: (
+  render: SsrRenderResult,
+  identity: ResumabilityIdentity,
+) => Promise<Resumability.CreatedRenderContractResult>
+/** Discover hydratable boundaries from SSR markup. */
+export declare const discoverHydrationBoundaries: (root: ParentNode) => ReadonlyArray<HydrationBoundaryHandle>
+/** Normalize the current DOM root into a hydration bootstrap plan. */
+export declare const bootstrapHydration: (root: ParentNode) => HydrationBootstrapResult
+/** Activate discovered hydration boundaries against the current hydration activation source. */
+export declare const activateHydration: (
+  root: ParentNode,
+  source: ActivationSource | SsrRenderResult | Resumability.ResumabilityActivationSource,
+  options?: HydrationActivationOptions,
+) => HydrationActivationResult

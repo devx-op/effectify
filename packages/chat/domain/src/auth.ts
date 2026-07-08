@@ -1,25 +1,14 @@
-import * as Email from "@effectify/shared-domain/email.js"
+// Stub for auth schemas - Effect v4 migration deferred
 import * as Schema from "effect/Schema"
 
 export const LoginSchema = Schema.Struct({
-  email: Email.Email,
-  password: Schema.String.pipe(Schema.minLength(3)),
+  email: Schema.String,
+  password: Schema.String,
 })
 
 export const RegisterSchema = Schema.Struct({
-  name: Schema.String.pipe(Schema.minLength(2)),
-  email: Email.Email,
-  password: Schema.String.pipe(Schema.minLength(6)),
-  confirmPassword: Schema.String.pipe(Schema.minLength(6)),
-}).pipe(
-  Schema.filter((input) => {
-    const issues: Schema.FilterIssue[] = []
-    if (input.password !== input.confirmPassword) {
-      issues.push({
-        path: ["confirmPassword"],
-        message: "Passwords do not match",
-      })
-    }
-    return issues
-  }),
-)
+  name: Schema.String,
+  email: Schema.String,
+  password: Schema.String,
+  confirmPassword: Schema.String,
+})

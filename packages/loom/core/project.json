@@ -1,0 +1,23 @@
+{
+  "name": "loom-core",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/loom/core/src",
+  "projectType": "library",
+  "tags": ["loom", "internal", "core"],
+  "targets": {
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit -p tsconfig.lib.json",
+        "cwd": "packages/loom/core"
+      }
+    },
+    "lint": {
+      "executor": "nx-oxlint:lint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["packages/loom/core/**/*.{ts,tsx,js,jsx,mts,cts}"]
+      }
+    }
+  }
+}
