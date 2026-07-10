@@ -1,0 +1,16 @@
+{
+  "runRoot": "tmp/typescript-validation",
+  "lanes": {
+    "ts6": { "compiler": "typescript-6", "version": "6.0.3" },
+    "ts7": { "compiler": "typescript-7", "version": "7.0.2", "patcher": "effect-tsgo-7" }
+  },
+  "executionClasses": {
+    "typecheck-ts6": "validation",
+    "typecheck-ts7": "validation",
+    "acceptance-ts6": "real",
+    "acceptance-ts7": "real",
+    "compiler-preflight": "real",
+    "cache-isolation-test": "cache-test",
+    "compiler-validation-test": "test"
+  }
+}

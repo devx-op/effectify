@@ -1,0 +1,63 @@
+{
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "name": "@effectify/typescript-validation",
+  "projectType": "library",
+  "sourceRoot": "packages/tooling/typescript-validation/src",
+  "targets": {
+    "typecheck-ts6": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "outputs": ["{workspaceRoot}/tmp/typescript-validation/**"],
+      "metadata": { "executionClass": "validation" },
+      "options": { "command": "node src/cli.mjs typecheck --lane=ts6", "cwd": "packages/tooling/typescript-validation" }
+    },
+    "typecheck-ts7": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "outputs": ["{workspaceRoot}/tmp/typescript-validation/**"],
+      "metadata": { "executionClass": "validation" },
+      "options": { "command": "node src/cli.mjs typecheck --lane=ts7", "cwd": "packages/tooling/typescript-validation" }
+    },
+    "acceptance-ts6": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "outputs": ["{workspaceRoot}/tmp/typescript-validation/**"],
+      "metadata": { "executionClass": "real" },
+      "options": {
+        "command": "node src/cli.mjs acceptance --lane=ts6",
+        "cwd": "packages/tooling/typescript-validation"
+      }
+    },
+    "acceptance-ts7": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "outputs": ["{workspaceRoot}/tmp/typescript-validation/**"],
+      "metadata": { "executionClass": "real" },
+      "options": {
+        "command": "node src/cli.mjs acceptance --lane=ts7",
+        "cwd": "packages/tooling/typescript-validation"
+      }
+    },
+    "compiler-preflight": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "outputs": ["{workspaceRoot}/tmp/typescript-validation/**"],
+      "metadata": { "executionClass": "real" },
+      "options": { "command": "node src/cli.mjs preflight", "cwd": "packages/tooling/typescript-validation" }
+    },
+    "cache-isolation-test": {
+      "executor": "nx:run-commands",
+      "cache": true,
+      "outputs": ["{workspaceRoot}/tmp/typescript-validation/**"],
+      "metadata": { "executionClass": "cache-test" },
+      "options": { "command": "node src/cli.mjs cache-isolation-test", "cwd": "packages/tooling/typescript-validation" }
+    },
+    "compiler-validation-test": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "outputs": ["{workspaceRoot}/tmp/typescript-validation/**"],
+      "metadata": { "executionClass": "test" },
+      "options": { "command": "node --test test/*.test.mjs", "cwd": "packages/tooling/typescript-validation" }
+    }
+  }
+}

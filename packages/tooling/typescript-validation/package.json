@@ -1,0 +1,11 @@
+{
+  "name": "@effectify/typescript-validation",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "effect-tsgo-7": "npm:@effect/tsgo@0.18.1",
+    "typescript-6": "npm:typescript@6.0.3",
+    "typescript-7": "npm:typescript@7.0.2"
+  }
+}
