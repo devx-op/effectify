@@ -3,6 +3,21 @@ name: 🚀 CD
 on:
   push:
     branches: [master]
+  workflow_dispatch:
+    inputs:
+      publish_only:
+        description: "Publish existing stable versions without versioning, changelog, or git changes"
+        required: true
+        type: boolean
+        default: false
+      projects:
+        description: "Comma-separated existing Nx release project names; required for publish-only recovery"
+        required: false
+        type: string
+
+concurrency:
+  group: cd-release
+  cancel-in-progress: false
 
 permissions:
   contents: write # Needed for creating commits and tags
@@ -36,45 +51,68 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: ⚙️ Git Configuration
+        if: ${{ inputs.publish_only != true }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: 🔍 Validate Publish-Only Recovery Projects
+        id: recovery
+        if: ${{ inputs.publish_only == true }}
+        env:
+          RECOVERY_PROJECTS: ${{ inputs.projects || '' }}
+        run: |
+          if [ -z "$RECOVERY_PROJECTS" ]; then
+            echo "publish-only recovery requires an explicit comma-separated projects input" >&2
+            exit 1
+          fi
+          RELEASE_PROJECTS=$(jq -r '.release.projects[]' nx.json | while read -r path; do
+            pnpm nx show project "$path" --json | jq -r '.name'
+          done | sort -u)
+          SELECTED_PROJECTS=$(printf '%s' "$RECOVERY_PROJECTS" | tr ',' '\n' | sed '/^$/d' | sort -u)
+          while IFS= read -r project; do
+            if ! printf '%s\n' "$RELEASE_PROJECTS" | grep -Fx -- "$project" >/dev/null; then
+              echo "Invalid release project: $project" >&2
+              exit 1
+            fi
+          done <<< "$SELECTED_PROJECTS"
+          echo "projects=$(printf '%s' "$SELECTED_PROJECTS" | paste -sd, -)" >> "$GITHUB_OUTPUT"
+
+      - name: 🔐 Verify npm authentication
+        run: npm whoami
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: 🔖 Version & Changelog
-        # Calculates versions, updates changelogs, creates commit and tag
+        if: ${{ inputs.publish_only != true }}
+        # Nx Release is the sole owner of changelogs, the release commit, and tags.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # Ensure git user is configured
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          # Run versioning (Nx modifies files locally)
-          pnpm nx release version --git-commit --git-tag
-
-          # Manual Safety Net: Commit and Push
-          # 1. If Nx made a commit but didn't push -> We push.
-          # 2. If Nx modified files but didn't commit -> We commit and push.
-
-          if [[ -n $(git status -s) ]]; then
-            echo "📝 Changes detected (Nx didn't commit). Committing manually..."
-            git add .
-            git commit -m "chore(release): publish [skip ci]"
-          else
-            echo "✅ No uncommitted changes found (Nx likely committed)."
-          fi
-
-          echo "🚀 Pushing changes and tags to remote..."
-          git push origin HEAD --follow-tags
+        run: pnpm nx release --skip-publish
 
       - name: 🏗️ Build
-        # Builds projects with the updated version before publishing
-        run: pnpm nx run-many -t build --all
+        env:
+          PUBLISH_ONLY: ${{ inputs.publish_only || false }}
+          PROJECTS: ${{ steps.recovery.outputs.projects }}
+        run: |
+          if [ "$PUBLISH_ONLY" = "true" ]; then
+            pnpm nx run-many -t build "--projects=$PROJECTS"
+          else
+            pnpm nx run-many -t build --all
+          fi
 
       - name: 🚀 Publish
         env:
+          PUBLISH_ONLY: ${{ inputs.publish_only || false }}
+          PROJECTS: ${{ steps.recovery.outputs.projects }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed for creating GitHub Releases
-        # Publishes packages to npm and creates GitHub Releases
-        run: pnpm nx release publish
+          NPM_CONFIG_PROVENANCE: true
+        # Publish-only recovery uses selected existing manifests; Nx checks registry state.
+        run: |
+          if [ "$PUBLISH_ONLY" = "true" ]; then
+            pnpm nx release publish "--projects=$PROJECTS"
+          else
+            pnpm nx release publish
+          fi

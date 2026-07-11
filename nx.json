@@ -103,6 +103,11 @@
       "packages/prisma",
       "packages/hatchet"
     ],
+    "git": {
+      "commit": true,
+      "tag": true,
+      "push": true
+    },
     "changelog": {
       "automaticFromRef": "HEAD~100",
       "projectChangelogs": {
@@ -117,10 +122,12 @@
     },
     "version": {
       "conventionalCommits": true,
-      "fallbackCurrentVersionResolver": "disk"
+      "fallbackCurrentVersionResolver": "disk",
+      "versionActions": "./tools/release-version-actions.cjs"
     },
     "releaseTag": {
-      "pattern": "{projectName}@{version}"
+      "pattern": "{projectName}@{version}",
+      "strictPreid": true
     }
   },
   "sync": {
