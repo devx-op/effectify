@@ -5,6 +5,7 @@ const {
 	createAfterAllProjectsVersioned,
 	createRootChangelog,
 	getRootChangelogUpdate,
+	mergeRootChangelog,
 } = require("./release-version-actions.cjs");
 
 const releasedPackages = [
@@ -40,6 +41,50 @@ test("creates the root release snapshot with UTC version dates and package names
 	);
 });
 
+test("preserves existing changelog history while prepending only new package versions", () => {
+	const existing = [
+		"# Changelog",
+		"",
+		"All notable changes to this project will be documented in this file.",
+		"",
+		"This changelog summarizes releases for the following packages:",
+		"",
+		"- @effectify/prisma",
+		"",
+		"## @effectify/prisma",
+		"",
+		"## 0.9.0 (2026-07-01)",
+		"",
+		"Legacy release notes.",
+		"",
+	].join("\n");
+
+	const merged = mergeRootChangelog(
+		existing,
+		releasedPackages,
+		new Date("2026-07-12T00:00:00Z"),
+	);
+
+	assert.match(merged, /## @effectify\/prisma\n\n## 1\.0\.0 \(2026-07-12\)/);
+	assert.match(
+		merged,
+		/## @effectify\/react-query\n\n## 2\.0\.0 \(2026-07-12\)/,
+	);
+	assert.match(
+		merged,
+		/## 0\.9\.0 \(2026-07-01\)\n\nLegacy release notes\./,
+	);
+	assert.equal((merged.match(/^# Changelog$/gm) ?? []).length, 1);
+	assert.equal(
+		mergeRootChangelog(
+			merged,
+			releasedPackages,
+			new Date("2026-07-12T00:00:00Z"),
+		),
+		merged,
+	);
+});
+
 test("writes and reports missing or different changelogs only outside dry runs", () => {
 	const nextContent = createRootChangelog(
 		releasedPackages,
@@ -69,7 +114,12 @@ test("writes and reports missing or different changelogs only outside dry runs",
 	});
 });
 
-function createHookFixture({ changedFiles = [], existingChangelog, result, failure } = {}) {
+function createHookFixture({
+	changedFiles = [],
+	existingChangelog,
+	result,
+	failure,
+} = {}) {
 	const writes = [];
 	const hook = createAfterAllProjectsVersioned({
 		versionActions: {

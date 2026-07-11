@@ -15,6 +15,10 @@ on:
         required: false
         type: string
 
+concurrency:
+  group: cd-release
+  cancel-in-progress: false
+
 permissions:
   contents: write # Needed for creating commits and tags
   id-token: write # Needed for npm provenance authentication

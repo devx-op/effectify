@@ -27,6 +27,48 @@ function createRootChangelog(releasedPackages, date = new Date()) {
 	].join("\n");
 }
 
+function createReleaseEntries(releasedPackages, date) {
+	const releasedOn = date.toISOString().slice(0, 10);
+	const sortedPackages = [...releasedPackages].sort((left, right) =>
+		left.name.localeCompare(right.name),
+	);
+
+	return sortedPackages
+		.flatMap((packageJson) => [
+			`## ${packageJson.name}`,
+			"",
+			`## ${packageJson.version} (${releasedOn})`,
+			"",
+		])
+		.join("\n");
+}
+
+function hasRelease(content, packageJson) {
+	return content.includes(
+		`## ${packageJson.name}\n\n## ${packageJson.version} (`,
+	);
+}
+
+function mergeRootChangelog(existingContent, releasedPackages, date) {
+	if (existingContent === undefined) {
+		return createRootChangelog(releasedPackages, date);
+	}
+
+	const newPackages = releasedPackages.filter(
+		(packageJson) => !hasRelease(existingContent, packageJson),
+	);
+	if (newPackages.length === 0) return existingContent;
+
+	const firstReleaseIndex = existingContent.search(/^## /m);
+	if (firstReleaseIndex === -1) {
+		return `${existingContent.trimEnd()}\n\n${createReleaseEntries(newPackages, date)}`;
+	}
+
+	const header = existingContent.slice(0, firstReleaseIndex).trimEnd();
+	const history = existingContent.slice(firstReleaseIndex).trimStart();
+	return `${header}\n\n${createReleaseEntries(newPackages, date).trimEnd()}\n\n${history}`;
+}
+
 function getRootChangelogUpdate(existingContent, nextContent, dryRun) {
 	const changed = existingContent !== nextContent;
 
@@ -88,9 +130,10 @@ function createAfterAllProjectsVersioned({
 		if (releasedPackages.length === 0) return result;
 
 		const changelogPath = joinPath(cwd, "CHANGELOG.md");
+		const existingContent = readRootChangelog(changelogPath, readFile);
 		const update = getRootChangelogUpdate(
-			readRootChangelog(changelogPath, readFile),
-			createRootChangelog(releasedPackages, date()),
+			existingContent,
+			mergeRootChangelog(existingContent, releasedPackages, date()),
 			options.dryRun,
 		);
 
@@ -107,7 +150,9 @@ function createAfterAllProjectsVersioned({
 }
 
 module.exports = defaultVersionActions.default;
-module.exports.createAfterAllProjectsVersioned = createAfterAllProjectsVersioned;
+module.exports.createAfterAllProjectsVersioned =
+	createAfterAllProjectsVersioned;
 module.exports.createRootChangelog = createRootChangelog;
 module.exports.getRootChangelogUpdate = getRootChangelogUpdate;
+module.exports.mergeRootChangelog = mergeRootChangelog;
 module.exports.afterAllProjectsVersioned = createAfterAllProjectsVersioned();
