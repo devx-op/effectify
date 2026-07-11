@@ -1,3 +1,7 @@
+## 0.5.12-alpha.0 (2026-07-11)
+
+This was a version bump only for @effectify/node-better-auth to align it with other projects, there were no code changes.
+
 ## 1.0.0-alpha.2 (2026-04-27)
 
 ### 🚀 Features

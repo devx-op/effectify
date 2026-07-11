@@ -1,3 +1,10 @@
+## 0.5.12-alpha.0 (2026-07-11)
+
+### 🧱 Updated Dependencies
+
+- Updated @effectify/react-router to 0.5.11-alpha.0
+- Updated @effectify/node-better-auth to 0.5.12-alpha.0
+
 ## 1.0.0-alpha.3 (2026-04-27)
 
 This was a version bump only for @effectify/react-router-better-auth to align it with other projects, there were no code changes.
