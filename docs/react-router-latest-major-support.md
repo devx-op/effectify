@@ -23,3 +23,13 @@ Before publication, abort if the exact 8.2.0 family manifests, no-build migratio
 After publication, verify the registry package version, tarball metadata, peer dependencies, and release notes match the approved 8.2.0 compatibility decision, then run the published-consumer smoke and compatibility checks. Published packages are immutable: do not unpublish, retag, or mutate a release to recover. Fix defects only with a new forward version and publish it after the same pre-publication gates pass.
 
 `@effectify/react-router` is compatible with React Router `^8.2.0`; without a deliberate passing dual-major matrix, do not claim v7 support from that artifact. React Router v7 consumers must remain on the preceding Effectify release line until they complete their own v8 migration.
+
+## WU3 Better Auth and Framework Mode proof
+
+`@effectify/react-router-better-auth` now reads the existing typed loader and action argument contexts directly. Its no-build target typechecks Better Auth, the router, and node Better Auth source together; no declarations were emitted and no package version was selected. The Unreleased package changelog records the compatibility evidence while Nx release policy remains the sole version authority.
+
+Focused guard tests verify loader and action redirects retain status `302`, `Location`, and `Set-Cookie`, while successful loader/action responses retain their status and body. API handler tests verify both typed request contexts reach Better Auth unchanged.
+
+The existing no-build `migration:test` target uses React Router 8.2.0's native static handler to prove document and `.data` request URL/response behavior, including the `.data` shape used for client navigation. This is request-level evidence only: it does not claim a browser, server start, build, or build-dependent e2e result.
+
+The optional example-local server middleware remains deferred. The installed 8.2.0 types prove native server middleware has one `next()` returning `Response | void`, and the focused static-handler tests prove one-call enforcement, RouterContextProvider visibility, ordering, and Response identity. They do not prove an example-owned Effect scope finalizes on returned responses, thrown responses/errors, rejected downstream work, and interruption. Without that complete direct runtime proof, no middleware was added. No package middleware adapter, Better Auth middleware replacement, RouterContext ownership wrapper, instrumentation, Stream/Suspense, RouterProvider, or HydratedRouter wrapper was added.

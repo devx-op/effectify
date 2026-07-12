@@ -1,3 +1,10 @@
+## Unreleased
+
+### Compatibility
+
+- Verified React Router 8.2.0 loader/action request access without unsafe context assertions. Public exports and package version remain unchanged; Nx release policy determines any future version.
+- Verified both Better Auth guard variants preserve redirect status, location, and `Set-Cookie` headers for v8-compatible requests.
+
 ## 0.5.12-alpha.0 (2026-07-11)
 
 ### 🧱 Updated Dependencies

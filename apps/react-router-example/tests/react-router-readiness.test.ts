@@ -113,4 +113,53 @@ describe("React Router final-v8 safety", () => {
       }),
     ).rejects.toThrow("You may only call `next()` once per middleware")
   })
+
+  it.each([
+    ["document", "https://effectify.dev/todo-app"],
+    [
+      "client-navigation data",
+      "https://effectify.dev/todo-app.data?_routes=routes/todo-app",
+    ],
+  ])("preserves the %s request URL through native middleware", async (_kind, url) => {
+    const seenUrls: string[] = []
+    const handler = createStaticHandler([
+      {
+        id: "todo-app",
+        path: "/todo-app.data",
+        middleware: [
+          async ({ request }, next) => {
+            seenUrls.push(request.url)
+            return next()
+          },
+        ],
+        loader: () => new Response("data", { headers: { "X-Effectify-Request": "data" } }),
+      },
+      {
+        id: "todo-document",
+        path: "/todo-app",
+        middleware: [
+          async ({ request }, next) => {
+            seenUrls.push(request.url)
+            return next()
+          },
+        ],
+        loader: () =>
+          new Response("document", {
+            headers: { "X-Effectify-Request": "document" },
+          }),
+      },
+    ])
+
+    const result = await handler.queryRoute(new Request(url), {
+      generateMiddlewareResponse: async (query) => {
+        const value = await query(new Request(url))
+        return value instanceof Response ? value : Response.json(value)
+      },
+    })
+
+    expect(result.headers.get("X-Effectify-Request")).toBe(
+      url.includes(".data") ? "data" : "document",
+    )
+    expect(seenUrls).toEqual([url])
+  })
 })

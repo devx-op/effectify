@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.lib.json",
+  "compilerOptions": {
+    "rootDir": "../../..",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@effectify/node-better-auth": ["../../node/better-auth/src/index.ts"],
+      "@effectify/react-router": ["../router/src/index.ts"]
+    }
+  },
+  "include": [
+    "src/**/*.ts",
+    "../../node/better-auth/src/**/*.ts",
+    "../router/src/**/*.ts"
+  ]
+}
