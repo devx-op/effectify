@@ -2,7 +2,7 @@ name: 🧪 CI
 
 on:
   pull_request:
-    branches: [master, dev]
+    types: [opened, synchronize, reopened, ready_for_review]
   push:
     branches: [dev]
 
@@ -18,6 +18,7 @@ jobs:
   # Lint and format check
   lint:
     name: 🔍 Lint & Format
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout
@@ -54,6 +55,7 @@ jobs:
   # Type checking
   typecheck:
     name: 🔍 Type Check
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout
@@ -87,6 +89,7 @@ jobs:
   # Build affected projects
   build:
     name: 🏗️ Build
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     outputs:
       has-build-artifacts: ${{ steps.build.outputs.has-artifacts }}
@@ -113,7 +116,11 @@ jobs:
       - name: 🏗️ Build affected projects
         id: build
         run: |
-          BASE=$(git merge-base HEAD origin/dev)
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            BASE="origin/${{ github.base_ref }}"
+          else
+            BASE="HEAD~1"
+          fi
 
           # Build affected projects with caching
           pnpm nx affected --target=build --base=$BASE --head=HEAD --parallel=1 --verbose
@@ -123,7 +130,7 @@ jobs:
           if [ -n "$AFFECTED_PROJECTS" ]; then
             echo "has-artifacts=true" >> $GITHUB_OUTPUT
             echo "📦 Built projects: $AFFECTED_PROJECTS"
-            
+
             # Create build manifest for artifact upload
             echo "BUILT_PROJECTS=$AFFECTED_PROJECTS" >> $GITHUB_ENV
           else
@@ -146,6 +153,7 @@ jobs:
   # Test affected projects
   test:
     name: 🧪 Test
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     needs: [build]
     steps:
@@ -176,14 +184,18 @@ jobs:
 
       - name: 🧪 Test affected projects
         run: |
-          BASE=$(git merge-base HEAD origin/dev)
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            BASE="origin/${{ github.base_ref }}"
+          else
+            BASE="HEAD~1"
+          fi
           pnpm nx affected --target=test --base=$BASE --head=HEAD --parallel=1 --verbose --passWithNoTests
   # Summary job
   ci-summary:
     name: 📊 CI Summary
     runs-on: ubuntu-latest
     needs: [lint, typecheck, build, test]
-    if: always()
+    if: always() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
     steps:
       - name: 📊 CI Summary
         run: |
