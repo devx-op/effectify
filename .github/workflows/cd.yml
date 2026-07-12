@@ -43,7 +43,7 @@ jobs:
       - name: 🏗️ Setup Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: "22.22.0"
           registry-url: "https://registry.npmjs.org"
           cache: "pnpm"
 
@@ -82,6 +82,13 @@ jobs:
         run: npm whoami
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: ✅ Verify React Router migration
+        run: |
+          pnpm nx test @effectify/react-router
+          pnpm nx run @effectify/react-router-example:migration:test
+          pnpm nx run @effectify/react-router-example:migration:verify
+          pnpm nx run @effectify/react-router-example:migration:manifest
 
       - name: 🔖 Version & Changelog
         if: ${{ inputs.publish_only != true }}

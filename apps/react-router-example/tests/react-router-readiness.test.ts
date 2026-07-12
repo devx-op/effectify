@@ -1,0 +1,116 @@
+import { readFile } from "node:fs/promises"
+import { resolve } from "node:path"
+import { createContext, createStaticHandler, type MiddlewareFunction, RouterContextProvider } from "react-router"
+import config from "../react-router.config.js"
+import { describe, expect, it } from "vitest"
+import { resolveConfig } from "vite"
+
+describe("React Router final-v8 safety", () => {
+  it("keeps Framework Mode server rendering enabled", () => {
+    expect(config.ssr).toBe(true)
+  })
+
+  it("removes obsolete future flags and pins the final 8.2.0 family", async () => {
+    expect("future" in config).toBe(false)
+    const catalog = await readFile(
+      resolve(import.meta.dirname, "../../../pnpm-workspace.yaml"),
+      "utf8",
+    )
+    for (
+      const dependency of [
+        "react-router",
+        "@react-router/dev",
+        "@react-router/node",
+        "@react-router/serve",
+      ]
+    ) {
+      expect(catalog).toMatch(
+        new RegExp(`['"]?${dependency.replace("/", "\\/")}['"]?: 8\\.2\\.0`),
+      )
+    }
+  })
+
+  it.each([
+    "development",
+    "production",
+  ])("resolves the React Router Vite plugin for %s mode", async (mode) => {
+    const resolved = await resolveConfig(
+      { configFile: resolve(import.meta.dirname, "../vite.config.ts") },
+      "serve",
+      mode,
+    )
+
+    expect(
+      resolved.plugins.some((plugin) => plugin.name === "react-router"),
+    ).toBe(true)
+  })
+
+  it("runs native middleware in order with the request context and response identity", async () => {
+    const requestValue = createContext("missing")
+    const requestContext = new RouterContextProvider()
+    const response = new Response("ok", { status: 201 })
+    const calls: string[] = []
+    const middleware = [
+      async ({ context }, next) => {
+        calls.push(`outer-before:${context.get(requestValue)}`)
+        const value = await next()
+        calls.push("outer-after")
+        return value
+      },
+      async (_args, next) => {
+        calls.push("inner-before")
+        const value = await next()
+        calls.push("inner-after")
+        return value
+      },
+    ] satisfies MiddlewareFunction[]
+    requestContext.set(requestValue, "request-local")
+    const handler = createStaticHandler([
+      { id: "root", path: "/", middleware, loader: () => response },
+    ])
+
+    const result = await handler.queryRoute(
+      new Request("https://effectify.dev/"),
+      {
+        requestContext,
+        generateMiddlewareResponse: async (query) => {
+          const value = await query(new Request("https://effectify.dev/"))
+          return value instanceof Response ? value : Response.json(value)
+        },
+      },
+    )
+
+    expect(result).toBe(response)
+    expect(calls).toEqual([
+      "outer-before:request-local",
+      "inner-before",
+      "inner-after",
+      "outer-after",
+    ])
+  })
+
+  it("rejects a native middleware that calls next twice", async () => {
+    const handler = createStaticHandler([
+      {
+        id: "root",
+        path: "/",
+        middleware: [
+          async (_args, next) => {
+            await next()
+            return next()
+          },
+        ],
+        loader: () => new Response("ok"),
+      },
+    ])
+
+    await expect(
+      handler.queryRoute(new Request("https://effectify.dev/"), {
+        generateMiddlewareResponse: async (query) => {
+          const value = await query(new Request("https://effectify.dev/"))
+          return value instanceof Response ? value : Response.json(value)
+        },
+      }),
+    ).rejects.toThrow("You may only call `next()` once per middleware")
+  })
+})

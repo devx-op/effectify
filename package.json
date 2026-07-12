@@ -2,6 +2,9 @@
   "name": "@effectify/repo",
   "version": "1.0.0",
   "license": "MIT",
+  "engines": {
+    "node": ">=22.22"
+  },
   "scripts": {
     "lint-staged": "lint-staged --allow-empty",
     "clean": "rm -rf node_modules dist pnpm-lock.yaml && pnpm store prune & find . -type d \\( -name 'node_modules' -o -name 'dist' -o -name '.output' -o -name '.vinxi' -o -name '.cache' -o -name '.expo' -o -name '.nx' \\) -prune -exec rm -rf {} + & wait",
@@ -33,7 +36,7 @@
     "@nx/vite": "catalog:",
     "@nx/vitest": "23.0.1",
     "@nx/web": "catalog:",
-    "@react-router/dev": "catalog:",
+    "@react-router/dev": "8.2.0",
     "@swc-node/register": "catalog:",
     "@swc/core": "catalog:",
     "@swc/helpers": "catalog:",
@@ -106,8 +109,8 @@
   "packageManager": "pnpm@10.14.0",
   "dependencies": {
     "@prisma/client": "catalog:",
-    "@react-router/node": "catalog:",
-    "@react-router/serve": "catalog:",
+    "@react-router/node": "8.2.0",
+    "@react-router/serve": "8.2.0",
     "isbot": "catalog:",
     "prisma": "catalog:",
     "react": "catalog:",

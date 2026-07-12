@@ -5,13 +5,13 @@ import { fileURLToPath } from "node:url"
 import { nxCopyAssetsPlugin } from "@nx/vite/plugins/nx-copy-assets.plugin"
 import { nxViteTsPaths } from "@nx/vite/plugins/nx-tsconfig-paths.plugin"
 import { reactRouter } from "@react-router/dev/vite"
-import { defineConfig, PluginOption } from "vite"
+import { defineConfig, type PluginOption } from "vite"
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
 const plugins = [
-  ...(process.env.VITEST ? [] : [reactRouter()]),
+  reactRouter(),
   nxViteTsPaths() as Plugin,
   nxCopyAssetsPlugin([
     {

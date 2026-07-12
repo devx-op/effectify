@@ -4,6 +4,20 @@
   "sourceRoot": "packages/react/router-better-auth/src",
   "projectType": "library",
   "targets": {
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm exec vitest run --config vitest.config.ts",
+        "cwd": "packages/react/router-better-auth"
+      }
+    },
+    "typecheck:no-build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsgo --project tsconfig.lib.json --noEmit",
+        "cwd": "packages/react/router-better-auth"
+      }
+    },
     "build": {
       "executor": "nx:run-commands",
       "options": {
