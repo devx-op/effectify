@@ -1,5 +1,6 @@
 import type { Route } from "./+types/todo-app.js"
 import * as Effect from "effect/Effect"
+import * as Schema from "effect/Schema"
 import { ActionArgsContext, httpFailure, httpRedirect, httpSuccess } from "@effectify/react-router"
 import { withActionEffect, withLoaderEffect } from "../lib/runtime.server.js"
 import { randomUUID } from "node:crypto"
@@ -78,7 +79,7 @@ export const action = Effect.gen(function*() {
 
   yield* TodoRepo.create({
     data: {
-      id: TodoId.makeUnsafe(randomUUID()),
+      id: Schema.decodeUnknownSync(TodoId)(randomUUID()),
       title,
       content,
       status: "PENDING",
