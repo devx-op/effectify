@@ -7,7 +7,6 @@ export const NAV_ITEMS = [
   { to: "/signup", label: "Sign Up" },
   { to: "/todo-app", label: "Todo App" },
   { to: "/chat", label: "Chat Demo" },
-  { to: "/hatchet-demo", label: "Hatchet Demo" },
 ] as const
 
 export function AppNav() {

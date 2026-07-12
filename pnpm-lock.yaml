@@ -640,9 +640,6 @@ importers:
 
   apps/react-router-example:
     dependencies:
-      '@effectify/hatchet':
-        specifier: workspace:*
-        version: link:../../packages/hatchet
       '@effectify/node-better-auth':
         specifier: workspace:*
         version: link:../../packages/node/better-auth
