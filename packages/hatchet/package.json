@@ -1,6 +1,6 @@
 {
   "name": "@effectify/hatchet",
-  "version": "0.1.0-alpha.4",
+  "version": "0.1.0-alpha.5",
   "description": "Native Effect v4 integration with Hatchet workflows",
   "repository": {
     "type": "git",

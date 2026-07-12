@@ -1,3 +1,7 @@
+## 0.1.0-alpha.5 (2026-07-12)
+
+This was a version bump only for @effectify/hatchet to align it with other projects, there were no code changes.
+
 ## 0.1.0-alpha.4 (2026-07-11)
 
 This was a version bump only for @effectify/hatchet to align it with other projects, there were no code changes.

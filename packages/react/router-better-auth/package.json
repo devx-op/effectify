@@ -1,6 +1,6 @@
 {
   "name": "@effectify/react-router-better-auth",
-  "version": "0.5.12-alpha.0",
+  "version": "0.5.12-alpha.1",
   "description": "Integration of React Router + better-auth with Effect for React applications",
   "repository": {
     "type": "git",

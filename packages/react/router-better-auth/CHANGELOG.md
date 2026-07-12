@@ -1,3 +1,22 @@
+## 0.5.12-alpha.1 (2026-07-12)
+
+### 🚀 Features
+
+- ⚠️ **react-router:** support React Router 8
+
+### ⚠️ Breaking Changes
+
+- **react-router:** support React Router 8
+
+### 🧱 Updated Dependencies
+
+- Updated @effectify/react-router to 0.5.11-alpha.1
+- Updated @effectify/node-better-auth to 0.5.12-alpha.1
+
+### ❤️ Thank You
+
+- Andres David Jimenez @kattsushi
+
 ## Unreleased
 
 ### Compatibility
