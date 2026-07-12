@@ -45,6 +45,16 @@ describe("React Router final-v8 safety", () => {
     ).toBe(true)
   })
 
+  it("decodes generated Todo IDs with the Effect Schema v4 API", async () => {
+    const route = await readFile(
+      resolve(import.meta.dirname, "../app/routes/todo-app.tsx"),
+      "utf8",
+    )
+
+    expect(route).toContain("Schema.decodeUnknownSync(TodoId)(randomUUID())")
+    expect(route).not.toContain("TodoId.makeUnsafe")
+  })
+
   it("runs native middleware in order with the request context and response identity", async () => {
     const requestValue = createContext("missing")
     const requestContext = new RouterContextProvider()
