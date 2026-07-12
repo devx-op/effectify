@@ -11,12 +11,12 @@ const withAuthHandler = (request: Request) =>
 
 const getLoaderRequest = Effect.gen(function*() {
   const ctx = yield* LoaderArgsContext
-  return (ctx as any).request
+  return ctx.request
 })
 
 const getActionRequest = Effect.gen(function*() {
   const ctx = yield* ActionArgsContext
-  return (ctx as any).request
+  return ctx.request
 })
 
 export const betterAuthLoader = pipe(

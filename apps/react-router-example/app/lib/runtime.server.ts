@@ -1,5 +1,4 @@
 import "dotenv/config"
-import { HatchetClientLive, HatchetConfigLayer, type HatchetConfigType } from "@effectify/hatchet"
 import { AuthService } from "@effectify/node-better-auth"
 import { Runtime } from "@effectify/react-router"
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3"
@@ -18,31 +17,6 @@ const prismaLayer = Prisma.layer({
   log: ["query", "info", "warn", "error"],
 })
 
-const resolveHatchetToken = () => process.env.HATCHET_CLIENT_TOKEN ?? process.env.HATCHET_TOKEN ?? ""
-
-export const BaseAppLayer = Layer.mergeAll(
-  authLayer,
-  prismaLayer,
-)
-
-const hatchetConfig = {
-  host: process.env.HATCHET_HOST ?? "localhost:7077",
-  token: resolveHatchetToken(),
-  namespace: process.env.HATCHET_NAMESPACE,
-} satisfies HatchetConfigType
-
-const hatchetConfigLayer = HatchetConfigLayer(hatchetConfig)
-
-const hatchetClientLayer = HatchetClientLive.pipe(Layer.provide(hatchetConfigLayer))
-
-const hatchetServicesLayer = Layer.merge(
-  hatchetConfigLayer,
-  hatchetClientLayer,
-)
-
-export const AppLayer = Layer.merge(
-  BaseAppLayer,
-  hatchetServicesLayer,
-)
+export const AppLayer = Layer.mergeAll(authLayer, prismaLayer)
 
 export const { withLoaderEffect, withActionEffect } = Runtime.make(AppLayer)

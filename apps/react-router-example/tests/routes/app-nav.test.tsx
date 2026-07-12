@@ -19,7 +19,6 @@ describe("AppNav", () => {
       { to: "/signup", label: "Sign Up" },
       { to: "/todo-app", label: "Todo App" },
       { to: "/chat", label: "Chat Demo" },
-      { to: "/hatchet-demo", label: "Hatchet Demo" },
     ])
   })
 
@@ -36,5 +35,7 @@ describe("AppNav", () => {
     }
 
     expect(markup).not.toContain("data-discover")
+    expect(markup).not.toContain("Hatchet")
+    expect(markup).not.toContain("hatchet-demo")
   })
 })
