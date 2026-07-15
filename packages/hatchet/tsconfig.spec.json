@@ -10,5 +10,5 @@
       "@effectify/hatchet": ["./src/index.ts"]
     }
   },
-  "include": ["test/**/*.ts", "src/**/*.ts"]
+  "include": ["tests/types/**/*.ts", "src/**/*.ts"]
 }
