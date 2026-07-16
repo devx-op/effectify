@@ -87,10 +87,14 @@ Use `Hatchet.layer` only inside a scope. The live adapter supports verified SDK 
 const live = Effect.scoped(
   Effect.gen(function*() {
     const registered = yield* Hatchet.register(greet)
-    return yield* Hatchet.schedule(registered, "Ada", {
+    yield* Hatchet.startWorker
+    const schedule = yield* Hatchet.schedule(registered, "Ada", {
       _tag: "After",
       delay: "5 minutes",
     })
+
+    console.log(`Scheduled ${schedule.id}; worker is active until interruption.`)
+    return yield* Effect.never
   }).pipe(
     Effect.provide(Hatchet.layer({ worker: { name: "greeting-worker" } })),
   ),
