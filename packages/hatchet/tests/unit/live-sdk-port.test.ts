@@ -35,10 +35,55 @@ const sdk = vi.hoisted(() => {
     }),
   )
   const task = vi.fn((declaration) => ({ ...declaration, runNoWait }))
+  const scheduled = {
+    create: vi.fn(async () => ({
+      metadata: { id: "schedule-42" },
+      workflowName: "live-time-task",
+      triggerAt: "2026-01-01T00:00:01.000Z",
+    })),
+    get: vi.fn(async () => ({
+      metadata: { id: "schedule-42" },
+      workflowName: "live-time-task",
+      triggerAt: "2026-01-01T00:00:01.000Z",
+    })),
+    delete: vi.fn(async () => undefined),
+  }
+  const crons = {
+    create: vi.fn(async () => ({
+      metadata: { id: "cron-42" },
+      cron: "0 0 * * *",
+      workflowName: "live-time-task",
+      enabled: true,
+      method: "DEFAULT",
+    })),
+    get: vi.fn(async () => ({
+      metadata: { id: "cron-42" },
+      cron: "0 0 * * *",
+      workflowName: "live-time-task",
+      enabled: true,
+      method: "DEFAULT",
+    })),
+    list: vi.fn(async () => ({
+      rows: [
+        {
+          metadata: { id: "cron-42" },
+          cron: "0 0 * * *",
+          workflowName: "live-time-task",
+          enabled: true,
+          method: "DEFAULT",
+        },
+      ],
+    })),
+    delete: vi.fn(async () => undefined),
+  }
+  const runs = { cancel: vi.fn(async () => ({ data: {} })) }
   return {
-    init: vi.fn(() => ({ task, worker })),
+    init: vi.fn(() => ({ task, worker, scheduled, crons, runs })),
     task,
     runNoWait,
+    scheduled,
+    crons,
+    runs,
     worker,
     registerWorkflows,
     start,
@@ -95,7 +140,13 @@ describe("live SDK port", () => {
   beforeEach(() => {
     sdk.events.length = 0
     vi.clearAllMocks()
-    sdk.init.mockImplementation(() => ({ task: sdk.task, worker: sdk.worker }))
+    sdk.init.mockImplementation(() => ({
+      task: sdk.task,
+      worker: sdk.worker,
+      scheduled: sdk.scheduled,
+      crons: sdk.crons,
+      runs: sdk.runs,
+    }))
     sdk.worker.mockImplementation(async () => {
       sdk.events.push("create")
       return {
@@ -366,6 +417,31 @@ describe("live SDK port", () => {
     const callbackError = await callback.catch((error: unknown) => error)
     expect(Cause.hasInterrupts(callbackCause(callbackError))).toBe(true)
     expect(removeEventListener).toHaveBeenCalledTimes(1)
+  })
+
+  it("starts an explicit worker once and stops it when the layer scope closes", async () => {
+    const task = Task.make({
+      name: "explicit-worker-start",
+      fn: () => Effect.void,
+    })
+
+    await Effect.runPromise(
+      Effect.scoped(
+        Effect.gen(function*() {
+          yield* Hatchet.register(task)
+          yield* Hatchet.startWorker
+          yield* Hatchet.startWorker
+          expect(sdk.start).toHaveBeenCalledTimes(1)
+          expect(sdk.waitUntilReady).toHaveBeenCalledTimes(1)
+          expect(sdk.stop).not.toHaveBeenCalled()
+        }).pipe(
+          Effect.provide(Hatchet.layer({ worker: { name: "live-worker" } })),
+        ),
+      ),
+    )
+
+    expect(sdk.start).toHaveBeenCalledTimes(1)
+    expect(sdk.stop).toHaveBeenCalledTimes(1)
   })
 
   it("starts one lazy worker in create → register → fork start → waitUntilReady → ready order", async () => {
@@ -1030,6 +1106,186 @@ describe("live SDK port", () => {
       expect(failures[0].resourceId).toBe(`bad-envelope-${index}`)
       expect(failures[0].originalCause).toBe(output)
     }
+  })
+
+  it("uses only the verified live time SDK operations with exact payloads", async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date("2026-01-01T00:00:00.000Z"))
+    try {
+      const task = Task.make({ name: "live-time-task", fn: () => Effect.void })
+      const layer = Hatchet.layer({ worker: { name: "live-worker" } })
+      const schedule = await Effect.runPromise(
+        Effect.scoped(
+          Hatchet.register(task).pipe(
+            Effect.flatMap((registered) =>
+              Hatchet.schedule(
+                registered,
+                { hello: "world" },
+                {
+                  _tag: "After",
+                  delay: "1 second",
+                },
+              )
+            ),
+            Effect.provide(layer),
+          ),
+        ),
+      )
+      expect(schedule).toMatchObject({
+        id: "schedule-42",
+        taskName: "live-time-task",
+        triggerAt: new Date("2026-01-01T00:00:01.000Z"),
+      })
+      expect(sdk.scheduled.create).toHaveBeenCalledWith("live-time-task", {
+        triggerAt: new Date("2026-01-01T00:00:01.000Z"),
+        input: { hello: "world" },
+      })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it("maps live cron CRUD and only maps an evidenced not-found response", async () => {
+    const task = Task.make({ name: "live-time-task", fn: () => Effect.void })
+    const layer = Hatchet.layer({ worker: { name: "live-worker" } })
+    const result = await Effect.runPromise(
+      Effect.scoped(
+        Hatchet.register(task).pipe(
+          Effect.flatMap((registered) =>
+            Hatchet.createCron(registered, {
+              name: "daily",
+              expression: "0 0 * * *",
+              input: { hello: "world" },
+              additionalMetadata: { source: "test" },
+              priority: 2,
+            })
+          ),
+          Effect.flatMap((cron) =>
+            Hatchet.getCron(cron.id).pipe(
+              Effect.flatMap((found) =>
+                Hatchet.listCrons({
+                  taskName: "live-time-task",
+                  name: "daily",
+                  offset: 0,
+                  limit: 1,
+                }).pipe(
+                  Effect.flatMap((listed) =>
+                    Hatchet.deleteCron(cron.id).pipe(
+                      Effect.as({ found, listed }),
+                    )
+                  ),
+                )
+              ),
+            )
+          ),
+          Effect.provide(layer),
+        ),
+      ),
+    )
+    expect(result.found).toEqual(
+      Option.some(
+        expect.objectContaining({ id: "cron-42", expression: "0 0 * * *" }),
+      ),
+    )
+    expect(result.listed).toHaveLength(1)
+    expect(sdk.crons.create).toHaveBeenCalledWith("live-time-task", {
+      name: "daily",
+      expression: "0 0 * * *",
+      input: { hello: "world" },
+      additionalMetadata: { source: "test" },
+      priority: 2,
+    })
+    expect(sdk.crons.list).toHaveBeenCalledWith({
+      workflow: "live-time-task",
+      name: "daily",
+      offset: 0,
+      limit: 1,
+    })
+    expect(sdk.crons.delete).toHaveBeenCalledWith("cron-42")
+  })
+
+  it("gets and deletes a live schedule without cancelling an emitted run", async () => {
+    const result = await Effect.runPromise(
+      Effect.scoped(
+        Hatchet.getSchedule("schedule-42" as never).pipe(
+          Effect.flatMap((schedule) =>
+            Hatchet.deleteSchedule("schedule-42" as never).pipe(
+              Effect.as(schedule),
+            )
+          ),
+          Effect.provide(Hatchet.layer({ worker: { name: "live-worker" } })),
+        ),
+      ),
+    )
+    expect(result).toEqual(
+      Option.some(expect.objectContaining({ id: "schedule-42" })),
+    )
+    expect(sdk.scheduled.get).toHaveBeenCalledWith("schedule-42")
+    expect(sdk.scheduled.delete).toHaveBeenCalledWith("schedule-42")
+    expect(sdk.runs.cancel).not.toHaveBeenCalled()
+  })
+
+  it("maps only positive 404 evidence to a missing live schedule", async () => {
+    sdk.scheduled.get.mockRejectedValueOnce({ response: { status: 404 } })
+    const result = await Effect.runPromise(
+      Effect.scoped(
+        Hatchet.getSchedule("missing" as never).pipe(
+          Effect.provide(Hatchet.layer({ worker: { name: "live-worker" } })),
+        ),
+      ),
+    )
+    expect(result).toEqual(Option.none())
+  })
+
+  it("rejects malformed live schedule responses with their original payload", async () => {
+    const task = Task.make({ name: "live-time-task", fn: () => Effect.void })
+    sdk.scheduled.create.mockResolvedValueOnce({ metadata: {} } as never)
+    const exit = await Effect.runPromiseExit(
+      Effect.scoped(
+        Hatchet.register(task).pipe(
+          Effect.flatMap((registered) =>
+            Hatchet.schedule(
+              registered,
+              {},
+              { _tag: "At", at: new Date("2030-01-01T00:00:01.000Z") },
+            )
+          ),
+          Effect.provide(Hatchet.layer({ worker: { name: "live-worker" } })),
+        ),
+      ),
+    )
+    const failures = failureReasons(exit)
+    expect(failures).toHaveLength(1)
+    expect(failures[0]).toMatchObject({
+      _tag: "HatchetSdkError",
+      operation: "schedule.create",
+      originalCause: { metadata: {} },
+    })
+  })
+
+  it("uses exact run cancellation and retains unknown live rejection causes", async () => {
+    const layer = Hatchet.layer({ worker: { name: "live-worker" } })
+    await Effect.runPromise(
+      Effect.scoped(
+        Hatchet.cancelRun("run-42" as never).pipe(Effect.provide(layer)),
+      ),
+    )
+    expect(sdk.runs.cancel).toHaveBeenCalledWith({ ids: ["run-42"] })
+    const rejection = new Error("unexpected transport failure")
+    sdk.scheduled.get.mockRejectedValueOnce(rejection)
+    const exit = await Effect.runPromiseExit(
+      Effect.scoped(
+        Hatchet.getSchedule("missing" as never).pipe(Effect.provide(layer)),
+      ),
+    )
+    const failures = failureReasons(exit)
+    expect(failures).toHaveLength(1)
+    expect(failures[0]).toMatchObject({
+      _tag: "HatchetSdkError",
+      operation: "schedule.get",
+      resourceId: "missing",
+      originalCause: rejection,
+    })
   })
 
   it("treats accepted cancellation separately from remote completion", async () => {

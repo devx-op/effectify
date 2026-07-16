@@ -1,63 +1,51 @@
 /**
- * Example: Running a worker with @effectify/hatchet
+ * Example: run a task-first Hatchet worker.
  *
- * This demonstrates how to integrate @effectify/hatchet with Hatchet Lite.
- *
- * Usage:
- *   HATCHET_TOKEN="your-token" pnpm tsx packages/hatchet/scripts/test-workflow.ts
+ * Usage: set HATCHET_TOKEN, then run `pnpm tsx packages/hatchet/scripts/test-workflow.ts`.
  */
 
-import { Hatchet } from "@hatchet-dev/typescript-sdk"
+import * as Effect from "effect/Effect"
+import { Hatchet, Task } from "@effectify/hatchet"
 
 const token = process.env.HATCHET_TOKEN
 if (!token) {
-  console.error("❌ Please set HATCHET_TOKEN")
-  console.log("   Get it from: http://localhost:8888 → Settings → API Tokens")
+  console.error("Please set HATCHET_TOKEN")
   process.exit(1)
 }
 
-// For Hatchet Lite:
-// - UI Dashboard: http://localhost:8888
-// - gRPC API: localhost:7077 (use this!)
-const hatchet = Hatchet.init({
-  token,
-  host_port: "localhost:7077", // gRPC port, NOT UI port
-  tls_config: {
-    tls_strategy: "none",
-  },
-})
-
-console.log("✅ Hatchet client initialized")
-console.log("   gRPC: localhost:7077")
-console.log("   UI: http://localhost:8888\n")
-
-// Define your Effect-based tasks
-const myTask = hatchet.task({
+const greeting = Task.make({
   name: "my-effect-task",
-  fn: async (input: { message: string }) => {
-    // Your Effect logic would go here
-    console.log("   📝 Processing:", input.message)
-    return { result: "done", message: input.message }
-  },
+  fn: (input: { readonly message: string }) => Effect.sync(() => ({ result: "done", message: input.message })),
 })
 
-async function main() {
-  const worker = await hatchet.worker("my-worker", {
-    workflows: [myTask],
-    slots: 10,
-  })
+const program = Effect.scoped(
+  Effect.gen(function*() {
+    const registered = yield* Hatchet.register(greeting)
+    yield* Hatchet.startWorker
+    const schedule = yield* Hatchet.schedule(
+      registered,
+      { message: "Hello" },
+      {
+        _tag: "After",
+        delay: "1 minute",
+      },
+    )
 
-  console.log("✅ Worker registered")
-  await worker.start()
-  console.log("✅ Worker started!\n")
+    console.log(
+      `Worker ready; scheduled ${schedule.id}. Waiting for interruption.`,
+    )
+    yield* Effect.never
+  }).pipe(
+    Effect.provide(
+      Hatchet.layer({
+        worker: { name: "my-worker" },
+        client: { token, hostPort: "localhost:7077" },
+      }),
+    ),
+  ),
+)
 
-  console.log("📋 To trigger:")
-  console.log("   1. Go to http://localhost:8888")
-  console.log("   2. Find 'my-effect-task' → Run")
-  console.log('   3. Input: { "message": "Hello!" }')
-  console.log("")
-
-  await new Promise(() => {})
-}
-
-main().catch(console.error)
+Effect.runPromise(program).catch((error) => {
+  console.error(error)
+  process.exitCode = 1
+})
