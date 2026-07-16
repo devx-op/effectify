@@ -1,33 +1,33 @@
-import * as Data from "effect/Data";
+import * as Data from "effect/Data"
 
 export class DuplicateTaskError extends Data.TaggedError("DuplicateTaskError")<{
-	readonly taskName: string;
+  readonly taskName: string
 }> {}
 
 export class MissingTaskError extends Data.TaggedError("MissingTaskError")<{
-	readonly taskName: string;
+  readonly taskName: string
 }> {}
 
 export class TaskSchemaError extends Data.TaggedError("TaskSchemaError")<{
-	readonly taskName: string;
-	readonly phase: "input" | "output";
-	readonly issue: unknown;
+  readonly taskName: string
+  readonly phase: "input" | "output"
+  readonly issue: unknown
 }> {}
 
 export class HatchetConfigError extends Data.TaggedError("HatchetConfigError")<{
-	readonly field: string;
-	readonly originalCause: unknown;
+  readonly field: string
+  readonly originalCause: unknown
 }> {}
 
 export class HatchetSdkError extends Data.TaggedError("HatchetSdkError")<{
-	readonly operation: string;
-	readonly resourceId?: string;
-	readonly originalCause: unknown;
+  readonly operation: string
+  readonly resourceId?: string
+  readonly originalCause: unknown
 }> {}
 
 export class WorkerAlreadyStartedError extends Data.TaggedError(
-	"WorkerAlreadyStartedError",
+  "WorkerAlreadyStartedError",
 )<{
-	readonly taskName: string;
-	readonly workerName: string;
+  readonly taskName: string
+  readonly workerName: string
 }> {}
