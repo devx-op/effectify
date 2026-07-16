@@ -13,3 +13,21 @@ export class TaskSchemaError extends Data.TaggedError("TaskSchemaError")<{
   readonly phase: "input" | "output"
   readonly issue: unknown
 }> {}
+
+export class HatchetConfigError extends Data.TaggedError("HatchetConfigError")<{
+  readonly field: string
+  readonly originalCause: unknown
+}> {}
+
+export class HatchetSdkError extends Data.TaggedError("HatchetSdkError")<{
+  readonly operation: string
+  readonly resourceId?: string
+  readonly originalCause: unknown
+}> {}
+
+export class WorkerAlreadyStartedError extends Data.TaggedError(
+  "WorkerAlreadyStartedError",
+)<{
+  readonly taskName: string
+  readonly workerName: string
+}> {}
