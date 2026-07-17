@@ -58,6 +58,25 @@ HATCHET_CLIENT_TOKEN='<token>' node --experimental-strip-types packages/hatchet/
 
 The upstream Hatchet SDK keeps its run-result gRPC transport alive and currently exposes no client-level close/dispose API. The executable example therefore terminates explicitly only after its Effect completes and the Hatchet Layer has stopped its worker. This workaround is CLI-only; package source never terminates the process.
 
+## Schedule once
+
+`Hatchet.schedule` creates a one-time task trigger with either an exact `At` date or an `After` `Duration.Input`. It returns a branded schedule record containing its id and exact trigger time. `getSchedule` returns `Some` while the owned schedule is waiting or executing. `deleteSchedule` returns `true` and interrupts it in either state, then returns `false` after completion, deletion, or absence. Cron APIs remain separate for recurring schedules.
+
+```ts
+const record = yield * Hatchet.schedule(greet, { name: "Ada" }, {
+  _tag: "After",
+  delay: "5 seconds",
+})
+const pending = yield * Hatchet.getSchedule(record.id)
+const deleted = yield * Hatchet.deleteSchedule(record.id)
+```
+
+Run the live scheduling example with:
+
+```sh
+HATCHET_CLIENT_TOKEN='<token>' node --experimental-strip-types packages/hatchet/scripts/test-schedule.ts
+```
+
 ## Lazy Layer
 
 `Hatchet.layer({ tasks })` is inert when acquired. It does not read configuration, construct the SDK, contact Hatchet, register tasks, or start a worker until the first `Hatchet` operation.

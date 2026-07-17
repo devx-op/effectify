@@ -229,13 +229,15 @@ describe("live SDK adapter behind Hatchet.layer", () => {
       ["empty ID", "Unknown"],
     ] as const,
   )("compensates a run ID %s without replacing its error", async (kind, reason) => {
-    const runIdFailure = Object.assign(new Error("run-id-token"), { status: 503 })
+    const runIdFailure = Object.assign(new Error("run-id-token"), {
+      status: 503,
+    })
     const cancelFailure = new Error("cancel-token")
     if (kind === "empty ID") sdk.cancel.mockRejectedValueOnce(cancelFailure)
     let rejectRunId: ((reason: unknown) => void) | undefined
-    const runId = kind === "empty ID" ? Promise.resolve("") : new Promise<string>(
-      (_, reject) => rejectRunId = reject,
-    )
+    const runId = kind === "empty ID"
+      ? Promise.resolve("")
+      : new Promise<string>((_, reject) => (rejectRunId = reject))
     sdk.runNoWait.mockResolvedValueOnce({
       runId,
       output: Promise.resolve({ value: "DONE" }),
@@ -255,9 +257,13 @@ describe("live SDK adapter behind Hatchet.layer", () => {
       operation: "run.runId",
       reason,
     })
-    expect("originalCause" in error && error.originalCause).not.toBe(cancelFailure)
+    expect("originalCause" in error && error.originalCause).not.toBe(
+      cancelFailure,
+    )
     if (kind === "rejection") {
-      expect("originalCause" in error && error.originalCause).toBe(runIdFailure)
+      expect("originalCause" in error && error.originalCause).toBe(
+        runIdFailure,
+      )
     }
     expect(JSON.stringify(error)).not.toMatch(/run-id-token|cancel-token/)
     expect(sdk.cancel).toHaveBeenCalledOnce()

@@ -1,3 +1,4 @@
+import * as Cause from "effect/Cause"
 import * as Clock from "effect/Clock"
 import type * as Config from "effect/Config"
 import * as Context from "effect/Context"
@@ -18,7 +19,7 @@ import {
   InvalidCronFilterError,
   type InvalidHatchetConfiguration,
   InvalidTimeError,
-  MissingTaskError,
+  type MissingTaskError,
   TaskSchemaError,
 } from "./Error.js"
 import {
@@ -171,6 +172,7 @@ const makeInMemoryService = (ownerScope: Scope.Scope): Service => {
     {
       readonly record: ScheduleRecord
       readonly fiber: Fiber.Fiber<void, never>
+      deleting: boolean
     }
   >()
   const runs = new Map<RunId, Fiber.Fiber<unknown, unknown>>()
@@ -203,6 +205,63 @@ const makeInMemoryService = (ownerScope: Scope.Scope): Service => {
     }
   }
 
+  const mapTaskSchemaError = (taskName: string, phase: "input" | "output") => (issue: unknown) =>
+    new TaskSchemaError({ taskName, phase, issue })
+
+  const executeDecoded = <
+    Name extends string,
+    Input,
+    Output,
+    Error,
+    Requirements,
+  >(
+    task: Task.Task<Name, Input, Output, Error, Requirements>,
+    input: Input,
+    context: Task.Context,
+  ) =>
+    Effect.scoped(task.execute(input, context)).pipe(
+      Effect.tap((output) =>
+        task.outputSchema
+          ? Schema.encodeUnknownEffect(task.outputSchema)(output).pipe(
+            Effect.mapError(mapTaskSchemaError(task.name, "output")),
+          )
+          : Effect.void
+      ),
+    )
+
+  type PreparedExecution<Output, Error, Requirements> = (
+    context: Task.Context,
+  ) => Effect.Effect<Output, Error | TaskSchemaError, Requirements>
+
+  const prepareInput = <
+    Name extends string,
+    Input,
+    Output,
+    Error,
+    Requirements,
+  >(
+    task: Task.Task<Name, Input, Output, Error, Requirements>,
+    input: unknown,
+  ): Effect.Effect<
+    PreparedExecution<Output, Error, Requirements>,
+    TaskSchemaError
+  > => {
+    if (!task.inputSchema) {
+      return Effect.succeed((context: Task.Context) =>
+        Effect.scoped(
+          tasks.run<Output, Error>(task.name, input, context) ??
+            Effect.die("registered task disappeared"),
+        )
+      )
+    }
+    return Schema.decodeUnknownEffect(task.inputSchema)(input).pipe(
+      Effect.mapError(mapTaskSchemaError(task.name, "input")),
+      Effect.map(
+        (decoded) => (context: Task.Context) => executeDecoded(task, decoded, context),
+      ),
+    )
+  }
+
   const runNoWait = <Name extends string, Input, Output, Error, Requirements>(
     task: Task.Task<Name, Input, Output, Error, Requirements>,
     input: unknown,
@@ -213,28 +272,12 @@ const makeInMemoryService = (ownerScope: Scope.Scope): Service => {
   > =>
     Effect.gen(function*() {
       yield* ensureTask(task)
-      if (task.inputSchema) {
-        yield* Schema.decodeUnknownEffect(task.inputSchema)(input).pipe(
-          Effect.mapError(
-            (issue) =>
-              new TaskSchemaError({
-                taskName: task.name,
-                phase: "input",
-                issue,
-              }),
-          ),
-        )
-      }
+      const prepared = yield* prepareInput(task, input)
       const execution = nextContext()
-      const stored = tasks.run<Output, Error>(
-        task.name,
-        input,
-        execution.context,
+      const fiber = yield* Effect.forkIn(
+        prepared(execution.context),
+        ownerScope,
       )
-      if (!stored) {
-        return yield* new MissingTaskError({ taskName: task.name })
-      }
-      const fiber = yield* Effect.forkIn(Effect.scoped(stored), ownerScope)
       const id = makeRunId(execution.id)
       const remove = Effect.sync(() => runs.delete(id))
       runs.set(id, fiber)
@@ -269,19 +312,28 @@ const makeInMemoryService = (ownerScope: Scope.Scope): Service => {
           originalCause: timing,
         })
       }
+      const prepared = yield* prepareInput(task, input)
       const id = makeScheduleId(`schedule-${nextScheduleId++}`)
       const record: ScheduleRecord = {
         id,
         taskName: task.name,
         triggerAt: new Date(triggerAt),
       }
+      const execute = Effect.suspend(() => prepared(nextContext().context))
       const timer = Effect.sleep(triggerAt - now).pipe(
-        Effect.tap(() => Effect.sync(() => schedules.delete(id))),
-        Effect.flatMap(() => runNoWait(task, input).pipe(Effect.asVoid)),
+        Effect.andThen(execute),
+        Effect.onError((cause) =>
+          Cause.hasInterruptsOnly(cause)
+            ? Effect.void
+            : Effect.logError(
+              `ScheduledTaskFailure scheduleId=${id} taskName=${task.name}`,
+            )
+        ),
         Effect.ignore,
+        Effect.ensuring(Effect.sync(() => schedules.delete(id))),
       )
       const fiber = yield* Effect.forkIn(timer, ownerScope)
-      schedules.set(id, { record, fiber })
+      schedules.set(id, { record, fiber, deleting: false })
       return record
     })
 
@@ -425,8 +477,8 @@ const makeInMemoryService = (ownerScope: Scope.Scope): Service => {
     deleteSchedule: (id) =>
       Effect.gen(function*() {
         const schedule = schedules.get(id)
-        if (!schedule) return false
-        schedules.delete(id)
+        if (!schedule || schedule.deleting) return false
+        schedule.deleting = true
         yield* Fiber.interrupt(schedule.fiber)
         return true
       }),

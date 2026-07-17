@@ -5,6 +5,7 @@ import * as Exit from "effect/Exit"
 import * as Layer from "effect/Layer"
 import * as ManagedRuntime from "effect/ManagedRuntime"
 import * as Redacted from "effect/Redacted"
+import * as Schema from "effect/Schema"
 import { failureReason, Hatchet, makeRunId, Task } from "@effectify/hatchet"
 
 const sdk = vi.hoisted(() => {
@@ -81,10 +82,15 @@ const second = Task.make({
   name: "second-task",
   fn: (_input: undefined) => Effect.succeed("second"),
 })
+const scheduledTask = Task.make({
+  name: "scheduled-task",
+  input: Schema.Struct({ value: Schema.NumberFromString }),
+  fn: () => Effect.void,
+})
 
 const directLayer = () =>
   Hatchet.layer({
-    tasks: [first, second],
+    tasks: [first, second, scheduledTask],
     options: {
       client: { token: Redacted.make("runtime-token") },
       worker: { name: "runtime-worker" },
@@ -197,7 +203,7 @@ describe("Hatchet lazy Layer", () => {
     expect([firstHandle.id, secondHandle.id]).toEqual(["run-1", "run-1"])
     expect(sdk.events.slice(0, 4)).toEqual([
       "worker",
-      "register:first-task,second-task",
+      "register:first-task,second-task,scheduled-task",
       "start",
       "ready",
     ])
@@ -212,7 +218,7 @@ describe("Hatchet lazy Layer", () => {
     const triggerAt = new Date("2030-01-02T03:04:05.000Z")
     const sdkSchedule = {
       metadata: { id: "schedule-1" },
-      workflowName: first.name,
+      workflowName: scheduledTask.name,
       triggerAt: triggerAt.toISOString(),
     }
     sdk.scheduled.create.mockResolvedValueOnce(sdkSchedule)
@@ -222,7 +228,7 @@ describe("Hatchet lazy Layer", () => {
     const runtime = runtimeOf(directLayer())
 
     const schedule = await runtime.runPromise(
-      Hatchet.schedule(first, {}, { _tag: "At", at: triggerAt }),
+      Hatchet.schedule(scheduledTask, { value: 1 }, { _tag: "At", at: triggerAt }),
     )
     const missing = await runtime.runPromise(Hatchet.getSchedule(schedule.id))
     await expect(
@@ -230,9 +236,9 @@ describe("Hatchet lazy Layer", () => {
     ).resolves.toBe(true)
     await runtime.runPromise(Hatchet.cancelRun(makeRunId("run-1")))
 
-    expect(sdk.scheduled.create).toHaveBeenCalledExactlyOnceWith(first.name, {
+    expect(sdk.scheduled.create).toHaveBeenCalledExactlyOnceWith(scheduledTask.name, {
       triggerAt,
-      input: {},
+      input: { value: "1" },
     })
     expect(missing).toMatchObject({ _tag: "None" })
     expect(sdk.scheduled.delete).toHaveBeenCalledExactlyOnceWith(schedule.id)
