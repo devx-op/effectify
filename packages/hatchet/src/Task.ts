@@ -16,17 +16,33 @@ export const Context = {
   } satisfies Context,
 }
 
-export interface Task<Name extends string, Input, Output, Error, Requirements> {
+export interface Task<
+  out Name extends string,
+  out Input,
+  out Output,
+  out Error,
+  out Requirements,
+> {
   readonly name: Name
   readonly inputSchema: Schema.Codec<Input, unknown, never, never> | undefined
   readonly outputSchema:
     | Schema.Codec<Output, unknown, never, never>
     | undefined
-  readonly execute: (
+  execute(
     input: Input,
     context: Context,
-  ) => Effect.Effect<Output, Error, Requirements>
+  ): Effect.Effect<Output, Error, Requirements>
 }
+
+export type Any<Requirements = unknown> = Task<
+  string,
+  unknown,
+  unknown,
+  unknown,
+  Requirements
+>
+
+export type Requirements<T> = T extends Task<string, unknown, unknown, unknown, infer R> ? R : never
 
 export interface MakeOptions<
   Name extends string,

@@ -15,6 +15,22 @@ const taskFailureError = PublicApi.TaskFailureError
 const taskInterruptedError = PublicApi.TaskInterruptedError
 // @ts-expect-error WorkerShutdownError is not emitted by PR 1 and is not public.
 const workerShutdownError = PublicApi.WorkerShutdownError
+// @ts-expect-error RegisteredTask was an obsolete manual registration capability.
+const registeredTask = PublicApi.RegisteredTask
+// @ts-expect-error manual registration is not part of the task-first Hatchet API.
+const register = PublicApi.Hatchet.register
+// @ts-expect-error manual worker startup is owned by Hatchet.layer.
+const startWorker = PublicApi.Hatchet.startWorker
+// @ts-expect-error direct live options are internal to Hatchet.layer acquisition.
+const directOptions: PublicApi.Hatchet.DirectOptions = {
+  worker: { name: "legacy" },
+}
+// @ts-expect-error the previous live-options alias is also absent.
+const liveOptions: PublicApi.Hatchet.LiveOptions = {
+  worker: { name: "legacy" },
+}
+// @ts-expect-error HatchetRuntime was implementation plumbing.
+const runtime = PublicApi.HatchetRuntime
 
 void removedWorkflow
 void removedTask
@@ -23,6 +39,12 @@ void removedRegisterWorkflowWithConfig
 void taskFailureError
 void taskInterruptedError
 void workerShutdownError
+void registeredTask
+void register
+void startWorker
+void directOptions
+void liveOptions
+void runtime
 
 // @ts-expect-error removed alpha public subpath
 await import("../../src/workflow/index.js")

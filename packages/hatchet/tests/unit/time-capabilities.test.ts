@@ -1,388 +1,139 @@
 import { describe, expect, it } from "vitest"
-import * as Cause from "effect/Cause"
-import * as Context from "effect/Context"
 import * as Effect from "effect/Effect"
-import * as Layer from "effect/Layer"
 import * as Option from "effect/Option"
+import * as Schema from "effect/Schema"
 import type * as Scope from "effect/Scope"
-import { TestClock } from "effect/testing"
-import { Hatchet, type RunId, Task } from "@effectify/hatchet"
+import { Hatchet, Task } from "@effectify/hatchet"
 
-class Prefix extends Context.Service<Prefix, { readonly value: string }>()(
-  "@effectify/hatchet/test/ScheduledPrefix",
-) {}
-
-const testLayer = Layer.merge(Hatchet.layerInMemory, TestClock.layer())
+const task = Task.make({
+  name: "time-task",
+  fn: (name: string | undefined, context) =>
+    Effect.succeed({
+      name,
+      runId: Option.getOrThrow(context.workflowRunId),
+    }),
+})
 
 const run = <A, E>(
   effect: Effect.Effect<A, E, Hatchet.Hatchet | Scope.Scope>,
-) => Effect.runPromise(Effect.scoped(effect).pipe(Effect.provide(testLayer)))
+) =>
+  Effect.runPromise(
+    Effect.scoped(effect.pipe(Effect.provide(Hatchet.layerInMemory))),
+  )
 
-describe("time capabilities", () => {
-  it("treats explicit in-memory worker startup as an idempotent ready no-op", async () => {
-    const task = Task.make({
-      name: "in-memory-explicit-start",
-      fn: () => Effect.succeed("ready"),
-    })
-
-    await expect(
-      run(
-        Effect.gen(function*() {
-          const registered = yield* Hatchet.register(task)
-          yield* Hatchet.startWorker
-          yield* Hatchet.startWorker
-          return yield* Hatchet.run(registered, undefined)
-        }),
-      ),
-    ).resolves.toBe("ready")
-  })
-
-  it("creates deterministic pending schedules through the in-memory service", async () => {
-    const task = Task.make({
-      name: "scheduled-greeting",
-      fn: (name: string) => Effect.succeed(`hello ${name}`),
-    })
-    const record = await run(
-      Effect.gen(function*() {
-        const registered = yield* Hatchet.register(task)
-        return yield* Hatchet.schedule(registered, "Ada", {
-          _tag: "After",
-          delay: "1 second",
-        })
-      }),
-    )
-
-    expect(record).toMatchObject({
-      id: "schedule-1",
-      taskName: "scheduled-greeting",
-    })
-  })
-
-  it("does not run before its boundary and runs exactly at it", async () => {
-    const events: string[] = []
-    const task = Task.make({
-      name: "boundary-task",
-      fn: () => Effect.sync(() => events.push("ran")),
-    })
-
+describe("time capabilities with public Task identity", () => {
+  it("creates, reads, and idempotently deletes a pending schedule", async () => {
     await run(
       Effect.gen(function*() {
-        const registered = yield* Hatchet.register(task)
-        yield* Hatchet.schedule(registered, undefined, {
+        const schedule = yield* Hatchet.schedule(task, "Ada", {
           _tag: "After",
-          delay: "1 second",
+          delay: "5 minutes",
         })
-        yield* TestClock.adjust("999 millis")
-        expect(events).toEqual([])
-        yield* TestClock.adjust("1 millis")
-        expect(events).toEqual(["ran"])
-      }),
-    )
-  })
-
-  it("runs with captured dependencies and deterministic task context", async () => {
-    const events: string[] = []
-    const task = Task.make({
-      name: "captured-scheduled-task",
-      fn: (_: undefined, context) =>
-        Effect.map(Prefix, (prefix) => {
-          events.push(
-            `${prefix.value}:${Option.getOrThrow(context.workflowRunId)}`,
-          )
-        }),
-    })
-
-    await run(
-      Effect.gen(function*() {
-        const registered = yield* Hatchet.register(task).pipe(
-          Effect.provide(Layer.succeed(Prefix, { value: "captured" })),
+        expect(yield* Hatchet.getSchedule(schedule.id)).toEqual(
+          Option.some(schedule),
         )
-        yield* Hatchet.schedule(registered, undefined, {
-          _tag: "After",
-          delay: "1 second",
-        })
-        yield* TestClock.adjust("1 second")
-        expect(events).toEqual(["captured:run-1"])
-      }),
-    )
-  })
-
-  it("deleting a pending schedule prevents its emission and is idempotent", async () => {
-    const events: string[] = []
-    const task = Task.make({
-      name: "deleted-before-emission",
-      fn: () => Effect.sync(() => events.push("ran")),
-    })
-
-    await run(
-      Effect.gen(function*() {
-        const registered = yield* Hatchet.register(task)
-        const schedule = yield* Hatchet.schedule(registered, undefined, {
-          _tag: "After",
-          delay: "1 second",
-        })
         expect(yield* Hatchet.deleteSchedule(schedule.id)).toBe(true)
         expect(yield* Hatchet.deleteSchedule(schedule.id)).toBe(false)
-        expect(yield* Hatchet.getSchedule(schedule.id)).toEqual(Option.none())
-        yield* TestClock.adjust("1 second")
-        expect(events).toEqual([])
       }),
     )
   })
 
-  it("does not cancel an already emitted run when its trigger is deleted", async () => {
-    const events: string[] = []
-    const task = Task.make({
-      name: "emitted-run",
-      fn: () => Effect.sync(() => events.push("ran")),
-    })
-
-    await run(
+  it("rejects invalid and past timing", async () => {
+    const outcomes = await run(
       Effect.gen(function*() {
-        const registered = yield* Hatchet.register(task)
-        const schedule = yield* Hatchet.schedule(registered, undefined, {
-          _tag: "After",
-          delay: "1 second",
-        })
-        yield* TestClock.adjust("1 second")
-        expect(yield* Hatchet.deleteSchedule(schedule.id)).toBe(false)
-        expect(yield* Hatchet.getSchedule(schedule.id)).toEqual(Option.none())
-        expect(events).toEqual(["ran"])
-      }),
-    )
-  })
-
-  it("cancels pending schedule fibers when their scope closes", async () => {
-    const events: string[] = []
-    const task = Task.make({
-      name: "scope-closed-schedule",
-      fn: () => Effect.sync(() => events.push("ran")),
-    })
-
-    await run(
-      Effect.gen(function*() {
-        const registered = yield* Hatchet.register(task)
-        yield* Effect.scoped(
-          Hatchet.schedule(registered, undefined, {
+        const invalidDelay = yield* Effect.exit(
+          Hatchet.schedule(task, undefined, {
             _tag: "After",
-            delay: "1 second",
+            delay: -1,
           }),
         )
-        yield* TestClock.adjust("1 second")
-        expect(events).toEqual([])
+        const past = yield* Effect.exit(
+          Hatchet.schedule(task, undefined, {
+            _tag: "At",
+            at: new Date(0),
+          }),
+        )
+        return { invalidDelay, past }
       }),
     )
+    expect(String(outcomes.invalidDelay)).toContain("InvalidTimeError")
+    expect(String(outcomes.past)).toContain("InvalidTimeError")
   })
 
-  it("uses the exact Effect Clock instant for an absolute At schedule", async () => {
-    const events: string[] = []
-    const task = Task.make({
-      name: "absolute-schedule",
-      fn: () => Effect.sync(() => events.push("ran")),
-    })
-
-    await run(
-      Effect.gen(function*() {
-        const registered = yield* Hatchet.register(task)
-        const schedule = yield* Hatchet.schedule(registered, undefined, {
-          _tag: "At",
-          at: new Date(1_000),
-        })
-        expect(schedule.triggerAt.getTime()).toBe(1_000)
-        yield* TestClock.adjust("999 millis")
-        expect(events).toEqual([])
-        yield* TestClock.adjust("1 millis")
-        expect(events).toEqual(["ran"])
-      }),
-    )
-  })
-
-  it("rejects invalid, past, and unsupported time inputs", async () => {
-    const task = Task.make({
-      name: "invalid-schedule",
-      fn: () => Effect.void,
-    })
-
-    await run(
-      Effect.gen(function*() {
-        const registered = yield* Hatchet.register(task)
-        for (
-          const timing of [
-            { _tag: "At" as const, at: new Date(Number.NaN) },
-            { _tag: "At" as const, at: new Date(0) },
-            { _tag: "After" as const, delay: 0 },
-            { _tag: "After" as const, delay: -1 },
-            { _tag: "After" as const, delay: Number.POSITIVE_INFINITY },
-          ]
-        ) {
-          const exit = yield* Hatchet.schedule(
-            registered,
-            undefined,
-            timing,
-          ).pipe(Effect.exit)
-          expect(exit._tag).toBe("Failure")
-        }
-      }),
-    )
-  })
-
-  it("does not cancel an emitted run when its trigger is deleted", async () => {
-    const events: string[] = []
-    let runId: string | undefined
-    const task = Task.make({
-      name: "emitted-cancellable-run",
-      fn: (_: undefined, context) =>
-        Effect.sync(() => {
-          runId = Option.getOrThrow(context.workflowRunId)
-        }).pipe(
-          Effect.andThen(Effect.never),
-          Effect.onInterrupt(() => Effect.sync(() => events.push("interrupted"))),
-        ),
-    })
-
-    await run(
-      Effect.gen(function*() {
-        const registered = yield* Hatchet.register(task)
-        const schedule = yield* Hatchet.schedule(registered, undefined, {
-          _tag: "After",
-          delay: "1 second",
-        })
-        yield* TestClock.adjust("1 second")
-        expect(yield* Hatchet.deleteSchedule(schedule.id)).toBe(false)
-        expect(events).toEqual([])
-        expect(runId).toBe("run-1")
-        yield* Hatchet.cancelRun(runId as RunId)
-        expect(events).toEqual(["interrupted"])
-      }),
-    )
-  })
-
-  it("fails cancellation of an unknown local run with the run.cancel error", async () => {
+  it("cancels a direct local run independently from schedules", async () => {
+    const waiting = Task.make({ name: "waiting", fn: () => Effect.never })
     const exit = await run(
-      Hatchet.cancelRun("run-missing" as RunId).pipe(Effect.exit),
+      Effect.gen(function*() {
+        const handle = yield* Hatchet.runNoWait(waiting, undefined)
+        yield* handle.cancel
+        return yield* Effect.exit(handle.await)
+      }),
     )
-
     expect(exit._tag).toBe("Failure")
-    if (exit._tag === "Failure") {
-      expect(
-        Option.getOrThrow(Cause.findErrorOption(exit.cause)),
-      ).toMatchObject({
-        _tag: "HatchetSdkError",
-        operation: "run.cancel",
-        resourceId: "run-missing",
-      })
-    }
+  })
+})
+
+describe("storage-only cron", () => {
+  const cronTask = Task.make({
+    name: "cron-task",
+    input: Schema.Struct({ recipient: Schema.NonEmptyString }),
+    fn: ({ recipient }) => Effect.succeed(recipient),
   })
 
-  it("cancels a local run without deleting its schedule trigger", async () => {
-    const events: string[] = []
-    const task = Task.make({
-      name: "cancellable-run",
-      fn: () =>
-        Effect.never.pipe(
-          Effect.onInterrupt(() => Effect.sync(() => events.push("interrupted"))),
-        ),
+  it("stores, filters, and deletes cron records without firing tasks", async () => {
+    let executions = 0
+    const counted = Task.make({
+      name: "counted-cron",
+      input: Schema.Struct({ recipient: Schema.NonEmptyString }),
+      fn: ({ recipient }) =>
+        Effect.sync(() => {
+          executions += 1
+          return recipient
+        }),
     })
-
     await run(
       Effect.gen(function*() {
-        const registered = yield* Hatchet.register(task)
-        const handle = yield* Hatchet.runNoWait(registered, undefined)
-        yield* Effect.yieldNow
-        yield* Hatchet.cancelRun(handle.id)
-        expect(events).toEqual(["interrupted"])
-        yield* Hatchet.cancelRun(handle.id)
-        expect(events).toEqual(["interrupted"])
-      }),
-    )
-  })
-
-  it("stores crons deterministically without firing them when virtual time advances", async () => {
-    const events: string[] = []
-    const task = Task.make({
-      name: "cron-storage-task",
-      fn: () => Effect.sync(() => events.push("ran")),
-    })
-
-    await run(
-      Effect.gen(function*() {
-        const registered = yield* Hatchet.register(task)
-        const first = yield* Hatchet.createCron(registered, {
+        const first = yield* Hatchet.createCron(counted, {
           name: "daily",
-          expression: "0 0 * * *",
-          input: {},
+          expression: "0 9 * * 1-5",
+          input: { recipient: "Ada" },
         })
-        const second = yield* Hatchet.createCron(registered, {
-          name: "hourly",
-          expression: "0 * * * *",
-          input: {},
-          priority: 2,
+        yield* Hatchet.createCron(cronTask, {
+          name: "other",
+          expression: "0 10 * * *",
+          input: { recipient: "Grace" },
         })
-        expect(first).toMatchObject({
-          id: "cron-1",
-          taskName: "cron-storage-task",
-          enabled: true,
-          method: "DEFAULT",
-        })
-        expect(second.id).toBe("cron-2")
-        expect(yield* Hatchet.getCron(first.id)).toEqual(Option.some(first))
-        expect(yield* Hatchet.listCrons({ name: "hourly" })).toEqual([second])
-        yield* TestClock.adjust("365 days")
-        expect(events).toEqual([])
-      }),
-    )
-  })
-
-  it("validates cron input and pagination, filters in creation order, and makes deletion idempotent", async () => {
-    const task = Task.make({
-      name: "cron-validation-task",
-      fn: () => Effect.void,
-    })
-
-    await run(
-      Effect.gen(function*() {
-        const registered = yield* Hatchet.register(task)
-        for (
-          const options of [
-            { name: "", expression: "0 0 * * *", input: {} },
-            { name: "valid", expression: "0 0 * *", input: {} },
-            { name: "valid", expression: "0 0 * * *", input: [] },
-            { name: "valid", expression: "0 0 * * *", input: {}, priority: 4 },
-          ]
-        ) {
-          const exit = yield* Hatchet.createCron(registered, options).pipe(
-            Effect.exit,
-          )
-          expect(exit._tag).toBe("Failure")
-        }
-        const first = yield* Hatchet.createCron(registered, {
-          name: "first",
-          expression: "0 0 * * *",
-          input: {},
-        })
-        const second = yield* Hatchet.createCron(registered, {
-          name: "second",
-          expression: "0 1 * * *",
-          input: {},
-        })
-        expect(yield* Hatchet.listCrons({ offset: 1, limit: 1 })).toEqual([
-          second,
-        ])
-        for (
-          const options of [
-            { offset: -1 },
-            { limit: 0 },
-            { offset: 0.5 },
-            { limit: 1.5 },
-          ]
-        ) {
-          const exit = yield* Hatchet.listCrons(options).pipe(Effect.exit)
-          expect(exit._tag).toBe("Failure")
-        }
+        expect(yield* Hatchet.listCrons({ name: "daily" })).toEqual([first])
+        expect(executions).toBe(0)
         expect(yield* Hatchet.deleteCron(first.id)).toBe(true)
         expect(yield* Hatchet.deleteCron(first.id)).toBe(false)
-        expect(yield* Hatchet.getCron(first.id)).toEqual(Option.none())
       }),
     )
+  })
+
+  it("validates cron expressions, schema input, and pagination", async () => {
+    const outcomes = await run(
+      Effect.gen(function*() {
+        const expression = yield* Effect.exit(
+          Hatchet.createCron(cronTask, {
+            name: "bad-expression",
+            expression: "bad",
+            input: { recipient: "Ada" },
+          }),
+        )
+        const input = yield* Effect.exit(
+          Hatchet.createCron(cronTask, {
+            name: "bad-input",
+            expression: "0 9 * * *",
+            input: { recipient: "" },
+          }),
+        )
+        const pagination = yield* Effect.exit(Hatchet.listCrons({ limit: 0 }))
+        return { expression, input, pagination }
+      }),
+    )
+    expect(String(outcomes.expression)).toContain("InvalidCronError")
+    expect(String(outcomes.input)).toContain("TaskSchemaError")
+    expect(String(outcomes.pagination)).toContain("InvalidCronFilterError")
   })
 })

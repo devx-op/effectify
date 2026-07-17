@@ -1,110 +1,93 @@
 # @effectify/hatchet
 
-`@effectify/hatchet` is now task-first: define work with `Task.make`, register it through the `Hatchet` service, and keep the chosen layer inside an Effect scope.
+`@effectify/hatchet` is a task-first, Effect-native Hatchet integration. Consumers declare `Task` values, compose `Hatchet.layer`, and yield `Hatchet` operations. SDK construction, configuration acquisition, task registration, worker lifecycle, lazy initialization, retries, and cleanup remain package-owned.
 
-## Breaking alpha migration
-
-The alpha workflow DSL is gone: `workflow`, standalone `task`, `registerWorkflow`, and `registerWorkflowWithConfig` are not exported. There is no compatibility facade or migration shim.
-
-| Before                     | After                                                               |
-| -------------------------- | ------------------------------------------------------------------- |
-| `workflow(...).task(...)`  | `Task.make({ name, fn })`                                           |
-| `registerWorkflow(...)`    | `Hatchet.register(task)` in a program provided with a Hatchet layer |
-| SDK schedule/cron wrappers | `Hatchet.schedule`, cron CRUD, and `Hatchet.cancelRun`              |
-
-## Quick path: deterministic local development
+## Define a Task
 
 ```ts
-import * as Effect from "effect/Effect"
 import { Hatchet, Task } from "@effectify/hatchet"
+import * as Effect from "effect/Effect"
+import * as Layer from "effect/Layer"
+import * as Schema from "effect/Schema"
+
+const GreetingInput = Schema.Struct({
+  name: Schema.NonEmptyString,
+})
+const GreetingOutput = Schema.Struct({
+  greeting: Schema.String,
+})
 
 const greet = Task.make({
   name: "greet",
-  fn: (name: string) => Effect.succeed(`Hello ${name}`),
+  input: GreetingInput,
+  output: GreetingOutput,
+  fn: ({ name }) => Effect.succeed({ greeting: `Hello, ${name}!` }),
 })
 
-const program = Effect.gen(function*() {
-  const registered = yield* Hatchet.register(greet)
-  return yield* Hatchet.run(registered, "Ada")
-}).pipe(Effect.provide(Hatchet.layerInMemory))
-```
+const AppLayer = Layer.mergeAll(
+  DatabaseLive,
+  Hatchet.layer({ tasks: [greet] }),
+)
 
-Run scoped effects with `Effect.scoped(...)` when scheduling or using the live layer. The scope owns pending local timers, detached local runs, and live worker resources.
-
-## Time capabilities
-
-Register the task once, then use the registered capability. `At` schedules at a future `Date`; `After` uses an Effect `Duration.Input`.
-
-```ts
-const program = Effect.gen(function*() {
-  const registered = yield* Hatchet.register(greet)
-
-  const schedule = yield* Hatchet.schedule(registered, "Ada", {
-    _tag: "After",
-    delay: "5 minutes",
-  })
-
-  yield* Hatchet.schedule(registered, "Grace", {
-    _tag: "At",
-    at: new Date(Date.now() + 60_000),
-  })
-
-  return schedule.id
-})
-```
-
-A schedule is a trigger, not a run. `deleteSchedule(id)` returns whether a pending trigger was removed. Once emitted, the trigger is gone; deleting it does not cancel the independent run.
-
-### Storage-only cron
-
-Cron on `Hatchet.layerInMemory` is deterministic storage only. It accepts shallow five-field expressions, supports create/get/list/delete, and **never fires a timer or a task**.
-
-```ts
-const cron = yield * Hatchet.createCron(registered, {
-  name: "weekday-greeting",
-  expression: "0 9 * * 1-5",
-  input: { recipient: "Ada" },
-})
-
-const stored = yield * Hatchet.listCrons({ name: "weekday-greeting" })
-yield * Hatchet.deleteCron(cron.id)
-```
-
-### Cancellation
-
-Cancel an emitted or direct run by its `RunId`; cancellation is not deletion and never removes schedule or cron history.
-
-```ts
-const handle = yield * Hatchet.runNoWait(registered, "Ada")
-yield * Hatchet.cancelRun(handle.id)
-```
-
-## Live layer
-
-Use `Hatchet.layer` only inside a scope. The live adapter supports verified SDK 1.21.0 schedule create/get/delete, cron create/get/list/delete, and single-run cancellation (`runs.cancel({ ids: [runId] })`). SDK failures are `HatchetSdkError` values with `originalCause` retained.
-
-```ts
-const live = Effect.scoped(
-  Effect.gen(function*() {
-    const registered = yield* Hatchet.register(greet)
-    yield* Hatchet.startWorker
-    const schedule = yield* Hatchet.schedule(registered, "Ada", {
-      _tag: "After",
-      delay: "5 minutes",
-    })
-
-    console.log(`Scheduled ${schedule.id}; worker is active until interruption.`)
-    return yield* Effect.never
-  }).pipe(
-    Effect.provide(Hatchet.layer({ worker: { name: "greeting-worker" } })),
-  ),
+const program = Hatchet.run(greet, { name: "Ada" }).pipe(
+  Effect.provide(AppLayer),
 )
 ```
 
-## Fidelity and rollback limits
+`input` and `output` are optional Effect Schema codecs. Input is decoded before the task body; output is validated and encoded at the transport boundary. Boundary failures use `TaskSchemaError` with an `input` or `output` phase. Schema-free tasks remain supported.
 
-`Hatchet.layerInMemory` is process-local, scope-bound, non-durable, and non-distributed. It does not model remote execution, worker affinity, retries, dashboard state, persistence, or remote races. Its cron records never fire.
+## Lazy Layer
 
-Closing an in-memory scope interrupts pending timers/runs and discards storage-only cron records. Code rollback does **not** roll back remote Hatchet registrations: inventory created remote schedule and cron IDs, explicitly delete pending triggers, and explicitly cancel emitted runs by run ID. Never perform automatic broad-filter or bulk cleanup.
+`Hatchet.layer({ tasks })` is inert when acquired. It does not read configuration, construct the SDK, contact Hatchet, register tasks, or start a worker until the first `Hatchet` operation.
 
-The retained `core/client.ts`, `core/config.ts`, and `testing/mock-client.ts` support unrelated administrative internals. They are deferred from this task-first public API migration.
+Concurrent first operations share one acquisition attempt. A successful worker is reused for the Layer scope. A failed attempt is cleaned up and returned to all waiters; the next operation retries. Closing the Layer scope stops the worker exactly once.
+
+Explicit decoded options and custom Effect Config are supported:
+
+```ts
+const explicit = Hatchet.layer({
+  tasks: [greet],
+  options: {
+    client: { token },
+    worker: {
+      name: "greeting-worker",
+      slots: 4,
+      readyTimeoutMs: 10_000,
+      stopTimeoutMs: 5_000,
+    },
+  },
+})
+
+const configured = Hatchet.layer({
+  tasks: [greet],
+  config: applicationHatchetConfig,
+})
+```
+
+Without `options` or `config`, the package uses its Effect Config environment contract. `HATCHET_CLIENT_TOKEN` is required on first operation. Optional keys are `HATCHET_HOST_PORT`, `HATCHET_API_URL`, `HATCHET_TLS_STRATEGY`, `HATCHET_TENANT_ID`, `HATCHET_NAMESPACE`, `HATCHET_LOG_LEVEL`, `HATCHET_WORKER_NAME`, `HATCHET_WORKER_SLOTS`, `HATCHET_WORKER_READY_TIMEOUT_MS`, and `HATCHET_WORKER_STOP_TIMEOUT_MS`.
+
+Omitting TLS strategy preserves the SDK secure default. Local plaintext Hatchet Lite deployments must explicitly use `none`.
+
+## Public API
+
+- `Task.make(options)` — declarative task identity with optional input/output Schema
+- `Hatchet.layer({ tasks, options?, config? })` — package-owned lazy live Layer
+- `Hatchet.layerInMemory` — deterministic scoped adapter for tests
+- `Hatchet.run(task, input)` — await task output
+- `Hatchet.runNoWait(task, input)` — obtain a run handle
+- `Hatchet.schedule`, `Hatchet.getSchedule`, `Hatchet.deleteSchedule`
+- `Hatchet.cancelRun`
+- `Hatchet.createCron`, `Hatchet.getCron`, `Hatchet.listCrons`, `Hatchet.deleteCron`
+- typed models and errors from the package root
+
+Applications do not need a separate runtime service, Promise bridge, worker registration API, or lifecycle API.
+
+## In-memory adapter
+
+```ts
+const local = Effect.gen(function*() {
+  return yield* Hatchet.run(greet, { name: "Ada" })
+}).pipe(Effect.provide(Hatchet.layerInMemory))
+```
+
+The in-memory adapter is process-local, scope-bound, non-durable, and non-distributed. Its schedule and cron records exist for deterministic tests; they do not model a distributed Hatchet server.

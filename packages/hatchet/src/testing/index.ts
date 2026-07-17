@@ -8,7 +8,6 @@ export {
   createDefaultMockLayer,
   createMockContext,
   createMockLayer,
-  createMockStepContext,
   runWithMockContext,
   testTask,
   testTaskExit,

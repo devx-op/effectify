@@ -39,6 +39,7 @@ export default defineConfig({
     external: [
       "better-sqlite3",
       "better-auth",
+      "@effectify/hatchet",
       "@prisma/client",
       "@prisma/adapter-better-sqlite3",
     ],

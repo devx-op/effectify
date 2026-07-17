@@ -30,16 +30,6 @@ describe("Nx Cypress target contract", () => {
     )
   })
 
-  it("removes Hatchet-only targets from the app project contract", () => {
-    const projectJson = readJson<{
-      targets?: Record<string, unknown>
-    }>(resolve(workspaceRoot, "apps/react-router-example/project.json"))
-
-    for (const target of Object.keys(projectJson.targets ?? {})) {
-      expect(target.toLowerCase()).not.toContain("hatchet")
-    }
-  })
-
   it("uses the React Router build script as the single build artifact producer", () => {
     const projectJson = readJson<{
       targets?: {

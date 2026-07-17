@@ -13,6 +13,7 @@
     "node": ">=22.22"
   },
   "dependencies": {
+    "@effectify/hatchet": "workspace:*",
     "@effectify/node-better-auth": "workspace:*",
     "@effectify/prisma": "workspace:*",
     "@effectify/react-query": "workspace:*",

@@ -5,7 +5,7 @@
  */
 
 import * as Effect from "effect/Effect"
-import * as Exit from "effect/Exit"
+import type * as Exit from "effect/Exit"
 import * as Layer from "effect/Layer"
 import { HatchetStepContext, type HatchetTaskContext } from "../core/context.js"
 
@@ -149,8 +149,3 @@ export const testTaskExit = async <A, E>(
   const effectWithContext = Effect.provide(effect, mockLayer)
   return Effect.runPromiseExit(effectWithContext)
 }
-
-/**
- * @deprecated Use createMockContext instead
- */
-export const createMockStepContext = createMockContext

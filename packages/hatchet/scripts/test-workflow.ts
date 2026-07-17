@@ -1,48 +1,21 @@
 /**
- * Example: run a task-first Hatchet worker.
+ * Example: invoke a task through the package-owned Hatchet Layer.
  *
- * Usage: set HATCHET_TOKEN, then run `pnpm tsx packages/hatchet/scripts/test-workflow.ts`.
+ * Usage: configure HATCHET_CLIENT_TOKEN and run
+ * `pnpm tsx packages/hatchet/scripts/test-workflow.ts`.
  */
 
-import * as Effect from "effect/Effect"
 import { Hatchet, Task } from "@effectify/hatchet"
-
-const token = process.env.HATCHET_TOKEN
-if (!token) {
-  console.error("Please set HATCHET_TOKEN")
-  process.exit(1)
-}
+import * as Effect from "effect/Effect"
 
 const greeting = Task.make({
   name: "my-effect-task",
-  fn: (input: { readonly message: string }) => Effect.sync(() => ({ result: "done", message: input.message })),
+  fn: (input: { readonly message: string }) => Effect.succeed({ result: "done", message: input.message }),
 })
 
-const program = Effect.scoped(
-  Effect.gen(function*() {
-    const registered = yield* Hatchet.register(greeting)
-    yield* Hatchet.startWorker
-    const schedule = yield* Hatchet.schedule(
-      registered,
-      { message: "Hello" },
-      {
-        _tag: "After",
-        delay: "1 minute",
-      },
-    )
-
-    console.log(
-      `Worker ready; scheduled ${schedule.id}. Waiting for interruption.`,
-    )
-    yield* Effect.never
-  }).pipe(
-    Effect.provide(
-      Hatchet.layer({
-        worker: { name: "my-worker" },
-        client: { token, hostPort: "localhost:7077" },
-      }),
-    ),
-  ),
+const program = Hatchet.run(greeting, { message: "Hello from Effect" }).pipe(
+  Effect.tap((output) => Effect.log("Hatchet task completed", output)),
+  Effect.provide(Hatchet.layer({ tasks: [greeting] })),
 )
 
 Effect.runPromise(program).catch((error) => {
