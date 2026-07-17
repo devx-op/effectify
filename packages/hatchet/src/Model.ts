@@ -1,6 +1,6 @@
 import * as Schema from "effect/Schema"
 
-export const RunId = Schema.String.pipe(
+export const RunId = Schema.NonEmptyString.pipe(
   Schema.brand("@effectify/hatchet/RunId"),
 )
 export type RunId = typeof RunId.Type

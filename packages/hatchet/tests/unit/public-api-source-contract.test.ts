@@ -9,6 +9,10 @@ const publicSourceFiles = [
   "../../src/Error.ts",
   "../../src/Model.ts",
 ].map((path) => new URL(path, import.meta.url))
+const exampleSourceFile = new URL(
+  "../../scripts/test-workflow.ts",
+  import.meta.url,
+)
 
 const forbiddenManualLifecycleSymbols = [
   "RegisteredTask",
@@ -39,5 +43,16 @@ describe("public API source contract", () => {
     expect(api.Hatchet).not.toHaveProperty("startWorker")
     expect(api.Hatchet).toHaveProperty("layer")
     expect(api).not.toHaveProperty("HatchetRuntime")
+  })
+
+  it("keeps forced process termination in the CLI example after Effect finalization", () => {
+    const exampleSource = readFileSync(exampleSourceFile, "utf8")
+
+    expect(exampleSource).toContain("Effect.runPromise(program).then(")
+    expect(exampleSource).toContain("process.exit(exitCode)")
+    expect(exampleSource).toContain("Layer finalizers have completed")
+    for (const sourceFile of publicSourceFiles) {
+      expect(readFileSync(sourceFile, "utf8")).not.toContain("process.exit(")
+    }
   })
 })

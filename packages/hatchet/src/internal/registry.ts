@@ -1,6 +1,7 @@
 import type * as Context from "effect/Context"
 import * as Effect from "effect/Effect"
 import * as Schema from "effect/Schema"
+import * as Scope from "effect/Scope"
 import { TaskSchemaError } from "../Error.js"
 import type * as Task from "../Task.js"
 
@@ -36,6 +37,7 @@ const makeStoredTask = <
 ): StoredTask => ({
   run: (input, taskContext) =>
     Effect.gen(function*() {
+      const taskScope = yield* Scope.Scope
       const decoded = task.inputSchema
         ? yield* Schema.decodeUnknownEffect(task.inputSchema)(input).pipe(
           Effect.mapError(
@@ -50,7 +52,10 @@ const makeStoredTask = <
         : (input as Input)
       const output = yield* task
         .execute(decoded, taskContext)
-        .pipe(Effect.provideContext(context))
+        .pipe(
+          Effect.provideService(Scope.Scope, taskScope),
+          Effect.provideContext(context),
+        )
       if (task.outputSchema) {
         yield* Schema.encodeUnknownEffect(task.outputSchema)(output).pipe(
           Effect.mapError(

@@ -36,6 +36,28 @@ const program = Hatchet.run(greet, { name: "Ada" }).pipe(
 
 `input` and `output` are optional Effect Schema codecs. Input is decoded before the task body; output is validated and encoded at the transport boundary. Boundary failures use `TaskSchemaError` with an `input` or `output` phase. Schema-free tasks remain supported.
 
+## Dispatch without waiting
+
+`Hatchet.runNoWait(task, input)` dispatches the task and returns a scoped `RunHandle` before the task completes. Its branded `id` identifies the run, `await` produces the same Schema-decoded output as `Hatchet.run`, and `cancel` interrupts an outstanding run.
+
+```ts
+const program = Effect.gen(function*() {
+  const handle = yield* Hatchet.runNoWait(greet, { name: "Ada" })
+  yield* Effect.log("Continue independent Effect work", handle.id)
+  return yield* handle.await
+}).pipe(Effect.provide(AppLayer))
+```
+
+Outstanding in-memory runs are interrupted when their Layer scope closes. Live handles delegate dispatch, result, and cancellation to Hatchet while mapping SDK failures into package errors.
+
+Run the live dispatch example on the repository's supported Node version (`>=22.22`):
+
+```sh
+HATCHET_CLIENT_TOKEN='<token>' node --experimental-strip-types packages/hatchet/scripts/test-workflow.ts
+```
+
+The upstream Hatchet SDK keeps its run-result gRPC transport alive and currently exposes no client-level close/dispose API. The executable example therefore terminates explicitly only after its Effect completes and the Hatchet Layer has stopped its worker. This workaround is CLI-only; package source never terminates the process.
+
 ## Lazy Layer
 
 `Hatchet.layer({ tasks })` is inert when acquired. It does not read configuration, construct the SDK, contact Hatchet, register tasks, or start a worker until the first `Hatchet` operation.

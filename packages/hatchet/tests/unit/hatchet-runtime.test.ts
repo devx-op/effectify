@@ -224,9 +224,7 @@ describe("Hatchet lazy Layer", () => {
     const schedule = await runtime.runPromise(
       Hatchet.schedule(first, {}, { _tag: "At", at: triggerAt }),
     )
-    const missing = await runtime.runPromise(
-      Hatchet.getSchedule(schedule.id),
-    )
+    const missing = await runtime.runPromise(Hatchet.getSchedule(schedule.id))
     await expect(
       runtime.runPromise(Hatchet.deleteSchedule(schedule.id)),
     ).resolves.toBe(true)
@@ -293,9 +291,7 @@ describe("Hatchet lazy Layer", () => {
     }
 
     expect(failureReason(error)).toBe("NotConfigured")
-    expect(failureReason({ response: { status: 401 } })).toBe(
-      "Unauthorized",
-    )
+    expect(failureReason({ response: { status: 401 } })).toBe("Unauthorized")
     expect(JSON.stringify(error)).not.toContain("missing secret token")
   })
 

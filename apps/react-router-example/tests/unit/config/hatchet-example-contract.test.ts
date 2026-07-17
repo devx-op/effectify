@@ -55,7 +55,9 @@ describe("one-task Hatchet example configuration", () => {
 
   it("keeps the public package external without exposing its SDK", async () => {
     const vite = await appFile("vite.config.ts")
-    expect(vite).toMatch(/ssr:\s*\{[\s\S]*external:[\s\S]*"@effectify\/hatchet"/)
+    expect(vite).toMatch(
+      /ssr:\s*\{[\s\S]*external:[\s\S]*"@effectify\/hatchet"/,
+    )
     expect(vite).not.toContain("@hatchet-dev/typescript-sdk")
   })
 

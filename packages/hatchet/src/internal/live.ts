@@ -264,7 +264,7 @@ const makeService = <Requirements>(
                 : Effect.succeed(value)
             ),
           )
-          return Effect.runPromiseExit(encoded).then((exit) => {
+          return Effect.runPromiseExit(Effect.scoped(encoded)).then((exit) => {
             if (!Exit.isSuccess(exit)) throw new LiveCallbackError(exit.cause)
             if (!isTransportValue(exit.value)) {
               throw new LiveCallbackError(
@@ -436,11 +436,21 @@ const makeService = <Requirements>(
           try: () => declaration.runNoWait(encodedInput),
           catch: (originalCause) => sdkError("task.runNoWait", originalCause, task.name),
         })
-        const id = makeRunId(
-          yield* Effect.tryPromise({
-            try: () => reference.runId,
-            catch: (originalCause) => sdkError("run.runId", originalCause, task.name),
-          }),
+        const compensate = Effect.tryPromise({
+          try: () => reference.cancel(),
+          catch: () => undefined,
+        }).pipe(Effect.ignore)
+        const id = yield* Effect.tryPromise({
+          try: () => reference.runId,
+          catch: (originalCause) => sdkError("run.runId", originalCause, task.name),
+        }).pipe(
+          Effect.flatMap((rawId) =>
+            Effect.try({
+              try: () => makeRunId(rawId),
+              catch: (originalCause) => sdkError("run.runId", originalCause, task.name),
+            })
+          ),
+          Effect.tapError(() => compensate),
         )
         const awaitOutput = Effect.gen(function*() {
           const envelope = yield* Effect.tryPromise({
@@ -469,14 +479,13 @@ const makeService = <Requirements>(
             ),
           )
         })
-        return {
-          id,
-          await: awaitOutput,
-          cancel: Effect.tryPromise({
+        const cancel = yield* Effect.cached(
+          Effect.tryPromise({
             try: () => reference.cancel(),
             catch: (originalCause) => sdkError("run.cancel", originalCause, id),
           }),
-        }
+        )
+        return { id, await: awaitOutput, cancel }
       })
 
     const createCron: Hatchet.Service["createCron"] = (task, cronOptions) =>

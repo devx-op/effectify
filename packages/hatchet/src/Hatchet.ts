@@ -16,7 +16,7 @@ import {
   HatchetSdkError,
   InvalidCronError,
   InvalidCronFilterError,
-  InvalidHatchetConfiguration,
+  type InvalidHatchetConfiguration,
   InvalidTimeError,
   MissingTaskError,
   TaskSchemaError,
@@ -213,6 +213,18 @@ const makeInMemoryService = (ownerScope: Scope.Scope): Service => {
   > =>
     Effect.gen(function*() {
       yield* ensureTask(task)
+      if (task.inputSchema) {
+        yield* Schema.decodeUnknownEffect(task.inputSchema)(input).pipe(
+          Effect.mapError(
+            (issue) =>
+              new TaskSchemaError({
+                taskName: task.name,
+                phase: "input",
+                issue,
+              }),
+          ),
+        )
+      }
       const execution = nextContext()
       const stored = tasks.run<Output, Error>(
         task.name,
@@ -222,13 +234,17 @@ const makeInMemoryService = (ownerScope: Scope.Scope): Service => {
       if (!stored) {
         return yield* new MissingTaskError({ taskName: task.name })
       }
-      const fiber = yield* Effect.forkIn(stored, ownerScope)
+      const fiber = yield* Effect.forkIn(Effect.scoped(stored), ownerScope)
       const id = makeRunId(execution.id)
+      const remove = Effect.sync(() => runs.delete(id))
       runs.set(id, fiber)
       return {
         id,
-        await: Fiber.join(fiber),
-        cancel: Fiber.interrupt(fiber).pipe(Effect.asVoid),
+        await: Fiber.join(fiber).pipe(Effect.ensuring(remove)),
+        cancel: Fiber.interrupt(fiber).pipe(
+          Effect.asVoid,
+          Effect.ensuring(remove),
+        ),
       }
     })
 
@@ -462,11 +478,7 @@ type State =
 const initialize = <const Tasks extends ReadonlyArray<Task.Any>>(
   options: LayerOptions<Tasks>,
   scope: Scope.Closeable,
-): Effect.Effect<
-  Ready,
-  AcquisitionError,
-  Task.Requirements<Tasks[number]>
-> =>
+): Effect.Effect<Ready, AcquisitionError, Task.Requirements<Tasks[number]>> =>
   Effect.gen(function*() {
     const liveOptions = options.options === undefined
       ? yield* (options.config ?? HatchetConfig.fromEnv).pipe(
