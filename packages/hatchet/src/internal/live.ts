@@ -14,8 +14,6 @@ import type * as Scope from "effect/Scope"
 import {
   HatchetConfigError,
   HatchetSdkError,
-  InvalidCronError,
-  InvalidCronFilterError,
   InvalidHatchetConfiguration,
   InvalidTimeError,
   MissingTaskError,
@@ -23,8 +21,11 @@ import {
 } from "../Error.js"
 import * as Hatchet from "../Hatchet.js"
 import type { HatchetOptions } from "../HatchetConfig.js"
+import * as CronExpression from "../CronExpression.js"
 import { type CronRecord, makeCronId, makeRunId, makeScheduleId, type ScheduleRecord } from "../Model.js"
 import type * as Task from "../Task.js"
+import * as CronValidation from "./cron-validation.js"
+import { getErrorCause } from "./error-cause.js"
 import * as Registry from "./registry.js"
 
 type LiveOutputEnvelope = { readonly value: JsonValue }
@@ -102,14 +103,18 @@ const sdkError = (
     ...(resourceId === undefined ? {} : { resourceId }),
   })
 
-const isNotFound = (cause: unknown): boolean =>
-  typeof cause === "object" &&
-  cause !== null &&
-  "response" in cause &&
-  typeof cause.response === "object" &&
-  cause.response !== null &&
-  "status" in cause.response &&
-  cause.response.status === 404
+const isNotFound = (error: HatchetSdkError): boolean => {
+  const cause = getErrorCause(error)
+  return (
+    typeof cause === "object" &&
+    cause !== null &&
+    "response" in cause &&
+    typeof cause.response === "object" &&
+    cause.response !== null &&
+    "status" in cause.response &&
+    cause.response.status === 404
+  )
+}
 
 const scheduleRecord = (
   value: unknown,
@@ -139,6 +144,95 @@ const scheduleRecord = (
       triggerAt,
     })
 }
+
+const cronListIds = (value: unknown): ReadonlyArray<string> | undefined => {
+  if (
+    typeof value !== "object" ||
+    value === null ||
+    !("rows" in value) ||
+    !Array.isArray(value.rows)
+  ) {
+    return undefined
+  }
+  const ids: Array<string> = []
+  for (const row of value.rows) {
+    if (
+      typeof row !== "object" ||
+      row === null ||
+      !("metadata" in row) ||
+      typeof row.metadata !== "object" ||
+      row.metadata === null ||
+      !("id" in row.metadata) ||
+      typeof row.metadata.id !== "string"
+    ) {
+      return undefined
+    }
+    ids.push(row.metadata.id)
+  }
+  return ids
+}
+
+const pageNumber = (value: unknown): value is number =>
+  typeof value === "number" && Number.isSafeInteger(value) && value >= 0
+
+export const verifyCronAbsent = async (
+  list: (query: {
+    readonly offset: number
+    readonly limit: number
+  }) => Promise<unknown>,
+  id: string,
+  maxPages = 1_000,
+): Promise<boolean> => {
+  const limit = 100
+  let offset = 0
+  const seen = new Set<number>()
+  for (let pages = 0; pages < maxPages; pages++) {
+    const response = await list({ offset, limit })
+    const ids = cronListIds(response)
+    if (!ids || ids.length > limit || ids.includes(id)) return false
+    if (
+      typeof response !== "object" ||
+      response === null ||
+      !("pagination" in response)
+    ) {
+      if (ids.length < limit) return true
+      offset += limit
+      if (!Number.isSafeInteger(offset)) return false
+      continue
+    }
+    const pagination = response.pagination
+    if (typeof pagination !== "object" || pagination === null) return false
+    const current = "current_page" in pagination ? pagination.current_page : undefined
+    const next = "next_page" in pagination ? pagination.next_page : undefined
+    const total = "num_pages" in pagination ? pagination.num_pages : undefined
+    if (
+      !pageNumber(current) ||
+      !pageNumber(total) ||
+      seen.has(current) ||
+      (next !== undefined && !pageNumber(next))
+    ) {
+      return false
+    }
+    seen.add(current)
+    if (current >= total) return true
+    if (next === undefined || next <= current || next > total) return false
+    offset += (next - current) * limit
+    if (!Number.isSafeInteger(offset)) return false
+  }
+  return false
+}
+
+const cronVerificationListTimeout = Duration.seconds(5)
+
+const verifyCronAbsentWithinBound = (
+  list: Parameters<typeof verifyCronAbsent>[0],
+  id: string,
+): Effect.Effect<boolean> =>
+  Effect.tryPromise(() => verifyCronAbsent(list, id)).pipe(
+    Effect.timeoutOption(cronVerificationListTimeout),
+    Effect.catch(() => Effect.succeed(Option.none())),
+    Effect.map(Option.getOrElse(() => false)),
+  )
 
 const cronRecord = (
   value: unknown,
@@ -184,35 +278,6 @@ const cronRecord = (
       : {}),
   })
 }
-
-const validateCron = (
-  options: Hatchet.CreateCronOptions,
-): Effect.Effect<void, InvalidCronError> =>
-  Effect.gen(function*() {
-    if (options.name.trim().length === 0) {
-      return yield* new InvalidCronError({
-        field: "name",
-        originalCause: options.name,
-      })
-    }
-    if (options.expression.trim().split(/\s+/).length !== 5) {
-      return yield* new InvalidCronError({
-        field: "expression",
-        originalCause: options.expression,
-      })
-    }
-    if (
-      options.priority !== undefined &&
-      (!Number.isInteger(options.priority) ||
-        options.priority < 1 ||
-        options.priority > 3)
-    ) {
-      return yield* new InvalidCronError({
-        field: "priority",
-        originalCause: options.priority,
-      })
-    }
-  })
 
 const makeService = <Requirements>(
   client: ReturnType<typeof HatchetClient.init>,
@@ -490,17 +555,28 @@ const makeService = <Requirements>(
 
     const createCron: Hatchet.Service["createCron"] = (task, cronOptions) =>
       Effect.gen(function*() {
-        yield* validateCron(cronOptions)
-        const input = yield* encodeInput(
-          task,
-          cronOptions.input,
-          "cron.create.input",
-        )
+        yield* CronValidation.validateCreate(cronOptions)
+        yield* ensureKnown(task)
+        const encoded = task.inputSchema
+          ? yield* Schema.encodeUnknownEffect(task.inputSchema)(
+            cronOptions.input,
+          ).pipe(
+            Effect.mapError(
+              (issue) =>
+                new TaskSchemaError({
+                  taskName: task.name,
+                  phase: "input",
+                  issue,
+                }),
+            ),
+          )
+          : cronOptions.input
+        const input = yield* CronValidation.validateInput(encoded)
         const response = yield* Effect.tryPromise({
           try: () =>
             client.crons.create(task.name, {
               name: cronOptions.name,
-              expression: cronOptions.expression,
+              expression: CronExpression.source(cronOptions.schedule),
               input,
               ...(cronOptions.additionalMetadata === undefined
                 ? {}
@@ -557,10 +633,7 @@ const makeService = <Requirements>(
               Effect.map(Option.some),
             )
           ),
-          Effect.catchIf(
-            (error: HatchetSdkError) => isNotFound(error.originalCause),
-            () => Effect.succeed(Option.none()),
-          ),
+          Effect.catchIf(isNotFound, () => Effect.succeed(Option.none())),
         ),
       deleteSchedule: (id) =>
         Effect.tryPromise({
@@ -568,10 +641,7 @@ const makeService = <Requirements>(
           catch: (cause) => sdkError("schedule.delete", cause, id),
         }).pipe(
           Effect.as(true),
-          Effect.catchIf(
-            (error: HatchetSdkError) => isNotFound(error.originalCause),
-            () => Effect.succeed(false),
-          ),
+          Effect.catchIf(isNotFound, () => Effect.succeed(false)),
         ),
       cancelRun: (id) =>
         Effect.tryPromise({
@@ -585,26 +655,11 @@ const makeService = <Requirements>(
           catch: (cause) => sdkError("cron.get", cause, id),
         }).pipe(
           Effect.flatMap((response) => cronRecord(response, "cron.get").pipe(Effect.map(Option.some))),
-          Effect.catchIf(
-            (error: HatchetSdkError) => isNotFound(error.originalCause),
-            () => Effect.succeed(Option.none()),
-          ),
+          Effect.catchIf(isNotFound, () => Effect.succeed(Option.none())),
         ),
       listCrons: (listOptions = {}) =>
         Effect.gen(function*() {
-          for (
-            const [field, value] of [
-              ["taskName", listOptions.taskName],
-              ["name", listOptions.name],
-            ] as const
-          ) {
-            if (value !== undefined && value.trim().length === 0) {
-              return yield* new InvalidCronFilterError({
-                field,
-                originalCause: value,
-              })
-            }
-          }
+          yield* CronValidation.validateList(listOptions)
           const response = yield* Effect.tryPromise({
             try: () =>
               client.crons.list({
@@ -634,8 +689,16 @@ const makeService = <Requirements>(
         }).pipe(
           Effect.as(true),
           Effect.catchIf(
-            (error: HatchetSdkError) => isNotFound(error.originalCause),
-            () => Effect.succeed(false),
+            () => true,
+            (deleteError: HatchetSdkError) => {
+              if (isNotFound(deleteError)) return Effect.succeed(false)
+              return verifyCronAbsentWithinBound(
+                (query) => client.crons.list(query),
+                id,
+              ).pipe(
+                Effect.flatMap((absent) => absent ? Effect.succeed(false) : Effect.fail(deleteError)),
+              )
+            },
           ),
         ),
     }

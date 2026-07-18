@@ -1,4 +1,15 @@
-import type { CreateCronOptions, CronRecord, ListCronOptions, ScheduleRecord, ScheduleTiming } from "../../src/index.js"
+import type * as EffectCron from "effect/Cron"
+import type {
+  CreateCronOptions,
+  CronExpression,
+  CronRecord,
+  ListCronOptions,
+  ScheduleRecord,
+  ScheduleTiming,
+} from "../../src/index.js"
+
+declare const cronSchedule: CronExpression.CronExpression
+declare const effectCron: EffectCron.Cron
 
 const schedule: ScheduleTiming = { _tag: "After", delay: "1 second" }
 const scheduleRecord: ScheduleRecord = {
@@ -8,7 +19,13 @@ const scheduleRecord: ScheduleRecord = {
 }
 const cronOptions: CreateCronOptions = {
   name: "daily",
-  expression: "0 0 * * *",
+  schedule: cronSchedule,
+  input: {},
+}
+const rawCronOptions: CreateCronOptions = {
+  name: "raw-cron",
+  // @ts-expect-error A Cron.Cron can contain seconds and has no source to serialize.
+  schedule: effectCron,
   input: {},
 }
 const cronRecord: CronRecord = {
@@ -23,5 +40,6 @@ const listOptions: ListCronOptions = { offset: 0, limit: 10 }
 void schedule
 void scheduleRecord
 void cronOptions
+void rawCronOptions
 void cronRecord
 void listOptions

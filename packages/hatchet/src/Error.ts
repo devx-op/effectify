@@ -1,5 +1,6 @@
 import * as Data from "effect/Data"
 import * as Schema from "effect/Schema"
+import { setErrorCause } from "./internal/error-cause.js"
 
 export class MissingTaskError extends Data.TaggedError("MissingTaskError")<{
   readonly taskName: string
@@ -91,28 +92,19 @@ const classifyFailure = (
   return "Unknown"
 }
 
-const hideOriginalCause = (error: object, originalCause: unknown): void => {
-  Object.defineProperty(error, "originalCause", {
-    configurable: true,
-    enumerable: false,
-    value: originalCause,
-  })
-}
-
 export class HatchetConfigError extends Data.TaggedError("HatchetConfigError")<{
   readonly field: string
   readonly reason: HatchetFailureReason
-  readonly originalCause: unknown
 }> {
   constructor(args: {
     readonly field: string
     readonly originalCause: unknown
   }) {
     super({
-      ...args,
+      field: args.field,
       reason: classifyFailure(`config.${args.field}`, args.originalCause),
     })
-    hideOriginalCause(this, args.originalCause)
+    setErrorCause(this, args.originalCause)
   }
 }
 
@@ -120,7 +112,6 @@ export class HatchetSdkError extends Data.TaggedError("HatchetSdkError")<{
   readonly operation: string
   readonly resourceId?: string
   readonly reason: HatchetFailureReason
-  readonly originalCause: unknown
 }> {
   constructor(args: {
     readonly operation: string
@@ -128,10 +119,11 @@ export class HatchetSdkError extends Data.TaggedError("HatchetSdkError")<{
     readonly originalCause: unknown
   }) {
     super({
-      ...args,
+      operation: args.operation,
+      ...(args.resourceId === undefined ? {} : { resourceId: args.resourceId }),
       reason: classifyFailure(args.operation, args.originalCause),
     })
-    hideOriginalCause(this, args.originalCause)
+    setErrorCause(this, args.originalCause)
   }
 }
 

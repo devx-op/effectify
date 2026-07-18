@@ -1,3 +1,4 @@
+import { format, inspect } from "node:util"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import * as ConfigProvider from "effect/ConfigProvider"
 import * as Effect from "effect/Effect"
@@ -6,7 +7,7 @@ import * as Layer from "effect/Layer"
 import * as ManagedRuntime from "effect/ManagedRuntime"
 import * as Redacted from "effect/Redacted"
 import * as Schema from "effect/Schema"
-import { failureReason, Hatchet, makeRunId, Task } from "@effectify/hatchet"
+import { failureReason, Hatchet, HatchetConfigError, HatchetSdkError, makeRunId, Task } from "@effectify/hatchet"
 
 const sdk = vi.hoisted(() => {
   const events: Array<string> = []
@@ -299,6 +300,47 @@ describe("Hatchet lazy Layer", () => {
     expect(failureReason(error)).toBe("NotConfigured")
     expect(failureReason({ response: { status: 401 } })).toBe("Unauthorized")
     expect(JSON.stringify(error)).not.toContain("missing secret token")
+  })
+
+  it("keeps raw SDK and config causes out of every public error rendering surface", () => {
+    const secret = "secret-axios-token"
+    interface SecretCause extends Error {
+      readonly request: { readonly authorization: string }
+      readonly response: { readonly status: number; readonly data: string }
+      self?: SecretCause
+    }
+    const cause: SecretCause = Object.assign(new Error(secret), {
+      request: { authorization: secret },
+      response: { status: 500, data: secret },
+    })
+    cause.self = cause
+    const cases = [
+      {
+        error: new HatchetSdkError({
+          operation: "cron.delete",
+          resourceId: "cron-1",
+          originalCause: cause,
+        }),
+        keys: ["_tag", "operation", "reason", "resourceId"],
+      },
+      {
+        error: new HatchetConfigError({
+          field: "client",
+          originalCause: cause,
+        }),
+        keys: ["_tag", "field", "reason"],
+      },
+    ]
+
+    for (const { error, keys } of cases) {
+      expect(error.reason).toBe("Unavailable")
+      expect(Object.keys(error).sort()).toEqual(keys.sort())
+      expect("originalCause" in error).toBe(false)
+      expect(JSON.stringify(error)).not.toContain(secret)
+      expect(String(error)).not.toContain(secret)
+      expect(inspect(error)).not.toContain(secret)
+      expect(format(error)).not.toContain(secret)
+    }
   })
 
   it("does not expose the removed Promise bridge", () => {

@@ -1,9 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
+import * as Deferred from "effect/Deferred"
 import * as Effect from "effect/Effect"
+import * as Fiber from "effect/Fiber"
+import * as Layer from "effect/Layer"
 import * as ManagedRuntime from "effect/ManagedRuntime"
 import * as Redacted from "effect/Redacted"
 import * as Schema from "effect/Schema"
-import { Hatchet, Task } from "@effectify/hatchet"
+import { TestClock } from "effect/testing"
+import { CronExpression, Hatchet, makeCronId, Task } from "@effectify/hatchet"
+import { verifyCronAbsent } from "../../src/internal/live.js"
 
 const sdk = vi.hoisted(() => {
   const events: Array<string> = []
@@ -39,7 +44,7 @@ const sdk = vi.hoisted(() => {
       method: "DEFAULT",
     })),
     get: vi.fn(),
-    list: vi.fn(async () => ({ rows: [] })),
+    list: vi.fn(async (_options: unknown): Promise<unknown> => ({ rows: [] })),
     delete: vi.fn(),
   }
   return {
@@ -257,14 +262,7 @@ describe("live SDK adapter behind Hatchet.layer", () => {
       operation: "run.runId",
       reason,
     })
-    expect("originalCause" in error && error.originalCause).not.toBe(
-      cancelFailure,
-    )
-    if (kind === "rejection") {
-      expect("originalCause" in error && error.originalCause).toBe(
-        runIdFailure,
-      )
-    }
+    expect("originalCause" in error).toBe(false)
     expect(JSON.stringify(error)).not.toMatch(/run-id-token|cancel-token/)
     expect(sdk.cancel).toHaveBeenCalledOnce()
     await runtime.dispose()
@@ -429,20 +427,216 @@ describe("live SDK adapter behind Hatchet.layer", () => {
   it("uses Task identity for cron creation", async () => {
     const runtime = ManagedRuntime.make(layer())
 
-    await expect(
-      runtime.runPromise(
-        Hatchet.createCron(upper, {
-          name: "daily-upper",
-          expression: "0 0 * * *",
-          input: { value: "scheduled" },
-        }),
-      ),
-    ).resolves.toMatchObject({ id: "cron-42", taskName: "upper" })
-    expect(sdk.crons.create).toHaveBeenCalledWith(
-      "upper",
-      expect.objectContaining({ input: { value: "scheduled" } }),
+    const schedule = await Effect.runPromise(CronExpression.parse("0 0 * * *"))
+    const created = await runtime.runPromise(
+      Hatchet.createCron(upper, {
+        name: "daily-upper",
+        schedule,
+        input: { value: "scheduled" },
+      }),
     )
+    expect(created).toMatchObject({ id: "cron-42", taskName: "upper" })
+    expect(sdk.crons.create).toHaveBeenCalledWith("upper", {
+      name: "daily-upper",
+      expression: "0 0 * * *",
+      input: { value: "scheduled" },
+    })
+    sdk.crons.get.mockRejectedValueOnce({ response: { status: 404 } })
+    sdk.crons.delete.mockRejectedValueOnce({ response: { status: 404 } })
+    await expect(
+      runtime.runPromise(Hatchet.getCron(created.id)),
+    ).resolves.toMatchObject({
+      _tag: "None",
+    })
+    await expect(
+      runtime.runPromise(Hatchet.deleteCron(created.id)),
+    ).resolves.toBe(false)
+    expect(sdk.crons.list).not.toHaveBeenCalled()
 
     await runtime.dispose()
+  })
+
+  it("treats a failed cron delete as absent only when a safe list proves absence", async () => {
+    const runtime = ManagedRuntime.make(layer())
+    const deletionFailure = {
+      response: { status: 500, data: "delete-secret" },
+    }
+    sdk.crons.delete.mockRejectedValueOnce(deletionFailure)
+    sdk.crons.list.mockResolvedValueOnce({ rows: [] })
+
+    const cronId = makeCronId("cron-42")
+    await expect(runtime.runPromise(Hatchet.deleteCron(cronId))).resolves.toBe(
+      false,
+    )
+    expect(sdk.crons.delete).toHaveBeenCalledExactlyOnceWith(cronId)
+    expect(sdk.crons.list).toHaveBeenCalledExactlyOnceWith({
+      offset: 0,
+      limit: 100,
+    })
+    expect(sdk.crons.get).not.toHaveBeenCalled()
+    await runtime.dispose()
+  })
+
+  it("preserves the delete failure when the cron is still listed", async () => {
+    const runtime = ManagedRuntime.make(layer())
+    sdk.crons.delete.mockRejectedValueOnce({
+      response: { status: 500, data: "delete-secret" },
+    })
+    sdk.crons.list.mockResolvedValueOnce({
+      rows: [{ metadata: { id: "cron-42" } }],
+    })
+
+    const error = await runtime.runPromise(
+      Hatchet.deleteCron(makeCronId("cron-42")).pipe(Effect.flip),
+    )
+
+    expect(error).toMatchObject({
+      _tag: "HatchetSdkError",
+      operation: "cron.delete",
+      resourceId: "cron-42",
+      reason: "Unavailable",
+    })
+    expect("originalCause" in error).toBe(false)
+    expect(JSON.stringify(error)).not.toContain("delete-secret")
+    await runtime.dispose()
+  })
+
+  it.each([
+    ["malformed", { rows: "verification-secret" }],
+    ["missing rows", { verification: "verification-secret" }],
+    ["malformed row", { rows: [{ metadata: { id: 42 } }] }],
+  ])("preserves the delete failure when the cron list is %s", async (_kind, response) => {
+    const runtime = ManagedRuntime.make(layer())
+    sdk.crons.delete.mockRejectedValueOnce({
+      response: { status: 500, data: "delete-secret" },
+    })
+    sdk.crons.list.mockResolvedValueOnce(response)
+
+    const error = await runtime.runPromise(
+      Hatchet.deleteCron(makeCronId("cron-42")).pipe(Effect.flip),
+    )
+
+    expect(error).toMatchObject({
+      _tag: "HatchetSdkError",
+      operation: "cron.delete",
+      resourceId: "cron-42",
+      reason: "Unavailable",
+    })
+    expect(JSON.stringify(error)).not.toMatch(
+      /delete-secret|verification-secret/,
+    )
+    await runtime.dispose()
+  })
+
+  it("preserves the delete failure when cron list verification fails", async () => {
+    const runtime = ManagedRuntime.make(layer())
+    sdk.crons.delete.mockRejectedValueOnce({
+      response: { status: 500, data: "delete-secret" },
+    })
+    sdk.crons.list.mockRejectedValueOnce({
+      response: { status: 503, data: "list-secret" },
+    })
+
+    const error = await runtime.runPromise(
+      Hatchet.deleteCron(makeCronId("cron-42")).pipe(Effect.flip),
+    )
+
+    expect(error).toMatchObject({
+      _tag: "HatchetSdkError",
+      operation: "cron.delete",
+      resourceId: "cron-42",
+      reason: "Unavailable",
+    })
+    expect(JSON.stringify(error)).not.toMatch(/delete-secret|list-secret/)
+    await runtime.dispose()
+  })
+
+  it("preserves the delete failure when cron list verification times out", async () => {
+    sdk.crons.delete.mockRejectedValueOnce({
+      response: { status: 500, data: "delete-secret" },
+    })
+
+    const error = await Effect.runPromise(
+      Effect.gen(function*() {
+        const listStarted = yield* Deferred.make<void>()
+        sdk.crons.list.mockImplementationOnce(() => {
+          Effect.runSync(Deferred.succeed(listStarted, undefined))
+          return new Promise<unknown>(() => undefined)
+        })
+        const fiber = yield* Hatchet.deleteCron(makeCronId("cron-42")).pipe(
+          Effect.flip,
+          Effect.forkChild,
+        )
+        yield* Deferred.await(listStarted)
+        expect(sdk.crons.list).toHaveBeenCalledExactlyOnceWith({
+          offset: 0,
+          limit: 100,
+        })
+        yield* TestClock.adjust("5 seconds")
+        return yield* Fiber.join(fiber)
+      }).pipe(
+        Effect.provide(Layer.merge(layer(), TestClock.layer())),
+        Effect.scoped,
+      ),
+    )
+
+    expect(error).toMatchObject({
+      _tag: "HatchetSdkError",
+      operation: "cron.delete",
+      resourceId: "cron-42",
+      reason: "Unavailable",
+    })
+    expect(JSON.stringify(error)).not.toContain("delete-secret")
+  })
+
+  it.each(
+    [
+      ["offset", -1],
+      ["limit", 0],
+    ] as const,
+  )("rejects invalid cron %s before the SDK call", async (field, value) => {
+    const runtime = ManagedRuntime.make(layer())
+
+    await expect(
+      runtime.runPromise(Hatchet.listCrons({ [field]: value })),
+    ).rejects.toMatchObject({ _tag: "InvalidCronFilterError", field })
+    expect(sdk.crons.list).not.toHaveBeenCalled()
+    await runtime.dispose()
+  })
+
+  it("paginates failed-delete absence verification safely", async () => {
+    const page = (ids: ReadonlyArray<string>, pagination?: unknown) => ({
+      rows: ids.map((id) => ({ metadata: { id } })),
+      ...(pagination === undefined ? {} : { pagination }),
+    })
+    const full = page(
+      Array.from({ length: 100 }, (_, index) => `other-${index}`),
+    )
+    const paginated = [
+      page([], { current_page: 1, next_page: 2, num_pages: 2 }),
+      page(["cron-42"], { current_page: 2, num_pages: 2 }),
+    ]
+    const cases = [
+      [paginated, false, [0, 100]],
+      [[page([], { current_page: 1, num_pages: 1 })], true, [0]],
+      [[full, page([])], true, [0, 100]],
+      [
+        [page([], { current_page: 1, next_page: "2", num_pages: 2 })],
+        false,
+        [0],
+      ],
+      [[page([], { current_page: 1, next_page: 1, num_pages: 2 })], false, [0]],
+      [[full, full], false, [0, 100], 2],
+    ] as const
+    for (const [responses, absent, offsets, maxPages] of cases) {
+      const list = vi.fn()
+      for (const response of responses) list.mockResolvedValueOnce(response)
+      await expect(verifyCronAbsent(list, "cron-42", maxPages)).resolves.toBe(
+        absent,
+      )
+      expect(list.mock.calls.map(([query]) => query)).toEqual(
+        offsets.map((offset) => ({ offset, limit: 100 })),
+      )
+    }
   })
 })

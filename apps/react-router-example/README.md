@@ -1,6 +1,6 @@
 # React Router Example with Effect
 
-This example combines React Router, Effect, better-auth, Prisma, and one task-first Hatchet endpoint.
+This example combines React Router, Effect, better-auth, Prisma, and authenticated Hatchet task and cron workflows.
 
 ## App entrypoints
 
@@ -8,6 +8,7 @@ This example combines React Router, Effect, better-auth, Prisma, and one task-fi
 - `/login` — email/password sign-in
 - `/signup` — account creation
 - `/todo-app` — protected Prisma loader/action example
+- `/hatchet-crons` — protected Hatchet cron list/create/preview example
 - `/chat` — shell/runtime smoke example
 - `/api/auth/*` — better-auth handler
 - `POST /api/hatchet/runs` — Schema-backed greeting task
@@ -79,6 +80,12 @@ The endpoint awaits the registered worker and returns the Task output:
 
 Invalid JSON or Schema input returns a safe `400` response through the existing React Router Effect adapter.
 
+### Manage greeting crons
+
+Open <http://localhost:4200/hatchet-crons> after signing in. The protected screen queries `Hatchet.listCrons` and creates five-field schedules for `greetingTask` with `Hatchet.createCron`. Its loader and action use the shared Effect runtime adapters and Better Auth guards, matching the protected todo workflow.
+
+The create form reuses `greetingInput`: provide a cron name, an expression such as `0 9 * * 1-5`, and the greeting name passed to the task. `CronExpression` validates the schedule once at the form boundary and renders the next three local occurrences before submission.
+
 ## Project structure
 
 ```text
@@ -95,6 +102,7 @@ app/
 │   ├── api.auth.ts
 │   ├── api.hatchet.runs.ts
 │   ├── chat.tsx
+│   ├── hatchet-crons.tsx
 │   ├── login.tsx
 │   ├── signup.tsx
 │   └── todo-app.tsx

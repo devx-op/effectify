@@ -1,3 +1,4 @@
+export * as CronExpression from "./CronExpression.js"
 export * as Task from "./Task.js"
 export * as Hatchet from "./Hatchet.js"
 export * as HatchetConfig from "./HatchetConfig.js"

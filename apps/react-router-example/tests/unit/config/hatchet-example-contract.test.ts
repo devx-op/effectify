@@ -19,7 +19,7 @@ describe("one-task Hatchet example configuration", () => {
     )
   })
 
-  it("documents only direct Compose setup and the one Task endpoint", async () => {
+  it("documents direct Compose setup, the Task endpoint, and authenticated cron management", async () => {
     const readme = await appFile("README.md")
     for (
       const expected of [
@@ -27,8 +27,12 @@ describe("one-task Hatchet example configuration", () => {
         "docker compose down",
         "HATCHET_CLIENT_TOKEN",
         "/api/hatchet/runs",
+        "/hatchet-crons",
         "Hatchet.layer",
         "Hatchet.run",
+        "Hatchet.listCrons",
+        "Hatchet.createCron",
+        "CronExpression",
       ]
     ) {
       expect(readme).toContain(expected)
@@ -39,12 +43,45 @@ describe("one-task Hatchet example configuration", () => {
         "hatchet:ensure",
         "hatchet:up",
         "dev:hatchet",
-        "/api/hatchet/crons/",
         "HatchetRuntime",
       ]
     ) {
       expect(readme).not.toContain(removed)
     }
+  })
+
+  it("keeps cron route transport inside the Effect and Better Auth integrations", async () => {
+    const route = await appFile("app/routes/hatchet-crons.tsx")
+    for (
+      const expected of [
+        "Effect.gen",
+        "ActionArgsContext",
+        "Schema.decodeUnknownEffect",
+        "CronExpression.parse",
+        "CronExpression.nextRuns",
+        "withLoaderEffect",
+        "withActionEffect",
+        "withBetterAuthGuard",
+        "withBetterAuthGuardAction",
+        "Hatchet.listCrons",
+        "Hatchet.createCron",
+      ]
+    ) {
+      expect(route).toContain(expected)
+    }
+    for (
+      const removed of [
+        "Hatchet.deleteCron",
+        "cron-owner",
+        "additionalMetadata",
+        "pattern=",
+      ]
+    ) {
+      expect(route).not.toContain(removed)
+    }
+    expect(route).not.toMatch(
+      /export\s+(?:async\s+)?function\s+(?:loader|action)/,
+    )
   })
 
   it("keeps Nx free of app-owned Hatchet orchestration", async () => {

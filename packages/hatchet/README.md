@@ -77,6 +77,22 @@ Run the live scheduling example with:
 HATCHET_CLIENT_TOKEN='<token>' node --experimental-strip-types packages/hatchet/scripts/test-schedule.ts
 ```
 
+## Cron records
+
+`CronExpression.parse` accepts exactly five Hatchet-compatible fields, validates their semantics with Effect Cron, and preserves a normalized source string. `CronExpression.next` and `CronExpression.nextRuns` provide local previews without exposing the SDK transport. Pass the parsed value as `schedule` to `createCron`; the package serializes its preserved source and Schema-encodes task input.
+
+```ts
+const schedule = yield * CronExpression.parse("0 9 * * 1-5")
+const preview = CronExpression.nextRuns(schedule, 3)
+const cron = yield * Hatchet.createCron(greet, {
+  name: "weekday-greeting",
+  schedule,
+  input: { name: "Ada" },
+})
+```
+
+`getCron`, filtered/paginated `listCrons`, and `deleteCron` complete the package lifecycle. Creation is non-idempotent: in-memory calls get distinct IDs, while live duplicate policy is backend-owned, so callers must not assume idempotency. In-memory records do not auto-fire. Run the live lifecycle with `HATCHET_CLIENT_TOKEN='<token>' node --experimental-strip-types packages/hatchet/scripts/test-cron.ts`.
+
 ## Lazy Layer
 
 `Hatchet.layer({ tasks })` is inert when acquired. It does not read configuration, construct the SDK, contact Hatchet, register tasks, or start a worker until the first `Hatchet` operation.
@@ -118,6 +134,7 @@ Omitting TLS strategy preserves the SDK secure default. Local plaintext Hatchet 
 - `Hatchet.runNoWait(task, input)` — obtain a run handle
 - `Hatchet.schedule`, `Hatchet.getSchedule`, `Hatchet.deleteSchedule`
 - `Hatchet.cancelRun`
+- `CronExpression.parse`, `CronExpression.next`, `CronExpression.nextRuns`
 - `Hatchet.createCron`, `Hatchet.getCron`, `Hatchet.listCrons`, `Hatchet.deleteCron`
 - typed models and errors from the package root
 

@@ -3,7 +3,7 @@ import * as Effect from "effect/Effect"
 import * as Option from "effect/Option"
 import * as Schema from "effect/Schema"
 import type * as Scope from "effect/Scope"
-import { Hatchet, Task } from "@effectify/hatchet"
+import { CronExpression, Hatchet, Task } from "@effectify/hatchet"
 
 const task = Task.make({
   name: "time-task",
@@ -93,14 +93,16 @@ describe("storage-only cron", () => {
     })
     await run(
       Effect.gen(function*() {
+        const daily = yield* CronExpression.parse("0 9 * * 1-5")
+        const other = yield* CronExpression.parse("0 10 * * *")
         const first = yield* Hatchet.createCron(counted, {
           name: "daily",
-          expression: "0 9 * * 1-5",
+          schedule: daily,
           input: { recipient: "Ada" },
         })
         yield* Hatchet.createCron(cronTask, {
           name: "other",
-          expression: "0 10 * * *",
+          schedule: other,
           input: { recipient: "Grace" },
         })
         expect(yield* Hatchet.listCrons({ name: "daily" })).toEqual([first])
@@ -114,17 +116,12 @@ describe("storage-only cron", () => {
   it("validates cron expressions, schema input, and pagination", async () => {
     const outcomes = await run(
       Effect.gen(function*() {
-        const expression = yield* Effect.exit(
-          Hatchet.createCron(cronTask, {
-            name: "bad-expression",
-            expression: "bad",
-            input: { recipient: "Ada" },
-          }),
-        )
+        const expression = yield* Effect.exit(CronExpression.parse("bad"))
+        const schedule = yield* CronExpression.parse("0 9 * * *")
         const input = yield* Effect.exit(
           Hatchet.createCron(cronTask, {
             name: "bad-input",
-            expression: "0 9 * * *",
+            schedule,
             input: { recipient: "" },
           }),
         )

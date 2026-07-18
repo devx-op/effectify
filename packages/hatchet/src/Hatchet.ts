@@ -15,8 +15,8 @@ import * as Semaphore from "effect/Semaphore"
 import {
   HatchetConfigError,
   HatchetSdkError,
-  InvalidCronError,
-  InvalidCronFilterError,
+  type InvalidCronError,
+  type InvalidCronFilterError,
   type InvalidHatchetConfiguration,
   InvalidTimeError,
   type MissingTaskError,
@@ -32,8 +32,10 @@ import {
   type ScheduleId,
   type ScheduleRecord,
 } from "./Model.js"
+import * as CronExpression from "./CronExpression.js"
 import type { HatchetOptions } from "./HatchetConfig.js"
 import * as HatchetConfig from "./HatchetConfig.js"
+import * as CronValidation from "./internal/cron-validation.js"
 import * as Live from "./internal/live.js"
 import * as Registry from "./internal/registry.js"
 import type * as Task from "./Task.js"
@@ -55,7 +57,7 @@ export type ScheduleTiming =
 
 export interface CreateCronOptions {
   readonly name: string
-  readonly expression: string
+  readonly schedule: CronExpression.CronExpression
   readonly input: unknown
   readonly additionalMetadata?: Readonly<Record<string, string>>
   readonly priority?: 1 | 2 | 3
@@ -135,35 +137,6 @@ export interface Service {
 export class Hatchet extends Context.Service<Hatchet, Service>()(
   "@effectify/hatchet/Hatchet",
 ) {}
-
-const isTransportValue = (value: unknown): boolean => {
-  if (
-    value === null ||
-    value === undefined ||
-    typeof value === "string" ||
-    typeof value === "number" ||
-    typeof value === "boolean"
-  ) {
-    return true
-  }
-  if (Array.isArray(value)) return value.every(isTransportValue)
-  if (
-    typeof value !== "object" ||
-    Object.getPrototypeOf(value) !== Object.prototype
-  ) {
-    return false
-  }
-  return Object.values(value).every(isTransportValue)
-}
-
-const isTransportObject = (
-  value: unknown,
-): value is Readonly<Record<string, unknown>> =>
-  typeof value === "object" &&
-  value !== null &&
-  !Array.isArray(value) &&
-  Object.getPrototypeOf(value) === Object.prototype &&
-  Object.values(value).every(isTransportValue)
 
 const makeInMemoryService = (ownerScope: Scope.Scope): Service => {
   const tasks = Registry.make()
@@ -347,19 +320,8 @@ const makeInMemoryService = (ownerScope: Scope.Scope): Service => {
   > =>
     Effect.gen(function*() {
       yield* ensureTask(task)
-      if (options.name.trim().length === 0) {
-        return yield* new InvalidCronError({
-          field: "name",
-          originalCause: options.name,
-        })
-      }
-      if (options.expression.trim().split(/\s+/).length !== 5) {
-        return yield* new InvalidCronError({
-          field: "expression",
-          originalCause: options.expression,
-        })
-      }
-      const input = task.inputSchema
+      yield* CronValidation.validateCreate(options)
+      const encoded = task.inputSchema
         ? yield* Schema.encodeUnknownEffect(task.inputSchema)(
           options.input,
         ).pipe(
@@ -373,28 +335,12 @@ const makeInMemoryService = (ownerScope: Scope.Scope): Service => {
           ),
         )
         : options.input
-      if (!isTransportObject(input)) {
-        return yield* new InvalidCronError({
-          field: "input",
-          originalCause: input,
-        })
-      }
-      if (
-        options.priority !== undefined &&
-        (!Number.isInteger(options.priority) ||
-          options.priority < 1 ||
-          options.priority > 3)
-      ) {
-        return yield* new InvalidCronError({
-          field: "priority",
-          originalCause: options.priority,
-        })
-      }
+      const input = yield* CronValidation.validateInput(encoded)
       const record: CronRecord = {
         id: makeCronId(`cron-${nextCronId++}`),
         taskName: task.name,
         name: options.name,
-        expression: options.expression,
+        expression: CronExpression.source(options.schedule),
         input,
         ...(options.additionalMetadata === undefined
           ? {}
@@ -416,42 +362,7 @@ const makeInMemoryService = (ownerScope: Scope.Scope): Service => {
     InvalidCronFilterError | HatchetSdkError
   > =>
     Effect.gen(function*() {
-      for (
-        const [field, value] of [
-          ["taskName", options.taskName],
-          ["name", options.name],
-        ] as const
-      ) {
-        if (value !== undefined && value.trim().length === 0) {
-          return yield* new InvalidCronFilterError({
-            field,
-            originalCause: value,
-          })
-        }
-      }
-      for (
-        const [field, value, valid] of [
-          [
-            "offset",
-            options.offset,
-            options.offset === undefined ||
-            (Number.isInteger(options.offset) && options.offset >= 0),
-          ],
-          [
-            "limit",
-            options.limit,
-            options.limit === undefined ||
-            (Number.isInteger(options.limit) && options.limit > 0),
-          ],
-        ] as const
-      ) {
-        if (!valid) {
-          return yield* new InvalidCronFilterError({
-            field,
-            originalCause: value,
-          })
-        }
-      }
+      yield* CronValidation.validateList(options)
       return Array.from(crons.values())
         .filter(
           (cron) =>
