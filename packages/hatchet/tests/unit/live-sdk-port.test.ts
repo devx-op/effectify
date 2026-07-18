@@ -472,11 +472,12 @@ describe("live SDK adapter behind Hatchet.layer", () => {
     await runtime.dispose()
   })
 
-  it("recovers an ambiguous cron create failure when exactly one matching cron exists", async () => {
+  it.each([
+    ["HTTP 503", { response: { status: 503, data: "create-secret" } }],
+    ["network error", new Error("failed", { cause: { code: "ECONNRESET" } })],
+  ])("recovers an ambiguous cron create failure after %s", async (_kind, failure) => {
     const runtime = ManagedRuntime.make(layer())
-    sdk.crons.create.mockRejectedValueOnce({
-      response: { status: 503, data: "create-secret" },
-    })
+    sdk.crons.create.mockRejectedValueOnce(failure)
     sdk.crons.list.mockResolvedValueOnce({
       rows: [
         cronRow("cron-recovered"),
@@ -494,11 +495,36 @@ describe("live SDK adapter behind Hatchet.layer", () => {
     })
     expect(sdk.crons.create).toHaveBeenCalledOnce()
     expect(sdk.crons.list).toHaveBeenCalledExactlyOnceWith({
-      workflowName: "upper",
-      cronName: "daily-upper",
+      workflow: "upper",
+      name: "daily-upper",
       offset: 0,
       limit: 2,
     })
+    await runtime.dispose()
+  })
+
+  it.each(
+    [
+      ["authorization", 401, "Unauthorized"],
+      ["validation", 422, "InvalidResponse"],
+    ] as const,
+  )("preserves a definitive %s cron create failure", async (_kind, status, reason) => {
+    const runtime = ManagedRuntime.make(layer())
+    sdk.crons.create.mockRejectedValueOnce({
+      response: { status, data: "create-secret" },
+    })
+    const schedule = await Effect.runPromise(CronExpression.parse("0 0 * * *"))
+
+    const error = await runtime.runPromise(
+      createDailyCron(schedule).pipe(Effect.flip),
+    )
+
+    expect(error).toMatchObject({
+      _tag: "HatchetSdkError",
+      operation: "cron.create",
+      reason,
+    })
+    expect(sdk.crons.list).not.toHaveBeenCalled()
     await runtime.dispose()
   })
 
@@ -524,8 +550,8 @@ describe("live SDK adapter behind Hatchet.layer", () => {
     expect(JSON.stringify(error)).not.toContain("create-secret")
     expect(sdk.crons.create).toHaveBeenCalledOnce()
     expect(sdk.crons.list).toHaveBeenCalledExactlyOnceWith({
-      workflowName: "upper",
-      cronName: "daily-upper",
+      workflow: "upper",
+      name: "daily-upper",
       offset: 0,
       limit: 2,
     })
@@ -554,8 +580,8 @@ describe("live SDK adapter behind Hatchet.layer", () => {
     expect(JSON.stringify(error)).not.toContain("create-secret")
     expect(sdk.crons.create).toHaveBeenCalledOnce()
     expect(sdk.crons.list).toHaveBeenCalledExactlyOnceWith({
-      workflowName: "upper",
-      cronName: "daily-upper",
+      workflow: "upper",
+      name: "daily-upper",
       offset: 0,
       limit: 2,
     })

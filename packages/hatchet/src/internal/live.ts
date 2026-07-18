@@ -116,6 +116,31 @@ const isNotFound = (error: HatchetSdkError): boolean => {
   )
 }
 
+const isAmbiguousCronCreateCause = (cause: unknown, depth = 0): boolean => {
+  if (typeof cause !== "object" || cause === null || depth > 2) return false
+  const status = "status" in cause && typeof cause.status === "number"
+    ? cause.status
+    : "response" in cause &&
+        typeof cause.response === "object" &&
+        cause.response !== null &&
+        "status" in cause.response &&
+        typeof cause.response.status === "number"
+    ? cause.response.status
+    : undefined
+  if (status === 408 || (status !== undefined && status >= 500 && status < 600)) {
+    return true
+  }
+  if (
+    "code" in cause &&
+    ["ECONNREFUSED", "ECONNRESET", "ENETUNREACH", "ETIMEDOUT"].includes(
+      String(cause.code),
+    )
+  ) {
+    return true
+  }
+  return "cause" in cause && isAmbiguousCronCreateCause(cause.cause, depth + 1)
+}
+
 const scheduleRecord = (
   value: unknown,
   operation: string,
@@ -622,11 +647,14 @@ const makeService = <Requirements>(
         if (result._tag === "Success") {
           return yield* cronRecord(result.success, "cron.create")
         }
+        if (!isAmbiguousCronCreateCause(getErrorCause(result.failure))) {
+          return yield* result.failure
+        }
         const reconciled = yield* reconcileCronCreateWithinBound(
           () =>
             client.crons.list({
-              workflowName: task.name,
-              cronName: cronOptions.name,
+              workflow: task.name,
+              ...{ name: cronOptions.name },
               offset: 0,
               limit: 2,
             }),
