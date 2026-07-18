@@ -25,8 +25,10 @@ import * as CronExpression from "../CronExpression.js"
 import { type CronRecord, makeCronId, makeRunId, makeScheduleId, type ScheduleRecord } from "../Model.js"
 import type * as Task from "../Task.js"
 import * as CronValidation from "./cron-validation.js"
+import * as Declarations from "./declaration-validation.js"
 import { getErrorCause } from "./error-cause.js"
 import * as Registry from "./registry.js"
+import * as SdkDeclaration from "./sdk-declaration.js"
 
 type LiveOutputEnvelope = { readonly value: JsonValue }
 
@@ -356,8 +358,12 @@ const makeService = <Requirements>(
       context: Context.Context<Requirements>,
     ) => {
       tasks.add(task, context)
+      const rateLimits = SdkDeclaration.rateLimits(task.rateLimits)
+      const on = SdkDeclaration.on(task.triggers)
       const declaration = client.task<JsonObject, LiveOutputEnvelope>({
         name: task.name,
+        ...(rateLimits.length === 0 ? {} : { rateLimits }),
+        ...(on === undefined ? {} : { on }),
         fn: (input, sdkContext) => {
           const stored = tasks.run<Output, Error>(task.name, input, {
             workflowRunId: Option.some(sdkContext.workflowRunId()),
@@ -404,6 +410,10 @@ const makeService = <Requirements>(
     }
 
     const context = yield* Effect.context<Requirements>()
+    for (const task of declarationsToLoad) {
+      Declarations.rateLimits(task.name, task.rateLimits)
+      Declarations.triggers(task.name, task.triggers)
+    }
     for (const task of declarationsToLoad) addDeclaration(task, context)
 
     let startFiber: Fiber.Fiber<void, HatchetSdkError> | undefined

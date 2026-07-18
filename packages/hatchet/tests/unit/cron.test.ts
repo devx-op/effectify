@@ -64,8 +64,14 @@ describe("CronExpression", () => {
     })
   })
 
-  it.each([null, {}, 42])("rejects non-string runtime input %j", async (input) => {
-    const result = Reflect.apply(CronExpression.parseResult, undefined, [input])
+  it.each([
+    null,
+    {},
+    42,
+  ])("rejects non-string runtime input %j", async (input) => {
+    const result = Reflect.apply(CronExpression.parseResult, undefined, [
+      input,
+    ])
     expect(Result.isFailure(result)).toBe(true)
     if (Result.isFailure(result)) {
       expect(result.failure).toMatchObject({
@@ -76,7 +82,10 @@ describe("CronExpression", () => {
 
     const effect = Reflect.apply(CronExpression.parse, undefined, [input])
     const error = await Effect.runPromise(effect.pipe(Effect.flip))
-    expect(error).toMatchObject({ _tag: "InvalidCronError", field: "expression" })
+    expect(error).toMatchObject({
+      _tag: "InvalidCronError",
+      field: "expression",
+    })
   })
 
   it("preserves a normalized source string", async () => {

@@ -75,7 +75,9 @@ export const parseResult = (
   input: string,
 ): Result.Result<CronExpression, InvalidCronError> => {
   if (typeof input !== "string") {
-    return Result.fail(invalid(new TypeError("Cron expression must be a string")))
+    return Result.fail(
+      invalid(new TypeError("Cron expression must be a string")),
+    )
   }
   const source = normalize(input)
   return Result.map(parseCron(source), (cron) => new Value(source, cron)).pipe(
