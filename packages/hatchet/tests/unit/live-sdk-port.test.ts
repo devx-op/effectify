@@ -7,7 +7,10 @@ import * as ManagedRuntime from "effect/ManagedRuntime"
 import * as Redacted from "effect/Redacted"
 import * as Schema from "effect/Schema"
 import { TestClock } from "effect/testing"
-import { CronExpression, Hatchet, makeCronId, Task } from "@effectify/hatchet"
+import { CronExpression, Hatchet, makeCronId } from "@effectify/hatchet"
+import * as RateLimit from "../../src/RateLimit.js"
+import * as Task from "../../src/Task.js"
+import * as Trigger from "../../src/Trigger.js"
 import { verifyCronAbsent } from "../../src/internal/live.js"
 
 const sdk = vi.hoisted(() => {
@@ -68,12 +71,24 @@ const sdk = vi.hoisted(() => {
   }
 })
 
-vi.mock("@hatchet-dev/typescript-sdk", () => ({ Hatchet: { init: sdk.init } }))
+vi.mock("@hatchet-dev/typescript-sdk", () => ({
+  Hatchet: { init: sdk.init },
+  RateLimitDuration: { MINUTE: 1 },
+}))
 
 const upper = Task.make({
   name: "upper",
   input: Schema.Struct({ value: Schema.String }),
   output: Schema.NonEmptyString,
+  rateLimits: [
+    RateLimit.make({
+      units: 2,
+      limit: "input.limit",
+      key: "email",
+      duration: "minute",
+    }),
+  ],
+  triggers: [Trigger.event("customer:updated")],
   fn: ({ value }) => Effect.succeed(value.toUpperCase()),
 })
 
@@ -210,6 +225,19 @@ describe("live SDK adapter behind Hatchet.layer", () => {
     ])
     expect(sdk.runNoWait).toHaveBeenCalledWith({ value: "done" })
     expect(sdk.cancel).toHaveBeenCalledOnce()
+    expect(sdk.task).toHaveBeenCalledExactlyOnceWith({
+      name: "upper",
+      rateLimits: [
+        {
+          units: 2,
+          limit: "input.limit",
+          key: "email",
+          duration: 1,
+        },
+      ],
+      on: { event: ["customer:updated"] },
+      fn: expect.any(Function),
+    })
 
     await runtime.dispose()
     expect(sdk.stop).toHaveBeenCalledOnce()

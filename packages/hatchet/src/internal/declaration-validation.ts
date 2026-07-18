@@ -17,13 +17,23 @@ const isPositiveSafeInteger = (value: number): boolean => Number.isSafeInteger(v
 
 const isNonEmpty = (value: string): boolean => value.trim().length > 0
 
+const isDuration = (value: unknown): value is RateLimit.Duration =>
+  value === "second" ||
+  value === "minute" ||
+  value === "hour" ||
+  value === "day" ||
+  value === "week" ||
+  value === "month" ||
+  value === "year"
+
 const validateNumberOrExpression = (
   taskName: string,
   index: number,
   field: "units" | "limit",
-  value: number | string,
+  value: unknown,
 ): void => {
   if (
+    (typeof value !== "number" && typeof value !== "string") ||
     (typeof value === "number" && !isPositiveSafeInteger(value)) ||
     (typeof value === "string" && !isNonEmpty(value))
   ) {
@@ -50,6 +60,9 @@ export const rateLimits = (
     validateNumberOrExpression(taskName, index, "units", value.units)
     if (value.limit !== undefined) {
       validateNumberOrExpression(taskName, index, "limit", value.limit)
+    }
+    if (value.duration !== undefined && !isDuration(value.duration)) {
+      throw new InvalidRateLimitError(taskName, index, "duration")
     }
     validateText(taskName, index, "key", value.key)
     validateText(taskName, index, "staticKey", value.staticKey)
