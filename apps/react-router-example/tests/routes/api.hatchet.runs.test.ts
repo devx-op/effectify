@@ -3,7 +3,7 @@ import type { ActionFunctionArgs } from "react-router"
 import { RouterContextProvider } from "react-router"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
-const hatchet = vi.hoisted(() => ({ run: vi.fn() }))
+const hatchet = vi.hoisted(() => ({ runNoWait: vi.fn() }))
 vi.mock("@effectify/hatchet", async () => {
   const actual = await vi.importActual<typeof import("@effectify/hatchet")>(
     "@effectify/hatchet",
@@ -13,7 +13,7 @@ vi.mock("@effectify/hatchet", async () => {
     ...actual,
     Hatchet: {
       ...actual.Hatchet,
-      run: (...args: ReadonlyArray<unknown>) => Effect.suspend(() => hatchet.run(...args)),
+      runNoWait: (...args: ReadonlyArray<unknown>) => Effect.suspend(() => hatchet.runNoWait(...args)),
     },
   }
 })
@@ -57,9 +57,13 @@ const read = async (response: Response): Promise<unknown> => response.json()
 
 describe("POST /api/hatchet/runs", () => {
   beforeEach(() => {
-    hatchet.run
-      .mockReset()
-      .mockReturnValue(Effect.succeed({ greeting: "Hello, Ada!" }))
+    hatchet.runNoWait.mockReset().mockReturnValue(
+      Effect.succeed({
+        id: "run-42",
+        await: Effect.never,
+        cancel: Effect.void,
+      }),
+    )
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(
@@ -75,7 +79,7 @@ describe("POST /api/hatchet/runs", () => {
     vi.unstubAllGlobals()
   })
 
-  it("rejects unauthenticated requests before Hatchet.run", async () => {
+  it("rejects unauthenticated requests before Hatchet.runNoWait", async () => {
     vi.mocked(fetch).mockResolvedValue(
       Response.json({ session: null, user: null }),
     )
@@ -86,7 +90,7 @@ describe("POST /api/hatchet/runs", () => {
     if (!(response instanceof Response)) throw new Error("expected Response")
     expect(response.status).toBe(302)
     expect(response.headers.get("Location")).toBe("/login")
-    expect(hatchet.run).not.toHaveBeenCalled()
+    expect(hatchet.runNoWait).not.toHaveBeenCalled()
   })
 
   it.each([
@@ -103,7 +107,7 @@ describe("POST /api/hatchet/runs", () => {
       ok: false,
       errors: ["Request body must contain a non-empty name"],
     })
-    expect(hatchet.run).not.toHaveBeenCalled()
+    expect(hatchet.runNoWait).not.toHaveBeenCalled()
   })
 
   it("rejects non-POST requests before any operation", async () => {
@@ -111,16 +115,16 @@ describe("POST /api/hatchet/runs", () => {
     expect(response).toBeInstanceOf(Response)
     if (!(response instanceof Response)) throw new Error("expected Response")
     expect(response.status).toBe(405)
-    expect(hatchet.run).not.toHaveBeenCalled()
+    expect(hatchet.runNoWait).not.toHaveBeenCalled()
   })
 
-  it("allows an authenticated request and returns its Schema output", async () => {
+  it("accepts an authenticated request without awaiting task output", async () => {
     const response = await action(args(JSON.stringify({ name: "Ada" })))
     expect(response).toBeInstanceOf(Response)
     if (!(response instanceof Response)) throw new Error("expected Response")
-    expect(response.status).toBe(200)
-    expect(await read(response)).toEqual({ greeting: "Hello, Ada!" })
-    expect(hatchet.run).toHaveBeenCalledOnce()
-    expect(hatchet.run.mock.calls[0]?.[1]).toEqual({ name: "Ada" })
+    expect(response.status).toBe(202)
+    expect(await read(response)).toEqual({ ok: true, runId: "run-42" })
+    expect(hatchet.runNoWait).toHaveBeenCalledOnce()
+    expect(hatchet.runNoWait.mock.calls[0]?.[1]).toEqual({ name: "Ada" })
   })
 })

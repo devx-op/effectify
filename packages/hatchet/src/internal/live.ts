@@ -279,6 +279,38 @@ const cronRecord = (
   })
 }
 
+const reconcileCronCreateWithinBound = (
+  list: () => Promise<unknown>,
+  taskName: string,
+  name: string,
+): Effect.Effect<Option.Option<CronRecord>> =>
+  Effect.tryPromise(list).pipe(
+    Effect.flatMap((response) => {
+      if (
+        typeof response !== "object" ||
+        response === null ||
+        !("rows" in response) ||
+        !Array.isArray(response.rows)
+      ) {
+        return Effect.succeed(Option.none())
+      }
+      return Effect.forEach(response.rows, (row) => cronRecord(row, "cron.list")).pipe(
+        Effect.map((records) => {
+          const matches = records.filter(
+            (record) => record.taskName === taskName && record.name === name,
+          )
+          const [only] = matches
+          return matches.length === 1 && only !== undefined
+            ? Option.some(only)
+            : Option.none()
+        }),
+      )
+    }),
+    Effect.timeoutOption(cronVerificationListTimeout),
+    Effect.catch(() => Effect.succeed(Option.none())),
+    Effect.map((result) => Option.isSome(result) ? result.value : Option.none()),
+  )
+
 const makeService = <Requirements>(
   client: ReturnType<typeof HatchetClient.init>,
   options: HatchetOptions,
@@ -572,7 +604,7 @@ const makeService = <Requirements>(
           )
           : cronOptions.input
         const input = yield* CronValidation.validateInput(encoded)
-        const response = yield* Effect.tryPromise({
+        const result = yield* Effect.tryPromise({
           try: () =>
             client.crons.create(task.name, {
               name: cronOptions.name,
@@ -586,8 +618,23 @@ const makeService = <Requirements>(
                 : { priority: cronOptions.priority }),
             }),
           catch: (cause) => sdkError("cron.create", cause),
-        })
-        return yield* cronRecord(response, "cron.create")
+        }).pipe(Effect.result)
+        if (result._tag === "Success") {
+          return yield* cronRecord(result.success, "cron.create")
+        }
+        const reconciled = yield* reconcileCronCreateWithinBound(
+          () =>
+            client.crons.list({
+              workflowName: task.name,
+              cronName: cronOptions.name,
+              offset: 0,
+              limit: 2,
+            }),
+          task.name,
+          cronOptions.name,
+        )
+        if (Option.isSome(reconciled)) return reconciled.value
+        return yield* result.failure
       })
 
     return {

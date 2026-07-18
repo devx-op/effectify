@@ -92,6 +92,22 @@ const context = (controller = new AbortController()) => ({
   abortController: controller,
 })
 
+const cronRow = (id: string) => ({
+  metadata: { id },
+  workflowName: "upper",
+  name: "daily-upper",
+  cron: "0 0 * * *",
+  enabled: true,
+  method: "DEFAULT",
+})
+
+const createDailyCron = (schedule: CronExpression.CronExpression) =>
+  Hatchet.createCron(upper, {
+    name: "daily-upper",
+    schedule,
+    input: { value: "scheduled" },
+  })
+
 type CallbackDeclaration = {
   readonly name: string
   readonly fn: (
@@ -453,6 +469,96 @@ describe("live SDK adapter behind Hatchet.layer", () => {
     ).resolves.toBe(false)
     expect(sdk.crons.list).not.toHaveBeenCalled()
 
+    await runtime.dispose()
+  })
+
+  it("recovers an ambiguous cron create failure when exactly one matching cron exists", async () => {
+    const runtime = ManagedRuntime.make(layer())
+    sdk.crons.create.mockRejectedValueOnce({
+      response: { status: 503, data: "create-secret" },
+    })
+    sdk.crons.list.mockResolvedValueOnce({
+      rows: [
+        cronRow("cron-recovered"),
+        { ...cronRow("cron-unrelated"), name: "other-cron" },
+      ],
+    })
+    const schedule = await Effect.runPromise(CronExpression.parse("0 0 * * *"))
+
+    const created = await runtime.runPromise(createDailyCron(schedule))
+
+    expect(created).toMatchObject({
+      id: "cron-recovered",
+      taskName: "upper",
+      name: "daily-upper",
+    })
+    expect(sdk.crons.create).toHaveBeenCalledOnce()
+    expect(sdk.crons.list).toHaveBeenCalledExactlyOnceWith({
+      workflowName: "upper",
+      cronName: "daily-upper",
+      offset: 0,
+      limit: 2,
+    })
+    await runtime.dispose()
+  })
+
+  it("preserves an ambiguous cron create failure when no matching cron exists", async () => {
+    const runtime = ManagedRuntime.make(layer())
+    sdk.crons.create.mockRejectedValueOnce({
+      response: { status: 503, data: "create-secret" },
+    })
+    sdk.crons.list.mockResolvedValueOnce({
+      rows: [{ ...cronRow("cron-unrelated"), workflowName: "other-task" }],
+    })
+    const schedule = await Effect.runPromise(CronExpression.parse("0 0 * * *"))
+
+    const error = await runtime.runPromise(
+      createDailyCron(schedule).pipe(Effect.flip),
+    )
+
+    expect(error).toMatchObject({
+      _tag: "HatchetSdkError",
+      operation: "cron.create",
+      reason: "Unavailable",
+    })
+    expect(JSON.stringify(error)).not.toContain("create-secret")
+    expect(sdk.crons.create).toHaveBeenCalledOnce()
+    expect(sdk.crons.list).toHaveBeenCalledExactlyOnceWith({
+      workflowName: "upper",
+      cronName: "daily-upper",
+      offset: 0,
+      limit: 2,
+    })
+    await runtime.dispose()
+  })
+
+  it("preserves an ambiguous cron create failure when multiple matching crons exist", async () => {
+    const runtime = ManagedRuntime.make(layer())
+    sdk.crons.create.mockRejectedValueOnce({
+      response: { status: 503, data: "create-secret" },
+    })
+    sdk.crons.list.mockResolvedValueOnce({
+      rows: [cronRow("cron-first"), cronRow("cron-second")],
+    })
+    const schedule = await Effect.runPromise(CronExpression.parse("0 0 * * *"))
+
+    const error = await runtime.runPromise(
+      createDailyCron(schedule).pipe(Effect.flip),
+    )
+
+    expect(error).toMatchObject({
+      _tag: "HatchetSdkError",
+      operation: "cron.create",
+      reason: "Unavailable",
+    })
+    expect(JSON.stringify(error)).not.toContain("create-secret")
+    expect(sdk.crons.create).toHaveBeenCalledOnce()
+    expect(sdk.crons.list).toHaveBeenCalledExactlyOnceWith({
+      workflowName: "upper",
+      cronName: "daily-upper",
+      offset: 0,
+      limit: 2,
+    })
     await runtime.dispose()
   })
 

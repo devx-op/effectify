@@ -20,7 +20,7 @@ describe("Effect-native Hatchet architecture", () => {
     expect(sharedRuntime).toMatch(/Layer\.mergeAll\([\s\S]*hatchetLayer/)
     expect(task).toContain("Task.make")
     expect(runRoute).toContain("Effect.gen")
-    expect(runRoute).toContain("yield* Hatchet.run(greetingTask, input)")
+    expect(runRoute).toContain("yield* Hatchet.runNoWait(greetingTask, input)")
     expect(runRoute).toContain("withActionEffect")
     expect(cronRoute).toContain("yield* Hatchet.listCrons")
     expect(cronRoute).toContain("yield* Hatchet.createCron(greetingTask")

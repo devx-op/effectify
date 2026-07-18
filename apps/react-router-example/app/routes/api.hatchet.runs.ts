@@ -32,8 +32,8 @@ export const action = Effect.gen(function*() {
     )
   }
   const input = yield* decodeInput(request)
-  const output = yield* Hatchet.run(greetingTask, input)
-  return Response.json(output)
+  const handle = yield* Hatchet.runNoWait(greetingTask, input)
+  return Response.json({ ok: true, runId: handle.id }, { status: 202 })
 }).pipe(
   withBetterAuthGuardAction.with({ redirectOnFail: "/login" }),
   withActionEffect,
