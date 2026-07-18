@@ -66,17 +66,34 @@ describe("RateLimit", () => {
       ["units", Number.POSITIVE_INFINITY],
       ["units", 1.5],
       ["units", "  "],
+      ["units", true],
       ["limit", 0],
       ["limit", "  "],
+      ["limit", false],
+      ["duration", "fortnight"],
+      ["duration", 1],
       ["key", ""],
       ["staticKey", " "],
       ["dynamicKey", " "],
     ] as const,
-  )("rejects invalid %s values", (field, value) => {
-    const limit = RateLimit.make({
-      units: 1,
-      [field]: value,
-    } as RateLimit.Options)
+  )("rejects invalid runtime %s value %j", (field, value) => {
+    const limit = Reflect.apply(RateLimit.make, undefined, [
+      {
+        units: 1,
+        [field]: value,
+      },
+    ])
     expect(() => Declarations.rateLimits("task", [limit])).toThrow(field)
+  })
+
+  it("fails closed instead of mapping a malformed present duration", () => {
+    const limit = Reflect.apply(RateLimit.make, undefined, [
+      {
+        units: 1,
+        duration: "fortnight",
+      },
+    ])
+
+    expect(() => SdkDeclaration.rateLimits([limit])).toThrow("duration")
   })
 })

@@ -22,6 +22,7 @@ export const rateLimitDuration = (
     case "year":
       return RateLimitDuration.YEAR
   }
+  throw new TypeError("Unsupported rate limit duration")
 }
 
 export const rateLimits = (
