@@ -1,5 +1,7 @@
 export * as CronExpression from "./CronExpression.js"
 export * as Task from "./Task.js"
+export * as RateLimit from "./RateLimit.js"
+export * as Trigger from "./Trigger.js"
 export * as Hatchet from "./Hatchet.js"
 export * as HatchetConfig from "./HatchetConfig.js"
 export * from "./Error.js"

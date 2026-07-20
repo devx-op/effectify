@@ -71,6 +71,30 @@ describe("Task.make direct Effect execution", () => {
     )
   })
 
+  it("dispatches a durable task through the in-memory registry exactly once", async () => {
+    let invocations = 0
+    const task = Task.durable({
+      name: "durable-local",
+      input: Schema.Struct({ value: Schema.Number }),
+      fn: ({ value }, context) =>
+        Effect.sync(() => {
+          invocations += 1
+          return `${value}:${context.invocationCount}`
+        }),
+    })
+
+    await expect(
+      Effect.runPromise(
+        Effect.scoped(
+          Hatchet.run(task, { value: 3 }).pipe(
+            Effect.provide(Hatchet.layerInMemory),
+          ),
+        ),
+      ),
+    ).resolves.toBe("3:0")
+    expect(invocations).toBe(1)
+  })
+
   it("preserves typed failures and leaves defects in the defect channel", async () => {
     const typed = Task.make({
       name: "typed-failure",
@@ -186,6 +210,51 @@ describe("Schema input and output boundaries", () => {
 })
 
 describe("no-wait execution", () => {
+  it("releases a successful fire-and-forget run after completion", async () => {
+    const completed = Deferred.makeUnsafe<void>()
+    const task = Task.make({
+      name: "fire-and-forget-success",
+      fn: () => Deferred.succeed(completed, undefined),
+    })
+    const program = Effect.gen(function*() {
+      const handle = yield* Hatchet.runNoWait(task, undefined)
+      yield* Deferred.await(completed)
+      yield* Effect.yieldNow
+      return yield* Hatchet.cancelRun(handle.id).pipe(
+        Effect.catchTag("HatchetSdkError", Effect.succeed),
+      )
+    }).pipe(Effect.provide(Hatchet.layerInMemory))
+
+    await expect(Effect.runPromise(Effect.scoped(program))).resolves.toMatchObject({
+      _tag: "HatchetSdkError",
+      operation: "run.cancel",
+    })
+  })
+
+  it("releases a failed fire-and-forget run after completion", async () => {
+    const completed = Deferred.makeUnsafe<void>()
+    const task = Task.make({
+      name: "fire-and-forget-failure",
+      fn: () =>
+        Deferred.succeed(completed, undefined).pipe(
+          Effect.andThen(Effect.fail(new TypedFailure())),
+        ),
+    })
+    const program = Effect.gen(function*() {
+      const handle = yield* Hatchet.runNoWait(task, undefined)
+      yield* Deferred.await(completed)
+      yield* Effect.yieldNow
+      return yield* Hatchet.cancelRun(handle.id).pipe(
+        Effect.catchTag("HatchetSdkError", Effect.succeed),
+      )
+    }).pipe(Effect.provide(Hatchet.layerInMemory))
+
+    await expect(Effect.runPromise(Effect.scoped(program))).resolves.toMatchObject({
+      _tag: "HatchetSdkError",
+      operation: "run.cancel",
+    })
+  })
+
   it("returns an observable handle whose cancellation interrupts work", async () => {
     const started = Deferred.makeUnsafe<void>()
     const task = Task.make({

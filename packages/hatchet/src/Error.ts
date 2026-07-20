@@ -12,6 +12,32 @@ export class TaskSchemaError extends Data.TaggedError("TaskSchemaError")<{
   readonly issue: unknown
 }> {}
 
+export type TaskDeclarationFailureReason =
+  | "DuplicateIdentity"
+  | "InvalidKind"
+  | "InvalidMetadata"
+
+export class TaskDeclarationError extends Data.TaggedError(
+  "TaskDeclarationError",
+)<{
+  readonly taskName: string
+  readonly field: string
+  readonly reason: TaskDeclarationFailureReason
+  readonly index?: number
+}> {
+  constructor(args: {
+    readonly taskName: string
+    readonly field: string
+    readonly reason: TaskDeclarationFailureReason
+    readonly index?: number
+  }) {
+    super(args)
+    this.message = `Invalid task declaration ${args.field} for ${args.taskName}${
+      args.index === undefined ? "" : ` at index ${args.index}`
+    }`
+  }
+}
+
 export class InvalidHatchetConfiguration extends Schema.TaggedErrorClass<InvalidHatchetConfiguration>()(
   "InvalidHatchetConfiguration",
   {
