@@ -42,6 +42,9 @@ describe("public API source contract", () => {
     expect(api.Hatchet).not.toHaveProperty("register")
     expect(api.Hatchet).not.toHaveProperty("startWorker")
     expect(api.Hatchet).toHaveProperty("layer")
+    expect(api).toHaveProperty("RateLimit")
+    expect(api).toHaveProperty("Trigger")
+    expect(api).toHaveProperty("TaskDeclarationError")
     expect(api).not.toHaveProperty("HatchetRuntime")
   })
 

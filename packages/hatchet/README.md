@@ -36,6 +36,41 @@ const program = Hatchet.run(greet, { name: "Ada" }).pipe(
 
 `input` and `output` are optional Effect Schema codecs. Input is decoded before the task body; output is validated and encoded at the transport boundary. Boundary failures use `TaskSchemaError` with an `input` or `output` phase. Schema-free tasks remain supported.
 
+## Declarative metadata
+
+Package-owned `RateLimit` and `Trigger` values keep Hatchet SDK declaration types behind the adapter boundary. Values are immutable, validated before SDK or worker mutation, and translated without dropping duplicates or optional fields.
+
+```ts
+import { RateLimit, Task, Trigger } from "@effectify/hatchet"
+
+const notified = Task.make({
+  name: "customer-notified",
+  rateLimits: [RateLimit.make({ units: 10, duration: "minute", key: "customer" })],
+  triggers: [Trigger.event("customer:updated")],
+  fn: (input: { readonly customerId: string }) => Effect.succeed(input),
+})
+```
+
+Empty names, malformed rate limits or triggers, unknown declaration kinds, and duplicate task identities fail with `TaskDeclarationError` before registration starts.
+
+## Durable tasks
+
+`Task.durable` uses the same Effect-first Schema and requirements contract while exposing durable invocation metadata to the handler. The live adapter registers it with Hatchet's durable task API; the in-memory adapter supplies invocation count `0` for deterministic tests.
+
+```ts
+const durableGreeting = Task.durable({
+  name: "durable-greeting",
+  input: GreetingInput,
+  output: GreetingOutput,
+  fn: ({ name }, context) =>
+    Effect.succeed({
+      greeting: `Hello, ${name}! Invocation ${context.invocationCount}`,
+    }),
+})
+```
+
+Durable handlers receive `workflowRunId`, `taskRunExternalId`, `interruption`, and `invocationCount`. SDK abort signals interrupt the Effect execution, task requirements are captured when the Layer is acquired, and unknown task identities fail with `MissingTaskError` rather than dispatching another declaration.
+
 ## Dispatch without waiting
 
 `Hatchet.runNoWait(task, input)` dispatches the task and returns a scoped `RunHandle` before the task completes. Its branded `id` identifies the run, `await` produces the same Schema-decoded output as `Hatchet.run`, and `cancel` interrupts an outstanding run.
@@ -128,6 +163,9 @@ Omitting TLS strategy preserves the SDK secure default. Local plaintext Hatchet 
 ## Public API
 
 - `Task.make(options)` — declarative task identity with optional input/output Schema
+- `Task.durable(options)` — durable declaration with `Task.DurableContext`
+- `RateLimit.make(options)` — immutable rate-limit metadata
+- `Trigger.event(name)`, `Trigger.cron(expression)` — immutable trigger metadata
 - `Hatchet.layer({ tasks, options?, config? })` — package-owned lazy live Layer
 - `Hatchet.layerInMemory` — deterministic scoped adapter for tests
 - `Hatchet.run(task, input)` — await task output
