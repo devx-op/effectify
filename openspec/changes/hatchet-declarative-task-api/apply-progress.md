@@ -98,10 +98,21 @@ The single allowed gatekeeper corrective retry repaired only the candidate OpenS
 
 Artifact SHA-256 values are `f61df4611c09cf343452bac3889aa67961987a8815619e5a07499a685ad4eee4` (proposal), `3bddc195d7a3d710a589da2f7a42f5aba3678d188074a5ca9f879c4650326adb` (design), and `5439e2fb2dbcae83d5af8231e4e718a0cdabb320d436dd91c0bac673bff00281` (spec). That earlier gate status is historical, not the current candidate status. Phase 4 remains 0/3 complete. The later terminal review `review-2daefffe05d2966e` and both earlier reviews remain unchanged; this corrective work created no review, commit, push, PR update, or staged content.
 
+## Final Feature Branch Chain Delivery
+
+The user explicitly replaced the stale single-PR/native-receipt delivery plan with a three-PR Feature Branch Chain and deferred native gates until delivery. Historical authorities remain immutable and were never used as current approval.
+
+| Slice | Scope                                                                       | Commit                        | PR  | Review and verification                                                                          | Integration                       |
+| ----- | --------------------------------------------------------------------------- | ----------------------------- | --- | ------------------------------------------------------------------------------------------------ | --------------------------------- |
+| PR1   | Task compatibility, RateLimit, Trigger                                      | `0e6a8302` (after `b3554662`) | #75 | Package tests/typecheck/build and reviewed correction evidence                                   | Merged into tracker as `40ddc620` |
+| PR2   | Durable registry/live dispatch, typed failures, interruption-safe lifecycle | `d4a4ca42`                    | #76 | 132/132, Nx typecheck/lint/build, dprint, exact diff hash, final dual Judgment Day empty ledgers | Merged into PR1 as `fecd89e8`     |
+| PR3   | Root exports, consumer contracts, README                                    | `7048c83c`                    | #77 | Public API RED/GREEN, full verification, exact diff hash, dual Judgment Day empty ledgers        | Merged into PR2 as `a0e2d2cc`     |
+
+PR #75 initially conflicted because tracker commit `71e3da82` already contained the earlier combined recovery. Conflict resolution kept the final reviewed chain bytes for all seven package files. Hatchet verification passed 132/132 plus Nx typecheck/lint/build, dprint, and `git diff --check`; a fresh reliability audit returned an empty ledger. The final tracker package tree exactly matches the merged PR1 branch.
+
 ## Remaining Work
 
-- [ ] 4.1 Parent orchestrator starts exactly one new current-contract review.
-- [ ] 4.2 Parent follows only native `next_action`, stages reviewed bytes, and validates the new receipt at delivery gates.
-- [ ] 4.3 Parent performs conventional commit, push, and existing tracker PR update only on native allow.
+- [ ] Run final SDD sync/archive only when the completed tracker PR #74 is ready to integrate into `dev`.
+- [ ] Keep PR #74 draft while further Hatchet modernization work continues.
 
-No commit, push, PR creation/update, review lens, review start, historical authority mutation, or reviewed-content staging was performed in this apply phase.
+Implementation, bounded review, commits, pushes, PR creation, CI, conflict resolution, and chain integration for this declarative task API change are complete.

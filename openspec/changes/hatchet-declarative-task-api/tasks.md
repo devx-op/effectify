@@ -51,9 +51,11 @@ Chain strategy: size-exception
 
 ## Phase 4: Review and Delivery Gates
 
-- [ ] 4.1 Request exactly one NEW Gentle AI current-contract review; preserve `review-ecff39feff9d2cff` and `review-517abc7c361506f0` untouched.
-- [ ] 4.2 Follow only native `next_action`; stage reviewed paths without byte/mode changes and validate the same new lineage at pre-commit, pre-push, and pre-PR.
-- [ ] 4.3 Create conventional commits without AI attribution; push/update only the Hatchet tracker PR on native `allow`, otherwise stop.
+The user replaced the stale single-review delivery plan with an explicit three-PR Feature Branch Chain. Historical native authorities remain immutable; each final slice received blind Judgment Day review, exact staged/committed hash verification, CI, and ordered integration into the tracker.
+
+- [x] 4.1 Review PR1–PR3 as bounded slices; preserve historical authorities and resolve the PR2 interruption CRITICAL before delivery.
+- [x] 4.2 Verify normalized reviewed bytes, tests/typecheck/lint/build, staged and committed hashes, and CI for each slice.
+- [x] 4.3 Merge PR #77 into #76, #76 into #75, resolve #75 without package drift, and merge #75 into tracker PR #74 without merging #74 to `dev`.
 
 ## Corrective Work Unit: Terminal Review Findings
 
