@@ -4,10 +4,12 @@ import * as Context from "effect/Context"
 import * as Deferred from "effect/Deferred"
 import * as Effect from "effect/Effect"
 import * as Exit from "effect/Exit"
+import * as Fiber from "effect/Fiber"
 import * as Layer from "effect/Layer"
 import * as Option from "effect/Option"
 import * as Schema from "effect/Schema"
 import { Hatchet, Task } from "@effectify/hatchet"
+import { makeRunId } from "../../src/Model.js"
 
 class Prefix extends Context.Service<Prefix, { readonly value: string }>()(
   "@effectify/hatchet/test/Prefix",
@@ -225,7 +227,9 @@ describe("no-wait execution", () => {
       )
     }).pipe(Effect.provide(Hatchet.layerInMemory))
 
-    await expect(Effect.runPromise(Effect.scoped(program))).resolves.toMatchObject({
+    await expect(
+      Effect.runPromise(Effect.scoped(program)),
+    ).resolves.toMatchObject({
       _tag: "HatchetSdkError",
       operation: "run.cancel",
     })
@@ -249,10 +253,41 @@ describe("no-wait execution", () => {
       )
     }).pipe(Effect.provide(Hatchet.layerInMemory))
 
-    await expect(Effect.runPromise(Effect.scoped(program))).resolves.toMatchObject({
+    await expect(
+      Effect.runPromise(Effect.scoped(program)),
+    ).resolves.toMatchObject({
       _tag: "HatchetSdkError",
       operation: "run.cancel",
     })
+  })
+
+  it("does not retain immediately interrupted submissions", async () => {
+    const task = Task.make({
+      name: "interrupted-submission",
+      fn: () => Effect.never,
+    })
+    const program = Effect.gen(function*() {
+      for (let index = 1; index <= 64; index += 1) {
+        const submission = yield* Effect.forkChild(
+          Hatchet.runNoWait(task, undefined),
+        )
+        yield* Fiber.interrupt(submission)
+      }
+      return yield* Effect.forEach(
+        Array.from({ length: 64 }, (_, index) => makeRunId(`run-${index + 1}`)),
+        (id) =>
+          Hatchet.cancelRun(id).pipe(
+            Effect.match({
+              onFailure: (error) => error._tag,
+              onSuccess: () => "retained" as const,
+            }),
+          ),
+      )
+    }).pipe(Effect.provide(Hatchet.layerInMemory))
+
+    await expect(
+      Effect.runPromise(Effect.scoped(program)),
+    ).resolves.not.toContain("retained")
   })
 
   it("returns an observable handle whose cancellation interrupts work", async () => {

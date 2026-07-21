@@ -50,18 +50,19 @@ const makeStoredTask = <
           ),
         )
         : (input as Input)
-      const output = yield* (task._tag === "Durable"
-        ? task.execute(decoded, {
-          ...taskContext,
-          invocationCount: "invocationCount" in taskContext
-            ? taskContext.invocationCount
-            : 0,
-        })
-        : task.execute(decoded, taskContext))
-        .pipe(
-          Effect.provideService(Scope.Scope, taskScope),
-          Effect.provideContext(context),
-        )
+      const output = yield* (
+        task._tag === "Durable"
+          ? task.execute(decoded, {
+            ...taskContext,
+            invocationCount: "invocationCount" in taskContext
+              ? taskContext.invocationCount
+              : 0,
+          })
+          : task.execute(decoded, taskContext)
+      ).pipe(
+        Effect.provideService(Scope.Scope, taskScope),
+        Effect.provideContext(context),
+      )
       if (task.outputSchema) {
         yield* Schema.encodeUnknownEffect(task.outputSchema)(output).pipe(
           Effect.mapError(

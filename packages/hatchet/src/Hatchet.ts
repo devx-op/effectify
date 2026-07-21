@@ -20,7 +20,7 @@ import {
   type InvalidHatchetConfiguration,
   InvalidTimeError,
   type MissingTaskError,
-  TaskDeclarationError,
+  type TaskDeclarationError,
   TaskSchemaError,
 } from "./Error.js"
 import {
@@ -256,23 +256,36 @@ const makeInMemoryService = (ownerScope: Scope.Scope): Service => {
       const id = makeRunId(execution.id)
       const remove = Effect.sync(() => runs.delete(id))
       const registered = yield* Deferred.make<void>()
-      const fiber = yield* Effect.forkIn(
-        Deferred.await(registered).pipe(
-          Effect.andThen(prepared(execution.context)),
-          Effect.ensuring(remove),
-        ),
-        ownerScope,
+      return yield* Effect.uninterruptibleMask((restore) =>
+        Effect.gen(function*() {
+          const fiber = yield* Effect.forkIn(
+            Deferred.await(registered).pipe(
+              Effect.andThen(prepared(execution.context)),
+              Effect.ensuring(remove),
+              Effect.interruptible,
+            ),
+            ownerScope,
+          )
+          runs.set(id, fiber)
+          yield* Deferred.succeed(registered, undefined)
+          const handle = {
+            id,
+            await: Fiber.join(fiber).pipe(Effect.ensuring(remove)),
+            cancel: Fiber.interrupt(fiber).pipe(
+              Effect.asVoid,
+              Effect.ensuring(remove),
+            ),
+          }
+          return yield* restore(Effect.succeed(handle)).pipe(
+            Effect.onInterrupt(() =>
+              Fiber.interrupt(fiber).pipe(
+                Effect.asVoid,
+                Effect.ensuring(remove),
+              )
+            ),
+          )
+        })
       )
-      runs.set(id, fiber)
-      yield* Deferred.succeed(registered, undefined)
-      return {
-        id,
-        await: Fiber.join(fiber).pipe(Effect.ensuring(remove)),
-        cancel: Fiber.interrupt(fiber).pipe(
-          Effect.asVoid,
-          Effect.ensuring(remove),
-        ),
-      }
     })
 
   const schedule = <Name extends string, Input, Output, Error, Requirements>(

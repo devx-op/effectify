@@ -145,7 +145,9 @@ type DurableCallbackDeclaration = {
   readonly name: string
   readonly fn: (
     input: unknown,
-    taskContext: ReturnType<typeof context> & { readonly invocationCount: number },
+    taskContext: ReturnType<typeof context> & {
+      readonly invocationCount: number
+    },
   ) => Promise<{ readonly value: string }>
 }
 
@@ -491,12 +493,16 @@ describe("live SDK adapter behind Hatchet.layer", () => {
     await runtime.runPromise(Hatchet.runNoWait(upper, { value: "warm" }))
 
     expect(sdk.durableTask).toHaveBeenCalledOnce()
-    const declaration = sdk.durableTask.mock.calls[0]?.[0] as DurableCallbackDeclaration
+    const declaration = sdk.durableTask.mock
+      .calls[0]?.[0] as DurableCallbackDeclaration
     await expect(
-      declaration.fn({ value: "callback" }, {
-        ...context(),
-        invocationCount: 7,
-      }),
+      declaration.fn(
+        { value: "callback" },
+        {
+          ...context(),
+          invocationCount: 7,
+        },
+      ),
     ).resolves.toEqual({ value: "CALLBACK:7" })
 
     await runtime.dispose()
@@ -522,13 +528,17 @@ describe("live SDK adapter behind Hatchet.layer", () => {
   it("reports durable input Schema failures without invoking the handler", async () => {
     const runtime = ManagedRuntime.make(layer())
     await runtime.runPromise(Hatchet.runNoWait(upper, { value: "warm" }))
-    const declaration = sdk.durableTask.mock.calls[0]?.[0] as DurableCallbackDeclaration
+    const declaration = sdk.durableTask.mock
+      .calls[0]?.[0] as DurableCallbackDeclaration
 
     await expect(
-      declaration.fn({ value: 42 }, {
-        ...context(),
-        invocationCount: 2,
-      }),
+      declaration.fn(
+        { value: 42 },
+        {
+          ...context(),
+          invocationCount: 2,
+        },
+      ),
     ).rejects.toMatchObject({ message: "Hatchet task callback failed" })
 
     await runtime.dispose()
@@ -549,13 +559,17 @@ describe("live SDK adapter behind Hatchet.layer", () => {
       }),
     )
     await runtime.runPromise(Hatchet.runNoWait(interrupted, {}))
-    const declaration = sdk.durableTask.mock.calls[0]?.[0] as DurableCallbackDeclaration
+    const declaration = sdk.durableTask.mock
+      .calls[0]?.[0] as DurableCallbackDeclaration
     const controller = new AbortController()
 
-    const result = declaration.fn({}, {
-      ...context(controller),
-      invocationCount: 1,
-    })
+    const result = declaration.fn(
+      {},
+      {
+        ...context(controller),
+        invocationCount: 1,
+      },
+    )
     controller.abort()
 
     await expect(result).rejects.toMatchObject({
@@ -596,13 +610,15 @@ describe("live SDK adapter behind Hatchet.layer", () => {
 
   it("rejects an unknown declaration kind before SDK initialization", async () => {
     const malformed = { ...upper, _tag: "Unknown" }
-    const invalidLayer = Reflect.apply(Hatchet.layer, undefined, [{
-      tasks: [malformed],
-      options: {
-        client: { token: Redacted.make("test-token") },
-        worker: { name: "test-worker" },
+    const invalidLayer = Reflect.apply(Hatchet.layer, undefined, [
+      {
+        tasks: [malformed],
+        options: {
+          client: { token: Redacted.make("test-token") },
+          worker: { name: "test-worker" },
+        },
       },
-    }])
+    ])
     const runtime = ManagedRuntime.make(invalidLayer)
 
     await expect(
@@ -672,8 +688,8 @@ describe("live SDK adapter behind Hatchet.layer", () => {
     })
     expect(sdk.crons.create).toHaveBeenCalledOnce()
     expect(sdk.crons.list).toHaveBeenCalledExactlyOnceWith({
-      workflowName: "upper",
-      cronName: "daily-upper",
+      workflow: "upper",
+      name: "daily-upper",
       offset: 0,
       limit: 2,
     })
@@ -727,8 +743,8 @@ describe("live SDK adapter behind Hatchet.layer", () => {
     expect(JSON.stringify(error)).not.toContain("create-secret")
     expect(sdk.crons.create).toHaveBeenCalledOnce()
     expect(sdk.crons.list).toHaveBeenCalledExactlyOnceWith({
-      workflowName: "upper",
-      cronName: "daily-upper",
+      workflow: "upper",
+      name: "daily-upper",
       offset: 0,
       limit: 2,
     })
@@ -757,8 +773,8 @@ describe("live SDK adapter behind Hatchet.layer", () => {
     expect(JSON.stringify(error)).not.toContain("create-secret")
     expect(sdk.crons.create).toHaveBeenCalledOnce()
     expect(sdk.crons.list).toHaveBeenCalledExactlyOnceWith({
-      workflowName: "upper",
-      cronName: "daily-upper",
+      workflow: "upper",
+      name: "daily-upper",
       offset: 0,
       limit: 2,
     })

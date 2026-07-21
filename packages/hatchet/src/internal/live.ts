@@ -130,7 +130,10 @@ const isAmbiguousCronCreateCause = (cause: unknown, depth = 0): boolean => {
         typeof cause.response.status === "number"
     ? cause.response.status
     : undefined
-  if (status === 408 || (status !== undefined && status >= 500 && status < 600)) {
+  if (
+    status === 408 ||
+    (status !== undefined && status >= 500 && status < 600)
+  ) {
     return true
   }
   if (
@@ -361,12 +364,15 @@ const makeService = <Requirements>(
       tasks.add(task, context)
       const rateLimits = SdkDeclaration.rateLimits(task.rateLimits)
       const on = SdkDeclaration.on(task.triggers)
-      const fn = (input: JsonObject, sdkContext: {
-        readonly workflowRunId: () => string
-        readonly taskRunExternalId: () => string
-        readonly abortController: AbortController
-        readonly invocationCount?: number
-      }) => {
+      const fn = (
+        input: JsonObject,
+        sdkContext: {
+          readonly workflowRunId: () => string
+          readonly taskRunExternalId: () => string
+          readonly abortController: AbortController
+          readonly invocationCount?: number
+        },
+      ) => {
         const baseContext = {
           workflowRunId: Option.some(sdkContext.workflowRunId()),
           taskRunExternalId: Option.some(sdkContext.taskRunExternalId()),
@@ -423,7 +429,9 @@ const makeService = <Requirements>(
         fn,
       }
       const declaration = task._tag === "Durable"
-        ? client.durableTask<JsonObject, LiveOutputEnvelope>(declarationOptions)
+        ? client.durableTask<JsonObject, LiveOutputEnvelope>(
+          declarationOptions,
+        )
         : client.task<JsonObject, LiveOutputEnvelope>(declarationOptions)
       declarations.set(task.name, declaration)
       taskIdentities.add(task)
@@ -677,13 +685,15 @@ const makeService = <Requirements>(
           return yield* result.failure
         }
         const reconciled = yield* reconcileCronCreateWithinBound(
-          () =>
-            client.crons.list({
-              workflowName: task.name,
-              cronName: cronOptions.name,
+          () => {
+            const filters = {
+              workflow: task.name,
+              name: cronOptions.name,
               offset: 0,
               limit: 2,
-            }),
+            }
+            return client.crons.list(filters)
+          },
           task.name,
           cronOptions.name,
         )

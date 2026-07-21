@@ -117,8 +117,12 @@ export const declarations = <Requirements>(
         index,
       })
     }
-    if (!Array.isArray(value.rateLimits)) throw invalid(taskName, "rateLimits", index)
-    if (!Array.isArray(value.triggers)) throw invalid(taskName, "triggers", index)
+    if (!Array.isArray(value.rateLimits)) {
+      throw invalid(taskName, "rateLimits", index)
+    }
+    if (!Array.isArray(value.triggers)) {
+      throw invalid(taskName, "triggers", index)
+    }
     rateLimits(taskName, value.rateLimits)
     triggers(taskName, value.triggers)
     names.add(taskName)
