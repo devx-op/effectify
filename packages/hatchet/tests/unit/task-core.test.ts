@@ -4,10 +4,12 @@ import * as Context from "effect/Context"
 import * as Deferred from "effect/Deferred"
 import * as Effect from "effect/Effect"
 import * as Exit from "effect/Exit"
+import * as Fiber from "effect/Fiber"
 import * as Layer from "effect/Layer"
 import * as Option from "effect/Option"
 import * as Schema from "effect/Schema"
 import { Hatchet, Task } from "@effectify/hatchet"
+import { makeRunId } from "../../src/Model.js"
 
 class Prefix extends Context.Service<Prefix, { readonly value: string }>()(
   "@effectify/hatchet/test/Prefix",
@@ -69,6 +71,30 @@ describe("Task.make direct Effect execution", () => {
     await expect(Effect.runPromise(Effect.scoped(program))).resolves.toBe(
       "captured",
     )
+  })
+
+  it("dispatches a durable task through the in-memory registry exactly once", async () => {
+    let invocations = 0
+    const task = Task.durable({
+      name: "durable-local",
+      input: Schema.Struct({ value: Schema.Number }),
+      fn: ({ value }, context) =>
+        Effect.sync(() => {
+          invocations += 1
+          return `${value}:${context.invocationCount}`
+        }),
+    })
+
+    await expect(
+      Effect.runPromise(
+        Effect.scoped(
+          Hatchet.run(task, { value: 3 }).pipe(
+            Effect.provide(Hatchet.layerInMemory),
+          ),
+        ),
+      ),
+    ).resolves.toBe("3:0")
+    expect(invocations).toBe(1)
   })
 
   it("preserves typed failures and leaves defects in the defect channel", async () => {
@@ -186,6 +212,84 @@ describe("Schema input and output boundaries", () => {
 })
 
 describe("no-wait execution", () => {
+  it("releases a successful fire-and-forget run after completion", async () => {
+    const completed = Deferred.makeUnsafe<void>()
+    const task = Task.make({
+      name: "fire-and-forget-success",
+      fn: () => Deferred.succeed(completed, undefined),
+    })
+    const program = Effect.gen(function*() {
+      const handle = yield* Hatchet.runNoWait(task, undefined)
+      yield* Deferred.await(completed)
+      yield* Effect.yieldNow
+      return yield* Hatchet.cancelRun(handle.id).pipe(
+        Effect.catchTag("HatchetSdkError", Effect.succeed),
+      )
+    }).pipe(Effect.provide(Hatchet.layerInMemory))
+
+    await expect(
+      Effect.runPromise(Effect.scoped(program)),
+    ).resolves.toMatchObject({
+      _tag: "HatchetSdkError",
+      operation: "run.cancel",
+    })
+  })
+
+  it("releases a failed fire-and-forget run after completion", async () => {
+    const completed = Deferred.makeUnsafe<void>()
+    const task = Task.make({
+      name: "fire-and-forget-failure",
+      fn: () =>
+        Deferred.succeed(completed, undefined).pipe(
+          Effect.andThen(Effect.fail(new TypedFailure())),
+        ),
+    })
+    const program = Effect.gen(function*() {
+      const handle = yield* Hatchet.runNoWait(task, undefined)
+      yield* Deferred.await(completed)
+      yield* Effect.yieldNow
+      return yield* Hatchet.cancelRun(handle.id).pipe(
+        Effect.catchTag("HatchetSdkError", Effect.succeed),
+      )
+    }).pipe(Effect.provide(Hatchet.layerInMemory))
+
+    await expect(
+      Effect.runPromise(Effect.scoped(program)),
+    ).resolves.toMatchObject({
+      _tag: "HatchetSdkError",
+      operation: "run.cancel",
+    })
+  })
+
+  it("does not retain immediately interrupted submissions", async () => {
+    const task = Task.make({
+      name: "interrupted-submission",
+      fn: () => Effect.never,
+    })
+    const program = Effect.gen(function*() {
+      for (let index = 1; index <= 64; index += 1) {
+        const submission = yield* Effect.forkChild(
+          Hatchet.runNoWait(task, undefined),
+        )
+        yield* Fiber.interrupt(submission)
+      }
+      return yield* Effect.forEach(
+        Array.from({ length: 64 }, (_, index) => makeRunId(`run-${index + 1}`)),
+        (id) =>
+          Hatchet.cancelRun(id).pipe(
+            Effect.match({
+              onFailure: (error) => error._tag,
+              onSuccess: () => "retained" as const,
+            }),
+          ),
+      )
+    }).pipe(Effect.provide(Hatchet.layerInMemory))
+
+    await expect(
+      Effect.runPromise(Effect.scoped(program)),
+    ).resolves.not.toContain("retained")
+  })
+
   it("returns an observable handle whose cancellation interrupts work", async () => {
     const started = Deferred.makeUnsafe<void>()
     const task = Task.make({

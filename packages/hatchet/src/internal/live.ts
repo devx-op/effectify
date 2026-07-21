@@ -17,6 +17,7 @@ import {
   InvalidHatchetConfiguration,
   InvalidTimeError,
   MissingTaskError,
+  TaskDeclarationError,
   TaskSchemaError,
 } from "../Error.js"
 import * as Hatchet from "../Hatchet.js"
@@ -129,7 +130,10 @@ const isAmbiguousCronCreateCause = (cause: unknown, depth = 0): boolean => {
         typeof cause.response.status === "number"
     ? cause.response.status
     : undefined
-  if (status === 408 || (status !== undefined && status >= 500 && status < 600)) {
+  if (
+    status === 408 ||
+    (status !== undefined && status >= 500 && status < 600)
+  ) {
     return true
   }
   if (
@@ -354,66 +358,86 @@ const makeService = <Requirements>(
     let closing = false
 
     const addDeclaration = <Name extends string, Input, Output, Error>(
-      task: Task.Task<Name, Input, Output, Error, Requirements>,
+      task: Task.Of<Name, Input, Output, Error, Requirements>,
       context: Context.Context<Requirements>,
     ) => {
       tasks.add(task, context)
       const rateLimits = SdkDeclaration.rateLimits(task.rateLimits)
       const on = SdkDeclaration.on(task.triggers)
-      const declaration = client.task<JsonObject, LiveOutputEnvelope>({
+      const fn = (
+        input: JsonObject,
+        sdkContext: {
+          readonly workflowRunId: () => string
+          readonly taskRunExternalId: () => string
+          readonly abortController: AbortController
+          readonly invocationCount?: number
+        },
+      ) => {
+        const baseContext = {
+          workflowRunId: Option.some(sdkContext.workflowRunId()),
+          taskRunExternalId: Option.some(sdkContext.taskRunExternalId()),
+          interruption: abortSignalEffect(sdkContext.abortController.signal),
+        }
+        const stored = tasks.run<Output, Error>(
+          task.name,
+          input,
+          task._tag === "Durable"
+            ? {
+              ...baseContext,
+              invocationCount: sdkContext.invocationCount ?? 0,
+            }
+            : baseContext,
+        )
+        if (!stored) {
+          return Promise.reject(new MissingTaskError({ taskName: task.name }))
+        }
+        const encoded = Effect.raceFirst(
+          abortSignalEffect(sdkContext.abortController.signal),
+          stored,
+        ).pipe(
+          Effect.flatMap((value) =>
+            task.outputSchema
+              ? Schema.encodeUnknownEffect(task.outputSchema)(value).pipe(
+                Effect.mapError(
+                  (issue) =>
+                    new TaskSchemaError({
+                      taskName: task.name,
+                      phase: "output",
+                      issue,
+                    }),
+                ),
+              )
+              : Effect.succeed(value)
+          ),
+        )
+        return Effect.runPromiseExit(Effect.scoped(encoded)).then((exit) => {
+          if (!Exit.isSuccess(exit)) throw new LiveCallbackError(exit.cause)
+          if (!isTransportValue(exit.value)) {
+            throw new LiveCallbackError(
+              Cause.die(
+                new TypeError("live callback output is not transportable"),
+              ),
+            )
+          }
+          return { value: exit.value }
+        })
+      }
+      const declarationOptions = {
         name: task.name,
         ...(rateLimits.length === 0 ? {} : { rateLimits }),
         ...(on === undefined ? {} : { on }),
-        fn: (input, sdkContext) => {
-          const stored = tasks.run<Output, Error>(task.name, input, {
-            workflowRunId: Option.some(sdkContext.workflowRunId()),
-            taskRunExternalId: Option.some(sdkContext.taskRunExternalId()),
-            interruption: abortSignalEffect(sdkContext.abortController.signal),
-          })
-          if (!stored) {
-            return Promise.reject(new Error(`Missing task: ${task.name}`))
-          }
-          const encoded = Effect.raceFirst(
-            abortSignalEffect(sdkContext.abortController.signal),
-            stored,
-          ).pipe(
-            Effect.flatMap((value) =>
-              task.outputSchema
-                ? Schema.encodeUnknownEffect(task.outputSchema)(value).pipe(
-                  Effect.mapError(
-                    (issue) =>
-                      new TaskSchemaError({
-                        taskName: task.name,
-                        phase: "output",
-                        issue,
-                      }),
-                  ),
-                )
-                : Effect.succeed(value)
-            ),
-          )
-          return Effect.runPromiseExit(Effect.scoped(encoded)).then((exit) => {
-            if (!Exit.isSuccess(exit)) throw new LiveCallbackError(exit.cause)
-            if (!isTransportValue(exit.value)) {
-              throw new LiveCallbackError(
-                Cause.die(
-                  new TypeError("live callback output is not transportable"),
-                ),
-              )
-            }
-            return { value: exit.value }
-          })
-        },
-      })
+        fn,
+      }
+      const declaration = task._tag === "Durable"
+        ? client.durableTask<JsonObject, LiveOutputEnvelope>(
+          declarationOptions,
+        )
+        : client.task<JsonObject, LiveOutputEnvelope>(declarationOptions)
       declarations.set(task.name, declaration)
       taskIdentities.add(task)
     }
 
     const context = yield* Effect.context<Requirements>()
-    for (const task of declarationsToLoad) {
-      Declarations.rateLimits(task.name, task.rateLimits)
-      Declarations.triggers(task.name, task.triggers)
-    }
     for (const task of declarationsToLoad) addDeclaration(task, context)
 
     let startFiber: Fiber.Fiber<void, HatchetSdkError> | undefined
@@ -515,7 +539,7 @@ const makeService = <Requirements>(
       Error,
       TaskRequirements,
     >(
-      task: Task.Task<Name, Input, Output, Error, TaskRequirements>,
+      task: Task.Of<Name, Input, Output, Error, TaskRequirements>,
       input: unknown,
       operation: string,
     ): Effect.Effect<
@@ -661,13 +685,15 @@ const makeService = <Requirements>(
           return yield* result.failure
         }
         const reconciled = yield* reconcileCronCreateWithinBound(
-          () =>
-            client.crons.list({
+          () => {
+            const filters = {
               workflow: task.name,
-              ...{ name: cronOptions.name },
+              name: cronOptions.name,
               offset: 0,
               limit: 2,
-            }),
+            }
+            return client.crons.list(filters)
+          },
           task.name,
           cronOptions.name,
         )
@@ -829,12 +855,26 @@ export const layer = <Requirements>(
   tasks: ReadonlyArray<Task.Any<Requirements>>,
 ): Layer.Layer<
   Hatchet.Hatchet,
-  InvalidHatchetConfiguration | HatchetConfigError | HatchetSdkError,
+  | InvalidHatchetConfiguration
+  | HatchetConfigError
+  | HatchetSdkError
+  | TaskDeclarationError,
   Requirements
 > =>
   Layer.effect(Hatchet.Hatchet)(
     Effect.gen(function*() {
       yield* validate(options)
+      yield* Effect.try({
+        try: () => Declarations.declarations(tasks),
+        catch: (cause) =>
+          cause instanceof TaskDeclarationError
+            ? cause
+            : new TaskDeclarationError({
+              taskName: "<unknown>",
+              field: "declaration",
+              reason: "InvalidMetadata",
+            }),
+      })
       const client = options.client
       const sdkClient = yield* Effect.try({
         try: () =>

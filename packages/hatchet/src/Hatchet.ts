@@ -20,6 +20,7 @@ import {
   type InvalidHatchetConfiguration,
   InvalidTimeError,
   type MissingTaskError,
+  type TaskDeclarationError,
   TaskSchemaError,
 } from "./Error.js"
 import {
@@ -74,10 +75,11 @@ export type AcquisitionError =
   | HatchetConfigError
   | InvalidHatchetConfiguration
   | HatchetSdkError
+  | TaskDeclarationError
 
 export interface Service {
   readonly run: <Name extends string, Input, Output, Error, Requirements>(
-    task: Task.Task<Name, Input, Output, Error, Requirements>,
+    task: Task.Of<Name, Input, Output, Error, Requirements>,
     input: unknown,
   ) => Effect.Effect<
     Output,
@@ -85,7 +87,7 @@ export interface Service {
     Requirements
   >
   readonly runNoWait: <Name extends string, Input, Output, Error, Requirements>(
-    task: Task.Task<Name, Input, Output, Error, Requirements>,
+    task: Task.Of<Name, Input, Output, Error, Requirements>,
     input: unknown,
   ) => Effect.Effect<
     RunHandle<Output, Error>,
@@ -93,7 +95,7 @@ export interface Service {
     Requirements
   >
   readonly schedule: <Name extends string, Input, Output, Error, Requirements>(
-    task: Task.Task<Name, Input, Output, Error, Requirements>,
+    task: Task.Of<Name, Input, Output, Error, Requirements>,
     input: unknown,
     timing: ScheduleTiming,
   ) => Effect.Effect<
@@ -115,7 +117,7 @@ export interface Service {
     Error,
     Requirements,
   >(
-    task: Task.Task<Name, Input, Output, Error, Requirements>,
+    task: Task.Of<Name, Input, Output, Error, Requirements>,
     options: CreateCronOptions,
   ) => Effect.Effect<
     CronRecord,
@@ -155,7 +157,7 @@ const makeInMemoryService = (ownerScope: Scope.Scope): Service => {
   let nextCronId = 1
 
   const ensureTask = <Name extends string, Input, Output, Error, Requirements>(
-    task: Task.Task<Name, Input, Output, Error, Requirements>,
+    task: Task.Of<Name, Input, Output, Error, Requirements>,
   ): Effect.Effect<void, never, Requirements> =>
     Effect.gen(function*() {
       if (tasks.has(task.name)) return
@@ -188,11 +190,15 @@ const makeInMemoryService = (ownerScope: Scope.Scope): Service => {
     Error,
     Requirements,
   >(
-    task: Task.Task<Name, Input, Output, Error, Requirements>,
+    task: Task.Of<Name, Input, Output, Error, Requirements>,
     input: Input,
     context: Task.Context,
   ) =>
-    Effect.scoped(task.execute(input, context)).pipe(
+    Effect.scoped(
+      task._tag === "Durable"
+        ? task.execute(input, { ...context, invocationCount: 0 })
+        : task.execute(input, context),
+    ).pipe(
       Effect.tap((output) =>
         task.outputSchema
           ? Schema.encodeUnknownEffect(task.outputSchema)(output).pipe(
@@ -213,7 +219,7 @@ const makeInMemoryService = (ownerScope: Scope.Scope): Service => {
     Error,
     Requirements,
   >(
-    task: Task.Task<Name, Input, Output, Error, Requirements>,
+    task: Task.Of<Name, Input, Output, Error, Requirements>,
     input: unknown,
   ): Effect.Effect<
     PreparedExecution<Output, Error, Requirements>,
@@ -236,7 +242,7 @@ const makeInMemoryService = (ownerScope: Scope.Scope): Service => {
   }
 
   const runNoWait = <Name extends string, Input, Output, Error, Requirements>(
-    task: Task.Task<Name, Input, Output, Error, Requirements>,
+    task: Task.Of<Name, Input, Output, Error, Requirements>,
     input: unknown,
   ): Effect.Effect<
     RunHandle<Output, Error>,
@@ -247,25 +253,43 @@ const makeInMemoryService = (ownerScope: Scope.Scope): Service => {
       yield* ensureTask(task)
       const prepared = yield* prepareInput(task, input)
       const execution = nextContext()
-      const fiber = yield* Effect.forkIn(
-        prepared(execution.context),
-        ownerScope,
-      )
       const id = makeRunId(execution.id)
       const remove = Effect.sync(() => runs.delete(id))
-      runs.set(id, fiber)
-      return {
-        id,
-        await: Fiber.join(fiber).pipe(Effect.ensuring(remove)),
-        cancel: Fiber.interrupt(fiber).pipe(
-          Effect.asVoid,
-          Effect.ensuring(remove),
-        ),
-      }
+      const registered = yield* Deferred.make<void>()
+      return yield* Effect.uninterruptibleMask((restore) =>
+        Effect.gen(function*() {
+          const fiber = yield* Effect.forkIn(
+            Deferred.await(registered).pipe(
+              Effect.andThen(prepared(execution.context)),
+              Effect.ensuring(remove),
+              Effect.interruptible,
+            ),
+            ownerScope,
+          )
+          runs.set(id, fiber)
+          yield* Deferred.succeed(registered, undefined)
+          const handle = {
+            id,
+            await: Fiber.join(fiber).pipe(Effect.ensuring(remove)),
+            cancel: Fiber.interrupt(fiber).pipe(
+              Effect.asVoid,
+              Effect.ensuring(remove),
+            ),
+          }
+          return yield* restore(Effect.succeed(handle)).pipe(
+            Effect.onInterrupt(() =>
+              Fiber.interrupt(fiber).pipe(
+                Effect.asVoid,
+                Effect.ensuring(remove),
+              )
+            ),
+          )
+        })
+      )
     })
 
   const schedule = <Name extends string, Input, Output, Error, Requirements>(
-    task: Task.Task<Name, Input, Output, Error, Requirements>,
+    task: Task.Of<Name, Input, Output, Error, Requirements>,
     input: unknown,
     timing: ScheduleTiming,
   ): Effect.Effect<
@@ -311,7 +335,7 @@ const makeInMemoryService = (ownerScope: Scope.Scope): Service => {
     })
 
   const createCron = <Name extends string, Input, Output, Error, Requirements>(
-    task: Task.Task<Name, Input, Output, Error, Requirements>,
+    task: Task.Of<Name, Input, Output, Error, Requirements>,
     options: CreateCronOptions,
   ): Effect.Effect<
     CronRecord,
@@ -578,7 +602,7 @@ export const layer = <const Tasks extends ReadonlyArray<Task.Any>>(
   )
 
 export const run = <Name extends string, Input, Output, Error, Requirements>(
-  task: Task.Task<Name, Input, Output, Error, Requirements>,
+  task: Task.Of<Name, Input, Output, Error, Requirements>,
   input: unknown,
 ): Effect.Effect<
   Output,
@@ -593,7 +617,7 @@ export const runNoWait = <
   Error,
   Requirements,
 >(
-  task: Task.Task<Name, Input, Output, Error, Requirements>,
+  task: Task.Of<Name, Input, Output, Error, Requirements>,
   input: unknown,
 ): Effect.Effect<
   RunHandle<Output, Error>,
@@ -608,7 +632,7 @@ export const schedule = <
   Error,
   Requirements,
 >(
-  task: Task.Task<Name, Input, Output, Error, Requirements>,
+  task: Task.Of<Name, Input, Output, Error, Requirements>,
   input: unknown,
   timing: ScheduleTiming,
 ): Effect.Effect<
@@ -637,7 +661,7 @@ export const createCron = <
   Error,
   Requirements,
 >(
-  task: Task.Task<Name, Input, Output, Error, Requirements>,
+  task: Task.Of<Name, Input, Output, Error, Requirements>,
   options: CreateCronOptions,
 ): Effect.Effect<
   CronRecord,

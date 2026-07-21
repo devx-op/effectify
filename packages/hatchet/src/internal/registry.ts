@@ -8,19 +8,19 @@ import type * as Task from "../Task.js"
 interface StoredTask {
   readonly run: (
     input: unknown,
-    taskContext: Task.Context,
+    taskContext: Task.Context | Task.DurableContext,
   ) => Effect.Effect<unknown, unknown | TaskSchemaError, unknown>
 }
 
 export interface Registry {
   readonly add: <Name extends string, Input, Output, Error, Requirements>(
-    task: Task.Task<Name, Input, Output, Error, Requirements>,
+    task: Task.Of<Name, Input, Output, Error, Requirements>,
     context: Context.Context<Requirements>,
   ) => void
   readonly run: <Output, Error>(
     name: string,
     input: unknown,
-    taskContext: Task.Context,
+    taskContext: Task.Context | Task.DurableContext,
   ) => Effect.Effect<Output, Error | TaskSchemaError> | undefined
   readonly has: (name: string) => boolean
 }
@@ -32,7 +32,7 @@ const makeStoredTask = <
   Error,
   Requirements,
 >(
-  task: Task.Task<Name, Input, Output, Error, Requirements>,
+  task: Task.Of<Name, Input, Output, Error, Requirements>,
   context: Context.Context<Requirements>,
 ): StoredTask => ({
   run: (input, taskContext) =>
@@ -50,12 +50,19 @@ const makeStoredTask = <
           ),
         )
         : (input as Input)
-      const output = yield* task
-        .execute(decoded, taskContext)
-        .pipe(
-          Effect.provideService(Scope.Scope, taskScope),
-          Effect.provideContext(context),
-        )
+      const output = yield* (
+        task._tag === "Durable"
+          ? task.execute(decoded, {
+            ...taskContext,
+            invocationCount: "invocationCount" in taskContext
+              ? taskContext.invocationCount
+              : 0,
+          })
+          : task.execute(decoded, taskContext)
+      ).pipe(
+        Effect.provideService(Scope.Scope, taskScope),
+        Effect.provideContext(context),
+      )
       if (task.outputSchema) {
         yield* Schema.encodeUnknownEffect(task.outputSchema)(output).pipe(
           Effect.mapError(
@@ -83,7 +90,7 @@ export const make = (): Registry => {
     run: <Output, Error>(
       name: string,
       input: unknown,
-      taskContext: Task.Context,
+      taskContext: Task.Context | Task.DurableContext,
     ) => {
       const task = tasks.get(name)
       // The heterogeneous map erases task-specific I/O/E/R only here. Public callers
