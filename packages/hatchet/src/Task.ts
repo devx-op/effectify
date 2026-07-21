@@ -76,7 +76,11 @@ export interface DurableTask<
   ): Effect.Effect<Output, Error, Requirements>
 }
 
-export type Any<Requirements = unknown> = Task<
+export type Of<Name extends string, Input, Output, Error, Requirements> =
+  | Task<Name, Input, Output, Error, Requirements>
+  | DurableTask<Name, Input, Output, Error, Requirements>
+
+export type Any<Requirements = unknown> = Of<
   string,
   unknown,
   unknown,
@@ -84,14 +88,9 @@ export type Any<Requirements = unknown> = Task<
   Requirements
 >
 
-export type Declaration<Requirements = unknown> =
-  | Any<Requirements>
-  | DurableTask<string, unknown, unknown, unknown, Requirements>
+export type Declaration<Requirements = unknown> = Any<Requirements>
 
-export type Requirements<T> = T extends
-  | Task<string, unknown, unknown, unknown, infer R>
-  | DurableTask<string, unknown, unknown, unknown, infer R> ? R
-  : never
+export type Requirements<T> = T extends Of<string, unknown, unknown, unknown, infer R> ? R : never
 
 export interface MakeOptions<
   Name extends string,

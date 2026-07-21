@@ -1,7 +1,7 @@
 import * as Context from "effect/Context"
 import * as Effect from "effect/Effect"
 import * as Schema from "effect/Schema"
-import { Task } from "@effectify/hatchet"
+import { RateLimit, Task, TaskDeclarationError, Trigger } from "@effectify/hatchet"
 
 class Dependency extends Context.Service<
   Dependency,
@@ -27,9 +27,11 @@ const ordinary: Task.Task<"ordinary", Input, Output, Failure, Dependency> = Task
 
 const durable = Task.durable({
   name: "durable",
-  fn: (_input: Input, context) => {
+  fn: (_input: Input, context): Effect.Effect<Output, never, Dependency> => {
     const count: number = context.invocationCount
-    return Effect.succeed({ rendered: String(count) })
+    return Effect.map(Dependency, ({ value }) => ({
+      rendered: `${value}:${count}`,
+    }))
   },
 })
 
@@ -41,3 +43,10 @@ durable.execute({ value: 1 }, Task.DurableContext.empty).sleepFor
 ordinary.execute({ value: 1 }, Task.DurableContext.empty).invocationCount
 
 void mixed
+void RateLimit.make({ units: 1, duration: "minute" })
+void Trigger.event("customer:updated")
+void new TaskDeclarationError({
+  taskName: "ordinary",
+  field: "name",
+  reason: "DuplicateIdentity",
+})

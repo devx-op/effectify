@@ -38,6 +38,7 @@ const sdk = vi.hoisted(() => {
     cancel,
   }))
   const task = vi.fn((declaration) => ({ ...declaration, runNoWait }))
+  const durableTask = vi.fn((declaration) => ({ ...declaration, runNoWait }))
   const crons = {
     create: vi.fn(async (name: string) => ({
       metadata: { id: "cron-42" },
@@ -54,12 +55,14 @@ const sdk = vi.hoisted(() => {
     events,
     init: vi.fn(() => ({
       task,
+      durableTask,
       worker,
       crons,
       scheduled: { create: vi.fn(), get: vi.fn(), delete: vi.fn() },
       runs: { cancel: vi.fn() },
     })),
     task,
+    durableTask,
     worker,
     registerWorkflows,
     start,
@@ -92,9 +95,16 @@ const upper = Task.make({
   fn: ({ value }) => Effect.succeed(value.toUpperCase()),
 })
 
+const durableUpper = Task.durable({
+  name: "durable-upper",
+  input: Schema.Struct({ value: Schema.String }),
+  output: Schema.NonEmptyString,
+  fn: ({ value }, context) => Effect.succeed(`${value.toUpperCase()}:${context.invocationCount}`),
+})
+
 const layer = (token = "test-token") =>
   Hatchet.layer({
-    tasks: [upper],
+    tasks: [upper, durableUpper],
     options: {
       client: { token: Redacted.make(token) },
       worker: { name: "test-worker" },
@@ -128,6 +138,16 @@ type CallbackDeclaration = {
   readonly fn: (
     input: unknown,
     taskContext: ReturnType<typeof context>,
+  ) => Promise<{ readonly value: string }>
+}
+
+type DurableCallbackDeclaration = {
+  readonly name: string
+  readonly fn: (
+    input: unknown,
+    taskContext: ReturnType<typeof context> & {
+      readonly invocationCount: number
+    },
   ) => Promise<{ readonly value: string }>
 }
 
@@ -219,7 +239,7 @@ describe("live SDK adapter behind Hatchet.layer", () => {
 
     expect(sdk.events.slice(0, 4)).toEqual([
       "worker",
-      "declarations:upper",
+      "declarations:upper,durable-upper",
       "start",
       "ready",
     ])
@@ -465,6 +485,151 @@ describe("live SDK adapter behind Hatchet.layer", () => {
       value: "CALLBACK",
     })
 
+    await runtime.dispose()
+  })
+
+  it("registers and dispatches durable declarations with invocation metadata", async () => {
+    const runtime = ManagedRuntime.make(layer())
+    await runtime.runPromise(Hatchet.runNoWait(upper, { value: "warm" }))
+
+    expect(sdk.durableTask).toHaveBeenCalledOnce()
+    const declaration = sdk.durableTask.mock
+      .calls[0]?.[0] as DurableCallbackDeclaration
+    await expect(
+      declaration.fn(
+        { value: "callback" },
+        {
+          ...context(),
+          invocationCount: 7,
+        },
+      ),
+    ).resolves.toEqual({ value: "CALLBACK:7" })
+
+    await runtime.dispose()
+  })
+
+  it("fails an unknown durable identity before SDK dispatch", async () => {
+    const unknown = Task.durable({
+      name: "unknown-durable",
+      fn: () => Effect.succeed("unreachable"),
+    })
+    const runtime = ManagedRuntime.make(layer())
+
+    await expect(
+      runtime.runPromise(Hatchet.runNoWait(unknown, undefined)),
+    ).rejects.toMatchObject({
+      _tag: "MissingTaskError",
+      taskName: "unknown-durable",
+    })
+    expect(sdk.runNoWait).not.toHaveBeenCalled()
+    await runtime.dispose()
+  })
+
+  it("reports durable input Schema failures without invoking the handler", async () => {
+    const runtime = ManagedRuntime.make(layer())
+    await runtime.runPromise(Hatchet.runNoWait(upper, { value: "warm" }))
+    const declaration = sdk.durableTask.mock
+      .calls[0]?.[0] as DurableCallbackDeclaration
+
+    await expect(
+      declaration.fn(
+        { value: 42 },
+        {
+          ...context(),
+          invocationCount: 2,
+        },
+      ),
+    ).rejects.toMatchObject({ message: "Hatchet task callback failed" })
+
+    await runtime.dispose()
+  })
+
+  it("interrupts durable callback execution from the SDK abort signal", async () => {
+    const interrupted = Task.durable({
+      name: "durable-interrupted",
+      fn: (_input: unknown, taskContext) => taskContext.interruption,
+    })
+    const runtime = ManagedRuntime.make(
+      Hatchet.layer({
+        tasks: [interrupted],
+        options: {
+          client: { token: Redacted.make("test-token") },
+          worker: { name: "test-worker" },
+        },
+      }),
+    )
+    await runtime.runPromise(Hatchet.runNoWait(interrupted, {}))
+    const declaration = sdk.durableTask.mock
+      .calls[0]?.[0] as DurableCallbackDeclaration
+    const controller = new AbortController()
+
+    const result = declaration.fn(
+      {},
+      {
+        ...context(controller),
+        invocationCount: 1,
+      },
+    )
+    controller.abort()
+
+    await expect(result).rejects.toMatchObject({
+      message: "Hatchet task callback failed",
+    })
+    await runtime.dispose()
+    expect(sdk.stop).toHaveBeenCalledOnce()
+  })
+
+  it("rejects duplicate declaration identities before SDK or worker mutation", async () => {
+    const duplicate = Task.make({
+      name: "upper",
+      fn: () => Effect.succeed("duplicate"),
+    })
+    const runtime = ManagedRuntime.make(
+      Hatchet.layer({
+        tasks: [upper, duplicate],
+        options: {
+          client: { token: Redacted.make("test-token") },
+          worker: { name: "test-worker" },
+        },
+      }),
+    )
+
+    await expect(
+      runtime.runPromise(Hatchet.runNoWait(upper, { value: "done" })),
+    ).rejects.toMatchObject({
+      _tag: "TaskDeclarationError",
+      taskName: "upper",
+      field: "name",
+      reason: "DuplicateIdentity",
+    })
+    expect(sdk.task).not.toHaveBeenCalled()
+    expect(sdk.durableTask).not.toHaveBeenCalled()
+    expect(sdk.worker).not.toHaveBeenCalled()
+    await runtime.dispose()
+  })
+
+  it("rejects an unknown declaration kind before SDK initialization", async () => {
+    const malformed = { ...upper, _tag: "Unknown" }
+    const invalidLayer = Reflect.apply(Hatchet.layer, undefined, [
+      {
+        tasks: [malformed],
+        options: {
+          client: { token: Redacted.make("test-token") },
+          worker: { name: "test-worker" },
+        },
+      },
+    ])
+    const runtime = ManagedRuntime.make(invalidLayer)
+
+    await expect(
+      runtime.runPromise(Hatchet.runNoWait(upper, { value: "done" })),
+    ).rejects.toMatchObject({
+      _tag: "TaskDeclarationError",
+      field: "_tag",
+      reason: "InvalidKind",
+    })
+    expect(sdk.init).not.toHaveBeenCalled()
+    expect(sdk.worker).not.toHaveBeenCalled()
     await runtime.dispose()
   })
 
