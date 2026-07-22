@@ -1,8 +1,10 @@
 import { readFile } from "node:fs/promises"
 import * as ConfigProvider from "effect/ConfigProvider"
 import * as Effect from "effect/Effect"
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 import { authOptionsConfig } from "../../../app/lib/better-auth-options.server.js"
+
+vi.mock("../../../app/lib/prisma.js", () => ({ database: {} }))
 
 const withConfig = (values: Record<string, string>) =>
   authOptionsConfig.pipe(

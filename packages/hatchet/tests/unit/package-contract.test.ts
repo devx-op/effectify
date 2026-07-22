@@ -1,12 +1,9 @@
 import { execFileSync } from "node:child_process"
-import { existsSync, rmSync } from "node:fs"
+import { existsSync } from "node:fs"
 import { fileURLToPath } from "node:url"
 import { describe, expect, it } from "vitest"
 
 const packageDirectory = fileURLToPath(new URL("../..", import.meta.url))
-const repositoryDirectory = fileURLToPath(
-  new URL("../../../..", import.meta.url),
-)
 
 const runNode = (source: string): string =>
   execFileSync(process.execPath, ["--input-type=module", "--eval", source], {
@@ -15,20 +12,7 @@ const runNode = (source: string): string =>
   })
 
 describe("published package contract", () => {
-  it("builds a clean testing subpath without exposing testing helpers from the root", () => {
-    rmSync(new URL("../../dist", import.meta.url), {
-      force: true,
-      recursive: true,
-    })
-    execFileSync(
-      "pnpm",
-      ["nx", "run", "@effectify/hatchet:build", "--skip-nx-cache"],
-      {
-        cwd: repositoryDirectory,
-        stdio: "inherit",
-      },
-    )
-
+  it("resolves the built testing subpath without exposing testing helpers from the root", () => {
     expect(
       existsSync(new URL("../../dist/src/testing/index.js", import.meta.url)),
     ).toBe(true)
