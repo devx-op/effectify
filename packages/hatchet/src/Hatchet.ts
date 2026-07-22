@@ -1,6 +1,7 @@
 import * as Cause from "effect/Cause"
 import * as Clock from "effect/Clock"
 import type * as Config from "effect/Config"
+import type { Hatchet as HatchetClientSdk } from "@hatchet-dev/typescript-sdk"
 import * as Context from "effect/Context"
 import * as Deferred from "effect/Deferred"
 import * as Duration from "effect/Duration"
@@ -17,6 +18,7 @@ import {
   HatchetSdkError,
   type InvalidCronError,
   type InvalidCronFilterError,
+  InvalidEventError,
   type InvalidHatchetConfiguration,
   InvalidTimeError,
   type MissingTaskError,
@@ -42,6 +44,130 @@ import * as Registry from "./internal/registry.js"
 import type * as Task from "./Task.js"
 
 export type { CronRecord, ScheduleRecord } from "./Model.js"
+
+export type EventJsonValue =
+  | null
+  | boolean
+  | number
+  | string
+  | ReadonlyArray<EventJsonValue>
+  | {
+    readonly [key: string]: EventJsonValue
+  }
+export type EventPayload = { readonly [key: string]: EventJsonValue }
+export type PushEventOptions = Parameters<
+  InstanceType<typeof HatchetClientSdk>["events"]["push"]
+>[2]
+export interface EventReceipt<TPayload extends EventPayload> {
+  readonly eventId: string
+  readonly key: string
+  readonly payload: TPayload
+  readonly additionalMetadata?: Readonly<Record<string, unknown>>
+  readonly scope?: string
+}
+
+const isPlainObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" &&
+  value !== null &&
+  !Array.isArray(value) &&
+  Object.getPrototypeOf(value) === Object.prototype
+
+const isJsonValue = (value: unknown, seen: Set<object>): boolean => {
+  if (value === null || typeof value === "boolean" || typeof value === "string") {
+    return true
+  }
+  if (typeof value === "number") return Number.isFinite(value)
+  if (typeof value !== "object" || seen.has(value)) return false
+  seen.add(value)
+  const valid = Array.isArray(value)
+    ? Array.from(
+      { length: value.length },
+      (_, index) => index in value && isJsonValue(value[index], seen),
+    ).every(Boolean)
+    : isPlainObject(value) &&
+      Object.values(value).every((item) => isJsonValue(item, seen))
+  seen.delete(value)
+  return valid
+}
+
+export const validateEvent = (
+  key: string,
+  payload: unknown,
+  options?: unknown,
+): Effect.Effect<void, InvalidEventError> =>
+  Effect.suspend(() => {
+    if (key.trim().length === 0) {
+      return Effect.fail(
+        new InvalidEventError({ field: "key", reason: "EmptyKey" }),
+      )
+    }
+    if (/[\u0000-\u001F\u007F-\u009F]/.test(key)) {
+      return Effect.fail(
+        new InvalidEventError({ field: "key", reason: "UnsafeKey" }),
+      )
+    }
+    if (!isPlainObject(payload) || !isJsonValue(payload, new Set())) {
+      return Effect.fail(
+        new InvalidEventError({
+          field: "payload",
+          reason: "InvalidJsonObject",
+        }),
+      )
+    }
+    if (options === undefined) return Effect.void
+    if (!isPlainObject(options)) {
+      return Effect.fail(
+        new InvalidEventError({
+          field: "options",
+          reason: "InvalidOptionValue",
+        }),
+      )
+    }
+    for (const option of Object.keys(options)) {
+      if (!["additionalMetadata", "priority", "scope"].includes(option)) {
+        return Effect.fail(
+          new InvalidEventError({
+            field: "options",
+            reason: "UnsupportedOption",
+          }),
+        )
+      }
+    }
+    const { additionalMetadata, priority, scope } = options
+    if (
+      additionalMetadata !== undefined &&
+      (!isPlainObject(additionalMetadata) ||
+        !Object.values(additionalMetadata).every(
+          (value) => typeof value === "string",
+        ))
+    ) {
+      return Effect.fail(
+        new InvalidEventError({
+          field: "options",
+          reason: "InvalidOptionValue",
+        }),
+      )
+    }
+    if (
+      priority !== undefined &&
+      (typeof priority !== "number" || !Number.isFinite(priority))
+    ) {
+      return Effect.fail(
+        new InvalidEventError({
+          field: "options",
+          reason: "InvalidOptionValue",
+        }),
+      )
+    }
+    return scope === undefined || typeof scope === "string"
+      ? Effect.void
+      : Effect.fail(
+        new InvalidEventError({
+          field: "options",
+          reason: "InvalidOptionValue",
+        }),
+      )
+  })
 
 export interface RunHandle<Output, Error> {
   readonly id: RunId
@@ -78,6 +204,14 @@ export type AcquisitionError =
   | TaskDeclarationError
 
 export interface Service {
+  readonly pushEvent: <const TPayload extends EventPayload>(
+    key: string,
+    payload: TPayload,
+    options?: PushEventOptions,
+  ) => Effect.Effect<
+    EventReceipt<TPayload>,
+    InvalidEventError | AcquisitionError
+  >
   readonly run: <Name extends string, Input, Output, Error, Requirements>(
     task: Task.Of<Name, Input, Output, Error, Requirements>,
     input: unknown,
@@ -152,6 +286,7 @@ const makeInMemoryService = (ownerScope: Scope.Scope): Service => {
   >()
   const runs = new Map<RunId, Fiber.Fiber<unknown, unknown>>()
   const crons = new Map<CronId, CronRecord>()
+  let nextEventId = 1
   let nextRunId = 1
   let nextScheduleId = 1
   let nextCronId = 1
@@ -405,6 +540,20 @@ const makeInMemoryService = (ownerScope: Scope.Scope): Service => {
     })
 
   return {
+    pushEvent: (key, payload, options) =>
+      validateEvent(key, payload, options).pipe(
+        Effect.andThen(
+          Effect.sync(() => ({
+            eventId: `event-${nextEventId++}`,
+            key,
+            payload,
+            ...(options?.additionalMetadata === undefined
+              ? {}
+              : { additionalMetadata: options.additionalMetadata }),
+            ...(options?.scope === undefined ? {} : { scope: options.scope }),
+          })),
+        ),
+      ),
     run: (task, input) => runNoWait(task, input).pipe(Effect.flatMap((handle) => handle.await)),
     runNoWait,
     schedule,
@@ -574,6 +723,12 @@ export const layer = <const Tasks extends ReadonlyArray<Task.Any>>(
       ) => Effect.flatMap(ready, ({ service }) => operation(service))
 
       const service = Hatchet.of({
+        pushEvent: (key, payload, eventOptions) =>
+          validateEvent(key, payload, eventOptions).pipe(
+            Effect.andThen(
+              use((hatchet) => hatchet.pushEvent(key, payload, eventOptions)),
+            ),
+          ),
         run: (task, input) => use((hatchet) => hatchet.run(task, input)),
         runNoWait: (task, input) => use((hatchet) => hatchet.runNoWait(task, input)),
         schedule: (task, input, timing) => use((hatchet) => hatchet.schedule(task, input, timing)),
@@ -599,6 +754,21 @@ export const layer = <const Tasks extends ReadonlyArray<Task.Any>>(
       )
       return service
     }),
+  )
+
+export const pushEvent = <const TPayload extends EventPayload>(
+  key: string,
+  payload: TPayload,
+  options?: PushEventOptions,
+): Effect.Effect<
+  EventReceipt<TPayload>,
+  InvalidEventError | AcquisitionError,
+  Hatchet
+> =>
+  validateEvent(key, payload, options).pipe(
+    Effect.andThen(
+      Effect.flatMap(Hatchet, (service) => service.pushEvent(key, payload, options)),
+    ),
   )
 
 export const run = <Name extends string, Input, Output, Error, Requirements>(

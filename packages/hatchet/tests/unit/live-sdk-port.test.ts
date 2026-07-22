@@ -3,9 +3,12 @@ import * as Deferred from "effect/Deferred"
 import * as Effect from "effect/Effect"
 import * as Fiber from "effect/Fiber"
 import * as Layer from "effect/Layer"
+import * as Logger from "effect/Logger"
 import * as ManagedRuntime from "effect/ManagedRuntime"
 import * as Redacted from "effect/Redacted"
 import * as Schema from "effect/Schema"
+import * as Scope from "effect/Scope"
+import * as Exit from "effect/Exit"
 import { TestClock } from "effect/testing"
 import { CronExpression, Hatchet, makeCronId } from "@effectify/hatchet"
 import * as RateLimit from "../../src/RateLimit.js"
@@ -39,6 +42,8 @@ const sdk = vi.hoisted(() => {
   }))
   const task = vi.fn((declaration) => ({ ...declaration, runNoWait }))
   const durableTask = vi.fn((declaration) => ({ ...declaration, runNoWait }))
+  const pushEvent = vi.fn(async () => ({ eventId: "event-42" }))
+  const eventsClient = { push: pushEvent }
   const crons = {
     create: vi.fn(async (name: string) => ({
       metadata: { id: "cron-42" },
@@ -58,6 +63,7 @@ const sdk = vi.hoisted(() => {
       durableTask,
       worker,
       crons,
+      events: eventsClient,
       scheduled: { create: vi.fn(), get: vi.fn(), delete: vi.fn() },
       runs: { cancel: vi.fn() },
     })),
@@ -71,6 +77,7 @@ const sdk = vi.hoisted(() => {
     runNoWait,
     cancel,
     crons,
+    pushEvent,
   }
 })
 
@@ -202,6 +209,7 @@ describe("live SDK adapter behind Hatchet.layer", () => {
         stop: sdk.stop,
       }
     })
+    sdk.pushEvent.mockResolvedValue({ eventId: "event-42" })
     sdk.runNoWait.mockResolvedValue({
       runId: Promise.resolve("run-42"),
       output: Promise.resolve({ value: "DONE" }),
@@ -927,6 +935,111 @@ describe("live SDK adapter behind Hatchet.layer", () => {
     ).rejects.toMatchObject({ _tag: "InvalidCronFilterError", field })
     expect(sdk.crons.list).not.toHaveBeenCalled()
     await runtime.dispose()
+  })
+
+  it("publishes events with exact SDK arguments, normalizes the receipt, and disposes the live service", async () => {
+    const runtime = ManagedRuntime.make(layer())
+    const payload = { customer: { id: "customer-1" }, active: true } as const
+    const options = {
+      additionalMetadata: { source: "unit-test" },
+      priority: 4,
+      scope: "tenant-a",
+    }
+
+    const receipt = await runtime.runPromise(
+      Hatchet.pushEvent("customer.updated", payload, options),
+    )
+
+    expect(sdk.pushEvent).toHaveBeenCalledExactlyOnceWith(
+      "customer.updated",
+      payload,
+      options,
+    )
+    expect(receipt).toEqual({
+      eventId: "event-42",
+      key: "customer.updated",
+      payload,
+      additionalMetadata: options.additionalMetadata,
+      scope: options.scope,
+    })
+    await runtime.dispose()
+    expect(sdk.stop).toHaveBeenCalledOnce()
+  })
+
+  it.each([
+    ["blank key", " ", { ok: true }, undefined],
+    ["control key", "unsafe\u0000key", { ok: true }, undefined],
+    ["invalid payload", "customer.updated", { invalid: undefined }, undefined],
+    ["unsupported option", "customer.updated", { ok: true }, { unknown: true }],
+  ])("rejects %s before lazy SDK initialization or event dispatch", async (_name, key, payload, options) => {
+    const runtime = ManagedRuntime.make(layer())
+
+    const error = await runtime.runPromise(
+      Reflect.apply(Hatchet.pushEvent, undefined, [key, payload, options]).pipe(
+        Effect.flip,
+      ),
+    )
+
+    expect(error).toMatchObject({ _tag: "InvalidEventError" })
+    expect(sdk.init).not.toHaveBeenCalled()
+    expect(sdk.worker).not.toHaveBeenCalled()
+    expect(sdk.pushEvent).not.toHaveBeenCalled()
+    await runtime.dispose()
+  })
+
+  it("maps SDK event rejections and malformed required event IDs without exposing causes", async () => {
+    const runtime = ManagedRuntime.make(layer())
+    const secret = "event-sdk-secret"
+    sdk.pushEvent.mockRejectedValueOnce(new Error(secret))
+    const rejection = await runtime.runPromise(
+      Hatchet.pushEvent("customer.updated", { ok: true }).pipe(Effect.flip),
+    )
+    sdk.pushEvent.mockResolvedValueOnce({ eventId: "" })
+    const malformed = await runtime.runPromise(
+      Hatchet.pushEvent("customer.updated", { ok: true }).pipe(Effect.flip),
+    )
+
+    expect(rejection).toMatchObject({
+      _tag: "HatchetSdkError",
+      operation: "event.push",
+      resourceId: "customer.updated",
+    })
+    expect(JSON.stringify(rejection)).not.toContain(secret)
+    expect(malformed).toMatchObject({
+      _tag: "HatchetSdkError",
+      operation: "event.push",
+      reason: "InvalidResponse",
+    })
+    await runtime.dispose()
+  })
+
+  it("redacts rejected worker-stop causes from failed-scope cleanup logs while preserving propagation", async () => {
+    const secret = "worker-stop-secret-sentinel"
+    const logs: string[] = []
+    const logger = Logger.make(({ cause, message }) => logs.push(JSON.stringify({ cause: String(cause), message })))
+    sdk.stop.mockRejectedValueOnce(new Error(secret))
+    const failure = new Error("scope-failure")
+
+    const close = await Effect.runPromise(
+      Effect.gen(function*() {
+        const scope = yield* Scope.make()
+        const context = yield* Layer.buildWithScope(scope)(
+          Layer.merge(layer(), Logger.layer([logger])),
+        )
+        yield* Hatchet.pushEvent("customer.updated", { ok: true }).pipe(
+          Effect.provide(context),
+        )
+        return yield* Scope.close(scope, Exit.fail(failure)).pipe(Effect.exit)
+      }),
+    )
+
+    expect(Exit.isFailure(close)).toBe(true)
+    expect(sdk.stop).toHaveBeenCalledOnce()
+    expect(logs.join("\\n")).toContain(
+      "Hatchet worker stop failed during failed scope cleanup",
+    )
+    expect(logs.join("\\n")).toContain("worker.stop")
+    expect(logs.join("\\n")).not.toContain(secret)
   })
 
   it("paginates failed-delete absence verification safely", async () => {
