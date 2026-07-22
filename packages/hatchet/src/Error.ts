@@ -156,6 +156,11 @@ export class HatchetSdkError extends Data.TaggedError("HatchetSdkError")<{
 /** Classifies package and SDK failures without exposing implementation causes. */
 export const failureReason = (cause: unknown): HatchetFailureReason => classifyFailure("operation", cause)
 
+export class InvalidEventError extends Data.TaggedError("InvalidEventError")<{
+  readonly field: "key" | "payload" | "options"
+  readonly reason: "EmptyKey" | "UnsafeKey" | "InvalidJsonObject" | "UnsupportedOption" | "InvalidOptionValue"
+}> {}
+
 export class InvalidTimeError extends Data.TaggedError("InvalidTimeError")<{
   readonly field: "at" | "delay"
   readonly originalCause: unknown

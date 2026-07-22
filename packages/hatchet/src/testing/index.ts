@@ -20,3 +20,5 @@ export {
   TestHatchetConfigLayer,
   TestHatchetLayer,
 } from "./mock-client.js"
+
+export { layerInMemory } from "../Hatchet.js"

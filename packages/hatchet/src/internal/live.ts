@@ -483,19 +483,13 @@ const makeService = <Requirements>(
                 return yield* Effect.die(stopDefect)
               }
               const timedOut = Cause.isTimeoutError(stopDefect.originalCause)
-              if (timedOut) {
-                yield* Effect.logError(
-                  "Hatchet worker stop timed out",
-                  options.worker.name,
-                )
-              }
+              yield* Effect.logError(
+                timedOut
+                  ? "Hatchet worker stop timed out"
+                  : "Hatchet worker stop failed during failed scope cleanup",
+                { workerName: options.worker.name, operation: "worker.stop" },
+              )
               if (Exit.isFailure(exit)) {
-                if (!timedOut) {
-                  yield* Effect.logError(
-                    "Hatchet worker stop failed during failed scope cleanup",
-                    stopDefect.originalCause,
-                  )
-                }
                 return
               }
               return yield* Effect.die(stopDefect)
@@ -701,7 +695,44 @@ const makeService = <Requirements>(
         return yield* result.failure
       })
 
+    const pushEvent: Hatchet.Service["pushEvent"] = (
+      key,
+      payload,
+      eventOptions,
+    ) =>
+      Hatchet.validateEvent(key, payload, eventOptions).pipe(
+        Effect.andThen(ensureOpen("event.push")),
+        Effect.andThen(
+          Effect.tryPromise({
+            try: () => client.events.push(key, payload, eventOptions),
+            catch: (originalCause) => sdkError("event.push", originalCause, key),
+          }),
+        ),
+        Effect.flatMap((event) =>
+          typeof event === "object" &&
+            event !== null &&
+            "eventId" in event &&
+            typeof event.eventId === "string" &&
+            event.eventId.length > 0
+            ? Effect.succeed({
+              eventId: event.eventId,
+              key,
+              payload,
+              ...(eventOptions?.additionalMetadata === undefined
+                ? {}
+                : { additionalMetadata: eventOptions.additionalMetadata }),
+              ...(eventOptions?.scope === undefined
+                ? {}
+                : { scope: eventOptions.scope }),
+            })
+            : Effect.fail(
+              sdkError("event.push", { reason: "InvalidResponse" }, key),
+            )
+        ),
+      )
+
     return {
+      pushEvent,
       run: (task, input) => runNoWait(task, input).pipe(Effect.flatMap((handle) => handle.await)),
       runNoWait,
       schedule: (task, input, timing) =>

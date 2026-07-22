@@ -6,16 +6,22 @@
   "targets": {
     "build": {
       "executor": "@nx/js:tsc",
-      "outputs": ["{options.outputPath}"],
+      "outputs": [
+        "{options.outputPath}"
+      ],
       "defaultConfiguration": "production",
       "options": {
         "outputPath": "packages/hatchet/dist",
         "main": "packages/hatchet/src/index.ts",
         "tsConfig": "packages/hatchet/tsconfig.lib.json",
-        "format": ["esm"],
+        "format": [
+          "esm"
+        ],
         "generatePackageJson": false,
         "updateBuildableProjectDepsInPackageJson": false,
-        "additionalEntryPoints": []
+        "additionalEntryPoints": [
+          "packages/hatchet/src/testing/index.ts"
+        ]
       },
       "configurations": {
         "development": {},
@@ -31,11 +37,19 @@
     },
     "lint": {
       "executor": "nx-oxlint:lint",
-      "outputs": ["{options.outputFile}"],
+      "outputs": [
+        "{options.outputFile}"
+      ],
       "options": {
-        "lintFilePatterns": ["packages/hatchet/**/*.{ts,tsx,js,jsx}"]
+        "lintFilePatterns": [
+          "packages/hatchet/**/*.{ts,tsx,js,jsx}"
+        ]
       }
     }
   },
-  "tags": ["node", "react", "hatchet"]
+  "tags": [
+    "node",
+    "react",
+    "hatchet"
+  ]
 }
