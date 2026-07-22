@@ -1,4 +1,5 @@
 import { readFile } from "node:fs/promises"
+import * as Config from "effect/Config"
 import * as ConfigProvider from "effect/ConfigProvider"
 import * as Effect from "effect/Effect"
 import { describe, expect, it, vi } from "vitest"
@@ -12,12 +13,11 @@ const withConfig = (values: Record<string, string>) =>
   )
 
 describe("Better Auth Effect configuration", () => {
-  it("rejects a missing secret without rendering supplied secret material", async () => {
-    const suppliedSecret = "missing-secret-must-not-appear"
+  it("rejects a missing secret with an identifiable configuration error", async () => {
     const error = await Effect.runPromise(withConfig({}).pipe(Effect.flip))
 
-    expect(String(error)).not.toContain(suppliedSecret)
-    expect(JSON.stringify(error)).not.toContain(suppliedSecret)
+    expect(error).toBeInstanceOf(Config.ConfigError)
+    expect(String(error)).toContain("BETTER_AUTH_SECRET")
   })
 
   it("rejects a whitespace-only secret without rendering it", async () => {
