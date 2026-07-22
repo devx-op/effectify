@@ -19,8 +19,11 @@ Normal development, auth, Prisma, tests, typecheck, and builds do not require Ha
 
 ```bash
 pnpm install
+export BETTER_AUTH_SECRET="$(openssl rand -base64 32)"
 pnpm nx run @effectify/react-router-example:dev
 ```
+
+Generate a new local `BETTER_AUTH_SECRET` for each development environment. Do not commit the generated value.
 
 The app bootstraps its local SQLite auth and todo tables. Regenerate Prisma after changing its schema:
 
@@ -66,17 +69,22 @@ docker compose down
 
 ### Invoke the task
 
+Sign in first, then send the Better Auth session cookie with the request:
+
 ```bash
 curl -i -X POST http://localhost:4200/api/hatchet/runs \
   -H 'content-type: application/json' \
+  -H 'cookie: better-auth.session_token=<session-cookie>' \
   -d '{"name":"Ada"}'
 ```
 
-The endpoint awaits the registered worker and returns the Task output:
+An authenticated request receives immediate `202 Accepted` confirmation:
 
 ```json
-{ "greeting": "Hello, Ada!" }
+{ "ok": true, "runId": "..." }
 ```
+
+`202` confirms the workflow was accepted and started; it does not await workflow output.
 
 Invalid JSON or Schema input returns a safe `400` response through the existing React Router Effect adapter.
 

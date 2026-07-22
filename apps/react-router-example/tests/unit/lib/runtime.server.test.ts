@@ -14,12 +14,15 @@ const { adapterConfigMock, authHandlerMock, prismaLayerMock } = vi.hoisted(
   },
 )
 
-vi.mock("../../../app/lib/better-auth-options.server.js", () => ({
-  authOptions: {
-    baseURL: "http://localhost:4200",
-    secret: "runtime-test-secret",
-  },
-}))
+vi.mock("../../../app/lib/better-auth-options.server.js", async () => {
+  const Effect = await import("effect/Effect")
+  return {
+    authOptionsConfig: Effect.succeed({
+      baseURL: "http://localhost:4200",
+      secret: "runtime-test-secret",
+    }),
+  }
+})
 
 vi.mock("@effectify/node-better-auth", async () => {
   const Context = await import("effect/Context")
