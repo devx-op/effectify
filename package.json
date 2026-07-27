@@ -84,7 +84,6 @@
       }
     },
     "overrides": {
-      "@effect/platform-node-shared": "4.0.0-beta.94",
       "@types/react": "19.2.17",
       "@types/react-dom": "19.2.3"
     },
