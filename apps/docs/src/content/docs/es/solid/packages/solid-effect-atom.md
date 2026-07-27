@@ -141,14 +141,14 @@ function Config() {
 ## Resumen de la API
 
 - **`RegistryProvider`**: Limita un registro de átomos a un subárbol de Solid.
-- **`useAtom(atom)`**: Retorna un accessor reactivo y un setter.
-- **`useAtomValue(atom, selector?)`**: Retorna un accessor reactivo.
-- **`useAtomSet(atom)`**: Retorna un setter sin suscribirse al valor.
-- **`useAtomSubscribe(atom, callback)`**: Se suscribe a cambios.
-- **`useAtomMount(atom)`**: Mantiene un átomo montado para el owner actual de Solid.
+- **`useAtom(() => atom)`**: Retorna un accessor reactivo y un setter.
+- **`useAtomValue(() => atom, selector?)`**: Retorna un accessor reactivo.
+- **`useAtomSet(() => atom)`**: Retorna un setter sin suscribirse al valor.
+- **`useAtomSubscribe(() => atom, callback)`**: Se suscribe a cambios.
+- **`useAtomMount(() => atom)`**: Mantiene un átomo montado para el owner actual de Solid.
 - **`useAtomInitialValues(values)`**: Inicializa átomos en el registro actual.
-- **`useAtomRefresh(atom)`**: Retorna un callback para refrescar.
-- **`useAtomResource(atom)`**: Convierte un átomo de `AsyncResult` en un recurso de Solid.
-- **`useAtomRef(ref)`**: Se suscribe a un `AtomRef`.
-- **`useAtomRefProp(ref, key)`**: Deriva una referencia de propiedad.
-- **`useAtomRefPropValue(ref, key)`**: Se suscribe al valor de una propiedad.
+- **`useAtomRefresh(() => atom)`**: Retorna un callback para refrescar.
+- **`useAtomResource(() => atom)`**: Convierte un átomo de `AsyncResult` en un recurso de Solid.
+- **`useAtomRef(() => ref)`**: Se suscribe a un `AtomRef`.
+- **`useAtomRefProp(() => ref, key)`**: Deriva una referencia de propiedad.
+- **`useAtomRefPropValue(() => ref, key)`**: Se suscribe al valor de una propiedad.

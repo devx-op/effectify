@@ -141,14 +141,14 @@ function Config() {
 ## API overview
 
 - **`RegistryProvider`**: Scopes an atom registry to a Solid subtree.
-- **`useAtom(atom)`**: Returns a reactive accessor and setter.
-- **`useAtomValue(atom, selector?)`**: Returns a reactive accessor.
-- **`useAtomSet(atom)`**: Returns a setter without subscribing to the value.
-- **`useAtomSubscribe(atom, callback)`**: Subscribes to changes.
-- **`useAtomMount(atom)`**: Keeps an atom mounted for the current Solid owner.
+- **`useAtom(() => atom)`**: Returns a reactive accessor and setter.
+- **`useAtomValue(() => atom, selector?)`**: Returns a reactive accessor.
+- **`useAtomSet(() => atom)`**: Returns a setter without subscribing to the value.
+- **`useAtomSubscribe(() => atom, callback)`**: Subscribes to changes.
+- **`useAtomMount(() => atom)`**: Keeps an atom mounted for the current Solid owner.
 - **`useAtomInitialValues(values)`**: Seeds atoms in the current registry.
-- **`useAtomRefresh(atom)`**: Returns a refresh callback.
-- **`useAtomResource(atom)`**: Converts an `AsyncResult` atom into a Solid resource.
-- **`useAtomRef(ref)`**: Subscribes to an `AtomRef`.
-- **`useAtomRefProp(ref, key)`**: Derives a property ref.
-- **`useAtomRefPropValue(ref, key)`**: Subscribes to a property value.
+- **`useAtomRefresh(() => atom)`**: Returns a refresh callback.
+- **`useAtomResource(() => atom)`**: Converts an `AsyncResult` atom into a Solid resource.
+- **`useAtomRef(() => ref)`**: Subscribes to an `AtomRef`.
+- **`useAtomRefProp(() => ref, key)`**: Derives a property ref.
+- **`useAtomRefPropValue(() => ref, key)`**: Subscribes to a property value.
