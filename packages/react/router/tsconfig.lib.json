@@ -8,7 +8,8 @@
     "lib": ["DOM", "DOM.Iterable", "es2022"],
     "module": "esnext",
     "moduleResolution": "bundler",
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "ignoreDeprecations": "6.0"
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"]
 }

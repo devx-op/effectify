@@ -43,7 +43,12 @@
           "unnecessaryPipeChain": "warning"
         }
       }
-    ]
+    ],
+    "noUncheckedSideEffectImports": false,
+    "types": [
+      "*"
+    ],
+    "ignoreDeprecations": "6.0"
   },
   "$schema": "https://raw.githubusercontent.com/Effect-TS/tsgo/refs/heads/main/schema.json"
 }

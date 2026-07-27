@@ -18,7 +18,8 @@
       "vitest/globals",
       "react",
       "react-dom"
-    ]
+    ],
+    "ignoreDeprecations": "6.0"
   },
   "include": [],
   "references": [

@@ -8,6 +8,7 @@
       "@effectify/loom-router": ["./router/src/index.ts"],
       "@effectify/loom-vite": ["./vite/src/index.ts"],
       "@effectify/loom-nitro": ["./nitro/src/index.ts"]
-    }
+    },
+    "ignoreDeprecations": "6.0"
   }
 }
