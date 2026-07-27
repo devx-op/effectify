@@ -80,9 +80,18 @@ pnpm nx dev tanstack-solid-app
 # Build all packages
 pnpm nx affected -t build
 
+# Check or apply pinned oxfmt to changed files
+pnpm format:check
+pnpm format
+
+# Audit the full repository before the dedicated formatting follow-up
+pnpm format:all:check
+
 # Clean project
 pnpm clean
 ```
+
+The workspace pins Oxfmt 0.60.0 and Oxlint 1.75.0, whose published Node engine range is `^20.19.0 || >=22.12.0`. Oxfmt provides full-document formatting through the OXC editor extension, its LSP, and the contextual Node API used by the Prisma generator. Changed-file enforcement covers TypeScript, JavaScript, JSON, Markdown, CSS, SCSS, and HTML. Oxfmt 0.60.0 does not support Eta filepath parsing, so changed Eta files fail the formatter check with an explicit manual-formatting requirement until upstream support is available. LSP range formatting is also unavailable, so formatting a selection remains an upstream follow-up rather than claimed parity.
 
 ### Release Management
 
