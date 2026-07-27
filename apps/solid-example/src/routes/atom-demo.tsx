@@ -183,7 +183,7 @@ function AtomDemo() {
           </h1>
 
           <p class="text-xl text-gray-300 mb-12">
-            Demonstrating @effectify/solid-effect-atom v0.3.0
+            Effect v4 Atom and AtomRef with the official @effect/atom-solid bindings
           </p>
 
           <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">

@@ -18,9 +18,6 @@ catalogs:
     '@dprint/typescript':
       specifier: ^0.96.1
       version: 0.96.1
-    '@effect-atom/atom':
-      specifier: 0.5.0
-      version: 0.5.0
     '@effect/atom-solid':
       specifier: 4.0.0-beta.102
       version: 4.0.0-beta.102
@@ -729,9 +726,6 @@ importers:
 
   apps/solid-example:
     dependencies:
-      '@effect-atom/atom':
-        specifier: 'catalog:'
-        version: 0.5.0(@effect/experimental@0.59.0(@effect/platform@0.95.0(effect@4.0.0-beta.102))(effect@4.0.0-beta.102)(ioredis@5.10.1))(@effect/platform@0.95.0(effect@4.0.0-beta.102))(@effect/rpc@0.73.2(@effect/platform@0.95.0(effect@4.0.0-beta.102))(effect@4.0.0-beta.102))(effect@4.0.0-beta.102)
       '@effect/atom-solid':
         specifier: 'catalog:'
         version: 4.0.0-beta.102(effect@4.0.0-beta.102)(solid-js@1.9.14)
@@ -2361,14 +2355,6 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@effect-atom/atom@0.5.0':
-    resolution: {integrity: sha512-qg6Qpf+ESi63taFJrufPtYDHghRLXxAte/xgpKqN+m7T6I3Lw1jgiNxR4AJeNG7f2UOkpmPhA8AYdWMgaUU61w==}
-    peerDependencies:
-      '@effect/experimental': ^0.58.0
-      '@effect/platform': ^0.94.2
-      '@effect/rpc': ^0.73.0
-      effect: ^3.19.15
-
   '@effect/atom-solid@4.0.0-beta.102':
     resolution: {integrity: sha512-+pfF40PKjeNfVzkbc88F0pQDiYN/DFVJ23XnP0RtNlsvKGzCDxp2LHSTA/LUyNIimJ2KsWops3qLrKXE0N0gOg==}
     peerDependencies:
@@ -2379,19 +2365,6 @@ packages:
     resolution: {integrity: sha512-wzunjr8pyNjghLueo5ePQD7vaM3qeO2H/jF57hNYbQM/rxfipBWYKukoqWyp04qGZ+V86FyOHb8zD5+PMZvH2A==}
     engines: {node: '>=16.17.1'}
     hasBin: true
-
-  '@effect/experimental@0.59.0':
-    resolution: {integrity: sha512-XqdBpIH5VLlkRxKlyPYp8TAYUeBPjoWYgtrxDebDab14K4kkrpkHk0ZsmmOiQUZ+LY5veRn/PBSogXor9gtPqg==}
-    peerDependencies:
-      '@effect/platform': ^0.95.0
-      effect: ^3.20.0
-      ioredis: ^5
-      lmdb: ^3
-    peerDependenciesMeta:
-      ioredis:
-        optional: true
-      lmdb:
-        optional: true
 
   '@effect/language-service@0.87.1':
     resolution: {integrity: sha512-kcljlJmEgqg5mFAM6UShJYJjMqJb3TbHHxrK8Qoubvwugc0aVWpRkbdgQvK5b17puOt3BKXXKOmcV+oQt0oQqQ==}
@@ -2409,17 +2382,6 @@ packages:
     peerDependencies:
       effect: ^4.0.0-beta.102
       ioredis: ^5.7.0
-
-  '@effect/platform@0.95.0':
-    resolution: {integrity: sha512-WDlRiWRSWlmhCPq09bvAofK0qr5vM4yNklXjoJdZHmugKRRTpN/Okn3ODnjgM/Kb/4hjMrRyrsUeH/Brieq7KA==}
-    peerDependencies:
-      effect: ^3.20.0
-
-  '@effect/rpc@0.73.2':
-    resolution: {integrity: sha512-td7LHDgBOYKg+VgGWEelD8rSAmvjXz7am17vfxZROX5qIYuvH7drL/z4p5xQFadhHZ7DYdlFpqdO9ggc77OCIw==}
-    peerDependencies:
-      '@effect/platform': ^0.94.5
-      effect: ^3.19.18
 
   '@effect/tsgo-darwin-arm64@0.16.3':
     resolution: {integrity: sha512-k3f8LzSDzPMGveMuChvWjlOxgfCsr+b/Lzo8NkUqIiIyDM2Rmi3vSGk8xgSxLzqoS/Z5dl9Y4CS6LGZlEr6Ssg==}
@@ -9968,9 +9930,6 @@ packages:
     resolution: {integrity: sha512-4kmO/MdyUIkLIvTPr8VHLil4AtoKIoniWPIEk5+CDy0xnWC84azhSFmuJ7PxZdsYtiP5kEeQsORAVIeMgxT+Hw==}
     hasBin: true
 
-  msgpackr@1.11.10:
-    resolution: {integrity: sha512-iCZNq+HszvF+fC3anCm4nBmWEnbeIAfpDs6IStAEKhQ2YSgkjzVG2FF9XJqwwQh5bH3N9OUTUt4QwVN6MLMLtA==}
-
   msgpackr@2.0.4:
     resolution: {integrity: sha512-o1C5KRmuRt+apqMr1HuGSqWStZoRBUpEsCsl15uM9VdAF1qHLtvMOU2En747EnTyEl6c4pzPewRMFF31s1CNbA==}
 
@@ -12045,10 +12004,6 @@ packages:
     resolution: {integrity: sha512-pMZTvIkT1d+TFGvDOqodOclx0QWkkgi6Tdoa8gC8ffGAAqz9pzPTZWAybbsHHoED/ztMtkv/VoYTYyShUn81hA==}
     engines: {node: '>= 0.4.0'}
 
-  uuid@11.1.0:
-    resolution: {integrity: sha512-0/A9rDy9P7cJ+8w1c9WD9V//9Wj15Ce2MPz8Ri6032usz+NfePxx5AcN3bN+r6ZL6jEo066/yNYB3tn4pQEx+A==}
-    hasBin: true
-
   uuid@14.0.1:
     resolution: {integrity: sha512-6ZxzVpzDXDa3bJWaHilVayA+BH/1zmxCJoVgvmqJnid/gPoKHxUrS/aC/T6LGQtNHT+XHG9fXPJB4d+IrU30Ew==}
     hasBin: true
@@ -14107,13 +14062,6 @@ snapshots:
   '@dprint/win32-x64@0.55.1':
     optional: true
 
-  '@effect-atom/atom@0.5.0(@effect/experimental@0.59.0(@effect/platform@0.95.0(effect@4.0.0-beta.102))(effect@4.0.0-beta.102)(ioredis@5.10.1))(@effect/platform@0.95.0(effect@4.0.0-beta.102))(@effect/rpc@0.73.2(@effect/platform@0.95.0(effect@4.0.0-beta.102))(effect@4.0.0-beta.102))(effect@4.0.0-beta.102)':
-    dependencies:
-      '@effect/experimental': 0.59.0(@effect/platform@0.95.0(effect@4.0.0-beta.102))(effect@4.0.0-beta.102)(ioredis@5.10.1)
-      '@effect/platform': 0.95.0(effect@4.0.0-beta.102)
-      '@effect/rpc': 0.73.2(@effect/platform@0.95.0(effect@4.0.0-beta.102))(effect@4.0.0-beta.102)
-      effect: 4.0.0-beta.102
-
   '@effect/atom-solid@4.0.0-beta.102(effect@4.0.0-beta.102)(solid-js@1.9.14)':
     dependencies:
       effect: 4.0.0-beta.102
@@ -14123,14 +14071,6 @@ snapshots:
     dependencies:
       micromatch: 4.0.8
       pkg-entry-points: 1.1.1
-
-  '@effect/experimental@0.59.0(@effect/platform@0.95.0(effect@4.0.0-beta.102))(effect@4.0.0-beta.102)(ioredis@5.10.1)':
-    dependencies:
-      '@effect/platform': 0.95.0(effect@4.0.0-beta.102)
-      effect: 4.0.0-beta.102
-      uuid: 11.1.0
-    optionalDependencies:
-      ioredis: 5.10.1
 
   '@effect/language-service@0.87.1': {}
 
@@ -14153,19 +14093,6 @@ snapshots:
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
-
-  '@effect/platform@0.95.0(effect@4.0.0-beta.102)':
-    dependencies:
-      effect: 4.0.0-beta.102
-      find-my-way-ts: 0.1.6
-      msgpackr: 1.11.10
-      multipasta: 0.2.8
-
-  '@effect/rpc@0.73.2(@effect/platform@0.95.0(effect@4.0.0-beta.102))(effect@4.0.0-beta.102)':
-    dependencies:
-      '@effect/platform': 0.95.0(effect@4.0.0-beta.102)
-      effect: 4.0.0-beta.102
-      msgpackr: 1.11.10
 
   '@effect/tsgo-darwin-arm64@0.16.3':
     optional: true
@@ -23499,10 +23426,6 @@ snapshots:
       '@msgpackr-extract/msgpackr-extract-win32-x64': 3.0.4
     optional: true
 
-  msgpackr@1.11.10:
-    optionalDependencies:
-      msgpackr-extract: 3.0.4
-
   msgpackr@2.0.4:
     optionalDependencies:
       msgpackr-extract: 3.0.4
@@ -26232,8 +26155,6 @@ snapshots:
       which-typed-array: 1.1.20
 
   utils-merge@1.0.1: {}
-
-  uuid@11.1.0: {}
 
   uuid@14.0.1: {}
 

@@ -1,119 +1,121 @@
 ---
-title: "@effectify/solid-effect-atom"
-description: Referencia de API para @effectify/solid-effect-atom
+title: API de Effect v4 Atom para Solid
+description: Referencia de la API de Atom de Effect v4 y los bindings oficiales para SolidJS
 sidebar:
-  label: Solid Effect Atom Reference
+  label: API de Effect Atom para Solid
 ---
 
-## Hooks
+Importa `Atom` y `AtomRef` desde el núcleo de Effect v4, y los bindings de Solid desde `@effect/atom-solid`.
+
+```ts
+import * as Atom from "effect/unstable/reactivity/Atom"
+import * as AsyncResult from "effect/unstable/reactivity/AsyncResult"
+import * as AtomRef from "effect/unstable/reactivity/AtomRef"
+import { RegistryProvider, useAtom } from "@effect/atom-solid"
+import type { Accessor, ResourceOptions, ResourceReturn } from "solid-js"
+```
+
+## Hooks de Atom
+
+Los hooks que seleccionan Atom o AtomRef aceptan funciones diferidas cuando así lo indican las firmas siguientes, lo que permite rastrear la fuente seleccionada dentro del modelo de propiedad reactiva de Solid. `useAtomInitialValues` es diferente: recibe el iterable directamente.
 
 ### useAtom
 
-Se suscribe a un átomo y retorna una tupla `[accessor, setter]`.
+Se suscribe a un átomo escribible y retorna un accessor reactivo junto con un setter.
 
 ```ts
 function useAtom<R, W>(
-  atom: Atom.Writable<R, W>,
-): [Accessor<R>, (value: W) => void]
+  atom: () => Atom.Writable<R, W>,
+): readonly [Accessor<R>, (value: W | ((current: R) => W)) => void]
 ```
 
 ### useAtomValue
 
-Se suscribe a un átomo y retorna su valor como un accessor.
+Se suscribe a un átomo y permite derivar un valor de forma opcional.
 
 ```ts
-function useAtomValue<A>(atom: Atom.Atom<A>): Accessor<A>
-function useAtomValue<A, B>(atom: Atom.Atom<A>, f: (a: A) => B): Accessor<B>
+function useAtomValue<A>(atom: () => Atom.Atom<A>): Accessor<A>
+function useAtomValue<A, B>(atom: () => Atom.Atom<A>, select: (value: A) => B): Accessor<B>
 ```
 
 ### useAtomSet
 
-Retorna una función setter para el átomo sin suscribirse a su valor.
+Retorna un setter sin suscribirse al valor del átomo.
 
 ```ts
-function useAtomSet<R, W>(atom: Atom.Writable<R, W>): (value: W) => void
+function useAtomSet<R, W>(
+  atom: () => Atom.Writable<R, W>,
+): (value: W | ((current: R) => W)) => void
 ```
 
 ### useAtomSubscribe
 
-Se suscribe a cambios en el valor de un átomo.
+Suscribe un callback a los cambios del átomo.
 
 ```ts
 function useAtomSubscribe<A>(
-  atom: Atom.Atom<A>,
-  f: (value: A) => void,
-  options?: { immediate?: boolean },
+  atom: () => Atom.Atom<A>,
+  callback: (value: A) => void,
+  options?: { readonly immediate?: boolean },
 ): void
 ```
 
-### useAtomMount
-
-Monta un átomo en el registro sin suscribirse a su valor. Es útil para mantener un átomo vivo.
+### useAtomMount y useAtomRefresh
 
 ```ts
-function useAtomMount<A>(atom: Atom.Atom<A>): void
-```
-
-### useAtomRefresh
-
-Retorna una función que fuerza al átomo a refrescar su valor.
-
-```ts
-function useAtomRefresh<A>(atom: Atom.Atom<A>): () => void
+function useAtomMount<A>(atom: () => Atom.Atom<A>): void
+function useAtomRefresh<A>(atom: () => Atom.Atom<A>): () => void
 ```
 
 ### useAtomInitialValues
 
-Establece valores iniciales para átomos en el registro actual. Útil para SSR o inicialización.
+Inicializa el primer valor proporcionado para cada átomo en el registro actual.
 
 ```ts
 function useAtomInitialValues(
-  initialValues: Iterable<[Atom.Atom<any>, any]>,
+  initialValues: Iterable<readonly [Atom.Atom<any>, any]>,
 ): void
 ```
 
-### useAtomRef
+### useAtomResource
 
-Se suscribe a un `AtomRef` y retorna su valor como un accessor.
+Convierte un átomo de `AsyncResult` en un recurso de Solid. También acepta opciones de recursos de Solid y `suspendOnWaiting`.
 
 ```ts
-function useAtomRef<A>(ref: AtomRef.ReadonlyRef<A>): Accessor<A>
+function useAtomResource<A, E>(
+  atom: () => Atom.Atom<AsyncResult.AsyncResult<A, E>>,
+  options?: ResourceOptions<A> & { suspendOnWaiting?: boolean },
+): ResourceReturn<A, void>
+```
+
+## Hooks de AtomRef
+
+### useAtomRef
+
+```ts
+function useAtomRef<A>(ref: () => AtomRef.ReadonlyRef<A>): Accessor<A>
 ```
 
 ### useAtomRefProp
 
-Crea un `AtomRef` derivado para una propiedad específica de un objeto almacenado en un `AtomRef`.
+Retorna un accessor que contiene la referencia de propiedad derivada.
 
 ```ts
 function useAtomRefProp<A, K extends keyof A>(
-  ref: AtomRef.AtomRef<A>,
-  prop: K,
-): AtomRef.AtomRef<A[K]>
+  ref: () => AtomRef.AtomRef<A>,
+  property: K,
+): Accessor<AtomRef.AtomRef<A[K]>>
 ```
 
 ### useAtomRefPropValue
 
-Se suscribe a una propiedad específica de un objeto almacenado en un `AtomRef`.
-
 ```ts
 function useAtomRefPropValue<A, K extends keyof A>(
-  ref: AtomRef.AtomRef<A>,
-  prop: K,
+  ref: () => AtomRef.AtomRef<A>,
+  property: K,
 ): Accessor<A[K]>
 ```
 
-## Contexto
+## Contexto del registro
 
-### RegistryProvider
-
-Provee el contexto `AtomRegistry` al árbol de componentes. Esto es requerido para que funcionen los hooks de átomos.
-
-```tsx
-function RegistryProvider(props: {
-  children?: JSX.Element
-  initialValues?: Iterable<[Atom.Atom<any>, any]>
-  scheduleTask?: (f: () => void) => () => void
-  timeoutResolution?: number
-  defaultIdleTTL?: number
-}): JSX.Element
-```
+`RegistryProvider` crea y descarta un `AtomRegistry` para un subárbol de Solid. Acepta valores iniciales y opciones de planificación y duración. `RegistryContext` expone el registro actual para integraciones de bajo nivel.
