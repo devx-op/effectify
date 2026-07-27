@@ -6,17 +6,10 @@ Migrate the Nx workspace's React projects from 18 to 19. Run the codemods first,
 
 ```bash
 npx codemod@latest react/19/migration-recipe
-npx types-react-codemod@latest preset-19 ./PROJECT_PATH
+npx types-react-codemod@latest preset-19 ./PROJECT_PATH --yes
 ```
 
-First handles API changes, second handles `@types/react` 19 types. Review the diffs.
-
-`preset-19` is interactive (prompts per codemod). For a non-interactive run, the two that clear the most common type errors are:
-
-```bash
-npx types-react-codemod@latest useRef-required-initial ./PROJECT_PATH  # useRef() -> useRef(initialValue); 19 dropped the zero-arg overload
-npx types-react-codemod@latest refobject-defaults ./PROJECT_PATH       # RefObject<T> -> RefObject<T | null>; covers both ref sites and helper param signatures
-```
+The first command handles API changes. The second runs the complete `@types/react` 19 preset non-interactively, including `useRef-required-initial`, `refobject-defaults`, and the other React 19 type transforms. Review the diffs because some transforms can produce false positives.
 
 ## Step 2: Removed APIs (fix by hand if codemod misses)
 
@@ -27,11 +20,14 @@ npx types-react-codemod@latest refobject-defaults ./PROJECT_PATH       # RefObje
 - `defaultProps` -> removed for FUNCTION components (use default params); still works on classes.
 - Legacy string refs -> callback refs or `useRef`.
 - Legacy Context: consumer `contextTypes` and provider `childContextTypes` / `getChildContext` -> `createContext`.
+- `React.createFactory` -> replace factories with JSX.
+- Module pattern factories that return an object with `render` -> convert them to regular function components that return JSX.
+- `react-test-renderer/shallow` -> install and import `react-shallow-renderer`, or preferably migrate to `@testing-library/react`.
 - `react-test-renderer` is deprecated -> migrate tests to `@testing-library/react`.
 
 ## Step 3: ref as prop
 
-`forwardRef` is no longer needed; `ref` is a normal prop. Existing `forwardRef` calls still work (deprecated).
+For function components, `forwardRef` is no longer needed because `ref` is available as a normal prop. Existing `forwardRef` calls still work but are deprecated. This behavior does not apply to class components: a ref passed to a class component still targets the component instance and is not available through `props`.
 
 ## Step 4: Types
 
@@ -49,12 +45,12 @@ declare global {
 }
 ```
 
-no longer merges into the JSX that React resolves under the automatic runtime (`jsx: "react-jsx"`), so the element becomes a `TS2339` unknown-property error in every consuming `.tsx`. Re-target the augmentation at the `react` module:
+no longer merges into the JSX namespace selected by the project's `jsx` compiler option, so the element becomes a `TS2339` unknown-property error in every consuming `.tsx`. Re-target both the import and augmentation to the matching JSX runtime. For `jsx: "react-jsx"`:
 
 ```ts
-import type {} from 'react';
+import type {} from 'react/jsx-runtime';
 
-declare module 'react' {
+declare module 'react/jsx-runtime' {
   namespace JSX {
     interface IntrinsicElements {
       'my-element': ...;
@@ -63,7 +59,7 @@ declare module 'react' {
 }
 ```
 
-The `import type {} from 'react'` is required when the file (or its tsconfig `types`) does not otherwise pull in `react`; without `react` in the program the augmentation fails with `TS2664: Invalid module name in augmentation`. Keep any `eslint-disable` comment already on the `namespace` line.
+Use `react/jsx-dev-runtime` for `jsx: "react-jsxdev"`, and `react` for classic `jsx: "react"` or `jsx: "preserve"` modes. Importing the same module being augmented ensures it is part of the program and avoids `TS2664: Invalid module name in augmentation`. Keep any existing `eslint-disable` comment on the `namespace` line.
 
 ## Validate
 
@@ -85,5 +81,5 @@ Most React 19 breakages are type-level (the `JSX` namespace move, implicit `chil
 
 ## References
 
-- React 19 upgrade guide (the TypeScript section covers the `JSX`, `useRef`, and `ref` changes): https://react.dev/blog/2024/04/25/react-19-upgrade-guide
-- `types-react-codemod` (what each codemod does, including `scoped-jsx`): https://github.com/eps1lon/types-react-codemod
+- React 19 upgrade guide (the TypeScript section covers the `JSX`, `useRef`, and `ref` changes): <https://react.dev/blog/2024/04/25/react-19-upgrade-guide>
+- `types-react-codemod` (what each codemod does, including `scoped-jsx`): <https://github.com/eps1lon/types-react-codemod>
