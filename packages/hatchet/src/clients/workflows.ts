@@ -5,7 +5,7 @@
  */
 
 import * as Effect from "effect/Effect"
-import type { CreateWorkflowOpts as SdkCreateWorkflowOpts, WorkflowsClient } from "@hatchet-dev/typescript-sdk"
+import type { WorkflowsClient } from "@hatchet-dev/typescript-sdk"
 import type { HatchetClientService } from "../core/client.js"
 import { getHatchetClient } from "../core/client.js"
 import { HatchetWorkflowError } from "../core/error.js"
@@ -13,41 +13,9 @@ import { HatchetWorkflowError } from "../core/error.js"
 /**
  * Type audit:
  * - `WorkflowTarget` and `ListWorkflowsOpts` are direct SDK derivations for passthrough calls.
- * - `createWorkflow` is intentionally unsupported because SDK 1.21.0 exposes workflow declarations but no public `workflows.create` transport method.
  * - Tagged errors stay local for the Effect boundary.
  */
 export type WorkflowTarget = Parameters<WorkflowsClient["delete"]>[0]
-export type UnsupportedCreateWorkflowDefinition = Pick<
-  SdkCreateWorkflowOpts,
-  "name"
->
-
-export const CREATE_WORKFLOW_UNSUPPORTED_MESSAGE =
-  "Workflow creation is not supported by Hatchet SDK 1.21.0 public workflows client"
-
-const getUnsupportedWorkflowName = (
-  workflow: string | UnsupportedCreateWorkflowDefinition,
-): string => (typeof workflow === "string" ? workflow : workflow.name)
-
-/**
- * Create a new workflow in Hatchet
- *
- * Honest package stance: the public Hatchet SDK exposes workflow declarations,
- * but not a supported `workflows.create` mutation in v1.21.0.
- *
- * @deprecated Compatibility-only shim. Hatchet SDK 1.21.0 does not expose a supported `workflows.create` API.
- * @param workflow - Workflow identity used only for the typed unsupported error
- * @returns Effect that always fails with `HatchetWorkflowError`
- */
-export const createWorkflow = (
-  workflow: string | UnsupportedCreateWorkflowDefinition,
-): Effect.Effect<never, HatchetWorkflowError, never> =>
-  Effect.fail(
-    new HatchetWorkflowError({
-      message: CREATE_WORKFLOW_UNSUPPORTED_MESSAGE,
-      workflowName: getUnsupportedWorkflowName(workflow),
-    }),
-  )
 
 /**
  * Get a workflow by name

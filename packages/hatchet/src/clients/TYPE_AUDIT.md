@@ -5,7 +5,7 @@
 | Client          | Category    | Prefer SDK/core types                                                                                    | Keep custom boundary types                                                     |
 | --------------- | ----------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
 | `runs.ts`       | Passthrough | `RunOpts`, `ListRunsOpts`, `ReplayRunOpts`, `RunFilter` source fields                                    | Singular `workflowName` / `status` convenience + tagged errors                 |
-| `workflows.ts`  | Passthrough | `ListWorkflowsOpts`, `WorkflowTarget`                                                                    | Honest unsupported `createWorkflow` identity input + tagged errors             |
+| `workflows.ts`  | Passthrough | `ListWorkflowsOpts`, `WorkflowTarget`                                                                    | Tagged errors for get/list/delete                                              |
 | `workers.ts`    | Passthrough | `RegisterWorkerOpts` via `HatchetClient["worker"]`, workflow item type via `Worker['registerWorkflows']` | Tagged errors + register/start lifecycle                                       |
 | `ratelimits.ts` | Boundary    | `ListRateLimitsOptions`, enum re-exports                                                                 | `UpsertRateLimitOptions`, `HatchetRateLimitRecord`                             |
 | `filters.ts`    | Normalized  | `ListFiltersOptions`, `CreateFilterInput`                                                                | `HatchetFilterRecord`, tagged errors                                           |

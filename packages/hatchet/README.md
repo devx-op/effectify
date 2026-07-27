@@ -1,241 +1,189 @@
 # @effectify/hatchet
 
-> Native Effect v4 integration with Hatchet workflows
+`@effectify/hatchet` is a task-first, Effect-native Hatchet integration. Consumers declare `Task` values, compose `Hatchet.layer`, and yield `Hatchet` operations. SDK construction, configuration acquisition, task registration, worker lifecycle, lazy initialization, retries, and cleanup remain package-owned.
 
-`@effectify/hatchet` provides a native Effect v4 API for creating and running Hatchet workflows. Write your tasks as `Effect`s and let the package handle the conversion to Hatchet's step functions.
+## Define a Task
 
-## Features
-
-- **Native Effect API** — Write tasks using `Effect<A, E, R>` instead of async functions
-- **Type-safe inputs** — Built-in schema validation for task inputs using Effect's Schema
-- **Automatic logging** — Logs are automatically synced to the Hatchet UI
-- **Familiar API** — API mirrors Hatchet's native API for easy migration
-- **Full TypeScript** — Complete type inference and IntelliSense
-
-## Installation
-
-```bash
-pnpm add @effectify/hatchet effect
-```
-
-## Quick Start
-
-```typescript
-import { registerWorkflow, task, workflow } from "@effectify/hatchet"
+```ts
+import { Hatchet, Task } from "@effectify/hatchet"
 import * as Effect from "effect/Effect"
-
-// Define your task as an Effect
-const myTask = task(
-  { name: "hello-task" },
-  Effect.succeed({ message: "Hello from Effect!" }),
-)
-
-// Create a workflow
-const myWorkflow = workflow({
-  name: "hello-workflow",
-  description: "My first Effect-powered workflow",
-}).task(myTask)
-
-// Register and start the worker
 import * as Layer from "effect/Layer"
+import * as Schema from "effect/Schema"
 
-const configLayer = HatchetConfigLayer({
-  token: process.env.HATCHET_TOKEN!,
-  host: process.env.HATCHET_HOST || "http://localhost:8080",
+const GreetingInput = Schema.Struct({
+  name: Schema.NonEmptyString,
+})
+const GreetingOutput = Schema.Struct({
+  greeting: Schema.String,
 })
 
-Effect.runPromise(registerWorkflow("my-worker", myWorkflow, configLayer))
-```
-
-## API Reference
-
-### `workflow(options)`
-
-Creates a new workflow definition.
-
-```typescript
-const wf = workflow({
-  name: "my-workflow",
-  description: "Optional description",
-  version: "1.0.0",
+const greet = Task.make({
+  name: "greet",
+  input: GreetingInput,
+  output: GreetingOutput,
+  fn: ({ name }) => Effect.succeed({ greeting: `Hello, ${name}!` }),
 })
-```
 
-**Options:**
+const AppLayer = Layer.mergeAll(
+  DatabaseLive,
+  Hatchet.layer({ tasks: [greet] }),
+)
 
-- `name` (required) — Workflow name
-- `description` — Workflow description
-- `version` — Workflow version (default: "1.0.0")
-
-**Returns:** `EffectWorkflow` — Chainable workflow builder
-
-### `.task(taskDefinition)`
-
-Adds a task to the workflow. Returns the workflow for chaining.
-
-```typescript
-workflow({ name: "my-workflow" }).task(task1).task(task2) // Can depend on task1 via parents
-```
-
-### `task(options, effect)`
-
-Defines a task as an Effect.
-
-```typescript
-const myTask = task(
-  {
-    name: "my-task",
-    timeout: "30s", // Optional timeout
-    parents: ["previous-task"], // Optional dependencies
-  },
-  Effect.gen(function*() {
-    // Your Effect code here
-    return { result: "done" }
-  }),
+const program = Hatchet.run(greet, { name: "Ada" }).pipe(
+  Effect.provide(AppLayer),
 )
 ```
 
-**Options:**
+`input` and `output` are optional Effect Schema codecs. Input is decoded before the task body; output is validated and encoded at the transport boundary. Boundary failures use `TaskSchemaError` with an `input` or `output` phase. Schema-free tasks remain supported.
 
-- `name` (required) — Task name
-- `timeout` — Task timeout (e.g., "30s", "1m")
-- `parents` — Array of parent task names
+## Declarative metadata
 
-**Effect:** Any `Effect<A, E, R>` — The task logic
+Package-owned `RateLimit` and `Trigger` values keep Hatchet SDK declaration types behind the adapter boundary. Values are immutable, validated before SDK or worker mutation, and translated without dropping duplicates or optional fields.
 
-### `registerWorkflow(workerName, workflow, layer)`
+```ts
+import { RateLimit, Task, Trigger } from "@effectify/hatchet"
 
-Registers a workflow and starts a worker.
-
-```typescript
-Effect.runPromise(registerWorkflow("my-worker", myWorkflow, configLayer))
-```
-
-### `registerWorkflowWithConfig(workerName, workflow, config)`
-
-Alternative registration with inline config.
-
-```typescript
-Effect.runPromise(
-  registerWorkflowWithConfig("my-worker", myWorkflow, {
-    token: "...",
-    host: "http://localhost:7077", // gRPC port
-  }),
-)
-```
-
-## Input Validation
-
-Use `getValidatedInput` to validate and parse task inputs with type safety:
-
-```typescript
-import { Schema } from "effect"
-import { getValidatedInput } from "@effectify/hatchet"
-
-const UserInputSchema = Schema.Struct({
-  userId: Schema.String,
-  action: Schema.Literal("create", "update", "delete"),
+const notified = Task.make({
+  name: "customer-notified",
+  rateLimits: [RateLimit.make({ units: 10, duration: "minute", key: "customer" })],
+  triggers: [Trigger.event("customer:updated")],
+  fn: (input: { readonly customerId: string }) => Effect.succeed(input),
 })
-
-const myTask = task(
-  { name: "process-user" },
-  Effect.gen(function*() {
-    const input = yield* getValidatedInput(UserInputSchema)
-    // input is typed as { userId: string, action: "create" | "update" | "delete" }
-    return { processed: input.userId }
-  }),
-)
 ```
 
-## Logging
+Empty names, malformed rate limits or triggers, unknown declaration kinds, and duplicate task identities fail with `TaskDeclarationError` before registration starts.
 
-The `withHatchetLogger` function adds automatic log syncing to any Effect:
+## Durable tasks
 
-```typescript
-import { task, withHatchetLogger, workflow } from "@effectify/hatchet"
+`Task.durable` uses the same Effect-first Schema and requirements contract while exposing durable invocation metadata to the handler. The live adapter registers it with Hatchet's durable task API; the in-memory adapter supplies invocation count `0` for deterministic tests.
 
-const loggedTask = task(
-  { name: "logged-task" },
-  withHatchetLogger(
-    Effect.gen(function*() {
-      yield* Effect.log("Starting work...")
-      const result = yield* Effect.succeed({ data: "done" })
-      yield* Effect.log("Work complete!")
-      return result
+```ts
+const durableGreeting = Task.durable({
+  name: "durable-greeting",
+  input: GreetingInput,
+  output: GreetingOutput,
+  fn: ({ name }, context) =>
+    Effect.succeed({
+      greeting: `Hello, ${name}! Invocation ${context.invocationCount}`,
     }),
-  ),
-)
+})
 ```
 
-## Testing
+Durable handlers receive `workflowRunId`, `taskRunExternalId`, `interruption`, and `invocationCount`. SDK abort signals interrupt the Effect execution, task requirements are captured when the Layer is acquired, and unknown task identities fail with `MissingTaskError` rather than dispatching another declaration.
 
-Use the testing utilities to create mock contexts and test tasks in isolation:
+## Dispatch without waiting
 
-```typescript
-import { createMockContext, testTask } from "@effectify/hatchet/testing"
+`Hatchet.runNoWait(task, input)` dispatches the task and returns a scoped `RunHandle` before the task completes. Its branded `id` identifies the run, `await` produces the same Schema-decoded output as `Hatchet.run`, and `cancel` interrupts an outstanding run.
 
-const mockContext = createMockContext<{ userId: string }>({
-  workflow: { runId: "test-run", workflowId: "test-wf" },
-  step: { name: "test-step" },
-  input: { userId: "test-user" },
+```ts
+const program = Effect.gen(function*() {
+  const handle = yield* Hatchet.runNoWait(greet, { name: "Ada" })
+  yield* Effect.log("Continue independent Effect work", handle.id)
+  return yield* handle.await
+}).pipe(Effect.provide(AppLayer))
+```
+
+Outstanding in-memory runs are interrupted when their Layer scope closes. Live handles delegate dispatch, result, and cancellation to Hatchet while mapping SDK failures into package errors.
+
+Run the live dispatch example on the repository's supported Node version (`>=22.22`):
+
+```sh
+HATCHET_CLIENT_TOKEN='<token>' node --experimental-strip-types packages/hatchet/scripts/test-workflow.ts
+```
+
+The upstream Hatchet SDK keeps its run-result gRPC transport alive and currently exposes no client-level close/dispose API. The executable example therefore terminates explicitly only after its Effect completes and the Hatchet Layer has stopped its worker. This workaround is CLI-only; package source never terminates the process.
+
+## Schedule once
+
+`Hatchet.schedule` creates a one-time task trigger with either an exact `At` date or an `After` `Duration.Input`. It returns a branded schedule record containing its id and exact trigger time. `getSchedule` returns `Some` while the owned schedule is waiting or executing. `deleteSchedule` returns `true` and interrupts it in either state, then returns `false` after completion, deletion, or absence. Cron APIs remain separate for recurring schedules.
+
+```ts
+const record = yield * Hatchet.schedule(greet, { name: "Ada" }, {
+  _tag: "After",
+  delay: "5 seconds",
+})
+const pending = yield * Hatchet.getSchedule(record.id)
+const deleted = yield * Hatchet.deleteSchedule(record.id)
+```
+
+Run the live scheduling example with:
+
+```sh
+HATCHET_CLIENT_TOKEN='<token>' node --experimental-strip-types packages/hatchet/scripts/test-schedule.ts
+```
+
+## Cron records
+
+`CronExpression.parse` accepts exactly five Hatchet-compatible fields, validates their semantics with Effect Cron, and preserves a normalized source string. `CronExpression.next` and `CronExpression.nextRuns` provide local previews without exposing the SDK transport. Pass the parsed value as `schedule` to `createCron`; the package serializes its preserved source and Schema-encodes task input.
+
+```ts
+const schedule = yield * CronExpression.parse("0 9 * * 1-5")
+const preview = CronExpression.nextRuns(schedule, 3)
+const cron = yield * Hatchet.createCron(greet, {
+  name: "weekday-greeting",
+  schedule,
+  input: { name: "Ada" },
+})
+```
+
+`getCron`, filtered/paginated `listCrons`, and `deleteCron` complete the package lifecycle. Creation is non-idempotent: in-memory calls get distinct IDs, while live duplicate policy is backend-owned, so callers must not assume idempotency. In-memory records do not auto-fire. Run the live lifecycle with `HATCHET_CLIENT_TOKEN='<token>' node --experimental-strip-types packages/hatchet/scripts/test-cron.ts`.
+
+## Lazy Layer
+
+`Hatchet.layer({ tasks })` is inert when acquired. It does not read configuration, construct the SDK, contact Hatchet, register tasks, or start a worker until the first `Hatchet` operation.
+
+Concurrent first operations share one acquisition attempt. A successful worker is reused for the Layer scope. A failed attempt is cleaned up and returned to all waiters; the next operation retries. Closing the Layer scope stops the worker exactly once.
+
+Explicit decoded options and custom Effect Config are supported:
+
+```ts
+const explicit = Hatchet.layer({
+  tasks: [greet],
+  options: {
+    client: { token },
+    worker: {
+      name: "greeting-worker",
+      slots: 4,
+      readyTimeoutMs: 10_000,
+      stopTimeoutMs: 5_000,
+    },
+  },
 })
 
-const result = await testTask(myTask, mockContext)
+const configured = Hatchet.layer({
+  tasks: [greet],
+  config: applicationHatchetConfig,
+})
 ```
 
-## Error Handling
+Without `options` or `config`, the package uses its Effect Config environment contract. `HATCHET_CLIENT_TOKEN` is required on first operation. Optional keys are `HATCHET_HOST_PORT`, `HATCHET_API_URL`, `HATCHET_TLS_STRATEGY`, `HATCHET_TENANT_ID`, `HATCHET_NAMESPACE`, `HATCHET_LOG_LEVEL`, `HATCHET_WORKER_NAME`, `HATCHET_WORKER_SLOTS`, `HATCHET_WORKER_READY_TIMEOUT_MS`, and `HATCHET_WORKER_STOP_TIMEOUT_MS`.
 
-The package provides typed errors using Effect's `Data.TaggedError`:
+Omitting TLS strategy preserves the SDK secure default. Local plaintext Hatchet Lite deployments must explicitly use `none`.
 
-```typescript
-import { HatchetError, HatchetRetryError, HatchetTimeoutError } from "@effectify/hatchet"
+## Public API
 
-const myTask = task(
-  { name: "faulty-task" },
-  Effect.gen(function*() {
-    yield* new HatchetError({ message: "Something went wrong" })
-    // Or use specific error types:
-    // yield* new HatchetTimeoutError({ message: "Task timed out" })
-  }),
-)
+- `Task.make(options)` — declarative task identity with optional input/output Schema
+- `Task.durable(options)` — durable declaration with `Task.DurableContext`
+- `RateLimit.make(options)` — immutable rate-limit metadata
+- `Trigger.event(name)`, `Trigger.cron(expression)` — immutable trigger metadata
+- `Hatchet.layer({ tasks, options?, config? })` — package-owned lazy live Layer
+- `Hatchet.layerInMemory` — deterministic scoped adapter for tests
+- `Hatchet.run(task, input)` — await task output
+- `Hatchet.runNoWait(task, input)` — obtain a run handle
+- `Hatchet.schedule`, `Hatchet.getSchedule`, `Hatchet.deleteSchedule`
+- `Hatchet.cancelRun`
+- `CronExpression.parse`, `CronExpression.next`, `CronExpression.nextRuns`
+- `Hatchet.createCron`, `Hatchet.getCron`, `Hatchet.listCrons`, `Hatchet.deleteCron`
+- typed models and errors from the package root
+
+Applications do not need a separate runtime service, Promise bridge, worker registration API, or lifecycle API.
+
+## In-memory adapter
+
+```ts
+const local = Effect.gen(function*() {
+  return yield* Hatchet.run(greet, { name: "Ada" })
+}).pipe(Effect.provide(Hatchet.layerInMemory))
 ```
 
-## Effect Patterns
-
-This package follows Effect v4 best practices:
-
-- Use `Effect.gen` for async task logic
-- Use `yield*` for direct error yielding (not `Effect.fail`)
-- Use `Schema` from the `effect` package for validation
-- Use `Layer` for dependency injection
-
-```typescript
-// ✅ Correct
-yield * new HatchetError({ message: "Failed" })
-
-// ❌ Don't use Effect.fail
-yield * Effect.fail(new Error("Failed")) // Avoid this
-```
-
-## Requirements
-
-- Effect v4 (v4.0.0 or later)
-- Hatchet v1.21.0+
-- TypeScript 5.0+
-
-## Architecture
-
-For detailed architecture decisions and implementation details, see:
-
-- [Specs](./docs/specs/hatchet-spec.md) - Detailed requirement specifications
-- [Design](./docs/design/hatchet-design.md) - Architecture and design decisions
-
-The `effectifier` module (internal) handles the conversion from Effect to Hatchet's Promise-based task functions, providing:
-
-- `effectifyTask` - Core function that wraps an Effect with a ManagedRuntime
-- Context injection - Automatic injection of HatchetStepContext into Effects
-- Error propagation - Proper error mapping for Hatchet's retry mechanism
-
-## License
-
-MIT
+The in-memory adapter is process-local, scope-bound, non-durable, and non-distributed. Its schedule and cron records exist for deterministic tests; they do not model a distributed Hatchet server.
