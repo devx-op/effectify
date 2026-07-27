@@ -1,8 +1,8 @@
 ---
 name: effect-context-manager
 description: >
-  Gestiona los clones locales de referencia de Effect v4 y Alchemy alojados en ./.effect-reference.
-  Trigger: Cuando se necesita consultar el código de Effect o Alchemy, actualizar el contexto, o configurar una nueva máquina.
+  Manages the local Effect v4 and Alchemy reference clones hosted in ./.effect-reference.
+  Trigger: When Effect or Alchemy code needs to be consulted, the context needs to be updated, or a new machine needs to be set up.
 license: Apache-2.0
 metadata:
   author: gentleman-programming
@@ -11,36 +11,36 @@ metadata:
 
 ## When to Use
 
-- Clonar las referencias locales de Effect v4 y Alchemy en una nueva máquina
-- Actualizar Effect desde `Effect-TS/effect` rama `main`
-- Actualizar Alchemy desde `alchemy-run/alchemy` rama `main`
-- Consultar patrones actuales directamente en los clones de referencia
-- Verificar que ambos clones depth-1 están sincronizados con sus upstreams
+- Clone the local Effect v4 and Alchemy references on a new machine
+- Update Effect from the `main` branch of `Effect-TS/effect`
+- Update Alchemy from the `main` branch of `alchemy-run/alchemy`
+- Consult current patterns directly in the reference clones
+- Verify that both depth-1 clones are synchronized with their upstreams
 
-## Fuentes Canónicas
+## Canonical Sources
 
-- `.effect-reference/effect` es un clon depth-1 de `https://github.com/Effect-TS/effect.git`, rama `main`, y es la referencia local de Effect v4.
-- Effect v3 corresponde a la rama `v3` del mismo repositorio `Effect-TS/effect`; no debe utilizarse como objetivo de la referencia v4.
-- `.effect-reference/alchemy` es un clon depth-1 de `https://github.com/alchemy-run/alchemy.git`, rama `main`, y es la referencia canónica de Alchemy next/alpha basada en Effect.
-- `alchemy-run/alchemy-async` es la implementación async anterior, no la referencia canónica actual.
+- `.effect-reference/effect` is a depth-1 clone of the `main` branch of `https://github.com/Effect-TS/effect.git` and is the local Effect v4 reference.
+- Effect v3 corresponds to the `v3` branch of the same `Effect-TS/effect` repository; it must not be used as the target for the v4 reference.
+- `.effect-reference/alchemy` is a depth-1 clone of the `main` branch of `https://github.com/alchemy-run/alchemy.git` and is the canonical Effect-based Alchemy next/alpha reference.
+- `alchemy-run/alchemy-async` is the former async implementation, not the current canonical reference.
 
 ## Critical Patterns
 
-### Protocolo 1: Setup en Nueva Máquina
+### Protocol 1: Setup on a New Machine
 
-Los directorios de referencia están ignorados por Git y son clones independientes. No son worktrees del repositorio principal ni ramas huérfanas.
+The reference directories are ignored by Git and are independent clones. They are neither worktrees of the main repository nor orphan branches.
 
-Cuando uno de los directorios no exista o el usuario mencione una nueva máquina:
+When one of the directories does not exist or the user mentions a new machine:
 
 ```bash
-# 1. Crear el directorio contenedor ignorado
+# 1. Create the ignored container directory
 mkdir -p .effect-reference
 
-# 2. Clonar únicamente las ramas canónicas con profundidad 1
+# 2. Clone only the canonical branches with depth 1
 git clone --depth 1 --branch main https://github.com/Effect-TS/effect.git .effect-reference/effect
 git clone --depth 1 --branch main https://github.com/alchemy-run/alchemy.git .effect-reference/alchemy
 
-# 3. Confirmar remoto, rama y profundidad de cada clon
+# 3. Confirm the remote, branch, and depth of each clone
 git -C .effect-reference/effect remote get-url origin
 git -C .effect-reference/effect branch --show-current
 git -C .effect-reference/effect rev-parse --is-shallow-repository
@@ -49,11 +49,11 @@ git -C .effect-reference/alchemy branch --show-current
 git -C .effect-reference/alchemy rev-parse --is-shallow-repository
 ```
 
-Si uno de los clones ya existe, no volver a ejecutar `git clone` sobre ese directorio. Utilizar el protocolo de sincronización correspondiente.
+If one of the clones already exists, do not run `git clone` again in that directory. Use the corresponding synchronization protocol.
 
-### Protocolo 2: Actualización desde los Orígenes
+### Protocol 2: Update from Upstream Sources
 
-Cuando el usuario pida actualizar el contexto, confirmar primero que cada clon esté limpio y apunte al remoto y rama esperados:
+When the user asks to update the context, first confirm that each clone is clean and points to the expected remote and branch:
 
 ```bash
 # Effect v4
@@ -69,36 +69,36 @@ git -C .effect-reference/alchemy branch --show-current
 git -C .effect-reference/alchemy pull --ff-only --depth 1 origin main
 ```
 
-No sobrescribir cambios locales en los clones. Si `status --short` muestra cambios o `pull --ff-only` no puede avanzar, detenerse y resolver el estado explícitamente.
+Do not overwrite local changes in the clones. If `status --short` shows changes or `pull --ff-only` cannot fast-forward, stop and resolve the state explicitly.
 
-## Restricciones Críticas de Seguridad
+## Critical Safety Constraints
 
-| Restricción               | Descripción                                                                                                  |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| **Aislamiento Total**     | Nunca hacer `git merge` entre los clones de referencia y las ramas de desarrollo                             |
-| **Modo Solo-Lectura**     | No sugerir cambios de código dentro de `.effect-reference/effect` o `.effect-reference/alchemy`              |
-| **Clones Independientes** | No montar estas referencias como worktrees ni mantenerlas mediante ramas huérfanas del repositorio principal |
-| **Contenido Ignorado**    | Los archivos de `.effect-reference` no deben incluirse en commits de las ramas de desarrollo                 |
-| **Sincronización Segura** | Actualizar únicamente clones limpios mediante fast-forward desde la rama `main` de su origin esperado        |
+| Constraint               | Description                                                                                                |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| **Total Isolation**      | Never run `git merge` between the reference clones and the development branches                            |
+| **Read-Only Mode**       | Do not suggest code changes inside `.effect-reference/effect` or `.effect-reference/alchemy`               |
+| **Independent Clones**   | Do not mount these references as worktrees or maintain them through orphan branches of the main repository |
+| **Ignored Content**      | Files under `.effect-reference` must not be included in commits on development branches                    |
+| **Safe Synchronization** | Update only clean clones by fast-forwarding from the `main` branch of their expected `origin`              |
 
-## Verificación del Estado
+## Status Verification
 
 ```bash
-# Verificar remoto, rama y clon shallow de Effect
+# Verify the remote, branch, and shallow clone status of Effect
 git -C .effect-reference/effect remote get-url origin
 git -C .effect-reference/effect branch --show-current
 git -C .effect-reference/effect rev-parse --is-shallow-repository
 git -C .effect-reference/effect rev-parse HEAD
 git ls-remote https://github.com/Effect-TS/effect.git refs/heads/main
 
-# Verificar remoto, rama y clon shallow de Alchemy
+# Verify the remote, branch, and shallow clone status of Alchemy
 git -C .effect-reference/alchemy remote get-url origin
 git -C .effect-reference/alchemy branch --show-current
 git -C .effect-reference/alchemy rev-parse --is-shallow-repository
 git -C .effect-reference/alchemy rev-parse HEAD
 git ls-remote https://github.com/alchemy-run/alchemy.git refs/heads/main
 
-# Ambos clones deben permanecer limpios
+# Both clones must remain clean
 git -C .effect-reference/effect status --short --branch
 git -C .effect-reference/alchemy status --short --branch
 ```
@@ -106,21 +106,21 @@ git -C .effect-reference/alchemy status --short --branch
 ## Commands
 
 ```bash
-# Setup inicial
+# Initial setup
 git clone --depth 1 --branch main https://github.com/Effect-TS/effect.git .effect-reference/effect
 git clone --depth 1 --branch main https://github.com/alchemy-run/alchemy.git .effect-reference/alchemy
 
-# Sincronizar con latest
+# Synchronize with the latest upstream state
 git -C .effect-reference/effect pull --ff-only --depth 1 origin main
 git -C .effect-reference/alchemy pull --ff-only --depth 1 origin main
 
-# Verificar estado
+# Verify status
 git -C .effect-reference/effect status --short --branch
 git -C .effect-reference/alchemy status --short --branch
 ```
 
-## Recursos
+## Resources
 
-- **Referencia Effect v4**: [.effect-reference/effect/](../../../.effect-reference/effect/)
-- **Guía de Migración de Effect**: [.effect-reference/effect/MIGRATION.md](../../../.effect-reference/effect/MIGRATION.md)
-- **Referencia Alchemy next/alpha**: [.effect-reference/alchemy/](../../../.effect-reference/alchemy/)
+- **Effect v4 Reference**: [.effect-reference/effect/](../../../.effect-reference/effect/)
+- **Effect Migration Guide**: [.effect-reference/effect/MIGRATION.md](../../../.effect-reference/effect/MIGRATION.md)
+- **Alchemy next/alpha Reference**: [.effect-reference/alchemy/](../../../.effect-reference/alchemy/)
