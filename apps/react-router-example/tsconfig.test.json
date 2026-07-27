@@ -18,6 +18,7 @@
       "react-dom"
     ],
     "lib": ["DOM", "DOM.Iterable", "ES2022"],
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "rootDir": "."
   }
 }

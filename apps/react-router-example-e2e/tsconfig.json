@@ -13,7 +13,8 @@
       "es2022"
     ],
     "allowJs": false,
-    "noEmit": true
+    "noEmit": true,
+    "ignoreDeprecations": "6.0"
   },
   "include": [
     "src/**/*.ts",

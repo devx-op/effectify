@@ -6,6 +6,7 @@
     { "path": "./tsconfig.app.json" }
   ],
   "compilerOptions": {
-    "strict": true
+    "strict": true,
+    "ignoreDeprecations": "6.0"
   }
 }
