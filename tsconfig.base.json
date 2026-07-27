@@ -25,12 +25,7 @@
     "plugins": [
       {
         "name": "@effect/language-service",
-        "namespaceImportPackages": [
-          "effect",
-          "@effect/platform",
-          "@effect/platform-node",
-          "@effectify/cli"
-        ],
+        "namespaceImportPackages": ["effect", "@effect/platform", "@effect/platform-node", "@effectify/cli"],
         "diagnosticSeverity": {
           "anyUnknownInErrorContext": "error",
           "duplicatePackage": "error",
@@ -42,9 +37,7 @@
       }
     ],
     "noUncheckedSideEffectImports": false,
-    "types": [
-      "*"
-    ],
+    "types": ["*"],
     "ignoreDeprecations": "6.0"
   },
   "$schema": "https://raw.githubusercontent.com/Effect-TS/tsgo/refs/heads/main/schema.json"

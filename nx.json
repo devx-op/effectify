@@ -5,10 +5,7 @@
     "packageManager": "pnpm"
   },
   "namedInputs": {
-    "default": [
-      "{projectRoot}/**/*",
-      "sharedGlobals"
-    ],
+    "default": ["{projectRoot}/**/*", "sharedGlobals"],
     "production": [
       "default",
       "!{projectRoot}/**/?(*.)+(spec|test).[jt]s?(x)?(.snap)",
@@ -38,10 +35,7 @@
     },
     {
       "plugin": "@nx/vite/plugin",
-      "exclude": [
-        "apps/solid-app-start/**/*",
-        "apps/react-remix-example/**/*"
-      ],
+      "exclude": ["apps/solid-app-start/**/*", "apps/react-remix-example/**/*"],
       "options": {
         "buildTargetName": "build",
         "serveTargetName": "serve",
@@ -67,7 +61,8 @@
     {
       "plugin": "nx-oxlint",
       "options": {
-        "lintTargetName": "lint"
+        "lintTargetName": "lint",
+        "additionalArguments": "--no-error-on-unmatched-pattern"
       }
     },
     {
@@ -75,11 +70,7 @@
       "options": {
         "testTargetName": "test"
       },
-      "exclude": [
-        "apps/solid-app-start/**/*",
-        "apps/react-remix-example/**/*",
-        "apps/minimal-example/**/*"
-      ]
+      "exclude": ["apps/solid-app-start/**/*", "apps/react-remix-example/**/*", "apps/minimal-example/**/*"]
     },
     {
       "plugin": "@nx/cypress/plugin",
@@ -131,9 +122,7 @@
     }
   },
   "sync": {
-    "disabledTaskSyncGenerators": [
-      "@nx/js:typescript-sync"
-    ]
+    "disabledTaskSyncGenerators": ["@nx/js:typescript-sync"]
   },
   "targets": {
     "local-registry": {
@@ -169,45 +158,26 @@
   "targetDefaults": {
     "dev": {
       "cache": false,
-      "dependsOn": [
-        "^build"
-      ]
+      "dependsOn": ["^build"]
     },
     "build": {
       "cache": true,
-      "inputs": [
-        "production",
-        "^production"
-      ],
-      "dependsOn": [
-        "^build"
-      ]
+      "inputs": ["production", "^production"],
+      "dependsOn": ["^build"]
     },
     "serve": {
       "cache": false,
-      "dependsOn": [
-        "^build"
-      ]
+      "dependsOn": ["^build"]
     },
     "@nx/esbuild:esbuild": {
       "cache": true,
-      "dependsOn": [
-        "^build"
-      ],
-      "inputs": [
-        "production",
-        "^production"
-      ]
+      "dependsOn": ["^build"],
+      "inputs": ["production", "^production"]
     },
     "@nx/js:tsc": {
       "cache": true,
-      "dependsOn": [
-        "^build"
-      ],
-      "inputs": [
-        "production",
-        "^production"
-      ]
+      "dependsOn": ["^build"],
+      "inputs": ["production", "^production"]
     }
   },
   "generators": {

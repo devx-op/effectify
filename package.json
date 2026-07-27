@@ -2,6 +2,28 @@
   "name": "@effectify/repo",
   "version": "1.0.0",
   "license": "MIT",
+  "nx": {
+    "targets": {
+      "format": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "node tools/format-changed.mjs --write"
+        }
+      },
+      "format:check": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "node tools/format-changed.mjs --check"
+        }
+      },
+      "format:all:check": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "pnpm exec oxfmt --check '**/*.{ts,tsx,js,jsx,json,jsonc,md,mdx,css,scss,html}'"
+        }
+      }
+    }
+  },
   "engines": {
     "node": ">=22.22"
   },
@@ -12,18 +34,24 @@
     "build:affected": "pnpm nx affected --target=build",
     "test:affected": "pnpm nx affected --target=test",
     "typecheck:affected": "pnpm nx affected --target=typecheck",
-    "lint": "pnpm exec oxlint && pnpm exec dprint check",
-    "lint:fix": "pnpm exec oxlint --fix && pnpm exec dprint fmt",
+    "format": "pnpm nx run @effectify/repo:format",
+    "format:check": "pnpm nx run @effectify/repo:format:check",
+    "format:all:check": "pnpm nx run @effectify/repo:format:all:check",
+    "lint": "pnpm exec oxlint && pnpm format:check",
+    "lint:fix": "pnpm exec oxlint --fix && pnpm format",
     "lint:affected": "pnpm nx affected --target=lint",
-    "lint:many": "pnpm nx run-many --target=lint && pnpm exec dprint check",
+    "lint:many": "pnpm nx run-many --target=lint && pnpm format:check",
     "publish:affected": "pnpm nx publish-affected",
     "release:affected": "pnpm nx release-affected",
     "release:affected:dry-run": "pnpm nx release-affected-dry-run"
   },
   "lint-staged": {
-    "*.{js,jsx,ts,tsx,json,jsonc,css,scss,md,mdx}": [
+    "*.{js,jsx,ts,tsx}": [
       "pnpm exec oxlint --fix",
-      "pnpm exec dprint fmt --allow-no-files"
+      "pnpm exec oxfmt"
+    ],
+    "*.{json,jsonc,md,mdx,css,scss,html}": [
+      "pnpm exec oxfmt"
     ]
   },
   "devDependencies": {
@@ -48,14 +76,14 @@
     "@vitest/coverage-v8": "catalog:",
     "@vitest/ui": "catalog:",
     "cypress": "catalog:",
-    "dprint": "catalog:",
     "husky": "catalog:",
     "jiti": "catalog:",
     "jsdom": "catalog:",
     "lint-staged": "catalog:",
     "nx": "23.1.0",
     "nx-oxlint": "catalog:",
-    "oxlint": "1.42.0",
+    "oxfmt": "catalog:",
+    "oxlint": "catalog:",
     "prettier": "catalog:",
     "ts-patch": "catalog:",
     "tslib": "catalog:",
