@@ -10,7 +10,6 @@ catalog:
   "@astrojs/starlight-tailwind": 4.0.2
   "@better-auth/cli": 1.4.10
   "@corvu/drawer": 0.2.4
-  "@effect-atom/atom": 0.5.0
   "@effect/atom-solid": 4.0.0-beta.102
   "@effect/build-utils": 0.8.9
   "@effect/language-service": 0.87.1

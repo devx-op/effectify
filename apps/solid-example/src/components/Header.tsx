@@ -18,11 +18,7 @@ export default function Header() {
         </button>
         <h1 class="ml-4 text-xl font-semibold">
           <Link to="/">
-            <img
-              src="/tanstack-word-logo-white.svg"
-              alt="TanStack Logo"
-              class="h-10"
-            />
+            <img src="/tanstack-word-logo-white.svg" alt="TanStack Logo" class="h-10" />
           </Link>
         </h1>
       </header>
@@ -81,7 +77,7 @@ export default function Header() {
             }}
           >
             <Globe size={20} />
-            <span class="font-medium">Start - @effecitfy/solid-effect-atom Atom Demo</span>
+            <span class="font-medium">Start - Effect v4 Atom + Solid</span>
           </Link>
 
           {/* Demo Atom End */}
