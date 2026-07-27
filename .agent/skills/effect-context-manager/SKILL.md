@@ -73,13 +73,13 @@ No sobrescribir cambios locales en los clones. Si `status --short` muestra cambi
 
 ## Restricciones Críticas de Seguridad
 
-| Restricción            | Descripción                                                                                                          |
-| ---------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| **Aislamiento Total**  | Nunca hacer `git merge` entre los clones de referencia y las ramas de desarrollo                                    |
-| **Modo Solo-Lectura**  | No sugerir cambios de código dentro de `.effect-reference/effect` o `.effect-reference/alchemy`                     |
-| **Clones Independientes** | No montar estas referencias como worktrees ni mantenerlas mediante ramas huérfanas del repositorio principal     |
-| **Contenido Ignorado** | Los archivos de `.effect-reference` no deben incluirse en commits de las ramas de desarrollo                         |
-| **Sincronización Segura** | Actualizar únicamente clones limpios mediante fast-forward desde la rama `main` de su origin esperado             |
+| Restricción               | Descripción                                                                                                  |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| **Aislamiento Total**     | Nunca hacer `git merge` entre los clones de referencia y las ramas de desarrollo                             |
+| **Modo Solo-Lectura**     | No sugerir cambios de código dentro de `.effect-reference/effect` o `.effect-reference/alchemy`              |
+| **Clones Independientes** | No montar estas referencias como worktrees ni mantenerlas mediante ramas huérfanas del repositorio principal |
+| **Contenido Ignorado**    | Los archivos de `.effect-reference` no deben incluirse en commits de las ramas de desarrollo                 |
+| **Sincronización Segura** | Actualizar únicamente clones limpios mediante fast-forward desde la rama `main` de su origin esperado        |
 
 ## Verificación del Estado
 
