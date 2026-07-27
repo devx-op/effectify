@@ -13,12 +13,13 @@ catalog:
   "@dprint/formatter": ^0.5.1
   "@dprint/typescript": ^0.96.1
   "@effect-atom/atom": 0.5.0
-  "@effect/atom-solid": 4.0.0-beta.94
+  "@effect/atom-solid": 4.0.0-beta.102
   "@effect/build-utils": 0.8.9
-  "@effect/language-service": 0.86.4
-  "@effect/platform-node": 4.0.0-beta.94
-  "@effect/tsgo": 0.16.2
-  "@effect/vitest": 4.0.0-beta.94
+  "@effect/language-service": 0.87.1
+  "@effect/platform-node": 4.0.0-beta.102
+  # 0.17+ requires TypeScript >=7; keep the latest native-preview-compatible release.
+  "@effect/tsgo": 0.16.3
+  "@effect/vitest": 4.0.0-beta.102
   "@hatchet-dev/typescript-sdk": 1.21.0
   "@kobalte/core": 0.13.12
   "@nx/js": 23.1.0
@@ -97,7 +98,7 @@ catalog:
   cross-env: 10.1.0
   dotenv: ^17.2.3
   dprint: 0.55.1
-  effect: 4.0.0-beta.94
+  effect: 4.0.0-beta.102
   effect-prisma-generator: ^0.4.0
   eta: ^4.5.0
   express: 5.1.0
@@ -150,6 +151,9 @@ catalog:
 catalogMode: prefer
 
 cleanupUnusedCatalogs: true
+
+overrides:
+  "@effect/platform-node-shared": 4.0.0-beta.102
 
 onlyBuiltDependencies:
   - "@parcel/watcher"

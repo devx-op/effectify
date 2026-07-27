@@ -72,17 +72,23 @@ describe("HatchetConfig", () => {
     expect(String(exit)).toContain("HATCHET_TLS_STRATEGY")
   })
 
-  it.each([
-    ["HATCHET_HOST_PORT", ""],
-    ["HATCHET_WORKER_SLOTS", "0"],
-  ])("rejects invalid optional %s values", async (key, value) => {
+  it("treats an empty optional value as absent", async () => {
+    const config = await load({
+      HATCHET_CLIENT_TOKEN: "token",
+      HATCHET_HOST_PORT: "",
+    })
+
+    expect(config.client).not.toHaveProperty("hostPort")
+  })
+
+  it("rejects an invalid optional worker slot count", async () => {
     const exit = await loadExit({
       HATCHET_CLIENT_TOKEN: "token",
-      [key]: value,
+      HATCHET_WORKER_SLOTS: "0",
     })
 
     expect(Exit.isFailure(exit)).toBe(true)
-    expect(String(exit)).toContain(key)
+    expect(String(exit)).toContain("HATCHET_WORKER_SLOTS")
   })
 
   it("omits TLS to preserve the SDK secure default", async () => {
