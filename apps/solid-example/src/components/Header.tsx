@@ -81,7 +81,7 @@ export default function Header() {
             }}
           >
             <Globe size={20} />
-            <span class="font-medium">Start - @effecitfy/solid-effect-atom Atom Demo</span>
+            <span class="font-medium">Start - Effect v4 Atom + Solid</span>
           </Link>
 
           {/* Demo Atom End */}

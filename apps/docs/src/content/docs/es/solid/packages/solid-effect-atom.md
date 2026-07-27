@@ -1,25 +1,25 @@
 ---
-title: "@effectify/solid-effect-atom"
-description: Herramientas reactivas para Effect con SolidJS
+title: Atom de Effect v4 con SolidJS
+description: Usa Atom y AtomRef de Effect v4 con los bindings oficiales para SolidJS
 sidebar:
-  label: "@effectify/solid-effect-atom"
+  label: Effect Atom para SolidJS
   order: 1
 ---
 
-Bindings de SolidJS para la primitiva `Atom` de Effect. Esta librería permite utilizar el estado reactivo de Effect (`Atom`) dentro de componentes SolidJS de manera eficiente y segura.
+El paquete oficial `@effect/atom-solid` conecta los módulos principales `Atom` y `AtomRef` de Effect v4 con SolidJS. Proporciona accessors reactivos, setters, suscripciones y alcance de registros sin un paquete adaptador de Effectify.
 
 ## Instalación
 
 ```bash
-npm install @effectify/solid-effect-atom @effect-atom/atom effect solid-js
+npm install effect @effect/atom-solid solid-js
 ```
 
 ## Configuración
 
-Para usar los átomos, debes envolver tu aplicación (o la parte que los use) con `RegistryProvider`. Esto provee el contexto necesario para el registro de átomos.
+Usa `RegistryProvider` cuando el estado de los átomos deba limitarse a un subárbol de Solid. Sin un provider, los hooks usan el registro independiente predeterminado.
 
 ```tsx
-import { RegistryProvider } from "@effectify/solid-effect-atom"
+import { RegistryProvider } from "@effect/atom-solid"
 
 function App() {
   return (
@@ -30,42 +30,42 @@ function App() {
 }
 ```
 
-## Uso Básico
+## Uso básico
 
-### Crear un Átomo
+### Crear un átomo
 
-Utiliza `Atom.make` del paquete `@effect-atom/atom`.
+Importa `Atom` desde los módulos de reactividad de Effect v4.
 
 ```ts
-import * as Atom from "@effect-atom/atom/Atom"
+import * as Atom from "effect/unstable/reactivity/Atom"
 
 const counterAtom = Atom.make(0)
 ```
 
 ### useAtom
 
-Hook para leer y escribir un átomo. Similar a `createSignal` de Solid.
+`useAtom` lee y escribe un átomo, de forma similar a `createSignal` de Solid. Los hooks reciben una función para respetar el modelo de propiedad reactiva de Solid.
 
 ```tsx
-import { useAtom } from "@effectify/solid-effect-atom"
+import { useAtom } from "@effect/atom-solid"
 
 function Counter() {
-  const [count, setCount] = useAtom(counterAtom)
+  const [count, setCount] = useAtom(() => counterAtom)
 
-  return <button onClick={() => setCount((c) => c + 1)}>Count: {count()}</button>
+  return <button onClick={() => setCount((value) => value + 1)}>Count: {count()}</button>
 }
 ```
 
 ### useAtomValue
 
-Hook para solo leer el valor de un átomo. Puedes pasar una función selectora para transformar el valor (computado).
+Usa `useAtomValue` cuando un componente solo necesite un accessor reactivo. Un selector opcional permite derivar un valor.
 
 ```tsx
-import { useAtomValue } from "@effectify/solid-effect-atom"
+import { useAtomValue } from "@effect/atom-solid"
 
 function Display() {
-  const count = useAtomValue(counterAtom)
-  const doubled = useAtomValue(counterAtom, (n) => n * 2)
+  const count = useAtomValue(() => counterAtom)
+  const doubled = useAtomValue(() => counterAtom, (value) => value * 2)
 
   return (
     <div>
@@ -76,87 +76,59 @@ function Display() {
 }
 ```
 
-## Uso Avanzado
+## Uso avanzado
 
-### useAtomSet
-
-Útil cuando solo necesitas actualizar el átomo sin suscribirte a sus cambios.
+### Escribir sin suscribirse
 
 ```tsx
-import { useAtomSet } from "@effectify/solid-effect-atom"
+import { useAtomSet } from "@effect/atom-solid"
 
 function ResetButton() {
-  const setCount = useAtomSet(counterAtom)
+  const setCount = useAtomSet(() => counterAtom)
   return <button onClick={() => setCount(0)}>Reset</button>
 }
 ```
 
-### useAtomSubscribe
+### Suscribirse o mantener un átomo montado
 
-Se suscribe a los cambios del átomo manualmente. Útil para efectos secundarios (logging, analytics, etc.).
+`useAtomSubscribe` ejecuta un callback ante los cambios, mientras que `useAtomMount` mantiene un átomo montado durante la vida del owner actual de Solid.
 
 ```tsx
-import { useAtomSubscribe } from "@effectify/solid-effect-atom"
+import { useAtomMount, useAtomSubscribe } from "@effect/atom-solid"
 
-function Logger() {
-  useAtomSubscribe(counterAtom, (val) => {
-    console.log("Counter changed:", val)
+function Observer() {
+  useAtomMount(() => counterAtom)
+  useAtomSubscribe(() => counterAtom, (value) => {
+    console.log("Counter changed:", value)
   })
   return null
 }
 ```
 
-### useAtomMount
-
-Monta manualmente un átomo. Útil si quieres mantener un átomo vivo en el registro sin leer su valor.
+### Inicializar y refrescar valores
 
 ```tsx
-import { useAtomMount } from "@effectify/solid-effect-atom"
+import { useAtomInitialValues, useAtomRefresh } from "@effect/atom-solid"
 
-function Keeper() {
-  useAtomMount(counterAtom)
-  return null
-}
-```
-
-### useAtomInitialValues
-
-Útil para SSR o inicializar estado desde props.
-
-```tsx
-import { useAtomInitialValues } from "@effectify/solid-effect-atom"
-
-function Initializer() {
+function Controls() {
   useAtomInitialValues([[counterAtom, 100]])
-  return null
+  const refresh = useAtomRefresh(() => counterAtom)
+  return <button onClick={refresh}>Refresh</button>
 }
 ```
 
-### useAtomRefresh
+### Trabajar con AtomRef
 
-Fuerza la reevaluación o reinicio de un átomo.
-
-```tsx
-import { useAtomRefresh } from "@effectify/solid-effect-atom"
-
-function Refresher() {
-  const refresh = useAtomRefresh(counterAtom)
-  return <button onClick={refresh}>Reset Atom</button>
-}
-```
-
-### useAtomRef
-
-Para trabajar con referencias mutables (`AtomRef`).
+`AtomRef` forma parte del núcleo de Effect v4. `useAtomRef` conecta un accessor de Solid directamente con una referencia.
 
 ```tsx
-import * as AtomRef from "@effect-atom/atom/AtomRef"
-import { useAtomRef } from "@effectify/solid-effect-atom"
+import { useAtomRef } from "@effect/atom-solid"
+import * as AtomRef from "effect/unstable/reactivity/AtomRef"
 
 const configRef = AtomRef.make({ theme: "dark" })
 
 function Config() {
-  const config = useAtomRef(configRef)
+  const config = useAtomRef(() => configRef)
 
   return (
     <button onClick={() => configRef.set({ theme: "light" })}>
@@ -166,23 +138,17 @@ function Config() {
 }
 ```
 
-## Referencia de API
+## Resumen de la API
 
-### Hooks
-
-- **`useAtom(atom)`**: Retorna `[accessor, setter]`.
-- **`useAtomValue(atom, selector?)`**: Retorna `accessor`.
-- **`useAtomSet(atom)`**: Retorna solo el `setter`.
+- **`RegistryProvider`**: Limita un registro de átomos a un subárbol de Solid.
+- **`useAtom(atom)`**: Retorna un accessor reactivo y un setter.
+- **`useAtomValue(atom, selector?)`**: Retorna un accessor reactivo.
+- **`useAtomSet(atom)`**: Retorna un setter sin suscribirse al valor.
 - **`useAtomSubscribe(atom, callback)`**: Se suscribe a cambios.
-- **`useAtomMount(atom)`**: Monta el átomo en el registro.
+- **`useAtomMount(atom)`**: Mantiene un átomo montado para el owner actual de Solid.
 - **`useAtomInitialValues(values)`**: Inicializa átomos en el registro actual.
-- **`useAtomRefresh(atom)`**: Retorna una función para refrescar el átomo.
+- **`useAtomRefresh(atom)`**: Retorna un callback para refrescar.
+- **`useAtomResource(atom)`**: Convierte un átomo de `AsyncResult` en un recurso de Solid.
 - **`useAtomRef(ref)`**: Se suscribe a un `AtomRef`.
-
-### Componentes
-
-- **`RegistryProvider`**: Proveedor de contexto para el registro de átomos.
-
----
-
-> **Nota**: Esta librería está diseñada para funcionar con Effect v3 y `@effect-atom/atom`.
+- **`useAtomRefProp(ref, key)`**: Deriva una referencia de propiedad.
+- **`useAtomRefPropValue(ref, key)`**: Se suscribe al valor de una propiedad.

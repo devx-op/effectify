@@ -50,10 +50,15 @@ function Counter() {
 }
 
 function DoubledCounter() {
-  const doubled = useAtomValue(() => counterAtom, (n: number) => n * 2)
+  const doubled = useAtomValue(
+    () => counterAtom,
+    (n: number) => n * 2,
+  )
   return (
     <div class="p-6 bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl">
-      <h3 class="text-xl font-semibold text-white mb-4">Doubled (useAtomValue)</h3>
+      <h3 class="text-xl font-semibold text-white mb-4">
+        Doubled (useAtomValue)
+      </h3>
       <p class="text-3xl font-bold text-purple-400 mb-6">{doubled()}</p>
       <p class="text-gray-400">Derived from counter value * 2</p>
     </div>
@@ -115,7 +120,9 @@ function SetOnlyDemo() {
 
   return (
     <div class="p-6 bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl">
-      <h3 class="text-xl font-semibold text-white mb-4">Set Only (useAtomSet)</h3>
+      <h3 class="text-xl font-semibold text-white mb-4">
+        Set Only (useAtomSet)
+      </h3>
       <p class="text-3xl font-bold text-teal-400 mb-6">{count()}</p>
       <button
         class="px-4 py-2 bg-teal-500 hover:bg-teal-600 text-white font-semibold rounded-lg transition-colors"
@@ -130,15 +137,20 @@ function SetOnlyDemo() {
 function SubscribeDemo() {
   const [logs, setLogs] = createSignal<string[]>([])
 
-  useAtomSubscribe(() => subscribeAtom, (val: number) => {
-    setLogs((prev) => [`Value changed to: ${val}`, ...prev].slice(0, 3))
-  })
+  useAtomSubscribe(
+    () => subscribeAtom,
+    (val: number) => {
+      setLogs((prev) => [`Value changed to: ${val}`, ...prev].slice(0, 3))
+    },
+  )
 
   const setCount = useAtomSet(() => subscribeAtom)
 
   return (
     <div class="p-6 bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl">
-      <h3 class="text-xl font-semibold text-white mb-4">Subscribe (useAtomSubscribe)</h3>
+      <h3 class="text-xl font-semibold text-white mb-4">
+        Subscribe (useAtomSubscribe)
+      </h3>
       <button
         class="mb-4 px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white font-semibold rounded-lg transition-colors"
         onClick={() => setCount((c: number) => c + 1)}
@@ -160,8 +172,12 @@ function MountDemo() {
 
   return (
     <div class="p-6 bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl">
-      <h3 class="text-xl font-semibold text-white mb-4">Mount (useAtomMount)</h3>
-      <p class="text-gray-400 mb-4">Manually mounts an atom without reading its value.</p>
+      <h3 class="text-xl font-semibold text-white mb-4">
+        Mount (useAtomMount)
+      </h3>
+      <p class="text-gray-400 mb-4">
+        Manually mounts an atom without reading its value.
+      </p>
       <div class="flex items-center gap-2">
         <div class="w-3 h-3 rounded-full bg-green-500 animate-pulse"></div>
         <span class="text-green-400">Atom Mounted</span>
@@ -183,7 +199,7 @@ function AtomDemo() {
           </h1>
 
           <p class="text-xl text-gray-300 mb-12">
-            Demonstrating @effectify/solid-effect-atom v0.3.0
+            Effect v4 Atom and AtomRef with the official @effect/atom-solid bindings
           </p>
 
           <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
