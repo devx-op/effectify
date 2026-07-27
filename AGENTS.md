@@ -24,14 +24,16 @@
 
 ## Effect-TS Pattern Discovery
 
-This project uses effect-smol as the canonical source for Effect patterns.
+This project uses the `main` branch of [Effect-TS/effect](https://github.com/Effect-TS/effect.git) as the canonical Effect v4 source. Effect v3 is maintained on the `v3` branch of that same repository.
 
-| Skill                      | Description                         | Location                                                                                  |
-| -------------------------- | ----------------------------------- | ----------------------------------------------------------------------------------------- |
-| `effect-context-manager`   | Setup & sync Effect v4 reference    | [.agent/skills/effect-context-manager](.agent/skills/effect-context-manager/SKILL.md)     |
-| `effect-pattern-discovery` | Effect-TS patterns from effect-smol | [.agent/skills/effect-pattern-discovery](.agent/skills/effect-pattern-discovery/SKILL.md) |
+| Skill                      | Description                              | Location                                                                                  |
+| -------------------------- | ---------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `effect-context-manager`   | Setup & sync local reference clones      | [.agent/skills/effect-context-manager](.agent/skills/effect-context-manager/SKILL.md)     |
+| `effect-pattern-discovery` | Effect-TS patterns from Effect v4 source | [.agent/skills/effect-pattern-discovery](.agent/skills/effect-pattern-discovery/SKILL.md) |
 
-**Reference Directory**: `.effect-reference/` contains the effect-smol source code mounted as a git worktree.
+**Effect Reference**: `.effect-reference/effect/` is an ignored, standalone, depth-1 clone of `https://github.com/Effect-TS/effect.git` on `main`.
+
+**Alchemy Reference**: `.effect-reference/alchemy/` is an ignored, standalone, depth-1 clone of [`alchemy-run/alchemy`](https://github.com/alchemy-run/alchemy.git) on `main`, and is the canonical Effect-based Alchemy next/alpha reference. [`alchemy-run/alchemy-async`](https://github.com/alchemy-run/alchemy-async) is the former async implementation.
 
 ## Hatchet + Effect Conventions
 

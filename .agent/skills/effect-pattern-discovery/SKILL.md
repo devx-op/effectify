@@ -1,7 +1,7 @@
 ---
 name: effect-pattern-discovery
 description: >
-  Effect-TS patterns sourced from effect-smol reference implementation.
+  Effect-TS patterns sourced from the Effect v4 reference on Effect-TS/effect main.
   Trigger: When implementing Effect, Layer, Schema, Pipe, Context, or error handling patterns.
 license: Apache-2.0
 metadata:
@@ -173,23 +173,31 @@ const AppLayer = UserServiceLive.pipe(
 const CombinedLayer = Layer.merge(UserServiceLive, DatabaseServiceLive)
 ```
 
+## Reference Selection
+
+- `.effect-reference/effect` is the ignored, standalone, depth-1 clone of `https://github.com/Effect-TS/effect.git` on `main` and is the canonical Effect v4 source.
+- Effect v3 lives on the `v3` branch of the same `Effect-TS/effect` repository.
+- `.effect-reference/alchemy` is the ignored, standalone, depth-1 clone of `https://github.com/alchemy-run/alchemy.git` on `main` and is the canonical Effect-based Alchemy next/alpha reference.
+- `alchemy-run/alchemy-async` is the former async implementation; do not use it as the canonical current Alchemy reference.
+
 ## Commands
 
 ```bash
-# Scan for similar patterns in effect-smol
-ls .effect-reference/packages/effect/src/
+# Scan for similar patterns in the Effect v4 reference
+ls .effect-reference/effect/packages/effect/src/
 
 # Check internal implementations
-cat .effect-reference/packages/effect/src/internal/effect.ts
+cat .effect-reference/effect/packages/effect/src/internal/effect.ts
 
 # Look at module exports
-cat .effect-reference/packages/effect/src/index.ts
+cat .effect-reference/effect/packages/effect/src/index.ts
+
+# Explore current Effect-based Alchemy patterns
+ls .effect-reference/alchemy/
 ```
 
 ## Resources
 
-- **effect-smol source**: `.effect-reference/packages/effect/src/`
-- **Pattern docs**: `.effect-reference/.patterns/`
-- **Error handling**: `.effect-reference/.patterns/error-handling.md`
-- **Module organization**: `.effect-reference/.patterns/module-organization.md`
-- **Library development**: `.effect-reference/.patterns/effect-library-development.md`
+- **Effect v4 source**: `.effect-reference/effect/packages/effect/src/`
+- **Effect migration guide**: `.effect-reference/effect/MIGRATION.md`
+- **Alchemy next/alpha source**: `.effect-reference/alchemy/`
