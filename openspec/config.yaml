@@ -1,0 +1,60 @@
+schema: spec-driven
+
+context: |
+  Project: effectify, a pnpm 10.14.0 Nx 23.1.0 TypeScript monorepo.
+  Architecture: package-oriented libraries and application examples under packages/ and apps/.
+  Runtime: Node.js and browser applications using Effect v4 patterns and adapters.
+  Testing: Vitest unit/integration suites, Cypress E2E, and v8 coverage through Nx targets.
+  Quality: oxlint, TSGo typechecking, and the repository Oxfmt formatting workflow.
+  Conventions: use pnpm-prefixed Nx commands, Effect-first boundaries, and conventional commits.
+  Persistence: hybrid OpenSpec files plus Engram observations.
+
+strict_tdd: true
+
+testing:
+  runner: Vitest 4.1.10 via @nx/vitest 23.1.0
+  commands:
+    affected: pnpm nx affected --target=test
+    many: pnpm nx run-many --target=test
+  layers:
+    unit: Vitest and @effect/vitest
+    integration: Vitest integration suites and application/package harnesses
+    e2e: Cypress 15.18.1 via @nx/cypress 23.1.0
+  coverage:
+    available: true
+    provider: '@vitest/coverage-v8 4.1.10'
+    dedicated_target: false
+  quality:
+    lint: pnpm nx affected --target=lint
+    typecheck: pnpm nx affected --target=typecheck
+    format: pnpm nx run @effectify/repo:format:check
+  notes:
+    - 'The formatter target delegates to tools/format-changed.mjs and pnpm exec oxfmt.'
+    - 'The current local install does not resolve the oxfmt executable; verify before formatter-dependent work.'
+
+rules:
+  proposal:
+    - State intent, scope, affected areas, risks, dependencies, and rollback boundaries.
+    - Ask before widening scope or taking a risky delivery action.
+  specs:
+    - Use Given/When/Then scenarios and RFC 2119 keywords (MUST, SHALL, SHOULD, MAY).
+    - Keep delta specifications inside openspec/changes/{change-name}/specs/.
+  design:
+    - Document architecture decisions with rationale and include sequence diagrams for complex flows.
+    - Preserve Effect-first boundaries and keep awkward SDK types behind adapters.
+  tasks:
+    - Group tasks by phase with hierarchical numbering and reviewable work units.
+    - Keep each task completable in one focused session and include its verification command.
+  apply:
+    guidelines:
+      - Follow existing package, Nx, Effect, and testing patterns.
+      - Use RED-GREEN-REFACTOR under strict TDD and run tasks through pnpm Nx targets.
+    tdd: true
+    test_command: pnpm nx affected --target=test
+  verify:
+    test_command: pnpm nx affected --target=test
+    build_command: pnpm nx affected --target=build
+    coverage_threshold: 0
+  archive:
+    - Warn before merging destructive deltas into canonical specifications.
+    - Preserve archived change directories as an immutable audit trail.
