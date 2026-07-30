@@ -1,5 +1,5 @@
 {
   "extends": "./tsconfig.json",
-  "compilerOptions": { "declaration": true, "lib": ["ES2022"], "target": "ES2022", "types": [] },
+  "compilerOptions": { "declaration": true, "rootDir": "./src", "lib": ["ES2022"], "target": "ES2022", "types": [] },
   "include": ["src/**/*.ts"]
 }
