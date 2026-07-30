@@ -2,60 +2,68 @@
 
 ## Intent
 
-Create browser-neutral `@effectify/app-builder-contracts` as the versioned vocabulary for downstream consumers. This package enables downstream source-ownership guarantees by defining plans, provenance references, baselines, and digests. It does not generate, inspect, or mutate source code.
+Deliver browser-neutral `@effectify/app-builder-contracts` as the versioned vocabulary for downstream consumers. The parent `app-builder-protocol-contracts` remains a non-applicable roadmap and MUST never be applied.
 
 ## Scope
 
 ### In Scope
-- Versioned JSON envelopes, branded identities, structured diagnostics, and compatibility failures.
-- A dual boundary: typed in-process declarations preserve input, output, error, and requirements channels; serializable descriptions expose stable schema identities and JSON-safe schema descriptions.
-- Serializable requirements descriptors and tool metadata for class, capabilities, permissions, resumability, idempotency, and version.
-- Immutable passive plan, callback, continuation, and replay records, plus versioned canonicalization and digest identities for deterministic comparison.
+
+- Preserve versioned identities/envelopes, JSON canonicalization/digests, diagnostics/outcomes, requirement descriptors, typed tool declarations and serialized projection, passive plan/callback/continuation/replay records, exports, and compatibility certification.
+- Complete the four unpublished slices through exactly two applicable implementation changes.
+- Preserve published history unchanged: identities/envelopes PR #94, JSON canonicalization PR #96, and diagnostics/outcomes PR #98.
 
 ### Out of Scope
-- CLI, execution, IPC, locks, persistence, filesystem access, Nx mutation, approval, and recovery.
-- Plugin workers, brokers, registries, planners, builders, previews, generators, compatibility solving, or source ownership enforcement.
+
+- CLI, execution, IPC, persistence, filesystem/Nx mutation, approval, recovery, workers, brokers, registries, planners, builders, previews, generators, compatibility solving, or source-ownership enforcement.
+- Rewriting, merging, or renaming the three published grandchildren.
 
 ## Capabilities
 
 ### New Capabilities
-- `app-builder-protocol-contracts`: Browser-neutral, schema-defined protocol data and pure validation, encoding, compatibility, and canonicalization boundaries.
+
+- `app-builder-protocol-contracts`: Schema-defined protocol data and pure validation, encoding, compatibility, and canonicalization boundaries.
 
 ### Modified Capabilities
-None; no canonical OpenSpec capabilities currently exist.
+
+None.
 
 ## Approach
 
-Use schema-first, JSON-safe contracts with separate typed declarations and serialized descriptions. Reject malformed or unsupported versions deterministically; preserve array order while canonicalizing object keys. Design will decide whether descriptions embed or reference derived JSON Schema and whether portable hashing belongs here, while preserving browser neutrality and versioned canonicalization.
+Retain the schema-first, JSON-safe dual declaration/description model and all existing requirements. Replace only the remaining delivery shape:
 
-## Parent and Downstream Relationship
+| Superseded grandchild                          | Remaining change                            | Internal order                              |
+| ---------------------------------------------- | ------------------------------------------- | ------------------------------------------- |
+| `app-builder-contract-requirement-descriptors` | `app-builder-contract-declarations`         | 1                                           |
+| `app-builder-contract-tool-declarations`       | `app-builder-contract-declarations`         | 2: declarations then projection             |
+| `app-builder-contract-passive-records-replay`  | `app-builder-contract-replay-certification` | 1                                           |
+| `app-builder-contract-exports-compatibility`   | `app-builder-contract-replay-certification` | 2: exports then compatibility certification |
 
-This dependency-free unit implements only parent `platform-planning-execution` PE1–2 contract foundations. PE3–4 runtime behavior remains downstream. It precedes `app-builder-run-execution-cli` and `app-builder-plugin-sdk-worker`; later children consume it without widening scope. The umbrella remains non-applicable.
+Dependency sequence is PR #94 → #96 → #98 → declarations → replay certification. No scope is dropped.
 
 ## Affected Areas
 
-| Area | Impact | Description |
-|---|---|---|
-| `packages/app-builder/contracts` | New | Browser-neutral package, schemas, pure helpers, exports, and contract tests. |
+| Area                                              | Impact   | Description                                              |
+| ------------------------------------------------- | -------- | -------------------------------------------------------- |
+| `packages/app-builder/contracts`                  | New      | Delivered only by the two remaining applicable changes.  |
+| `openspec/changes/app-builder-protocol-contracts` | Modified | Roadmap delivery mapping only; apply remains prohibited. |
 
 ## Risks
 
-| Risk | Likelihood | Mitigation |
-|---|---|---|
-| Runtime schemas leak into wire data or typed channels flatten | High | Enforce declaration/description separation and channel-preservation checks. |
-| Canonicalization or version drift breaks replay identity | High | Version algorithms and compatibility; reject ambiguous JSON values. |
-| Review workload exceeds 400 lines | High | Tasks must forecast reviewable work units under `ask-on-risk`; chain strategy remains pending until tasks. |
+| Risk                             | Likelihood | Mitigation                                                                                                   |
+| -------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------ |
+| Larger review units hide defects | Medium     | Maintainer-approved 2,000–3,000 changed-line exception per consolidated PR; `ask-on-risk` again above 3,000. |
+| Rollback loses phase granularity | Medium     | Preserve internal dependency order and verification receipts.                                                |
 
 ## Rollback Plan
 
-Remove the isolated package and exports before downstream adoption. No CLI, runtime, persistence, workspace, or user-source state requires migration or recovery.
+Revert each consolidated PR as one unit. This couples descriptors with declarations/projection and replay records with export/certification rollback; the maintainer explicitly accepts that tradeoff. Published PRs #94, #96, and #98 remain untouched.
 
 ## Dependencies
 
-- Approved parent PE1–2 vocabulary; Effect v4 as peer; existing Nx/package conventions.
+- Approved PE1–2 vocabulary, Effect v4 peer, Nx/package conventions, and the published PR chain.
 
 ## Success Criteria
 
-- [ ] Consumers exchange versioned JSON contracts while preserving typed success, failure, and requirements channels.
-- [ ] Identical supported records canonicalize deterministically; incompatible versions and unsupported values fail explicitly.
-- [ ] The package remains browser-neutral, passive, and incapable of source or workspace mutation.
+- [ ] Exactly two remaining applicable changes preserve every existing requirement and dependency.
+- [ ] Each consolidated PR stays at or below 3,000 changed lines or triggers a new maintainer decision.
+- [ ] The package remains browser-neutral, passive, deterministic, and incapable of workspace mutation.
