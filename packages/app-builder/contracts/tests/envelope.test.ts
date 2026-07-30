@@ -23,8 +23,18 @@ it("preserves present trace and digest references", () => {
   const input = {
     ...shell,
     traceRef: { id: "trace:one", version: { major: 1, minor: 1, patch: 0 } },
-    planDigestRef: { id: "digest:plan", version: { major: 1, minor: 2, patch: 0 } },
-    outputDigestRef: { id: "digest:output", version: { major: 1, minor: 3, patch: 0 } },
+    planDigestRef: {
+      id: "digest:plan",
+      version: { major: 1, minor: 2, patch: 0 },
+      algorithm: "sha256",
+      value: "plan-material",
+    },
+    outputDigestRef: {
+      id: "digest:output",
+      version: { major: 1, minor: 3, patch: 0 },
+      algorithm: "sha256",
+      value: "output-material",
+    },
   }
   const identity = Result.getOrThrowWith(Schema.decodeUnknownResult(EnvelopeIdentity)(input), (failure) => failure)
 
