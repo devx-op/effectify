@@ -1,44 +1,48 @@
 # Tasks: App Builder Protocol Contracts — Non-Applicable Sub-Roadmap
 
-Parent/child apply is prohibited. This roadmap creates no grandchild artifacts, code, or apply-progress. Each named grandchild independently owns proposal → spec → design → tasks → apply → verify → archive, strict RED→GREEN→REFACTOR TDD, its review forecast/chain decision, focused-test/runtime receipts, docs, and rollback.
+Never apply or record apply-progress here; this is delivery routing only. Each child owns its SDD lifecycle.
 
 ## Review Workload Forecast
 
-| Field | Value |
-|---|---|
-| Estimated changed lines | 2,145 (program) |
-| 400-line budget risk | High |
-| Chained PRs recommended | Yes |
-| Suggested split | Seven grandchildren |
-| Delivery strategy | ask-on-risk |
-| Chain strategy | pending |
+| Field                   | Value                                             |
+| ----------------------- | ------------------------------------------------- |
+| Estimated changed lines | 4,000–6,000 program; 2,000–3,000 per remaining PR |
+| 400-line budget risk    | High                                              |
+| Chained PRs recommended | Yes                                               |
+| Suggested split         | declarations → replay certification               |
+| Delivery strategy       | ask-on-risk                                       |
+| Chain strategy          | feature-branch-chain                              |
 
 Decision needed before apply: Yes
 Chained PRs recommended: Yes
-Chain strategy: pending
+Chain strategy: feature-branch-chain
 400-line budget risk: High
 
-Each grandchild owns its own forecast and PR-chain decision; this program does not authorize a chain or apply.
+| Unit | Goal / target                              | Focused test / runtime / receipt                                                                                                         | Rollback boundary                              |
+| ---- | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| 1    | Declarations; base = tracker PR #93 branch | `pnpm nx run @effectify/app-builder-contracts:test`; runtime: browser-neutral declaration import; receipt base/head, files, +/-, results | descriptors + declarations/projection          |
+| 2    | Replay certification; base = Unit 1 branch | same test; runtime: browser import + compatibility decode; same receipt                                                                  | passive records/replay + exports/certification |
 
-## Phase 1: Foundations
+Child PRs require an issue first, conventional work-unit commits, a clean child-only diff, and reviewable chain context. Recount after every work unit: 2,000–3,000 uses the approved exception; above 3,000 stop before publication, invoke `ask-on-risk`, and reforecast/revise artifacts. No PR, issue, child artifact, code, commit, push, or publication is created by this roadmap.
 
-- [ ] 1.1 **`app-builder-contract-identities-envelopes`** — Deps: none. Scope: branded IDs, safe versions, references, common envelope foundation, typed identity failures. Terminal proof: its archived PASS with RED tests and Nx test/typecheck/lint/build receipts. Rollback owner: this grandchild only; revert its identity/envelope files. Trace: Versioned identity/Unknown protocol major; PE1.
-- [ ] 1.2 **`app-builder-contract-json-canonicalization`** — Deps: identities. Scope: JSON domain, hostile-input/non-echoing failures, frozen canonical material, `effectify-cjson/1`, RFC 3629 UTF-8/no-BOM contract; hashing stays downstream. Terminal: archived PASS receipts. Rollback owner: this grandchild only; revert JSON/canonical modules. Trace: JSON value/Canonical replay comparison/Unsupported value; PE2.
+## Phase 1: Published Historical Grandchildren
 
-## Phase 2: Parallel Contract Slices
+- [x] 1.1 **PR #94 `app-builder-contract-identities-envelopes`** — published/unchanged; identities/envelopes and typed rejection. Trace: Versioned identity; PE1.
+- [x] 1.2 **PR #96 `app-builder-contract-json-canonicalization`** — published/unchanged; JSON/canonical identities and hostile rejection. Trace: JSON canonical identity; PE2.
+- [x] 1.3 **PR #98 `app-builder-contract-diagnostics-outcomes`** — published/unchanged; diagnostics/exhaustive outcomes. Trace: Exhaustive outcomes; PE1.
 
-- [ ] 2.1 **`app-builder-contract-diagnostics-outcomes`** — Deps: identities; parallel with 2.2. Scope: diagnostics, typed failures, common envelope, only Success/Failure/InputRequired outcomes. Terminal: archived PASS receipts. Rollback owner: this grandchild only; revert diagnostic/outcome modules. Trace: Exhaustive envelope outcomes; PE1.
-- [ ] 2.2 **`app-builder-contract-requirement-descriptors`** — Deps: identities; parallel with 2.1. Scope: JSON capability/constraint descriptors and invariant, phantom, encoded-absent `R`; no service/permission evaluation. Terminal: archived PASS receipts. Rollback owner: this grandchild only; revert requirement modules. Trace: Explicit requirement descriptors/Serialize requirements; PE1.
+## Phase 2: Remaining Applicable Change 1 — Declarations
 
-## Phase 3: Projection and Replay
+- [ ] 2.1 **`app-builder-contract-declarations`** — deps: #94 → #96 → #98; publish before Unit 2. Scope trace: neutral pure boundary; explicit JSON capability/constraint descriptors with phantom, encoded-absent `R`; typed `Declaration<I,O,E,R>`; JSON-only `ToolDescription` with identity/version, schema metadata, class/capabilities/permissions/resumability/idempotency; typed mismatch/duplicate rejection; never handlers/codecs/services.
+- [ ] 2.2 Child strict TDD: RED descriptor serialization/type proofs → GREEN `src/requirement.ts` → REFACTOR; then RED channel/projection/mismatch/duplicate tests → GREEN `src/tool.ts` → REFACTOR, recording commands. Verify Nx test/typecheck/lint/build receipts. Rollback: revert this coupled PR only; it remains private and owns no final exports.
 
-- [ ] 3.1 **`app-builder-contract-tool-declarations`** — Deps: JSON canonicalization, diagnostics outcomes, requirement descriptors. Scope: encoded-side schema projection, schema identities/documents, declaration metadata, I/O/E/R type channels, mismatch/duplicate failures. Terminal: archived PASS receipts. Rollback owner: this grandchild only; revert tool/projection modules. Trace: Dual tool contract/Describe a tool; PE1.
-- [ ] 3.2 **`app-builder-contract-passive-records-replay`** — Deps: JSON canonicalization, diagnostics outcomes; parallel with 3.1. Scope: immutable ordered plans, callbacks, continuations, replay expectations, provenance/baselines/validations, canonical replay material and digest refs. Terminal: archived PASS receipts. Rollback owner: this grandchild only; revert passive-record/replay modules. Trace: Passive immutable replay records/Preserve replay data; PE2.
+## Phase 3: Remaining Applicable Change 2 — Replay Certification
 
-## Phase 4: Certification
+- [ ] 3.1 **`app-builder-contract-replay-certification`** — dependency: published declarations. Scope trace: frozen JSON-only `src/passive-record.ts`, `src/replay.ts`, `src/digest.ts`; ordered plans, pinned inputs, baselines, provenance, validations, callbacks, continuations, replay expectations, canonical identity, external hashing only.
+- [ ] 3.2 Child strict TDD: RED immutability/order/equal-identity tests → GREEN/REFACTOR records; then RED declared-minor acceptance and major/tag/duplicate/schema-mismatch, export-map, and no-Node browser-import tests → GREEN/REFACTOR `src/compatibility.ts`, `src/index.ts`, `package.json`, `project.json`, and TS entries. Publish ESM/types with Effect peer, `npm:public`, `scope:app-builder`, `layer:contracts`, `runtime:neutral`, `visibility:public`. Verify Unit 2 receipt. Rollback: revert this coupled PR; to revert declarations later, revert this first.
 
-- [ ] 4.1 **`app-builder-contract-exports-compatibility`** — Deps: all six above. Scope: public exports, declared compatibility, browser fixture, deterministic cross-module fixtures, type channels, docs. Terminal: archived PASS proving browser-safe exports, compatibility, fixtures, docs, build/test/lint/typecheck. Rollback owner: this grandchild only; revert export/compatibility/fixture/docs changes. Trace: Browser consumption, compatibility evolution, all child scenarios; PE1–2.
+## Phase 4: Tracker Closure
 
-Engram mirror: `sdd/app-builder-protocol-contracts/tasks`.
+- [ ] 4.1 After both new grandchildren are published with PASS receipts, merge the complete grandchild chain into tracker PR #93; parent remains non-applicable.
 
-Completion rule: all seven grandchildren are archived PASS; never apply this roadmap.
+Completion rule: historical PRs #94/#96/#98 stay published; both new grandchildren must publish before tracker merge. Engram mirror: `sdd/app-builder-protocol-contracts/tasks`.

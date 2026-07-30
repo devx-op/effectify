@@ -85,6 +85,7 @@
   "release": {
     "projectsRelationship": "independent",
     "projects": [
+      "packages/app-builder/contracts",
       "packages/react/remix",
       "packages/react/router",
       "packages/react/query",

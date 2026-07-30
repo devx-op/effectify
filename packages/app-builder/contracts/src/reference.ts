@@ -1,6 +1,12 @@
 import * as Result from "effect/Result"
 import * as Schema from "effect/Schema"
-import { type IdentityDomain, MalformedIdentity, MalformedVersion } from "./identity-failure.js"
+import { DigestAlgorithm, DigestValue } from "./digest.js"
+import {
+  type IdentityDomain,
+  MalformedDigestMetadata,
+  MalformedIdentity,
+  MalformedVersion,
+} from "./identity-failure.js"
 import {
   CallbackId,
   ContinuationId,
@@ -22,6 +28,7 @@ import {
   decodeTraceId,
 } from "./identity.js"
 import { Version, decodeVersion } from "./version.js"
+import { type Json, type JsonRecord, normalizeJson } from "./json.js"
 
 const reference = <Id extends Schema.ConstraintDecoder<unknown>>(id: Id) => Schema.Struct({ id, version: Version })
 
@@ -41,7 +48,12 @@ export const TraceRef = reference(TraceId)
 export type TraceRef = typeof TraceRef.Type
 export const SchemaRef = reference(SchemaId)
 export type SchemaRef = typeof SchemaRef.Type
-export const DigestRef = reference(DigestId)
+export const DigestRef = Schema.Struct({
+  id: DigestId,
+  version: Version,
+  algorithm: DigestAlgorithm,
+  value: DigestValue,
+})
 export type DigestRef = typeof DigestRef.Type
 
 const isObject = (value: unknown): value is object => typeof value === "object" && value !== null
@@ -97,4 +109,37 @@ export const decodeContinuationRef = (input: unknown) =>
   decode(ContinuationRef, decodeContinuationId, input, "continuation")
 export const decodeTraceRef = (input: unknown) => decode(TraceRef, decodeTraceId, input, "trace")
 export const decodeSchemaRef = (input: unknown) => decode(SchemaRef, decodeSchemaId, input, "schema")
-export const decodeDigestRef = (input: unknown) => decode(DigestRef, decodeDigestId, input, "digest")
+
+const isRecord = (value: Json): value is JsonRecord =>
+  !Array.isArray(value) && typeof value === "object" && value !== null
+
+const hasExactKeys = (value: JsonRecord, keys: ReadonlyArray<string>): boolean => {
+  const actual = Object.keys(value)
+  return actual.length === keys.length && keys.every((key) => Object.hasOwn(value, key))
+}
+
+const malformedDigestMetadata = (): MalformedDigestMetadata => new MalformedDigestMetadata()
+
+/** Decodes a four-key external digest claim; this boundary never computes or verifies a digest. */
+export const decodeDigestRef = (
+  input: unknown,
+): Result.Result<DigestRef, MalformedIdentity | MalformedVersion | MalformedDigestMetadata> =>
+  normalizeJson(input).pipe(
+    Result.mapError(malformedDigestMetadata),
+    Result.flatMap((value) => {
+      if (!isRecord(value) || !hasExactKeys(value, ["id", "version", "algorithm", "value"])) {
+        return Result.fail(malformedDigestMetadata())
+      }
+
+      return Result.all({
+        id: decodeDigestId(value.id),
+        version: decodeVersion(value.version).pipe(
+          Result.mapError(() => new MalformedVersion({ source: "reference" })),
+        ),
+        algorithm: Schema.decodeUnknownResult(DigestAlgorithm)(value.algorithm).pipe(
+          Result.mapError(malformedDigestMetadata),
+        ),
+        value: Schema.decodeUnknownResult(DigestValue)(value.value).pipe(Result.mapError(malformedDigestMetadata)),
+      }).pipe(Result.map((digest) => Object.freeze(digest)))
+    }),
+  )
