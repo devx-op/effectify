@@ -21,8 +21,11 @@ import "../src/tool-declaration-projection.js"
 it("keeps leaves direct and neutral", () => {
   const leaves = [
     "canonical-json",
+    "compatibility-failure",
+    "compatibility",
     "declaration-failure",
     "diagnostic",
+    "digest",
     "envelope",
     "identity",
     "identity-failure",
@@ -31,6 +34,9 @@ it("keeps leaves direct and neutral", () => {
     "outcome",
     "outcome-failure",
     "reference",
+    "passive-record",
+    "replay-failure",
+    "replay",
     "requirement",
     "schema-document",
     "tool-declaration",
@@ -45,7 +51,7 @@ it("keeps leaves direct and neutral", () => {
     .join("\n")
 
   expect(source).not.toMatch(
-    /node:|window|runtime|handler|execute|evaluate|evaluation|effect\/(?:Context|Effect|Layer)|Context\.Service|registry|replay|certification/i,
+    /node:|window|runtime|handler|execute|evaluate|evaluation|effect\/(?:Context|Effect|Layer)|Context\.Service|registry/i,
   )
   expect(canonicalizationSource).not.toMatch(/hash|digest|replay/i)
 
@@ -72,6 +78,16 @@ it("keeps leaves direct and neutral", () => {
       "schema-document.js",
     ],
     "tool-declaration-projection.ts": ["canonical-json.js", "declaration-failure.js", "tool-declaration.js"],
+    "passive-record.ts": ["json.js", "reference.js"],
+    "replay.ts": [
+      "canonical-json.js",
+      "tool-declaration-projection.js",
+      "json.js",
+      "passive-record.js",
+      "reference.js",
+      "replay-failure.js",
+    ],
+    "compatibility.ts": ["canonical-json.js", "compatibility-failure.js", "json.js", "identity.js", "version.js"],
   } as const
 
   for (const [file, allowed] of Object.entries(contractDependencies)) {
@@ -88,16 +104,23 @@ it("keeps private contracts in kebab-case with canonical Schema declarations", (
   const sourceDirectory = fileURLToPath(new URL("../src/", import.meta.url))
   expect(readdirSync(sourceDirectory).sort()).toEqual([
     "canonical-json.ts",
+    "compatibility-failure.ts",
+    "compatibility.ts",
     "declaration-failure.ts",
     "diagnostic.ts",
+    "digest.ts",
     "envelope.ts",
     "identity-failure.ts",
     "identity.ts",
+    "index.ts",
     "json-failure.ts",
     "json.ts",
     "outcome-failure.ts",
     "outcome.ts",
+    "passive-record.ts",
     "reference.ts",
+    "replay-failure.ts",
+    "replay.ts",
     "requirement.ts",
     "schema-document.ts",
     "tool-declaration-projection.ts",
@@ -114,9 +137,9 @@ it("keeps private contracts in kebab-case with canonical Schema declarations", (
   expect(source).toContain("Schema.Literals")
   expect(source).not.toContain("Schema.Class")
 
-  expect(existsSync(fileURLToPath(new URL("../src/index.ts", import.meta.url)))).toBe(false)
+  expect(existsSync(fileURLToPath(new URL("../src/index.ts", import.meta.url)))).toBe(true)
   const packageJson = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")) as {
     readonly exports?: unknown
   }
-  expect(packageJson.exports).toBeUndefined()
+  expect(packageJson.exports).toBeDefined()
 })

@@ -30,3 +30,8 @@ export class MalformedVersion extends Schema.TaggedErrorClass<MalformedVersion>(
 export class IncompatibleVersion extends Schema.TaggedErrorClass<IncompatibleVersion>()("IncompatibleVersion", {
   reason: IncompatibleVersionReason,
 }) {}
+
+export class MalformedDigestMetadata extends Schema.TaggedErrorClass<MalformedDigestMetadata>()(
+  "MalformedDigestMetadata",
+  {},
+) {}

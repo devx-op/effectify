@@ -24,6 +24,12 @@ import {
 } from "../src/reference.js"
 
 const input = { id: "app-builder:item", version: { major: 1, minor: 0, patch: 0 } }
+const digestInput = {
+  id: "digest:replay-material",
+  version: { major: 1, minor: 0, patch: 0 },
+  algorithm: "sha256",
+  value: "55e5182971d95806bc67a72c04387e34e8a81e2001ab258058534f95b90e4b1f",
+}
 
 const assertRoundTrip = <S extends Schema.ConstraintDecoder<unknown> & Schema.ConstraintEncoder<unknown>, E>(
   schema: S,
@@ -38,7 +44,7 @@ const assertRoundTrip = <S extends Schema.ConstraintDecoder<unknown> & Schema.Co
   expect(encoded).toMatchObject({ _tag: "Success", success: input })
 }
 
-it("round trips all nine branded references", () => {
+it("round trips eight ordinary branded references", () => {
   assertRoundTrip(ProtocolRef, decodeProtocolRef)
   assertRoundTrip(RunRef, decodeRunRef)
   assertRoundTrip(ToolRef, decodeToolRef)
@@ -47,7 +53,25 @@ it("round trips all nine branded references", () => {
   assertRoundTrip(ContinuationRef, decodeContinuationRef)
   assertRoundTrip(TraceRef, decodeTraceRef)
   assertRoundTrip(SchemaRef, decodeSchemaRef)
-  assertRoundTrip(DigestRef, decodeDigestRef)
+})
+
+it("round trips an external four-key digest reference without computing a digest", () => {
+  const decoded = Result.getOrThrowWith(decodeDigestRef(digestInput), (failure) => failure)
+
+  expect(Object.keys(decoded).sort()).toEqual(["algorithm", "id", "value", "version"])
+  expect(decoded).toEqual(digestInput)
+  expect(Schema.encodeUnknownResult(DigestRef)(decoded)).toMatchObject({ _tag: "Success", success: digestInput })
+})
+
+it("rejects absent or malformed external digest metadata", () => {
+  expect(decodeDigestRef({ id: "digest:replay-material", version: input.version })).toMatchObject({
+    _tag: "Failure",
+    failure: { _tag: "MalformedDigestMetadata" },
+  })
+  expect(decodeDigestRef({ ...digestInput, algorithm: "SHA256" })).toMatchObject({
+    _tag: "Failure",
+    failure: { _tag: "MalformedDigestMetadata" },
+  })
 })
 
 it("rejects malformed IDs and stages malformed reference versions", () => {
