@@ -3,14 +3,14 @@
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "packages/app-builder/contracts/src",
   "projectType": "library",
-  "tags": ["app-builder", "private", "contracts"],
+  "tags": ["app-builder", "public", "contracts"],
   "targets": {
     "build": {
       "executor": "@nx/js:tsc",
       "options": {
-        "main": "packages/app-builder/contracts/src/envelope.ts",
+        "main": "packages/app-builder/contracts/src/index.ts",
         "tsConfig": "packages/app-builder/contracts/tsconfig.lib.json",
-        "outputPath": "dist/packages/app-builder/contracts"
+        "outputPath": "packages/app-builder/contracts/dist"
       }
     },
     "typecheck": {
@@ -24,6 +24,13 @@
       "executor": "nx:run-commands",
       "options": {
         "command": "../../../node_modules/.bin/vitest run --config vitest.config.mts",
+        "cwd": "packages/app-builder/contracts"
+      }
+    },
+    "test-coverage": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "../../../node_modules/.bin/vitest run --config vitest.config.mts --coverage",
         "cwd": "packages/app-builder/contracts"
       }
     },
