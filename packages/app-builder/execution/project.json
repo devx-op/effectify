@@ -1,0 +1,44 @@
+{
+  "name": "@effectify/app-builder-execution",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/app-builder/execution/src",
+  "projectType": "library",
+  "tags": ["app-builder", "public", "execution"],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "options": {
+        "main": "packages/app-builder/execution/src/index.ts",
+        "tsConfig": "packages/app-builder/execution/tsconfig.lib.json",
+        "outputPath": "packages/app-builder/execution/dist"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit -p tsconfig.lib.json && tsc --noEmit -p tsconfig.spec.json",
+        "cwd": "packages/app-builder/execution"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "../../../node_modules/.bin/vitest run --config vitest.config.mts",
+        "cwd": "packages/app-builder/execution"
+      }
+    },
+    "test-coverage": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "../../../node_modules/.bin/vitest run --config vitest.config.mts --coverage",
+        "cwd": "packages/app-builder/execution"
+      }
+    },
+    "lint": {
+      "executor": "nx-oxlint:lint",
+      "options": {
+        "lintFilePatterns": ["packages/app-builder/execution/**/*.{ts,mts}"]
+      }
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "name": "@effectify/app-builder-execution",
+  "version": "0.0.0",
+  "type": "module",
+  "dependencies": {
+    "@effectify/app-builder-contracts": "workspace:*",
+    "tslib": "catalog:"
+  },
+  "peerDependencies": {
+    "effect": "catalog:"
+  },
+  "exports": {
+    ".": {
+      "@effectify/source": "./src/index.ts",
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js",
+      "default": "./dist/src/index.js"
+    }
+  },
+  "devDependencies": {
+    "@effect/vitest": "catalog:",
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}
