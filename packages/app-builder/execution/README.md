@@ -1,15 +1,22 @@
 # `@effectify/app-builder-execution`
 
-Deterministic, in-memory lifecycle authority for App Builder PE3–4 runs. It consumes the passive identities and diagnostics from `@effectify/app-builder-contracts`; it does not redefine those records or own their persistence.
+Deterministic lifecycle and durable-storage boundary for App Builder PE3–4 runs. It consumes the passive identities and diagnostics from `@effectify/app-builder-contracts`; it does not redefine those records.
 
 ## Public API
 
-The package root exports exactly four namespaces:
+The package root exports explicit module namespaces:
 
 - `RunLifecycle` — tagged lifecycle snapshots, transition requests and results, the pure `reduce` function, `makeDraft`, and the stateless Effect service.
 - `TransitionEvidence` — immutable transition evidence and contract-reference schemas.
 - `AutomaticPolicy` — policy request, receipt, decision, fact, and redacted-secret schemas.
 - `LifecycleFailure` — the closed typed failure set.
+- `PersistenceFormat` — canonical versioned journal and snapshot codecs.
+- `ManagedPath` — workspace-local managed-state path validation and layout helpers.
+- `DurableFileSystem` — Effect-first durable filesystem capability boundary.
+- `DraftStore` — contracts-validated passive draft persistence without CLI behavior.
+- `RunStore` — immutable journal commit boundary without cross-process lock claims.
+- `Recovery` — read-only journal validation and non-executable recovery decisions.
+- `Cleanup` — explicit terminal-only retention cleanup after exact-tail validation.
 
 `RunLifecycle.reduce` is the sole transition authority. It accepts a snapshot, request, and caller-provided prior-result material, then returns a new immutable result or a typed failure. It never mutates the supplied snapshot or holds state between calls.
 
@@ -40,10 +47,22 @@ Policy is an external seam. The package defines approval requests and receipts o
 
 `RunLifecycle.Service` wraps the pure reducer using `Effect.fn` and `Layer.succeed`. It remains stateless and preserves fiber interruption.
 
+## Durable storage and recovery boundary
+
+`RunStore` persists immutable, versioned journal segments under the workspace-local `/.effectify/` root. Snapshots are disposable read acceleration only; the journal remains the recovery authority.
+
+`DraftStore` persists and reads only canonical `ValidatedWizardDraft` material through the same managed durable boundary. Invalid drafts cause no managed filesystem mutation; CLI intent, prompts, and defaults remain excluded.
+
+The bundled Node adapter fails closed with `UnsupportedDurability` because path-string APIs cannot prove directory-handle-relative no-follow behavior. A live platform adapter must prove that capability before this package reads, publishes, or cleans managed paths.
+
+`Recovery` validates the complete journal set and returns only closed recovery outcomes. A recovery candidate identifies unmet lock and executor/idempotency authorities. It does not execute a workspace operation, acquire a lock, repair, salvage, migrate, quarantine, or remove evidence.
+
+`Cleanup` is explicit and terminal-only. It revalidates recovery evidence and an exact expected tail before removing a run tree; invalid, nonterminal, ambiguous, and draft evidence remains retained.
+
 ## Deliberate exclusions
 
-This package does **not** implement persistence or recovery; locks, executors, cleanup, or subprocess execution; CLI intent or wizard behavior; filesystem, process, clock, or global mutable state; Nx generation; web features; plugins; or analytics. Later children may adapt this lifecycle authority at those boundaries without duplicating its transition rules.
+This package does **not** implement cross-process locks, executors, subprocess execution, CLI intent or wizard behavior, automatic repair/salvage/migration/quarantine/cleanup, databases, Nx generation, web features, plugins, or analytics. Later children may adapt these boundaries without duplicating lifecycle transition rules.
 
 ## Rollback
 
-Before dependent children land, rollback is the removal of this additive `packages/app-builder/execution` package. `@effectify/app-builder-contracts` remains unchanged.
+Before dependent children land, rollback can remove the additive storage/recovery namespaces and the `/.effectify/` ignore rule. Preserve state bytes for diagnosis; rollback must not rewrite or delete workspace evidence. `@effectify/app-builder-contracts` remains unchanged.

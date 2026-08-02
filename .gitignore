@@ -89,3 +89,6 @@ generated/
 .github/agents/
 .github/prompts/
 .github/skills/
+
+# Workspace-local App Builder durable state
+/.effectify/
