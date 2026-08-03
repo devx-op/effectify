@@ -19,6 +19,7 @@ export interface FakeDurableFileSystem {
   readonly operations: Ref.Ref<ReadonlyArray<string>>
   readonly published: Deferred.Deferred<string>
   readonly contents: ReadonlyMap<string, Uint8Array>
+  readonly setContents: (path: string, bytes: Uint8Array) => void
 }
 
 const failure = (operation: string): DurableFileSystem.DurableFileSystemFailure =>
@@ -73,14 +74,30 @@ export const makeFakeDurableFileSystem = (options: FakeOptions = {}): Effect.Eff
           Effect.andThen(() =>
             entries.has(path)
               ? Effect.fail(failure("createPrivateDirectory"))
-              : Effect.sync(() =>
-                  entries.set(path, { type: "directory", device: 1, mode: DurableFileSystem.PrivateDirectoryMode }),
-                ),
+              : Effect.sync(() => {
+                  const entry = { type: "directory" as const, device: 1, mode: DurableFileSystem.PrivateDirectoryMode }
+                  entries.set(path, entry)
+                  return entry
+                }),
           ),
-          Effect.as({
+          Effect.map((entry) => ({
             sync: record(`directorySync:${path}`),
             close: record(`directoryClose:${path}`),
-          }),
+            rollback: record(`rollbackPrivateDirectory:${path}`).pipe(
+              Effect.flatMap(() => {
+                if (entries.get(path) !== entry) return Effect.succeed(false)
+                return Effect.sync(() => {
+                  for (const candidate of entries.keys()) {
+                    if (candidate === path || candidate.startsWith(`${path}/`)) {
+                      entries.delete(candidate)
+                      contents.delete(candidate)
+                    }
+                  }
+                  return true
+                })
+              }),
+            ),
+          })),
         ),
       createExclusive: (path, mode) =>
         record(`create:${path}`).pipe(
@@ -197,5 +214,5 @@ export const makeFakeDurableFileSystem = (options: FakeOptions = {}): Effect.Eff
           }),
         ),
     }
-    return { fileSystem, operations, published, contents }
+    return { fileSystem, operations, published, contents, setContents: (path, bytes) => contents.set(path, bytes) }
   })

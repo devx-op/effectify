@@ -23,10 +23,10 @@ const isWorkspaceRelativePath = (workspace: string, relativePath: string): boole
   return pathRelative.length > 0 && pathRelative !== ".." && !pathRelative.startsWith(`..${sep}`)
 }
 
-/** Internal mutation gate: callers supply an already-resolved mutation after scope and path validation. */
+/** Internal mutation gate: the operation receives only the validated workspace target. */
 export const mutate = <Value, Error, Requirements>(
   input: MutationInput,
-  operation: Effect.Effect<Value, Error, Requirements>,
+  operation: (target: string) => Effect.Effect<Value, Error, Requirements>,
 ): Effect.Effect<Value, Error | WorkspaceLock.OwnershipRejected | WorkspaceMutationRejected, Requirements> => {
   const workspace = resolve(input.workspace)
   if (!Ownership.isActiveFor(input.ownership, workspace, WorkspaceLock.workspaceLockPath(workspace))) {
@@ -35,5 +35,5 @@ export const mutate = <Value, Error, Requirements>(
   if (!isWorkspaceRelativePath(workspace, input.relativePath)) {
     return Effect.fail(new WorkspaceMutationRejected({ reason: "PathOutsideWorkspace" }))
   }
-  return operation
+  return operation(resolve(workspace, input.relativePath))
 }

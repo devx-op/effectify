@@ -33,7 +33,7 @@ export interface ExecutionContext {
   readonly ownership: Ownership.WorkspaceOwnership
   readonly mutate: <Value, Error, Requirements>(
     relativePath: string,
-    operation: Effect.Effect<Value, Error, Requirements>,
+    operation: (target: string) => Effect.Effect<Value, Error, Requirements>,
   ) => Effect.Effect<
     Value,
     Error | WorkspaceLock.OwnershipRejected | WorkspaceMutator.WorkspaceMutationRejected,

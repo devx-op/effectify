@@ -39,6 +39,11 @@ export interface DurableDirectory {
   readonly close: Effect.Effect<void, DurableFileSystemFailure | UnsupportedDurability>
 }
 
+export interface CreatedPrivateDirectory extends DurableDirectory {
+  /** Atomically remove only this exact directory instance, including incomplete contents. */
+  readonly rollback: Effect.Effect<boolean, DurableFileSystemFailure | UnsupportedDurability>
+}
+
 export interface DurableFileSystemService {
   readonly capabilities: DurableCapabilities
   readonly inspect: (
@@ -55,7 +60,7 @@ export interface DurableFileSystemService {
   /** Atomically create a new private directory; an existing path is always a failure. */
   readonly createPrivateDirectory: (
     path: string,
-  ) => Effect.Effect<DurableDirectory, DurableFileSystemFailure | UnsupportedDurability>
+  ) => Effect.Effect<CreatedPrivateDirectory, DurableFileSystemFailure | UnsupportedDurability>
   readonly createExclusive: (
     path: string,
     mode: number,

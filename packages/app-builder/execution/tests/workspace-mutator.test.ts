@@ -15,15 +15,17 @@ it.effect("runs a workspace-scoped mutation only for a matching live owner", () 
     })
     const owned = yield* WorkspaceMutator.mutate(
       { workspace, ownership, relativePath: "generated/file.txt" },
-      Ref.update(mutations, (count) => count + 1),
+      (target) =>
+        Effect.sync(() => expect(target).toBe("/workspace/generated/file.txt")).pipe(
+          Effect.andThen(Ref.update(mutations, (count) => count + 1)),
+        ),
     )
     const foreign = Ownership.issueForScope({
       workspace: "/other-workspace",
       lockPath: WorkspaceLock.workspaceLockPath("/other-workspace"),
     })
     const rejected = yield* Effect.result(
-      WorkspaceMutator.mutate(
-        { workspace, ownership: foreign, relativePath: "generated/file.txt" },
+      WorkspaceMutator.mutate({ workspace, ownership: foreign, relativePath: "generated/file.txt" }, () =>
         Ref.update(mutations, (count) => count + 1),
       ),
     )

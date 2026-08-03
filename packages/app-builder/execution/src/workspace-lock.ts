@@ -201,7 +201,11 @@ export const make = (dependencies: Dependencies): WorkspaceLockService => {
     const created = yield* Effect.result(fileSystem.createPrivateDirectory(lockPath))
 
     if (Result.isSuccess(created)) {
-      yield* writeMetadata(fileSystem, lockPath, metadataPath, metadata)
+      const published = yield* Effect.result(writeMetadata(fileSystem, lockPath, metadataPath, metadata))
+      if (Result.isFailure(published)) {
+        yield* created.success.rollback.pipe(Effect.result, Effect.asVoid)
+        return yield* Effect.fail(published.failure)
+      }
       return {
         ownership: Ownership.issueForScope({ workspace, lockPath }),
         workspace,

@@ -81,6 +81,39 @@ it.effect("allows one contender and invokes no losing callback", () =>
   }),
 )
 
+it.effect("rolls back a newly created lock when owner metadata publication fails", () =>
+  Effect.gen(function* () {
+    const fake = yield* makeFakeDurableFileSystem({ crashAt: "fileSync" })
+    const result = yield* Effect.result(
+      makeLock({ fileSystem: fake.fileSystem }).withExclusive({ workspace }, Effect.succeed),
+    )
+
+    expect(result).toMatchObject({ _tag: "Failure", failure: { _tag: "DurableFileSystemFailure" } })
+    expect(yield* fake.fileSystem.inspect(lockPath)).toBeUndefined()
+  }),
+)
+
+it.effect("preserves changed owner evidence when incomplete-lock rollback is indeterminate", () =>
+  Effect.gen(function* () {
+    const fake = yield* makeFakeDurableFileSystem({ crashAt: "fileSync" })
+    const replacement = WorkspaceLock.encodeOwnerMetadata({ ...metadata, nonce: "nonce:replacement" })
+    const fileSystem: DurableFileSystem.DurableFileSystemService = {
+      ...fake.fileSystem,
+      createPrivateDirectory: (path) =>
+        fake.fileSystem.createPrivateDirectory(path).pipe(
+          Effect.map((directory) => ({
+            ...directory,
+            rollback: Effect.sync(() => fake.setContents(`${lockPath}/owner.json`, replacement)).pipe(Effect.as(false)),
+          })),
+        ),
+    }
+    const result = yield* Effect.result(makeLock({ fileSystem }).withExclusive({ workspace }, Effect.succeed))
+
+    expect(result).toMatchObject({ _tag: "Failure", failure: { _tag: "DurableFileSystemFailure" } })
+    expect(yield* fake.fileSystem.readFile(`${lockPath}/owner.json`)).toEqual(replacement)
+  }),
+)
+
 it.effect("takes over only byte-identical dead same-host evidence with explicit recovery authority", () =>
   Effect.gen(function* () {
     const fake = yield* makeFakeDurableFileSystem()
