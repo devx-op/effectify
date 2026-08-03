@@ -94,6 +94,7 @@ interface ClosedRunStore {
 }
 
 interface Dependencies {
+  readonly fileSystem: DurableFileSystem.DurableFileSystemService
   readonly workspaceLock: WorkspaceLock.WorkspaceLockService
   readonly runStore: ClosedRunStore
   readonly toolProcess: ToolProcess.ToolProcessService
@@ -273,7 +274,10 @@ export const make = (dependencies: Dependencies): RunExecutorService => ({
               workspace: input.workspace,
               ownership,
               mutate: (relativePath, operation) =>
-                WorkspaceMutator.mutate({ workspace: input.workspace, ownership, relativePath }, operation),
+                WorkspaceMutator.mutate(
+                  { workspace: input.workspace, ownership, relativePath, fileSystem: dependencies.fileSystem },
+                  operation,
+                ),
             }
             const callbackExit = yield* restore(callback(context)).pipe(Effect.exit)
             const settled = yield* settleChild(dependencies.toolProcess, grace)
@@ -373,6 +377,7 @@ export const layer = Layer.effect(
     const crypto = yield* Crypto.Crypto
     return Service.of(
       make({
+        fileSystem,
         workspaceLock,
         runStore: {
           commit: (input) =>

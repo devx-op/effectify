@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto"
 import { dirname, isAbsolute, join, resolve } from "node:path"
+import * as Cause from "effect/Cause"
 import * as Context from "effect/Context"
 import * as Effect from "effect/Effect"
 import * as Exit from "effect/Exit"
@@ -191,6 +192,12 @@ const writeMetadata = (
 const hasSafeWorkspacePath = (workspace: string): boolean =>
   isAbsolute(workspace) && !workspace.includes("\u0000") && resolve(workspace) === workspace
 
+const shouldRelease = <Value, Error>(exit: Exit.Exit<Value, Error>): boolean => {
+  if (Exit.isSuccess(exit)) return true
+  for (const reason of exit.cause.reasons) if (!Cause.isFailReason(reason)) return false
+  return true
+}
+
 /** Creates an explicit, scoped lock service without ambient ownership defaults. */
 export const make = (dependencies: Dependencies): WorkspaceLockService => {
   const acquire = Effect.fn("AppBuilder.WorkspaceLock.acquire")(function* (input: WithExclusiveInput) {
@@ -279,7 +286,7 @@ export const make = (dependencies: Dependencies): WorkspaceLockService => {
           acquire(input),
           (lease) => restore(use(lease.ownership)),
           (lease, exit) =>
-            (Exit.isSuccess(exit) ? release(lease) : Effect.void).pipe(
+            (shouldRelease(exit) ? release(lease) : Effect.void).pipe(
               Effect.ensuring(Effect.sync(() => Ownership.invalidate(lease.ownership))),
             ),
         ),
@@ -290,7 +297,7 @@ export const make = (dependencies: Dependencies): WorkspaceLockService => {
           acquire(input),
           (lease) => restore(use(lease.ownership)),
           (lease, exit) =>
-            (Exit.isSuccess(exit) ? release(lease) : Effect.void).pipe(
+            (shouldRelease(exit) ? release(lease) : Effect.void).pipe(
               Effect.ensuring(Effect.sync(() => Ownership.invalidate(lease.ownership))),
             ),
         ).pipe(Effect.flatMap(({ value, payload }) => afterRelease(payload))),

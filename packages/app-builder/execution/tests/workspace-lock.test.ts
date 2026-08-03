@@ -191,6 +191,40 @@ it.effect("runs final evidence deletion only after durable lock release", () =>
   }),
 )
 
+it.effect("releases unchanged owned evidence after ordinary use failures", () =>
+  Effect.gen(function* () {
+    const ordinary = yield* makeFakeDurableFileSystem()
+    const ordinaryResult = yield* Effect.result(
+      makeLock({ fileSystem: ordinary.fileSystem }).withExclusive({ workspace }, () => Effect.fail("callback")),
+    )
+    const finalized = yield* makeFakeDurableFileSystem()
+    const finalizedResult = yield* Effect.result(
+      makeLock({ fileSystem: finalized.fileSystem }).withExclusiveFinalized(
+        { workspace },
+        () => Effect.fail("persistence"),
+        () => Effect.die("must not finalize"),
+      ),
+    )
+
+    expect(ordinaryResult).toMatchObject({ _tag: "Failure", failure: "callback" })
+    expect(finalizedResult).toMatchObject({ _tag: "Failure", failure: "persistence" })
+    expect(yield* ordinary.fileSystem.inspect(lockPath)).toBeUndefined()
+    expect(yield* finalized.fileSystem.inspect(lockPath)).toBeUndefined()
+  }),
+)
+
+it.effect("retains owned evidence when use is interrupted", () =>
+  Effect.gen(function* () {
+    const fake = yield* makeFakeDurableFileSystem()
+    const exit = yield* Effect.exit(
+      makeLock({ fileSystem: fake.fileSystem }).withExclusive({ workspace }, () => Effect.interrupt),
+    )
+
+    expect(exit._tag).toBe("Failure")
+    expect(yield* fake.fileSystem.inspect(lockPath)).toMatchObject({ type: "directory" })
+  }),
+)
+
 it.effect("skips final evidence deletion when durable lock release fails", () =>
   Effect.gen(function* () {
     const fake = yield* makeFakeDurableFileSystem()

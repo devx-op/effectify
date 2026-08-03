@@ -111,6 +111,7 @@ const makeExecutor = (
   } = {},
 ) =>
   Effect.gen(function* () {
+    const fileSystem = (yield* makeFakeDurableFileSystem()).fileSystem
     const commits = yield* Ref.make<ReadonlyArray<RunLifecycle.TransitionRequest>>([])
     const finalizations = yield* Ref.make(0)
     const workspaceLock: WorkspaceLock.WorkspaceLockService = {
@@ -119,6 +120,7 @@ const makeExecutor = (
         use(ownership).pipe(Effect.flatMap(({ value, payload }) => afterRelease(payload).pipe(Effect.as(value)))),
     }
     const executor = RunExecutor.make({
+      fileSystem,
       workspaceLock,
       runStore: {
         commit: (commitInput) =>
