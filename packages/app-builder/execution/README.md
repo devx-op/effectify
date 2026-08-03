@@ -17,6 +17,9 @@ The package root exports explicit module namespaces:
 - `RunStore` — immutable journal commit boundary without cross-process lock claims.
 - `Recovery` — read-only journal validation and non-executable recovery decisions.
 - `Cleanup` — explicit terminal-only retention cleanup after exact-tail validation.
+- `WorkspaceLock` — atomic scoped workspace ownership with fail-closed stale-lock evidence checks.
+- `LockRecoveryAuthority` — explicit authorization required before a definitively dead same-host lock owner may be replaced.
+- `RunExecutor` — one resolved Effect callback contract that commits execution before invocation and finalizes only proven outcomes.
 
 `RunLifecycle.reduce` is the sole transition authority. It accepts a snapshot, request, and caller-provided prior-result material, then returns a new immutable result or a typed failure. It never mutates the supplied snapshot or holds state between calls.
 
@@ -59,9 +62,15 @@ The bundled Node adapter fails closed with `UnsupportedDurability` because path-
 
 `Cleanup` is explicit and terminal-only. It revalidates recovery evidence and an exact expected tail before removing a run tree; invalid, nonterminal, ambiguous, and draft evidence remains retained.
 
+`WorkspaceLock` creates a private lock directory before yielding an opaque ownership capability. The capability is active only within its Effect scope and is required for every run-store commit, workspace mutation, and terminal cleanup. A stale lock is never reclaimed from elapsed time: recovery requires explicit `LockRecoveryAuthority`, unchanged metadata, and definitive same-host process-instance death. Any missing or ambiguous proof retains the lock.
+
+`RunExecutor` accepts one already-resolved Effect callback with run identity and idempotency proof. It does not inspect passive plans, discover tools, or expose child-process control. It commits `Ready` to `Executing` before invocation; interruption, child settlement, terminal persistence, cleanup, and compare-before-remove release preserve evidence whenever an outcome is not proven. `TerminationTimedOut` is never reported as cancellation.
+
 ## Deliberate exclusions
 
-This package does **not** implement cross-process locks, executors, subprocess execution, CLI intent or wizard behavior, automatic repair/salvage/migration/quarantine/cleanup, databases, Nx generation, web features, plugins, or analytics. Later children may adapt these boundaries without duplicating lifecycle transition rules.
+This package does **not** implement CLI commands, prompts, flags, signal registration or rendering, tool discovery or registries, passive-plan execution derivation, leases, distributed locks, automatic salvage, databases, Nx generation, web features, plugins, or analytics. Its internal argv-only process seam is not exported from the package root. Later children may adapt these boundaries without duplicating lifecycle transition rules.
+
+It does not provide a CLI surface or infer execution behavior from `PassivePlan` material.
 
 ## Rollback
 

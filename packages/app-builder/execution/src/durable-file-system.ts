@@ -9,7 +9,14 @@ import * as ManagedPath from "./managed-path.js"
 export const PrivateDirectoryMode = 0o700
 export const PrivateFileMode = 0o600
 
-type Capability = "privateAccessControl" | "noFollowPaths" | "noReplacePublish" | "fileSync" | "directorySync"
+type Capability =
+  | "privateAccessControl"
+  | "noFollowPaths"
+  | "noReplacePublish"
+  | "fileSync"
+  | "directorySync"
+  | "atomicPrivateDirectory"
+  | "compareMetadataDirectoryMutation"
 
 export interface DurableCapabilities {
   readonly privateAccessControl: boolean
@@ -17,6 +24,8 @@ export interface DurableCapabilities {
   readonly noReplacePublish: boolean
   readonly fileSync: boolean
   readonly directorySync: boolean
+  readonly atomicPrivateDirectory: boolean
+  readonly compareMetadataDirectoryMutation: boolean
 }
 
 export interface DurableFile {
@@ -43,6 +52,10 @@ export interface DurableFileSystemService {
     path: string,
     mode: number,
   ) => Effect.Effect<void, DurableFileSystemFailure | UnsupportedDurability>
+  /** Atomically create a new private directory; an existing path is always a failure. */
+  readonly createPrivateDirectory: (
+    path: string,
+  ) => Effect.Effect<DurableDirectory, DurableFileSystemFailure | UnsupportedDurability>
   readonly createExclusive: (
     path: string,
     mode: number,
@@ -55,6 +68,19 @@ export interface DurableFileSystemService {
     path: string,
   ) => Effect.Effect<DurableDirectory, DurableFileSystemFailure | UnsupportedDurability>
   readonly removeTree: (path: string) => Effect.Effect<void, DurableFileSystemFailure | UnsupportedDurability>
+  /** Atomically replace private lock state only while its owner metadata bytes still match. */
+  readonly replacePrivateDirectoryIfMetadataUnchanged: (
+    directoryPath: string,
+    metadataPath: string,
+    expectedMetadata: Uint8Array,
+    replacementMetadata: Uint8Array,
+  ) => Effect.Effect<boolean, DurableFileSystemFailure | UnsupportedDurability>
+  /** Atomically remove a private lock directory only while owner metadata bytes still match. */
+  readonly removePrivateDirectoryIfMetadataUnchanged: (
+    directoryPath: string,
+    metadataPath: string,
+    expectedMetadata: Uint8Array,
+  ) => Effect.Effect<boolean, DurableFileSystemFailure | UnsupportedDurability>
 }
 
 export class UnsupportedDurability extends Schema.TaggedErrorClass<UnsupportedDurability>()("UnsupportedDurability", {
@@ -64,6 +90,8 @@ export class UnsupportedDurability extends Schema.TaggedErrorClass<UnsupportedDu
     "noReplacePublish",
     "fileSync",
     "directorySync",
+    "atomicPrivateDirectory",
+    "compareMetadataDirectoryMutation",
   ]),
 }) {}
 
@@ -92,6 +120,8 @@ const nodeCapabilities: DurableCapabilities = Object.freeze({
   noReplacePublish: true,
   fileSync: true,
   directorySync: true,
+  atomicPrivateDirectory: true,
+  compareMetadataDirectoryMutation: true,
 })
 
 const noFollowUnavailable = <Value>(): Effect.Effect<Value, UnsupportedDurability> =>
@@ -104,10 +134,13 @@ export const makeLive = (): DurableFileSystemService => ({
   readDirectory: () => noFollowUnavailable(),
   readFile: () => noFollowUnavailable(),
   createDirectory: () => noFollowUnavailable(),
+  createPrivateDirectory: () => noFollowUnavailable(),
   createExclusive: () => noFollowUnavailable(),
   publishNoReplace: () => noFollowUnavailable(),
   openDirectory: () => noFollowUnavailable(),
   removeTree: () => noFollowUnavailable(),
+  replacePrivateDirectoryIfMetadataUnchanged: () => noFollowUnavailable(),
+  removePrivateDirectoryIfMetadataUnchanged: () => noFollowUnavailable(),
 })
 
 export const live = Layer.succeed(Service, Service.of(makeLive()))
@@ -120,6 +153,16 @@ export const requireCapabilities = (fileSystem: DurableFileSystemService): Effec
     yield* unavailable(fileSystem.capabilities, "noReplacePublish")
     yield* unavailable(fileSystem.capabilities, "fileSync")
     yield* unavailable(fileSystem.capabilities, "directorySync")
+  })
+
+/** Reject lock acquisition adapters that cannot atomically create and compare private directory state. */
+export const requireLockCapabilities = (
+  fileSystem: DurableFileSystemService,
+): Effect.Effect<void, UnsupportedDurability> =>
+  Effect.gen(function* () {
+    yield* requireCapabilities(fileSystem)
+    yield* unavailable(fileSystem.capabilities, "atomicPrivateDirectory")
+    yield* unavailable(fileSystem.capabilities, "compareMetadataDirectoryMutation")
   })
 
 /** Create or revalidate one owner-private directory on the workspace device without following links. */

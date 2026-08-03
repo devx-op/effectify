@@ -9,7 +9,9 @@ import * as Result from "effect/Result"
 import * as Schema from "effect/Schema"
 import * as DurableFileSystem from "../src/durable-file-system.js"
 import * as PersistenceFormat from "../src/persistence-format.js"
+import * as Ownership from "../src/ownership.js"
 import * as RunStore from "../src/run-store.js"
+import * as WorkspaceLock from "../src/workspace-lock.js"
 import { RunLifecycle } from "../src/index.js"
 import { makeFakeDurableFileSystem } from "./durable-file-system-fake.js"
 
@@ -80,7 +82,16 @@ const commitInput = (cause?: string) =>
       tailDigest: journal.value.payloadDigest,
       lifecycleSnapshot: journal.value.snapshot,
     })
-    return { workspace: "/workspace", expectedTail: { revision: 0 }, journal, snapshot }
+    return {
+      workspace: "/workspace",
+      ownership: Ownership.issueForScope({
+        workspace: "/workspace",
+        lockPath: WorkspaceLock.workspaceLockPath("/workspace"),
+      }),
+      expectedTail: { revision: 0 },
+      journal,
+      snapshot,
+    }
   })
 
 const decodeEquivalentMalformedUtf8 = (bytes: Uint8Array): Uint8Array => {
@@ -110,6 +121,44 @@ it.effect("rejects a stale observed tail before a duplicate immutable segment ca
 
     expect(first).toMatchObject({ _tag: "Committed", snapshot: "current", revision: 1 })
     expect(conflict).toMatchObject({ _tag: "Failure", failure: { _tag: "TailConflict", actualRevision: 1 } })
+  }).pipe(Effect.provide(cryptoLayer)),
+)
+
+it.effect("rejects a missing workspace ownership capability before any durable mutation", () =>
+  Effect.gen(function* () {
+    const fake = yield* makeFakeDurableFileSystem()
+    const unowned = yield* commitInput()
+    Reflect.deleteProperty(unowned, "ownership")
+    const outcome = yield* Effect.result(RunStore.commit(unowned).pipe(withStore(fake.fileSystem)))
+    const operations = yield* Ref.get(fake.operations)
+
+    expect(outcome).toMatchObject({ _tag: "Failure", failure: { _tag: "OwnershipRejected" } })
+    expect(operations).toEqual([])
+  }).pipe(Effect.provide(cryptoLayer)),
+)
+
+it.effect("rejects foreign or expired ownership before a journal operation", () =>
+  Effect.gen(function* () {
+    const input = yield* commitInput()
+    const foreign = Ownership.issueForScope({
+      workspace: "/another-workspace",
+      lockPath: WorkspaceLock.workspaceLockPath("/another-workspace"),
+    })
+    const expired = Ownership.issueForScope({
+      workspace: "/workspace",
+      lockPath: WorkspaceLock.workspaceLockPath("/workspace"),
+    })
+    Ownership.invalidate(expired)
+    const cases = [foreign, expired]
+
+    expect(cases).toHaveLength(2)
+    for (const ownership of cases) {
+      const fake = yield* makeFakeDurableFileSystem()
+      const result = yield* Effect.result(RunStore.commit({ ...input, ownership }).pipe(withStore(fake.fileSystem)))
+
+      expect(result).toMatchObject({ _tag: "Failure", failure: { _tag: "OwnershipRejected" } })
+      expect(yield* Ref.get(fake.operations)).toEqual([])
+    }
   }).pipe(Effect.provide(cryptoLayer)),
 )
 

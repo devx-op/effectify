@@ -9,7 +9,9 @@ import * as Layer from "effect/Layer"
 import * as Schema from "effect/Schema"
 import * as Cleanup from "../src/cleanup.js"
 import * as DurableFileSystem from "../src/durable-file-system.js"
+import * as Ownership from "../src/ownership.js"
 import * as Recovery from "../src/recovery.js"
+import * as WorkspaceLock from "../src/workspace-lock.js"
 import { RunLifecycle } from "../src/index.js"
 
 const version = { major: 1, minor: 0, patch: 0 }
@@ -36,6 +38,7 @@ it("fails the live adapter closed before read, publication, or cleanup when no-f
   const workspace = await mkdtemp(join(tmpdir(), "effectify-run-store-"))
   try {
     const fileSystem = DurableFileSystem.makeLive()
+    const ownership = Ownership.issueForScope({ workspace, lockPath: WorkspaceLock.workspaceLockPath(workspace) })
     const capability = await Effect.runPromise(Effect.result(DurableFileSystem.requireCapabilities(fileSystem)))
     const publication = await Effect.runPromise(
       Effect.result(DurableFileSystem.prepareRunJournalDirectory(fileSystem, workspace, "run:live-capability")),
@@ -47,7 +50,7 @@ it("fails the live adapter closed before read, publication, or cleanup when no-f
       ),
     )
     const cleanup = await Effect.runPromise(
-      Cleanup.cleanup({ workspace, runRef, expectedTailDigest: "0".repeat(64) }).pipe(
+      Cleanup.cleanup({ workspace, runRef, expectedTailDigest: "0".repeat(64), ownership }).pipe(
         Effect.provideService(DurableFileSystem.Service, fileSystem),
         Effect.provide(cryptoLayer),
       ),

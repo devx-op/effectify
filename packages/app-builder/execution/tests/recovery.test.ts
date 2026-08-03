@@ -10,8 +10,10 @@ import * as Schema from "effect/Schema"
 import * as DurableFileSystem from "../src/durable-file-system.js"
 import * as ManagedPath from "../src/managed-path.js"
 import * as PersistenceFormat from "../src/persistence-format.js"
+import * as Ownership from "../src/ownership.js"
 import * as Recovery from "../src/recovery.js"
 import * as RunStore from "../src/run-store.js"
+import * as WorkspaceLock from "../src/workspace-lock.js"
 import { RunLifecycle } from "../src/index.js"
 import { makeFakeDurableFileSystem } from "./durable-file-system-fake.js"
 
@@ -87,7 +89,16 @@ const commitInput = () =>
       tailDigest: journal.value.payloadDigest,
       lifecycleSnapshot: journal.value.snapshot,
     })
-    return { workspace: "/workspace", expectedTail: { revision: 0 }, journal, snapshot }
+    return {
+      workspace: "/workspace",
+      ownership: Ownership.issueForScope({
+        workspace: "/workspace",
+        lockPath: WorkspaceLock.workspaceLockPath("/workspace"),
+      }),
+      expectedTail: { revision: 0 },
+      journal,
+      snapshot,
+    }
   })
 
 const withStore =
@@ -264,6 +275,7 @@ it.effect("requires every next journal to start from the exact preceding result 
     })
     yield* RunStore.commit({
       workspace: "/workspace",
+      ownership: firstInput.ownership,
       expectedTail: { revision: 1, payloadDigest: preceding.payloadDigest },
       journal,
       snapshot,

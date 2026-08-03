@@ -9,8 +9,10 @@ import * as Schema from "effect/Schema"
 import * as Cleanup from "../src/cleanup.js"
 import * as DurableFileSystem from "../src/durable-file-system.js"
 import * as ManagedPath from "../src/managed-path.js"
+import * as Ownership from "../src/ownership.js"
 import * as PersistenceFormat from "../src/persistence-format.js"
 import * as RunStore from "../src/run-store.js"
+import * as WorkspaceLock from "../src/workspace-lock.js"
 import { RunLifecycle } from "../src/index.js"
 import { makeFakeDurableFileSystem } from "./durable-file-system-fake.js"
 
@@ -109,11 +111,19 @@ const withStore =
       Effect.provide(cryptoLayer),
     )
 
-const cleanup = (fileSystem: DurableFileSystem.DurableFileSystemService, expectedTailDigest: string) =>
-  Cleanup.cleanupClosed({ workspace: "/workspace", runRef: initialSnapshot().runRef, expectedTailDigest }).pipe(
-    Effect.provideService(DurableFileSystem.Service, fileSystem),
-    Effect.provide(cryptoLayer),
-  )
+const cleanup = (fileSystem: DurableFileSystem.DurableFileSystemService, expectedTailDigest: string) => {
+  const ownership = Ownership.issueForScope({
+    workspace: "/workspace",
+    lockPath: WorkspaceLock.workspaceLockPath("/workspace"),
+  })
+  Ownership.invalidate(ownership)
+  return Cleanup.cleanupClosed({
+    workspace: "/workspace",
+    runRef: initialSnapshot().runRef,
+    expectedTailDigest,
+    ownership,
+  }).pipe(Effect.provideService(DurableFileSystem.Service, fileSystem), Effect.provide(cryptoLayer))
+}
 
 const runDirectory = () =>
   success(ManagedPath.runLayout("/workspace", "run:explicit-cleanup@1.0.0")).runDirectory.absolute
@@ -124,6 +134,10 @@ const journalDirectory = () =>
 const commitCancelledRun = () =>
   Effect.gen(function* () {
     const fake = yield* makeFakeDurableFileSystem()
+    const ownership = Ownership.issueForScope({
+      workspace: "/workspace",
+      lockPath: WorkspaceLock.workspaceLockPath("/workspace"),
+    })
     const cancellation = success(
       RunLifecycle.reduce({ snapshot: initialSnapshot(), request: cancelRequest(initialSnapshot()), priorResults: [] }),
     )
@@ -136,6 +150,7 @@ const commitCancelledRun = () =>
     const firstSnapshot = yield* snapshot(firstJournal.value)
     yield* RunStore.commit({
       workspace: "/workspace",
+      ownership,
       expectedTail: { revision: 0 },
       journal: firstJournal,
       snapshot: firstSnapshot,
@@ -157,6 +172,7 @@ const commitCancelledRun = () =>
     const secondSnapshot = yield* snapshot(secondJournal.value)
     yield* RunStore.commit({
       workspace: "/workspace",
+      ownership,
       expectedTail: { revision: 1, payloadDigest: firstJournal.value.payloadDigest },
       journal: secondJournal,
       snapshot: secondSnapshot,
@@ -182,6 +198,25 @@ it.effect("preserves a terminal run until exclusive deletion authority is availa
   }).pipe(Effect.provide(cryptoLayer)),
 )
 
+it.effect("removes terminal evidence only with active matching ownership after tail revalidation", () =>
+  Effect.gen(function* () {
+    const { fake, tail } = yield* commitCancelledRun()
+    const ownership = Ownership.issueForScope({
+      workspace: "/workspace",
+      lockPath: WorkspaceLock.workspaceLockPath("/workspace"),
+    })
+    const outcome = yield* Cleanup.cleanup({
+      workspace: "/workspace",
+      runRef: initialSnapshot().runRef,
+      expectedTailDigest: tail,
+      ownership,
+    }).pipe(Effect.provideService(DurableFileSystem.Service, fake.fileSystem), Effect.provide(cryptoLayer))
+
+    expect(outcome).toMatchObject({ _tag: "Cleaned", tail: { payloadDigest: tail } })
+    expect(yield* fake.fileSystem.inspect(runDirectory())).toBeUndefined()
+  }).pipe(Effect.provide(cryptoLayer)),
+)
+
 it.effect("preserves terminal evidence that could have been superseded concurrently", () =>
   Effect.gen(function* () {
     const { fake, tail } = yield* commitCancelledRun()
@@ -203,6 +238,10 @@ it.effect("preserves drafts and all nonterminal, invalid, ambiguous, or stale-ta
   Effect.gen(function* () {
     const terminal = yield* commitCancelledRun()
     const nonterminal = yield* makeFakeDurableFileSystem()
+    const ownership = Ownership.issueForScope({
+      workspace: "/workspace",
+      lockPath: WorkspaceLock.workspaceLockPath("/workspace"),
+    })
     const initial = initialSnapshot()
     const cancellationRequest = cancelRequest(initial)
     const cancellation = success(
@@ -217,6 +256,7 @@ it.effect("preserves drafts and all nonterminal, invalid, ambiguous, or stale-ta
     const pendingSnapshot = yield* snapshot(pendingJournal.value)
     yield* RunStore.commit({
       workspace: "/workspace",
+      ownership,
       expectedTail: { revision: 0 },
       journal: pendingJournal,
       snapshot: pendingSnapshot,

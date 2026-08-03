@@ -15,3 +15,9 @@ export * as RunStore from "./run-store.js"
 export * as Recovery from "./recovery.js"
 /** Explicit terminal-only state retention cleanup after exact tail validation. */
 export * as Cleanup from "./cleanup.js"
+/** Scoped exclusive workspace ownership and stale-lock recovery boundary. */
+export * as WorkspaceLock from "./workspace-lock.js"
+/** Explicit authorization boundary for stale same-host lock recovery. */
+export * as LockRecoveryAuthority from "./lock-recovery-authority.js"
+/** Resolved callback execution and truthful lifecycle finalization boundary. */
+export * as RunExecutor from "./run-executor.js"

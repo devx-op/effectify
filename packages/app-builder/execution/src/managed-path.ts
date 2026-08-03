@@ -31,6 +31,12 @@ export interface DraftLayout {
   readonly draft: ManagedPath
 }
 
+export interface WorkspaceLockLayout {
+  readonly workspace: string
+  readonly root: string
+  readonly lockDirectory: ManagedPath
+}
+
 export class ManagedPathPolicyViolation extends Schema.TaggedErrorClass<ManagedPathPolicyViolation>()(
   "ManagedPathPolicyViolation",
   {
@@ -119,6 +125,15 @@ export const draftLayout = (workspace: string, draftId: string): Result.Result<D
     draftDirectory: resolveManagedPath(root, ["drafts", draft]),
     draft: resolveManagedPath(root, ["drafts", draft, "draft.json"]),
   }).pipe(Result.map((paths) => Object.freeze({ workspace: resolvedWorkspace, root, ...paths })))
+}
+
+/** Derive the fixed private lock directory without accepting caller-controlled descendant paths. */
+export const workspaceLockLayout = (workspace: string): Result.Result<WorkspaceLockLayout, ManagedPathFailure> => {
+  const resolvedWorkspace = resolve(workspace)
+  const root = resolve(resolvedWorkspace, ".effectify", "app-builder", "v1")
+  return resolveManagedPath(resolvedWorkspace, [".effectify", "app-builder", "v1", "workspace.lock"]).pipe(
+    Result.map((lockDirectory) => Object.freeze({ workspace: resolvedWorkspace, root, lockDirectory })),
+  )
 }
 
 const assertEntry = (

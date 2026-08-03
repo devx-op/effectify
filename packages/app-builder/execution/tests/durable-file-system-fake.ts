@@ -40,6 +40,8 @@ export const makeFakeDurableFileSystem = (options: FakeOptions = {}): Effect.Eff
       noReplacePublish: true,
       fileSync: true,
       directorySync: true,
+      atomicPrivateDirectory: true,
+      compareMetadataDirectoryMutation: true,
       ...options.capabilities,
     }
     const record = (operation: string) => Ref.update(operations, (current) => Object.freeze([...current, operation]))
@@ -65,6 +67,20 @@ export const makeFakeDurableFileSystem = (options: FakeOptions = {}): Effect.Eff
       createDirectory: (path, mode) =>
         record(`mkdir:${path}`).pipe(
           Effect.tap(() => Effect.sync(() => entries.set(path, { type: "directory", device: 1, mode }))),
+        ),
+      createPrivateDirectory: (path) =>
+        record(`createPrivateDirectory:${path}`).pipe(
+          Effect.andThen(() =>
+            entries.has(path)
+              ? Effect.fail(failure("createPrivateDirectory"))
+              : Effect.sync(() =>
+                  entries.set(path, { type: "directory", device: 1, mode: DurableFileSystem.PrivateDirectoryMode }),
+                ),
+          ),
+          Effect.as({
+            sync: record(`directorySync:${path}`),
+            close: record(`directoryClose:${path}`),
+          }),
         ),
       createExclusive: (path, mode) =>
         record(`create:${path}`).pipe(
@@ -127,6 +143,58 @@ export const makeFakeDurableFileSystem = (options: FakeOptions = {}): Effect.Eff
               }
             }),
           ),
+        ),
+      replacePrivateDirectoryIfMetadataUnchanged: (
+        directoryPath,
+        metadataPath,
+        expectedMetadata,
+        replacementMetadata,
+      ) =>
+        record(`replacePrivateDirectoryIfMetadataUnchanged:${directoryPath}`).pipe(
+          Effect.flatMap(() => {
+            const current = contents.get(metadataPath)
+            const matches =
+              current !== undefined &&
+              current.length === expectedMetadata.length &&
+              current.every((byte, index) => byte === expectedMetadata[index])
+            if (!matches) return Effect.succeed(false)
+            return Effect.sync(() => {
+              for (const candidate of entries.keys()) {
+                if (candidate === directoryPath || candidate.startsWith(`${directoryPath}/`)) {
+                  entries.delete(candidate)
+                  contents.delete(candidate)
+                }
+              }
+              entries.set(directoryPath, {
+                type: "directory",
+                device: 1,
+                mode: DurableFileSystem.PrivateDirectoryMode,
+              })
+              entries.set(metadataPath, { type: "file", device: 1, mode: DurableFileSystem.PrivateFileMode })
+              contents.set(metadataPath, replacementMetadata)
+              return true
+            })
+          }),
+        ),
+      removePrivateDirectoryIfMetadataUnchanged: (directoryPath, metadataPath, expectedMetadata) =>
+        record(`removePrivateDirectoryIfMetadataUnchanged:${directoryPath}`).pipe(
+          Effect.flatMap(() => {
+            const current = contents.get(metadataPath)
+            const matches =
+              current !== undefined &&
+              current.length === expectedMetadata.length &&
+              current.every((byte, index) => byte === expectedMetadata[index])
+            if (!matches) return Effect.succeed(false)
+            return Effect.sync(() => {
+              for (const candidate of entries.keys()) {
+                if (candidate === directoryPath || candidate.startsWith(`${directoryPath}/`)) {
+                  entries.delete(candidate)
+                  contents.delete(candidate)
+                }
+              }
+              return true
+            })
+          }),
         ),
     }
     return { fileSystem, operations, published, contents }

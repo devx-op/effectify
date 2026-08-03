@@ -3,19 +3,22 @@ import { readFileSync } from "node:fs"
 import { fileURLToPath } from "node:url"
 import * as Execution from "../src/index.js"
 
-it("exports durable storage, recovery, and cleanup only as explicit namespaces from its package root", () => {
+it("exports exclusive lock and resolved executor capabilities only as explicit namespaces from its package root", () => {
   expect(Object.keys(Execution).sort()).toEqual([
     "AutomaticPolicy",
     "Cleanup",
     "DraftStore",
     "DurableFileSystem",
     "LifecycleFailure",
+    "LockRecoveryAuthority",
     "ManagedPath",
     "PersistenceFormat",
     "Recovery",
+    "RunExecutor",
     "RunLifecycle",
     "RunStore",
     "TransitionEvidence",
+    "WorkspaceLock",
   ])
 })
 
@@ -26,6 +29,8 @@ it("does not leak internal leaf exports through its root barrel", () => {
   expect(Execution).not.toHaveProperty("recover")
   expect(Execution).not.toHaveProperty("cleanupClosed")
   expect(Execution).not.toHaveProperty("persist")
+  expect(Execution).not.toHaveProperty("ToolProcess")
+  expect(Execution).not.toHaveProperty("Ownership")
 })
 
 it("documents durable storage and recovery as non-executable package namespaces", () => {
@@ -36,8 +41,12 @@ it("documents durable storage and recovery as non-executable package namespaces"
   expect(readme).toContain("`RunStore`")
   expect(readme).toContain("`Recovery`")
   expect(readme).toContain("`Cleanup`")
+  expect(readme).toContain("`WorkspaceLock`")
+  expect(readme).toContain("`LockRecoveryAuthority`")
+  expect(readme).toContain("`RunExecutor`")
   expect(readme).toMatch(/does not.*execute/i)
   expect(readme).toMatch(/does not.*lock/i)
+  expect(readme).toMatch(/does not.*CLI/i)
 })
 
 it("documents Git-ignored managed state and rollback preservation semantics", () => {
