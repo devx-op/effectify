@@ -17,6 +17,11 @@ export default defineConfig({
         "src/automatic-policy.ts",
         "src/failure.ts",
         "src/index.ts",
+        "src/run-executor.ts",
+        "src/workspace-lock.ts",
+        "src/cleanup.ts",
+        "src/cleanup-finalization.ts",
+        "src/durable-file-system.ts",
       ],
       thresholds: {
         lines: 95,

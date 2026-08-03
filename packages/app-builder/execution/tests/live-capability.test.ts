@@ -65,7 +65,7 @@ it("fails the live adapter closed before read, publication, or cleanup when no-f
       failure: { _tag: "UnsupportedDurability", capability: "noFollowPaths" },
     })
     expect(recovery).toMatchObject({ _tag: "RecoveryBlocked", reason: "UnsupportedDurability" })
-    expect(cleanup).toMatchObject({ _tag: "CleanupPreserved", reason: "UnsupportedDurability" })
+    expect(cleanup).toMatchObject({ _tag: "CleanupPreserved", reason: "ReleaseRequired" })
     await expect(lstat(join(workspace, ".effectify"))).rejects.toMatchObject({ code: "ENOENT" })
   } finally {
     await rm(workspace, { force: true, recursive: true })

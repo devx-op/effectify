@@ -43,10 +43,33 @@ export const makeFakeDurableFileSystem = (options: FakeOptions = {}): Effect.Eff
       directorySync: true,
       atomicPrivateDirectory: true,
       compareMetadataDirectoryMutation: true,
+      compareTreeDirectoryMutation: true,
       ...options.capabilities,
     }
     const record = (operation: string) => Ref.update(operations, (current) => Object.freeze([...current, operation]))
     const shouldCrash = (stage: CrashStage) => options.crashAt === stage
+    const tree = (path: string): ReadonlyArray<DurableFileSystem.TreeEntry> =>
+      Array.from(entries.entries(), ([candidate, entry]) =>
+        candidate === path || candidate.startsWith(`${path}/`)
+          ? { path: candidate, type: entry.type, ...(entry.type === "file" ? { bytes: contents.get(candidate) } : {}) }
+          : undefined,
+      )
+        .filter((entry): entry is DurableFileSystem.TreeEntry => entry !== undefined)
+        .sort((left, right) => left.path.localeCompare(right.path))
+    const sameTree = (
+      left: ReadonlyArray<DurableFileSystem.TreeEntry>,
+      right: ReadonlyArray<DurableFileSystem.TreeEntry>,
+    ) =>
+      left.length === right.length &&
+      left.every(
+        (entry, index) =>
+          entry.path === right[index]?.path &&
+          entry.type === right[index]?.type &&
+          (entry.bytes === undefined
+            ? right[index]?.bytes === undefined
+            : entry.bytes.length === right[index]?.bytes?.length &&
+              entry.bytes.every((byte, byteIndex) => byte === right[index]?.bytes?.[byteIndex])),
+      )
     const fileSystem: DurableFileSystem.DurableFileSystemService = {
       capabilities,
       inspect: (path) => record(`inspect:${path}`).pipe(Effect.as(entries.get(path))),
@@ -159,6 +182,23 @@ export const makeFakeDurableFileSystem = (options: FakeOptions = {}): Effect.Eff
                 }
               }
             }),
+          ),
+        ),
+      captureTree: (path) => record(`captureTree:${path}`).pipe(Effect.as(tree(path))),
+      removeTreeIfUnchanged: (path, expected) =>
+        record(`removeTreeIfUnchanged:${path}`).pipe(
+          Effect.flatMap(() =>
+            sameTree(tree(path), expected)
+              ? Effect.sync(() => {
+                  for (const candidate of entries.keys()) {
+                    if (candidate === path || candidate.startsWith(`${path}/`)) {
+                      entries.delete(candidate)
+                      contents.delete(candidate)
+                    }
+                  }
+                  return true
+                })
+              : Effect.succeed(false),
           ),
         ),
       replacePrivateDirectoryIfMetadataUnchanged: (

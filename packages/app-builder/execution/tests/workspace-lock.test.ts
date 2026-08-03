@@ -173,3 +173,95 @@ it.effect("retains ambiguous, foreign, or changed lock evidence without callback
     expect(yield* fake.fileSystem.inspect(lockPath)).toMatchObject({ type: "directory" })
   }),
 )
+
+it.effect("runs final evidence deletion only after durable lock release", () =>
+  Effect.gen(function* () {
+    const fake = yield* makeFakeDurableFileSystem()
+    const lock = makeLock({ fileSystem: fake.fileSystem })
+    const afterRelease = yield* Ref.make(0)
+    const result = yield* lock.withExclusiveFinalized(
+      { workspace },
+      () => Effect.succeed({ value: "terminal", payload: "opaque-ticket" }),
+      () => Ref.update(afterRelease, (count) => count + 1).pipe(Effect.as("terminal")),
+    )
+
+    expect(result).toBe("terminal")
+    expect(yield* Ref.get(afterRelease)).toBe(1)
+    expect(yield* fake.fileSystem.inspect(lockPath)).toBeUndefined()
+  }),
+)
+
+it.effect("skips final evidence deletion when durable lock release fails", () =>
+  Effect.gen(function* () {
+    const fake = yield* makeFakeDurableFileSystem()
+    const lock = makeLock({
+      fileSystem: { ...fake.fileSystem, removePrivateDirectoryIfMetadataUnchanged: () => Effect.succeed(false) },
+    })
+    const afterRelease = yield* Ref.make(0)
+    const result = yield* Effect.result(
+      lock.withExclusiveFinalized(
+        { workspace },
+        () => Effect.succeed({ value: "terminal", payload: "opaque-ticket" }),
+        () => Ref.update(afterRelease, (count) => count + 1).pipe(Effect.as("terminal")),
+      ),
+    )
+
+    expect(result).toMatchObject({ _tag: "Failure", failure: { _tag: "LockEvidenceChanged" } })
+    expect(yield* Ref.get(afterRelease)).toBe(0)
+    expect(yield* fake.fileSystem.inspect(lockPath)).toMatchObject({ type: "directory" })
+  }),
+)
+
+it.effect("keeps the legacy wrapper and owner evidence digest available", () =>
+  Effect.gen(function* () {
+    const fake = yield* makeFakeDurableFileSystem()
+    const lock = makeLock({ fileSystem: fake.fileSystem })
+    const value = yield* WorkspaceLock.withExclusive({ workspace }, () => Effect.succeed("legacy-wrapper")).pipe(
+      Effect.provideService(WorkspaceLock.Service, lock),
+    )
+
+    expect(value).toBe("legacy-wrapper")
+    expect(WorkspaceLock.ownerMetadataDigest(WorkspaceLock.encodeOwnerMetadata(metadata))).toHaveLength(64)
+  }),
+)
+
+it.effect("rejects invalid paths and unauthorized recovery before mutation", () =>
+  Effect.gen(function* () {
+    const invalid = yield* Effect.result(
+      makeLock({ fileSystem: (yield* makeFakeDurableFileSystem()).fileSystem }).withExclusive(
+        { workspace: "relative" },
+        () => Effect.void,
+      ),
+    )
+    const fake = yield* makeFakeDurableFileSystem()
+    yield* seedLock(fake.fileSystem, WorkspaceLock.encodeOwnerMetadata(metadata))
+    const recovery = yield* Effect.result(
+      makeLock({ fileSystem: fake.fileSystem, status: { _tag: "Dead" }, authorize: false }).withExclusive(
+        { workspace, recover: true },
+        () => Effect.void,
+      ),
+    )
+
+    expect(invalid).toMatchObject({ _tag: "Failure", failure: { _tag: "InvalidExecutionInput" } })
+    expect(recovery).toMatchObject({ _tag: "Failure", failure: { _tag: "RecoveryDenied", reason: "NotAuthorized" } })
+  }),
+)
+
+it.effect("rejects malformed owner evidence through the injected lock layer", () =>
+  Effect.gen(function* () {
+    const fake = yield* makeFakeDurableFileSystem()
+    yield* seedLock(fake.fileSystem, Uint8Array.of(0xff))
+    const service = yield* WorkspaceLock.Service.pipe(
+      Effect.provide(WorkspaceLock.layer),
+      Effect.provideService(DurableFileSystem.Service, fake.fileSystem),
+      Effect.provideService(ProcessIdentity.Service, {
+        current: () => Effect.succeed(owner),
+        inspect: () => Effect.succeed({ _tag: "Dead" as const }),
+      }),
+      Effect.provideService(LockRecoveryAuthority.Service, { authorize: () => Effect.void }),
+    )
+    const result = yield* Effect.result(service.withExclusive({ workspace, recover: true }, () => Effect.void))
+
+    expect(result).toMatchObject({ _tag: "Failure", failure: { _tag: "RecoveryDenied", reason: "AmbiguousOwner" } })
+  }),
+)

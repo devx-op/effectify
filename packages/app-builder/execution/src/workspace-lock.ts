@@ -63,6 +63,13 @@ export interface WorkspaceLockService {
     input: WithExclusiveInput,
     use: (ownership: Ownership.WorkspaceOwnership) => Effect.Effect<Value, Error, Requirements>,
   ) => Effect.Effect<Value, Error | WorkspaceLockFailure, Requirements>
+  readonly withExclusiveFinalized: <Value, Payload, Error, Requirements>(
+    input: WithExclusiveInput,
+    use: (
+      ownership: Ownership.WorkspaceOwnership,
+    ) => Effect.Effect<{ readonly value: Value; readonly payload: Payload }, Error, Requirements>,
+    afterRelease: (payload: Payload) => Effect.Effect<Value, Error, Requirements>,
+  ) => Effect.Effect<Value, Error | WorkspaceLockFailure, Requirements>
 }
 
 export class Service extends Context.Service<Service, WorkspaceLockService>()(
@@ -276,6 +283,17 @@ export const make = (dependencies: Dependencies): WorkspaceLockService => {
               Effect.ensuring(Effect.sync(() => Ownership.invalidate(lease.ownership))),
             ),
         ),
+      ),
+    withExclusiveFinalized: (input, use, afterRelease) =>
+      Effect.uninterruptibleMask((restore) =>
+        Effect.acquireUseRelease(
+          acquire(input),
+          (lease) => restore(use(lease.ownership)),
+          (lease, exit) =>
+            (Exit.isSuccess(exit) ? release(lease) : Effect.void).pipe(
+              Effect.ensuring(Effect.sync(() => Ownership.invalidate(lease.ownership))),
+            ),
+        ).pipe(Effect.flatMap(({ value, payload }) => afterRelease(payload))),
       ),
   }
 }

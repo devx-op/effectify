@@ -17,6 +17,7 @@ type Capability =
   | "directorySync"
   | "atomicPrivateDirectory"
   | "compareMetadataDirectoryMutation"
+  | "compareTreeDirectoryMutation"
 
 export interface DurableCapabilities {
   readonly privateAccessControl: boolean
@@ -26,6 +27,13 @@ export interface DurableCapabilities {
   readonly directorySync: boolean
   readonly atomicPrivateDirectory: boolean
   readonly compareMetadataDirectoryMutation: boolean
+  readonly compareTreeDirectoryMutation: boolean
+}
+
+export interface TreeEntry {
+  readonly path: string
+  readonly type: ManagedPath.ManagedEntry["type"]
+  readonly bytes?: Uint8Array
 }
 
 export interface DurableFile {
@@ -73,6 +81,15 @@ export interface DurableFileSystemService {
     path: string,
   ) => Effect.Effect<DurableDirectory, DurableFileSystemFailure | UnsupportedDurability>
   readonly removeTree: (path: string) => Effect.Effect<void, DurableFileSystemFailure | UnsupportedDurability>
+  /** Capture an exact managed tree for a later atomic compare-remove. */
+  readonly captureTree: (
+    path: string,
+  ) => Effect.Effect<ReadonlyArray<TreeEntry>, DurableFileSystemFailure | UnsupportedDurability>
+  /** Atomically remove only when every captured path, type, and file byte remains unchanged. */
+  readonly removeTreeIfUnchanged: (
+    path: string,
+    expected: ReadonlyArray<TreeEntry>,
+  ) => Effect.Effect<boolean, DurableFileSystemFailure | UnsupportedDurability>
   /** Atomically replace private lock state only while its owner metadata bytes still match. */
   readonly replacePrivateDirectoryIfMetadataUnchanged: (
     directoryPath: string,
@@ -97,6 +114,7 @@ export class UnsupportedDurability extends Schema.TaggedErrorClass<UnsupportedDu
     "directorySync",
     "atomicPrivateDirectory",
     "compareMetadataDirectoryMutation",
+    "compareTreeDirectoryMutation",
   ]),
 }) {}
 
@@ -127,6 +145,7 @@ const nodeCapabilities: DurableCapabilities = Object.freeze({
   directorySync: true,
   atomicPrivateDirectory: true,
   compareMetadataDirectoryMutation: true,
+  compareTreeDirectoryMutation: true,
 })
 
 const noFollowUnavailable = <Value>(): Effect.Effect<Value, UnsupportedDurability> =>
@@ -144,6 +163,8 @@ export const makeLive = (): DurableFileSystemService => ({
   publishNoReplace: () => noFollowUnavailable(),
   openDirectory: () => noFollowUnavailable(),
   removeTree: () => noFollowUnavailable(),
+  captureTree: () => noFollowUnavailable(),
+  removeTreeIfUnchanged: () => noFollowUnavailable(),
   replacePrivateDirectoryIfMetadataUnchanged: () => noFollowUnavailable(),
   removePrivateDirectoryIfMetadataUnchanged: () => noFollowUnavailable(),
 })
@@ -168,6 +189,7 @@ export const requireLockCapabilities = (
     yield* requireCapabilities(fileSystem)
     yield* unavailable(fileSystem.capabilities, "atomicPrivateDirectory")
     yield* unavailable(fileSystem.capabilities, "compareMetadataDirectoryMutation")
+    yield* unavailable(fileSystem.capabilities, "compareTreeDirectoryMutation")
   })
 
 /** Create or revalidate one owner-private directory on the workspace device without following links. */

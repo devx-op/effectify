@@ -69,7 +69,7 @@ export const validateSpawn = (input: SpawnInput): SpawnValidation => {
 }
 
 export interface ToolProcessService {
-  readonly active: () => Effect.Effect<Option.Option<ChildProcess>>
+  readonly active: () => Effect.Effect<Option.Option<ChildProcess>, ToolProcessFailure>
 }
 
 export class Service extends Context.Service<Service, ToolProcessService>()(

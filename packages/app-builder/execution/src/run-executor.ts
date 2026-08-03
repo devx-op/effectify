@@ -1,4 +1,5 @@
 import * as Context from "effect/Context"
+import * as Cause from "effect/Cause"
 import * as Crypto from "effect/Crypto"
 import * as Duration from "effect/Duration"
 import * as Effect from "effect/Effect"
@@ -8,6 +9,7 @@ import * as Option from "effect/Option"
 import * as Result from "effect/Result"
 import * as Schema from "effect/Schema"
 import * as Cleanup from "./cleanup.js"
+import * as CleanupFinalization from "./cleanup-finalization.js"
 import * as DurableFileSystem from "./durable-file-system.js"
 import * as LifecycleFailure from "./failure.js"
 import * as Ownership from "./ownership.js"
@@ -52,10 +54,16 @@ export interface ExecuteInput {
   readonly recover?: boolean
 }
 
-export interface ExecutionResult {
-  readonly outcome: ExecutionOutcome
-  readonly terminal: Extract<RunLifecycle.LifecycleSnapshot, { readonly _tag: "Succeeded" | "Failed" }>
-}
+export type ExecutionResult =
+  | {
+      readonly _tag: "Completed"
+      readonly outcome: ExecutionOutcome
+      readonly terminal: Extract<RunLifecycle.LifecycleSnapshot, { readonly _tag: "Succeeded" | "Failed" }>
+    }
+  | {
+      readonly _tag: "Cancelled"
+      readonly terminal: Extract<RunLifecycle.LifecycleSnapshot, { readonly _tag: "Cancelled" }>
+    }
 
 export class InvalidExecutionInput extends Schema.TaggedErrorClass<InvalidExecutionInput>()("InvalidExecutionInput", {
   reason: Schema.Literals(["CallbackIdentity", "TerminationGrace"]),
@@ -89,7 +97,12 @@ interface Dependencies {
   readonly workspaceLock: WorkspaceLock.WorkspaceLockService
   readonly runStore: ClosedRunStore
   readonly toolProcess: ToolProcess.ToolProcessService
-  readonly cleanup: (input: Cleanup.CleanupInput) => Effect.Effect<Cleanup.CleanupOutcome>
+  readonly finalization: {
+    readonly prepare: (
+      input: Cleanup.CleanupInput,
+    ) => Effect.Effect<CleanupFinalization.CleanupTicket | Cleanup.CleanupPreserved>
+    readonly delete: (ticket: CleanupFinalization.CleanupTicket) => Effect.Effect<Cleanup.CleanupOutcome>
+  }
   readonly crypto: Crypto.Crypto
 }
 
@@ -127,7 +140,7 @@ const transition = (
   })
 
 const request = (input: {
-  readonly _tag: "AcceptExecution" | "Complete"
+  readonly _tag: "AcceptExecution" | "Complete" | "RequestCancellation" | "ConfirmCancellation"
   readonly snapshot: RunLifecycle.LifecycleSnapshot
   readonly attemptId: string
   readonly outcome?: ExecutionOutcome
@@ -143,16 +156,37 @@ const request = (input: {
           secrets: [],
           contracts: input.snapshot.contracts,
         }
-      : {
-          _tag: "Complete",
-          requestId: `executor:${input.attemptId}:complete`,
-          expectedRevision: input.snapshot.revision,
-          cause: "Persist proven resolved execution outcome",
-          facts: [],
-          secrets: [],
-          contracts: input.snapshot.contracts,
-          outcome: input.outcome,
-        },
+      : input._tag === "Complete"
+        ? {
+            _tag: "Complete",
+            requestId: `executor:${input.attemptId}:complete`,
+            expectedRevision: input.snapshot.revision,
+            cause: "Persist proven resolved execution outcome",
+            facts: [],
+            secrets: [],
+            contracts: input.snapshot.contracts,
+            outcome: input.outcome,
+          }
+        : input._tag === "RequestCancellation"
+          ? {
+              _tag: "RequestCancellation",
+              requestId: `executor:${input.attemptId}:cancel-request`,
+              expectedRevision: input.snapshot.revision,
+              cause: "Persist proven interruption-only cancellation",
+              facts: [],
+              secrets: [],
+              contracts: input.snapshot.contracts,
+            }
+          : {
+              _tag: "ConfirmCancellation",
+              requestId: `executor:${input.attemptId}:cancel-confirm`,
+              expectedRevision: input.snapshot.revision,
+              cause: "Confirm proven interruption-only cancellation",
+              facts: [],
+              secrets: [],
+              contracts: input.snapshot.contracts,
+              confirmationRef: `executor:${input.attemptId}:cancelled`,
+            },
   )
 
 const encodeCommit = (
@@ -201,17 +235,17 @@ const encodeCommit = (
 const settleChild = (
   process: ToolProcess.ToolProcessService,
   grace: Duration.Duration,
-): Effect.Effect<boolean, ToolProcess.ToolProcessFailure> =>
+): Effect.Effect<"Settled" | "TimedOut", ToolProcess.ToolProcessFailure> =>
   Effect.gen(function* () {
     const active = yield* process.active()
-    if (Option.isNone(active)) return true
+    if (Option.isNone(active)) return "Settled"
     const child = active.value
     yield* child.requestStop
     const stopped = yield* child.awaitExit.pipe(Effect.timeoutOption(grace))
-    if (Option.isSome(stopped)) return true
-    if (child.forceTerminate === undefined) return false
+    if (Option.isSome(stopped)) return "Settled"
+    if (child.forceTerminate === undefined) return "TimedOut"
     yield* child.forceTerminate
-    return Option.isSome(yield* child.awaitExit.pipe(Effect.timeoutOption(grace)))
+    return Option.isSome(yield* child.awaitExit.pipe(Effect.timeoutOption(grace))) ? "Settled" : "TimedOut"
   })
 
 /** Builds a closed executor from explicit lock, store, process, cleanup, and crypto dependencies. */
@@ -222,7 +256,7 @@ export const make = (dependencies: Dependencies): RunExecutorService => ({
     if (!sameReference(input.snapshot.runRef, input.identity.runRef) || input.identity.attemptId.length === 0) {
       return Effect.fail(new InvalidExecutionInput({ reason: "CallbackIdentity" }))
     }
-    return dependencies.workspaceLock.withExclusive(
+    return dependencies.workspaceLock.withExclusiveFinalized(
       { workspace: input.workspace, recover: input.recover },
       (ownership) =>
         Effect.uninterruptibleMask((restore) =>
@@ -243,36 +277,88 @@ export const make = (dependencies: Dependencies): RunExecutorService => ({
             }
             const callbackExit = yield* restore(callback(context)).pipe(Effect.exit)
             const settled = yield* settleChild(dependencies.toolProcess, grace)
-            if (!settled) return yield* Effect.fail(new TerminationTimedOut({ attemptId: input.identity.attemptId }))
-            if (Exit.isFailure(callbackExit)) return yield* Effect.failCause(callbackExit.cause)
-            const outcome = callbackExit.value
-            const terminal = yield* encodeCommit(
-              dependencies,
-              input,
-              ownership,
-              start.result.snapshot,
-              { revision: start.receipt.revision, payloadDigest: start.receipt.payloadDigest },
-              request({
-                _tag: "Complete",
-                snapshot: start.result.snapshot,
-                attemptId: input.identity.attemptId,
-                outcome,
-              }),
-            )
-            const cleanup = yield* dependencies.cleanup({
+            if (settled === "TimedOut")
+              return yield* Effect.fail(new TerminationTimedOut({ attemptId: input.identity.attemptId }))
+            const terminal = yield* Exit.isFailure(callbackExit)
+              ? Cause.hasInterruptsOnly(callbackExit.cause)
+                ? Effect.gen(function* () {
+                    const requested = yield* encodeCommit(
+                      dependencies,
+                      input,
+                      ownership,
+                      start.result.snapshot,
+                      { revision: start.receipt.revision, payloadDigest: start.receipt.payloadDigest },
+                      request({
+                        _tag: "RequestCancellation",
+                        snapshot: start.result.snapshot,
+                        attemptId: input.identity.attemptId,
+                      }),
+                    )
+                    return yield* encodeCommit(
+                      dependencies,
+                      input,
+                      ownership,
+                      requested.result.snapshot,
+                      { revision: requested.receipt.revision, payloadDigest: requested.receipt.payloadDigest },
+                      request({
+                        _tag: "ConfirmCancellation",
+                        snapshot: requested.result.snapshot,
+                        attemptId: input.identity.attemptId,
+                      }),
+                    )
+                  })
+                : Effect.failCause(callbackExit.cause)
+              : encodeCommit(
+                  dependencies,
+                  input,
+                  ownership,
+                  start.result.snapshot,
+                  { revision: start.receipt.revision, payloadDigest: start.receipt.payloadDigest },
+                  request({
+                    _tag: "Complete",
+                    snapshot: start.result.snapshot,
+                    attemptId: input.identity.attemptId,
+                    outcome: callbackExit.value,
+                  }),
+                )
+            const prepared = yield* dependencies.finalization.prepare({
               workspace: input.workspace,
               ownership,
               runRef: input.snapshot.runRef,
               expectedTailDigest: terminal.receipt.payloadDigest,
             })
-            if (cleanup._tag !== "Cleaned")
-              return yield* Effect.fail(new FinalizationPreserved({ reason: cleanup.reason }))
-            if (terminal.result.snapshot._tag !== "Succeeded" && terminal.result.snapshot._tag !== "Failed") {
+            if (prepared._tag === "CleanupPreserved")
+              return yield* Effect.fail(new FinalizationPreserved({ reason: prepared.reason }))
+            if (
+              terminal.result.snapshot._tag !== "Succeeded" &&
+              terminal.result.snapshot._tag !== "Failed" &&
+              terminal.result.snapshot._tag !== "Cancelled"
+            ) {
               return yield* Effect.fail(new FinalizationPreserved({ reason: "UnexpectedTerminal" }))
             }
-            return { outcome, terminal: terminal.result.snapshot }
+            const completedOutcome = Exit.isSuccess(callbackExit) ? callbackExit.value : undefined
+            let value: ExecutionResult
+            if (terminal.result.snapshot._tag === "Cancelled") {
+              value = { _tag: "Cancelled", terminal: terminal.result.snapshot }
+            } else {
+              if (completedOutcome === undefined) {
+                return yield* Effect.fail(new FinalizationPreserved({ reason: "UnexpectedCallbackExit" }))
+              }
+              value = { _tag: "Completed", outcome: completedOutcome, terminal: terminal.result.snapshot }
+            }
+            return { value, payload: { ticket: prepared, value } }
           }),
         ),
+      ({ ticket, value }) =>
+        dependencies.finalization
+          .delete(ticket)
+          .pipe(
+            Effect.flatMap((cleanup) =>
+              cleanup._tag === "Cleaned"
+                ? Effect.succeed(value)
+                : Effect.fail(new FinalizationPreserved({ reason: cleanup.reason })),
+            ),
+          ),
     )
   },
 })
@@ -298,11 +384,17 @@ export const layer = Layer.effect(
               ),
         },
         toolProcess,
-        cleanup: (input) =>
-          Cleanup.cleanup(input).pipe(
-            Effect.provideService(DurableFileSystem.Service, fileSystem),
-            Effect.provideService(Crypto.Crypto, crypto),
-          ),
+        finalization: {
+          prepare: (input) =>
+            CleanupFinalization.prepare(input).pipe(
+              Effect.provideService(DurableFileSystem.Service, fileSystem),
+              Effect.provideService(Crypto.Crypto, crypto),
+            ),
+          delete: (ticket) =>
+            CleanupFinalization.deletePrepared(ticket).pipe(
+              Effect.provideService(DurableFileSystem.Service, fileSystem),
+            ),
+        },
         crypto,
       }),
     )

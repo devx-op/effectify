@@ -7,6 +7,7 @@ import * as Ref from "effect/Ref"
 import * as Result from "effect/Result"
 import * as Schema from "effect/Schema"
 import * as Cleanup from "../src/cleanup.js"
+import * as CleanupFinalization from "../src/cleanup-finalization.js"
 import * as DurableFileSystem from "../src/durable-file-system.js"
 import * as ManagedPath from "../src/managed-path.js"
 import * as Ownership from "../src/ownership.js"
@@ -117,7 +118,7 @@ const cleanup = (fileSystem: DurableFileSystem.DurableFileSystemService, expecte
     lockPath: WorkspaceLock.workspaceLockPath("/workspace"),
   })
   Ownership.invalidate(ownership)
-  return Cleanup.cleanupClosed({
+  return Cleanup.cleanup({
     workspace: "/workspace",
     runRef: initialSnapshot().runRef,
     expectedTailDigest,
@@ -192,13 +193,13 @@ it.effect("preserves a terminal run until exclusive deletion authority is availa
     const outcome = yield* cleanup(fileSystem, tail)
     const removed = yield* Ref.get(removals)
 
-    expect(outcome).toEqual({ _tag: "CleanupPreserved", reason: "ExclusiveAuthorityRequired" })
+    expect(outcome).toEqual({ _tag: "CleanupPreserved", reason: "ReleaseRequired" })
     expect(removed).toEqual([])
     expect(removed).not.toContain("/workspace/.effectify/app-builder/v1/drafts/d1-preserved-draft")
   }).pipe(Effect.provide(cryptoLayer)),
 )
 
-it.effect("removes terminal evidence only with active matching ownership after tail revalidation", () =>
+it.effect("keeps the public cleanup surface non-mutating even with active matching ownership", () =>
   Effect.gen(function* () {
     const { fake, tail } = yield* commitCancelledRun()
     const ownership = Ownership.issueForScope({
@@ -212,8 +213,106 @@ it.effect("removes terminal evidence only with active matching ownership after t
       ownership,
     }).pipe(Effect.provideService(DurableFileSystem.Service, fake.fileSystem), Effect.provide(cryptoLayer))
 
-    expect(outcome).toMatchObject({ _tag: "Cleaned", tail: { payloadDigest: tail } })
+    expect(outcome).toEqual({ _tag: "CleanupPreserved", reason: "ReleaseRequired" })
+    expect(yield* fake.fileSystem.inspect(runDirectory())).toMatchObject({ type: "directory" })
+  }).pipe(Effect.provide(cryptoLayer)),
+)
+
+it.effect("preserves a changed post-release run tree when an opaque ticket is consumed", () =>
+  Effect.gen(function* () {
+    const { fake, tail } = yield* commitCancelledRun()
+    const ownership = Ownership.issueForScope({
+      workspace: "/workspace",
+      lockPath: WorkspaceLock.workspaceLockPath("/workspace"),
+    })
+    const ticket = yield* CleanupFinalization.prepare({
+      workspace: "/workspace",
+      ownership,
+      runRef: initialSnapshot().runRef,
+      expectedTailDigest: tail,
+    }).pipe(Effect.provideService(DurableFileSystem.Service, fake.fileSystem), Effect.provide(cryptoLayer))
+    if (ticket._tag === "CleanupPreserved") throw new Error(`Expected ticket, received ${ticket.reason}`)
+    const extra = yield* fake.fileSystem.createExclusive(
+      `${runDirectory()}/post-release-evidence`,
+      DurableFileSystem.PrivateFileMode,
+    )
+    yield* extra.writeAll(Uint8Array.of(1))
+    yield* extra.close
+    const outcome = yield* CleanupFinalization.deletePrepared(ticket).pipe(
+      Effect.provideService(DurableFileSystem.Service, fake.fileSystem),
+    )
+
+    expect(outcome).toEqual({ _tag: "CleanupPreserved", reason: "EvidenceChanged" })
+    expect(yield* fake.fileSystem.inspect(runDirectory())).toMatchObject({ type: "directory" })
+  }).pipe(Effect.provide(cryptoLayer)),
+)
+
+it.effect("fails closed for invalid, failed, and successful ticket consumption", () =>
+  Effect.gen(function* () {
+    const invalid = yield* CleanupFinalization.deletePrepared({ _tag: "CleanupFinalizationTicket" }).pipe(
+      Effect.provideService(DurableFileSystem.Service, (yield* makeFakeDurableFileSystem()).fileSystem),
+    )
+    const { fake, tail } = yield* commitCancelledRun()
+    const ownership = Ownership.issueForScope({
+      workspace: "/workspace",
+      lockPath: WorkspaceLock.workspaceLockPath("/workspace"),
+    })
+    const captureFailure = yield* CleanupFinalization.prepare({
+      workspace: "/workspace",
+      ownership,
+      runRef: initialSnapshot().runRef,
+      expectedTailDigest: tail,
+    }).pipe(
+      Effect.provideService(DurableFileSystem.Service, {
+        ...fake.fileSystem,
+        captureTree: () =>
+          Effect.fail(new DurableFileSystem.DurableFileSystemFailure({ operation: "capture", code: "InjectedCrash" })),
+      }),
+      Effect.provide(cryptoLayer),
+    )
+    const ticket = yield* CleanupFinalization.prepare({
+      workspace: "/workspace",
+      ownership,
+      runRef: initialSnapshot().runRef,
+      expectedTailDigest: tail,
+    }).pipe(Effect.provideService(DurableFileSystem.Service, fake.fileSystem), Effect.provide(cryptoLayer))
+    if (ticket._tag === "CleanupPreserved") throw new Error(`Expected ticket, received ${ticket.reason}`)
+    const cleaned = yield* CleanupFinalization.deletePrepared(ticket).pipe(
+      Effect.provideService(DurableFileSystem.Service, fake.fileSystem),
+    )
+
+    expect(invalid).toEqual({ _tag: "CleanupPreserved", reason: "InvalidTicket" })
+    expect(captureFailure).toEqual({ _tag: "CleanupPreserved", reason: "RemovalFailed" })
+    expect(cleaned).toMatchObject({ _tag: "Cleaned", tail: { payloadDigest: tail } })
     expect(yield* fake.fileSystem.inspect(runDirectory())).toBeUndefined()
+  }).pipe(Effect.provide(cryptoLayer)),
+)
+
+it.effect("retains evidence when preparation loses authority or its terminal tail changes", () =>
+  Effect.gen(function* () {
+    const { fake, tail } = yield* commitCancelledRun()
+    const active = Ownership.issueForScope({
+      workspace: "/workspace",
+      lockPath: WorkspaceLock.workspaceLockPath("/workspace"),
+    })
+    const inactive = Ownership.issueForScope({
+      workspace: "/workspace",
+      lockPath: WorkspaceLock.workspaceLockPath("/workspace"),
+    })
+    Ownership.invalidate(inactive)
+    const prepare = (ownership: Ownership.WorkspaceOwnership, expectedTailDigest: string) =>
+      CleanupFinalization.prepare({
+        workspace: "/workspace",
+        ownership,
+        runRef: initialSnapshot().runRef,
+        expectedTailDigest,
+      }).pipe(Effect.provideService(DurableFileSystem.Service, fake.fileSystem), Effect.provide(cryptoLayer))
+    const noAuthority = yield* prepare(inactive, tail)
+    const mismatchedTail = yield* prepare(active, "0".repeat(64))
+
+    expect(noAuthority).toEqual({ _tag: "CleanupPreserved", reason: "ExclusiveAuthorityRequired" })
+    expect(mismatchedTail).toEqual({ _tag: "CleanupPreserved", reason: "TailMismatch" })
+    expect(yield* fake.fileSystem.inspect(runDirectory())).toMatchObject({ type: "directory" })
   }).pipe(Effect.provide(cryptoLayer)),
 )
 
@@ -228,7 +327,7 @@ it.effect("preserves terminal evidence that could have been superseded concurren
     const outcome = yield* cleanup(fake.fileSystem, tail)
     const operations = yield* Ref.get(fake.operations)
 
-    expect(outcome).toEqual({ _tag: "CleanupPreserved", reason: "ExclusiveAuthorityRequired" })
+    expect(outcome).toEqual({ _tag: "CleanupPreserved", reason: "ReleaseRequired" })
     expect(fake.contents.has(newerEvidence)).toBe(true)
     expect(operations).not.toContain(`removeTree:${runDirectory()}`)
   }).pipe(Effect.provide(cryptoLayer)),
