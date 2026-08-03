@@ -56,13 +56,19 @@ Immutable versioned per-revision journals MUST be authoritative. Each MUST conta
 
 ### Requirement: Truthful Optimistic Commit
 
-The system MUST validate the authoritative tail and reject revision, predecessor, payload, or request-identity conflicts. Success SHALL require restrictive temporary creation, complete write, file durability, immutable no-replace publication, and directory durability. Unsupported or indeterminate stages MUST fail closed, never claim cross-process locking.
+The system MUST require matching scoped workspace ownership authority for every commit, validate the authoritative tail, and reject missing or wrong ownership plus revision, predecessor, payload, or request-identity conflicts. Success SHALL require restrictive temporary creation, complete write, file durability, immutable no-replace publication, and directory durability. Unsupported or indeterminate stages MUST fail closed, never claim cross-process locking.
 
 #### Scenario: Tail conflict
 
 - GIVEN an expected revision or digest differs
 - WHEN commit is requested
 - THEN a typed conflict MUST result without segment replacement
+
+#### Scenario: Missing ownership
+
+- GIVEN no matching scoped ownership authority
+- WHEN commit is requested
+- THEN a typed authorization failure MUST result and nothing is written
 
 #### Scenario: Interrupted commit
 
@@ -88,7 +94,7 @@ Recovery MUST validate filename identity, schema, version, digests, references, 
 
 ### Requirement: Non-Executable Handoff and Retention
 
-A `ResumeCandidate` MUST be non-executable and name unmet lock and executor/idempotency authorities. Evidence MUST remain through closure. Under matching live ownership, cleanup MAY prepare only validated terminal evidence for later deletion; it MUST delete only after durable lock release and only if the prepared terminal evidence remains unchanged. Recovery MUST NOT mutate workspaces, execute, lock, repair, salvage, migrate, quarantine, clean implicitly, use tombstone/rename recovery, or expose public cleanup authority. It MUST NOT require a database.
+A `ResumeCandidate` MUST be non-executable and name unmet lock and executor/idempotency authorities. Evidence MUST remain through closure. Under matching live scoped workspace ownership authority, cleanup MAY prepare only validated terminal evidence for later deletion; it MUST delete only after durable lock release and only if the prepared terminal evidence remains unchanged. Recovery MUST NOT mutate workspaces, execute, lock, repair, salvage, migrate, quarantine, clean implicitly, use tombstone/rename recovery, or expose public cleanup authority. It MUST NOT require a database.
 
 #### Scenario: Candidate handoff
 
@@ -101,6 +107,12 @@ A `ResumeCandidate` MUST be non-executable and name unmet lock and executor/idem
 - GIVEN nonterminal, invalid, or ambiguous state
 - WHEN cleanup is requested
 - THEN all evidence MUST be preserved
+
+#### Scenario: Owned cleanup
+
+- GIVEN validated terminal state and matching scoped authority
+- WHEN explicit cleanup is requested
+- THEN it MAY remove only the validated terminal state
 
 #### Scenario: Release failure
 
