@@ -12,6 +12,7 @@ import * as DurableFileSystem from "../src/durable-file-system.js"
 import * as ManagedPath from "../src/managed-path.js"
 import * as Ownership from "../src/ownership.js"
 import * as PersistenceFormat from "../src/persistence-format.js"
+import * as Recovery from "../src/recovery.js"
 import * as RunStore from "../src/run-store.js"
 import * as WorkspaceLock from "../src/workspace-lock.js"
 import { RunLifecycle } from "../src/index.js"
@@ -132,6 +133,23 @@ const runDirectory = () =>
 const journalDirectory = () =>
   success(ManagedPath.runLayout("/workspace", "run:explicit-cleanup@1.0.0")).journalDirectory.absolute
 
+const makeLock = (fileSystem: DurableFileSystem.DurableFileSystemService) =>
+  WorkspaceLock.make({
+    fileSystem,
+    processIdentity: {
+      current: () =>
+        Effect.succeed({
+          hostId: "host:cleanup",
+          bootId: "boot:cleanup",
+          pid: 42,
+          processStart: "start:cleanup",
+          nonce: "nonce:cleanup",
+        }),
+      inspect: () => Effect.succeed({ _tag: "Alive" }),
+    },
+    recoveryAuthority: { authorize: () => Effect.void },
+  })
+
 const commitCancelledRun = () =>
   Effect.gen(function* () {
     const fake = yield* makeFakeDurableFileSystem()
@@ -245,6 +263,55 @@ it.effect("preserves a changed post-release run tree when an opaque ticket is co
     expect(outcome).toEqual({ _tag: "CleanupPreserved", reason: "EvidenceChanged" })
     expect(yield* fake.fileSystem.inspect(runDirectory())).toMatchObject({ type: "directory" })
   }).pipe(Effect.provide(cryptoLayer)),
+)
+
+it.effect(
+  "recovers terminal evidence after a crash between lock release and deletion, then safely retries cleanup",
+  () =>
+    Effect.gen(function* () {
+      const { fake, tail } = yield* commitCancelledRun()
+      const lock = makeLock(fake.fileSystem)
+      const prepare = (ownership: Ownership.WorkspaceOwnership) =>
+        CleanupFinalization.prepare({
+          workspace: "/workspace",
+          ownership,
+          runRef: initialSnapshot().runRef,
+          expectedTailDigest: tail,
+        }).pipe(
+          Effect.provideService(DurableFileSystem.Service, fake.fileSystem),
+          Effect.provide(cryptoLayer),
+          Effect.flatMap((ticket) =>
+            ticket._tag === "CleanupPreserved"
+              ? Effect.die(`Expected cleanup ticket, received ${ticket.reason}`)
+              : Effect.succeed({ value: "terminal", payload: ticket }),
+          ),
+        )
+
+      const crashed = yield* Effect.exit(
+        lock.withExclusiveFinalized({ workspace: "/workspace" }, prepare, () => Effect.die("simulated crash")),
+      )
+      const recovered = yield* Recovery.recover({ workspace: "/workspace", runRef: initialSnapshot().runRef }).pipe(
+        Effect.provideService(DurableFileSystem.Service, fake.fileSystem),
+        Effect.provide(cryptoLayer),
+      )
+
+      expect(crashed._tag).toBe("Failure")
+      expect(yield* fake.fileSystem.inspect(WorkspaceLock.workspaceLockPath("/workspace"))).toBeUndefined()
+      expect(yield* fake.fileSystem.inspect(runDirectory())).toMatchObject({ type: "directory" })
+      expect(recovered).toMatchObject({ _tag: "Recovered", tail: { payloadDigest: tail } })
+
+      const retried = yield* lock.withExclusiveFinalized({ workspace: "/workspace" }, prepare, (ticket) =>
+        CleanupFinalization.deletePrepared(ticket).pipe(
+          Effect.provideService(DurableFileSystem.Service, fake.fileSystem),
+          Effect.flatMap((outcome) =>
+            outcome._tag === "Cleaned" ? Effect.succeed("terminal") : Effect.die(outcome.reason),
+          ),
+        ),
+      )
+
+      expect(retried).toBe("terminal")
+      expect(yield* fake.fileSystem.inspect(runDirectory())).toBeUndefined()
+    }).pipe(Effect.provide(cryptoLayer)),
 )
 
 it.effect("fails closed for invalid, failed, and successful ticket consumption", () =>

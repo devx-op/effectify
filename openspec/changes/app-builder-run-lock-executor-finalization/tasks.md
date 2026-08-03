@@ -8,7 +8,7 @@
 | 400-line budget risk    | Medium                                                       |
 | Chained PRs recommended | No                                                           |
 | Suggested split         | One bounded follow-up in the current lock-executor PR branch |
-| Delivery strategy       | single-pr                                                    |
+| Delivery strategy       | exception-ok                                                 |
 | Chain strategy          | feature-branch-chain                                         |
 
 Decision needed before apply: Yes
@@ -45,3 +45,9 @@ Chain strategy: feature-branch-chain
 
 - [x] 4.1 Run `pnpm nx run @effectify/app-builder-execution:typecheck`, `pnpm nx run @effectify/app-builder-execution:lint`, and `pnpm nx run @effectify/app-builder-execution:test-coverage`.
 - [x] 4.2 Run `pnpm nx affected --target=test`, `pnpm nx affected --target=typecheck`, `pnpm nx affected --target=lint`, `pnpm nx affected --target=build`, `pnpm nx run @effectify/repo:format:check`, and `git diff --check`.
+
+## Final Evidence Closure
+
+- The missing post-release crash proof now uses the deterministic fake filesystem and real `WorkspaceLock`/`CleanupFinalization`/`Recovery` boundaries. It injects a defect after durable lock release and before deletion, proves terminal evidence remains recoverable, then reacquires the lock and safely retries conditional cleanup.
+- `src/tool-process.ts` is now included in corrected-file coverage and has behavior-based validation and inactive-service tests. Existing 95/90/95/95 thresholds remain unchanged.
+- Independent verification remains pending; this receipt does not change the recorded failed verification verdict.

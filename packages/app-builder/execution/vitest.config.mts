@@ -18,6 +18,7 @@ export default defineConfig({
         "src/failure.ts",
         "src/index.ts",
         "src/run-executor.ts",
+        "src/tool-process.ts",
         "src/workspace-lock.ts",
         "src/cleanup.ts",
         "src/cleanup-finalization.ts",

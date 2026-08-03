@@ -57,3 +57,17 @@
 - Planning artifacts are tracked separately and do not widen runtime behavior.
 - No CLI, tool registry, `PassivePlan`, lock-model, recovery, or native runtime-attempt authority scope was changed.
 - The retained native token was not acquired, finished, settled, reset, bound, or otherwise altered.
+
+## Final Evidence Closure Receipt
+
+The original apply evidence above is retained as historical evidence. The authorized proof-only follow-up after `4ffae15bc` adds the two proofs missing from independent verification without changing production behavior.
+
+| Evidence                | Result                                                                                                                                                                                                                   |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Crash window            | Deterministic fake-backed runtime test injects a defect after durable lock release and before `deletePrepared`; recovery returns the terminal run, and a second exclusive finalization safely removes unchanged evidence |
+| Corrected-file coverage | `src/tool-process.ts` included at 100% statements, 100% branches, 100% functions, and 100% lines                                                                                                                         |
+| Focused tests           | `pnpm nx run @effectify/app-builder-execution:test --skip-nx-cache` — exit 0; 18 files / 115 tests                                                                                                                       |
+| Coverage before closure | 95.30% statements, 92.42% branches, 98.64% functions, 96.86% lines; 17 files / 109 tests                                                                                                                                 |
+| Coverage after closure  | 95.48% statements, 92.79% branches, 98.70% functions, 96.96% lines; unchanged 95/90/95/95 thresholds passed                                                                                                              |
+| Production source       | Unchanged                                                                                                                                                                                                                |
+| Verification authority  | Existing failed verification report remains unchanged; independent verification is pending                                                                                                                               |
