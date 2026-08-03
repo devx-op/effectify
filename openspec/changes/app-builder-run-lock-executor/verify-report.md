@@ -1,17 +1,17 @@
 ```yaml
 schema: gentle-ai.verify-result/v1
-evidence_revision: sha256:f933d6f1a4a582136e2c8e7db1ca5f911bc5c7286bbb10b2ae73ebf098f8c824
-verdict: fail
-blockers: 2
-critical_findings: 2
-requirements: 5/7
-scenarios: 12/16
+evidence_revision: sha256:6ba68240cfbdd884ef41eae7e5478da6546b02aa976dbaa8166c916c640b4604
+verdict: pass
+blockers: 0
+critical_findings: 0
+requirements: 7/7
+scenarios: 16/16
 test_command: pnpm nx affected --target=test
 test_exit_code: 0
-test_output_hash: sha256:04da3dd3349a437122902eb65ce27eceb0ea1f01f32454b3fb118fc597ef1b22
+test_output_hash: sha256:7b27502416c8d022b73b871d70c1a46b781ffd39f1bc436bc77e57e88a323724
 build_command: pnpm nx affected --target=build
 build_exit_code: 0
-build_output_hash: sha256:6115a8b7cea51eec1a3d69ed0abaed483ae00f85871ee2ed407a3c410aa3d647
+build_output_hash: sha256:390746a655994963af1ea53e5f8d39c50870f8677b628ea41df069411d308cc0
 ```
 
 ## Verification Report
@@ -19,162 +19,210 @@ build_output_hash: sha256:6115a8b7cea51eec1a3d69ed0abaed483ae00f85871ee2ed407a3c
 **Change**: `app-builder-run-lock-executor`
 **Version**: N/A
 **Mode**: Strict TDD
-**Verified revision**: `b80dd6763211cbcb09a46b3f045c69f1bae34d78`
-**Native attempt request**: `verify-lock-executor-20260802-1` (authority retained by orchestrator; untouched)
+**Verified revision**: `0f3b1c4903e1a230306399cbb7a5a3a792e2fb4f`
+**Native attempt**: ordinal 4 at authority revision `sha256:ffdd62fe8ed9131de5250fd52429093484c46faf67151f622084b06a748238e3` (parent-owned and untouched)
 
 ### Completeness
 
-| Metric                |                             Value |
-| --------------------- | --------------------------------: |
-| Requirements          |                                 7 |
-| Scenarios             |                                16 |
-| Tasks total           |                                14 |
-| Tasks complete        |                                14 |
-| Tasks incomplete      |                                 0 |
-| Focused package tests |              16 files / 91 passed |
-| Affected tests        | 645 passed across reported suites |
+| Metric                  |                 Value |
+| ----------------------- | --------------------: |
+| Parent requirements     |                     7 |
+| Parent scenarios        |                    16 |
+| Parent tasks total      |                    14 |
+| Parent tasks complete   |                    14 |
+| Parent tasks incomplete |                     0 |
+| Focused package tests   | 18 files / 115 passed |
 
-All 14 task checkboxes correspond to committed source, tests, documentation, and executed Nx targets. Task completion does not override the two substantive requirement failures below.
+All 14 parent task checkboxes are complete. The archived finalization evidence and canonical specs were also read; they extend the canonical capabilities without changing the authoritative parent count of 7 requirements and 16 scenarios.
 
 ### Build & Tests Execution
 
-| Command                                                      | Exit | Output SHA-256                                                     | Result                                       |
-| ------------------------------------------------------------ | ---: | ------------------------------------------------------------------ | -------------------------------------------- |
-| `pnpm nx run @effectify/app-builder-execution:test`          |    0 | `5cdb56cb4a89a3670c892c67bd05612fad27ed205f955e33751e6a74a52c72d6` | 16 files, 91 tests passed                    |
-| `pnpm nx affected --target=test`                             |    0 | `04da3dd3349a437122902eb65ce27eceb0ea1f01f32454b3fb118fc597ef1b22` | affected tests passed; 1/17 tasks cached     |
-| `pnpm nx affected --target=typecheck`                        |    0 | `4065b2cce73c793ee283adffea0273eae7d44349b95156b99e70d56088439147` | passed; unrelated suggestions only           |
-| `pnpm nx affected --target=lint`                             |    0 | `5f1bfd79b1062e590164dde55bb3e754268b8df1a95b19f22c6109163def4aca` | passed; no warnings in app-builder execution |
-| `pnpm nx affected --target=build`                            |    0 | `6115a8b7cea51eec1a3d69ed0abaed483ae00f85871ee2ed407a3c410aa3d647` | passed                                       |
-| `pnpm nx run @effectify/repo:format:check`                   |    0 | `e4168fb7ee107701d0397e55b2f306ffde3c7903411db40424806b873ec53c27` | check-only formatting passed                 |
-| `pnpm nx run @effectify/app-builder-execution:test-coverage` |    0 | `bd5c891fec46f315dd8532e3c580ec3e7eb3de4afcdfd2aa414b17ad70e5cdc3` | 16 files, 91 tests passed                    |
-| `git diff --check`                                           |    0 | N/A                                                                | passed                                       |
+| Command                                                                      | Exit | Output SHA-256                                                     | Outcome                                       |
+| ---------------------------------------------------------------------------- | ---: | ------------------------------------------------------------------ | --------------------------------------------- |
+| `pnpm nx run @effectify/app-builder-execution:test --skip-nx-cache`          |    0 | `259ad42fdedd70d5fd2e9fef62e1876f5345fde1b51889d21f1104d149ff79b6` | 18 files / 115 tests passed                   |
+| `pnpm nx run @effectify/app-builder-execution:test-coverage --skip-nx-cache` |    0 | `34d774a13c5fde60ba942c12f3cff4cf65bf86bf6f42c15dc4dc62fd2f3cd13a` | 18 files / 115 tests; thresholds passed       |
+| `pnpm nx run @effectify/app-builder-execution:typecheck --skip-nx-cache`     |    0 | `7caf01a0162a5d759f3d4313f2f0af0eadc0d784f41da5167c41c568e5adddd5` | passed                                        |
+| `pnpm nx run @effectify/app-builder-execution:lint --skip-nx-cache`          |    0 | `aa348ef086068d48e2705b3e7f2a6a28d376e2814adbfa0944ac047be4cc22f7` | 0 errors, 1 warning                           |
+| `pnpm nx run @effectify/app-builder-execution:build --skip-nx-cache`         |    0 | `3672d856641924b30473759a293c97abdef564e6ee8f2afc5653eeb73c2886b0` | passed                                        |
+| `pnpm nx affected --target=test`                                             |    0 | `7b27502416c8d022b73b871d70c1a46b781ffd39f1bc436bc77e57e88a323724` | 15 projects and 2 dependency tasks passed     |
+| `pnpm nx affected --target=typecheck`                                        |    0 | `8a9e2aa6ebbe0f8b839f6d107992402b4066dd0774ce0f61f82e76d56bf5eecf` | 28 projects and 16 dependency tasks passed    |
+| `pnpm nx affected --target=lint`                                             |    0 | `fbe204c1dc1f2aea0a944e51d84b54dcde87f277808e79eddb4cfc0075bc3f1b` | 30 projects passed                            |
+| `pnpm nx affected --target=build`                                            |    0 | `390746a655994963af1ea53e5f8d39c50870f8677b628ea41df069411d308cc0` | 25 projects and 2 dependency tasks passed     |
+| `pnpm nx run @effectify/repo:format:check --skip-nx-cache`                   |    0 | `507da2787eebef2b45ea64714e6885d09374b9c6a220de71a6c83f5f099b97bf` | check-only formatting passed                  |
+| `git diff --check`                                                           |    0 | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` | passed after final report write; empty output |
+
+**Coverage**: 95.48% statements (592/620), 92.79% branches (451/486), 98.70% functions (152/154), and 96.96% lines (544/561), above configured 95/90/95/95 thresholds.
 
 ### Spec Compliance Matrix
 
-| Requirement                                       | Scenario                             | Runtime test                                                                                                         | Result       |
-| ------------------------------------------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------- | ------------ |
-| Atomic Scoped Workspace Ownership                 | Concurrent acquisition               | `ownership.test.ts` / `workspace-lock.test.ts` race cases                                                            | ✅ COMPLIANT |
-| Atomic Scoped Workspace Ownership                 | Acquisition cannot prove exclusivity | lock loser and unsupported-capability cases                                                                          | ✅ COMPLIANT |
-| Owner Evidence and Stale Recovery                 | Authorized dead owner                | `workspace-lock.test.ts` dead same-host takeover                                                                     | ✅ COMPLIANT |
-| Owner Evidence and Stale Recovery                 | Ambiguous owner evidence             | `workspace-lock.test.ts` Alive/Unknown/ForeignHost/changed bytes                                                     | ✅ COMPLIANT |
-| Resolved Callback and Ownership-Gated Execution   | Ordered execution                    | `run-executor.test.ts` commit-before-callback                                                                        | ✅ COMPLIANT |
-| Resolved Callback and Ownership-Gated Execution   | Missing or wrong authority           | `run-store`, `cleanup`, `ownership`, `workspace-mutator` tests                                                       | ✅ COMPLIANT |
-| Interruption and Truthful Lifecycle Persistence   | Proven cancellation                  | no cancellation/interruption test; executor callback outcome cannot express cancellation                             | ❌ UNTESTED  |
-| Interruption and Truthful Lifecycle Persistence   | Termination timeout                  | `run-executor.test.ts` timeout evidence case                                                                         | ✅ COMPLIANT |
-| Safe Finalization, Compatibility, and Testability | Release after cleanup                | success case uses a fake lock that does not exercise real compare-remove release                                     | ⚠️ PARTIAL   |
-| Safe Finalization, Compatibility, and Testability | Changed metadata or cleanup failure  | no integrated release-race test; implementation removes run evidence before real release can reject changed metadata | ❌ FAILING   |
-| Truthful Optimistic Commit                        | Tail conflict                        | `run-store.test.ts` stale-tail case                                                                                  | ✅ COMPLIANT |
-| Truthful Optimistic Commit                        | Missing ownership                    | `run-store.test.ts` absent/foreign/expired cases                                                                     | ✅ COMPLIANT |
-| Truthful Optimistic Commit                        | Interrupted commit                   | `run-store.test.ts` publication/directory-sync failures                                                              | ✅ COMPLIANT |
-| Non-Executable Handoff and Retention              | Candidate handoff                    | `recovery.test.ts` non-executable decisions                                                                          | ✅ COMPLIANT |
-| Non-Executable Handoff and Retention              | Cleanup guard                        | `cleanup.test.ts` nonterminal/invalid/ambiguous/unowned cases                                                        | ✅ COMPLIANT |
-| Non-Executable Handoff and Retention              | Owned cleanup                        | `cleanup.test.ts` active matching ownership case                                                                     | ✅ COMPLIANT |
+| Requirement                                       | Scenario                             | Runtime evidence                                                                                                   | Result       |
+| ------------------------------------------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------ | ------------ |
+| Atomic Scoped Workspace Ownership                 | Concurrent acquisition               | `ownership.test.ts`, `workspace-lock.test.ts` race cases                                                           | ✅ COMPLIANT |
+| Atomic Scoped Workspace Ownership                 | Acquisition cannot prove exclusivity | acquisition and unsupported-capability fail-closed cases                                                           | ✅ COMPLIANT |
+| Owner Evidence and Stale Recovery                 | Authorized dead owner                | same-host definitive-death takeover test                                                                           | ✅ COMPLIANT |
+| Owner Evidence and Stale Recovery                 | Ambiguous owner evidence             | alive/unknown/foreign/changed-metadata preservation tests                                                          | ✅ COMPLIANT |
+| Resolved Callback and Ownership-Gated Execution   | Ordered execution                    | `run-executor.test.ts` proves `AcceptExecution` before callback                                                    | ✅ COMPLIANT |
+| Resolved Callback and Ownership-Gated Execution   | Missing or wrong authority           | store, cleanup, mutator, and ownership rejection tests                                                             | ✅ COMPLIANT |
+| Interruption and Truthful Lifecycle Persistence   | Proven cancellation                  | interruption-only callback plus settled child commits `RequestCancellation` then `ConfirmCancellation`             | ✅ COMPLIANT |
+| Interruption and Truthful Lifecycle Persistence   | Termination timeout                  | bounded stop/force timeout returns `TerminationTimedOut` and retains evidence                                      | ✅ COMPLIANT |
+| Safe Finalization, Compatibility, and Testability | Release after cleanup                | canonical release-before-deletion tests prove durable release and post-release conditional deletion                | ✅ COMPLIANT |
+| Safe Finalization, Compatibility, and Testability | Changed metadata or cleanup failure  | release/capture/manifest/removal failures preserve evidence; post-release crash remains recoverable and retry-safe | ✅ COMPLIANT |
+| Truthful Optimistic Commit                        | Tail conflict                        | stale-tail commit test rejects replacement                                                                         | ✅ COMPLIANT |
+| Truthful Optimistic Commit                        | Missing ownership                    | absent/foreign/expired ownership tests write nothing                                                               | ✅ COMPLIANT |
+| Truthful Optimistic Commit                        | Interrupted commit                   | durable-stage failure tests return typed status                                                                    | ✅ COMPLIANT |
+| Non-Executable Handoff and Retention              | Candidate handoff                    | recovery candidate keeps unmet authorities explicit                                                                | ✅ COMPLIANT |
+| Non-Executable Handoff and Retention              | Cleanup guard                        | nonterminal, invalid, ambiguous, stale, and unowned cases preserve evidence                                        | ✅ COMPLIANT |
+| Non-Executable Handoff and Retention              | Owned cleanup                        | matching authority cleans only validated unchanged terminal state                                                  | ✅ COMPLIANT |
 
-**Compliance summary**: 12/16 scenarios compliant; 1 partial, 1 untested, 1 failing, and the release-after-cleanup partial shares the same finalization defect.
+**Compliance summary**: 16/16 parent scenarios compliant; 7/7 parent requirements complete.
 
 ### Correctness (Static Evidence)
 
-| Requirement                                    | Status         | Evidence                                                                                                                                                                                        |
-| ---------------------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Atomic ownership and scope invalidation        | ✅ Implemented | private `Capability`, `WeakMap` state, exact workspace/lock binding, final invalidation, private-directory CAS seams                                                                            |
-| Process-instance recovery and PID reuse safety | ✅ Fail-closed | metadata includes host/boot/PID/process-start/nonce; live adapter returns `Unknown` for same host rather than PID-only proof                                                                    |
-| Changed-metadata takeover                      | ✅ Implemented | byte-identical compare-replace; mismatch returns `LockEvidenceChanged`                                                                                                                          |
-| Ownership-gated store/mutation/cleanup         | ✅ Implemented | all boundaries validate active matching capability before mutation                                                                                                                              |
-| Callback commit ordering and no replay         | ✅ Implemented | `AcceptExecution` commit precedes the single callback invocation; no retry wrapper surrounds callback                                                                                           |
-| Proven cancellation                            | ❌ Missing     | `ExecutionOutcome` is only `Succeeded                                                                                                                                                           | Failed`; interrupted callback exits via `failCause`after child settlement and cannot commit`Cancelled` |
-| Release-failure evidence retention             | ❌ Broken      | `RunExecutor` calls `cleanup` before returning; `WorkspaceLock` performs compare-remove release afterward. A metadata-change release failure occurs after cleanup has deleted the run directory |
-| Path/environment safety                        | ✅ Implemented | absolute workspace/cwd constraints, managed descendants, no shell command form, explicit environment, NUL checks                                                                                |
-| Compatibility and public surface               | ✅ Implemented | v1 recovery tests pass; root exports lock/recovery/executor namespaces and excludes issuer/process internals                                                                                    |
+| Requirement                          | Status                    | Evidence                                                                                                                                    |
+| ------------------------------------ | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Scoped atomic ownership              | ✅ Implemented            | private capability state, atomic private-directory acquisition, exact metadata comparison, scope invalidation                               |
+| Authorized stale recovery            | ✅ Fail-closed            | explicit recovery authority and definitive same-host process-instance proof; uncertainty preserves lock                                     |
+| Resolved callback and owned mutation | ✅ Implemented            | owned `AcceptExecution` commit precedes one callback invocation; no replay wrapper                                                          |
+| Truthful cancellation                | ✅ Resolved               | `RunExecutor` recognizes interruption-only `Cause`, requires child settlement, and persists ordered cancellation transitions                |
+| Release-before-cleanup ordering      | ✅ Resolved               | `withExclusiveFinalized` durably compare-removes lock and invalidates authority before `afterRelease` consumes the private cleanup ticket   |
+| Release/crash failure retention      | ✅ Implemented and tested | failed release skips deletion; changed tree is retained; post-release crash leaves recoverable evidence and reacquired retry is conditional |
+| Compatibility and bounded surface    | ✅ Implemented            | v1 recovery tests pass; cleanup authority and `ToolProcess` remain internal                                                                 |
 
 ### Coherence (Design)
 
-| Decision                                                         | Followed?           | Notes                                                                        |
-| ---------------------------------------------------------------- | ------------------- | ---------------------------------------------------------------------------- |
-| WeakMap-issued scope capability                                  | ✅ Yes              | issuer remains off the package root and capabilities are invalidated         |
-| Atomic private lock and unchanged-byte CAS                       | ✅ Yes              | no unlocked fallback                                                         |
-| Definitive same-host instance death                              | ✅ Yes, fail-closed | live implementation deliberately cannot prove dead instances                 |
-| Masked authority/evidence operations with interruptible callback | ✅ Yes              | callback runs through `restore`                                              |
-| Never replay callback after start                                | ✅ Yes              | identity proof is accepted but no callback replay path exists                |
-| Finalization preserves evidence on release failure               | ❌ No               | cleanup precedes real release and can delete evidence before release failure |
-| Truthful cancellation                                            | ❌ No               | no executor transition into cancellation states                              |
-| Later CLI excluded                                               | ✅ Yes              | no CLI, prompt, signal, or registry implementation added                     |
+| Decision                                               | Followed? | Notes                                                                  |
+| ------------------------------------------------------ | --------- | ---------------------------------------------------------------------- |
+| WeakMap-issued scoped capability                       | ✅ Yes    | issuer and cleanup ticket state remain private                         |
+| Atomic lock with unchanged-byte CAS                    | ✅ Yes    | no unlocked fallback                                                   |
+| Definitive same-host death proof                       | ✅ Yes    | ambiguous evidence blocks takeover                                     |
+| Interruptible callback with masked evidence operations | ✅ Yes    | callback exit is captured; final evidence operations remain controlled |
+| Never replay callback after start                      | ✅ Yes    | callback is invoked once                                               |
+| Truthful cancellation                                  | ✅ Yes    | cancellation requires interruption-only cause and settled child        |
+| Release before destructive cleanup                     | ✅ Yes    | release-aware bracket hands an opaque ticket to post-release cleanup   |
+| Later CLI excluded                                     | ✅ Yes    | no CLI, signal, registry, or `PassivePlan` behavior added              |
 
 ### TDD Compliance
 
-| Check                         | Result        | Details                                                                                                                                                     |
-| ----------------------------- | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| TDD evidence reported         | ⚠️ Incomplete | table exists, but it does not use the required RED/GREEN status contract and omits TRIANGULATE and SAFETY NET columns                                       |
-| All tasks have tests          | ✅            | behavior tasks map to committed tests; refactor/documentation tasks share acceptance suites                                                                 |
-| RED confirmed                 | ⚠️            | apply report claims failing pre-implementation runs, but all implementation and tests landed in one commit, so chronology is not independently reproducible |
-| GREEN confirmed               | ✅            | focused and affected tests pass now                                                                                                                         |
-| Triangulation adequate        | ⚠️            | only 4 executor tests cover a broader lifecycle/finalization scenario set; cancellation and real release races are absent                                   |
-| Safety Net for modified files | ⚠️            | mandatory safety-net evidence is absent from apply-progress                                                                                                 |
+| Check                         | Result | Details                                                                                                     |
+| ----------------------------- | ------ | ----------------------------------------------------------------------------------------------------------- |
+| TDD evidence reported         | ✅     | parent and finalization apply evidence were read; finalization has RED/GREEN/TRIANGULATE/SAFETY NET columns |
+| All parent tasks have tests   | ✅     | 14/14 tasks map to focused behavior, compatibility, or verification evidence                                |
+| RED confirmed                 | ✅     | referenced test files and recorded pre-GREEN failures exist in committed evidence                           |
+| GREEN confirmed               | ✅     | 18 files / 115 tests pass uncached at current HEAD                                                          |
+| Triangulation adequate        | ✅     | cancellation/mixed/timeout and release/failure/mismatch/crash contrasts pass                                |
+| Safety net for modified files | ✅     | baseline and final focused-suite evidence is recorded and current checks pass                               |
 
-**TDD Compliance**: 2/6 checks passed. The implementation has real behavior tests, but the persisted Strict TDD evidence does not satisfy the mandatory evidence schema.
+**TDD Compliance**: 6/6 checks passed.
 
 ### Test Layer Distribution
 
-| Layer       |  Tests |  Files | Tools                                                 |
-| ----------- | -----: | -----: | ----------------------------------------------------- |
-| Unit        |     91 |     16 | `@effect/vitest`, Vitest, deterministic fakes         |
-| Integration |      0 |      0 | none for the real lock→executor→cleanup→release chain |
-| E2E         |      0 |      0 | not required for this package boundary                |
-| **Total**   | **91** | **16** |                                                       |
+| Layer       |   Tests |         Files | Tools                                                           |
+| ----------- | ------: | ------------: | --------------------------------------------------------------- |
+| Unit        |     114 |            18 | `@effect/vitest`, Vitest, deterministic fakes                   |
+| Integration |       1 |             1 | deterministic lock → recovery → finalization → filesystem chain |
+| E2E         |       0 |             0 | not applicable to this package boundary                         |
+| **Total**   | **115** | **18 unique** |                                                                 |
 
 ### Changed File Coverage
 
-The coverage target passed, but its configuration reports only `src/lifecycle.ts`; none of the newly changed lock/executor/store/cleanup files appear in the coverage table. Changed-file line/branch coverage is therefore unavailable and cannot support the apply claim.
+| File                          | Line % | Branch % | Uncovered lines        | Rating             |
+| ----------------------------- | -----: | -------: | ---------------------- | ------------------ |
+| `src/cleanup-finalization.ts` | 96.29% |   70.00% | 30                     | ⚠️ Branch gaps     |
+| `src/durable-file-system.ts`  | 96.00% |   83.33% | 229, 255, 258          | ✅ Excellent lines |
+| `src/run-executor.ts`         | 92.95% |   88.46% | 335, 341, 349, 394–399 | ⚠️ Acceptable      |
+| `src/workspace-lock.ts`       | 96.26% |   84.31% | 147, 152, 236, 271     | ✅ Excellent lines |
 
-**Reported suite coverage**: 98.44% lines, 96.26% branches for `lifecycle.ts` only.
+**Global changed-surface coverage**: thresholds passed. `tool-process.ts` is explicitly included in coverage configuration and has dedicated behavior tests; the current compact reporter omits fully covered rows.
 
 ### Assertion Quality
 
-No banned tautologies, assertion-free tests, or ghost loops were found. Table-driven loops have explicit non-empty case arrays and production calls. The material gap is missing behavior coverage, not meaningless assertions.
+No tautologies, assertion-free production tests, ghost loops, smoke-only tests, or mock-heavy changed tests were found. Table-driven loops use explicit non-empty inputs and call production behavior before assertions.
 
-**Assertion quality**: ✅ Existing assertions verify real behavior.
+**Assertion quality**: ✅ All audited assertions verify real behavior.
 
 ### Quality Metrics
 
-**Linter**: ✅ app-builder execution has 0 warnings and 0 errors; affected workspace lint passed with unrelated existing warnings.
-**Type Checker**: ✅ affected typecheck passed; no changed-file errors.
-**Formatter**: ✅ check-only formatter passed; no source-mutating normalizer was run.
-
-### Artifact Consistency
-
-- OpenSpec records 14/14 tasks after commit `b80dd6763`.
-- Engram topic `sdd/app-builder-run-lock-executor/apply-progress` still states “all 13” in its prose although its associated implementation was later corrected to 14 tasks in OpenSpec.
-- The OpenSpec and Engram task artifacts also differ in the post-approval rationale. This does not change implementation behavior, but hybrid persistence is not byte-equivalent.
+**Linter**: ✅ 0 errors; ⚠️ one non-blocking unused destructured `value` warning in `src/workspace-lock.ts:303`.
+**Type Checker**: ✅ focused and affected checks passed.
+**Formatter**: ✅ check-only formatting passed.
 
 ### Issues Found
 
-**CRITICAL**
+**CRITICAL**: None.
+**WARNING**: `cleanup-finalization.ts` branch coverage is 70.00%; `run-executor.ts` is below 95% on individual statement/function/line metrics; focused lint reports one unused destructuring warning. Global thresholds and all runtime checks pass.
+**SUGGESTION**: Add focused branch cases when these modules are next changed; no parent verification blocker remains.
 
-1. **Proven cancellation is absent.** `RunExecutor` accepts only `Succeeded | Failed`; interrupted callbacks are rethrown after settlement without a cancellation transition or persisted proven cancellation. The required “Proven cancellation” scenario has no runtime test.
-2. **Changed lock metadata can lose run evidence.** `RunExecutor` performs owned cleanup before the real `WorkspaceLock` release. If compare-remove then fails because metadata changed, cleanup has already removed the run directory, violating the requirement to retain evidence and not claim completion on release failure. No integrated test exercises this race.
+### Cleanup and Process Evidence
 
-**WARNING**
+- Generated `packages/prisma/prisma/dev.db`, tracked React `tsconfig.lib.tsbuildinfo` files, untracked `packages/prisma/tsconfig.tsbuildinfo`, and package coverage output were restored or removed.
+- Before report persistence the worktree returned to exact clean status.
+- Final `git diff --check` ran after these report bytes were written and passed with exact empty output SHA-256 `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
+- No verifier-owned Nx or Vitest process remained; no live child-process or wall-clock process harness was launched.
+- Native attempt begin/reset/finish/settle operations were not invoked.
 
-1. Strict TDD evidence is incomplete: no mandatory TRIANGULATE/SAFETY NET columns and no independently reproducible RED chronology.
-2. Coverage configuration excludes every changed implementation file from the report.
-3. Hybrid OpenSpec/Engram apply-progress diverges on the corrected 14-task count.
-4. Affected commands defaulted to `--base=master`, producing a broader check set and some cached tasks; the focused package suite independently ran uncached and passed.
+### Canonical Verification Evidence Preimage
 
-**SUGGESTION**
+```text
+schema=gentle-ai.verification-evidence/v1
+change=app-builder-run-lock-executor
+attempt_ordinal=4
+authority_revision=sha256:ffdd62fe8ed9131de5250fd52429093484c46faf67151f622084b06a748238e3
+authority_disposition=parent-owned-untouched
+revision=0f3b1c4903e1a230306399cbb7a5a3a792e2fb4f
+finalization_commits=c9a58836beef844013ae583f87c86f3f83aa661e,bc5149f3bc959dae845c593e2614699ede269eb6,0f3b1c4903e1a230306399cbb7a5a3a792e2fb4f
+requirements=7/7
+scenarios=16/16
+tasks=14/14
+focused_test=pnpm nx run @effectify/app-builder-execution:test --skip-nx-cache
+focused_test_exit=0
+focused_test_counts=18-files/115-tests
+focused_test_output_sha256=259ad42fdedd70d5fd2e9fef62e1876f5345fde1b51889d21f1104d149ff79b6
+coverage=pnpm nx run @effectify/app-builder-execution:test-coverage --skip-nx-cache
+coverage_exit=0
+coverage_counts=18-files/115-tests
+coverage_totals=statements:95.48,branches:92.79,functions:98.70,lines:96.96
+coverage_output_sha256=34d774a13c5fde60ba942c12f3cff4cf65bf86bf6f42c15dc4dc62fd2f3cd13a
+focused_typecheck=pnpm nx run @effectify/app-builder-execution:typecheck --skip-nx-cache
+focused_typecheck_exit=0
+focused_typecheck_output_sha256=7caf01a0162a5d759f3d4313f2f0af0eadc0d784f41da5167c41c568e5adddd5
+focused_lint=pnpm nx run @effectify/app-builder-execution:lint --skip-nx-cache
+focused_lint_exit=0
+focused_lint_output_sha256=aa348ef086068d48e2705b3e7f2a6a28d376e2814adbfa0944ac047be4cc22f7
+focused_build=pnpm nx run @effectify/app-builder-execution:build --skip-nx-cache
+focused_build_exit=0
+focused_build_output_sha256=3672d856641924b30473759a293c97abdef564e6ee8f2afc5653eeb73c2886b0
+affected_test=pnpm nx affected --target=test
+affected_test_exit=0
+affected_test_output_sha256=7b27502416c8d022b73b871d70c1a46b781ffd39f1bc436bc77e57e88a323724
+affected_typecheck=pnpm nx affected --target=typecheck
+affected_typecheck_exit=0
+affected_typecheck_output_sha256=8a9e2aa6ebbe0f8b839f6d107992402b4066dd0774ce0f61f82e76d56bf5eecf
+affected_lint=pnpm nx affected --target=lint
+affected_lint_exit=0
+affected_lint_output_sha256=fbe204c1dc1f2aea0a944e51d84b54dcde87f277808e79eddb4cfc0075bc3f1b
+affected_build=pnpm nx affected --target=build
+affected_build_exit=0
+affected_build_output_sha256=390746a655994963af1ea53e5f8d39c50870f8677b628ea41df069411d308cc0
+format_check=pnpm nx run @effectify/repo:format:check --skip-nx-cache
+format_check_exit=0
+format_check_output_sha256=507da2787eebef2b45ea64714e6885d09374b9c6a220de71a6c83f5f099b97bf
+diff_check=git diff --check
+diff_check_phase=after-final-report-write
+diff_check_exit=0
+diff_check_output_sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+generated_artifacts=clean
+final_modified_paths=openspec/changes/app-builder-run-lock-executor/verify-report.md
+harness=deterministic-vitest-fakes-no-live-child-or-wall-clock
+cancellation_truth=passed
+release_before_cleanup=passed
+post_release_crash_recovery=passed
+verdict=pass-with-warnings
+```
 
-1. Add deterministic integration tests for the complete real lock→commit→callback→settle→terminal revalidation→cleanup→compare-release chain, including metadata change between cleanup and release.
-2. Add explicit authorization-denied and PID-reuse tuple tests instead of relying only on abstract owner-status fakes.
-
-### Native Attempt Completion Evidence
-
-- **Request ID**: `verify-lock-executor-20260802-1`
-- **Authority disposition**: untouched; no acquire, finish, settle, reset, bind, or mutation operation was performed.
-- **Process evidence**: verification ran under the existing `opencode` process; no persistent runtime harness or child process was launched by this verifier beyond Nx/tool subprocesses.
-- **Harness disposition**: deterministic Vitest fake filesystem/process/identity harnesses exited normally; no live process or wall-clock recovery harness remains.
-- **Cleanup evidence**: generated `packages/prisma/prisma/dev.db`, two tracked `tsconfig.lib.tsbuildinfo` files, and untracked `packages/prisma/tsconfig.tsbuildinfo` produced by affected targets were restored/removed; final `git status --porcelain=v1` was empty and `git diff --check` passed.
-- **Recommended orchestrator completion**: complete the native attempt as substantive verification failure using the exact report bytes and evidence revision above; do not archive.
+Preimage size: 2,910 bytes. SHA-256: `6ba68240cfbdd884ef41eae7e5478da6546b02aa976dbaa8166c916c640b4604`.
 
 ### Verdict
 
-**FAIL**
+**PASS WITH WARNINGS**
 
-All commands pass and all 14 task checkboxes are complete, but runtime success cannot override missing truthful cancellation and a concrete release-failure ordering defect that can delete evidence before lock release is proven.
+All 14 parent tasks, 7 parent requirements, and 16 parent scenarios are independently verified at committed HEAD. The historical cancellation-truth and release-before-cleanup blockers are resolved by committed implementation plus passing runtime coverage; remaining lint and per-file coverage findings are non-blocking.
