@@ -2,7 +2,7 @@
 
 **Mode:** Strict TDD
 **Delivery:** `exception-ok` / `size:exception` — one approved work unit; no later CLI child included.
-**Status:** 13/13 tasks complete
+**Status:** 14/14 tasks complete
 
 ## Completed Tasks
 
