@@ -17,7 +17,9 @@ it("selects each supported LP64 profile with its exact ABI fixtures", () => {
     expect(profile.stat.size).toBe(statSize)
     expect(profile.dirent.size).toBe(direntSize)
     expect(profile.flags.open.create).toBe(createFlag)
-    expect(profile.flags.open.noFollow).toBe(runtime.platform === "darwin" ? 0x100 : 0x20000)
+    expect(profile.flags.open.noFollow).toBe(
+      runtime.platform === "darwin" ? 0x100 : runtime.arch === "arm64" ? 0x8000 : 0x20000,
+    )
     expect(profile.modes).toEqual({ file: 0o600, directory: 0o700 })
     expect(profile.symbols.openat).toBe("openat")
     expect(profile.varargs.openat).toBe(runtime.platform === "darwin" ? "int" : "uint32_t")
@@ -39,8 +41,10 @@ it("encodes platform-specific symbols, offsets, rename flags, and errno aliases"
 
   expect(linuxX64.stat.fields).toContainEqual({ name: "mode", offset: 24, type: "uint32_t" })
   expect(linuxArm64.stat.fields).toContainEqual({ name: "mode", offset: 16, type: "uint32_t" })
-  expect(linuxArm64.flags.open.directory).toBe(0x10000)
-  expect(linuxArm64.flags.open.noFollow).toBe(0x20000)
+  expect(linuxX64.flags.open.directory).toBe(0x10000)
+  expect(linuxX64.flags.open.noFollow).toBe(0x20000)
+  expect(linuxArm64.flags.open.directory).toBe(0x4000)
+  expect(linuxArm64.flags.open.noFollow).toBe(0x8000)
   expect(linuxX64.dirent.fields).toContainEqual({ name: "name", offset: 19, type: "char", length: 256 })
   expect(linuxX64.flags.rename.noReplace).toBe(1)
   expect(linuxX64.flags.rename.exchange).toBe(2)

@@ -38,6 +38,37 @@ export interface PosixBindings {
 
 type NativeRecord = Record<string, unknown>
 
+interface FunctionDeclaration {
+  readonly symbol: string
+  readonly result: string
+  readonly parameters: ReadonlyArray<string>
+}
+
+export const posixFunctionDeclarations = (
+  profile: PosixAbiProfile,
+  statName: string,
+): Record<"openat" | "fstat" | "fstatat" | "fdopendir" | "readdir" | "closedir" | "rename", FunctionDeclaration> => ({
+  openat: {
+    symbol: profile.symbols.openat,
+    result: "int",
+    parameters: ["int", "const char *", "int", "..."],
+  },
+  fstat: { symbol: profile.symbols.fstat, result: "int", parameters: ["int", `_Out_ ${statName} *`] },
+  fstatat: {
+    symbol: profile.symbols.fstatat,
+    result: "int",
+    parameters: ["int", "const char *", `_Out_ ${statName} *`, "int"],
+  },
+  fdopendir: { symbol: profile.symbols.fdopendir, result: "void *", parameters: ["int"] },
+  readdir: { symbol: profile.symbols.readdir, result: "void *", parameters: ["void *"] },
+  closedir: { symbol: profile.symbols.closedir, result: "int", parameters: ["void *"] },
+  rename: {
+    symbol: profile.symbols.rename,
+    result: "int",
+    parameters: ["int", "const char *", "int", "const char *", "uint32_t"],
+  },
+})
+
 const isRecord = (value: unknown): value is NativeRecord => typeof value === "object" && value !== null
 const numberOf = (value: unknown): number =>
   typeof value === "number" ? value : typeof value === "bigint" ? Number(value) : Number.NaN
@@ -98,23 +129,26 @@ const bind = (profile: PosixAbiProfile): PosixBindings => {
   assertLayout(statType, profile.stat)
   assertLayout(direntType, profile.dirent)
 
-  const openat = library.func(`int ${profile.symbols.openat}(int, const char *, int, ...)`)
-  const fstat = library.func(`int ${profile.symbols.fstat}(int, _Out_ ${statName} *)`)
-  const fstatat = library.func(`int ${profile.symbols.fstatat}(int, const char *, _Out_ ${statName} *, int)`)
-  const mkdirat = library.func(`int mkdirat(int, const char *, ${profile.modeType})`)
-  const read = library.func("int64_t read(int, _Out_ uint8_t *, uint64_t)")
-  const write = library.func("int64_t write(int, const uint8_t *, uint64_t)")
-  const fsync = library.func("int fsync(int)")
-  const fcntl = library.func("int fcntl(int, int)")
-  const fchmod = library.func(`int fchmod(int, ${profile.modeType})`)
-  const dup = library.func("int dup(int)")
-  const fdopendir = library.func(`void *${profile.symbols.fdopendir}(int)`)
-  const readdir = library.func(`void *${profile.symbols.readdir}(void *)`)
-  const closedir = library.func(`int ${profile.symbols.closedir}(void *)`)
-  const unlinkat = library.func("int unlinkat(int, const char *, int)")
-  const flock = library.func("int flock(int, int)")
-  const close = library.func("int close(int)")
-  const rename = library.func(`int ${profile.symbols.rename}(int, const char *, int, const char *, uint32_t)`)
+  const declarations = posixFunctionDeclarations(profile, statName)
+  const declare = (declaration: FunctionDeclaration) =>
+    library.func(declaration.symbol, declaration.result, [...declaration.parameters])
+  const openat = declare(declarations.openat)
+  const fstat = declare(declarations.fstat)
+  const fstatat = declare(declarations.fstatat)
+  const mkdirat = library.func("mkdirat", "int", ["int", "const char *", profile.modeType])
+  const read = library.func("read", "int64_t", ["int", "_Out_ uint8_t *", "uint64_t"])
+  const write = library.func("write", "int64_t", ["int", "const uint8_t *", "uint64_t"])
+  const fsync = library.func("fsync", "int", ["int"])
+  const fcntl = library.func("fcntl", "int", ["int", "int"])
+  const fchmod = library.func("fchmod", "int", ["int", profile.modeType])
+  const dup = library.func("dup", "int", ["int"])
+  const fdopendir = declare(declarations.fdopendir)
+  const readdir = declare(declarations.readdir)
+  const closedir = declare(declarations.closedir)
+  const unlinkat = library.func("unlinkat", "int", ["int", "const char *", "int"])
+  const flock = library.func("flock", "int", ["int", "int"])
+  const close = library.func("close", "int", ["int"])
+  const rename = declare(declarations.rename)
 
   const callStat = (call: () => unknown, value: NativeRecord): readonly [number, PosixStat | undefined] => {
     const result = numberOf(call())
