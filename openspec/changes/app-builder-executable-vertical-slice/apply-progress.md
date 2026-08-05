@@ -294,3 +294,72 @@ Historical conclusion: the 1,676-line floor was 176 lines above the then-active 
 - Tasks 1.1–2.5 remain visibly complete in `tasks.md` (10/10).
 - Real non-local CI remains pending for macOS x64 and glibc Linux x64/arm64; this local verification does not claim those profiles passed.
 - The prior ordinal-6 authoritative terminal state remains the recorded native completion state. Ordinal 8 adds local verification evidence only.
+
+## Ordinal 12: Clean-checkout Dependency Pipeline Remediation
+
+**Status:** The three-line configuration correction is locally proven in a fresh sibling worktree. Native runtime attempt 12 remains active; this executor did not begin, reset, or finish an attempt.
+
+### Proven Root Cause
+
+`@effectify/app-builder-contracts` exports declarations only from `dist/src/index.d.ts`. A clean checkout has no such file. The `build` target already declared `dependsOn: ["^build"]`, but `typecheck`, `posix-smoke`, and `executable` did not, so their TypeScript compilations ran before the static `@effectify/app-builder-contracts` dependency was built. The missing-declaration error caused the downstream `never` diagnostics; no source type cast is warranted.
+
+### Strict TDD Cycle Evidence
+
+| Task                         | Layer                      | Safety Net                                                          | RED                                                                                                                                                              | GREEN                                                                  | TRIANGULATE                                                                                 | REFACTOR                                                         |
+| ---------------------------- | -------------------------- | ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| CI dependency build ordering | Clean-checkout integration | Fresh worktree at `b69b721`; contracts declaration confirmed absent | Exact affected typecheck, guarded POSIX smoke, and guarded executable commands each exited 1 with TS2307 for contracts and `run-executor.ts:262` `never` cascade | Same commands exited 0 after target dependencies built contracts first | Three independent consumers prove the same prerequisite: typecheck, POSIX smoke, executable | Added only `dependsOn: ["^build"]` to the three consumer targets |
+
+### Work Unit Evidence
+
+| Evidence                    | Exact result                                                                                                                                                                                                                                                                                             |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Focused configuration check | `pnpm nx show project @effectify/app-builder-execution --json` reports `dependsOn: ["^build"]` for `typecheck`, `posix-smoke`, and `executable`; candidate config matches the primary worktree byte-for-byte                                                                                             |
+| Focused tests               | `pnpm nx run @effectify/app-builder-execution:test -- tests/posix-abi.test.ts tests/executable-cli.test.ts --reporter=verbose` → exit 0; 2 files, 4/4 tests passed                                                                                                                                       |
+| Exact affected typecheck    | Fresh clean worktree: `pnpm nx affected --target=typecheck --base=origin/feat/app-builder-run-lock-executor --head=HEAD --parallel=1 --verbose` → exit 0; Nx ran `@effectify/app-builder-contracts:build` before execution typecheck and completed 28 projects / 17 dependencies                         |
+| Exact guarded POSIX smoke   | Fresh clean worktree after removing contract dist: `node packages/app-builder/execution/demo/deny-network.cjs -- pnpm nx run @effectify/app-builder-execution:posix-smoke` → exit 0; Nx built contracts first. Repeated with `NX_SKIP_NX_CACHE=true` → exit 0 and compiled contracts without cache reuse |
+| Exact guarded executable    | Fresh clean worktree after removing contract dist: `node packages/app-builder/execution/demo/deny-network.cjs -- pnpm nx run @effectify/app-builder-execution:executable -- --workspace <clean-temp> --approve` → exit 0; contracts built first and `generated.txt` plus `success-report.txt` existed    |
+| Formatting                  | `pnpm exec oxfmt --check packages/app-builder/execution/project.json` → exit 0                                                                                                                                                                                                                           |
+| Rollback boundary           | Revert the three `dependsOn: ["^build"]` entries in `packages/app-builder/execution/project.json`; source, public APIs, and existing task completion remain untouched                                                                                                                                    |
+
+### CI Evidence Pending
+
+- Run 31018934264 remains failed evidence only; all four matrix jobs and affected typecheck independently failed before smoke execution with the same missing-contract declaration.
+- A new CI run is required to prove macOS x64/arm64 and glibc Linux x64/arm64. This local remediation makes no claim about those non-local runtimes.
+
+### Line Accounting
+
+- Production correction: `packages/app-builder/execution/project.json` +3/-0 lines, within the 200-line remediation cap.
+- Existing tasks remain 10/10 checked; this bounded pipeline correction requires no task checkbox change.
+
+## Ordinal 13: Fresh-Clean Test Target Diagnosis
+
+**Status:** The final verifier recorded two independent failures. The first was procedural; the second was a real candidate configuration defect. No native review or SDD-attempt lifecycle command was invoked, and abandoned lineage `review-a36ec2588cd32df8` was not used.
+
+### Root Cause and Correct Invocation
+
+- `--skip-nx-cache` after Nx's `--` delimiter is forwarded to Vitest, which exits with `CACError: Unknown option \`--skipNxCache\``. Nx 23.1.0 help documents the flag as an Nx option; it must precede `--`.
+- The verifier's second command used valid Nx flag placement. Its file-load failure was candidate-caused: `test` lacked `dependsOn: ["^build"]`, so a clean checkout could not resolve `@effectify/app-builder-contracts` from its absent `dist` entry point. `posix-abi.test.ts` passed 3/3 because it does not import the contracts-dependent execution path; `executable-cli.test.ts` imports it through `recovery.ts`.
+- Preferred cache-disabled focused command: `env NX_SKIP_NX_CACHE=true pnpm nx run @effectify/app-builder-execution:test -- tests/posix-abi.test.ts tests/executable-cli.test.ts --reporter=verbose`. The environment avoids forwarding a cache flag to Vitest.
+
+### Strict TDD Cycle Evidence
+
+| Task                                 | Layer                      | Safety Net                                                                     | RED                                                                                                                                                                                        | GREEN                                                                                                         | TRIANGULATE                                                                                         | REFACTOR                                                    |
+| ------------------------------------ | -------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| Fresh-clean test dependency ordering | Clean-checkout integration | Primary focused command passed 4/4 while existing contracts `dist` was present | Fresh sibling worktree at `b69b721d9`, with no contracts/execution `dist`, exited 1: `executable-cli.test.ts` failed to resolve `@effectify/app-builder-contracts`; POSIX ABI remained 3/3 | Added `dependsOn: ["^build"]` to `test`; the same cache-disabled command built contracts first and passed 4/4 | All four contracts consumers now declare the prerequisite: typecheck, test, POSIX smoke, executable | Four declarative lines only; no source, test, or API change |
+
+### Work Unit Evidence
+
+| Evidence                   | Exact result                                                                                                                                                                                  |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Fresh-clean RED stderr     | `Error: Failed to resolve entry for package "@effectify/app-builder-contracts"` at `src/recovery.ts:3`; 1 failed file, 1 passed file, 3 passed tests                                          |
+| Focused GREEN              | Cache-disabled focused command above → exit 0; contracts built first; 2 files, 4/4 tests passed                                                                                               |
+| Affected typecheck         | `env NX_SKIP_NX_CACHE=true pnpm nx affected --target=typecheck --base=origin/feat/app-builder-run-lock-executor --head=HEAD --parallel=1 --verbose` → exit 0; 28 projects and 17 dependencies |
+| Full package test          | Cache-disabled package test → exit 0; 26 files, 144/144 tests passed                                                                                                                          |
+| Runtime harness            | Cache-disabled guarded POSIX smoke and approved executable → exit 0; executable produced `generated.txt` and `success-report.txt`                                                             |
+| Formatting and diff safety | `pnpm exec oxfmt --check packages/app-builder/execution/project.json` and `git diff --check` → exit 0                                                                                         |
+| Cleanup and rollback       | Removed generated `dist-demo`, temporary executable workspace, and typecheck `tsbuildinfo`; rollback is the four `dependsOn: ["^build"]` entries only                                         |
+
+### Line Accounting
+
+- Final production correction: `packages/app-builder/execution/project.json` +4/-0 lines, within the 200-line cap.
+- Existing tasks remain 10/10 checked; this bounded remediation has no task checkbox delta.
