@@ -403,22 +403,37 @@ export const makePosixDurableFileSystem = (bindings: PosixBindings): DurableFile
     openDirectory(path).pipe(
       Effect.map((descriptor) => ({ sync: sync(descriptor, "directorySync"), close: close(descriptor) })),
     )
-  const createDirectory = (path: string, mode: number): Effect.Effect<void, Failure> =>
+  const rollbackAfterDirectoryFailure = (
+    path: string,
+    created: PosixStat,
+    cause: Failure,
+  ): Effect.Effect<never, Failure> =>
+    rollbackPrivateDirectory(path, created).pipe(Effect.ignore, Effect.andThen(Effect.fail(cause)))
+  const createRecordedDirectory = (path: string, mode: number): Effect.Effect<PosixStat, Failure> =>
     openParent(path).pipe(
       Effect.flatMap(([parent, leaf]) =>
         result("mkdirat", () => bindings.mkdirAt(parent, leaf, mode)).pipe(
-          Effect.andThen(open("openat", parent, leaf, directoryFlags)),
-          Effect.flatMap((child) =>
-            result("fchmod", () => bindings.fchmod(child, mode)).pipe(
-              Effect.andThen(sync(child, "directorySync")),
-              Effect.ensuring(ignore(close(child))),
+          Effect.andThen(statAt(parent, leaf)),
+          Effect.flatMap((created) =>
+            open("openat", parent, leaf, directoryFlags).pipe(
+              Effect.flatMap((child) =>
+                stat(child).pipe(
+                  Effect.andThen(result("fchmod", () => bindings.fchmod(child, mode))),
+                  Effect.andThen(sync(child, "directorySync")),
+                  Effect.ensuring(ignore(close(child))),
+                ),
+              ),
+              Effect.andThen(sync(parent, "parentSync")),
+              Effect.as(created),
+              Effect.catch((cause) => rollbackAfterDirectoryFailure(path, created, cause)),
             ),
           ),
-          Effect.andThen(sync(parent, "parentSync")),
           Effect.ensuring(ignore(close(parent))),
         ),
       ),
     )
+  const createDirectory = (path: string, mode: number): Effect.Effect<void, Failure> =>
+    createRecordedDirectory(path, mode).pipe(Effect.asVoid)
   const rollbackPrivateDirectory = (path: string, created: PosixStat): Effect.Effect<boolean, Failure> =>
     openParent(path).pipe(
       Effect.flatMap(([parent, leaf]) =>
@@ -436,23 +451,28 @@ export const makePosixDurableFileSystem = (bindings: PosixBindings): DurableFile
       ),
     )
   const createPrivateDirectory = (path: string): Effect.Effect<CreatedPrivateDirectory, Failure> =>
-    createDirectory(path, profile.modes.directory).pipe(
-      Effect.andThen(openDirectory(path)),
-      Effect.flatMap((descriptor) =>
-        stat(descriptor).pipe(
-          Effect.map((created) => {
-            let closed = false
-            const closeOnce = (): Effect.Effect<void, DurableFileSystemFailure> => {
-              if (closed) return Effect.void
-              closed = true
-              return close(descriptor)
-            }
-            return {
-              sync: sync(descriptor, "directorySync"),
-              close: closeOnce(),
-              rollback: closeOnce().pipe(Effect.andThen(rollbackPrivateDirectory(path, created))),
-            }
-          }),
+    createRecordedDirectory(path, profile.modes.directory).pipe(
+      Effect.flatMap((created) =>
+        openDirectory(path).pipe(
+          Effect.flatMap((descriptor) =>
+            stat(descriptor).pipe(
+              Effect.tapError(() => ignore(close(descriptor))),
+              Effect.map(() => {
+                let closed = false
+                const closeOnce = (): Effect.Effect<void, DurableFileSystemFailure> => {
+                  if (closed) return Effect.void
+                  closed = true
+                  return close(descriptor)
+                }
+                return {
+                  sync: sync(descriptor, "directorySync"),
+                  close: closeOnce(),
+                  rollback: closeOnce().pipe(Effect.andThen(rollbackPrivateDirectory(path, created))),
+                }
+              }),
+            ),
+          ),
+          Effect.catch((cause) => rollbackAfterDirectoryFailure(path, created, cause)),
         ),
       ),
     )
@@ -501,11 +521,15 @@ export const makePosixDurableFileSystem = (bindings: PosixBindings): DurableFile
     join(dirname(path), `.${basename(path)}.effectify-sentinel-${randomUUID()}`)
   const exchange = (parent: number, left: string, right: string): Effect.Effect<void, DurableFileSystemFailure> =>
     result("renameat-exchange", () => bindings.rename(parent, left, parent, right, profile.flags.rename.exchange))
+  const directoryIdentity = (path: string): Effect.Effect<PosixStat, Failure> =>
+    openDirectory(path).pipe(
+      Effect.flatMap((descriptor) => stat(descriptor).pipe(Effect.ensuring(ignore(close(descriptor))))),
+    )
   const withSentinel = (
     path: string,
     prepare: (sentinel: string) => Effect.Effect<void, Failure>,
     matches: (sentinel: string) => Effect.Effect<boolean, Failure>,
-    commit: (path: string, sentinel: string) => Effect.Effect<void, Failure>,
+    commit: (path: string, sentinel: string, identity: PosixStat) => Effect.Effect<boolean, Failure>,
   ): Effect.Effect<boolean, Failure> =>
     splitPath(path).pipe(
       Effect.flatMap(({ parent, leaf }) => {
@@ -514,25 +538,34 @@ export const makePosixDurableFileSystem = (bindings: PosixBindings): DurableFile
         return createPrivateDirectory(sentinel).pipe(
           Effect.flatMap((created) =>
             created.close.pipe(
-              Effect.andThen(prepare(sentinel)),
-              Effect.andThen(openDirectory(parent)),
-              Effect.flatMap((parentDescriptor) => {
+              Effect.andThen(Effect.all([directoryIdentity(sentinel), prepare(sentinel), openDirectory(parent)])),
+              Effect.flatMap(([identity, , parentDescriptor]) => {
                 const restore = exchange(parentDescriptor, sentinelLeaf, leaf).pipe(
                   Effect.andThen(removeDetached(sentinel)),
                   Effect.andThen(sync(parentDescriptor, "parentSync")),
                 )
-                return exchange(parentDescriptor, leaf, sentinelLeaf).pipe(
+                return result("flock", () => bindings.flock(parentDescriptor, 2)).pipe(
                   Effect.andThen(
-                    matches(sentinel).pipe(Effect.catch((cause) => restore.pipe(Effect.andThen(Effect.fail(cause))))),
+                    exchange(parentDescriptor, leaf, sentinelLeaf).pipe(
+                      Effect.andThen(
+                        matches(sentinel).pipe(
+                          Effect.catch((cause) => restore.pipe(Effect.andThen(Effect.fail(cause)))),
+                        ),
+                      ),
+                      Effect.flatMap((matched) =>
+                        matched
+                          ? commit(path, sentinel, identity).pipe(
+                              Effect.flatMap((committed) =>
+                                committed
+                                  ? sync(parentDescriptor, "parentSync").pipe(Effect.as(true))
+                                  : Effect.succeed(false),
+                              ),
+                            )
+                          : restore.pipe(Effect.as(false)),
+                      ),
+                    ),
                   ),
-                  Effect.flatMap((matched) =>
-                    matched
-                      ? commit(path, sentinel).pipe(
-                          Effect.andThen(sync(parentDescriptor, "parentSync")),
-                          Effect.as(true),
-                        )
-                      : restore.pipe(Effect.as(false)),
-                  ),
+                  Effect.ensuring(ignore(result("flock", () => bindings.flock(parentDescriptor, 8)))),
                   Effect.ensuring(ignore(close(parentDescriptor))),
                 )
               }),
@@ -547,7 +580,13 @@ export const makePosixDurableFileSystem = (bindings: PosixBindings): DurableFile
       () => Effect.void,
       (sentinel) =>
         captureTree(sentinel).pipe(Effect.map((tree) => treesEqual(relocated(tree, sentinel, path), expected))),
-      (target, sentinel) => removeDetached(target).pipe(Effect.andThen(removeDetached(sentinel))),
+      (target, sentinel, identity) =>
+        rollbackPrivateDirectory(target, identity).pipe(
+          Effect.catch(() => Effect.succeed(false)),
+          Effect.flatMap((removed) =>
+            removed ? removeDetached(sentinel).pipe(Effect.as(true)) : Effect.succeed(false),
+          ),
+        ),
     )
   const metadataMutation = (
     operation: "replacePrivateDirectory" | "removePrivateDirectory",
@@ -572,8 +611,8 @@ export const makePosixDurableFileSystem = (bindings: PosixBindings): DurableFile
       (sentinel) => readFile(join(sentinel, metadataName)).pipe(Effect.map((actual) => bytesEqual(actual, expected))),
       (target, sentinel) =>
         replacement === undefined
-          ? removeDetached(target).pipe(Effect.andThen(removeDetached(sentinel)))
-          : removeDetached(sentinel),
+          ? removeDetached(target).pipe(Effect.andThen(removeDetached(sentinel)), Effect.as(true))
+          : removeDetached(sentinel).pipe(Effect.as(true)),
     )
   }
   const replacePrivateDirectoryIfMetadataUnchanged = (

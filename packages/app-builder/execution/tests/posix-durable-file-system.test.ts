@@ -18,6 +18,10 @@ interface FakeOptions {
   readonly link?: boolean
   readonly temporaryPresent?: boolean
   readonly failSyncDescriptor?: number
+  readonly failChmodOnce?: boolean
+  readonly failDirectoryOpenAt?: number
+  readonly failDirectoryFstatAt?: number
+  readonly replaceTargetAfterSentinelComparison?: boolean
 }
 
 const directory: PosixStat = { device: 1, inode: 1, mode: 0o40700, size: 0 }
@@ -28,7 +32,12 @@ const makeFake = (options: FakeOptions = {}) => {
   const writes = [...(options.writes ?? [4])]
   const reads = [...(options.reads ?? [])]
   const renames = [...(options.rename ?? [0])]
+  const createdDirectories = new Set<string>()
   let currentErrno = options.errno ?? 4
+  let failedChmod = false
+  let targetReplaced = false
+  let directoryOpenCount = 0
+  let directoryFstatCount = 0
   const profile =
     options.profile === "darwin"
       ? selectPosixAbiProfile({ platform: "darwin", arch: "arm64" })
@@ -37,33 +46,71 @@ const makeFake = (options: FakeOptions = {}) => {
     profile,
     openAt: (_directory, path, flags, mode) => {
       operations.push(`open:${path}:${flags}:${mode ?? ""}`)
+      if (path === "private" && createdDirectories.has(path)) {
+        directoryOpenCount += 1
+        if (directoryOpenCount === options.failDirectoryOpenAt) {
+          currentErrno = profile.errno.io
+          return -1
+        }
+      }
       return path === "link"
         ? -1
         : path === "temporary" || path === "temp" || path === "data" || path === "owner.json"
           ? 20
           : 10
     },
-    fstat: (fd) => [0, fd === 20 ? file : directory],
-    fstatAt: (_directory, path) => [
-      0,
-      path === "link" || options.link
-        ? { ...directory, mode: 0o120777 }
-        : path === "temp" && options.temporaryPresent !== false
-          ? file
-          : directory,
-    ],
-    mkdirAt: (_directory, path, mode) => (operations.push(`mkdir:${path}:${mode}`), 0),
+    fstat: (fd) => {
+      if (createdDirectories.has("private")) {
+        directoryFstatCount += 1
+        if (directoryFstatCount === options.failDirectoryFstatAt) {
+          currentErrno = profile.errno.io
+          return [-1, undefined]
+        }
+      }
+      return [0, fd === 20 ? file : directory]
+    },
+    fstatAt: (_directory, path) => {
+      if (options.replaceTargetAfterSentinelComparison && path.startsWith(".lock.effectify-sentinel-")) {
+        targetReplaced = true
+      }
+      return [
+        0,
+        path === "link" || options.link
+          ? { ...directory, mode: 0o120777 }
+          : targetReplaced && path === "lock"
+            ? { ...directory, inode: 99 }
+            : path === "temp" && options.temporaryPresent !== false
+              ? file
+              : directory,
+      ]
+    },
+    mkdirAt: (_directory, path, mode) => {
+      operations.push(`mkdir:${path}:${mode}`)
+      if (createdDirectories.has(path)) {
+        currentErrno = profile.errno.exists
+        return -1
+      }
+      createdDirectories.add(path)
+      return 0
+    },
     read: () => reads.shift() ?? [0, new Uint8Array()],
     write: (_fd, bytes) => (operations.push(`write:${bytes.length}`), writes.shift() ?? bytes.length),
     fsync: (fd) => (operations.push(`fsync:${fd}`), fd === options.failSyncDescriptor ? -1 : 0),
     fullSync: (fd) => (operations.push(`fullsync:${fd}`), 0),
-    fchmod: (fd, mode) => (operations.push(`chmod:${fd}:${mode}`), 0),
+    fchmod: (fd, mode) => {
+      operations.push(`chmod:${fd}:${mode}`)
+      if (options.failChmodOnce && !failedChmod) {
+        failedChmod = true
+        return -1
+      }
+      return 0
+    },
     dup: (fd) => (operations.push(`dup:${fd}`), 11),
     fdopendir: (fd) => (operations.push(`fdopendir:${fd}`), { fd }),
     readdir: (): PosixDirectoryEntry | undefined => undefined,
     closedir: () => (operations.push("closedir"), 0),
-    unlinkAt: (_directory, path) => (operations.push(`unlink:${path}`), 0),
-    flock: (fd, operation) => (operations.push(`flock:${fd}:${operation}`), 0),
+    unlinkAt: (_directory, path) => (operations.push(`unlink:${path}`), createdDirectories.delete(path), 0),
+    flock: () => 0,
     close: (fd) => (operations.push(`close:${fd}`), 0),
     rename: (_fromDirectory, from, _toDirectory, to, flags) => (
       operations.push(`rename:${from}:${to}:${flags}`),
@@ -248,5 +295,54 @@ it.effect("rolls back only the exact private directory instance and synchronizes
     expect(rolledBack).toBe(true)
     expect(fake.operations).toContain("unlink:private")
     expect(fake.operations).toContain("fsync:10")
+  }),
+)
+
+it.effect("does not recursively remove a concurrent replacement after sentinel comparison", () =>
+  Effect.gen(function* () {
+    const fake = makeFake({ replaceTargetAfterSentinelComparison: true })
+    const expected = yield* fake.fileSystem.captureTree("/workspace/lock")
+    const removed = yield* fake.fileSystem.removeTreeIfUnchanged("/workspace/lock", expected)
+
+    expect(removed).toBe(false)
+    expect(fake.operations).not.toContain("unlink:lock")
+  }),
+)
+
+it.effect("rolls back a private directory after setup failure so a retry succeeds", () =>
+  Effect.gen(function* () {
+    const fake = makeFake({ failChmodOnce: true, errno: 5 })
+    const failed = yield* Effect.result(fake.fileSystem.createPrivateDirectory("/workspace/private"))
+
+    expect(failed).toMatchObject({ _tag: "Failure", failure: { operation: "fchmod", code: "EIO" } })
+    expect(fake.operations).toContain("unlink:private")
+    yield* fake.fileSystem.createPrivateDirectory("/workspace/private")
+    expect(fake.operations.filter((operation) => operation === "mkdir:private:448")).toHaveLength(2)
+  }),
+)
+
+it.effect("rolls back every exact directory created before setup fails", () =>
+  Effect.gen(function* () {
+    const failures = [
+      { method: "createDirectory", options: { failDirectoryOpenAt: 1 }, operation: "openat" },
+      { method: "createDirectory", options: { failDirectoryFstatAt: 1 }, operation: "fstat" },
+      { method: "createPrivateDirectory", options: { failDirectoryOpenAt: 2 }, operation: "openat" },
+      { method: "createPrivateDirectory", options: { failDirectoryFstatAt: 2 }, operation: "fstat" },
+    ] as const
+    expect(failures).toHaveLength(4)
+
+    for (const { method, options, operation } of failures) {
+      const fake = makeFake({ ...options, errno: 5 })
+      const create = () =>
+        method === "createDirectory"
+          ? fake.fileSystem.createDirectory("/workspace/private", DurableFileSystem.PrivateDirectoryMode)
+          : fake.fileSystem.createPrivateDirectory("/workspace/private")
+      const failed = yield* Effect.result(create())
+
+      expect(failed).toMatchObject({ _tag: "Failure", failure: { operation, code: "EIO" } })
+      expect(fake.operations).toContain("unlink:private")
+      yield* create()
+      expect(fake.operations.filter((entry) => entry === "mkdir:private:448")).toHaveLength(2)
+    }
   }),
 )

@@ -363,3 +363,41 @@ Historical conclusion: the 1,676-line floor was 176 lines above the then-active 
 
 - Final production correction: `packages/app-builder/execution/project.json` +4/-0 lines, within the 200-line cap.
 - Existing tasks remain 10/10 checked; this bounded remediation has no task checkbox delta.
+
+## Ordinal 14: Native Review Correction (`review-full-da79520ce632`)
+
+- R1-001 uses parent `flock` and an identity-checked empty-sentinel `rmdir`; R4-001 rolls back the post-`mkdirat` directory before propagating the primary failure.
+
+### Strict TDD Cycle Evidence
+
+| Task          | RED                                 | GREEN        | REFACTOR                      |
+| ------------- | ----------------------------------- | ------------ | ----------------------------- |
+| R1-001/R4-001 | Focused suite: 2 failed / 11 passed | 13/13 passed | Minimal adapter and fake seam |
+
+### Work Unit Evidence
+
+| Evidence                     | Exact result                                                                                                                                                                                                                                                                                                                                                      |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Focused / runtime / rollback | Focused 13/13; guarded POSIX smoke and executable exit 0; reverting `packages/app-builder/execution/src/internal/posix-durable-file-system.ts` and `packages/app-builder/execution/tests/posix-durable-file-system.test.ts` together removes the four-path rollback implementation and its focused regressions while leaving public APIs/workflow code unchanged. |
+
+```json
+{"schema":"gentle-ai.remediation-result/v1","lineage_id":"review-da79520ce6325fb6","generation":3,"fix_batch":1,"failed_evidence_revision":"sha256:0a60d1bb9df31b768acc629d8bbe02755d082bcf8738f540cabcda999e3da607","result":"corrected"}
+```
+
+```json
+{"schema":"gentle-ai.remediation-evidence/v1","lineage_id":"review-da79520ce6325fb6","generation":3,"fix_batch":1,"failed_evidence_revision":"sha256:0a60d1bb9df31b768acc629d8bbe02755d082bcf8738f540cabcda999e3da607","focused":"13/13","runtime":"posix-smoke+executable:0","rollback":"revert packages/app-builder/execution/src/internal/posix-durable-file-system.ts and packages/app-builder/execution/tests/posix-durable-file-system.test.ts together; removes four-path rollback implementation/focused regressions; public APIs/workflow unchanged"}
+```
+
+- **Ordinal 15 R4-001 complete:** all four create-directory/reopen `openat`/`fstat` paths roll back the recorded exact identity; focused `env NX_SKIP_NX_CACHE=true pnpm nx run @effectify/app-builder-execution:test -- tests/posix-durable-file-system.test.ts --reporter=verbose` → exit 0, 14/14; runtime `env NX_SKIP_NX_CACHE=true node packages/app-builder/execution/demo/deny-network.cjs -- pnpm nx run @effectify/app-builder-execution:posix-smoke` → exit 0.
+
+### Ordinal 15 Strict TDD Cycle Evidence
+
+| Task   | Safety net             | RED                                                        | GREEN                          | TRIANGULATE                                                                                                                                | REFACTOR                                                  |
+| ------ | ---------------------- | ---------------------------------------------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------- |
+| R4-001 | Existing focused 13/13 | 13/14: new rollback assertion failed before implementation | Focused 14/14; package 147/147 | `createDirectory` `openat` failure, `createDirectory` `fstat` failure, `createPrivateDirectory` reopen failure, subsequent `fstat` failure | Shared identity-checked rollback helper; R1-001 preserved |
+
+- **Risk:** `node packages/app-builder/execution/demo/deny-network.cjs -- pnpm nx run @effectify/app-builder-execution:executable -- --workspace <temp> --approve` reported target success but shell exit 1; `EFFECTIFY_DENY_NETWORK=1 NODE_OPTIONS="--require=/Users/andres/devx-op/effectify/packages/app-builder/execution/demo/deny-network.cjs" node packages/app-builder/execution/dist-demo/demo/main.js --workspace /tmp/effectify-r4-001-runtime --approve` → exit 0 with r1–r5/payload.
+- **Boundary/routing:** `git diff --numstat e54e074031d45bf3a2ff508765f1b15cb2807d68 -- <three allowed paths>` → 5/0, 40/27, 47/1 = +92/-28 = 120; implementation/evidence complete; `pending_parent_native_settlement: true`; recommend `sdd-verify` only after the parent settles ordinal 15.
+- **Ordinal 16 evidence-only repair:** revision `sha256:b563de8dfe8043d8eb8cf11260a7e6a56eada816d2f41899e522b13f3d70d123`; documentation-only ≤30 lines, no runtime lifecycle command; parent owns native settlement and `pending_parent_native_settlement: true`.
+  {"schema":"gentle-ai.remediation-result/v1","lineage_id":"review-da79520ce6325fb6","generation":3,"fix_batch":2,"failed_evidence_revision":"sha256:57bbdaef43e5c15d1aceebdffcb4faba89065733ceb042a1948ad9f5b8da8abb","result":"corrected"}
+  {"schema":"gentle-ai.remediation-evidence/v1","lineage_id":"review-da79520ce6325fb6","generation":3,"fix_batch":2,"failed_evidence_revision":"sha256:57bbdaef43e5c15d1aceebdffcb4faba89065733ceb042a1948ad9f5b8da8abb","focused":"14/14","runtime":"posix-smoke:0; executable:0","rollback":"revert packages/app-builder/execution/src/internal/posix-durable-file-system.ts and packages/app-builder/execution/tests/posix-durable-file-system.test.ts together; removes four-path rollback implementation/focused regressions; public APIs/workflow unchanged"}
