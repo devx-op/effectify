@@ -1,146 +1,169 @@
-```yaml
-schema: gentle-ai.verify-result/v1
-evidence_revision: sha256:0a60d1bb9df31b768acc629d8bbe02755d082bcf8738f540cabcda999e3da607
-verdict: fail
-blockers: 3
-critical_findings: 3
-requirements: 6/8
-scenarios: 13/16
-test_command: pnpm nx affected --target=test
-test_exit_code: 0
-test_output_hash: sha256:430402e8da47563e4227d48f72e08438faa5b6dd96a9810f72e261f1307ecea7
-build_command: pnpm nx run @effectify/app-builder-execution:build
-build_exit_code: 0
-build_output_hash: sha256:77e130cfc43e2706d225af66e1df34a581839ee2f7c653f0983304bc27d5f2bf
-```
+# Verification Report: App Builder Executable Vertical Slice
 
-## Verification Report
+## Verdict
 
-**Change**: app-builder-executable-vertical-slice  
-**Version**: native verification objective ordinal 10  
-**Mode**: Strict TDD  
-**Platform observed locally**: macOS arm64  
-**RDD**: disabled by maintainer decision; separate delivery limitation.
+**PASS** under ordinary disabled/unmanaged policy.
 
-### Historical Verification and Remediation
+This independent organic repository verification was completed at HEAD
+`114f573fbe2402b1a15fd5e6f1663e6f37d245a0`. RDD was explicitly disabled and
+unmanaged. No `review.start`, `sdd-attempt`, receipt flow, SDD runtime command,
+or native-authority mutation was run. This verdict is not backed by, and does
+not claim, a new RDD approval receipt.
 
-Ordinal 7 independently returned **FAIL** at 4/8 requirements and 11/16 scenarios with five blockers. Authorized ordinal-8 remediation added exact r1/r2/r3 preparation-persistence failure tests and a live two-clean-workspace deterministic output/report test. Native remediation evidence is `sha256:ca352ae90827bd81c46b05a6da1ab5c95ad30a9f15d783ae823bdf7a56198d99`; no-op closure terminal revision is `sha256:585bf60be4566e888aece14db0e8984b9c0d1074e85c576ab6fed4c327493ab6`.
+| Metric                       |  Result |
+| ---------------------------- | ------: |
+| Requirements compliant       |   8 / 8 |
+| Scenarios compliant          | 16 / 16 |
+| Tasks complete and evidenced | 10 / 10 |
+| Blocking findings            |       0 |
+| GitHub Actions jobs passing  |   9 / 9 |
 
-This ordinal-10 rerun independently confirms both local remediations. The historical FAIL remains relevant because its three non-local platform blockers are unresolved.
+## Executive Summary
 
-### Completeness
+The approved command persists and reloads its draft, durably commits r1-r3,
+hands exact Ready r3 to `RunExecutor`, and lets the executor own r4, terminal
+evidence, and cleanup. It creates fixed output with no-replace semantics,
+exports stable path-free evidence, preserves truthful failure evidence, and
+fails closed at lock and durability boundaries.
 
-| Metric                               |       Value |
-| ------------------------------------ | ----------: |
-| Requirements total / fully compliant |       8 / 6 |
-| Scenarios total / runtime compliant  |     16 / 13 |
-| Scenarios partial / untested         |       1 / 2 |
-| Tasks total / complete / incomplete  | 10 / 10 / 0 |
+The prior final report failed because real macOS x64 and glibc Linux x64/arm64
+execution evidence did not yet exist. That historical result is superseded:
+GitHub Actions run
+[`31053129436`](https://github.com/devx-op/effectify/actions/runs/31053129436)
+passed all nine jobs for feature HEAD
+`114f573fbe2402b1a15fd5e6f1663e6f37d245a0`, including guarded POSIX smoke and
+guarded executable execution on all four required platform profiles.
 
-### Build and Test Execution
+## Verification Policy
 
-| Check                 | Command                                                                                                                                                | Exit | Evidence                                                                        |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ---: | ------------------------------------------------------------------------------- |
-| Affected tests        | `pnpm nx affected --target=test`                                                                                                                       |    0 | 15 affected projects; package 26 files, 143/143; `sha256:430402e8...cea7`       |
-| Remediation focus     | `pnpm nx run @effectify/app-builder-execution:test -- tests/executable-operation.test.ts tests/executable-determinism.live.test.ts --reporter=verbose` |    0 | 2 files, 9/9; `sha256:54a5f847...a88c`                                          |
-| Coverage              | `pnpm nx run @effectify/app-builder-execution:test-coverage`                                                                                           |    0 | 143/143; 97.07% lines, 93.03% branches; `sha256:128482c2...46aa`                |
-| Lint                  | `pnpm nx run @effectify/app-builder-execution:lint`                                                                                                    |    0 | 0 errors, 3 warnings including two generated copies; `sha256:2cfd9f81...2721`   |
-| Typecheck             | `pnpm nx run @effectify/app-builder-execution:typecheck`                                                                                               |    0 | Passed; `sha256:708c986b...c6ed`                                                |
-| Build                 | `pnpm nx run @effectify/app-builder-execution:build`                                                                                                   |    0 | Passed; `sha256:77e130cf...f2bf`                                                |
-| Guarded POSIX smoke   | `node .../deny-network.cjs -- pnpm nx run @effectify/app-builder-execution:posix-smoke`                                                                |    0 | Local macOS arm64 passed; `sha256:77974c53...bfa`                               |
-| Two-workspace harness | Two guarded approved executable runs plus `cmp` and path checks                                                                                        |    0 | Outputs/reports byte-identical and path-free; `sha256:c7c8b129...bed1`          |
-| CI YAML               | Ruby structural parse                                                                                                                                  |    0 | Four required runners and two offline commands present; `sha256:89cb6082...3c5` |
-| Diff safety           | `git diff --check`                                                                                                                                     |    0 | Clean; empty-output hash `sha256:e3b0c442...b855`                               |
+| Field              | Value                                                                  |
+| ------------------ | ---------------------------------------------------------------------- |
+| Policy             | Ordinary repository verification                                       |
+| RDD                | Disabled and unmanaged for this execution                              |
+| Receipt            | None created, required, referenced as current approval, or fabricated  |
+| Native authority   | Unmodified                                                             |
+| Verification actor | Independent ordinary-policy verifier, not the `sdd-verify` phase actor |
+| Source revision    | `114f573fbe2402b1a15fd5e6f1663e6f37d245a0`                             |
 
-### Spec Compliance Matrix
+Historical RDD/native-runtime records in `apply-progress.md` remain audit
+history only. They are not authority for this ordinary-policy PASS.
 
-|   # | Requirement                          | Scenario                                    | Current runtime evidence                                                           | Result       |
-| --: | ------------------------------------ | ------------------------------------------- | ---------------------------------------------------------------------------------- | ------------ |
-|   1 | Deterministic Approved Invocation    | Approved invocation                         | Guarded executable and package suite                                               | ✅ COMPLIANT |
-|   2 | Deterministic Approved Invocation    | Approval omitted                            | Negative harness and operation test                                                | ✅ COMPLIANT |
-|   3 | Durable Revision Handoff             | Ready handoff                               | Operation/executor tests and harness                                               | ✅ COMPLIANT |
-|   4 | Durable Revision Handoff             | Preparation cannot persist                  | Exact r1, r2, and r3 commit-failure tests prove no executor/output/cleanup/success | ✅ COMPLIANT |
-|   5 | Immutable Generated Output           | First generated output                      | Harness and report tests                                                           | ✅ COMPLIANT |
-|   6 | Immutable Generated Output           | Independent deterministic outputs           | Live test plus independent two-workspace guarded harness                           | ✅ COMPLIANT |
-|   7 | Immutable Generated Output           | Existing generated output                   | Negative harness and report test                                                   | ✅ COMPLIANT |
-|   8 | Truthful Exported Evidence           | Successful cleanup with evidence            | Report/executor tests and harness                                                  | ✅ COMPLIANT |
-|   9 | Recoverable Failure and Lock Safety  | Intermediate failure                        | Callback, receipt, cleanup tests                                                   | ✅ COMPLIANT |
-|  10 | Recoverable Failure and Lock Safety  | Lock reacquisition conflict                 | Workspace-lock callback exclusion test                                             | ✅ COMPLIANT |
-|  11 | Handle-Relative No-Follow Durability | macOS x64/arm64 offline durable smoke       | Local arm64 only; real macOS x64 job absent                                        | ⚠️ PARTIAL   |
-|  12 | Handle-Relative No-Follow Durability | glibc Linux x64/arm64 offline durable smoke | ABI/unit fixtures only; no real Linux jobs                                         | ❌ UNTESTED  |
-|  13 | Handle-Relative No-Follow Durability | Symlinked protected path                    | POSIX adapter test                                                                 | ✅ COMPLIANT |
-|  14 | Private Sync and No-Replace Creation | Existing immutable output                   | Adapter/executable tests                                                           | ✅ COMPLIANT |
-|  15 | Private Sync and No-Replace Creation | Unsatisfied platform primitive              | Unsupported/uncertain primitive tests                                              | ✅ COMPLIANT |
-|  16 | Platform CI Proof                    | CI matrix evidence                          | YAML valid; required real results absent for macOS x64 and Linux x64/arm64         | ❌ UNTESTED  |
+## Local Evidence
 
-**Compliance summary**: 13/16 compliant; 1 partial; 2 untested.
+The following checks were independently rerun with Nx cache disabled where
+applicable:
 
-### Local Remediation Confirmation
+| Check                 | Command                                                                                                                                                                                | Result                                                                  |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Focused POSIX adapter | `env NX_SKIP_NX_CACHE=true pnpm nx run @effectify/app-builder-execution:test -- tests/posix-durable-file-system.test.ts --reporter=verbose`                                            | 1 file, 14 / 14 tests passed                                            |
+| Full package          | `env NX_SKIP_NX_CACHE=true pnpm nx run @effectify/app-builder-execution:test -- --reporter=verbose`                                                                                    | 27 files, 148 / 148 tests passed                                        |
+| Typecheck             | `env NX_SKIP_NX_CACHE=true pnpm nx run @effectify/app-builder-execution:typecheck`                                                                                                     | Passed; contracts dependency built first                                |
+| Lint                  | `env NX_SKIP_NX_CACHE=true pnpm nx run @effectify/app-builder-execution:lint`                                                                                                          | Passed with 0 errors and 1 pre-existing warning                         |
+| Guarded POSIX smoke   | `env NX_SKIP_NX_CACHE=true node packages/app-builder/execution/demo/deny-network.cjs -- pnpm nx run @effectify/app-builder-execution:posix-smoke`                                      | Passed on local macOS arm64                                             |
+| Guarded executable    | `env NX_SKIP_NX_CACHE=true node packages/app-builder/execution/demo/deny-network.cjs -- pnpm nx run @effectify/app-builder-execution:executable -- --workspace <clean-temp> --approve` | Passed; r1-r5, generated digest, payload, and readable report confirmed |
+| Report format         | `pnpm exec oxfmt --check openspec/changes/app-builder-executable-vertical-slice/verify-report.md`                                                                                      | Passed after report update                                              |
+| Diff safety           | `git diff --check`                                                                                                                                                                     | Passed after report update                                              |
 
-| Remediated obligation             | Static confirmation                                               | Runtime confirmation                                                                              |
-| --------------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| Preparation persistence failure   | Narrow `failPreparationCommitAt: 1                                | 2                                                                                                 | 3`seam immediately precedes selected`RunStore.commit` | Three tests pass and assert preserved prior journals, absent failed journal, no output, no cleanup, no success, truthful failure report |
-| Independent deterministic outputs | Test creates and canonicalizes two distinct clean real workspaces | Live test and separate harness prove identical payload/report bytes and no workspace path leakage |
+The guarded executable produced the exact payload
+`Effectify App Builder executable vertical slice\n` and a stable report naming
+r1 Validated, r2 WaitingForApproval, r3 Ready, r4 Executing, terminal r5
+Succeeded, and the generated-output digest.
 
-The seams remain internal to the executable demo input and do not change public `DurableFileSystemService` or `RunExecutor.execute` contracts.
+The lint warning is the existing unused destructured `value` parameter at
+`packages/app-builder/execution/src/workspace-lock.ts:303`. It is non-blocking
+and outside this report-only verification change.
 
-### Correctness and Design Coherence
+## GitHub Actions Evidence
 
-| Area                                         | Status | Notes                                                                         |
-| -------------------------------------------- | ------ | ----------------------------------------------------------------------------- |
-| Exact supported platform scope               | ✅     | Darwin x64/arm64 and glibc Linux x64/arm64 only; musl/Windows/unknown reject. |
-| Koffi ABI and readdir decode                 | ✅     | Explicit profile data and pointer decode regression remain passing locally.   |
-| Durable no-follow/no-replace/sync semantics  | ✅     | Static implementation and deterministic failure tests remain coherent.        |
-| Real executor r4+/terminal/cleanup ownership | ✅     | `RunExecutor` remains the production execution path.                          |
-| Report/digest/public contract behavior       | ✅     | Stable path-free evidence and unchanged public signatures.                    |
-| Four-platform runtime proof                  | ❌     | CI wiring exists without required non-local job results.                      |
+| Field            | Value                                                                          |
+| ---------------- | ------------------------------------------------------------------------------ |
+| Run              | [`31053129436`](https://github.com/devx-op/effectify/actions/runs/31053129436) |
+| Workflow         | `🧪 CI`                                                                        |
+| Event            | `pull_request`                                                                 |
+| Feature head SHA | `114f573fbe2402b1a15fd5e6f1663e6f37d245a0`                                     |
+| Conclusion       | success, 9 / 9 jobs                                                            |
 
-### TDD Compliance
+The pull-request jobs checked out merge commit
+`2fe5b64ca5a896a1560f4f7206d86ee3b7853d6b`, which contains the exact feature
+head above merged into the target base. The run metadata independently records
+the requested feature head as `headSha`.
 
-| Check                   | Result | Details                                                                                                   |
-| ----------------------- | ------ | --------------------------------------------------------------------------------------------------------- |
-| TDD evidence reported   | ✅     | Apply-progress records safety net, RED, GREEN, refactor, and closure evidence.                            |
-| RED/GREEN files exist   | ✅     | Remediation test and production seam are present.                                                         |
-| Current GREEN confirmed | ✅     | Focused 9/9, full 143/143, and coverage 143/143 passed.                                                   |
-| Triangulation           | ✅     | Preparation failure is triangulated at r1/r2/r3; determinism uses two real workspaces.                    |
-| Safety net              | ✅     | Existing five operation tests passed before the new seam; live test is new.                               |
-| Assertion quality       | ✅     | Assertions exercise production calls and verify journal/output/cleanup/report behavior and byte equality. |
+| Required profile  | Runner evidence                      | POSIX smoke | Executable | Job                                                                                            |
+| ----------------- | ------------------------------------ | ----------- | ---------- | ---------------------------------------------------------------------------------------------- |
+| macOS x64         | macOS 15.7.7, `macos-15` x64 image   | Passed      | Passed     | [`92464683617`](https://github.com/devx-op/effectify/actions/runs/31053129436/job/92464683617) |
+| macOS arm64       | macOS 15.7.7, `macos-15-arm64` image | Passed      | Passed     | [`92464683585`](https://github.com/devx-op/effectify/actions/runs/31053129436/job/92464683585) |
+| glibc Linux x64   | Ubuntu 24.04.4 x64                   | Passed      | Passed     | [`92464683565`](https://github.com/devx-op/effectify/actions/runs/31053129436/job/92464683565) |
+| glibc Linux arm64 | Ubuntu 24.04.4 arm64                 | Passed      | Passed     | [`92464683551`](https://github.com/devx-op/effectify/actions/runs/31053129436/job/92464683551) |
 
-**TDD compliance**: 6/6 checks passed.
+Each platform job installed dependencies, then ran both targets through
+`demo/deny-network.cjs`. The executable jobs reported the same fixed payload and
+revision/digest sequence. The other five successful jobs were Type Check,
+Build, Lint & Format, Test, and CI Summary.
 
-### Test Layer Distribution and Coverage
+## Requirement And Scenario Matrix
 
-- Deterministic unit/integration: 142 tests across 25 files.
-- Live POSIX/executable integration: 2 tests across 2 files.
-- Independent command harness: two guarded clean-workspace executions.
-- Aggregate coverage: 97.07% lines / 93.03% branches.
-- Complete per-changed-file coverage remains unavailable because V8 omits several demo/POSIX files.
+|   # | Requirement                          | Scenario                                    | Concrete evidence                                                                                                           | Result |
+| --: | ------------------------------------ | ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ------ |
+|   1 | Deterministic Approved Invocation    | Approved invocation                         | Guarded local executable, two-workspace live test, and four guarded CI executable jobs                                      | PASS   |
+|   2 | Deterministic Approved Invocation    | Approval omitted                            | `executable-operation.test.ts` proves rejection before durable mutation; CLI parsing requires explicit approval             | PASS   |
+|   3 | Durable Revision Handoff             | Ready handoff                               | Operation and executor tests prove durable r1-r3, exact Ready r3 handoff, executor-owned r4 and terminal evidence           | PASS   |
+|   4 | Durable Revision Handoff             | Preparation cannot persist                  | Exact r1, r2, and r3 commit-failure tests prove no executor handoff or fabricated Ready state                               | PASS   |
+|   5 | Immutable Generated Output           | First generated output                      | Guarded executable and report test prove exact fixed bytes and one no-replace publication                                   | PASS   |
+|   6 | Immutable Generated Output           | Independent deterministic outputs           | `executable-determinism.live.test.ts` proves byte-identical output and path-free reports in two clean real workspaces       | PASS   |
+|   7 | Immutable Generated Output           | Existing generated output                   | Report/operation evidence proves visible failure and preservation of the existing file                                      | PASS   |
+|   8 | Truthful Exported Evidence           | Successful cleanup with evidence            | Executor observer publishes r4/terminal evidence before cleanup; report remains outside the removed run tree                | PASS   |
+|   9 | Recoverable Failure and Lock Safety  | Intermediate failure                        | Callback, observer, cleanup, and terminal-finalization tests preserve recoverable evidence and emit failure without success | PASS   |
+|  10 | Recoverable Failure and Lock Safety  | Lock reacquisition conflict                 | Workspace-lock tests prove losing, changed, ambiguous, or foreign ownership invokes no protected callback                   | PASS   |
+|  11 | Handle-Relative No-Follow Durability | macOS x64/arm64 offline durable smoke       | CI jobs `92464683617` and `92464683585` passed guarded real-adapter smoke and executable targets                            | PASS   |
+|  12 | Handle-Relative No-Follow Durability | glibc Linux x64/arm64 offline durable smoke | CI jobs `92464683565` and `92464683551` passed guarded real-adapter smoke and executable targets                            | PASS   |
+|  13 | Handle-Relative No-Follow Durability | Symlinked protected path                    | Focused POSIX test fails closed before writing through a symlinked component                                                | PASS   |
+|  14 | Private Sync and No-Replace Creation | Existing immutable output                   | Focused adapter test preserves destination for EEXIST; executable report test preserves existing generated output           | PASS   |
+|  15 | Private Sync and No-Replace Creation | Unsatisfied platform primitive              | Adapter tests reject unsupported/uncertain rename and sync outcomes without fallback                                        | PASS   |
+|  16 | Platform CI Proof                    | CI matrix evidence                          | Run `31053129436` passed all four real platform jobs with network-denied smoke execution                                    | PASS   |
 
-### Issues Found
+## Task Evidence Matrix
 
-**CRITICAL**
+| Task                          | Evidence                                                                                                                    | Result   |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 1.1 ABI fixtures              | `posix-abi.test.ts` and `posix-bindings.test.ts` cover four profiles, symbols, layouts, flags, and unsupported runtimes     | Complete |
+| 1.2 Bindings and smoke        | Koffi bindings, guarded network denial, Nx target, and all four CI installations/executions                                 | Complete |
+| 1.3 Adapter RED coverage      | Focused 14 / 14 covers no-follow, modes, partial/EINTR I/O, sync, publication, sentinel, and rollback behavior              | Complete |
+| 1.4 Adapter implementation    | Handle-relative adapter is wired behind the unchanged `DurableFileSystemService`; local and CI real-adapter runs pass       | Complete |
+| 1.5 Unit 1 evidence           | Focused, package, lint, typecheck, smoke, format, and rollback evidence are recorded                                        | Complete |
+| 2.1 Operation RED coverage    | Approval, r1-r3 failures, exact handoff, callback, observer, cleanup, and lock failure paths are tested                     | Complete |
+| 2.2 Executor integration      | Real `RunExecutor` owns r4+, terminal state, pre-cleanup observation, and cleanup                                           | Complete |
+| 2.3 Report RED coverage       | Stable LF report, exact revision/digest fields, and no-replace output behavior are tested                                   | Complete |
+| 2.4 Executable implementation | Caller workspace, mandatory approval, guarded runtime, output, success report, and truthful failure reports are implemented | Complete |
+| 2.5 Target and CI evidence    | Executable target and four-platform matrix passed in run `31053129436`                                                      | Complete |
 
-1. Required real macOS x64 smoke/executable CI evidence remains absent; local macOS arm64 cannot prove x64 behavior.
-2. Required real glibc Linux x64 and arm64 smoke/executable evidence remains absent; ABI fixtures cannot substitute for runtime execution.
-3. The four-runner CI matrix is structurally correct, but the mandatory all-four passing CI result does not exist.
+## Historical Failures
 
-**WARNING**
+The earlier 6/8-requirement, 13/16-scenario report correctly failed while real
+macOS x64 and Linux x64/arm64 evidence was absent. Subsequent clean-checkout
+dependency-ordering and POSIX binding corrections are present at the verified
+HEAD. Run `31053129436` proves those former blockers are closed. Historical
+failed runs and remediation records remain useful audit history but do not
+describe the current candidate.
 
-- V8 coverage does not emit complete per-changed-file coverage for all new demo/POSIX files.
-- Lint reports one source warning and two generated `dist-demo` copies, with zero errors.
+No unsupported claim from the failed report is carried forward: all four
+platform claims now cite completed real jobs, and local behavior claims cite
+current uncached test or guarded runtime execution.
 
-**SUGGESTION**
+## Residual Risks
 
-- Preserve job URLs and immutable result identifiers when the three pending non-local jobs run, then rerun verification without changing local implementation.
+- The pre-existing lint warning at `workspace-lock.ts:303` remains; lint has no errors.
+- V8 coverage was not rerun in this ordinary verification, and prior coverage could not attribute every demo/POSIX file. Scenario evidence instead comes from focused tests, live tests, guarded local execution, and the four-platform CI matrix.
+- Native POSIX ABI behavior remains sensitive to future OS, libc, Node, and Koffi changes. The explicit four-profile fixtures and real matrix are the regression boundary.
+- Windows and musl Linux remain intentionally unsupported non-goals.
 
-### Residual Blockers and Next Action
+None of these residual risks blocks the specified vertical slice.
 
-Obtain real passing evidence for macOS x64 and glibc Linux x64/arm64 from the configured CI jobs. Then rerun independent SDD verification. Do not archive while these spec-required runtime scenarios remain incomplete.
+## Archive Readiness
 
-### RDD Delivery Limitation
+The change is **ready to archive under ordinary disabled/unmanaged policy**:
+requirements are 8/8, scenarios are 16/16, tasks are 10/10, local checks pass,
+and the required four-platform CI proof passes at the verified feature head.
 
-RDD remains disabled by maintainer decision. No native review, receipt, commit, push, PR, merge, release, or lifecycle command was attempted. Delivery unavailability is separate from this substantive spec verdict.
-
-### Verdict
-
-**FAIL** — both authorized local scenario remediations are independently verified and now compliant, improving the result to 6/8 requirements and 13/16 scenarios. Mandatory real non-local platform CI evidence remains absent and blocking.
+This statement is a substantive repository-readiness conclusion only. It does
+not create an RDD receipt, perform archive/runtime commands, or alter native
+authority.
