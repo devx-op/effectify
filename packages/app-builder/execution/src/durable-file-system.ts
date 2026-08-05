@@ -5,6 +5,7 @@ import * as Layer from "effect/Layer"
 import * as Result from "effect/Result"
 import * as Schema from "effect/Schema"
 import * as ManagedPath from "./managed-path.js"
+import { makeLive as makePosixLive } from "./internal/posix-durable-file-system.js"
 
 export const PrivateDirectoryMode = 0o700
 export const PrivateFileMode = 0o600
@@ -137,37 +138,8 @@ const fromResult = <Value>(
 const unavailable = (capabilities: DurableCapabilities, capability: Capability) =>
   capabilities[capability] ? Effect.void : Effect.fail(new UnsupportedDurability({ capability }))
 
-const nodeCapabilities: DurableCapabilities = Object.freeze({
-  privateAccessControl: true,
-  noFollowPaths: false,
-  noReplacePublish: true,
-  fileSync: true,
-  directorySync: true,
-  atomicPrivateDirectory: true,
-  compareMetadataDirectoryMutation: true,
-  compareTreeDirectoryMutation: true,
-})
-
-const noFollowUnavailable = <Value>(): Effect.Effect<Value, UnsupportedDurability> =>
-  Effect.fail(new UnsupportedDurability({ capability: "noFollowPaths" }))
-
-/** Node's path-string APIs cannot prove handle-relative no-follow operations, so this adapter fails closed. */
-export const makeLive = (): DurableFileSystemService => ({
-  capabilities: nodeCapabilities,
-  inspect: () => noFollowUnavailable(),
-  readDirectory: () => noFollowUnavailable(),
-  readFile: () => noFollowUnavailable(),
-  createDirectory: () => noFollowUnavailable(),
-  createPrivateDirectory: () => noFollowUnavailable(),
-  createExclusive: () => noFollowUnavailable(),
-  publishNoReplace: () => noFollowUnavailable(),
-  openDirectory: () => noFollowUnavailable(),
-  removeTree: () => noFollowUnavailable(),
-  captureTree: () => noFollowUnavailable(),
-  removeTreeIfUnchanged: () => noFollowUnavailable(),
-  replacePrivateDirectoryIfMetadataUnchanged: () => noFollowUnavailable(),
-  removePrivateDirectoryIfMetadataUnchanged: () => noFollowUnavailable(),
-})
+/** POSIX ABI adapter with handle-relative no-follow operations on supported platforms. */
+export const makeLive = (): DurableFileSystemService => makePosixLive()
 
 export const live = Layer.succeed(Service, Service.of(makeLive()))
 

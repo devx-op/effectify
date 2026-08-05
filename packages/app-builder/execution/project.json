@@ -34,6 +34,20 @@
         "cwd": "packages/app-builder/execution"
       }
     },
+    "posix-smoke": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc -p tsconfig.demo.json && node dist-demo/demo/posix-smoke.js",
+        "cwd": "packages/app-builder/execution"
+      }
+    },
+    "executable": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc -p tsconfig.demo.json && node dist-demo/demo/main.js",
+        "cwd": "packages/app-builder/execution"
+      }
+    },
     "lint": {
       "executor": "nx-oxlint:lint",
       "options": {

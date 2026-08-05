@@ -19,6 +19,7 @@ import * as RunStore from "./run-store.js"
 import * as ToolProcess from "./tool-process.js"
 import * as WorkspaceLock from "./workspace-lock.js"
 import * as WorkspaceMutator from "./workspace-mutator.js"
+import type * as ExecutableEvidence from "./internal/executable-evidence.js"
 
 export type IdempotencyProof =
   | { readonly _tag: "SingleAttempt" }
@@ -105,6 +106,10 @@ interface Dependencies {
     readonly delete: (ticket: CleanupFinalization.CleanupTicket) => Effect.Effect<Cleanup.CleanupOutcome>
   }
   readonly crypto: Crypto.Crypto
+  /** Internal-only seam for exporting executor state before cleanup removes the run tree. */
+  readonly onPreCleanup?: (
+    entries: ReadonlyArray<ExecutableEvidence.Entry>,
+  ) => Effect.Effect<void, FinalizationPreserved>
 }
 
 export interface RunExecutorService {
@@ -325,6 +330,20 @@ export const make = (dependencies: Dependencies): RunExecutorService => ({
                     outcome: callbackExit.value,
                   }),
                 )
+            if (dependencies.onPreCleanup !== undefined) {
+              yield* dependencies.onPreCleanup([
+                {
+                  revision: start.receipt.revision,
+                  state: start.result.snapshot._tag,
+                  digest: start.receipt.payloadDigest,
+                },
+                {
+                  revision: terminal.receipt.revision,
+                  state: terminal.result.snapshot._tag,
+                  digest: terminal.receipt.payloadDigest,
+                },
+              ])
+            }
             const prepared = yield* dependencies.finalization.prepare({
               workspace: input.workspace,
               ownership,
