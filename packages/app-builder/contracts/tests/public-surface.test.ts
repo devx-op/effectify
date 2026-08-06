@@ -21,6 +21,7 @@ it("publishes only the exact named allowlist and module namespaces", () => {
       "Requirement",
       "SchemaDocument",
       "Version",
+      "WizardDraft",
       "PackageCompatibilityDeclarations",
       "canonicalJsonBytes",
       "canonicalizeJson",
@@ -35,6 +36,7 @@ it("publishes only the exact named allowlist and module namespaces", () => {
     ].sort(),
   )
   expect(Contracts.Replay.projectReplayMaterial).toBe(Contracts.projectReplayMaterial)
+  expect("decodeValidatedWizardDraft" in Contracts).toBe(false)
   expect("decodePinnedInput" in Contracts).toBe(false)
   expect("MalformedReplayContract" in Contracts).toBe(false)
 })
