@@ -108,12 +108,14 @@ const makeExecutor = (
   options: {
     readonly active?: () => Effect.Effect<Option.Option<ToolProcess.ChildProcess>, ToolProcess.ToolProcessFailure>
     readonly commitFailure?: RunLifecycle.TransitionRequest["_tag"]
+    readonly observed?: Ref.Ref<ReadonlyArray<number>>
   } = {},
 ) =>
   Effect.gen(function* () {
     const fileSystem = (yield* makeFakeDurableFileSystem()).fileSystem
     const commits = yield* Ref.make<ReadonlyArray<RunLifecycle.TransitionRequest>>([])
     const finalizations = yield* Ref.make(0)
+    const observed = options.observed
     const workspaceLock: WorkspaceLock.WorkspaceLockService = {
       withExclusive: (_input, use) => use(ownership),
       withExclusiveFinalized: (_input, use, afterRelease) =>
@@ -148,6 +150,15 @@ const makeExecutor = (
           ),
       },
       crypto,
+      ...(observed === undefined
+        ? {}
+        : {
+            onPreCleanup: (entries: ReadonlyArray<{ readonly revision: number }>) =>
+              Ref.set(
+                observed,
+                entries.map((entry) => entry.revision),
+              ),
+          }),
     })
     return { executor, commits, finalizations, workspaceLock }
   })
@@ -187,6 +198,16 @@ it.effect("commits Executing before invoking the resolved callback and records o
     expect(result).toMatchObject({ outcome: { _tag: "Succeeded" } })
     expect((yield* Ref.get(commits)).map((request) => request._tag)).toEqual(["AcceptExecution", "Complete"])
     expect(yield* Ref.get(finalizations)).toBe(1)
+  }),
+)
+
+it.effect("publishes executor-owned execution and terminal evidence before cleanup", () =>
+  Effect.gen(function* () {
+    const observed = yield* Ref.make<ReadonlyArray<number>>([])
+    const { executor } = yield* makeExecutor({ observed })
+    yield* executor.execute(executeInput, () => Effect.succeed({ _tag: "Succeeded" }))
+
+    expect(yield* Ref.get(observed)).toEqual([4, 5])
   }),
 )
 

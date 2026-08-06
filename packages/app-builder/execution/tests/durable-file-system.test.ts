@@ -3,38 +3,26 @@ import * as Effect from "effect/Effect"
 import * as DurableFileSystem from "../src/durable-file-system.js"
 import { makeFakeDurableFileSystem } from "./durable-file-system-fake.js"
 
-it.effect("requires every durability proof and fails every live operation closed", () =>
+it.effect("requires every durability proof and exposes the POSIX adapter as the live implementation", () =>
   Effect.gen(function* () {
     const fake = yield* makeFakeDurableFileSystem()
     const run = yield* DurableFileSystem.prepareRunJournalDirectory(fake.fileSystem, "/workspace", "run:coverage")
     const draft = yield* DurableFileSystem.prepareDraftDirectory(fake.fileSystem, "/workspace", "draft:coverage")
     yield* DurableFileSystem.requireLockCapabilities(fake.fileSystem)
     const live = DurableFileSystem.makeLive()
-    const blocked: ReadonlyArray<Effect.Effect<unknown, DurableFileSystem.DurableFailure>> = [
-      live.inspect("/workspace"),
-      live.readDirectory("/workspace"),
-      live.readFile("/workspace/file"),
-      live.createDirectory("/workspace/dir", 0o700),
-      live.createPrivateDirectory("/workspace/private"),
-      live.createExclusive("/workspace/file", 0o600),
-      live.publishNoReplace("/workspace/a", "/workspace/b"),
-      live.openDirectory("/workspace"),
-      live.removeTree("/workspace/run"),
-      live.captureTree("/workspace/run"),
-      live.removeTreeIfUnchanged("/workspace/run", []),
-      live.replacePrivateDirectoryIfMetadataUnchanged(
-        "/workspace/lock",
-        "/workspace/lock/owner",
-        Uint8Array.of(1),
-        Uint8Array.of(2),
-      ),
-      live.removePrivateDirectoryIfMetadataUnchanged("/workspace/lock", "/workspace/lock/owner", Uint8Array.of(1)),
-    ]
 
     expect(run.journalDirectory.absolute).toContain("/runs/")
     expect(draft.draftDirectory.absolute).toContain("/drafts/")
-    expect(blocked).toHaveLength(13)
-    for (const operation of blocked) expect((yield* Effect.result(operation))._tag).toBe("Failure")
+    expect(live.capabilities).toEqual({
+      privateAccessControl: true,
+      noFollowPaths: true,
+      noReplacePublish: true,
+      fileSync: true,
+      directorySync: true,
+      atomicPrivateDirectory: true,
+      compareMetadataDirectoryMutation: true,
+      compareTreeDirectoryMutation: true,
+    })
     for (const capability of [
       "privateAccessControl",
       "noFollowPaths",
