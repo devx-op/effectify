@@ -17,6 +17,7 @@ import "../src/requirement.js"
 import "../src/schema-document.js"
 import "../src/tool-declaration.js"
 import "../src/tool-declaration-projection.js"
+import "../src/wizard-draft.js"
 
 it("keeps leaves direct and neutral", () => {
   const leaves = [
@@ -42,6 +43,7 @@ it("keeps leaves direct and neutral", () => {
     "tool-declaration",
     "tool-declaration-projection",
     "version",
+    "wizard-draft",
   ]
   const source = leaves
     .map((name) => readFileSync(fileURLToPath(new URL(`../src/${name}.ts`, import.meta.url)), "utf8"))
@@ -88,6 +90,7 @@ it("keeps leaves direct and neutral", () => {
       "replay-failure.js",
     ],
     "compatibility.ts": ["canonical-json.js", "compatibility-failure.js", "json.js", "identity.js", "version.js"],
+    "wizard-draft.ts": ["identity.js", "json.js", "passive-record.js", "reference.js"],
   } as const
 
   for (const [file, allowed] of Object.entries(contractDependencies)) {
@@ -126,6 +129,7 @@ it("keeps private contracts in kebab-case with canonical Schema declarations", (
     "tool-declaration-projection.ts",
     "tool-declaration.ts",
     "version.ts",
+    "wizard-draft.ts",
   ])
 
   const source = readdirSync(sourceDirectory)

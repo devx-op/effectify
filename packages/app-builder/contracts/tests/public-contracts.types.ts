@@ -46,6 +46,12 @@ type PassiveRecordsDoNotGainChannels = Expect<
 type ReplayRecordsDoNotGainChannels = Expect<
   Equal<Extract<keyof Contracts.Replay.ReplayContract, "Type" | "Encoded" | "Error" | "Requirements">, never>
 >
+type WizardDraftHasOnlyPassiveContractFields = Expect<
+  Equal<keyof Contracts.WizardDraft.ValidatedWizardDraft, "draftId" | "runRef" | "protocolRef" | "passivePlan">
+>
+type WizardDraftDoesNotExposeCliIntentOrDefaults = Expect<
+  Equal<Extract<keyof Contracts.WizardDraft.ValidatedWizardDraft, "intent" | "defaults" | "prompt">, never>
+>
 
 void declaration
 void (null as unknown as DeclarationRequirements)
@@ -53,3 +59,5 @@ void (null as unknown as EnvelopeTypeChannel)
 void (null as unknown as EnvelopeEncodedChannel)
 void (null as unknown as PassiveRecordsDoNotGainChannels)
 void (null as unknown as ReplayRecordsDoNotGainChannels)
+void (null as unknown as WizardDraftHasOnlyPassiveContractFields)
+void (null as unknown as WizardDraftDoesNotExposeCliIntentOrDefaults)
