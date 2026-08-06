@@ -256,6 +256,41 @@ jobs:
 
       - name: 🧪 Test affected projects
         run: pnpm nx affected --target=test --base="${{ steps.affected-base.outputs.sha }}" --head=HEAD --parallel=1 --verbose --passWithNoTests
+  app-builder-executable:
+    name: App Builder executable (${{ matrix.label }})
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: macos-x64
+            runner: macos-15-intel
+          - label: macos-arm64
+            runner: macos-15
+          - label: linux-x64
+            runner: ubuntu-24.04
+          - label: linux-arm64
+            runner: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.14.0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22.22.0"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Run guarded POSIX smoke
+        run: node packages/app-builder/execution/demo/deny-network.cjs -- pnpm nx run @effectify/app-builder-execution:posix-smoke
+      - name: Run guarded executable workflow
+        shell: bash
+        run: |
+          workspace="$RUNNER_TEMP/effectify-executable-workspace"
+          mkdir -p "$workspace"
+          node packages/app-builder/execution/demo/deny-network.cjs -- pnpm nx run @effectify/app-builder-execution:executable -- --workspace "$workspace" --approve
+
   # Summary job
   ci-summary:
     name: 📊 CI Summary

@@ -1,0 +1,5 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "declaration": true, "rootDir": "./src", "lib": ["ES2022"], "target": "ES2022", "types": [] },
+  "include": ["src/**/*.ts"]
+}
