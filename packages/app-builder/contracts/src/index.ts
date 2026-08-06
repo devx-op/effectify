@@ -13,6 +13,7 @@ export * as Replay from "./replay.js"
 export * as Requirement from "./requirement.js"
 export * as SchemaDocument from "./schema-document.js"
 export * as Version from "./version.js"
+export * as WizardDraft from "./wizard-draft.js"
 
 export { canonicalJsonBytes, canonicalizeJson } from "./canonical-json.js"
 export { PackageCompatibilityDeclarations, certifyPackageCompatibility } from "./compatibility.js"
