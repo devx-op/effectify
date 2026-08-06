@@ -24,6 +24,7 @@ Intent selects a catalog. Community plugins MUST be preinstalled allowlisted pac
 ## Capabilities
 
 ### New Capabilities
+
 - `app-builder-creation-catalog`: Finite intent/catalog.
 - `app-builder-generation-planning`: Atomic plans, ownership, provenance, dependencies, and conflicts.
 - `app-builder-nx-generation`: One-way preset/evolution mutation.
@@ -33,6 +34,7 @@ Intent selects a catalog. Community plugins MUST be preinstalled allowlisted pac
 - `app-builder-golden-showcase`: Root-graph-excluded generated example.
 
 ### Modified Capabilities
+
 None. Existing specifications remain consumed authorities.
 
 ## Visible Acceptance Contract

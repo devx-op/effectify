@@ -29,12 +29,12 @@ None; existing contract specifications remain read-only dependencies.
 
 ## Proposed Grandchildren
 
-| Order | Change                           | Disposition |
-| ----- | -------------------------------- | ----------- |
-| 1     | `app-builder-run-lifecycle`      | Completed and archived; authority/evidence retained |
-| 2     | `app-builder-run-store-recovery` | Completed and archived; authority/evidence retained |
+| Order | Change                           | Disposition                                                           |
+| ----- | -------------------------------- | --------------------------------------------------------------------- |
+| 1     | `app-builder-run-lifecycle`      | Completed and archived; authority/evidence retained                   |
+| 2     | `app-builder-run-store-recovery` | Completed and archived; authority/evidence retained                   |
 | 3     | `app-builder-run-lock-executor`  | Completed and archived with finalization; authority/evidence retained |
-| 4     | `app-builder-execution-cli`      | **Superseded by `app-builder-golden-monorepo`; MUST NOT be applied** |
+| 4     | `app-builder-execution-cli`      | **Superseded by `app-builder-golden-monorepo`; MUST NOT be applied**  |
 
 Completed protocol-contract children and the verified POSIX/executable vertical slice are also retained prerequisites. Their artifacts and task evidence are historical authorities, not tracker-owned work.
 
@@ -44,11 +44,11 @@ The retained dependency order is protocol → lifecycle → store/recovery → l
 
 ## Affected Areas
 
-| Area                              | Impact                     |
-| --------------------------------- | -------------------------- |
-| `packages/app-builder/execution/` | Retained completed authority; unchanged |
-| `packages/app-builder/contracts/` | Retained completed authority; unchanged |
-| `openspec/changes/app-builder-golden-monorepo/proposal.md` | Next proposal-only route |
+| Area                                                       | Impact                                  |
+| ---------------------------------------------------------- | --------------------------------------- |
+| `packages/app-builder/execution/`                          | Retained completed authority; unchanged |
+| `packages/app-builder/contracts/`                          | Retained completed authority; unchanged |
+| `openspec/changes/app-builder-golden-monorepo/proposal.md` | Next proposal-only route                |
 
 ## Dependency
 
@@ -56,11 +56,11 @@ The retained dependency order is protocol → lifecycle → store/recovery → l
 
 ## Risks and Tradeoffs
 
-| Risk                      | Mitigation                                                 |
-| ------------------------- | ---------------------------------------------------------- |
-| Crash/lock corruption     | Atomic persistence, stale-lock rules, scoped cleanup       |
-| Unsafe resume/approval    | Typed guards, provenance, redaction, stop on ambiguity     |
-| Stale thin CLI is applied | Explicit supersession and MUST NOT apply gate |
+| Risk                      | Mitigation                                             |
+| ------------------------- | ------------------------------------------------------ |
+| Crash/lock corruption     | Atomic persistence, stale-lock rules, scoped cleanup   |
+| Unsafe resume/approval    | Typed guards, provenance, redaction, stop on ambiguity |
+| Stale thin CLI is applied | Explicit supersession and MUST NOT apply gate          |
 
 ## Rollback Plan
 

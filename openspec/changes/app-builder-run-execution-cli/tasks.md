@@ -2,12 +2,12 @@
 
 ## Review Workload Forecast
 
-| Grandchild                       | Estimated changed lines | 3,000-line risk | PR boundary                          |
-| -------------------------------- | ----------------------: | --------------- | ------------------------------------ |
-| `app-builder-run-lifecycle`      | Historical actual | Complete | Evidence retained |
-| `app-builder-run-store-recovery` | Historical actual | Complete | Evidence retained |
-| `app-builder-run-lock-executor`  | Historical actual | Complete | Evidence retained with finalization |
-| `app-builder-execution-cli`      | N/A | Superseded | MUST NOT apply |
+| Grandchild                       | Estimated changed lines | 3,000-line risk | PR boundary                         |
+| -------------------------------- | ----------------------: | --------------- | ----------------------------------- |
+| `app-builder-run-lifecycle`      |       Historical actual | Complete        | Evidence retained                   |
+| `app-builder-run-store-recovery` |       Historical actual | Complete        | Evidence retained                   |
+| `app-builder-run-lock-executor`  |       Historical actual | Complete        | Evidence retained with finalization |
+| `app-builder-execution-cli`      |                     N/A | Superseded      | MUST NOT apply                      |
 
 Decision needed before apply: No
 Chained PRs recommended: Yes

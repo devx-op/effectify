@@ -17,14 +17,14 @@ The ratified direction closes the old create-operation gap: Golden v1 itself is 
 
 #### Reusable foundation versus assumptions to retire
 
-| Keep and consume | Retire or defer |
-| --- | --- |
-| Contract identities, canonical JSON/digests, diagnostics/outcomes, declarations, compatibility, replay material | `PassivePlan` as sufficient executable generation authority |
-| Lifecycle transition laws and approval evidence | A parsing-only CLI presented as a complete product |
-| Durable draft/run persistence, recovery classification, scoped ownership, executor, cleanup | The old pending CLI child and its six-file transport-only boundary |
-| Verified POSIX durability adapter and one-command executable proof | Generic callback registries before a real finite capability catalog exists |
-| Effect-first services, Layers, schemas, typed errors, deterministic test seams | MCP, arbitrary plugin code execution, Effect AI, web UI, marketplace, and early infrastructure deletion |
-| Existing feature-branch-chain ancestry and archived child evidence | Monolithic templates and Effect-free “pure TypeScript” domain layers |
+| Keep and consume                                                                                                | Retire or defer                                                                                         |
+| --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Contract identities, canonical JSON/digests, diagnostics/outcomes, declarations, compatibility, replay material | `PassivePlan` as sufficient executable generation authority                                             |
+| Lifecycle transition laws and approval evidence                                                                 | A parsing-only CLI presented as a complete product                                                      |
+| Durable draft/run persistence, recovery classification, scoped ownership, executor, cleanup                     | The old pending CLI child and its six-file transport-only boundary                                      |
+| Verified POSIX durability adapter and one-command executable proof                                              | Generic callback registries before a real finite capability catalog exists                              |
+| Effect-first services, Layers, schemas, typed errors, deterministic test seams                                  | MCP, arbitrary plugin code execution, Effect AI, web UI, marketplace, and early infrastructure deletion |
+| Existing feature-branch-chain ancestry and archived child evidence                                              | Monolithic templates and Effect-free “pure TypeScript” domain layers                                    |
 
 ### Affected Areas
 
@@ -86,15 +86,15 @@ The catalog controls which blocks and renderer implementations may run. Official
 
 The CLI is the single public interface. Commands should share one versioned request envelope, one versioned result envelope, stable error codes, explicit exit classes, and optional event streaming.
 
-| Command | Conceptual contract |
-| --- | --- |
-| `catalog` | List finite presets, plugins, capabilities, versions, compatibility, and schemas. |
-| `plan` | Decode `CreationIntent`, resolve catalog/dependencies/blocks, and emit canonical `FilePlan` without mutation. |
-| `generate` | Apply an approved plan through execution authority and emit resulting digests/provenance. |
-| `verify` | Run declared generated-workspace checks and return structured evidence. |
-| `replay` | Reapply recorded intent/catalog/plan identities and compare deterministic output. |
-| `explain` | Explain selected blocks, dependencies, conflicts, files, and policy decisions. |
-| `doctor` | Diagnose host, package manager, Nx, catalog, and platform readiness without mutation. |
+| Command    | Conceptual contract                                                                                           |
+| ---------- | ------------------------------------------------------------------------------------------------------------- |
+| `catalog`  | List finite presets, plugins, capabilities, versions, compatibility, and schemas.                             |
+| `plan`     | Decode `CreationIntent`, resolve catalog/dependencies/blocks, and emit canonical `FilePlan` without mutation. |
+| `generate` | Apply an approved plan through execution authority and emit resulting digests/provenance.                     |
+| `verify`   | Run declared generated-workspace checks and return structured evidence.                                       |
+| `replay`   | Reapply recorded intent/catalog/plan identities and compare deterministic output.                             |
+| `explain`  | Explain selected blocks, dependencies, conflicts, files, and policy decisions.                                |
+| `doctor`   | Diagnose host, package manager, Nx, catalog, and platform readiness without mutation.                         |
 
 Requests arrive through explicit flags for small scalars or `--input <file>` / stdin for complete schema payloads. Machine stdout contains only JSON or JSON Lines. Human diagnostics use stderr. A final result envelope is mandatory even when event streaming is enabled. Callbacks/events are finite protocol records such as `PlanStarted`, `BlockResolved`, `FilePlanned`, `WriteStarted`, `VerificationStarted`, and `Completed`; they are observations or input-required continuations, never arbitrary executable callbacks supplied by the caller.
 
@@ -102,12 +102,12 @@ Effect AI remains outside Golden v1. A later adapter may translate natural langu
 
 #### Nested Nx E2E comparison
 
-| Approach | Strengths | Weaknesses | Recommendation |
-| --- | --- | --- | --- |
-| OS-temp nested workspace + local Verdaccio publication | Exercises the consumer-visible package boundary and Nx's documented plugin-E2E flow; no root graph pollution; validates manifests and installability | Registry lifecycle/versioning adds setup cost; lockfile bytes can vary unless versions, registry URL, pnpm store, and environment are pinned | Primary full E2E |
-| OS-temp nested workspace + `pnpm pack` tarballs | Fully offline-capable and simple artifact identity; tarball digest can be recorded | Transitive local packages and peer resolution require explicit packing/order; less aligned with Nx's provided local-registry executor | Focused distribution fallback or CI hardening |
-| In-memory `Tree` generator tests | Fast, deterministic, excellent for block merge/conflict and exact file snapshots | Does not prove package installation, nested Nx graph, build, or executable CLI | Mandatory lower layer, never the only E2E |
-| Generate under repository `tmp/` | Easy inspection and already Git-ignored | Still shares filesystem ancestry, Nx state, pnpm store, and accidental root discovery risk; cleanup failures leave state | Reject for authoritative E2E |
+| Approach                                               | Strengths                                                                                                                                            | Weaknesses                                                                                                                                   | Recommendation                                |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| OS-temp nested workspace + local Verdaccio publication | Exercises the consumer-visible package boundary and Nx's documented plugin-E2E flow; no root graph pollution; validates manifests and installability | Registry lifecycle/versioning adds setup cost; lockfile bytes can vary unless versions, registry URL, pnpm store, and environment are pinned | Primary full E2E                              |
+| OS-temp nested workspace + `pnpm pack` tarballs        | Fully offline-capable and simple artifact identity; tarball digest can be recorded                                                                   | Transitive local packages and peer resolution require explicit packing/order; less aligned with Nx's provided local-registry executor        | Focused distribution fallback or CI hardening |
+| In-memory `Tree` generator tests                       | Fast, deterministic, excellent for block merge/conflict and exact file snapshots                                                                     | Does not prove package installation, nested Nx graph, build, or executable CLI                                                               | Mandatory lower layer, never the only E2E     |
+| Generate under repository `tmp/`                       | Easy inspection and already Git-ignored                                                                                                              | Still shares filesystem ancestry, Nx state, pnpm store, and accidental root discovery risk; cleanup failures leave state                     | Reject for authoritative E2E                  |
 
 Recommended E2E protocol:
 

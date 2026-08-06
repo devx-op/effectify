@@ -10,27 +10,27 @@ contracts <- generation <- nx-plugin
 contracts + execution + generation + nx-plugin <- cli <- e2e
 ```
 
-| Location | Responsibility / Nx intent |
-|---|---|
-| `packages/app-builder/contracts` | Retained canonical protocol authority. |
-| `packages/app-builder/execution` | Retained lifecycle/store/recovery/lock/mutation/process/POSIX authority. |
+| Location                          | Responsibility / Nx intent                                                                          |
+| --------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `packages/app-builder/contracts`  | Retained canonical protocol authority.                                                              |
+| `packages/app-builder/execution`  | Retained lifecycle/store/recovery/lock/mutation/process/POSIX authority.                            |
 | `packages/app-builder/generation` | Intent, catalog, generator contracts, pure planner, replay/provenance; `layer:planning,npm:public`. |
-| `packages/app-builder/nx-plugin` | Local-plugin exports and only `Tree` adapter; `layer:adapter,npm:public`. |
-| `packages/app-builder/cli` | Seven commands and explicit Live graph; `layer:entrypoint,npm:public`. |
-| `packages/app-builder/e2e` | Temp proof; `type:e2e,npm:private`. |
-| `examples/app-builder-todo` | Committed output, excluded from pnpm and Nx inference. |
+| `packages/app-builder/nx-plugin`  | Local-plugin exports and only `Tree` adapter; `layer:adapter,npm:public`.                           |
+| `packages/app-builder/cli`        | Seven commands and explicit Live graph; `layer:entrypoint,npm:public`.                              |
+| `packages/app-builder/e2e`        | Temp proof; `type:e2e,npm:private`.                                                                 |
+| `examples/app-builder-todo`       | Committed output, excluded from pnpm and Nx inference.                                              |
 
 Graph verification rejects planning→adapter/execution and generated inward-boundary violations.
 
 ## Architecture Decisions
 
-| Choice | Rejected / tradeoff |
-|---|---|
-| Pure generation package plus Nx adapter | Reject `Tree`-shaped domain; separation enforces independence. |
-| Whole-file and JSON-pointer ownership | Reject markers/general AST rewriting; extension uses dedicated generated leaves. |
-| Exact allowlist, in-process plugins | Reject intent imports/sandbox claims; installation grants trust. |
-| Semantic dependency identity | Reject byte-lock identity; normalization needs certification tests. |
-| Preimage transaction journal | Reject direct writes; extra I/O buys recovery evidence. |
+| Choice                                  | Rejected / tradeoff                                                              |
+| --------------------------------------- | -------------------------------------------------------------------------------- |
+| Pure generation package plus Nx adapter | Reject `Tree`-shaped domain; separation enforces independence.                   |
+| Whole-file and JSON-pointer ownership   | Reject markers/general AST rewriting; extension uses dedicated generated leaves. |
+| Exact allowlist, in-process plugins     | Reject intent imports/sandbox claims; installation grants trust.                 |
+| Semantic dependency identity            | Reject byte-lock identity; normalization needs certification tests.              |
+| Preimage transaction journal            | Reject direct writes; extra I/O buys recovery evidence.                          |
 
 ## Generated Architecture
 
@@ -66,11 +66,11 @@ Canonical `effectify-cjson/1`, UTF-8/LF, POSIX paths, sorted contributions and e
 
 Unit proves schemas, conflicts, ownership, digests, Layers and exits; integration proves rollback/recovery, plugin gates, streams and channels. E2E uses external `fs.mkdtemp`, isolated Verdaccio, minimal environment, isolated Nx/pnpm state, frozen install, then nested graph/test/typecheck/build, Todo CRUD/events, regeneration and zero-diff. Finalizers clean every exit; evidence retains argv, exits, digests and cleanup diagnostics. Showcase CI compares public-CLI regeneration without rewriting.
 
-| Threat boundary | Applicability and RED requirement |
-|---|---|
-| Documentation-like paths | Applicable: executable mode is allowed only for catalog-declared bin outputs; `requirements.txt`, `CMakeLists.txt`, executable MD/MDX and `README.sh` remain non-executable or fail planning. |
-| Git repository / commit / push / PR | N/A: generation, diff and delivery invoke no Git/VCS automation. |
-| Tool subprocess | Applicable: fixed argv templates, contained absolute cwd, explicit environment, no shell. RED: spaces/metacharacters remain data; traversal, inherited env and shell forms fail; non-zero/signal/interruption are typed and finalized. |
+| Threat boundary                     | Applicability and RED requirement                                                                                                                                                                                                      |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Documentation-like paths            | Applicable: executable mode is allowed only for catalog-declared bin outputs; `requirements.txt`, `CMakeLists.txt`, executable MD/MDX and `README.sh` remain non-executable or fail planning.                                          |
+| Git repository / commit / push / PR | N/A: generation, diff and delivery invoke no Git/VCS automation.                                                                                                                                                                       |
+| Tool subprocess                     | Applicable: fixed argv templates, contained absolute cwd, explicit environment, no shell. RED: spaces/metacharacters remain data; traversal, inherited env and shell forms fail; non-zero/signal/interruption are typed and finalized. |
 
 Feature-chain boundaries: installable four-project skeleton; executable add/list; CRUD/events plus evolution; trusted replay CLI; isolated E2E/showcase. Each ends with output or executable proof below 3,000 lines; infrastructure-only children are rejected.
 
