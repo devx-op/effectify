@@ -1,0 +1,23 @@
+{
+  "name": "@effectify/app-builder-cli",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/app-builder/cli/src",
+  "projectType": "library",
+  "tags": ["app-builder", "layer:entrypoint", "npm:public"],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "options": {
+        "main": "packages/app-builder/cli/src/index.ts",
+        "tsConfig": "packages/app-builder/cli/tsconfig.lib.json",
+        "outputPath": "packages/app-builder/cli/dist"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["^build"],
+      "options": { "command": "tsc --noEmit -p tsconfig.lib.json", "cwd": "packages/app-builder/cli" }
+    },
+    "lint": { "executor": "nx-oxlint:lint", "options": { "lintFilePatterns": ["packages/app-builder/cli/**/*.ts"] } }
+  }
+}

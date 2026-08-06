@@ -1,0 +1,29 @@
+{
+  "canonicalJson": "effectify-cjson/1",
+  "catalogVersion": "effectify.todo-catalog/1",
+  "formatVersion": "effectify.todo-plan/1",
+  "intent": {
+    "capabilities": ["todo.cli-presentation", "todo.community-labels", "todo.events"],
+    "preset": "todo",
+    "version": "effectify.creation-intent/1"
+  },
+  "mutation": "none",
+  "orderedCapabilities": [
+    "todo.workspace",
+    "todo.model",
+    "todo.port",
+    "todo.use-case",
+    "todo.file-adapter",
+    "todo.cli-presentation",
+    "todo.community-labels",
+    "todo.events"
+  ],
+  "selectedPlugins": [
+    {
+      "capability": "todo.community-labels",
+      "exportName": "todoLabels",
+      "packageName": "@effectify-community/todo-labels",
+      "packageVersion": "1.0.0"
+    }
+  ]
+}

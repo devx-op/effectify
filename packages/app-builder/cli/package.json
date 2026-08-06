@@ -1,0 +1,20 @@
+{
+  "name": "@effectify/app-builder-cli",
+  "version": "0.0.0",
+  "type": "module",
+  "dependencies": {
+    "@effectify/app-builder-generation": "workspace:*",
+    "tslib": "catalog:"
+  },
+  "peerDependencies": {
+    "effect": "catalog:"
+  },
+  "exports": {
+    ".": {
+      "@effectify/source": "./src/index.ts",
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js",
+      "default": "./dist/src/index.js"
+    }
+  }
+}

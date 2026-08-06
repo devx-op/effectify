@@ -33,8 +33,8 @@ R01–R17/S01–S32 are ordered below; T1/T2 are mandatory RED tests. PR 07 defi
 
 ## Phase 1: Catalog Plan (PR 01)
 
-- [ ] 1.1 RED `packages/app-builder/generation/tests/planner.test.ts`: R01/R02/R05 S01–S04,S09; reject selectors before mutation.
-- [ ] 1.2 GREEN/REFACTOR `packages/app-builder/generation/src/{intent,catalog,planner}.ts`, `packages/app-builder/cli/src/plan.ts`: canonical Todo plan; retain `contracts`/`execution` and PR #104.
+- [x] 1.1 RED `packages/app-builder/generation/tests/planner.test.ts`: R01/R02/R05 S01–S04,S09; reject selectors before mutation.
+- [x] 1.2 GREEN/REFACTOR `packages/app-builder/generation/src/{intent,catalog,planner}.ts`, `packages/app-builder/cli/src/plan.ts`: canonical Todo plan; retain `contracts`/`execution` and PR #104.
 
 ## Phase 2: Generate Topology (PR 02)
 
