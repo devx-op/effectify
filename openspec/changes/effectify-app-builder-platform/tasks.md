@@ -4,14 +4,14 @@
 
 ## Review Workload Forecast
 
-| Field | Value |
-|---|---|
-| Estimate | 12–14k program |
-| Budget risk | High |
-| Chained PRs | Yes |
-| Split | Children |
-| Strategy | ask-on-risk |
-| Chain | pending |
+| Field       | Value          |
+| ----------- | -------------- |
+| Estimate    | 12–14k program |
+| Budget risk | High           |
+| Chained PRs | Yes            |
+| Split       | Children       |
+| Strategy    | ask-on-risk    |
+| Chain       | pending        |
 
 Decision needed before apply: Yes
 Chained PRs recommended: Yes

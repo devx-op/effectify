@@ -7,12 +7,12 @@ Astro/Starlight (`apps/docs`) + Solid island → contracts/planner → signed in
 CLI/tools → executor → plugin worker/broker → Nx Tree → owned workspace
 ```
 
-| Project | Runtime / dependency rule |
-|---|---|
-| `packages/app-builder/{contracts,planner,preview-protocol,solid-builder}` | Browser-safe `/builder` island |
-| `packages/app-builder/{execution,nx-plugin,cli,plugin-worker,registry,blueprints}` | Node-only |
-| `packages/app-builder/plugin-sdk`, `packages/plugin-*` | SDK; no CLI dependency |
-| `apps/{registry-worker,golden-react-router-order}`, `apps/docs` | Registry/golden/web host |
+| Project                                                                            | Runtime / dependency rule      |
+| ---------------------------------------------------------------------------------- | ------------------------------ |
+| `packages/app-builder/{contracts,planner,preview-protocol,solid-builder}`          | Browser-safe `/builder` island |
+| `packages/app-builder/{execution,nx-plugin,cli,plugin-worker,registry,blueprints}` | Node-only                      |
+| `packages/app-builder/plugin-sdk`, `packages/plugin-*`                             | SDK; no CLI dependency         |
+| `apps/{registry-worker,golden-react-router-order}`, `apps/docs`                    | Registry/golden/web host       |
 
 `@effectify/plugin-tanstack-solid` stays unrelated/experimental. Identity: `<workspace>-<context>-<layer>` plus `scope:*`, `layer:contracts|domain|application|infrastructure|presentation`, `runtime:neutral|browser|node`, `visibility:public|private`. Nx allows cross-context public contracts, inward adapters, no browser→Node imports.
 
@@ -63,33 +63,33 @@ Vertical seams: schema; CLI verb; state transition; generator+fixture; adoption 
 
 ## Decisions
 
-| Choice | Rationale / rejected alternative |
-|---|---|
-| Starlight/Solid | No standalone builder |
-| Tree/workers | No direct/in-process writes |
-| Typed IPC | No flattened errors |
-| Alchemy adapter | No frozen provider API |
-| Effect SQL v1 | No Prisma/Drizzle v1 |
+| Choice          | Rationale / rejected alternative |
+| --------------- | -------------------------------- |
+| Starlight/Solid | No standalone builder            |
+| Tree/workers    | No direct/in-process writes      |
+| Typed IPC       | No flattened errors              |
+| Alchemy adapter | No frozen provider API           |
+| Effect SQL v1   | No Prisma/Drizzle v1             |
 
 ## Threat matrix
 
-| Boundary | Applicability; safe/failure behavior; planned RED tests |
-|---|---|
+| Boundary                 | Applicability; safe/failure behavior; planned RED tests                                                                                  |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | Documentation-like paths | Applicable: data unless execution permission; otherwise deny. RED: `requirements.txt`, `CMakeLists.txt`, executable MD/MDX, `README.sh`. |
-| Git repository selection | Applicable: canonical root only; reject traversal/alternate repo. RED: `git -C`, relative, absolute selectors. |
-| Commit state | N/A: no commit automation. |
-| Push state | N/A: no push automation. |
-| PR commands | N/A: no PR automation. |
+| Git repository selection | Applicable: canonical root only; reject traversal/alternate repo. RED: `git -C`, relative, absolute selectors.                           |
+| Commit state             | N/A: no commit automation.                                                                                                               |
+| Push state               | N/A: no push automation.                                                                                                                 |
+| PR commands              | N/A: no PR automation.                                                                                                                   |
 
 ## Requirement traceability
 
-| Capability | Requirement groups → design |
-|---|---|
-| Planning/execution | Protocol→schemas; replay→hash-bound plan; approval/lock/recovery→state/journal; callbacks/privacy→run store+default-on analytics+separate diagnostics |
-| Workspace lifecycle | Ownership→Tree; adoption→classification; DDD→tagged projects; ledgers→manifest/migration DAG; testing→new Effect Vitest/adopted runner; updates→hash gates |
-| Plugin/marketplace | Parity→SDK/manifest; isolation→broker; authority→daily validation/signing; lifecycle→pins+impact approval+identity/validation/no-expansion automation; revocation→live feed |
-| Builder/blueprints | Planner→execution/editing/hosting exclusions+outcomes; preview→labels/local authority; URLs→private intent; blueprints→non-expiry+inspection+diff approval+pin/signature/revocation gates |
-| Golden platform | Preset/auth→profile+Hatchet/magic/UI constraints; DDD→Nx; persistence→SQL/seam; topology→one-app/native/RSC/Alchemy; certification/docs→CI/Starlight; maturity/tests→experimental Solid+runner defaults |
+| Capability          | Requirement groups → design                                                                                                                                                                             |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Planning/execution  | Protocol→schemas; replay→hash-bound plan; approval/lock/recovery→state/journal; callbacks/privacy→run store+default-on analytics+separate diagnostics                                                   |
+| Workspace lifecycle | Ownership→Tree; adoption→classification; DDD→tagged projects; ledgers→manifest/migration DAG; testing→new Effect Vitest/adopted runner; updates→hash gates                                              |
+| Plugin/marketplace  | Parity→SDK/manifest; isolation→broker; authority→daily validation/signing; lifecycle→pins+impact approval+identity/validation/no-expansion automation; revocation→live feed                             |
+| Builder/blueprints  | Planner→execution/editing/hosting exclusions+outcomes; preview→labels/local authority; URLs→private intent; blueprints→non-expiry+inspection+diff approval+pin/signature/revocation gates               |
+| Golden platform     | Preset/auth→profile+Hatchet/magic/UI constraints; DDD→Nx; persistence→SQL/seam; topology→one-app/native/RSC/Alchemy; certification/docs→CI/Starlight; maturity/tests→experimental Solid+runner defaults |
 
 ## Gate
 

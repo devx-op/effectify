@@ -365,15 +365,15 @@ Because Alchemy evolves rapidly, the official plugin and presets pin validated v
 
 ## Initial Official Plugins and Maturity
 
-| Plugin | v1 maturity intent | Notes |
-| --- | --- | --- |
-| `@effectify/plugin-react-router` | Supported golden path | Initial preset uses isomorphic SSR. |
-| `@effectify/plugin-effect-sql` | Supported default | Native PostgreSQL with pinned Effect v4 APIs. |
-| `@effectify/plugin-better-auth` | Supported golden path | Initial preset includes email/password, verification, recovery, sessions, organizations, memberships, roles, and basic user administration. |
-| `@effectify/plugin-better-auth-ui` | Supported golden path for React Router | Provider-owned profile; no implied native UI. |
-| `@effectify/plugin-hatchet` | Supported optional integration | Effect-first workflow boundary, independently selectable. |
-| `@effectify/plugin-alchemy` | Supported golden path with pinned matrix | Required by the initial Cloudflare preset; optional in custom compositions; RSC explicitly experimental. |
-| `@effectify/plugin-tanstack-solid` | Experimental | Must not be presented as stable until official upstream evidence and golden compatibility tests justify promotion. |
+| Plugin                             | v1 maturity intent                       | Notes                                                                                                                                       |
+| ---------------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@effectify/plugin-react-router`   | Supported golden path                    | Initial preset uses isomorphic SSR.                                                                                                         |
+| `@effectify/plugin-effect-sql`     | Supported default                        | Native PostgreSQL with pinned Effect v4 APIs.                                                                                               |
+| `@effectify/plugin-better-auth`    | Supported golden path                    | Initial preset includes email/password, verification, recovery, sessions, organizations, memberships, roles, and basic user administration. |
+| `@effectify/plugin-better-auth-ui` | Supported golden path for React Router   | Provider-owned profile; no implied native UI.                                                                                               |
+| `@effectify/plugin-hatchet`        | Supported optional integration           | Effect-first workflow boundary, independently selectable.                                                                                   |
+| `@effectify/plugin-alchemy`        | Supported golden path with pinned matrix | Required by the initial Cloudflare preset; optional in custom compositions; RSC explicitly experimental.                                    |
+| `@effectify/plugin-tanstack-solid` | Experimental                             | Must not be presented as stable until official upstream evidence and golden compatibility tests justify promotion.                          |
 
 Additional frameworks and native/desktop targets remain plugin candidates whose maturity is registry evidence, not a core promise. `tanstack-native` remains community prototype evidence and Native SDK mobile remains experimental.
 
@@ -440,18 +440,18 @@ No unresolved product decisions currently block explicit human review of this PR
 
 ## Source Register and Research Evidence
 
-| Source | Evidence status | Product implication |
-| --- | --- | --- |
-| Scott Wlaschin, *Domain Modeling Made Functional*, ISBN 978-1-68050-254-1, B5.0 (2017-11-20) | Authoritative user-supplied text; publisher metadata confirms ISBN, date, and content-complete status. | Functional DDD principles constrain generated architecture but do not prescribe a copied folder tree. |
-| [Native SDK introduction](https://native-sdk.dev/introduction) and [platform matrix](https://native-sdk.dev/platform-support) | Canonical documentation for `vercel-labs/native`; pre-1.0, with desktop more mature and mobile experimental. | Candidate plugin evidence, not universal-mobile v1 support. |
-| [`NathanWalker/tanstack-native`](https://github.com/NathanWalker/tanstack-native) | Community prototype, not official TanStack/NativeScript evidence; one commit and no releases at validation. | Experiment only; cannot establish supported v1 compatibility. |
-| [Alchemy getting started](https://alchemy.run/getting-started/) and `.effect-reference/alchemy/` | Canonical docs/source; evolving release channel and current main evidence. | Pinned, topology-aware plugin required by the initial Cloudflare preset and optional in custom compositions; no blanket provider claims. |
-| [Better Auth UI](https://better-auth-ui.com/) | Canonical independent MIT project docs; React/Solid package and copied registry surfaces; no evidenced native UI. | Framework-specific official profile, not universal UI support. |
-| [Nx local generators](https://nx.dev/docs/kb/local-generators) | Official Nx documentation; local plugins and in-memory `Tree` generators are preferred. | Nx generators are deterministic execution primitives, not the product model. |
-| [shadcn registry](https://ui.shadcn.com/docs/registry) and [CLI](https://ui.shadcn.com/docs/cli) | Official source-distribution model with init/add, no-overwrite defaults, dry-run, and diff. | Inspires inspectable source installation while Effectify owns its schema and lifecycle. |
-| Herdr, commit `1491b7dd9c992ef0ad2b763f3e450befaf25c47f` | Source-traced topic discovery, Cloudflare Worker/R2 snapshots, blacklist, and local install behavior. | Reuse candidate-feed/snapshot ideas; add typed validation, moderation, permissions, provenance, and registry authority. |
-| Effect v4 upstream commit `96ced895a07f89b2dd03c3e470884f7e25063696` | Verified canonical source/tests for beta.102 SQL/schema APIs. | Supports native PostgreSQL v1 design with pinned-version API-evolution risk. |
-| `drizzle-orm/effect-schema` and `drizzle-orm/effect-postgres` | Official integration direction verified as table → Effect Schema. | Requires Effectify-owned Effect Schema-first descriptors for v1.2 reverse generation/validation. |
+| Source                                                                                                                        | Evidence status                                                                                                   | Product implication                                                                                                                      |
+| ----------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Scott Wlaschin, _Domain Modeling Made Functional_, ISBN 978-1-68050-254-1, B5.0 (2017-11-20)                                  | Authoritative user-supplied text; publisher metadata confirms ISBN, date, and content-complete status.            | Functional DDD principles constrain generated architecture but do not prescribe a copied folder tree.                                    |
+| [Native SDK introduction](https://native-sdk.dev/introduction) and [platform matrix](https://native-sdk.dev/platform-support) | Canonical documentation for `vercel-labs/native`; pre-1.0, with desktop more mature and mobile experimental.      | Candidate plugin evidence, not universal-mobile v1 support.                                                                              |
+| [`NathanWalker/tanstack-native`](https://github.com/NathanWalker/tanstack-native)                                             | Community prototype, not official TanStack/NativeScript evidence; one commit and no releases at validation.       | Experiment only; cannot establish supported v1 compatibility.                                                                            |
+| [Alchemy getting started](https://alchemy.run/getting-started/) and `.effect-reference/alchemy/`                              | Canonical docs/source; evolving release channel and current main evidence.                                        | Pinned, topology-aware plugin required by the initial Cloudflare preset and optional in custom compositions; no blanket provider claims. |
+| [Better Auth UI](https://better-auth-ui.com/)                                                                                 | Canonical independent MIT project docs; React/Solid package and copied registry surfaces; no evidenced native UI. | Framework-specific official profile, not universal UI support.                                                                           |
+| [Nx local generators](https://nx.dev/docs/kb/local-generators)                                                                | Official Nx documentation; local plugins and in-memory `Tree` generators are preferred.                           | Nx generators are deterministic execution primitives, not the product model.                                                             |
+| [shadcn registry](https://ui.shadcn.com/docs/registry) and [CLI](https://ui.shadcn.com/docs/cli)                              | Official source-distribution model with init/add, no-overwrite defaults, dry-run, and diff.                       | Inspires inspectable source installation while Effectify owns its schema and lifecycle.                                                  |
+| Herdr, commit `1491b7dd9c992ef0ad2b763f3e450befaf25c47f`                                                                      | Source-traced topic discovery, Cloudflare Worker/R2 snapshots, blacklist, and local install behavior.             | Reuse candidate-feed/snapshot ideas; add typed validation, moderation, permissions, provenance, and registry authority.                  |
+| Effect v4 upstream commit `96ced895a07f89b2dd03c3e470884f7e25063696`                                                          | Verified canonical source/tests for beta.102 SQL/schema APIs.                                                     | Supports native PostgreSQL v1 design with pinned-version API-evolution risk.                                                             |
+| `drizzle-orm/effect-schema` and `drizzle-orm/effect-postgres`                                                                 | Official integration direction verified as table → Effect Schema.                                                 | Requires Effectify-owned Effect Schema-first descriptors for v1.2 reverse generation/validation.                                         |
 
 ## Explicit Approval Checklist
 

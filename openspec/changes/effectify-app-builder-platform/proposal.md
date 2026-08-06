@@ -7,6 +7,7 @@ Enable developers to create and evolve Effect/Nx applications without surrenderi
 ## Scope
 
 ### In Scope
+
 - Deterministic plans, Nx generation, typed JSON tools, resumable approvals, provenance, and migrations.
 - A plugin-first core for framework, transport, persistence, auth, UI, workflow, and deployment.
 - A planner-only builder, dual previews, signed blueprints, and governed marketplace.
@@ -14,6 +15,7 @@ Enable developers to create and evolve Effect/Nx applications without surrenderi
 - Official plugins: React Router, native Effect SQL, Better Auth, Better Auth UI, Hatchet, Alchemy, and experimental TanStack Solid.
 
 ### Out of Scope
+
 - Hosted editing/execution, managed hosting, browser-executed marketplace plugins, universal framework support, or distributed provider transactions.
 - Silent substitution, permission expansion, destructive migration, or overwrite of user-edited source.
 - Drizzle or Prisma in v1. Native Effect PostgreSQL is the v1 default; `@effectify/drizzle` follows in v1.2, while Prisma remains beyond v1.
@@ -21,6 +23,7 @@ Enable developers to create and evolve Effect/Nx applications without surrenderi
 ## Capabilities
 
 ### New Capabilities
+
 - `platform-planning-execution`: Shared capability, plan, tool, approval, and callback contracts.
 - `workspace-generation-lifecycle`: Greenfield/init/incremental Nx generation, provenance, updates, and migrations.
 - `plugin-platform-marketplace`: Isolated plugins, permissions, evidence, registry governance, and lifecycle.
@@ -28,6 +31,7 @@ Enable developers to create and evolve Effect/Nx applications without surrenderi
 - `official-golden-platform`: Supported preset, functional DDD output, validation, and documentation.
 
 ### Modified Capabilities
+
 None; no canonical OpenSpec capabilities exist yet.
 
 ## Approach
@@ -36,19 +40,19 @@ Share one typed model across CLI, generators, tools, plugins, builder, and lifec
 
 ## Affected Areas
 
-| Area | Impact | Description |
-|---|---|---|
+| Area        | Impact       | Description                                                                                                                   |
+| ----------- | ------------ | ----------------------------------------------------------------------------------------------------------------------------- |
 | `packages/` | New/Modified | Platform/plugins reuse React Router, Better Auth, Hatchet, Loom, and domain precedents; `@effectify/prisma` stays outside v1. |
-| `apps/docs` | Modified | Builder, marketplace, and generated reference. |
-| `apps/` | New | Versioned golden/reference applications. |
+| `apps/docs` | Modified     | Builder, marketplace, and generated reference.                                                                                |
+| `apps/`     | New          | Versioned golden/reference applications.                                                                                      |
 
 ## Risks
 
-| Risk | Likelihood | Mitigation |
-|---|---|---|
-| Support/API drift | High | Evidence states, pinned matrices, golden regeneration. |
-| Source/supply-chain harm | High | Diff approval, divergence checks, isolated workers, signed releases, revocation. |
-| Review overload | High | `ask-on-risk`; tasks must split work near the 400-line budget or request an explicit exception. |
+| Risk                     | Likelihood | Mitigation                                                                                      |
+| ------------------------ | ---------- | ----------------------------------------------------------------------------------------------- |
+| Support/API drift        | High       | Evidence states, pinned matrices, golden regeneration.                                          |
+| Source/supply-chain harm | High       | Diff approval, divergence checks, isolated workers, signed releases, revocation.                |
+| Review overload          | High       | `ask-on-risk`; tasks must split work near the 400-line budget or request an explicit exception. |
 
 ## Rollback Plan
 
