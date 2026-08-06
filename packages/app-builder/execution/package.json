@@ -4,6 +4,7 @@
   "type": "module",
   "dependencies": {
     "@effectify/app-builder-contracts": "workspace:*",
+    "koffi": "3.1.4",
     "tslib": "catalog:"
   },
   "peerDependencies": {

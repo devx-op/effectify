@@ -4,11 +4,14 @@ import type {
   DraftStore,
   DurableFileSystem,
   LifecycleFailure,
+  LockRecoveryAuthority,
   ManagedPath,
   Recovery,
   RunLifecycle,
+  RunExecutor,
   RunStore,
   TransitionEvidence,
+  WorkspaceLock,
 } from "../src/index.js"
 
 export type PublicNamespaceAllowlist = readonly [
@@ -16,10 +19,13 @@ export type PublicNamespaceAllowlist = readonly [
   typeof TransitionEvidence,
   typeof AutomaticPolicy,
   typeof LifecycleFailure,
+  typeof WorkspaceLock,
+  typeof LockRecoveryAuthority,
   typeof ManagedPath,
   typeof DurableFileSystem,
   typeof DraftStore,
   typeof RunStore,
+  typeof RunExecutor,
   typeof Recovery,
   typeof Cleanup,
 ]

@@ -40,6 +40,17 @@ it("rejects traversal, separators, and malformed encoded identifiers before reso
   expectFailure(ManagedPath.decodeIdentifier("r1", "d1-d3Jvbmc"), "InvalidIdentifier")
 })
 
+it("derives the fixed workspace lock directory beneath the validated managed root", () => {
+  const layout = success(ManagedPath.workspaceLockLayout("/workspace"))
+
+  expect(layout.workspace).toBe("/workspace")
+  expect(layout.root).toBe("/workspace/.effectify/app-builder/v1")
+  expect(layout.lockDirectory).toEqual({
+    absolute: "/workspace/.effectify/app-builder/v1/workspace.lock",
+    relative: ".effectify/app-builder/v1/workspace.lock",
+  })
+})
+
 it("fails closed for links, non-directories, device changes, and group or world readable entries", () => {
   const privateDirectory = { type: "directory", device: 7, mode: 0o700 } as const
   const privateFile = { type: "file", device: 7, mode: 0o600 } as const

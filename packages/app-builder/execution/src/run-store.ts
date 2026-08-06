@@ -1,6 +1,6 @@
 import { Buffer } from "node:buffer"
 import { randomUUID } from "node:crypto"
-import { join } from "node:path"
+import { join, resolve } from "node:path"
 import { CanonicalJson } from "@effectify/app-builder-contracts"
 import * as Context from "effect/Context"
 import * as Effect from "effect/Effect"
@@ -11,6 +11,8 @@ import type * as Crypto from "effect/Crypto"
 import * as DurableFileSystem from "./durable-file-system.js"
 import * as RunLifecycle from "./lifecycle.js"
 import * as PersistenceFormat from "./persistence-format.js"
+import * as Ownership from "./ownership.js"
+import * as WorkspaceLock from "./workspace-lock.js"
 
 export interface ExpectedTail {
   readonly revision: number
@@ -19,6 +21,7 @@ export interface ExpectedTail {
 
 export interface CommitInput {
   readonly workspace: string
+  readonly ownership: Ownership.WorkspaceOwnership
   readonly expectedTail: ExpectedTail
   readonly journal: PersistenceFormat.Encoded<PersistenceFormat.Journal>
   readonly snapshot: PersistenceFormat.Encoded<PersistenceFormat.Snapshot>
@@ -51,6 +54,7 @@ export type StoreFailure =
   | DurableFileSystem.DurableFailure
   | PersistenceFormat.PersistenceFormatFailure
   | TailConflict
+  | WorkspaceLock.OwnershipRejected
 
 export interface RunStoreService {
   readonly commit: (
@@ -209,6 +213,13 @@ const firstJournalCorresponds = (journal: PersistenceFormat.Journal): boolean =>
   )
 }
 
+const assertOwnership = (input: CommitInput): Effect.Effect<void, WorkspaceLock.OwnershipRejected> => {
+  const workspace = resolve(input.workspace)
+  return Ownership.isActiveFor(input.ownership, workspace, WorkspaceLock.workspaceLockPath(workspace))
+    ? Effect.void
+    : Effect.fail(new WorkspaceLock.OwnershipRejected({ reason: "Inactive" }))
+}
+
 const commitDurably = Effect.fn("AppBuilder.RunStore.commit")(function* (input: CommitInput) {
   const journal = yield* verifiedJournal(input.journal)
   const snapshot = yield* verifiedSnapshot(input.snapshot)
@@ -287,7 +298,8 @@ const safeCommitAnnotations = (input: CommitInput) =>
   })
 
 const commitEffect = (input: CommitInput) =>
-  commitDurably(input).pipe(
+  assertOwnership(input).pipe(
+    Effect.andThen(commitDurably(input)),
     Effect.tap((receipt) =>
       Effect.logDebug("run-store commit").pipe(Effect.annotateLogs({ outcome: receipt.snapshot })),
     ),

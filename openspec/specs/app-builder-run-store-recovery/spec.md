@@ -56,13 +56,19 @@ Immutable versioned per-revision journals MUST be authoritative. Each MUST conta
 
 ### Requirement: Truthful Optimistic Commit
 
-The system MUST validate the authoritative tail and reject revision, predecessor, payload, or request-identity conflicts. Success SHALL require restrictive temporary creation, complete write, file durability, immutable no-replace publication, and directory durability. Unsupported or indeterminate stages MUST fail closed, never claim cross-process locking.
+The system MUST require matching scoped workspace ownership authority for every commit, validate the authoritative tail, and reject missing or wrong ownership plus revision, predecessor, payload, or request-identity conflicts. Success SHALL require restrictive temporary creation, complete write, file durability, immutable no-replace publication, and directory durability. Unsupported or indeterminate stages MUST fail closed, never claim cross-process locking.
 
 #### Scenario: Tail conflict
 
 - GIVEN an expected revision or digest differs
 - WHEN commit is requested
 - THEN a typed conflict MUST result without segment replacement
+
+#### Scenario: Missing ownership
+
+- GIVEN no matching scoped ownership authority
+- WHEN commit is requested
+- THEN a typed authorization failure MUST result and nothing is written
 
 #### Scenario: Interrupted commit
 
@@ -88,7 +94,7 @@ Recovery MUST validate filename identity, schema, version, digests, references, 
 
 ### Requirement: Non-Executable Handoff and Retention
 
-A `ResumeCandidate` MUST be non-executable and name unmet lock and executor/idempotency authorities. Evidence MUST remain through closure; explicit cleanup MAY remove only validated terminal state. Recovery MUST NOT mutate workspaces, execute, lock, repair, salvage, migrate, quarantine, clean implicitly, or require a database.
+A `ResumeCandidate` MUST be non-executable and name unmet lock and executor/idempotency authorities. Evidence MUST remain through closure. Under matching live scoped workspace ownership authority, cleanup MAY prepare only validated terminal evidence for later deletion; it MUST delete only after durable lock release and only if the prepared terminal evidence remains unchanged. Recovery MUST NOT mutate workspaces, execute, lock, repair, salvage, migrate, quarantine, clean implicitly, use tombstone/rename recovery, or expose public cleanup authority. It MUST NOT require a database.
 
 #### Scenario: Candidate handoff
 
@@ -102,12 +108,36 @@ A `ResumeCandidate` MUST be non-executable and name unmet lock and executor/idem
 - WHEN cleanup is requested
 - THEN all evidence MUST be preserved
 
+#### Scenario: Owned cleanup
+
+- GIVEN validated terminal state and matching scoped authority
+- WHEN explicit cleanup is requested
+- THEN it MAY remove only the validated terminal state
+
+#### Scenario: Release failure
+
+- GIVEN prepared terminal evidence and a failed or interrupted lock release
+- WHEN finalization ends
+- THEN deletion MUST NOT occur and evidence MUST remain
+
+#### Scenario: Changed terminal evidence
+
+- GIVEN release succeeds and terminal evidence changes before deletion
+- WHEN deletion compares its preparation
+- THEN it MUST preserve evidence and report a closed failure
+
 ### Requirement: Strict TDD Evidence Matrix
 
-Deterministic Nx/pnpm tests MUST cover every crash boundary, validation class, replay law, path/permission defense, recovery outcome, and cleanup guard without failed-recovery mutation.
+Deterministic Nx/pnpm tests MUST cover every crash boundary, validation class, replay law, path/permission defense, recovery outcome, cleanup guard, cancellation proof, and release-before-delete ordering without failed-recovery mutation. Reproducible RED, GREEN, TRIANGULATE, and SAFETY NET evidence MUST distinguish interruption-only settlement, mixed/indeterminate outcomes, release failure, cleanup failure, and changed evidence. Coverage MUST include `run-executor.ts`, `workspace-lock.ts`, `cleanup.ts`, and every corrected helper without weakening existing thresholds. The follow-up SHOULD target no more than 400 changed lines; an overage MUST be recorded and MUST NOT omit required proof.
 
 #### Scenario: Crash matrix
 
 - GIVEN each durable commit boundary
 - WHEN interruption is injected
 - THEN recovery MUST yield its specified truthful outcome
+
+#### Scenario: Finalization proof matrix
+
+- GIVEN the corrected cancellation, release, and deletion paths
+- WHEN deterministic RED/GREEN/TRIANGULATE/SAFETY NET and coverage checks run
+- THEN every corrected path and outcome distinction MUST be proven

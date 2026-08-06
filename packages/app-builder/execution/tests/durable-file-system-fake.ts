@@ -19,6 +19,7 @@ export interface FakeDurableFileSystem {
   readonly operations: Ref.Ref<ReadonlyArray<string>>
   readonly published: Deferred.Deferred<string>
   readonly contents: ReadonlyMap<string, Uint8Array>
+  readonly setContents: (path: string, bytes: Uint8Array) => void
 }
 
 const failure = (operation: string): DurableFileSystem.DurableFileSystemFailure =>
@@ -40,10 +41,35 @@ export const makeFakeDurableFileSystem = (options: FakeOptions = {}): Effect.Eff
       noReplacePublish: true,
       fileSync: true,
       directorySync: true,
+      atomicPrivateDirectory: true,
+      compareMetadataDirectoryMutation: true,
+      compareTreeDirectoryMutation: true,
       ...options.capabilities,
     }
     const record = (operation: string) => Ref.update(operations, (current) => Object.freeze([...current, operation]))
     const shouldCrash = (stage: CrashStage) => options.crashAt === stage
+    const tree = (path: string): ReadonlyArray<DurableFileSystem.TreeEntry> =>
+      Array.from(entries.entries(), ([candidate, entry]) =>
+        candidate === path || candidate.startsWith(`${path}/`)
+          ? { path: candidate, type: entry.type, ...(entry.type === "file" ? { bytes: contents.get(candidate) } : {}) }
+          : undefined,
+      )
+        .filter((entry): entry is DurableFileSystem.TreeEntry => entry !== undefined)
+        .sort((left, right) => left.path.localeCompare(right.path))
+    const sameTree = (
+      left: ReadonlyArray<DurableFileSystem.TreeEntry>,
+      right: ReadonlyArray<DurableFileSystem.TreeEntry>,
+    ) =>
+      left.length === right.length &&
+      left.every(
+        (entry, index) =>
+          entry.path === right[index]?.path &&
+          entry.type === right[index]?.type &&
+          (entry.bytes === undefined
+            ? right[index]?.bytes === undefined
+            : entry.bytes.length === right[index]?.bytes?.length &&
+              entry.bytes.every((byte, byteIndex) => byte === right[index]?.bytes?.[byteIndex])),
+      )
     const fileSystem: DurableFileSystem.DurableFileSystemService = {
       capabilities,
       inspect: (path) => record(`inspect:${path}`).pipe(Effect.as(entries.get(path))),
@@ -65,6 +91,36 @@ export const makeFakeDurableFileSystem = (options: FakeOptions = {}): Effect.Eff
       createDirectory: (path, mode) =>
         record(`mkdir:${path}`).pipe(
           Effect.tap(() => Effect.sync(() => entries.set(path, { type: "directory", device: 1, mode }))),
+        ),
+      createPrivateDirectory: (path) =>
+        record(`createPrivateDirectory:${path}`).pipe(
+          Effect.andThen(() =>
+            entries.has(path)
+              ? Effect.fail(failure("createPrivateDirectory"))
+              : Effect.sync(() => {
+                  const entry = { type: "directory" as const, device: 1, mode: DurableFileSystem.PrivateDirectoryMode }
+                  entries.set(path, entry)
+                  return entry
+                }),
+          ),
+          Effect.map((entry) => ({
+            sync: record(`directorySync:${path}`),
+            close: record(`directoryClose:${path}`),
+            rollback: record(`rollbackPrivateDirectory:${path}`).pipe(
+              Effect.flatMap(() => {
+                if (entries.get(path) !== entry) return Effect.succeed(false)
+                return Effect.sync(() => {
+                  for (const candidate of entries.keys()) {
+                    if (candidate === path || candidate.startsWith(`${path}/`)) {
+                      entries.delete(candidate)
+                      contents.delete(candidate)
+                    }
+                  }
+                  return true
+                })
+              }),
+            ),
+          })),
         ),
       createExclusive: (path, mode) =>
         record(`create:${path}`).pipe(
@@ -128,6 +184,75 @@ export const makeFakeDurableFileSystem = (options: FakeOptions = {}): Effect.Eff
             }),
           ),
         ),
+      captureTree: (path) => record(`captureTree:${path}`).pipe(Effect.as(tree(path))),
+      removeTreeIfUnchanged: (path, expected) =>
+        record(`removeTreeIfUnchanged:${path}`).pipe(
+          Effect.flatMap(() =>
+            sameTree(tree(path), expected)
+              ? Effect.sync(() => {
+                  for (const candidate of entries.keys()) {
+                    if (candidate === path || candidate.startsWith(`${path}/`)) {
+                      entries.delete(candidate)
+                      contents.delete(candidate)
+                    }
+                  }
+                  return true
+                })
+              : Effect.succeed(false),
+          ),
+        ),
+      replacePrivateDirectoryIfMetadataUnchanged: (
+        directoryPath,
+        metadataPath,
+        expectedMetadata,
+        replacementMetadata,
+      ) =>
+        record(`replacePrivateDirectoryIfMetadataUnchanged:${directoryPath}`).pipe(
+          Effect.flatMap(() => {
+            const current = contents.get(metadataPath)
+            const matches =
+              current !== undefined &&
+              current.length === expectedMetadata.length &&
+              current.every((byte, index) => byte === expectedMetadata[index])
+            if (!matches) return Effect.succeed(false)
+            return Effect.sync(() => {
+              for (const candidate of entries.keys()) {
+                if (candidate === directoryPath || candidate.startsWith(`${directoryPath}/`)) {
+                  entries.delete(candidate)
+                  contents.delete(candidate)
+                }
+              }
+              entries.set(directoryPath, {
+                type: "directory",
+                device: 1,
+                mode: DurableFileSystem.PrivateDirectoryMode,
+              })
+              entries.set(metadataPath, { type: "file", device: 1, mode: DurableFileSystem.PrivateFileMode })
+              contents.set(metadataPath, replacementMetadata)
+              return true
+            })
+          }),
+        ),
+      removePrivateDirectoryIfMetadataUnchanged: (directoryPath, metadataPath, expectedMetadata) =>
+        record(`removePrivateDirectoryIfMetadataUnchanged:${directoryPath}`).pipe(
+          Effect.flatMap(() => {
+            const current = contents.get(metadataPath)
+            const matches =
+              current !== undefined &&
+              current.length === expectedMetadata.length &&
+              current.every((byte, index) => byte === expectedMetadata[index])
+            if (!matches) return Effect.succeed(false)
+            return Effect.sync(() => {
+              for (const candidate of entries.keys()) {
+                if (candidate === directoryPath || candidate.startsWith(`${directoryPath}/`)) {
+                  entries.delete(candidate)
+                  contents.delete(candidate)
+                }
+              }
+              return true
+            })
+          }),
+        ),
     }
-    return { fileSystem, operations, published, contents }
+    return { fileSystem, operations, published, contents, setContents: (path, bytes) => contents.set(path, bytes) }
   })
