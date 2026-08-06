@@ -2,20 +2,20 @@
 
 ## Purpose
 
-Preserve PE3–4 requirements and the `app-builder-protocol-contracts` dependency without authorizing implementation. Contract records and identities are consumed, never redefined.
+Preserve completed PE3–4 and protocol/POSIX authorities and their evidence without authorizing implementation. Only the pending thin CLI child is superseded; product planning continues at the proposal-only `app-builder-golden-monorepo` change.
 
 ## Requirements
 
 ### Requirement: Tracker Boundary and Grandchild Ownership
 
-This tracker MUST NOT be applied. Delivery SHALL use grandchildren: `app-builder-run-lifecycle` (policy), `app-builder-run-store-recovery` (durability), `app-builder-run-lock-executor` (exclusive execution), then `app-builder-execution-cli` (product interface).
+This tracker MUST NOT be applied. `app-builder-run-lifecycle`, `app-builder-run-store-recovery`, and `app-builder-run-lock-executor` plus finalization are completed retained authorities. Completed protocol-contract children and verified POSIX/executable evidence are retained prerequisites. `app-builder-execution-cli` is superseded and MUST NOT be applied.
 
 #### Scenario: Tracker apply is requested
 
 - GIVEN this tracker has no implementation tasks
 - WHEN an apply operation targets it
 - THEN the operation MUST stop without mutation
-- AND direct work MUST be assigned to a proposed grandchild
+- AND the operation MUST direct product planning to `app-builder-golden-monorepo` without authorizing a later phase
 
 #### Scenario: Dependency is consumed
 
@@ -71,28 +71,40 @@ This tracker MUST NOT be applied. Delivery SHALL use grandchildren: `app-builder
 - WHEN finalization occurs
 - THEN owned resources MUST be released and non-idempotent mutation MUST NOT retry
 
-### Requirement: `effectify create` Interface Parity
+### Requirement: Superseded Thin CLI Boundary
 
-`app-builder-execution-cli` MUST use current Effect v4 `effect/unstable/cli` `Prompt` for `effectify create` without arguments. Wizard answers, complete flags, and declared defaults MUST resolve to one validated intent model. Non-interactive missing required input MUST fail before mutation; validated drafts MUST be resumable. JSON mode MUST reserve stdout for one machine envelope and route human terminal output elsewhere.
+The pending `app-builder-execution-cli` child is non-applicable and superseded by `app-builder-golden-monorepo`. It MUST NOT be proposed, specified, designed, tasked, applied, or merged. Its historical planned files and interface scenarios confer no implementation authority.
 
-#### Scenario: Equivalent interactive and flag input
+#### Scenario: Thin CLI work is requested
 
-- GIVEN equivalent wizard answers and complete flags
-- WHEN each invokes `effectify create`
-- THEN both MUST yield the same validated intent and defaults
+- GIVEN the old `app-builder-execution-cli` child is pending
+- WHEN any lifecycle or implementation action is requested for it
+- THEN the action MUST stop as superseded and perform no mutation
 
-#### Scenario: Automation input is incomplete
+#### Scenario: Golden planning continues
 
-- GIVEN non-interactive input omits a required value
-- WHEN `effectify create` is invoked in JSON mode
-- THEN it MUST emit one machine error envelope and perform no mutation
+- GIVEN the Golden proposal is approved
+- WHEN product planning resumes
+- THEN the next route MUST be `app-builder-golden-monorepo`
+- AND this tracker MUST NOT imply authorization for Golden specs, design, tasks, or implementation
 
-### Requirement: Deterministic and Bounded Delivery
+### Requirement: Evidence and Integration Tracker Preservation
 
-Each grandchild MUST expose typed errors and deterministic Effect-aware test seams for transitions, recovery, locks, cancellation, output, and retry bounds. Nx generation, web UI, analytics, plugin SDK, registry/marketplace, and broad scaffolding MUST remain excluded.
+PR #104 MUST remain a no-merge integration tracker. Completed child checkboxes, archived artifacts, verification reports, task evidence, commits, PR facts, and canonical specifications MUST remain unchanged and consumable by future Golden planning.
 
-#### Scenario: Proposed work widens scope
+#### Scenario: Tracker is respecified
 
-- GIVEN a proposed grandchild adds an excluded capability
-- WHEN its specification is reviewed
-- THEN the work MUST be rejected or split into a separately authorized change
+- GIVEN completed protocol, lifecycle, store/recovery, lock/executor/finalization, and POSIX/executable evidence
+- WHEN pending routing is updated
+- THEN only the obsolete thin CLI route SHALL be marked superseded
+- AND all completed evidence MUST remain intact
+
+### Requirement: Retained Deterministic Evidence
+
+Completed children MUST retain their typed errors and deterministic Effect-aware evidence for transitions, recovery, locks, cancellation, output, and retry bounds. This tracker MUST NOT reopen delivery or authorize Nx generation, web UI, analytics, plugin SDK, registry/marketplace, or broad scaffolding.
+
+#### Scenario: Tracker work is proposed
+
+- GIVEN retained evidence or an excluded capability would be changed through this tracker
+- WHEN the work is reviewed
+- THEN it MUST be rejected and routed to a separately authorized change

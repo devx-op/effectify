@@ -2,7 +2,7 @@
 
 ## Technical Approach
 
-This tracker is **non-applicable to apply**: it creates no runtime code or tasks. PE3–4 delivery is four strict-TDD grandchildren consuming `@effectify/app-builder-contracts`; contracts remain read-only. The architecture separates pure lifecycle authority, crash-consistent state, exclusive mutation, and the product adapter. Nx generation, web, plugins, analytics, registry/marketplace, and broad scaffolding are excluded.
+This tracker is **non-applicable to apply** and remains PR #104's no-merge integration record. Protocol, lifecycle, crash-consistent state, exclusive mutation/finalization, POSIX durability, and executable-slice authorities are completed prerequisites retained with their evidence. Only the pending thin `app-builder-execution-cli` plan is superseded by `app-builder-golden-monorepo` and MUST NOT be applied. The Golden remains proposal-only; no specs, design, tasks, or implementation are authorized here.
 
 ## Architecture Decisions
 
@@ -14,25 +14,27 @@ This tracker is **non-applicable to apply**: it creates no runtime code or tasks
 | Durability    | Journal event is authoritative: encode/validate, write same-directory temp, sync file, atomic rename, sync directory, then replace derived snapshot. Unsupported durability fails typed; revision/digest conflicts never overwrite.                                                                            | In-place JSON or snapshot authority.        |
 | Resume        | Auto-resume requires valid journal chain, exact policy/contract versions, owned lock, stable operation key, and a transition plus tool operation explicitly marked idempotent. Corrupt, unknown, already-running, or non-idempotent work returns input-required/recovery-blocked before mutation.              | “Retry last step.”                          |
 | Lock          | Atomic workspace lock-directory acquisition with scoped owner token and process identity; no lease/heartbeat in v1 because suspension creates false staleness. Recovery requires unchanged metadata, same-host definitive dead-owner proof, and explicit `LockRecoveryAuthority`; unknown/remote owners block. | `Semaphore`, timestamps, global maps.       |
-| Unstable APIs | One concrete adapter imports current pinned `effect/unstable/cli` and process modules; it composes upstream APIs directly and is contract-tested, without wrapper/shadow APIs.                                                                                                                                 | Forking Effect CLI types.                   |
+| Historical thin CLI | Superseded and non-applicable; its former adapter decision confers no implementation authority. | Reviving the old CLI plan. |
 
-## Grandchild Dependency and File Ownership
+## Grandchild Dependency, Status, and File Ownership
 
-`contracts → lifecycle → store/recovery → lock/executor → CLI`
+`contracts → lifecycle → store/recovery → lock/executor/finalization → POSIX/executable foundation → Golden product planning`
 
-| Grandchild                       | Exact ownership and API seam                                                                                                                                                                                 | Rollback boundary                                          |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------- |
-| `app-builder-run-lifecycle`      | `packages/app-builder/execution/src/{creation-intent,lifecycle,automatic-policy,transition-evidence,failure}.ts`; exports schemas, `RunLifecycle`, policy service.                                           | Remove additive modules/package.                           |
-| `app-builder-run-store-recovery` | same package: `{run-store,recovery,persistence-format,durable-file-system}.ts`; `RunStore`/`Recovery` consume lifecycle and require scoped write authority.                                                  | Revert storage modules/formats; retain lifecycle.          |
-| `app-builder-run-lock-executor`  | same package: `{workspace-lock,process-identity,run-executor,workspace-mutator,tool-process}.ts`; `WorkspaceLock.withExclusive` provides write authority; executor is the only mutation/process caller.      | Revert executor/lock; persisted evidence remains readable. |
-| `app-builder-execution-cli`      | `packages/app-builder/cli/src/{effect-cli-adapter,create-command,input-resolver,output,config,main}.ts`; `Command.make`, `Argument`, `Flag`, `Prompt`, `Command.runWith`; sole `NodeRuntime.runMain` wiring. | Remove CLI package; execution API remains.                 |
+| Grandchild | Status | Exact ownership and API seam | Rollback boundary |
+| ---------- | ------ | ---------------------------- | ----------------- |
+| `app-builder-run-lifecycle` | Completed/archived | `packages/app-builder/execution/src/{creation-intent,lifecycle,automatic-policy,transition-evidence,failure}.ts`; schemas, `RunLifecycle`, policy service. | Historical boundary retained. |
+| `app-builder-run-store-recovery` | Completed/archived | Same package: `{run-store,recovery,persistence-format,durable-file-system}.ts`; lifecycle-consuming durable state/recovery. | Historical boundary retained. |
+| `app-builder-run-lock-executor` | Completed/archived with finalization | Same package: `{workspace-lock,process-identity,run-executor,workspace-mutator,tool-process}.ts`; exclusive mutation/process authority and release-safe finalization. | Historical boundary retained. |
+| `app-builder-execution-cli` | **Superseded; MUST NOT apply** | Historical planned thin adapter only; no implementation ownership remains. | N/A; no work may start. |
+
+Completed protocol-contract children and the verified POSIX/executable vertical slice keep their own archived or active evidence and are consumed as prerequisites; this tracker does not rewrite or absorb them.
 
 ## Data Flow
 
 ```text
-Argument/Flag or Prompt or draft → InputResolver → CreationIntent decoder
-  → Recovery → WorkspaceLock(scope) → RunExecutor → WorkspaceMutator/ChildProcess
-  → journal evidence → Output (human stderr/terminal | one JSON envelope stdout)
+Retained protocol/lifecycle/store/lock/POSIX authorities
+  → app-builder-golden-monorepo proposal
+  → future specs/design/tasks only after separate authorization
 ```
 
 ## Interfaces / Contracts
@@ -45,7 +47,7 @@ Services use `Context.Service`, `Layer.effect`, and named `Effect.fn("AppBuilder
 | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Unit        | Transition laws, policy versions/redaction, intent parity/defaults, resume decision table, typed failures.                                                                                               |
 | Integration | Inject crash points around each sync/rename, malformed journals, owner races/stale recovery, cancellation/finalizers, fake process/output services.                                                      |
-| CLI/E2E     | `Command.runWith` deterministic argv/Prompt layers; exactly one JSON stdout value; human stderr separation; child-process signal handshake. Use `TestClock`, `Deferred`, `Queue`, `Ref`; no real sleeps. |
+| CLI/E2E     | Pending thin CLI tests are non-applicable. Future product acceptance belongs to separately authorized Golden artifacts. |
 
 ## Threat Matrix
 
@@ -60,7 +62,7 @@ Services use `Context.Service`, `Layer.effect`, and named `Effect.fn("AppBuilder
 
 ## Migration / Rollout
 
-No migration. Deliver/revert grandchildren in dependency/reverse order; each must preserve PE3–4 requirement links and independently prove its API seam before the next begins.
+No migration. Retain completed authorities and evidence unchanged. Route only future product planning to `app-builder-golden-monorepo`; do not create or apply its later phases from this tracker.
 
 ## Open Questions
 
