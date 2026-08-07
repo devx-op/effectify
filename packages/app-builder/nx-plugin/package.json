@@ -1,0 +1,27 @@
+{
+  "name": "@effectify/app-builder-nx-plugin",
+  "version": "0.0.0",
+  "type": "module",
+  "dependencies": {
+    "@effectify/app-builder-generation": "workspace:*",
+    "@nx/devkit": "23.1.0",
+    "tslib": "catalog:"
+  },
+  "peerDependencies": {
+    "effect": "catalog:"
+  },
+  "exports": {
+    ".": {
+      "@effectify/source": "./src/index.ts",
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js",
+      "default": "./dist/src/index.js"
+    }
+  },
+  "devDependencies": {
+    "@effect/vitest": "catalog:",
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

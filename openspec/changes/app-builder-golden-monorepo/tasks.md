@@ -38,8 +38,8 @@ R01–R17/S01–S32 are ordered below; T1/T2 are mandatory RED tests. PR 07 defi
 
 ## Phase 2: Generate Topology (PR 02)
 
-- [ ] 2.1 RED `packages/app-builder/nx-plugin/tests/apply-plan.test.ts`: R03/R04/R06 S05–S08,S10–S11; conflict and direction failures.
-- [ ] 2.2 GREEN/REFACTOR `packages/app-builder/nx-plugin/src/apply-plan.ts`, `packages/app-builder/generation/src/todo-preset.ts`: single `Tree` apply; four roots.
+- [x] 2.1 RED `packages/app-builder/nx-plugin/tests/apply-plan.test.ts`: R03/R04/R06 S05–S08,S10–S11; conflict and direction failures.
+- [x] 2.2 GREEN/REFACTOR `packages/app-builder/nx-plugin/src/apply-plan.ts`, `packages/app-builder/generation/src/todo-preset.ts`: single `Tree` apply; four roots.
 
 ## Phase 3: Todo Behavior (PR 03)
 
