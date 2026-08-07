@@ -43,8 +43,8 @@ R01–R17/S01–S32 are ordered below; T1/T2 are mandatory RED tests. PR 07 defi
 
 ## Phase 3: Todo Behavior (PR 03)
 
-- [ ] 3.1 RED generated `packages/todo/**/tests`: R07/R08 S12–S15; fixed ports, failures, durable ordered events.
-- [ ] 3.2 GREEN/REFACTOR `packages/app-builder/generation/src/templates/todo/{domain,application,infrastructure,cli}.ts`: CRUD Live/Test Layers via retained executor/lock/mutator.
+- [x] 3.1 RED generated `packages/todo/**/tests`: R07/R08 S12–S15; fixed ports, failures, durable ordered events.
+- [x] 3.2 GREEN/REFACTOR `packages/app-builder/generation/src/templates/todo/{domain,application,infrastructure,cli}.ts`: CRUD Live/Test Layers via retained executor/lock/mutator.
 
 ## Phase 4: Post-generation Evolution (PR 04)
 

@@ -1,6 +1,7 @@
 import * as Data from "effect/Data"
 import * as Effect from "effect/Effect"
 import type { TodoPlan } from "./planner.js"
+import { todoTemplateFiles } from "./templates/todo/index.js"
 
 export const TodoTopologyRoots = [
   "packages/todo/domain",
@@ -48,8 +49,6 @@ const owner = "@effectify/app-builder/todo-preset/1" as const
 const packageFile = (name: string, dependencies: Readonly<Record<string, string>>): string =>
   `${JSON.stringify({ name, private: true, type: "module", dependencies }, null, 2)}\n`
 
-const sourceFile = (name: string): string => `export const topologyRoot = "${name}"\n`
-
 const project = (name: string, root: TodoTopologyRoot, dependencies: ReadonlyArray<string>): TodoTopologyProject => ({
   dependencies: Object.freeze([...dependencies]),
   name,
@@ -57,18 +56,18 @@ const project = (name: string, root: TodoTopologyRoot, dependencies: ReadonlyArr
 })
 
 const filesFor = (topologyProject: TodoTopologyProject): ReadonlyArray<TodoTopologyFile> => {
-  const dependencies = Object.fromEntries(topologyProject.dependencies.map((dependency) => [dependency, "workspace:*"]))
+  const dependencies = Object.fromEntries([
+    ["effect", "catalog:"],
+    ...topologyProject.dependencies.map((dependency) => [dependency, "workspace:*"]),
+  ])
+  const sources = todoTemplateFiles().filter((file) => file.path.startsWith(`${topologyProject.root}/`))
   return [
     {
       content: packageFile(topologyProject.name, dependencies),
       owner,
       path: `${topologyProject.root}/package.json`,
     },
-    {
-      content: sourceFile(topologyProject.name),
-      owner,
-      path: `${topologyProject.root}/src/index.ts`,
-    },
+    ...sources.map((file) => ({ ...file, owner })),
   ]
 }
 
