@@ -6,6 +6,7 @@ export default defineConfig({
   cacheDir: "../../../node_modules/.vite/packages/app-builder/cli",
   resolve: {
     alias: {
+      "@effectify/app-builder-contracts": fileURLToPath(new URL("../contracts/src/index.ts", import.meta.url)),
       "@effectify/app-builder-generation": fileURLToPath(new URL("../generation/src/index.ts", import.meta.url)),
     },
   },

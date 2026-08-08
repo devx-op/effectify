@@ -21,6 +21,10 @@ interface MainModule {
   ) => Effect.Effect<number, unknown>
 }
 
+interface ReplayModule {
+  readonly captureReplayProvenance: (candidate: unknown) => Effect.Effect<unknown, unknown>
+}
+
 const request = {
   version: "effectify.app-builder-cli-request/1",
   command: "plan",
@@ -32,6 +36,9 @@ const request = {
 }
 
 const main = () => Effect.promise<MainModule>(() => import(new URL("../src/main.js", import.meta.url).href))
+
+const replay = () =>
+  Effect.promise<ReplayModule>(() => import(new URL("../../generation/src/replay.js", import.meta.url).href))
 
 const invoke = (
   args: ReadonlyArray<string>,
@@ -116,17 +123,63 @@ effect("S19 emits JSON Lines only when selected and always ends with one termina
   }),
 )
 
-effect("S16 accepts only catalog and the five closed deferred command names", () =>
+effect("S16 accepts catalog, binds replay to trusted evidence, and keeps four later commands closed", () =>
   Effect.gen(function* () {
     const catalog = yield* invoke(["catalog"], JSON.stringify({ ...request, command: "catalog", payload: {} }))
     expect(catalog.exit).toBe(0)
     expect(JSON.parse(catalog.stdout)).toMatchObject({ terminal: { _tag: "Success", command: "catalog" } })
 
-    for (const command of ["generate", "verify", "replay", "explain", "doctor"] as const) {
+    for (const command of ["generate", "verify", "explain", "doctor"] as const) {
       const result = yield* invoke([command], JSON.stringify({ ...request, command, payload: {} }))
       expect(result.exit).toBe(0)
       expect(JSON.parse(result.stdout)).toMatchObject({ terminal: { _tag: "NotAvailable", command } })
     }
+
+    const Replay = yield* replay()
+    const candidate = {
+      blocks: ["model"],
+      catalog: { version: "effectify.todo-catalog/1" },
+      dependencies: [
+        {
+          importer: "workspace",
+          integrity: "sha512-effect",
+          name: "effect",
+          peers: {},
+          version: "4.0.0",
+        },
+      ],
+      intent: request.payload,
+      outputs: [
+        {
+          content: "export const generated = true\n",
+          mode: "100644",
+          owner: "@effectify/app-builder/model/1",
+          path: "packages/todo/domain/src/generated.ts",
+        },
+      ],
+      pins: {
+        effect: "4.0.0",
+        frozenInstall: true,
+        nx: "23.1.0",
+        packageManager: "pnpm@10.14.0",
+        plugins: [{ name: "@effectify/app-builder-generation", version: "0.0.0" }],
+      },
+      plan: request.payload,
+    }
+    const provenance = yield* Replay.captureReplayProvenance(candidate)
+    const replayResult = yield* invoke(
+      ["replay"],
+      JSON.stringify({
+        ...request,
+        command: "replay",
+        payload: { candidate, provenance, workspaceOutputs: candidate.outputs },
+      }),
+    )
+
+    expect(replayResult.exit).toBe(0)
+    expect(JSON.parse(replayResult.stdout)).toMatchObject({
+      terminal: { _tag: "Success", command: "replay", result: { diffPaths: [], zeroDiff: true } },
+    })
   }),
 )
 

@@ -837,6 +837,9 @@ importers:
 
   packages/app-builder/generation:
     dependencies:
+      '@effectify/app-builder-contracts':
+        specifier: workspace:*
+        version: link:../contracts
       effect:
         specifier: 'catalog:'
         version: 4.0.0-beta.102

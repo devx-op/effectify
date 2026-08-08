@@ -58,8 +58,8 @@ R01–R17/S01–S32 are ordered below; T1/T2 are mandatory RED tests. PR 07 defi
 
 ## Phase 6: Replay (PR 06)
 
-- [ ] 6.1 RED `packages/app-builder/generation/tests/replay.test.ts`: R12/R13 S21–S24; semantic dependencies and changed-output pre-write failure.
-- [ ] 6.2 GREEN/REFACTOR `packages/app-builder/generation/src/{cjson,provenance,replay}.ts`: pinned frozen replay, canonical digests, zero-diff evidence.
+- [x] 6.1 RED `packages/app-builder/generation/tests/replay.test.ts`: R12/R13 S21–S24; semantic dependencies and changed-output pre-write failure.
+- [x] 6.2 GREEN/REFACTOR `packages/app-builder/generation/src/{cjson,provenance,replay}.ts`: pinned frozen replay, canonical digests, zero-diff evidence.
 
 ## Phase 7: Nested E2E (PR 07)
 
