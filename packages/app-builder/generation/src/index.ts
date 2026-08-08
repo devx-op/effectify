@@ -1,7 +1,10 @@
 export * as Catalog from "./catalog.js"
 export * as Intent from "./intent.js"
 export * as Planner from "./planner.js"
+export * as TodoEvolution from "./evolution.js"
+export * as TodoGeneration from "./generators/index.js"
 export * as TodoPreset from "./todo-preset.js"
 
 export type { TodoPlan } from "./planner.js"
+export type { TodoGenerationBlockId } from "./generators/index.js"
 export type { TodoTopology, TodoTopologyFile, TodoTopologyProject, TodoTopologyRoot } from "./todo-preset.js"

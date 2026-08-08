@@ -48,8 +48,8 @@ R01–R17/S01–S32 are ordered below; T1/T2 are mandatory RED tests. PR 07 defi
 
 ## Phase 4: Post-generation Evolution (PR 04)
 
-- [ ] 4.1 RED `packages/app-builder/generation/tests/evolution.test.ts`: R03/R04 S05–S08; model/use-case/port/integration-adapter/event/presentation additions own leaves only.
-- [ ] 4.2 GREEN/REFACTOR `packages/app-builder/generation/src/generators/{model,use-case,port,integration-adapter,event,presentation}.ts`: shared preset blocks, manifests, provenance, idempotence.
+- [x] 4.1 RED `packages/app-builder/generation/tests/evolution.test.ts`: R03/R04 S05–S08; model/use-case/port/integration-adapter/event/presentation additions own leaves only.
+- [x] 4.2 GREEN/REFACTOR `packages/app-builder/generation/src/generators/{model,use-case,port,integration-adapter,event,presentation}.ts`: shared preset blocks, manifests, provenance, idempotence.
 
 ## Phase 5: Closed CLI Protocol (PR 05)
 

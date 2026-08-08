@@ -1,7 +1,7 @@
 import * as Data from "effect/Data"
 import * as Effect from "effect/Effect"
+import { allTodoGenerationBlocks, type GenerationBlockFile } from "./generators/index.js"
 import type { TodoPlan } from "./planner.js"
-import { todoTemplateFiles } from "./templates/todo/index.js"
 
 export const TodoTopologyRoots = [
   "packages/todo/domain",
@@ -12,11 +12,7 @@ export const TodoTopologyRoots = [
 
 export type TodoTopologyRoot = (typeof TodoTopologyRoots)[number]
 
-export interface TodoTopologyFile {
-  readonly content: string
-  readonly owner: "@effectify/app-builder/todo-preset/1"
-  readonly path: string
-}
+export type TodoTopologyFile = GenerationBlockFile
 
 export interface TodoTopologyProject {
   readonly dependencies: ReadonlyArray<string>
@@ -44,7 +40,7 @@ const requiredCapabilities = [
   "todo.events",
 ] as const
 
-const owner = "@effectify/app-builder/todo-preset/1" as const
+const owner = "@effectify/app-builder/workspace/1"
 
 const packageFile = (name: string, dependencies: Readonly<Record<string, string>>): string =>
   `${JSON.stringify({ name, private: true, type: "module", dependencies }, null, 2)}\n`
@@ -55,19 +51,17 @@ const project = (name: string, root: TodoTopologyRoot, dependencies: ReadonlyArr
   root,
 })
 
-const filesFor = (topologyProject: TodoTopologyProject): ReadonlyArray<TodoTopologyFile> => {
+const packageFilesFor = (topologyProject: TodoTopologyProject): ReadonlyArray<TodoTopologyFile> => {
   const dependencies = Object.fromEntries([
     ["effect", "catalog:"],
     ...topologyProject.dependencies.map((dependency) => [dependency, "workspace:*"]),
   ])
-  const sources = todoTemplateFiles().filter((file) => file.path.startsWith(`${topologyProject.root}/`))
   return [
     {
       content: packageFile(topologyProject.name, dependencies),
       owner,
       path: `${topologyProject.root}/package.json`,
     },
-    ...sources.map((file) => ({ ...file, owner })),
   ]
 }
 
@@ -96,7 +90,10 @@ export const createTodoTopology = (plan: TodoPlan): Effect.Effect<TodoTopology, 
 
   return Effect.succeed(
     Object.freeze({
-      files: Object.freeze(projects.flatMap(filesFor)),
+      files: Object.freeze([
+        ...projects.flatMap(packageFilesFor),
+        ...allTodoGenerationBlocks().flatMap((block) => block.files),
+      ]),
       projects,
       roots: Object.freeze([...TodoTopologyRoots]),
     }),
