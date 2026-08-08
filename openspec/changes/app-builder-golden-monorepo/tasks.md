@@ -53,8 +53,8 @@ R01–R17/S01–S32 are ordered below; T1/T2 are mandatory RED tests. PR 07 defi
 
 ## Phase 5: Closed CLI Protocol (PR 05)
 
-- [ ] 5.1 RED `packages/app-builder/cli/tests/protocol.test.ts`: R09–R11 S16–S20, T1/T2; reject docs, shell/traversal/env, signals, automation.
-- [ ] 5.2 GREEN/REFACTOR `packages/app-builder/cli/src/{main,protocol,commands}.ts`: stdin XOR file, exits, stderr, JSONL, one terminal envelope.
+- [x] 5.1 RED `packages/app-builder/cli/tests/protocol.test.ts`: R09–R11 S16–S20, T1/T2; reject docs, shell/traversal/env, signals, automation.
+- [x] 5.2 GREEN/REFACTOR `packages/app-builder/cli/src/{main,protocol,commands}.ts`: stdin XOR file, exits, stderr, JSONL, one terminal envelope.
 
 ## Phase 6: Replay (PR 06)
 
