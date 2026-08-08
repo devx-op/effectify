@@ -63,8 +63,8 @@ R01–R17/S01–S32 are ordered below; T1/T2 are mandatory RED tests. PR 07 defi
 
 ## Phase 7: Nested E2E (PR 07)
 
-- [ ] 7.1 RED `packages/app-builder/e2e/tests/golden.e2e.test.ts`: R14/R15 S25–S28; failed/interrupted cleanup and root exclusion.
-- [ ] 7.2 GREEN/REFACTOR `packages/app-builder/e2e/**`: OS-temp distribution, isolated registry/Nx/pnpm, nested graph/test/typecheck/build/CRUD/regeneration.
+- [x] 7.1 RED `packages/app-builder/e2e/tests/golden.e2e.test.ts`: R14/R15 S25–S28; failed/interrupted cleanup and root exclusion.
+- [x] 7.2 GREEN/REFACTOR `packages/app-builder/e2e/**`: OS-temp distribution, isolated registry/Nx/pnpm, nested graph/test/typecheck/build/CRUD/regeneration.
 
 ## Phase 8: Showcase and Closure (PR 08)
 
