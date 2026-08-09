@@ -23,7 +23,7 @@ export const CliUnavailableSchema = Schema.Struct({
   command: CliCommandSchema,
 })
 export const CliErrorSchema = Schema.Struct({
-  _tag: Schema.Literals(["InputError", "HostError"]),
+  _tag: Schema.Literals(["InputError", "ConflictError", "HostError"]),
   reason: Schema.String,
 })
 export const CliTerminalEnvelopeSchema = Schema.Struct({
@@ -54,11 +54,15 @@ export class InputError extends Data.TaggedError("InputError")<{
   readonly reason: string
 }> {}
 
+export class ConflictError extends Data.TaggedError("ConflictError")<{
+  readonly reason: string
+}> {}
+
 export class HostError extends Data.TaggedError("HostError")<{
   readonly reason: string
 }> {}
 
-export type CliFailure = InputError | HostError
+export type CliFailure = ConflictError | InputError | HostError
 
 export const isCliCommand = (value: string): value is CliCommand =>
   value === "catalog" ||

@@ -1,4 +1,5 @@
 export { renderTodoPlan } from "./plan.js"
+export { generateTodo } from "./generate.js"
 export { runCli, runNodeCli } from "./main.js"
 export {
   CliCommands,

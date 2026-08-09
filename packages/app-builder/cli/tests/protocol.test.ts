@@ -1,4 +1,6 @@
 import { expect, it } from "vitest"
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises"
+import { join } from "node:path"
 import * as Effect from "effect/Effect"
 
 interface CommandDispatcher {
@@ -34,6 +36,15 @@ const request = {
     capabilities: ["todo.events"],
   },
 }
+
+const generateRequest = (workspace: string) => ({
+  ...request,
+  command: "generate" as const,
+  payload: {
+    intent: request.payload,
+    workspace,
+  },
+})
 
 const main = () => Effect.promise<MainModule>(() => import(new URL("../src/main.js", import.meta.url).href))
 
@@ -123,13 +134,133 @@ effect("S19 emits JSON Lines only when selected and always ends with one termina
   }),
 )
 
-effect("S16 accepts catalog, binds replay to trusted evidence, and keeps four later commands closed", () =>
+effect("R16 prerequisite generates deterministic consumer output through the public JSONL command", () => {
+  const workspace = "tests/public-generate-workspace"
+  const workspacePath = join(process.cwd(), workspace)
+
+  return Effect.gen(function* () {
+    yield* Effect.promise(() => rm(workspacePath, { force: true, recursive: true }))
+    const input = JSON.stringify(generateRequest(workspace))
+
+    return yield* Effect.gen(function* () {
+      const first = yield* invoke(["generate", "--events=jsonl"], input)
+      const firstFrames = first.stdout
+        .trim()
+        .split("\n")
+        .map((line) => JSON.parse(line))
+      const firstTerminal = firstFrames[1]?.terminal
+
+      expect(first.stderr).toBe("")
+      expect(first.exit).toBe(0)
+      expect(firstFrames).toHaveLength(2)
+      expect(firstFrames[0]).toMatchObject({
+        version: "effectify.app-builder-cli-event/1",
+        _tag: "Event",
+        command: "generate",
+      })
+      expect(firstTerminal).toMatchObject({
+        _tag: "Success",
+        command: "generate",
+        result: {
+          provenance: {
+            version: "effectify.app-builder-replay-provenance/1",
+          },
+        },
+      })
+      expect(firstTerminal.result.writtenPaths).not.toEqual([])
+      expect(
+        yield* Effect.promise(() => readFile(join(workspacePath, "apps/todo-cli/src/index.ts"), "utf8")),
+      ).toContain("createLiveRuntime")
+
+      const second = yield* invoke(["generate"], input)
+      const secondTerminal = JSON.parse(second.stdout).terminal
+
+      expect(second.exit).toBe(0)
+      expect(second.stderr).toBe("")
+      expect(secondTerminal).toMatchObject({ _tag: "Success", command: "generate" })
+      expect(secondTerminal.result.writtenPaths).toEqual([])
+      expect(secondTerminal.result.provenance).toEqual(firstTerminal.result.provenance)
+    }).pipe(Effect.ensuring(Effect.promise(() => rm(workspacePath, { force: true, recursive: true }))))
+  })
+})
+
+effect("R03 and R04 reject a conflicting generated target before writing any other output", () => {
+  const workspace = "tests/public-generate-conflict"
+  const workspacePath = join(process.cwd(), workspace)
+  const conflictingPath = join(workspacePath, "packages/todo/domain/package.json")
+  const userBytes = '{"name":"user-authored-domain"}\n'
+
+  return Effect.gen(function* () {
+    yield* Effect.promise(() => rm(workspacePath, { force: true, recursive: true }))
+    yield* Effect.promise(async () => {
+      await mkdir(join(workspacePath, "packages/todo/domain"), { recursive: true })
+      await writeFile(conflictingPath, userBytes)
+    })
+
+    return yield* Effect.gen(function* () {
+      const result = yield* invoke(["generate"], JSON.stringify(generateRequest(workspace)))
+
+      expect(result.exit).toBe(4)
+      expect(result.stderr).toContain("conflict:")
+      expect(result.stdout.trim().split("\n")).toHaveLength(1)
+      expect(JSON.parse(result.stdout)).toMatchObject({
+        terminal: { _tag: "Failure", error: { _tag: "ConflictError" } },
+      })
+      expect(yield* Effect.promise(() => readFile(conflictingPath, "utf8"))).toBe(userBytes)
+      expect(
+        yield* Effect.promise(() =>
+          readFile(join(workspacePath, "apps/todo-cli/package.json"), "utf8")
+            .then(() => true)
+            .catch(() => false),
+        ),
+      ).toBe(false)
+    }).pipe(Effect.ensuring(Effect.promise(() => rm(workspacePath, { force: true, recursive: true }))))
+  })
+})
+
+effect("R09 and R11 reject unsafe generate workspaces and injected automation before mutation", () => {
+  const injectedWorkspace = join(process.cwd(), "tests/injected-automation")
+
+  return Effect.gen(function* () {
+    yield* Effect.promise(() => rm(injectedWorkspace, { force: true, recursive: true }))
+
+    return yield* Effect.gen(function* () {
+      for (const payload of [
+        generateRequest("../unsafe-workspace"),
+        {
+          ...generateRequest("tests/injected-automation"),
+          payload: {
+            intent: { ...request.payload, automation: { execute: "rm -rf /", tool: "mcp" } },
+            workspace: "tests/injected-automation",
+          },
+        },
+      ]) {
+        const result = yield* invoke(["generate"], JSON.stringify(payload))
+
+        expect(result.exit).toBe(2)
+        expect(result.stderr).toContain("input:")
+        expect(JSON.parse(result.stdout)).toMatchObject({
+          terminal: { _tag: "Failure", error: { _tag: "InputError" } },
+        })
+      }
+      expect(
+        yield* Effect.promise(() =>
+          readFile(join(injectedWorkspace, "apps/todo-cli/package.json"), "utf8")
+            .then(() => true)
+            .catch(() => false),
+        ),
+      ).toBe(false)
+    }).pipe(Effect.ensuring(Effect.promise(() => rm(injectedWorkspace, { force: true, recursive: true }))))
+  })
+})
+
+effect("S16 accepts catalog, binds replay to trusted evidence, and keeps three later commands closed", () =>
   Effect.gen(function* () {
     const catalog = yield* invoke(["catalog"], JSON.stringify({ ...request, command: "catalog", payload: {} }))
     expect(catalog.exit).toBe(0)
     expect(JSON.parse(catalog.stdout)).toMatchObject({ terminal: { _tag: "Success", command: "catalog" } })
 
-    for (const command of ["generate", "verify", "explain", "doctor"] as const) {
+    for (const command of ["verify", "explain", "doctor"] as const) {
       const result = yield* invoke([command], JSON.stringify({ ...request, command, payload: {} }))
       expect(result.exit).toBe(0)
       expect(JSON.parse(result.stdout)).toMatchObject({ terminal: { _tag: "NotAvailable", command } })
