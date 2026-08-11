@@ -1,8 +1,11 @@
 import { createTreeWithEmptyWorkspace } from "@nx/devkit/testing"
 import { expect, it } from "@effect/vitest"
 import * as Effect from "effect/Effect"
+import { surfaceRequest } from "../../generation/tests/surface-request.js"
 
 type ApplyPlanModule = typeof import("../src/apply-plan.js")
+type PublicModule = typeof import("../src/index.js")
+type GenerationModule = typeof import("@effectify/app-builder-generation")
 type PlannerModule = typeof import("../../generation/src/planner.js")
 type TodoPresetModule = typeof import("../../generation/src/todo-preset.js")
 
@@ -16,9 +19,11 @@ const roots = [
 const modules = () =>
   Effect.all({
     ApplyPlan: Effect.promise<ApplyPlanModule>(() => import(new URL("../src/apply-plan.js", import.meta.url).href)),
+    Generation: Effect.promise<GenerationModule>(() => import("@effectify/app-builder-generation")),
     Planner: Effect.promise<PlannerModule>(
       () => import(new URL("../../generation/src/planner.js", import.meta.url).href),
     ),
+    Public: Effect.promise<PublicModule>(() => import(new URL("../src/index.js", import.meta.url).href)),
     TodoPreset: Effect.promise<TodoPresetModule>(
       () => import(new URL("../../generation/src/todo-preset.js", import.meta.url).href),
     ),
@@ -45,6 +50,22 @@ it.effect("S05 and R06 apply an approved Todo plan through Tree with exactly fou
     for (const root of roots) {
       expect(tree.exists(`${root}/package.json`)).toBe(true)
       expect(tree.exists(`${root}/src/index.ts`)).toBe(true)
+    }
+  }),
+)
+
+it.effect("generic Nx planning behaviorally composes actual surface catalogs", () =>
+  Effect.gen(function* () {
+    const { Generation, Public } = yield* modules()
+    for (const [scope, workspace] of [
+      ["@acme", "task-workspace"],
+      ["@globex", "console"],
+    ]) {
+      const options = surfaceRequest(Generation, scope, workspace)
+      const direct = yield* Generation.composeCatalog(options)
+      const adapter = yield* Public.composeGeneration(options)
+
+      expect(adapter).toEqual(direct)
     }
   }),
 )

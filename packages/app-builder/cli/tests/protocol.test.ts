@@ -2,6 +2,7 @@ import { expect, it } from "vitest"
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises"
 import { join } from "node:path"
 import * as Effect from "effect/Effect"
+import { surfaceRequest } from "../../generation/tests/surface-request.js"
 
 interface CommandDispatcher {
   readonly dispatch: (request: unknown) => Effect.Effect<unknown, unknown>
@@ -27,6 +28,9 @@ interface ReplayModule {
   readonly captureReplayProvenance: (candidate: unknown) => Effect.Effect<unknown, unknown>
 }
 
+type PublicModule = typeof import("../src/index.js")
+type GenerationModule = typeof import("@effectify/app-builder-generation")
+
 const request = {
   version: "effectify.app-builder-cli-request/1",
   command: "plan",
@@ -50,6 +54,12 @@ const main = () => Effect.promise<MainModule>(() => import(new URL("../src/main.
 
 const replay = () =>
   Effect.promise<ReplayModule>(() => import(new URL("../../generation/src/replay.js", import.meta.url).href))
+
+const publicSurface = () =>
+  Effect.all({
+    Cli: Effect.promise<PublicModule>(() => import(new URL("../src/index.js", import.meta.url).href)),
+    Generation: Effect.promise<GenerationModule>(() => import("@effectify/app-builder-generation")),
+  })
 
 const invoke = (
   args: ReadonlyArray<string>,
@@ -114,6 +124,22 @@ effect("S16 and S18 execute the trusted plan command from stdin or an explicit J
       })
     }
     expect(file.reads).toEqual({ stdin: 1, file: 1 })
+  }),
+)
+
+effect("generic CLI planning behaviorally composes actual surface catalogs", () =>
+  Effect.gen(function* () {
+    const { Cli, Generation } = yield* publicSurface()
+    for (const [scope, workspace] of [
+      ["@acme", "task-workspace"],
+      ["@globex", "console"],
+    ]) {
+      const options = surfaceRequest(Generation, scope, workspace)
+      const direct = yield* Generation.composeCatalog(options)
+      const adapter = yield* Cli.composeGeneration(options)
+
+      expect(adapter).toEqual(direct)
+    }
   }),
 )
 

@@ -1,5 +1,6 @@
 export * as Catalog from "./catalog.js"
 export * as GenerationKernel from "./kernel.js"
+export { composeCatalog } from "./catalog.js"
 export * as Intent from "./intent.js"
 export * as Planner from "./planner.js"
 export * as Replay from "./replay.js"
@@ -12,6 +13,7 @@ export type {
   AtomicGenerator,
   Capability,
   FileContribution,
+  FiniteCatalog,
   GenerationFailure,
   GeneratorId,
   OwnerId,

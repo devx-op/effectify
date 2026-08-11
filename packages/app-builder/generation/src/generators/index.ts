@@ -6,6 +6,9 @@ import { portBlock } from "./port.js"
 import { presentationBlock } from "./presentation.js"
 import { useCaseBlock } from "./use-case.js"
 
+export { packageSurfaceGenerator, SurfaceCatalog, WorkspaceRootFiles, workspaceSurfaceGenerator } from "./surfaces.js"
+export type { WorkspaceRootFile } from "./surfaces.js"
+
 export { type GenerationBlock, type GenerationBlockFile, type TodoGenerationBlockId } from "./block.js"
 
 export const TodoGenerationBlockIds = [
