@@ -1,4 +1,14 @@
+import { infrastructureTemplate } from "../templates/todo/infrastructure.js"
 import { defineTodoGenerationBlock, fromTodoTemplate } from "./block.js"
+import { defineTodoGenerator } from "./todo.js"
+
+export const integrationAdapterGenerator = defineTodoGenerator({
+  files: [{ content: infrastructureTemplate, relativePath: "src/adapter.ts" }],
+  id: "integration-adapter",
+  packageId: "infrastructure",
+  provides: ["todo-file-adapter"],
+  requires: ["todo-use-case"],
+})
 
 export const integrationAdapterBlock = defineTodoGenerationBlock({
   files: [
