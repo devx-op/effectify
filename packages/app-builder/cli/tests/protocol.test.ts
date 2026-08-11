@@ -198,6 +198,19 @@ effect("R16 prerequisite generates deterministic consumer output through the pub
         yield* Effect.promise(() => readFile(join(workspacePath, "apps/todo-cli/src/index.ts"), "utf8")),
       ).toContain("createLiveRuntime")
 
+      const { Generation } = yield* publicSurface()
+      const direct = yield* Generation.TodoGeneration.composeTodoAtomic(Generation.TodoPreset.DefaultTodoRenderContext)
+      const rootPaths = new Set<string>(Generation.TodoGeneration.WorkspaceRootFiles)
+      const rootFiles = direct.contributions.filter((file) => rootPaths.has(file.path))
+
+      expect(rootFiles).toHaveLength(5)
+      expect(firstTerminal.result.writtenPaths).toEqual(expect.arrayContaining(rootFiles.map((file) => file.path)))
+      for (const file of rootFiles) {
+        expect(yield* Effect.promise(() => readFile(join(workspacePath, file.path), "utf8"))).toBe(
+          new TextDecoder().decode(file.bytes),
+        )
+      }
+
       const second = yield* invoke(["generate"], input)
       const secondTerminal = JSON.parse(second.stdout).terminal
 

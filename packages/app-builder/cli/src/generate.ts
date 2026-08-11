@@ -78,7 +78,7 @@ const workspacePath = (workspace: string): Effect.Effect<string, GenerateInputEr
 
 const outputPath = (workspace: string, path: string): string => {
   const segments = safeSegments(path, safeOutputSegment)
-  const isOwned = TodoPreset.TodoTopologyRoots.some((root) => path.startsWith(`${root}/`))
+  const isOwned = TodoPreset.isTodoTopologyPath(path)
   if (segments === undefined || !isOwned) {
     throw new GenerateHostError({ reason: "generated topology contains an unsafe output path" })
   }

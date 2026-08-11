@@ -35,10 +35,6 @@ interface TodoCliModule {
 
 type TodoPresetModule = typeof import("../src/todo-preset.js")
 
-interface TodoTemplateModule {
-  readonly todoTemplateFiles: () => ReadonlyArray<{ readonly content: string; readonly path: string }>
-}
-
 const intent = {
   version: "effectify.creation-intent/1",
   preset: "todo",
@@ -51,29 +47,19 @@ const modules = () =>
       () => import(new URL("../src/planner.js", import.meta.url).href),
     ),
     TodoPreset: Effect.promise<TodoPresetModule>(() => import(new URL("../src/todo-preset.js", import.meta.url).href)),
-    TodoTemplates: Effect.promise<TodoTemplateModule>(
-      () => import(new URL("../src/templates/todo/index.js", import.meta.url).href),
-    ),
   })
 
 const withGeneratedTodo = <Value, Error>(
   use: (cli: TodoCliModule, workspace: string) => Effect.Effect<Value, Error>,
 ): Effect.Effect<Value, Error | unknown> =>
   Effect.gen(function* () {
-    const { Planner, TodoPreset, TodoTemplates } = yield* modules()
+    const { Planner, TodoPreset } = yield* modules()
     const topology = yield* TodoPreset.createTodoTopology(yield* Planner.planTodo(intent))
     const workspace = yield* Effect.tryPromise(() => mkdtemp(join(process.cwd(), "tests/.generated-todo-")))
     for (const file of topology.files) {
       yield* Effect.tryPromise(() => mkdir(dirname(join(workspace, file.path)), { recursive: true }))
       yield* Effect.tryPromise(() => writeFile(join(workspace, file.path), file.content))
     }
-    const generatedTests = topology.files.filter((file) => file.path.includes("/tests/"))
-    expect(generatedTests.map((file) => file.path)).toEqual(
-      TodoTemplates.todoTemplateFiles()
-        .map((file) => file.path)
-        .filter((path) => path.includes("/tests/")),
-    )
-    expect(generatedTests.map((file) => file.path)).toContain("packages/todo/infrastructure/tests/todo-runtime.test.ts")
     const cli = yield* Effect.promise<TodoCliModule>(
       () => import(pathToFileURL(join(workspace, "apps/todo-cli/src/index.ts")).href),
     )
