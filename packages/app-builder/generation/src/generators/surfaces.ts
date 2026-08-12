@@ -14,7 +14,13 @@ import {
   type RenderContext,
   RenderFailure,
 } from "../kernel.js"
-import { renderTemplate, templateAsset, type TemplateAsset, type TemplateSubstitutions } from "../templates.js"
+import {
+  renderTemplate,
+  templateAsset,
+  templateSubstitutions,
+  type TemplateAsset,
+  type TemplateSubstitutions,
+} from "../templates.js"
 
 export const WorkspaceRootFiles = [
   "nx.json",
@@ -58,10 +64,7 @@ const contribution = (
     template,
   })
 
-const workspaceSubstitutions = (context: RenderContext): TemplateSubstitutions => ({
-  tmpl: "",
-  workspacePackageName: `${context.workspace.npmScope}/${context.workspace.name}`,
-})
+const workspaceSubstitutions = (context: RenderContext): TemplateSubstitutions => templateSubstitutions(context)
 
 export const workspaceSurfaceGenerator: AtomicGenerator<PackageSurfaceInput> = {
   InputSchema: PackageSurfaceInputSchema,
@@ -126,7 +129,7 @@ export const packageSurfaceGenerator: AtomicGenerator<PackageSurfaceInput> = {
       }
       const owner = `package-surface-${target.id}`
       const resolved = dependencies.filter((dependency): dependency is PackageTarget => dependency !== undefined)
-      const substitutions: TemplateSubstitutions = {
+      const substitutions = templateSubstitutions(context, {
         dependenciesJson: JSON.stringify(
           Object.fromEntries(resolved.map((dependency) => [dependency.name, "workspace:*"]).sort()),
           null,
@@ -139,8 +142,7 @@ export const packageSurfaceGenerator: AtomicGenerator<PackageSurfaceInput> = {
         ),
         packageName: target.name,
         targetRoot: target.root,
-        tmpl: "",
-      }
+      })
       const manifestTemplate = templateAsset({
         directory: "generic/package",
         group: `package-surface-${target.id}`,

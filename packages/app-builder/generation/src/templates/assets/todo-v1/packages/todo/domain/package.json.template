@@ -1,5 +1,5 @@
 {
-  "name": "@effectify/todo-domain",
+  "name": "<%- domainImport %>",
   "private": true,
   "type": "module",
   "exports": {

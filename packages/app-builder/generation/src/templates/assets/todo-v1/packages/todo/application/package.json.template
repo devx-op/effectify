@@ -1,5 +1,5 @@
 {
-  "name": "@effectify/todo-application",
+  "name": "<%- applicationImport %>",
   "private": true,
   "type": "module",
   "exports": {
@@ -12,6 +12,6 @@
   },
   "dependencies": {
     "effect": "catalog:",
-    "@effectify/todo-domain": "workspace:*"
+    "<%- domainImport %>": "workspace:*"
   }
 }

@@ -1,5 +1,5 @@
 {
-  "name": "@effectify/todo-cli",
+  "name": "<%- presentationImport %>",
   "private": true,
   "type": "module",
   "exports": {
@@ -12,8 +12,8 @@
   },
   "dependencies": {
     "effect": "catalog:",
-    "@effectify/todo-infrastructure": "workspace:*",
-    "@effectify/todo-application": "workspace:*",
-    "@effectify/todo-domain": "workspace:*"
+    "<%- infrastructureImport %>": "workspace:*",
+    "<%- applicationImport %>": "workspace:*",
+    "<%- domainImport %>": "workspace:*"
   }
 }

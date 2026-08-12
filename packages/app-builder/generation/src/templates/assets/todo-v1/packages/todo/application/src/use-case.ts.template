@@ -1,1 +1,1 @@
-export { TodoApplication } from "./index.js"
+export { <%- entitySingular %>Application } from "./index.js"

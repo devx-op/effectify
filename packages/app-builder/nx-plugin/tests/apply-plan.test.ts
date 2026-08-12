@@ -174,7 +174,7 @@ it.effect("renders a non-default generic context through real Nx EJS with exact 
     const tree = createTree()
     const initialPaths = new Set(tree.listChanges().map((change) => change.path))
     for (const group of Generation.Templates.templateGroups(plan.contributions)) {
-      generateFiles(tree, Generation.Templates.templateDirectory(group), "", group.substitutions)
+      generateFiles(tree, Generation.Templates.templateDirectory(group), group.targetDirectory, group.substitutions)
     }
     const expected = Object.fromEntries(
       plan.contributions.map((file) => [file.path, new TextDecoder().decode(file.bytes)]),

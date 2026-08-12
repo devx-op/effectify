@@ -1,21 +1,21 @@
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
-import * as Application from "@effectify/todo-application"
-import type { TodoEvent } from "@effectify/todo-domain"
-import * as Infrastructure from "@effectify/todo-infrastructure"
+import * as Application from "<%- applicationImport %>"
+import type { <%- entitySingular %>Event } from "<%- domainImport %>"
+import * as Infrastructure from "<%- infrastructureImport %>"
 
 export const createTestRuntime = (input: { readonly ids: ReadonlyArray<string>; readonly now: string }) => Effect.gen(function* () {
   const layer = Application.layer.pipe(Layer.provideMerge(Infrastructure.testLayer(input)))
-  const services = yield* Effect.all({ application: Application.TodoApplication, probe: Infrastructure.TodoTestProbe }).pipe(Effect.provide(layer))
+  const services = yield* Effect.all({ application: Application.<%- entitySingular %>Application, probe: Infrastructure.<%- entitySingular %>TestProbe }).pipe(Effect.provide(layer))
   return Object.freeze({ ...services.application, events: services.probe.events })
 })
 
 export const createLiveRuntime = (path: string) => Effect.gen(function* () {
   const layer = Application.layer.pipe(Layer.provide(Infrastructure.liveLayer(path)))
-  return yield* Application.TodoApplication.pipe(Effect.provide(layer))
+  return yield* Application.<%- entitySingular %>Application.pipe(Effect.provide(layer))
 })
 
-export const renderEvent = (event: TodoEvent): string =>
-  event._tag === "TodoAdded" ? "added:" + event.todo.id + ":" + event.todo.text
-  : event._tag === "TodoCompleted" ? "completed:" + event.todo.id + ":" + event.todo.text
-  : "removed:" + event.todo.id + ":" + event.todo.text
+export const renderEvent = (event: <%- entitySingular %>Event): string =>
+  event._tag === "<%- entitySingular %>Added" ? "added:" + event.<%- entityIdentifier %>.id + ":" + event.<%- entityIdentifier %>.text
+  : event._tag === "<%- entitySingular %>Completed" ? "completed:" + event.<%- entityIdentifier %>.id + ":" + event.<%- entityIdentifier %>.text
+  : "removed:" + event.<%- entityIdentifier %>.id + ":" + event.<%- entityIdentifier %>.text

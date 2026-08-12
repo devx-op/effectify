@@ -30,8 +30,12 @@ it.effect("renders generated source and root outputs from real template assets w
 
     expect(generated).toContain("export const TaskId")
     expect(generated).toContain("export const Task")
+    expect(generated).toContain('Schema.brand("Acme.TaskId")')
     expect(generated).not.toContain("Todo")
     expect(workspacePackage).toContain('"name": "@acme/task-workspace"')
+    expect(
+      new TextDecoder().decode(plan.contributions.find((file) => file.path === "pnpm-workspace.yaml")?.bytes),
+    ).toContain("modules/*")
     expect(plan.contributions.map((file) => file.path)).toEqual(
       expect.arrayContaining([
         "modules/task-core/src/model.ts",

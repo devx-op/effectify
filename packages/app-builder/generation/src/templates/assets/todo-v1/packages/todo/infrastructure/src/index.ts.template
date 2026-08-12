@@ -1,3 +1,5 @@
+<%
+let source = String.raw`
 import { access, mkdir, readFile, writeFile } from "node:fs/promises"
 import { randomUUID } from "node:crypto"
 import { dirname } from "node:path"
@@ -89,3 +91,6 @@ export const liveLayer = (path: string) => Layer.effectContext(Effect.gen(functi
     Context.add(Application.TodoEvents, eventServices.service),
   )
 }))
+`
+for (const [from, to] of [["@effectify/todo-application", applicationImport], ["@effectify/todo-domain", domainImport], ["Todos", entityPlural], ["Todo", entitySingular], ["todos", entityPluralIdentifier], ["todo", entityIdentifier], ["@effectify", workspaceScope]]) source = source.replaceAll(from, to)
+-%><%- source.slice(1, -1) %>

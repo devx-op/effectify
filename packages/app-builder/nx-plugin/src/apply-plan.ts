@@ -134,7 +134,7 @@ const stageTemplates = (topology: TodoPreset.TodoTopology): ReadonlyArray<Staged
       fallbackChanges = fallbackStaging.listChanges()
     }
     for (const group of groups) {
-      generateFiles(staging, Templates.templateDirectory(group), "", group.substitutions)
+      generateFiles(staging, Templates.templateDirectory(group), group.targetDirectory, group.substitutions)
     }
     for (const change of fallbackChanges) if (change.content !== null) staging.write(change.path, change.content)
   } catch {

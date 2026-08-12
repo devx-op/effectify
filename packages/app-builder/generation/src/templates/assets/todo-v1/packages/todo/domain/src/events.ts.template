@@ -1,1 +1,1 @@
-export type { TodoEvent } from "./index.js"
+export type { <%- entitySingular %>Event } from "./index.js"

@@ -1,28 +1,28 @@
 import * as Data from "effect/Data"
 import * as Schema from "effect/Schema"
 
-export const TodoId = Schema.NonEmptyString.pipe(Schema.brand("Effectify.TodoId"))
-export type TodoId = typeof TodoId.Type
+export const <%- entitySingular %>Id = Schema.NonEmptyString.pipe(Schema.brand("<%- brandNamespace %>.<%- entitySingular %>Id"))
+export type <%- entitySingular %>Id = typeof <%- entitySingular %>Id.Type
 
-export const Todo = Schema.Struct({
+export const <%- entitySingular %> = Schema.Struct({
   completed: Schema.Boolean,
   createdAt: Schema.String,
-  id: TodoId,
+  id: <%- entitySingular %>Id,
   text: Schema.NonEmptyString,
 })
-export type Todo = typeof Todo.Type
+export type <%- entitySingular %> = typeof <%- entitySingular %>.Type
 
-export class TodoTextInvalid extends Data.TaggedError("TodoTextInvalid")<{ readonly reason: "empty" }> {}
-export class TodoNotFound extends Data.TaggedError("TodoNotFound")<{ readonly id: string }> {}
-export class TodoAlreadyCompleted extends Data.TaggedError("TodoAlreadyCompleted")<{ readonly id: string }> {}
-export class TodoIdExhausted extends Data.TaggedError("TodoIdExhausted")<{}> {}
-export class TodoPersistenceError extends Data.TaggedError("TodoPersistenceError")<{
+export class <%- entitySingular %>TextInvalid extends Data.TaggedError("<%- entitySingular %>TextInvalid")<{ readonly reason: "empty" }> {}
+export class <%- entitySingular %>NotFound extends Data.TaggedError("<%- entitySingular %>NotFound")<{ readonly id: string }> {}
+export class <%- entitySingular %>AlreadyCompleted extends Data.TaggedError("<%- entitySingular %>AlreadyCompleted")<{ readonly id: string }> {}
+export class <%- entitySingular %>IdExhausted extends Data.TaggedError("<%- entitySingular %>IdExhausted")<{}> {}
+export class <%- entitySingular %>PersistenceError extends Data.TaggedError("<%- entitySingular %>PersistenceError")<{
   readonly operation: "read" | "write"
 }> {}
 
-export type TodoEvent = Data.TaggedEnum<{
-  TodoAdded: { readonly todo: Todo }
-  TodoCompleted: { readonly todo: Todo }
-  TodoRemoved: { readonly todo: Todo }
+export type <%- entitySingular %>Event = Data.TaggedEnum<{
+  <%- entitySingular %>Added: { readonly <%- entityIdentifier %>: <%- entitySingular %> }
+  <%- entitySingular %>Completed: { readonly <%- entityIdentifier %>: <%- entitySingular %> }
+  <%- entitySingular %>Removed: { readonly <%- entityIdentifier %>: <%- entitySingular %> }
 }>
-export const TodoEvent = Data.taggedEnum<TodoEvent>()
+export const <%- entitySingular %>Event = Data.taggedEnum<<%- entitySingular %>Event>()

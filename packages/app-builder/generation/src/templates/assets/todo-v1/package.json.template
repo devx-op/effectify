@@ -1,5 +1,5 @@
 {
-  "name": "@effectify/todo-workspace",
+  "name": "<%- workspacePackageName %>",
   "packageManager": "pnpm@10.14.0",
   "private": true,
   "scripts": {

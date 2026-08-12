@@ -1,7 +1,7 @@
 import * as Data from "effect/Data"
 import * as Schema from "effect/Schema"
 
-export const <%- entitySingular %>Id = Schema.NonEmptyString.pipe(Schema.brand("Effectify.<%- entitySingular %>Id"))
+export const <%- entitySingular %>Id = Schema.NonEmptyString.pipe(Schema.brand("<%- brandNamespace %>.<%- entitySingular %>Id"))
 export type <%- entitySingular %>Id = typeof <%- entitySingular %>Id.Type
 
 export const <%- entitySingular %> = Schema.Struct({

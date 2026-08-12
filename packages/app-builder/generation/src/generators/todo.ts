@@ -4,7 +4,7 @@ import * as Effect from "effect/Effect"
 import * as Schema from "effect/Schema"
 import * as Kernel from "../kernel.js"
 import type { PackageSurfaceInput } from "./surfaces.js"
-import { renderTemplate, templateAsset, type TemplateSubstitutions } from "../templates.js"
+import { renderTemplate, templateAsset, templateSubstitutions, type TemplateSubstitutions } from "../templates.js"
 
 const ids = ["model", "port", "event", "use-case", "integration-adapter", "presentation"] as const
 export { ids as TodoGenerationBlockIds }
@@ -27,18 +27,13 @@ const importFrom = (context: Kernel.RenderContext, from: Kernel.PackageTarget, i
   return relative(`${from.root}/src`, `${target.root}/src/index.js`).replace(/^(?!\.)/, "./")
 }
 
-const substitutions = (context: Kernel.RenderContext, target: Kernel.PackageTarget): TemplateSubstitutions => ({
-  applicationImport: importFrom(context, target, "application"),
-  domainImport: importFrom(context, target, "domain"),
-  entityId: context.entity.id,
-  entityIdentifier: `${context.entity.singular[0]?.toLowerCase()}${context.entity.singular.slice(1)}`,
-  entityPlural: context.entity.plural,
-  entitySingular: context.entity.singular,
-  infrastructureImport: importFrom(context, target, "infrastructure"),
-  targetRoot: target.root,
-  tmpl: "",
-  workspaceScope: context.workspace.npmScope,
-})
+const substitutions = (context: Kernel.RenderContext, target: Kernel.PackageTarget): TemplateSubstitutions =>
+  templateSubstitutions(context, {
+    applicationImport: importFrom(context, target, "application"),
+    domainImport: importFrom(context, target, "domain"),
+    infrastructureImport: importFrom(context, target, "infrastructure"),
+    targetRoot: target.root,
+  })
 
 export const todoContribution = (options: {
   readonly content: string

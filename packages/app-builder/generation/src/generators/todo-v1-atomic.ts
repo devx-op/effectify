@@ -2,25 +2,33 @@ import { createHash } from "node:crypto"
 import * as Effect from "effect/Effect"
 import * as Schema from "effect/Schema"
 import * as Kernel from "../kernel.js"
-import { renderTemplate, templateAsset } from "../templates.js"
-const canonicalTemplate = (path: string): string =>
-  renderTemplate(
-    templateAsset({
-      directory: "todo-v1",
-      group: "todo-v1",
-      outputPath: path,
-      sourcePath: `${path}.template`,
-      substitutions: { tmpl: "" },
-    }),
-  )
+import { renderTemplate, templateAsset, templateSubstitutions } from "../templates.js"
 const contribution = (
-  content: string,
+  context: Kernel.RenderContext,
+  sourcePath: string,
   owner: string,
   packageId: Kernel.FileContribution["package"],
   path: string,
   surface: string,
-): Kernel.FileContribution =>
-  Object.freeze({
+): Kernel.FileContribution => {
+  const sourceRoot = [
+    "apps/todo-cli",
+    "packages/todo/application",
+    "packages/todo/domain",
+    "packages/todo/infrastructure",
+  ].find((root) => sourcePath.startsWith(`${root}/`))
+  const targetDirectory =
+    packageId === "workspace" ? "" : context.packages.find((target) => target.id === packageId)?.root
+  const template = templateAsset({
+    directory: sourceRoot === undefined ? "todo-v1" : `todo-v1/${sourceRoot}`,
+    group: `todo-v1-${packageId}`,
+    outputPath: path,
+    sourcePath: sourceRoot === undefined ? sourcePath : sourcePath.slice(sourceRoot.length + 1),
+    substitutions: templateSubstitutions(context),
+    targetDirectory,
+  })
+  const content = renderTemplate(template)
+  return Object.freeze({
     bytes: new TextEncoder().encode(content),
     mode: "100644",
     owner: Kernel.identifier(owner),
@@ -28,26 +36,22 @@ const contribution = (
     path: Kernel.safeRelativePath(path),
     sourceDigest: Kernel.sourceDigest(`sha256:${createHash("sha256").update(content).digest("hex")}`),
     surface: Kernel.identifier(surface),
-    template: templateAsset({
-      directory: "todo-v1",
-      group: "todo-v1",
-      outputPath: path,
-      sourcePath: `${path}.template`,
-      substitutions: { tmpl: "" },
-    }),
+    template,
   })
+}
 const workspace: Kernel.AtomicGenerator<unknown> = {
   InputSchema: Schema.Unknown,
   id: Kernel.identifier("todo-v1-workspace"),
   provides: Kernel.capabilities("todo-v1-workspace"),
   requires: Kernel.capabilities(),
   version: "1",
-  render: () =>
+  render: (_input, context) =>
     Effect.succeed(
       Object.freeze(
         ["nx.json", "package.json", "pnpm-workspace.yaml", "tsconfig.build.json", "vitest.config.mts"].map((path) =>
           contribution(
-            canonicalTemplate(path),
+            context,
+            `${path}.template`,
             `workspace-surface-${path.replace(/[^a-z0-9]+/g, "-")}`,
             "workspace",
             path,
@@ -63,6 +67,7 @@ const definitions = [
   ["infrastructure", ["application", "domain"], "todo-v1-infrastructure-surface"],
   ["presentation", ["infrastructure", "application", "domain"], "todo-v1-presentation-surface"],
 ] as const
+const sourceRoot = (id: string) => (id === "presentation" ? "apps/todo-cli" : `packages/todo/${id}`)
 const packageSurface = (
   id: (typeof definitions)[number][0],
   dependencies: ReadonlyArray<string>,
@@ -77,19 +82,26 @@ const packageSurface = (
     const target = context.packages.find((candidate) => candidate.id === id)
     const resolved = dependencies.map((dependency) => context.packages.find((candidate) => candidate.id === dependency))
     if (target === undefined || resolved.some((dependency) => dependency === undefined))
-      return Effect.fail(new Kernel.RenderFailure({ generatorId: capability, reason: "unsafe-path" }))
+      return Effect.fail(
+        new Kernel.RenderFailure({
+          generatorId: capability,
+          reason: "unsafe-path",
+        }),
+      )
     const owner = `package-surface-${id}`
     return Effect.succeed(
       Object.freeze([
         contribution(
-          canonicalTemplate(`${target.root}/package.json`),
+          context,
+          `${sourceRoot(id)}/package.json.template`,
           `${owner}-manifest`,
           target.id,
           `${target.root}/package.json`,
           "package-surface",
         ),
         contribution(
-          canonicalTemplate(`${target.root}/src/index.ts`),
+          context,
+          `${sourceRoot(id)}/src/index.ts.template`,
           `${owner}-barrel`,
           target.id,
           `${target.root}/src/index.ts`,
@@ -99,21 +111,30 @@ const packageSurface = (
     )
   },
 })
-const templateTest = (packageId: string, path: string) => [packageId, path, canonicalTemplate(path)] as const
+const templateTest = (packageId: string, sourcePath: string, relativePath: string) =>
+  [packageId, sourcePath, relativePath] as const
 const leafFiles = {
-  model: templateTest("domain", "packages/todo/domain/tests/todo.test.ts"),
-  event: ["domain", "packages/todo/domain/src/events.ts", 'export type { TodoEvent } from "./index.js"\n'],
+  model: templateTest(
+    "domain",
+    "packages/todo/domain/tests/__entityId__.test.ts.template",
+    "tests/__entityId__.test.ts",
+  ),
+  event: templateTest("domain", "packages/todo/domain/src/events.ts.template", "src/events.ts"),
   port: ["application", undefined, undefined],
-  "use-case": [
-    "application",
-    "packages/todo/application/src/use-case.ts",
-    'export { TodoApplication } from "./index.js"\n',
-  ],
-  "integration-adapter": templateTest("infrastructure", "packages/todo/infrastructure/tests/todo-runtime.test.ts"),
-  presentation: templateTest("presentation", "apps/todo-cli/tests/todo.test.ts"),
+  "use-case": templateTest("application", "packages/todo/application/src/use-case.ts.template", "src/use-case.ts"),
+  "integration-adapter": templateTest(
+    "infrastructure",
+    "packages/todo/infrastructure/tests/__entityId__-runtime.test.ts.template",
+    "tests/__entityId__-runtime.test.ts",
+  ),
+  presentation: templateTest(
+    "presentation",
+    "apps/todo-cli/tests/__entityId__.test.ts.template",
+    "tests/__entityId__.test.ts",
+  ),
 } as const
 const leaf = (id: keyof typeof leafFiles, requires: ReadonlyArray<string>): Kernel.AtomicGenerator<unknown> => {
-  const [packageId, path, content] = leafFiles[id]
+  const [packageId, sourcePath, relativePath] = leafFiles[id]
   return {
     InputSchema: Schema.Unknown,
     id: Kernel.identifier(`todo-v1-${id}`),
@@ -123,19 +144,25 @@ const leaf = (id: keyof typeof leafFiles, requires: ReadonlyArray<string>): Kern
     render: (_input, context) => {
       const target = context.packages.find((candidate) => candidate.id === packageId)
       if (target === undefined)
-        return Effect.fail(new Kernel.RenderFailure({ generatorId: `todo-v1-${id}`, reason: "unsafe-path" }))
+        return Effect.fail(
+          new Kernel.RenderFailure({
+            generatorId: `todo-v1-${id}`,
+            reason: "unsafe-path",
+          }),
+        )
+      if (sourcePath === undefined || relativePath === undefined) return Effect.succeed(Object.freeze([]))
+      const path = `${target.root}/${relativePath.replaceAll("__entityId__", context.entity.id)}`
       return Effect.succeed(
-        path === undefined || content === undefined
-          ? Object.freeze([])
-          : Object.freeze([
-              contribution(
-                content,
-                `todo-${id}-${path.replace(/[^a-z0-9]+/g, "-")}`,
-                target.id,
-                path,
-                "todo-capability",
-              ),
-            ]),
+        Object.freeze([
+          contribution(
+            context,
+            sourcePath,
+            `todo-${id}-${path.replace(/[^a-z0-9]+/g, "-")}`,
+            target.id,
+            path,
+            "todo-capability",
+          ),
+        ]),
       )
     },
   }

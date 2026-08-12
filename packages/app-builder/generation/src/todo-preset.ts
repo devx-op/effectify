@@ -18,22 +18,25 @@ export type TodoTopologyFile = GenerationBlockFile
 export const isTodoTopologyPath = (path: string): boolean =>
   WorkspaceRootFiles.some((file) => file === path) || TodoTopologyRoots.some((root) => path.startsWith(`${root}/`))
 
-/** Fixed render context for the public Todo preset. */
 export const DefaultTodoRenderContext = Object.freeze({
   version: "effectify.render-context/1" as const,
   workspace: Object.freeze({ name: "todo-workspace", npmScope: "@effectify" }),
   domain: Object.freeze({ id: "domain", importName: "@effectify/todo-domain" }),
   entity: Object.freeze({ id: "todo", singular: "Todo", plural: "Todos", importName: "@effectify/todo-cli" }),
-  packages: Object.freeze([
-    Object.freeze({ id: "domain", name: "@effectify/todo-domain", root: "packages/todo/domain" }),
-    Object.freeze({ id: "application", name: "@effectify/todo-application", root: "packages/todo/application" }),
-    Object.freeze({
-      id: "infrastructure",
-      name: "@effectify/todo-infrastructure",
-      root: "packages/todo/infrastructure",
-    }),
-    Object.freeze({ id: "presentation", name: "@effectify/todo-cli", root: "apps/todo-cli" }),
-  ]),
+  packages: Object.freeze(
+    TodoTopologyRoots.map((root, index) =>
+      Object.freeze({
+        id: ["domain", "application", "infrastructure", "presentation"][index]!,
+        name: [
+          "@effectify/todo-domain",
+          "@effectify/todo-application",
+          "@effectify/todo-infrastructure",
+          "@effectify/todo-cli",
+        ][index]!,
+        root,
+      }),
+    ),
+  ),
 })
 
 export interface TodoTopologyProject {
