@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs"
-import { dirname, isAbsolute, join, relative } from "node:path"
+import { isAbsolute, join, relative } from "node:path"
 import { fileURLToPath } from "node:url"
 import ejs from "ejs"
 
@@ -11,18 +11,8 @@ export interface TemplateSubstitutions {
 export interface TemplateAsset {
   readonly directory: string
   readonly group: string
-  readonly outputPath: string
   readonly sourcePath: string
   readonly substitutions: TemplateSubstitutions
-  readonly targetDirectory?: string
-}
-
-export interface TemplateGroup {
-  readonly directory: string
-  readonly id: string
-  readonly outputPaths: ReadonlyArray<string>
-  readonly substitutions: TemplateSubstitutions
-  readonly targetDirectory: string
 }
 
 const root = fileURLToPath(new URL("./templates/assets/", import.meta.url))
@@ -30,7 +20,7 @@ const safe = (value: string): boolean =>
   value.length > 0 &&
   !isAbsolute(value) &&
   !value.includes("\\") &&
-  value.split("/").every((segment) => /^[A-Za-z0-9_.-]+$/.test(segment) && segment !== "." && segment !== "..")
+  value.split("/").every((segment) => ![".", ".."].includes(segment) && /^[A-Za-z0-9_.-]+$/.test(segment))
 
 export const templateRoot = (): string => root
 
@@ -53,19 +43,15 @@ export const templateSubstitutions = (
   const typeName = (value: string) => `${value[0]?.toLowerCase()}${value.slice(1)}`
   return Object.freeze({
     applicationImport: application.name,
-    applicationRoot: application.root,
     brandNamespace: context.workspace.npmScope.slice(1).replace(/(^|-)(\w)/g, (_, _dash, char) => char.toUpperCase()),
     domainImport: domain.name,
-    domainRoot: domain.root,
     entityId: context.entity.id,
     entityIdentifier: typeName(context.entity.singular),
     entityPlural: context.entity.plural,
     entityPluralIdentifier: typeName(context.entity.plural),
     entitySingular: context.entity.singular,
     infrastructureImport: infrastructure.name,
-    infrastructureRoot: infrastructure.root,
     presentationImport: presentation.name,
-    presentationRoot: presentation.root,
     workspacePackageGlobs: globs.map((path) => `  - ${path}`).join("\n"),
     workspacePackageName: `${context.workspace.npmScope}/${context.workspace.name}`,
     workspaceScope: context.workspace.npmScope,
@@ -76,7 +62,7 @@ export const templateSubstitutions = (
   })
 }
 
-export const templateDirectory = (group: Pick<TemplateGroup, "directory">): string => {
+export const templateDirectory = (group: Pick<TemplateAsset, "directory">): string => {
   if (!safe(group.directory)) throw new Error(`Unsafe template directory: ${group.directory}`)
   const directory = join(root, group.directory)
   if (relative(root, directory).startsWith("..")) throw new Error(`Template directory escapes package: ${directory}`)
@@ -84,10 +70,7 @@ export const templateDirectory = (group: Pick<TemplateGroup, "directory">): stri
 }
 
 export const templateAsset = (options: TemplateAsset): TemplateAsset => {
-  if (
-    ![options.directory, options.group, options.outputPath, options.sourcePath].every(safe) ||
-    (options.targetDirectory !== undefined && options.targetDirectory !== "" && !safe(options.targetDirectory))
-  ) {
+  if (![options.directory, options.group, options.sourcePath].every(safe)) {
     throw new Error(`Unsafe template asset: ${options.sourcePath}`)
   }
   return Object.freeze({
@@ -102,7 +85,6 @@ export const templateAsset = (options: TemplateAsset): TemplateAsset => {
  */
 export const renderTemplate = (asset: TemplateAsset): string => {
   const source = join(templateDirectory(asset), asset.sourcePath)
-  if (relative(root, dirname(source)).startsWith("..")) throw new Error(`Template source escapes package: ${source}`)
   return ejs.render(readFileSync(source, "utf8"), asset.substitutions, {
     filename: source,
   })
@@ -110,39 +92,19 @@ export const renderTemplate = (asset: TemplateAsset): string => {
 
 export const templateGroups = (
   contributions: ReadonlyArray<{ readonly template?: TemplateAsset }>,
-): ReadonlyArray<TemplateGroup> => {
-  const groups = new Map<string, TemplateGroup>()
+): ReadonlyArray<TemplateAsset> => {
+  const groups = new Map<string, TemplateAsset>()
   for (const contribution of contributions) {
     const asset = contribution.template
     if (asset === undefined) continue
     const existing = groups.get(asset.group)
-    if (existing === undefined) {
-      groups.set(
-        asset.group,
-        Object.freeze({
-          directory: asset.directory,
-          id: asset.group,
-          outputPaths: Object.freeze([asset.outputPath]),
-          substitutions: asset.substitutions,
-          targetDirectory: asset.targetDirectory ?? "",
-        }),
-      )
-      continue
-    }
     if (
-      existing.directory !== asset.directory ||
-      existing.targetDirectory !== (asset.targetDirectory ?? "") ||
-      JSON.stringify(existing.substitutions) !== JSON.stringify(asset.substitutions)
-    ) {
-      throw new Error(`Inconsistent template group: ${asset.group}`)
-    }
-    groups.set(
-      asset.group,
-      Object.freeze({
-        ...existing,
-        outputPaths: Object.freeze([...existing.outputPaths, asset.outputPath]),
-      }),
+      existing !== undefined &&
+      (existing.directory !== asset.directory ||
+        JSON.stringify(existing.substitutions) !== JSON.stringify(asset.substitutions))
     )
+      throw new Error(`Inconsistent template group: ${asset.group}`)
+    groups.set(asset.group, asset)
   }
-  return Object.freeze([...groups.values()].sort((left, right) => left.id.localeCompare(right.id)))
+  return Object.freeze([...groups.values()].sort((left, right) => left.group.localeCompare(right.group)))
 }

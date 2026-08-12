@@ -1,9 +1,6 @@
 import { generateFiles, type Tree } from "@nx/devkit"
 import { Templates, TodoPreset, type TodoPlan } from "@effectify/app-builder-generation"
 import { Buffer } from "node:buffer"
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
-import { dirname, join } from "node:path"
-import { tmpdir } from "node:os"
 import * as Data from "effect/Data"
 import * as Effect from "effect/Effect"
 
@@ -18,71 +15,18 @@ export class TodoTopologyApplyError extends Data.TaggedError("TodoTopologyApplyE
   readonly reason: "dependency-direction" | "ownership-conflict"
 }> {}
 
-const outwardProjects = new Set(["@effectify/todo-infrastructure", "@effectify/todo-cli"])
-
 interface StagedOutput {
   readonly bytes: Buffer
-  readonly owner: string
   readonly path: string
 }
 
-class StagingTree implements Tree {
-  readonly root = "/effectify-template-staging"
-  readonly #allowedPaths: ReadonlySet<string>
-  readonly #files = new Map<string, Buffer>()
-
-  constructor(allowedPaths: ReadonlyArray<string>) {
-    this.#allowedPaths = new Set(allowedPaths)
-  }
-
-  read(path: string): Buffer | null
-  read(path: string, encoding: BufferEncoding): string | null
-  read(path: string, encoding?: BufferEncoding): Buffer | string | null {
-    const content = this.#files.get(path)
-    return content === undefined ? null : encoding === undefined ? Buffer.from(content) : content.toString(encoding)
-  }
-  write(path: string, content: Buffer | string): void {
-    if (!this.#allowedPaths.has(path)) return
-    this.#files.set(path, Buffer.isBuffer(content) ? Buffer.from(content) : Buffer.from(content))
-  }
-  exists(path: string): boolean {
-    return this.#files.has(path)
-  }
-  delete(path: string): void {
-    this.#files.delete(path)
-  }
-  rename(from: string, to: string): void {
-    if (!this.#allowedPaths.has(to)) return
-    const content = this.#files.get(from)
-    if (content !== undefined) this.#files.set(to, content)
-    this.#files.delete(from)
-  }
-  isFile(path: string): boolean {
-    return this.#files.has(path)
-  }
-  children(path: string): string[] {
-    const prefix = path.length === 0 ? "" : `${path.replace(/\/$/, "")}/`
-    return [
-      ...new Set(
-        [...this.#files.keys()]
-          .filter((file) => file.startsWith(prefix))
-          .map((file) => file.slice(prefix.length).split("/")[0]),
-      ),
-    ]
-  }
-  listChanges(): ReturnType<Tree["listChanges"]> {
-    return [...this.#files].map(([path, content]) => ({ content, path, type: "CREATE" as const }))
-  }
-  changePermissions(): void {}
-}
-
-const isAllowedPath = (path: string): boolean =>
+const isAllowedPath = (path: string, roots: ReadonlyArray<string>): boolean =>
   path.length > 0 &&
   !path.includes("\\") &&
   path
     .split("/")
     .every((segment) => segment !== "." && segment !== ".." && /^[A-Za-z0-9.][A-Za-z0-9._-]*$/.test(segment)) &&
-  TodoPreset.isTodoTopologyPath(path)
+  TodoPreset.isTodoTopologyPath(path, roots)
 
 const validateOwnership = (tree: Tree, outputs: ReadonlyArray<StagedOutput>): TodoTopologyApplyError | undefined => {
   for (const output of outputs) {
@@ -96,9 +40,14 @@ const validateOwnership = (tree: Tree, outputs: ReadonlyArray<StagedOutput>): To
 }
 
 const validateDependencies = (topology: TodoPreset.TodoTopology): TodoTopologyApplyError | undefined => {
+  const outwardNames = new Set(
+    topology.projects
+      .filter(({ role }) => role === "infrastructure" || role === "presentation")
+      .map(({ name }) => name),
+  )
   for (const project of topology.projects) {
-    const isInwardOnly = project.name === "@effectify/todo-domain" || project.name === "@effectify/todo-application"
-    if (isInwardOnly && project.dependencies.some((dependency: string) => outwardProjects.has(dependency))) {
+    const isInwardOnly = project.role === "domain" || project.role === "application"
+    if (isInwardOnly && project.dependencies.some((dependency: string) => outwardNames.has(dependency))) {
       return new TodoTopologyApplyError({ project: project.name, reason: "dependency-direction" })
     }
   }
@@ -106,57 +55,46 @@ const validateDependencies = (topology: TodoPreset.TodoTopology): TodoTopologyAp
   return undefined
 }
 
-const stageTemplates = (topology: TodoPreset.TodoTopology): ReadonlyArray<StagedOutput> | TodoTopologyApplyError => {
+const stageTemplates = (
+  tree: Tree,
+  topology: TodoPreset.TodoTopology,
+): ReadonlyArray<StagedOutput> | TodoTopologyApplyError => {
   const paths = new Set<string>()
-  const expected = new Map<string, string>()
   for (const file of topology.files) {
-    if (!isAllowedPath(file.path) || file.owner.length === 0 || paths.has(file.path)) {
+    if (!isAllowedPath(file.path, topology.roots) || file.owner.length === 0 || paths.has(file.path)) {
       return new TodoTopologyApplyError({ path: file.path, reason: "ownership-conflict" })
     }
     paths.add(file.path)
-    expected.set(file.path, file.owner)
   }
-  const staging = new StagingTree([...paths])
-  const groups = Templates.templateGroups(topology.files)
-  let fallbackDirectory: string | undefined
-  let fallbackChanges: ReturnType<Tree["listChanges"]> = []
+  const staged = new Map<string, Buffer>()
+  const staging = new Proxy(tree, {
+    get: (target, property, receiver) =>
+      property === "exists"
+        ? (path: string) => staged.has(path)
+        : property === "write"
+          ? (path: string, content: Buffer | string) => {
+              if (paths.has(path)) staged.set(path, Buffer.from(content))
+            }
+          : Reflect.get(target, property, receiver),
+  })
   try {
-    const fallbackFiles = topology.files.filter((file) => file.template === undefined)
-    if (fallbackFiles.length > 0) {
-      const fallbackStaging = new StagingTree(fallbackFiles.map((file) => file.path))
-      fallbackDirectory = mkdtempSync(join(tmpdir(), "effectify-nx-"))
-      for (const file of fallbackFiles) {
-        const source = join(fallbackDirectory, `${file.path}.template`)
-        mkdirSync(dirname(source), { recursive: true })
-        writeFileSync(source, file.content)
-      }
-      generateFiles(fallbackStaging, fallbackDirectory, "", { tmpl: "" })
-      fallbackChanges = fallbackStaging.listChanges()
+    for (const file of topology.files) if (file.template === undefined) staged.set(file.path, Buffer.from(file.content))
+    for (const group of Templates.templateGroups(topology.files)) {
+      generateFiles(staging, Templates.templateDirectory(group), "", group.substitutions)
     }
-    for (const group of groups) {
-      generateFiles(staging, Templates.templateDirectory(group), group.targetDirectory, group.substitutions)
-    }
-    for (const change of fallbackChanges) if (change.content !== null) staging.write(change.path, change.content)
   } catch {
     return new TodoTopologyApplyError({ reason: "ownership-conflict" })
-  } finally {
-    if (fallbackDirectory !== undefined) rmSync(fallbackDirectory, { force: true, recursive: true })
   }
-  const stagedPaths = staging
-    .listChanges()
-    .map((change) => change.path)
-    .sort()
-  if (JSON.stringify(stagedPaths) !== JSON.stringify([...paths].sort())) {
+  if (staged.size !== paths.size) {
     return new TodoTopologyApplyError({ reason: "ownership-conflict" })
   }
   const outputs: Array<StagedOutput> = []
   for (const path of paths) {
-    const bytes = staging.read(path)
-    const owner = expected.get(path)
-    if (bytes === null || owner === undefined) {
+    const bytes = staged.get(path)
+    if (bytes === undefined) {
       return new TodoTopologyApplyError({ path, reason: "ownership-conflict" })
     }
-    outputs.push(Object.freeze({ bytes, owner, path }))
+    outputs.push(Object.freeze({ bytes, path }))
   }
   return Object.freeze(outputs)
 }
@@ -169,7 +107,7 @@ export const applyTodoTopology = (
   Effect.gen(function* () {
     const dependencyFailure = validateDependencies(topology)
     if (dependencyFailure !== undefined) return yield* Effect.fail(dependencyFailure)
-    const stagedResult = stageTemplates(topology)
+    const stagedResult = stageTemplates(tree, topology)
     if (stagedResult instanceof TodoTopologyApplyError) return yield* Effect.fail(stagedResult)
     const staged = stagedResult
     const failure = validateOwnership(tree, staged)

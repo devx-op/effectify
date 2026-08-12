@@ -78,7 +78,6 @@ export const workspaceSurfaceGenerator: AtomicGenerator<PackageSurfaceInput> = {
           const template = templateAsset({
             directory: "generic/workspace",
             group: "workspace-surface",
-            outputPath: path,
             sourcePath: `${path}.template`,
             substitutions,
           })
@@ -146,14 +145,12 @@ export const packageSurfaceGenerator: AtomicGenerator<PackageSurfaceInput> = {
       const manifestTemplate = templateAsset({
         directory: "generic/package",
         group: `package-surface-${target.id}`,
-        outputPath: `${target.root}/package.json`,
         sourcePath: "__targetRoot__/package.json.template",
         substitutions,
       })
       const barrelTemplate = templateAsset({
         directory: "generic/package",
         group: `package-surface-${target.id}`,
-        outputPath: `${target.root}/src/index.ts`,
         sourcePath: "__targetRoot__/src/index.ts.template",
         substitutions,
       })

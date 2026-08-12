@@ -26,8 +26,14 @@ export type {
   SourceDigest,
   SurfaceId,
 } from "./kernel.js"
-export type { TemplateAsset, TemplateGroup, TemplateSubstitutions } from "./templates.js"
+export type { TemplateAsset, TemplateSubstitutions } from "./templates.js"
 export type { CatalogComposition } from "./catalog.js"
 export type { ReplayProvenance } from "./provenance.js"
 export type { TodoGenerationBlockId } from "./generators/index.js"
-export type { TodoTopology, TodoTopologyFile, TodoTopologyProject, TodoTopologyRoot } from "./todo-preset.js"
+export type {
+  TodoPackageRole,
+  TodoTopology,
+  TodoTopologyFile,
+  TodoTopologyProject,
+  TodoTopologyRoot,
+} from "./todo-preset.js"

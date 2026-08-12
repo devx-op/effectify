@@ -11,21 +11,13 @@ const contribution = (
   path: string,
   surface: string,
 ): Kernel.FileContribution => {
-  const sourceRoot = [
-    "apps/todo-cli",
-    "packages/todo/application",
-    "packages/todo/domain",
-    "packages/todo/infrastructure",
-  ].find((root) => sourcePath.startsWith(`${root}/`))
-  const targetDirectory =
-    packageId === "workspace" ? "" : context.packages.find((target) => target.id === packageId)?.root
+  const [directory, ...relativeSource] = sourcePath.split("/")
+  const targetRoot = packageId === "workspace" ? undefined : context.packages.find(({ id }) => id === packageId)?.root
   const template = templateAsset({
-    directory: sourceRoot === undefined ? "todo-v1" : `todo-v1/${sourceRoot}`,
+    directory: `blueprint/${directory}`,
     group: `todo-v1-${packageId}`,
-    outputPath: path,
-    sourcePath: sourceRoot === undefined ? sourcePath : sourcePath.slice(sourceRoot.length + 1),
-    substitutions: templateSubstitutions(context),
-    targetDirectory,
+    sourcePath: relativeSource.join("/"),
+    substitutions: templateSubstitutions(context, targetRoot === undefined ? {} : { targetRoot }),
   })
   const content = renderTemplate(template)
   return Object.freeze({
@@ -51,7 +43,7 @@ const workspace: Kernel.AtomicGenerator<unknown> = {
         ["nx.json", "package.json", "pnpm-workspace.yaml", "tsconfig.build.json", "vitest.config.mts"].map((path) =>
           contribution(
             context,
-            `${path}.template`,
+            `workspace/${path}.template`,
             `workspace-surface-${path.replace(/[^a-z0-9]+/g, "-")}`,
             "workspace",
             path,
@@ -67,7 +59,6 @@ const definitions = [
   ["infrastructure", ["application", "domain"], "todo-v1-infrastructure-surface"],
   ["presentation", ["infrastructure", "application", "domain"], "todo-v1-presentation-surface"],
 ] as const
-const sourceRoot = (id: string) => (id === "presentation" ? "apps/todo-cli" : `packages/todo/${id}`)
 const packageSurface = (
   id: (typeof definitions)[number][0],
   dependencies: ReadonlyArray<string>,
@@ -93,7 +84,7 @@ const packageSurface = (
       Object.freeze([
         contribution(
           context,
-          `${sourceRoot(id)}/package.json.template`,
+          `${id === "domain" ? "layer-1" : id === "application" ? "layer-2" : id === "infrastructure" ? "layer-3" : "layer-4"}/__targetRoot__/package.json.template`,
           `${owner}-manifest`,
           target.id,
           `${target.root}/package.json`,
@@ -101,7 +92,7 @@ const packageSurface = (
         ),
         contribution(
           context,
-          `${sourceRoot(id)}/src/index.ts.template`,
+          `${id === "domain" ? "layer-1" : id === "application" ? "layer-2" : id === "infrastructure" ? "layer-3" : "layer-4"}/__targetRoot__/src/index.ts.template`,
           `${owner}-barrel`,
           target.id,
           `${target.root}/src/index.ts`,
@@ -116,20 +107,20 @@ const templateTest = (packageId: string, sourcePath: string, relativePath: strin
 const leafFiles = {
   model: templateTest(
     "domain",
-    "packages/todo/domain/tests/__entityId__.test.ts.template",
+    "layer-1/__targetRoot__/tests/__entityId__.test.ts.template",
     "tests/__entityId__.test.ts",
   ),
-  event: templateTest("domain", "packages/todo/domain/src/events.ts.template", "src/events.ts"),
+  event: templateTest("domain", "layer-1/__targetRoot__/src/events.ts.template", "src/events.ts"),
   port: ["application", undefined, undefined],
-  "use-case": templateTest("application", "packages/todo/application/src/use-case.ts.template", "src/use-case.ts"),
+  "use-case": templateTest("application", "layer-2/__targetRoot__/src/use-case.ts.template", "src/use-case.ts"),
   "integration-adapter": templateTest(
     "infrastructure",
-    "packages/todo/infrastructure/tests/__entityId__-runtime.test.ts.template",
+    "layer-3/__targetRoot__/tests/__entityId__-runtime.test.ts.template",
     "tests/__entityId__-runtime.test.ts",
   ),
   presentation: templateTest(
     "presentation",
-    "apps/todo-cli/tests/__entityId__.test.ts.template",
+    "layer-4/__targetRoot__/tests/__entityId__.test.ts.template",
     "tests/__entityId__.test.ts",
   ),
 } as const
@@ -151,7 +142,7 @@ const leaf = (id: keyof typeof leafFiles, requires: ReadonlyArray<string>): Kern
           }),
         )
       if (sourcePath === undefined || relativePath === undefined) return Effect.succeed(Object.freeze([]))
-      const path = `${target.root}/${relativePath.replaceAll("__entityId__", context.entity.id)}`
+      const path = `${target.root}/${relativePath.replace("__entityId__", context.entity.id)}`
       return Effect.succeed(
         Object.freeze([
           contribution(
@@ -176,6 +167,23 @@ const port = leaf("port", ["todo-v1-model", "todo-v1-application-surface"])
 const useCase = leaf("use-case", ["todo-v1-port", "todo-v1-application-surface"])
 const adapter = leaf("integration-adapter", ["todo-v1-use-case", "todo-v1-infrastructure-surface"])
 const presentation = leaf("presentation", ["todo-v1-integration-adapter", "todo-v1-presentation-surface"])
+export const DefaultTodoRenderContext = Object.freeze({
+  version: "effectify.render-context/1" as const,
+  workspace: Object.freeze({ name: "todo-workspace", npmScope: "@effectify" }),
+  domain: Object.freeze({ id: "todo", name: "Todo", importName: "@effectify/todo-domain" }),
+  entity: Object.freeze({ id: "todo", singular: "Todo", plural: "Todos" }),
+  entrypoint: Object.freeze({ id: "todo-cli", name: "TodoCli", importName: "@effectify/todo-cli" }),
+  packages: Object.freeze(
+    [
+      ["domain", "@effectify/todo-domain", "packages/todo/domain"],
+      ["application", "@effectify/todo-application", "packages/todo/application"],
+      ["infrastructure", "@effectify/todo-infrastructure", "packages/todo/infrastructure"],
+      ["presentation", "@effectify/todo-cli", "apps/todo-cli"],
+    ].map(([id, name, root]) =>
+      Object.freeze({ id: Kernel.identifier(id!), name: name!, root: Kernel.safeRelativePath(root!) }),
+    ),
+  ),
+})
 export const TodoV1AtomicCatalog = Kernel.defineCatalog([
   workspace,
   domainSurface,
@@ -189,16 +197,16 @@ export const TodoV1AtomicCatalog = Kernel.defineCatalog([
   adapter,
   presentation,
 ])
-const TodoV1Identity =
-  '{"version":"effectify.render-context/1","workspace":{"name":"todo-workspace","npmScope":"@effectify"},"domain":{"id":"domain","importName":"@effectify/todo-domain"},"entity":{"id":"todo","singular":"Todo","plural":"Todos","importName":"@effectify/todo-cli"},"packages":[{"id":"application","name":"@effectify/todo-application","root":"packages/todo/application"},{"id":"domain","name":"@effectify/todo-domain","root":"packages/todo/domain"},{"id":"infrastructure","name":"@effectify/todo-infrastructure","root":"packages/todo/infrastructure"},{"id":"presentation","name":"@effectify/todo-cli","root":"apps/todo-cli"}]}'
 const todoV1Identity = (context: Kernel.RenderContext): string =>
   JSON.stringify({
     version: context.version,
     workspace: context.workspace,
     domain: context.domain,
     entity: context.entity,
+    entrypoint: context.entrypoint,
     packages: [...context.packages].sort((left, right) => left.id.localeCompare(right.id)),
   })
+const TodoV1Identity = todoV1Identity(DefaultTodoRenderContext)
 export const isTodoV1Context = (context: Kernel.RenderContext): boolean => todoV1Identity(context) === TodoV1Identity
 export const todoV1GeneratorIds = (selected: ReadonlyArray<string>) =>
   selected.map((id) => Kernel.identifier(`todo-v1-${id}`))

@@ -67,9 +67,8 @@ export const defineTodoGenerator = (definition: TodoGeneratorDefinition): Kernel
       Object.freeze(
         definition.files.map((file) => {
           const template = templateAsset({
-            directory: `generic/${definition.id}`,
+            directory: `generic/${definition.id === "presentation" ? "interface" : definition.id}`,
             group: `todo-${definition.id}`,
-            outputPath: `${target.root}/${file.relativePath}`,
             sourcePath: file.sourcePath,
             substitutions: substitutions(context, target),
           })

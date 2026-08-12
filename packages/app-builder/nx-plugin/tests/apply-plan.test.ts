@@ -1,12 +1,8 @@
-import { generateFiles } from "@nx/devkit"
 import { createTree } from "@nx/devkit/testing"
 import { expect, it } from "@effect/vitest"
 import * as Effect from "effect/Effect"
 import { vi } from "vitest"
 import { surfaceRequest } from "../../generation/tests/surface-request.js"
-
-const generatedPathsByCall = vi.hoisted(() => [] as Array<ReadonlyArray<string>>)
-const generatedContentByPath = vi.hoisted(() => new Map<string, string>())
 
 vi.mock("@nx/devkit", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@nx/devkit")>()
@@ -14,17 +10,12 @@ vi.mock("@nx/devkit", async (importOriginal) => {
     ...actual,
     generateFiles: (...args: Parameters<typeof actual.generateFiles>) => {
       actual.generateFiles(...args)
-      for (const [path, content] of generatedContentByPath) {
-        if (args[0].exists(path)) args[0].write(path, content)
-      }
-      generatedPathsByCall.push(args[0].listChanges().map((change) => change.path))
     },
   }
 })
 
 type ApplyPlanModule = typeof import("../src/apply-plan.js")
 type PublicModule = typeof import("../src/index.js")
-type CliModule = typeof import("../../cli/src/index.js")
 type GenerationModule = typeof import("@effectify/app-builder-generation")
 type PlannerModule = typeof import("../../generation/src/planner.js")
 type TodoPresetModule = typeof import("../../generation/src/todo-preset.js")
@@ -46,7 +37,6 @@ const workspaceRootFiles = [
 const modules = () =>
   Effect.all({
     ApplyPlan: Effect.promise<ApplyPlanModule>(() => import(new URL("../src/apply-plan.js", import.meta.url).href)),
-    Cli: Effect.promise<CliModule>(() => import(new URL("../../cli/src/index.js", import.meta.url).href)),
     Generation: Effect.promise<GenerationModule>(() => import("@effectify/app-builder-generation")),
     Planner: Effect.promise<PlannerModule>(
       () => import(new URL("../../generation/src/planner.js", import.meta.url).href),
@@ -92,6 +82,31 @@ it.effect("S05 and R06 apply an approved Todo plan through Tree with exactly fou
   }),
 )
 
+it.effect("materializes custom public naming through real Nx generateFiles", () => {
+  const intent = {
+    version: "effectify.creation-intent/1",
+    preset: "todo",
+    capabilities: ["todo.events"],
+    naming: {
+      workspace: "operations-workspace",
+      npmScope: "@acme",
+      domain: { id: "operations", name: "Operations" },
+      entity: { id: "task", singular: "Task", plural: "Tasks" },
+      entrypoint: { id: "admin-console", name: "AdminConsole" },
+    },
+  }
+  return Effect.gen(function* () {
+    const { ApplyPlan, Planner, TodoPreset } = yield* modules()
+    const plan = yield* Planner.planTodo(intent)
+    const topology = yield* TodoPreset.createTodoTopology(plan)
+    const tree = createTree()
+    const result = yield* ApplyPlan.applyTodoPlan(tree, plan)
+    expect(result.writtenPaths).toEqual(topology.files.map(({ path }) => path))
+    expect(tree.read("apps/admin-console/src/index.ts", "utf8")).toContain("TaskApplication")
+    expect(tree.read("packages/operations/domain/package.json", "utf8")).toContain("@acme/operations-domain")
+  })
+})
+
 it.effect("accepts only canonical workspace-root files before mutating the Tree", () =>
   Effect.gen(function* () {
     const { ApplyPlan, Planner, TodoPreset } = yield* modules()
@@ -121,77 +136,6 @@ it.effect("generic Nx planning behaviorally composes actual surface catalogs", (
 
       expect(adapter).toEqual(direct)
     }
-  }),
-)
-
-it.effect("renders a non-default generic context through real Nx EJS with exact kernel parity", () =>
-  Effect.gen(function* () {
-    const { Cli, Generation } = yield* modules()
-    const context = {
-      version: "effectify.render-context/1" as const,
-      workspace: { name: "operations-workspace", npmScope: "@acme" },
-      domain: { id: "domain", importName: "@acme/work-item-domain" },
-      entity: {
-        id: "work-item",
-        singular: "WorkItem",
-        plural: "WorkItems",
-        importName: "@acme/work-item-console",
-      },
-      packages: [
-        { id: "domain", name: "@acme/work-item-domain", root: "modules/work-items/core" },
-        { id: "application", name: "@acme/work-item-service", root: "services/work-items" },
-        { id: "infrastructure", name: "@acme/work-item-storage", root: "adapters/work-items" },
-        { id: "presentation", name: "@acme/work-item-console", root: "tools/work-items" },
-      ],
-    }
-    const input = {
-      packages: [
-        {
-          dependencies: [],
-          exports: [
-            { from: "./model.js", name: "WorkItem" },
-            { from: "./event.js", name: "WorkItemEvent" },
-          ],
-          packageId: "domain",
-        },
-        {
-          dependencies: ["domain"],
-          exports: [{ from: "./use-case.js", name: "WorkItemApplication" }],
-          packageId: "application",
-        },
-        { dependencies: ["application", "domain"], exports: [], packageId: "infrastructure" },
-        { dependencies: ["infrastructure", "application", "domain"], exports: [], packageId: "presentation" },
-      ],
-    }
-    const options = {
-      catalog: Generation.TodoGeneration.TodoAtomicCatalog,
-      context,
-      input,
-      selected: Generation.TodoGeneration.TodoAtomicCatalog.map((generator) => generator.id),
-    }
-    const plan = yield* Generation.composeCatalog(options)
-    const cli = yield* Cli.composeGeneration(options)
-    const tree = createTree()
-    const initialPaths = new Set(tree.listChanges().map((change) => change.path))
-    for (const group of Generation.Templates.templateGroups(plan.contributions)) {
-      generateFiles(tree, Generation.Templates.templateDirectory(group), group.targetDirectory, group.substitutions)
-    }
-    const expected = Object.fromEntries(
-      plan.contributions.map((file) => [file.path, new TextDecoder().decode(file.bytes)]),
-    )
-    const actual = Object.fromEntries(
-      tree
-        .listChanges()
-        .filter((change) => !initialPaths.has(change.path))
-        .map((change) => [change.path, change.content?.toString()]),
-    )
-
-    expect(Object.keys(actual).sort()).toEqual(Object.keys(expected).sort())
-    expect(actual).toEqual(expected)
-    expect(cli).toEqual(plan)
-    expect(actual["modules/work-items/core/src/model.ts"]).toContain("export const WorkItemId")
-    expect(actual["services/work-items/src/use-case.ts"]).toContain("WorkItemEvent.WorkItemAdded({ workItem: value })")
-    expect(actual["modules/work-items/core/src/index.ts"]).toContain('export { WorkItemEvent } from "./event.js"')
   }),
 )
 
@@ -242,47 +186,6 @@ it.effect("S08 rejects duplicate ownership claims before applying any files", ()
 
     expect(failure).toMatchObject({ _tag: "TodoTopologyApplyError", path: first.path, reason: "ownership-conflict" })
     expect(tree.exists(first.path)).toBe(false)
-  }),
-)
-
-it.effect("rolls back caller Tree writes when committing a validated template plan fails", () =>
-  Effect.gen(function* () {
-    const { ApplyPlan, Planner, TodoPreset } = yield* modules()
-    const tree = createTree()
-    const topology = yield* TodoPreset.createTodoTopology(yield* canonicalPlan(Planner))
-    const originalWrite = tree.write.bind(tree)
-    let writes = 0
-    tree.write = (path, content, options) => {
-      writes += 1
-      if (writes === 2) throw new Error("simulated Tree write failure")
-      originalWrite(path, content, options)
-    }
-
-    const failure = yield* ApplyPlan.applyTodoTopology(tree, topology).pipe(Effect.flip)
-
-    expect(failure).toMatchObject({ _tag: "TodoTopologyApplyError", reason: "ownership-conflict" })
-    expect(topology.files.some((file) => tree.exists(file.path))).toBe(false)
-  }),
-)
-
-it.effect("commits generated partial-evolution bytes instead of descriptor content", () =>
-  Effect.gen(function* () {
-    const { ApplyPlan } = yield* modules()
-    const Evolution = yield* Effect.promise(() => import("../../generation/src/evolution.js"))
-    const tree = createTree()
-    const topology = yield* Evolution.planTodoEvolution(["event"])
-    const nonTemplate = topology.files.find((file) => file.template === undefined)
-    if (nonTemplate === undefined) throw new Error("Partial evolution must contain non-template output")
-    const generatedContent = `${nonTemplate.content}// generated by Nx\n`
-    generatedPathsByCall.length = 0
-    generatedContentByPath.set(nonTemplate.path, generatedContent)
-
-    yield* ApplyPlan.applyTodoTopology(tree, topology)
-    generatedContentByPath.clear()
-
-    expect(generatedPathsByCall.some((paths) => paths.includes(nonTemplate.path))).toBe(true)
-    expect(generatedContent).not.toBe(nonTemplate.content)
-    expect(tree.read(nonTemplate.path, "utf8")).toBe(generatedContent)
   }),
 )
 

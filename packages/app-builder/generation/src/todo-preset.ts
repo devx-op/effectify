@@ -1,6 +1,11 @@
 import * as Data from "effect/Data"
 import * as Effect from "effect/Effect"
-import { composeTodoAtomic, WorkspaceRootFiles, type GenerationBlockFile } from "./generators/index.js"
+import {
+  composeTodoV1Atomic,
+  DefaultTodoRenderContext,
+  WorkspaceRootFiles,
+  type GenerationBlockFile,
+} from "./generators/index.js"
 import type { TodoPlan } from "./planner.js"
 
 export const TodoTopologyRoots = [
@@ -10,39 +15,22 @@ export const TodoTopologyRoots = [
   "apps/todo-cli",
 ] as const
 
-export type TodoTopologyRoot = (typeof TodoTopologyRoots)[number]
+export type TodoTopologyRoot = string
+export type TodoPackageRole = "application" | "domain" | "infrastructure" | "presentation"
 
 export type TodoTopologyFile = GenerationBlockFile
 
 /** The canonical workspace surface emitted with the Todo package and application outputs. */
-export const isTodoTopologyPath = (path: string): boolean =>
-  WorkspaceRootFiles.some((file) => file === path) || TodoTopologyRoots.some((root) => path.startsWith(`${root}/`))
+export const isTodoTopologyPath = (path: string, roots: ReadonlyArray<string> = TodoTopologyRoots): boolean =>
+  WorkspaceRootFiles.some((file) => file === path) || roots.some((root) => path.startsWith(`${root}/`))
 
-export const DefaultTodoRenderContext = Object.freeze({
-  version: "effectify.render-context/1" as const,
-  workspace: Object.freeze({ name: "todo-workspace", npmScope: "@effectify" }),
-  domain: Object.freeze({ id: "domain", importName: "@effectify/todo-domain" }),
-  entity: Object.freeze({ id: "todo", singular: "Todo", plural: "Todos", importName: "@effectify/todo-cli" }),
-  packages: Object.freeze(
-    TodoTopologyRoots.map((root, index) =>
-      Object.freeze({
-        id: ["domain", "application", "infrastructure", "presentation"][index]!,
-        name: [
-          "@effectify/todo-domain",
-          "@effectify/todo-application",
-          "@effectify/todo-infrastructure",
-          "@effectify/todo-cli",
-        ][index]!,
-        root,
-      }),
-    ),
-  ),
-})
+export { DefaultTodoRenderContext }
 
 export interface TodoTopologyProject {
   readonly dependencies: ReadonlyArray<string>
   readonly name: string
   readonly root: TodoTopologyRoot
+  readonly role: TodoPackageRole
 }
 
 export interface TodoTopology {
@@ -65,12 +53,6 @@ const requiredCapabilities = [
   "todo.events",
 ] as const
 
-const project = (name: string, root: TodoTopologyRoot, dependencies: ReadonlyArray<string>): TodoTopologyProject => ({
-  dependencies: Object.freeze([...dependencies]),
-  name,
-  root,
-})
-
 const hasRequiredCapabilities = (plan: TodoPlan): boolean =>
   requiredCapabilities.every((capability) => plan.orderedCapabilities.includes(capability))
 
@@ -80,21 +62,44 @@ export const createTodoTopology = (plan: TodoPlan): Effect.Effect<TodoTopology, 
     return Effect.fail(new TodoPresetError({ reason: "missing-capability" }))
   }
 
-  const projects = Object.freeze([
-    project("@effectify/todo-domain", "packages/todo/domain", []),
-    project("@effectify/todo-application", "packages/todo/application", ["@effectify/todo-domain"]),
-    project("@effectify/todo-infrastructure", "packages/todo/infrastructure", [
-      "@effectify/todo-application",
-      "@effectify/todo-domain",
-    ]),
-    project("@effectify/todo-cli", "apps/todo-cli", [
-      "@effectify/todo-infrastructure",
-      "@effectify/todo-application",
-      "@effectify/todo-domain",
-    ]),
-  ])
+  const naming = plan.intent.naming ?? {
+    workspace: DefaultTodoRenderContext.workspace.name,
+    npmScope: DefaultTodoRenderContext.workspace.npmScope,
+    domain: DefaultTodoRenderContext.domain,
+    entity: DefaultTodoRenderContext.entity,
+    entrypoint: DefaultTodoRenderContext.entrypoint,
+  }
+  const roles = ["domain", "application", "infrastructure", "presentation"] as const
+  const packages = roles.map((id) => ({
+    id,
+    name: `${naming.npmScope}/${id === "presentation" ? naming.entrypoint.id : `${naming.domain.id}-${id}`}`,
+    root: id === "presentation" ? `apps/${naming.entrypoint.id}` : `packages/${naming.domain.id}/${id}`,
+  }))
+  const [domain, , , presentation] = packages
+  const projects = Object.freeze(
+    packages.map((target, index) =>
+      Object.freeze({
+        ...target,
+        role: target.id,
+        dependencies: Object.freeze(
+          packages
+            .slice(0, index)
+            .reverse()
+            .map(({ name }) => name),
+        ),
+      }),
+    ),
+  )
+  const context = {
+    version: "effectify.render-context/1" as const,
+    workspace: { name: naming.workspace, npmScope: naming.npmScope },
+    domain: { ...naming.domain, importName: domain.name },
+    entity: naming.entity,
+    entrypoint: { ...naming.entrypoint, importName: presentation.name },
+    packages,
+  }
 
-  return composeTodoAtomic(DefaultTodoRenderContext).pipe(
+  return composeTodoV1Atomic(context).pipe(
     Effect.map(({ contributions }) =>
       Object.freeze({
         files: Object.freeze(
@@ -108,7 +113,7 @@ export const createTodoTopology = (plan: TodoPlan): Effect.Effect<TodoTopology, 
           ),
         ),
         projects,
-        roots: Object.freeze([...TodoTopologyRoots]),
+        roots: Object.freeze(packages.map(({ root }) => root)),
       }),
     ),
     Effect.mapError(() => new TodoPresetError({ reason: "atomic-composition" })),
