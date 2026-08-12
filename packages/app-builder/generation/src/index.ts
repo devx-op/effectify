@@ -7,6 +7,7 @@ export * as Replay from "./replay.js"
 export * as TodoEvolution from "./evolution.js"
 export * as TodoGeneration from "./generators/index.js"
 export * as TodoPreset from "./todo-preset.js"
+export * as TodoV1 from "./todo-v1.js"
 
 export type { TodoPlan } from "./planner.js"
 export type {

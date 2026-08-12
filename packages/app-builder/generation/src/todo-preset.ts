@@ -21,7 +21,7 @@ export const isTodoTopologyPath = (path: string): boolean =>
 /** Fixed render context for the public Todo preset. */
 export const DefaultTodoRenderContext = Object.freeze({
   version: "effectify.render-context/1" as const,
-  workspace: Object.freeze({ name: "todo", npmScope: "@effectify" }),
+  workspace: Object.freeze({ name: "todo-workspace", npmScope: "@effectify" }),
   domain: Object.freeze({ id: "domain", importName: "@effectify/todo-domain" }),
   entity: Object.freeze({ id: "todo", singular: "Todo", plural: "Todos", importName: "@effectify/todo-cli" }),
   packages: Object.freeze([
