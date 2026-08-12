@@ -95,10 +95,30 @@ it.effect("keeps generated payloads out of TypeScript template-string constants"
         "utf8",
       ),
     )
-    expect(packageBarrel).toContain("<% for (const entry of JSON.parse(exportsJson)) { -%>")
+    expect(packageBarrel).toContain("<% JSON.parse(exportsJson).forEach((entry) => { -%>")
     expect(sources.find(([path]) => path === "generators/surfaces.ts")?.[1]).not.toMatch(/\.map\(\(entry\) => `export /)
   }),
 )
+
+it("renders ordinary JavaScript iteration through EJS", () => {
+  const template = Templates.templateAsset({
+    directory: "generic/package",
+    group: "ejs-regression",
+    outputPath: "packages/task/src/index.ts",
+    sourcePath: "__targetRoot__/src/index.ts.template",
+    substitutions: {
+      exportsJson: JSON.stringify([
+        { from: "./task.js", name: "Task" },
+        { from: "./task-event.js", name: "TaskEvent" },
+      ]),
+      tmpl: "",
+    },
+  })
+
+  expect(Templates.renderTemplate(template)).toBe(
+    'export { Task } from "./task.js"\nexport { TaskEvent } from "./task-event.js"\n',
+  )
+})
 
 it.effect("ships the same template assets through the built package", () =>
   Effect.gen(function* () {

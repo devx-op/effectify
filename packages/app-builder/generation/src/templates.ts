@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs"
 import { dirname, isAbsolute, join, relative } from "node:path"
 import { fileURLToPath } from "node:url"
+import ejs from "ejs"
 
 export interface TemplateSubstitutions {
   readonly tmpl: ""
@@ -48,40 +49,14 @@ export const templateAsset = (options: TemplateAsset): TemplateAsset => {
   })
 }
 
-const renderCompatibleEjs = (source: string, substitutions: TemplateSubstitutions): string => {
-  const loop = /<% for \(const (\w+) of JSON\.parse\((\w+)\)\) \{ -%>\n([\s\S]*?)<% \} -%>\n?/g
-  const expanded = source.replace(loop, (_match, itemName: string, sourceName: string, body: string) => {
-    const encoded = substitutions[sourceName]
-    const items = encoded === undefined ? undefined : JSON.parse(encoded)
-    if (!Array.isArray(items)) throw new Error(`Unknown template collection: ${sourceName}`)
-    return items
-      .map((item: unknown) =>
-        body.replace(
-          new RegExp(`<%-\\s*${itemName}\\.([A-Za-z][A-Za-z0-9]*)\\s*%>`, "g"),
-          (_propertyMatch: string, property: string) => {
-            if (typeof item !== "object" || item === null || typeof Reflect.get(item, property) !== "string") {
-              throw new Error(`Invalid template collection member: ${sourceName}.${property}`)
-            }
-            return Reflect.get(item, property) as string
-          },
-        ),
-      )
-      .join("")
-  })
-  const rendered = expanded.replace(/<%-\s*([A-Za-z][A-Za-z0-9]*)\s*%>/g, (_match, name: string) => {
-    const value = substitutions[name]
-    if (value === undefined) throw new Error(`Unknown template substitution: ${name}`)
-    return value
-  })
-  if (rendered.includes("<%")) throw new Error("Template uses unsupported EJS syntax")
-  return rendered
-}
-
-/** Renders the bounded raw-substitution and collection subset shared with Nx generateFiles/EJS. */
+/**
+ * Renders synchronously with the same EJS semantics consumed by Nx generateFiles.
+ * EJS executes JavaScript, so only validated package-owned templates may reach this boundary; substitutions are bounded immutable data.
+ */
 export const renderTemplate = (asset: TemplateAsset): string => {
   const source = join(templateDirectory(asset), asset.sourcePath)
   if (relative(root, dirname(source)).startsWith("..")) throw new Error(`Template source escapes package: ${source}`)
-  return renderCompatibleEjs(readFileSync(source, "utf8"), asset.substitutions)
+  return ejs.render(readFileSync(source, "utf8"), asset.substitutions, { filename: source })
 }
 
 export const templateGroups = (
