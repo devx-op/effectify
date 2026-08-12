@@ -1,0 +1,15 @@
+import * as Context from "effect/Context"
+import * as Effect from "effect/Effect"
+import { <%- entitySingular %>Id, type <%- entitySingular %>, type <%- entitySingular %>Event as Event, <%- entitySingular %>IdExhausted, <%- entitySingular %>PersistenceError } from "<%- domainImport %>"
+
+export interface <%- entitySingular %>RepositoryApi {
+  readonly find: (id: <%- entitySingular %>Id) => Effect.Effect<<%- entitySingular %> | undefined, <%- entitySingular %>PersistenceError>
+  readonly list: () => Effect.Effect<ReadonlyArray<<%- entitySingular %>>, <%- entitySingular %>PersistenceError>
+  readonly remove: (id: <%- entitySingular %>Id) => Effect.Effect<<%- entitySingular %>, <%- entitySingular %>PersistenceError>
+  readonly save: (<%- entityId %>: <%- entitySingular %>) => Effect.Effect<void, <%- entitySingular %>PersistenceError>
+}
+export class <%- entitySingular %>Repository extends Context.Service<<%- entitySingular %>Repository, <%- entitySingular %>RepositoryApi>()("<%- workspaceScope %>/<%- entityId %>/<%- entitySingular %>Repository") {}
+
+export class <%- entitySingular %>Clock extends Context.Service<<%- entitySingular %>Clock, { readonly now: () => Effect.Effect<string> }>()("<%- workspaceScope %>/<%- entityId %>/<%- entitySingular %>Clock") {}
+export class <%- entitySingular %>IdGenerator extends Context.Service<<%- entitySingular %>IdGenerator, { readonly next: () => Effect.Effect<<%- entitySingular %>Id, <%- entitySingular %>IdExhausted> }>()("<%- workspaceScope %>/<%- entityId %>/<%- entitySingular %>IdGenerator") {}
+export class <%- entitySingular %>Events extends Context.Service<<%- entitySingular %>Events, { readonly publish: (event: Event) => Effect.Effect<void> }>()("<%- workspaceScope %>/<%- entityId %>/<%- entitySingular %>Events") {}

@@ -153,6 +153,26 @@ it.effect("S08 rejects duplicate ownership claims before applying any files", ()
   }),
 )
 
+it.effect("rolls back caller Tree writes when committing a validated template plan fails", () =>
+  Effect.gen(function* () {
+    const { ApplyPlan, Planner, TodoPreset } = yield* modules()
+    const tree = createTree()
+    const topology = yield* TodoPreset.createTodoTopology(yield* canonicalPlan(Planner))
+    const originalWrite = tree.write.bind(tree)
+    let writes = 0
+    tree.write = (path, content, options) => {
+      writes += 1
+      if (writes === 2) throw new Error("simulated Tree write failure")
+      originalWrite(path, content, options)
+    }
+
+    const failure = yield* ApplyPlan.applyTodoTopology(tree, topology).pipe(Effect.flip)
+
+    expect(failure).toMatchObject({ _tag: "TodoTopologyApplyError", reason: "ownership-conflict" })
+    expect(topology.files.some((file) => tree.exists(file.path))).toBe(false)
+  }),
+)
+
 it.effect("S10 emits the inward-only Todo dependency direction", () =>
   Effect.gen(function* () {
     const { Planner, TodoPreset } = yield* modules()

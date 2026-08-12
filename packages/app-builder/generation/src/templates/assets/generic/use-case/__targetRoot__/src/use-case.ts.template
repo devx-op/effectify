@@ -1,0 +1,56 @@
+import * as Context from "effect/Context"
+import * as Effect from "effect/Effect"
+import * as Layer from "effect/Layer"
+import * as Option from "effect/Option"
+import * as Schema from "effect/Schema"
+import { <%- entitySingular %>Event, <%- entitySingular %>Id, type <%- entitySingular %>, <%- entitySingular %>AlreadyCompleted, <%- entitySingular %>IdExhausted, <%- entitySingular %>NotFound, <%- entitySingular %>PersistenceError, <%- entitySingular %>TextInvalid } from "<%- domainImport %>"
+import { <%- entitySingular %>Clock, <%- entitySingular %>Events, <%- entitySingular %>IdGenerator, <%- entitySingular %>Repository } from "./port.js"
+
+type <%- entitySingular %>Failure = <%- entitySingular %>AlreadyCompleted | <%- entitySingular %>IdExhausted | <%- entitySingular %>NotFound | <%- entitySingular %>PersistenceError | <%- entitySingular %>TextInvalid
+
+export interface <%- entitySingular %>ApplicationApi {
+  readonly add: (text: string) => Effect.Effect<<%- entitySingular %>, <%- entitySingular %>Failure>
+  readonly complete: (id: string) => Effect.Effect<<%- entitySingular %>, <%- entitySingular %>Failure>
+  readonly list: () => Effect.Effect<ReadonlyArray<<%- entitySingular %>>, <%- entitySingular %>PersistenceError>
+  readonly remove: (id: string) => Effect.Effect<<%- entitySingular %>, <%- entitySingular %>Failure>
+}
+export class <%- entitySingular %>Application extends Context.Service<<%- entitySingular %>Application, <%- entitySingular %>ApplicationApi>()("<%- workspaceScope %>/<%- entityId %>/<%- entitySingular %>Application") {}
+
+const resolveId = (id: string): Effect.Effect<<%- entitySingular %>Id, <%- entitySingular %>NotFound> =>
+  Schema.decodeUnknownEffect(<%- entitySingular %>Id)(id).pipe(Effect.mapError(() => new <%- entitySingular %>NotFound({ id })))
+
+export const layer = Layer.effect(<%- entitySingular %>Application, Effect.gen(function* () {
+  const repository = yield* <%- entitySingular %>Repository
+  const clock = yield* <%- entitySingular %>Clock
+  const ids = yield* <%- entitySingular %>IdGenerator
+  const events = yield* <%- entitySingular %>Events
+  const find = Effect.fn("<%- entitySingular %>Application.find")(function* (rawId: string) {
+    const id = yield* resolveId(rawId)
+    const value = Option.fromUndefinedOr(yield* repository.find(id))
+    if (Option.isNone(value)) return yield* Effect.fail(new <%- entitySingular %>NotFound({ id: rawId }))
+    return value.value
+  })
+  const add = Effect.fn("<%- entitySingular %>Application.add")(function* (text: string) {
+    const normalized = text.trim()
+    if (normalized.length === 0) return yield* Effect.fail(new <%- entitySingular %>TextInvalid({ reason: "empty" }))
+    const value: <%- entitySingular %> = { completed: false, createdAt: yield* clock.now(), id: yield* ids.next(), text: normalized }
+    yield* repository.save(value)
+    yield* events.publish(<%- entitySingular %>Event.<%- entitySingular %>Added({ <%- entityId %>: value }))
+    return value
+  })
+  const complete = Effect.fn("<%- entitySingular %>Application.complete")(function* (id: string) {
+    const value = yield* find(id)
+    if (value.completed) return yield* Effect.fail(new <%- entitySingular %>AlreadyCompleted({ id }))
+    const completed = { ...value, completed: true }
+    yield* repository.save(completed)
+    yield* events.publish(<%- entitySingular %>Event.<%- entitySingular %>Completed({ <%- entityId %>: completed }))
+    return completed
+  })
+  const remove = Effect.fn("<%- entitySingular %>Application.remove")(function* (id: string) {
+    const value = yield* find(id)
+    yield* repository.remove(value.id)
+    yield* events.publish(<%- entitySingular %>Event.<%- entitySingular %>Removed({ <%- entityId %>: value }))
+    return value
+  })
+  return <%- entitySingular %>Application.of({ add, complete, list: repository.list, remove })
+}))

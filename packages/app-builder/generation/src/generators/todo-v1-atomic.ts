@@ -2,35 +2,17 @@ import { createHash } from "node:crypto"
 import * as Effect from "effect/Effect"
 import * as Schema from "effect/Schema"
 import * as Kernel from "../kernel.js"
-import { todoTemplateContent } from "../templates/todo/index.js"
-const json = (source: string): string => `${JSON.stringify(JSON.parse(source), null, 2)}\n`
-const rootFiles = {
-  "nx.json": json(
-    '{"defaultBase":"HEAD","plugins":[{"plugin":"@nx/js/typescript","options":{"typecheck":{"targetName":"typecheck"}}},{"plugin":"@nx/vitest","options":{"testTargetName":"test"}}]}',
-  ),
-  "package.json": json(
-    '{"name":"@effectify/todo-workspace","packageManager":"pnpm@10.14.0","private":true,"scripts":{"build":"pnpm exec tsc -p tsconfig.build.json","test":"pnpm exec vitest run --config vitest.config.mts","typecheck":"pnpm exec tsc --noEmit -p tsconfig.build.json"},"devDependencies":{"@effect/vitest":"catalog:","@types/node":"catalog:","@nx/js":"catalog:","@nx/vitest":"23.1.0","effect":"catalog:","nx":"23.1.0","typescript":"catalog:","vitest":"catalog:"}}',
-  ),
-  "pnpm-workspace.yaml":
-    'packages:\n  - apps/*\n  - packages/*/*\n\ncatalog:\n  "@effect/vitest": 4.0.0-beta.102\n  "@nx/js": 23.1.0\n  "@types/node": 20.19.25\n  effect: 4.0.0-beta.102\n  typescript: 6.0.3\n  vitest: 4.1.10\n',
-  "tsconfig.build.json": json(
-    '{"compilerOptions":{"module":"NodeNext","moduleResolution":"NodeNext","outDir":"dist","rootDir":".","skipLibCheck":true,"strict":true,"target":"ES2022","types":["node"]},"include":["apps/**/src/**/*.ts","packages/**/src/**/*.ts"]}',
-  ),
-  "vitest.config.mts":
-    'import { defineConfig } from "vitest/config"\n\nexport default defineConfig({\n  test: {\n    environment: "node",\n    include: ["apps/**/tests/**/*.test.ts", "packages/**/tests/**/*.test.ts"],\n    watch: false,\n  },\n})\n',
-} as const
+import { renderTemplate, templateAsset } from "../templates.js"
 const canonicalTemplate = (path: string): string =>
-  todoTemplateContent(path)
-    .replaceAll(
-      'import * as Application from "../../../packages/todo/application/src/index.js"\nimport * as Infrastructure from "../../../packages/todo/infrastructure/src/index.js"\nimport type { TodoEvent } from "../../../packages/todo/domain/src/index.js"',
-      'import * as Application from "@effectify/todo-application"\nimport type { TodoEvent } from "@effectify/todo-domain"\nimport * as Infrastructure from "@effectify/todo-infrastructure"',
-    )
-    .replaceAll(
-      'import * as Effect from "effect/Effect"\nimport * as Layer from "effect/Layer"\nimport * as Application from "../../application/src/index.js"',
-      'import * as Application from "@effectify/todo-application"\nimport * as Effect from "effect/Effect"\nimport * as Layer from "effect/Layer"',
-    )
-    .replaceAll("../../application/src/index.js", "@effectify/todo-application")
-    .replaceAll("../../domain/src/index.js", "@effectify/todo-domain")
+  renderTemplate(
+    templateAsset({
+      directory: "todo-v1",
+      group: "todo-v1",
+      outputPath: path,
+      sourcePath: `${path}.template`,
+      substitutions: { tmpl: "" },
+    }),
+  )
 const contribution = (
   content: string,
   owner: string,
@@ -46,6 +28,13 @@ const contribution = (
     path: Kernel.safeRelativePath(path),
     sourceDigest: Kernel.sourceDigest(`sha256:${createHash("sha256").update(content).digest("hex")}`),
     surface: Kernel.identifier(surface),
+    template: templateAsset({
+      directory: "todo-v1",
+      group: "todo-v1",
+      outputPath: path,
+      sourcePath: `${path}.template`,
+      substitutions: { tmpl: "" },
+    }),
   })
 const workspace: Kernel.AtomicGenerator<unknown> = {
   InputSchema: Schema.Unknown,
@@ -56,9 +45,9 @@ const workspace: Kernel.AtomicGenerator<unknown> = {
   render: () =>
     Effect.succeed(
       Object.freeze(
-        Object.entries(rootFiles).map(([path, content]) =>
+        ["nx.json", "package.json", "pnpm-workspace.yaml", "tsconfig.build.json", "vitest.config.mts"].map((path) =>
           contribution(
-            content,
+            canonicalTemplate(path),
             `workspace-surface-${path.replace(/[^a-z0-9]+/g, "-")}`,
             "workspace",
             path,
@@ -67,11 +56,6 @@ const workspace: Kernel.AtomicGenerator<unknown> = {
         ),
       ),
     ),
-}
-const packageScripts = {
-  build: "pnpm -w exec tsc -p tsconfig.build.json",
-  test: "pnpm -w exec vitest run --config vitest.config.mts",
-  typecheck: "pnpm -w exec tsc --noEmit -p tsconfig.build.json",
 }
 const definitions = [
   ["domain", [], "todo-v1-domain-surface"],
@@ -94,14 +78,16 @@ const packageSurface = (
     const resolved = dependencies.map((dependency) => context.packages.find((candidate) => candidate.id === dependency))
     if (target === undefined || resolved.some((dependency) => dependency === undefined))
       return Effect.fail(new Kernel.RenderFailure({ generatorId: capability, reason: "unsafe-path" }))
-    const links = resolved.filter((dependency): dependency is Kernel.PackageTarget => dependency !== undefined)
-    const manifest = json(
-      `{"name":${JSON.stringify(target.name)},"private":true,"type":"module","exports":{".":"./src/index.ts"},"scripts":${JSON.stringify(packageScripts)},"dependencies":${JSON.stringify(Object.fromEntries([["effect", "catalog:"], ...links.map((dependency) => [dependency.name, "workspace:*"])]))}}`,
-    )
     const owner = `package-surface-${id}`
     return Effect.succeed(
       Object.freeze([
-        contribution(manifest, `${owner}-manifest`, target.id, `${target.root}/package.json`, "package-surface"),
+        contribution(
+          canonicalTemplate(`${target.root}/package.json`),
+          `${owner}-manifest`,
+          target.id,
+          `${target.root}/package.json`,
+          "package-surface",
+        ),
         contribution(
           canonicalTemplate(`${target.root}/src/index.ts`),
           `${owner}-barrel`,

@@ -96,7 +96,12 @@ export const createTodoTopology = (plan: TodoPlan): Effect.Effect<TodoTopology, 
       Object.freeze({
         files: Object.freeze(
           contributions.map((file) =>
-            Object.freeze({ content: new TextDecoder().decode(file.bytes), owner: file.owner, path: file.path }),
+            Object.freeze({
+              content: new TextDecoder().decode(file.bytes),
+              owner: file.owner,
+              path: file.path,
+              ...(file.template === undefined ? {} : { template: file.template }),
+            }),
           ),
         ),
         projects,

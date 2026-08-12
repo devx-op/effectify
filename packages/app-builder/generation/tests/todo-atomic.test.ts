@@ -87,7 +87,7 @@ it.effect("each Todo capability closes only its real implementation prerequisite
       new TextDecoder().decode(
         port.contributions.find((file) => file.path === "modules/task-core/src/index.ts")?.bytes,
       ),
-    ).toContain('export { TodoEvent } from "./event.js"')
+    ).toContain('export { TaskEvent } from "./event.js"')
     const missing = yield* Todo.composeTodoAtomic(
       { ...context(), packages: context().packages.filter((target) => target.id !== "application") },
       ["model"],

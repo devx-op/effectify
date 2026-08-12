@@ -5,7 +5,12 @@ import * as Effect from "effect/Effect"
 const blockIds = ["model", "use-case", "port", "integration-adapter", "event", "presentation"] as const
 type BlockId = (typeof blockIds)[number]
 
-type GeneratedFile = { readonly content: string; readonly owner: string; readonly path: string }
+type GeneratedFile = {
+  readonly content: string
+  readonly owner: string
+  readonly path: string
+  readonly template?: unknown
+}
 type Topology = {
   readonly files: ReadonlyArray<GeneratedFile>
   readonly projects: ReadonlyArray<unknown>
@@ -35,6 +40,7 @@ type TodoGenerationModule = {
         readonly bytes: Uint8Array
         readonly owner: string
         readonly path: string
+        readonly template?: unknown
       }>
     },
     unknown
@@ -84,6 +90,7 @@ it.effect("the public Todo topology is exactly the direct atomic catalog output"
         content: new TextDecoder().decode(file.bytes),
         owner: file.owner,
         path: file.path,
+        template: file.template,
       })),
     )
   }),

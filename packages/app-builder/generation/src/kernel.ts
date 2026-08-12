@@ -1,5 +1,6 @@
 import * as Effect from "effect/Effect"
 import * as Schema from "effect/Schema"
+import type { TemplateAsset } from "./templates.js"
 const IdentifierSchema = Schema.String.check(Schema.isPattern(/^[a-z][a-z0-9-]*$/))
 const SafeRelativePathSchema = Schema.String.check(
   Schema.isPattern(/^(?!.*(?:^|\/)\.\.(?:\/|$))[A-Za-z0-9][A-Za-z0-9._-]*(?:\/[A-Za-z0-9][A-Za-z0-9._-]*)*$/),
@@ -34,6 +35,7 @@ export interface FileContribution {
   readonly path: SafeRelativePath
   readonly sourceDigest: SourceDigest
   readonly surface: SurfaceId
+  readonly template?: TemplateAsset
 }
 export interface AtomicGenerator<
   Input,

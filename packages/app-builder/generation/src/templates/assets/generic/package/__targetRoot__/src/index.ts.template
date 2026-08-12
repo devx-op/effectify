@@ -1,0 +1,3 @@
+<% for (const entry of JSON.parse(exportsJson)) { -%>
+export { <%- entry.name %> } from "<%- entry.from %>"
+<% } -%>

@@ -1,4 +1,4 @@
-import { todoTemplateContent } from "../templates/todo/index.js"
+import { todoTemplateContent, todoTemplateFiles } from "../templates/todo/index.js"
 
 export type TodoGenerationBlockId = "model" | "port" | "event" | "use-case" | "integration-adapter" | "presentation"
 
@@ -6,6 +6,7 @@ export interface GenerationBlockFile {
   readonly content: string
   readonly owner: string
   readonly path: string
+  readonly template?: import("../templates.js").TemplateAsset
 }
 
 export interface GenerationBlock {
@@ -24,7 +25,10 @@ interface Definition {
   readonly requires: ReadonlyArray<TodoGenerationBlockId>
 }
 
-export const fromTodoTemplate = (path: string): Readonly<{ content: string; path: string }> => ({
+export const fromTodoTemplate = (
+  path: string,
+): Readonly<{ content: string; path: string; template?: import("../templates.js").TemplateAsset }> => ({
+  ...todoTemplateFiles().find((file) => file.path === path),
   content: todoTemplateContent(path),
   path,
 })

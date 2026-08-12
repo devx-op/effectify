@@ -8,6 +8,7 @@ export * as TodoEvolution from "./evolution.js"
 export * as TodoGeneration from "./generators/index.js"
 export * as TodoPreset from "./todo-preset.js"
 export * as TodoV1 from "./todo-v1.js"
+export * as Templates from "./templates.js"
 
 export type { TodoPlan } from "./planner.js"
 export type {
@@ -25,6 +26,7 @@ export type {
   SourceDigest,
   SurfaceId,
 } from "./kernel.js"
+export type { TemplateAsset, TemplateGroup, TemplateSubstitutions } from "./templates.js"
 export type { CatalogComposition } from "./catalog.js"
 export type { ReplayProvenance } from "./provenance.js"
 export type { TodoGenerationBlockId } from "./generators/index.js"
