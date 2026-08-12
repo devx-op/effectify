@@ -129,3 +129,25 @@ it.effect(
     }),
   15_000,
 )
+
+it.effect("compiles a valid hyphenated entity id with derived TypeScript identifiers", () =>
+  Effect.gen(function* () {
+    const Todo = yield* generators()
+    const plan = yield* Todo.composeTodoAtomic({
+      ...context(),
+      entity: {
+        id: "work-item",
+        singular: "WorkItem",
+        plural: "WorkItems",
+        importName: "@acme/task-cli",
+      },
+    })
+    const files = Object.fromEntries(
+      plan.contributions.map((file) => [file.path, new TextDecoder().decode(file.bytes)]),
+    )
+
+    expect(files["modules/task-service/src/port.ts"]).toContain("readonly save: (workItem: WorkItem)")
+    expect(files["tools/task-cli/src/presentation.ts"]).toContain("event.workItem.id")
+    yield* compile(files)
+  }),
+)

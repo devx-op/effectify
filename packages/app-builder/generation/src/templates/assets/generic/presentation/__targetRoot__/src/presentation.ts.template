@@ -16,6 +16,6 @@ export const createLiveRuntime = (path: string) => Effect.gen(function* () {
 })
 
 export const renderEvent = (event: <%- entitySingular %>Event): string =>
-  event._tag === "<%- entitySingular %>Added" ? "added:" + event.<%- entityId %>.id + ":" + event.<%- entityId %>.text
-  : event._tag === "<%- entitySingular %>Completed" ? "completed:" + event.<%- entityId %>.id + ":" + event.<%- entityId %>.text
-  : "removed:" + event.<%- entityId %>.id + ":" + event.<%- entityId %>.text
+  event._tag === "<%- entitySingular %>Added" ? "added:" + event.<%- entityIdentifier %>.id + ":" + event.<%- entityIdentifier %>.text
+  : event._tag === "<%- entitySingular %>Completed" ? "completed:" + event.<%- entityIdentifier %>.id + ":" + event.<%- entityIdentifier %>.text
+  : "removed:" + event.<%- entityIdentifier %>.id + ":" + event.<%- entityIdentifier %>.text

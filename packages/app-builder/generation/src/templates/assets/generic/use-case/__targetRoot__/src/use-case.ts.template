@@ -35,7 +35,7 @@ export const layer = Layer.effect(<%- entitySingular %>Application, Effect.gen(f
     if (normalized.length === 0) return yield* Effect.fail(new <%- entitySingular %>TextInvalid({ reason: "empty" }))
     const value: <%- entitySingular %> = { completed: false, createdAt: yield* clock.now(), id: yield* ids.next(), text: normalized }
     yield* repository.save(value)
-    yield* events.publish(<%- entitySingular %>Event.<%- entitySingular %>Added({ <%- entityId %>: value }))
+    yield* events.publish(<%- entitySingular %>Event.<%- entitySingular %>Added({ <%- entityIdentifier %>: value }))
     return value
   })
   const complete = Effect.fn("<%- entitySingular %>Application.complete")(function* (id: string) {
@@ -43,13 +43,13 @@ export const layer = Layer.effect(<%- entitySingular %>Application, Effect.gen(f
     if (value.completed) return yield* Effect.fail(new <%- entitySingular %>AlreadyCompleted({ id }))
     const completed = { ...value, completed: true }
     yield* repository.save(completed)
-    yield* events.publish(<%- entitySingular %>Event.<%- entitySingular %>Completed({ <%- entityId %>: completed }))
+    yield* events.publish(<%- entitySingular %>Event.<%- entitySingular %>Completed({ <%- entityIdentifier %>: completed }))
     return completed
   })
   const remove = Effect.fn("<%- entitySingular %>Application.remove")(function* (id: string) {
     const value = yield* find(id)
     yield* repository.remove(value.id)
-    yield* events.publish(<%- entitySingular %>Event.<%- entitySingular %>Removed({ <%- entityId %>: value }))
+    yield* events.publish(<%- entitySingular %>Event.<%- entitySingular %>Removed({ <%- entityIdentifier %>: value }))
     return value
   })
   return <%- entitySingular %>Application.of({ add, complete, list: repository.list, remove })

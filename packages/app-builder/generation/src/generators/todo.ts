@@ -31,6 +31,7 @@ const substitutions = (context: Kernel.RenderContext, target: Kernel.PackageTarg
   applicationImport: importFrom(context, target, "application"),
   domainImport: importFrom(context, target, "domain"),
   entityId: context.entity.id,
+  entityIdentifier: `${context.entity.singular[0]?.toLowerCase()}${context.entity.singular.slice(1)}`,
   entityPlural: context.entity.plural,
   entitySingular: context.entity.singular,
   infrastructureImport: importFrom(context, target, "infrastructure"),
