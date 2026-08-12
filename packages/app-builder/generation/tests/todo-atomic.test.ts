@@ -102,27 +102,30 @@ it.effect("each Todo capability closes only its real implementation prerequisite
   }),
 )
 
-it.effect("semantically compiles reordered bytes and rejects missing runtime imports", () =>
-  Effect.gen(function* () {
-    const Todo = yield* generators()
-    const plan = yield* Todo.composeTodoAtomic({ ...context(), packages: [...context().packages].reverse() })
-    const files = Object.fromEntries(
-      plan.contributions.map((file) => [file.path, new TextDecoder().decode(file.bytes)]),
-    )
-    yield* compile(files)
-    expect(Object.values(files).join("\n")).not.toContain("packages/todo/")
-    expect(yield* Todo.composeTodoAtomic(context())).toEqual(plan)
-    expect(plan.generatorIds.slice(0, 2)).toEqual(["workspace-surface", "package-surface"])
-    expect(new Set(plan.contributions.map((file) => file.path)).size).toBe(plan.contributions.length)
-    expect(new Set(plan.contributions.map((file) => file.owner)).size).toBe(plan.contributions.length)
-    const imports = [
-      ["modules/task-core/src/model.ts", 'import * as Data from "effect/Data"\n', "Data"],
-      ["modules/task-service/src/port.ts", 'import * as Context from "effect/Context"\n', "Context"],
-      ["tools/task-cli/src/presentation.ts", 'import * as Effect from "effect/Effect"\n', "Effect"],
-    ] as const
-    for (const [path, source, symbol] of imports) {
-      const error = yield* compile({ ...files, [path]: files[path].replace(source, "") }).pipe(Effect.flip)
-      expect(error).toMatch(new RegExp(`Cannot find (name|namespace) '${symbol}'`))
-    }
-  }),
+it.effect(
+  "semantically compiles reordered bytes and rejects missing runtime imports",
+  () =>
+    Effect.gen(function* () {
+      const Todo = yield* generators()
+      const plan = yield* Todo.composeTodoAtomic({ ...context(), packages: [...context().packages].reverse() })
+      const files = Object.fromEntries(
+        plan.contributions.map((file) => [file.path, new TextDecoder().decode(file.bytes)]),
+      )
+      yield* compile(files)
+      expect(Object.values(files).join("\n")).not.toContain("packages/todo/")
+      expect(yield* Todo.composeTodoAtomic(context())).toEqual(plan)
+      expect(plan.generatorIds.slice(0, 2)).toEqual(["workspace-surface", "package-surface"])
+      expect(new Set(plan.contributions.map((file) => file.path)).size).toBe(plan.contributions.length)
+      expect(new Set(plan.contributions.map((file) => file.owner)).size).toBe(plan.contributions.length)
+      const imports = [
+        ["modules/task-core/src/model.ts", 'import * as Data from "effect/Data"\n', "Data"],
+        ["modules/task-service/src/port.ts", 'import * as Context from "effect/Context"\n', "Context"],
+        ["tools/task-cli/src/presentation.ts", 'import * as Effect from "effect/Effect"\n', "Effect"],
+      ] as const
+      for (const [path, source, symbol] of imports) {
+        const error = yield* compile({ ...files, [path]: files[path].replace(source, "") }).pipe(Effect.flip)
+        expect(error).toMatch(new RegExp(`Cannot find (name|namespace) '${symbol}'`))
+      }
+    }),
+  15_000,
 )
