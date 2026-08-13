@@ -9,8 +9,9 @@ type Generator = import("../src/kernel.js").AtomicGenerator<{ readonly content: 
 const context = {
   version: "effectify.render-context/1",
   workspace: { name: "todo", npmScope: "@acme" },
-  domain: { id: "todo", importName: "@acme/todo" },
-  entity: { id: "todo", singular: "Todo", plural: "Todos", importName: "@acme/todo" },
+  domain: { id: "todo", name: "Todo", importName: "@acme/todo" },
+  entity: { id: "todo", singular: "Todo", plural: "Todos" },
+  entrypoint: { id: "todo", name: "Todo", importName: "@acme/todo" },
   packages: [{ id: "domain", name: "@acme/todo", root: "pkg/todo" }],
 } as const
 const duplicatePackage = { ...context.packages[0], id: "domain", name: "@acme/app", root: "app" }
@@ -63,7 +64,7 @@ it.effect("rejects invalid RenderContext shapes before any generator runs", () =
       [{ workspace: { ...context.workspace, npmScope: "acme" } }, "schema"],
       [{ packages: [{ ...context.packages[0], root: "../escape" }] }, "schema"],
       [{ packages: [...context.packages, duplicatePackage] }, "derived-identity"],
-      [{ entity: { ...context.entity, importName: "@acme/missing" } }, "derived-identity"],
+      [{ entrypoint: { ...context.entrypoint, importName: "@acme/missing" } }, "derived-identity"],
       [{ unexpected: true }, "schema"],
     ] as const
     for (const [patch, reason] of invalid) {
@@ -98,7 +99,7 @@ it.effect("closes a finite catalog in deterministic dependency order and snapsho
     )
   }),
 )
-it.effect("fails closed for missing, cyclic, duplicate catalog, owner, and output path identities", () =>
+it.effect("fails closed for missing, cyclic, duplicate catalog, and output path identities", () =>
   Effect.gen(function* () {
     const { Catalog, Kernel } = yield* modules()
     const g = (id: string, requires: ReadonlyArray<string> = [], owner = id, paths?: ReadonlyArray<string>) =>
@@ -110,15 +111,12 @@ it.effect("fails closed for missing, cyclic, duplicate catalog, owner, and outpu
     const missing = one(g("application", ["model"]))
     const cyclic = two(g("application", ["model"]), g("model", ["application"]))
     const duplicateId = two(g("same"), g("same"))
-    const duplicateOwner = two(g("first", [], "owner"), g("second", [], "owner"))
     const repeatedOwner = one(g("same-owner", [], "owner", ["one.ts", "two.ts"]))
     const duplicatePath = two(g("first", [], "first", ["same.ts"]), g("second", [], "second", ["same.ts"]))
     const scenarios = [
       [missing, ["application"], graph("model", "missing-capability")],
       [cyclic, ["application"], graph("application", "cyclic-capability")],
       [duplicateId, ["same"], graph("same", "duplicate-generator-id")],
-      [duplicateOwner, ["first", "second"], conflict("owner", "duplicate-owner")],
-      [repeatedOwner, ["same-owner"], conflict("owner", "duplicate-owner")],
       [duplicatePath, ["first", "second"], conflict("same.ts", "duplicate-path")],
     ] as const
     for (const [catalog, selected, [tag, identity, reason]] of scenarios) {
@@ -129,5 +127,10 @@ it.effect("fails closed for missing, cyclic, duplicate catalog, owner, and outpu
           : { _tag: tag, identity, reason },
       )
     }
+    const result = yield* compose(Catalog, repeatedOwner, context, [Kernel.identifier("same-owner")])
+    expect(result.contributions.map(({ owner, path }) => ({ owner, path }))).toEqual([
+      { owner: "owner", path: "one.ts" },
+      { owner: "owner", path: "two.ts" },
+    ])
   }),
 )

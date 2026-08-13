@@ -25,8 +25,9 @@ const context = (
 ) => ({
   version: "effectify.render-context/1" as const,
   workspace: { name: workspace, npmScope: scope },
-  domain: { id: "domain", importName: `${scope}/task-core` },
-  entity: { id: "task", singular: "Task", plural: "Tasks", importName: `${scope}/task-app` },
+  domain: { id: "task", name: "Task", importName: `${scope}/task-core` },
+  entity: { id: "task", singular: "Task", plural: "Tasks" },
+  entrypoint: { id: "task-app", name: "TaskApp", importName: `${scope}/task-app` },
   packages: [
     { id: "domain", name: `${scope}/task-core`, root: roots.domain },
     { id: "application", name: `${scope}/task-app`, root: roots.application },

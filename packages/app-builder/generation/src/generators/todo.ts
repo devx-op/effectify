@@ -4,6 +4,7 @@ import * as Effect from "effect/Effect"
 import * as Schema from "effect/Schema"
 import * as Kernel from "../kernel.js"
 import type { PackageSurfaceInput } from "./surfaces.js"
+import { renderTemplate, templateAsset, templateSubstitutions, type TemplateSubstitutions } from "../templates.js"
 
 const ids = ["model", "port", "event", "use-case", "integration-adapter", "presentation"] as const
 export { ids as TodoGenerationBlockIds }
@@ -12,7 +13,7 @@ export type TodoGenerationBlockId = (typeof ids)[number]
 const TodoPackageIds = ["domain", "application", "infrastructure", "presentation"] as const
 
 interface TodoGeneratorDefinition {
-  readonly files: ReadonlyArray<Readonly<{ content: string; relativePath: string }>>
+  readonly files: ReadonlyArray<Readonly<{ relativePath: string; sourcePath: string }>>
   readonly id: TodoGenerationBlockId
   readonly packageId: string
   readonly provides: ReadonlyArray<string>
@@ -20,15 +21,19 @@ interface TodoGeneratorDefinition {
 }
 
 const digest = (content: string) => Kernel.sourceDigest(`sha256:${createHash("sha256").update(content).digest("hex")}`)
-const contextualizeImports = (content: string, context: Kernel.RenderContext, from: Kernel.PackageTarget) =>
-  ["domain", "application", "infrastructure"].reduce((output, id) => {
-    const target = context.packages.find((candidate) => candidate.id === id)
-    if (target === undefined) return output
-    const specifier = relative(`${from.root}/src`, `${target.root}/src/index.js`).replace(/^(?!\.)/, "./")
-    return output
-      .replaceAll(`../../${id}/src/index.js`, specifier)
-      .replaceAll(`../../../packages/todo/${id}/src/index.js`, specifier)
-  }, content)
+const importFrom = (context: Kernel.RenderContext, from: Kernel.PackageTarget, id: string): string => {
+  const target = context.packages.find((candidate) => candidate.id === id)
+  if (target === undefined) throw new Error(`Missing template package: ${id}`)
+  return relative(`${from.root}/src`, `${target.root}/src/index.js`).replace(/^(?!\.)/, "./")
+}
+
+const substitutions = (context: Kernel.RenderContext, target: Kernel.PackageTarget): TemplateSubstitutions =>
+  templateSubstitutions(context, {
+    applicationImport: importFrom(context, target, "application"),
+    domainImport: importFrom(context, target, "domain"),
+    infrastructureImport: importFrom(context, target, "infrastructure"),
+    targetRoot: target.root,
+  })
 
 export const todoContribution = (options: {
   readonly content: string
@@ -36,6 +41,7 @@ export const todoContribution = (options: {
   readonly path: string
   readonly surface: string
   readonly target: Kernel.PackageTarget
+  readonly template?: Kernel.FileContribution["template"]
 }): Kernel.FileContribution =>
   Object.freeze({
     bytes: new TextEncoder().encode(options.content),
@@ -45,6 +51,7 @@ export const todoContribution = (options: {
     path: Kernel.safeRelativePath(options.path),
     sourceDigest: digest(options.content),
     surface: Kernel.identifier(options.surface),
+    ...(options.template === undefined ? {} : { template: options.template }),
   })
 
 export const defineTodoGenerator = (definition: TodoGeneratorDefinition): Kernel.AtomicGenerator<unknown> => ({
@@ -58,15 +65,22 @@ export const defineTodoGenerator = (definition: TodoGeneratorDefinition): Kernel
     }
     return Effect.succeed(
       Object.freeze(
-        definition.files.map((file) =>
-          todoContribution({
-            content: contextualizeImports(file.content, context, target),
+        definition.files.map((file) => {
+          const template = templateAsset({
+            directory: `generic/${definition.id === "presentation" ? "interface" : definition.id}`,
+            group: `todo-${definition.id}`,
+            sourcePath: file.sourcePath,
+            substitutions: substitutions(context, target),
+          })
+          return todoContribution({
+            content: renderTemplate(template),
             owner: `todo-${definition.id}-${file.relativePath.replace(/[^a-z0-9]+/g, "-")}`,
             path: `${target.root}/${file.relativePath}`,
             surface: "todo-capability",
             target,
-          }),
-        ),
+            template,
+          })
+        }),
       ),
     )
   },
@@ -93,15 +107,28 @@ const selectedWithPrerequisites = (selected: ReadonlyArray<TodoGenerationBlockId
   return included
 }
 
-const modelExports =
-  "TodoId Todo TodoTextInvalid TodoNotFound TodoAlreadyCompleted TodoIdExhausted TodoPersistenceError".split(" ")
-const exportsFor = (included: ReadonlySet<TodoGenerationBlockId>) => ({
-  domain: [...(included.has("model") ? modelExports : []), ...(included.has("event") ? ["TodoEvent"] : [])],
-  application: [
-    ...(included.has("port") ? ["TodoRepository", "TodoClock", "TodoIdGenerator", "TodoEvents"] : []),
-    ...(included.has("use-case") ? ["TodoApplication", "layer"] : []),
+const exportsFor = (included: ReadonlySet<TodoGenerationBlockId>, entity: string) => ({
+  domain: [
+    ...(included.has("model")
+      ? [
+          `${entity}Id`,
+          entity,
+          `${entity}TextInvalid`,
+          `${entity}NotFound`,
+          `${entity}AlreadyCompleted`,
+          `${entity}IdExhausted`,
+          `${entity}PersistenceError`,
+        ]
+      : []),
+    ...(included.has("event") ? [`${entity}Event`] : []),
   ],
-  infrastructure: included.has("integration-adapter") ? ["TodoTestProbe", "testLayer", "liveLayer"] : [],
+  application: [
+    ...(included.has("port")
+      ? [`${entity}Repository`, `${entity}Clock`, `${entity}IdGenerator`, `${entity}Events`]
+      : []),
+    ...(included.has("use-case") ? [`${entity}Application`, "layer"] : []),
+  ],
+  infrastructure: included.has("integration-adapter") ? [`${entity}TestProbe`, "testLayer", "liveLayer"] : [],
   presentation: included.has("presentation") ? ["createTestRuntime", "createLiveRuntime", "renderEvent"] : [],
 })
 
@@ -115,7 +142,7 @@ export const todoSurfaceInput = (
   ) {
     return Effect.fail(new Kernel.RenderFailure({ generatorId: "todo-surface-input", reason: "unsafe-path" }))
   }
-  const exports = exportsFor(selectedWithPrerequisites(selected))
+  const exports = exportsFor(selectedWithPrerequisites(selected), context.entity.singular)
   const dependencies = {
     application: exports.application.length > 0 ? ["domain"] : [],
     domain: [],
@@ -126,7 +153,7 @@ export const todoSurfaceInput = (
     packages: TodoPackageIds.map((packageId) => ({
       dependencies: dependencies[packageId],
       exports: exports[packageId].map((name) => ({
-        from: `./${packageId === "domain" ? (name === "TodoEvent" ? "event" : "model") : packageId === "application" ? (["TodoRepository", "TodoClock", "TodoIdGenerator", "TodoEvents"].includes(name) ? "port" : "use-case") : packageId === "infrastructure" ? "adapter" : "presentation"}.js`,
+        from: `./${packageId === "domain" ? (name === `${context.entity.singular}Event` ? "event" : "model") : packageId === "application" ? (["Repository", "Clock", "IdGenerator", "Events"].some((suffix) => name === `${context.entity.singular}${suffix}`) ? "port" : "use-case") : packageId === "infrastructure" ? "adapter" : "presentation"}.js`,
         name,
       })),
       packageId,

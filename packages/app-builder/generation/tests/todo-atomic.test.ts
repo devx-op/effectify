@@ -10,8 +10,9 @@ type AtomicTodoModule = typeof import("../src/generators/index.js")
 const context = () => ({
   version: "effectify.render-context/1" as const,
   workspace: { name: "task-workspace", npmScope: "@acme" },
-  domain: { id: "domain", importName: "@acme/task-domain" },
-  entity: { id: "task", singular: "Task", plural: "Tasks", importName: "@acme/task-cli" },
+  domain: { id: "task", name: "Task", importName: "@acme/task-domain" },
+  entity: { id: "task", singular: "Task", plural: "Tasks" },
+  entrypoint: { id: "task-cli", name: "TaskCli", importName: "@acme/task-cli" },
   packages: [
     { id: "domain", name: "@acme/task-domain", root: "modules/task-core" },
     { id: "application", name: "@acme/task-application", root: "modules/task-service" },
@@ -87,7 +88,7 @@ it.effect("each Todo capability closes only its real implementation prerequisite
       new TextDecoder().decode(
         port.contributions.find((file) => file.path === "modules/task-core/src/index.ts")?.bytes,
       ),
-    ).toContain('export { TodoEvent } from "./event.js"')
+    ).toContain('export { TaskEvent } from "./event.js"')
     const missing = yield* Todo.composeTodoAtomic(
       { ...context(), packages: context().packages.filter((target) => target.id !== "application") },
       ["model"],

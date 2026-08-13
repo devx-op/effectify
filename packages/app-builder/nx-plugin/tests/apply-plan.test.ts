@@ -1,7 +1,18 @@
 import { createTree } from "@nx/devkit/testing"
 import { expect, it } from "@effect/vitest"
 import * as Effect from "effect/Effect"
+import { vi } from "vitest"
 import { surfaceRequest } from "../../generation/tests/surface-request.js"
+
+vi.mock("@nx/devkit", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@nx/devkit")>()
+  return {
+    ...actual,
+    generateFiles: (...args: Parameters<typeof actual.generateFiles>) => {
+      actual.generateFiles(...args)
+    },
+  }
+})
 
 type ApplyPlanModule = typeof import("../src/apply-plan.js")
 type PublicModule = typeof import("../src/index.js")
@@ -70,6 +81,31 @@ it.effect("S05 and R06 apply an approved Todo plan through Tree with exactly fou
     }
   }),
 )
+
+it.effect("materializes custom public naming through real Nx generateFiles", () => {
+  const intent = {
+    version: "effectify.creation-intent/1",
+    preset: "todo",
+    capabilities: ["todo.events"],
+    naming: {
+      workspace: "operations-workspace",
+      npmScope: "@acme",
+      domain: { id: "operations", name: "Operations" },
+      entity: { id: "task", singular: "Task", plural: "Tasks" },
+      entrypoint: { id: "admin-console", name: "AdminConsole" },
+    },
+  }
+  return Effect.gen(function* () {
+    const { ApplyPlan, Planner, TodoPreset } = yield* modules()
+    const plan = yield* Planner.planTodo(intent)
+    const topology = yield* TodoPreset.createTodoTopology(plan)
+    const tree = createTree()
+    const result = yield* ApplyPlan.applyTodoPlan(tree, plan)
+    expect(result.writtenPaths).toEqual(topology.files.map(({ path }) => path))
+    expect(tree.read("apps/admin-console/src/index.ts", "utf8")).toContain("TaskApplication")
+    expect(tree.read("packages/operations/domain/package.json", "utf8")).toContain("@acme/operations-domain")
+  })
+})
 
 it.effect("accepts only canonical workspace-root files before mutating the Tree", () =>
   Effect.gen(function* () {

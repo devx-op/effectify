@@ -1,0 +1,9 @@
+import { expect, it } from "@effect/vitest"
+import * as Effect from "effect/Effect"
+import { createTestRuntime } from "../src/index.js"
+
+it.effect("runs deterministic <%- entitySingular %> behavior", () => Effect.gen(function* () {
+  const <%- entityIdentifier %> = yield* createTestRuntime({ ids: ["<%- entityId %>-1"], now: "2026-01-01T00:00:00.000Z" })
+  expect(yield* <%- entityIdentifier %>.list()).toEqual([])
+  expect((yield* <%- entityIdentifier %>.add("write tests")).id).toBe("<%- entityId %>-1")
+}))

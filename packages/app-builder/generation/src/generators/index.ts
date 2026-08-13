@@ -11,6 +11,7 @@ import { TodoGenerationBlockIds, todoSurfaceInput, type TodoGenerationBlockId } 
 import { packageSurfaceGenerator, workspaceSurfaceGenerator } from "./surfaces.js"
 import { useCaseBlock, useCaseGenerator } from "./use-case.js"
 import { isTodoV1Context, TodoV1AtomicCatalog, todoV1GeneratorIds } from "./todo-v1-atomic.js"
+export { DefaultTodoRenderContext } from "./todo-v1-atomic.js"
 
 export { packageSurfaceGenerator, SurfaceCatalog, WorkspaceRootFiles, workspaceSurfaceGenerator } from "./surfaces.js"
 export type { WorkspaceRootFile } from "./surfaces.js"
@@ -62,6 +63,21 @@ export const composeTodoAtomic = (context: unknown, selected: ReadonlyArray<stri
           }),
         ),
       )
+    }),
+  )
+
+export const composeTodoV1Atomic = (context: unknown, selected: ReadonlyArray<string> = TodoGenerationBlockIds) =>
+  decodeRenderContext(context).pipe(
+    Effect.flatMap((decoded) => {
+      const invalid = selected.find((id) => !isTodoGenerationBlockId(id))
+      return invalid === undefined
+        ? composeCatalog({
+            catalog: TodoV1AtomicCatalog,
+            context: decoded,
+            input: undefined,
+            selected: todoV1GeneratorIds(selected.filter(isTodoGenerationBlockId)),
+          })
+        : Effect.fail(new CapabilityGraphFailure({ capability: invalid, reason: "missing-capability" }))
     }),
   )
 
