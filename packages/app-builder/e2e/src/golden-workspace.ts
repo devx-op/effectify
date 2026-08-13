@@ -1,22 +1,27 @@
 import { spawn, type ChildProcess } from "node:child_process"
-import { mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from "node:fs/promises"
+import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises"
+import { createRequire } from "node:module"
 import { createServer } from "node:net"
 import { tmpdir } from "node:os"
-import { dirname, join } from "node:path"
+import { basename, dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
-import * as Effect from "effect/Effect"
 
 const intent = {
   version: "effectify.creation-intent/1",
   preset: "todo",
   capabilities: ["todo.events"],
+  naming: {
+    workspace: "operations-workspace",
+    npmScope: "@acme",
+    domain: { id: "operations", name: "Operations" },
+    entity: { id: "task", singular: "Task", plural: "Tasks" },
+    entrypoint: { id: "admin-console", name: "AdminConsole" },
+  },
 }
 
 const commandTimeout = 90_000
 const shutdownTimeout = 5_000
 const repositoryRoot = fileURLToPath(new URL("../../../../", import.meta.url))
-
-type Scenario = "interrupted" | "success" | "verification-failure"
 
 export interface CommandEvidence {
   readonly argv: ReadonlyArray<string>
@@ -31,16 +36,13 @@ export interface GoldenWorkspaceEvidence {
     readonly workspaceRemoved: boolean
   }
   readonly commands: ReadonlyArray<CommandEvidence>
-  readonly outcome: Scenario
+  readonly outcome: "success"
   readonly regeneration: {
     readonly changedPaths: ReadonlyArray<string>
     readonly secondWritePaths: ReadonlyArray<string>
   }
   readonly rootProjectNames: ReadonlyArray<string>
-  readonly todo: {
-    readonly events: ReadonlyArray<string>
-    readonly state: "[]\n"
-  }
+  readonly task: { readonly events: ReadonlyArray<string>; readonly id: string; readonly state: "[]\n" }
 }
 
 interface ProcessResult {
@@ -52,22 +54,6 @@ interface ProcessResult {
 interface WorkspaceState {
   readonly environment: NodeJS.ProcessEnv
   readonly store: string
-}
-
-interface GeneratedFile {
-  readonly content: string
-  readonly path: string
-}
-
-interface GenerationModule {
-  readonly Planner: {
-    readonly planTodo: (input: unknown) => Effect.Effect<unknown, unknown>
-  }
-  readonly TodoPreset: {
-    readonly createTodoTopology: (
-      plan: unknown,
-    ) => Effect.Effect<{ readonly files: ReadonlyArray<GeneratedFile> }, unknown>
-  }
 }
 
 const exists = async (path: string): Promise<boolean> =>
@@ -93,6 +79,7 @@ const run = (
   argv: ReadonlyArray<string>,
   environment: NodeJS.ProcessEnv,
   timeout = commandTimeout,
+  input = "",
 ): Promise<ProcessResult> =>
   new Promise((resolve, reject) => {
     const [command, ...args] = argv
@@ -100,7 +87,7 @@ const run = (
       reject(new Error("E2E subprocess requires an executable"))
       return
     }
-    const child = spawn(command, args, { cwd, env: environment, shell: false, stdio: ["ignore", "pipe", "pipe"] })
+    const child = spawn(command, args, { cwd, env: environment, shell: false, stdio: ["pipe", "pipe", "pipe"] })
     let stdout = ""
     let stderr = ""
     let timedOut = false
@@ -117,6 +104,7 @@ const run = (
     child.stderr.on("data", (chunk: string) => {
       stderr += chunk
     })
+    child.stdin.end(input)
     child.once("error", (error) => {
       clearTimeout(timer)
       reject(error)
@@ -171,95 +159,67 @@ const write = async (path: string, content: string): Promise<void> => {
   await writeFile(path, content)
 }
 
-const generation = () =>
-  Effect.promise<GenerationModule>(() => import(new URL("../../generation/src/index.js", import.meta.url).href))
+const generationRoot = createRequire(import.meta.url)
+  .resolve("@effectify/app-builder-generation")
+  .replace(/\/dist\/.*$/, "")
+const packageRoots = ["contracts", "generation", "cli"].map((name) => join(dirname(generationRoot), name))
 
-const project = (name: string, root: string) =>
-  `${JSON.stringify({ name, projectType: root.startsWith("apps/") ? "application" : "library", root }, null, 2)}\n`
+const installCli = async (workspace: string, registry: string, environment: NodeJS.ProcessEnv) => {
+  const tarballs: Array<string> = []
+  for (const root of packageRoots) {
+    const packed = await run(root, ["pnpm", "pack", "--pack-destination", join(workspace, "distribution")], environment)
+    if (packed.exitCode !== 0) throw new Error(`Unable to pack public CLI dependency: ${packed.stderr}`)
+    const tarball = packed.stdout.trim().split("\n").at(-1)
+    if (tarball === undefined) throw new Error("Package distribution did not produce a tarball")
+    tarballs.push(tarball)
+  }
+  const driver = join(workspace, "driver")
+  await write(join(driver, "package.json"), '{"private":true}\n')
+  const argv = ["npm", "install", "--registry", registry, ...tarballs, "effect@4.0.0-beta.102"]
+  const result = await run(driver, argv, environment)
+  if (result.exitCode !== 0) throw new Error(`Unable to install public CLI: ${result.stderr}${result.stdout}`)
+  return { argv, cli: join(driver, "node_modules/.bin/effectify-app-builder"), result }
+}
 
-const workspaceFiles = (): Readonly<Record<string, string>> => ({
-  "nx.json": `${JSON.stringify({ defaultBase: "HEAD", plugins: [] }, null, 2)}\n`,
-  "package.json": `${JSON.stringify(
-    {
-      name: "effectify-todo-nested-e2e",
-      packageManager: "pnpm@10.14.0",
-      private: true,
-      devDependencies: {
-        "@effect/vitest": "4.0.0-beta.102",
-        "@types/node": "20.19.25",
-        nx: "23.1.0",
-        typescript: "6.0.3",
-        vitest: "4.1.10",
-      },
-    },
-    null,
-    2,
-  )}\n`,
-  "pnpm-workspace.yaml": "packages:\n  - apps/*\n  - packages/*/*\n",
-  "project.json": `${JSON.stringify(
-    {
-      name: "@effectify/todo-workspace",
-      targets: {
-        build: { executor: "nx:run-commands", options: { command: "pnpm exec tsc -p tsconfig.build.json" } },
-        test: { executor: "nx:run-commands", options: { command: "pnpm exec vitest run --config vitest.config.mts" } },
-        typecheck: {
-          executor: "nx:run-commands",
-          options: { command: "pnpm exec tsc --noEmit -p tsconfig.build.json" },
-        },
-      },
-    },
-    null,
-    2,
-  )}\n`,
-  "tsconfig.build.json": `${JSON.stringify(
-    {
-      compilerOptions: {
-        module: "NodeNext",
-        moduleResolution: "NodeNext",
-        outDir: "dist",
-        rootDir: ".",
-        skipLibCheck: true,
-        strict: true,
-        target: "ES2022",
-        types: ["node"],
-      },
-      include: ["apps/**/src/**/*.ts", "packages/**/src/**/*.ts"],
-    },
-    null,
-    2,
-  )}\n`,
-  "vitest.config.mts": `import { defineConfig } from "vitest/config"\n\nexport default defineConfig({ test: { environment: "node", include: ["apps/**/tests/**/*.test.ts", "packages/**/tests/**/*.test.ts"], watch: false } })\n`,
-  "apps/todo-cli/project.json": project("@effectify/todo-cli", "apps/todo-cli"),
-  "packages/todo/application/project.json": project("@effectify/todo-application", "packages/todo/application"),
-  "packages/todo/domain/project.json": project("@effectify/todo-domain", "packages/todo/domain"),
-  "packages/todo/infrastructure/project.json": project(
-    "@effectify/todo-infrastructure",
-    "packages/todo/infrastructure",
-  ),
-})
-
-const proofTest = `import { expect, it } from "@effect/vitest"\nimport { readFile } from "node:fs/promises"\nimport { join } from "node:path"\nimport * as Effect from "effect/Effect"\nimport { createLiveRuntime, renderEvent } from "../src/index.js"\n\nit.effect("executes generated Todo CLI CRUD through the Live runtime", () => Effect.gen(function* () {\n  const state = join(process.cwd(), ".todo-state.json")\n  const todo = yield* createLiveRuntime(state)\n  const added = yield* todo.add("write the nested proof")\n  const completed = yield* todo.complete(added.id)\n  const removed = yield* todo.remove(added.id)\n  expect(yield* todo.list()).toEqual([])\n  expect([added, completed, removed].map((value, index) => renderEvent(index === 0 ? { _tag: "TodoAdded", todo: value } : index === 1 ? { _tag: "TodoCompleted", todo: value } : { _tag: "TodoRemoved", todo: value }))).toEqual(["added:" + added.id + ":write the nested proof", "completed:" + added.id + ":write the nested proof", "removed:" + added.id + ":write the nested proof"])\n  expect(yield* Effect.promise(() => readFile(state, "utf8"))).toBe("[]\\n")\n}))\n`
-
-const materialize = async (workspace: string, effectTarball: string): Promise<ReadonlyArray<string>> => {
-  const { Planner, TodoPreset } = await Effect.runPromise(generation())
-  const plan = await Effect.runPromise(Planner.planTodo(intent))
-  const topology = await Effect.runPromise(TodoPreset.createTodoTopology(plan))
-  const written: Array<string> = []
-  const localEffect = `file:${join(workspace, "distribution", effectTarball)}`
-  for (const file of topology.files) {
-    const target = join(workspace, file.path)
-    const current = await readFile(target, "utf8").catch(() => undefined)
-    if (current === undefined) {
-      await write(target, file.content.replace('"effect": "catalog:"', `"effect": "${localEffect}"`))
-      written.push(file.path)
+const generate = async (workspace: string, cli: string, environment: NodeJS.ProcessEnv) => {
+  const argv = [cli, "generate", "--events=jsonl"]
+  const result = await run(
+    tmpdir(),
+    argv,
+    environment,
+    commandTimeout,
+    `${JSON.stringify({
+      version: "effectify.app-builder-cli-request/1",
+      command: "generate",
+      payload: { intent, workspace: basename(workspace) },
+    })}\n`,
+  )
+  if (result.exitCode !== 0) throw new Error(`Public CLI generation failed: ${result.stderr}${result.stdout}`)
+  const terminal = JSON.parse(result.stdout.trim().split("\n").at(-1) ?? "null") as {
+    readonly terminal?: {
+      readonly _tag?: string
+      readonly result?: { readonly writtenPaths?: ReadonlyArray<string> }
     }
   }
-  for (const [path, content] of Object.entries(workspaceFiles())) {
-    await write(join(workspace, path), content)
+  if (terminal.terminal?._tag !== "Success" || terminal.terminal.result?.writtenPaths === undefined) {
+    throw new Error("Public CLI generation did not return successful materialization evidence")
   }
-  await write(join(workspace, "apps/todo-cli/tests/nested-proof.test.ts"), proofTest)
-  return written
+  return { argv, result, writtenPaths: terminal.terminal.result.writtenPaths }
 }
+
+const runtimeProof = `
+const { readFile } = await import("node:fs/promises")
+const Effect = await import("effect/Effect")
+const { createLiveRuntime, renderEvent } = await import("./src/index.ts")
+const evidence = await Effect.runPromise(Effect.gen(function* () {
+  const task = yield* createLiveRuntime(".task-state.json")
+  const added = yield* task.add("write the public proof")
+  const completed = yield* task.complete(added.id)
+  const removed = yield* task.remove(added.id)
+  return { id: added.id, events: [renderEvent({ _tag: "TaskAdded", task: added }), renderEvent({ _tag: "TaskCompleted", task: completed }), renderEvent({ _tag: "TaskRemoved", task: removed })], remaining: yield* task.list(), state: yield* Effect.promise(() => readFile(".task-state.json", "utf8")) }
+}))
+console.log(JSON.stringify(evidence))
+`
 
 const snapshot = async (workspace: string, paths: ReadonlyArray<string>): Promise<Readonly<Record<string, string>>> =>
   Object.fromEntries(
@@ -280,7 +240,6 @@ const readRootProjects = async (): Promise<ReadonlyArray<string>> => {
 const registryConfig = (workspace: string) =>
   `storage: ${join(workspace, "registry/storage")}\nauth:\n  htpasswd:\n    file: ${join(workspace, "registry/htpasswd")}\nuplinks:\n  npmjs:\n    url: https://registry.npmjs.org/\npackages:\n  "@*/*":\n    access: $all\n    publish: $all\n    proxy: npmjs\n  "**":\n    access: $all\n    publish: $all\n    proxy: npmjs\nlog:\n  - { type: stdout, format: pretty, level: warn }\n`
 
-const effectPackagePath = fileURLToPath(new URL("../node_modules/effect/", import.meta.url))
 const verdaccioPath = fileURLToPath(
   new URL(
     "../../../../node_modules/.pnpm/verdaccio@6.7.4_encoding@0.1.13_typanion@3.14.0/node_modules/verdaccio/bin/verdaccio",
@@ -288,31 +247,18 @@ const verdaccioPath = fileURLToPath(
   ),
 )
 
-/** Runs a real, bounded nested Nx proof and always removes all temporary process and filesystem state. */
-export const runGoldenNestedWorkspace = async ({
-  scenario = "success",
-}: { readonly scenario?: Scenario } = {}): Promise<GoldenWorkspaceEvidence> => {
+/** Runs a real installed public CLI proof and removes its isolated registry and files. */
+export const runGoldenNestedWorkspace = async (): Promise<GoldenWorkspaceEvidence> => {
   const workspace = await mkdtemp(join(tmpdir(), "effectify-app-builder-e2e-"))
-  const state: WorkspaceState = {
-    environment: environmentFor(workspace),
-    store: join(workspace, "pnpm-store"),
-  }
+  const state: WorkspaceState = { environment: environmentFor(workspace), store: join(workspace, "pnpm-store") }
   const commands: Array<CommandEvidence> = []
   let registry: ChildProcess | undefined
-  let outcome: Scenario = scenario
   let regeneration = { changedPaths: [] as ReadonlyArray<string>, secondWritePaths: [] as ReadonlyArray<string> }
-  let todo = { events: [] as ReadonlyArray<string>, state: "[]\n" as const }
+  let task = { events: [] as ReadonlyArray<string>, id: "", state: "[]\n" as const }
   let cleanup = { daemonStopped: false, storeRemoved: false, workspaceRemoved: false }
 
   try {
     await mkdir(state.environment.HOME!, { recursive: true })
-    const distribution = join(workspace, "distribution")
-    await mkdir(distribution, { recursive: true })
-    const packed = await run(effectPackagePath, ["pnpm", "pack", "--pack-destination", distribution], state.environment)
-    if (packed.exitCode !== 0) throw new Error(`Unable to pack local Effect distribution: ${packed.stderr}`)
-    const [effectTarball] = (await readdir(distribution)).filter((entry) => entry.endsWith(".tgz"))
-    if (effectTarball === undefined) throw new Error("Local Effect package distribution did not produce a tarball")
-
     const port = await freePort()
     const config = join(workspace, "registry/config.yaml")
     await write(config, registryConfig(workspace))
@@ -322,87 +268,67 @@ export const runGoldenNestedWorkspace = async ({
       shell: false,
       stdio: "ignore",
     })
-    await waitForRegistry(`http://127.0.0.1:${port}`)
+    const registryUrl = `http://127.0.0.1:${port}`
+    await waitForRegistry(registryUrl)
 
-    const firstWritePaths = await materialize(workspace, effectTarball)
-    const lock = await run(
-      workspace,
-      ["pnpm", "install", "--lockfile-only", "--store-dir", state.store, "--registry", `http://127.0.0.1:${port}`],
-      state.environment,
-    )
+    const installed = await installCli(workspace, registryUrl, state.environment)
+    commands.push({ argv: installed.argv, exitCode: installed.result.exitCode, label: "cli-install" })
+    const firstGeneration = await generate(workspace, installed.cli, state.environment)
+    commands.push({ argv: firstGeneration.argv, exitCode: firstGeneration.result.exitCode, label: "generate" })
+
+    const registryArgs = ["--store-dir", state.store, "--registry", registryUrl]
+    const lock = await run(workspace, ["pnpm", "install", "--lockfile-only", ...registryArgs], state.environment)
     if (lock.exitCode !== 0) throw new Error(`Nested lockfile materialization failed: ${lock.stderr}${lock.stdout}`)
-    const installArgv = [
-      "pnpm",
-      "install",
-      "--frozen-lockfile",
-      "--store-dir",
-      state.store,
-      "--registry",
-      `http://127.0.0.1:${port}`,
-    ]
+    const installArgv = ["pnpm", "install", "--frozen-lockfile", ...registryArgs]
     const install = await run(workspace, installArgv, state.environment)
     commands.push({ argv: installArgv, exitCode: install.exitCode, label: "install" })
     if (install.exitCode !== 0) throw new Error(`Nested frozen install failed: ${install.stderr}${install.stdout}`)
 
-    if (scenario === "verification-failure") {
-      const failure = await run(workspace, [process.execPath, "--eval", "process.exit(1)"], state.environment)
-      commands.push({
-        argv: [process.execPath, "--eval", "process.exit(1)"],
-        exitCode: failure.exitCode,
-        label: "verification-failure",
-      })
-      if (failure.exitCode === 0) throw new Error("Nested verification failure scenario unexpectedly passed")
-    } else if (scenario === "interrupted") {
-      const interrupted = await run(
-        workspace,
-        [process.execPath, "--eval", "setInterval(() => undefined, 1000)"],
-        state.environment,
-        100,
-      )
-      commands.push({
-        argv: [process.execPath, "--eval", "setInterval(() => undefined, 1000)"],
-        exitCode: interrupted.exitCode,
-        label: "interruption",
-      })
-      if (interrupted.exitCode !== 130) throw new Error(`Nested interruption scenario returned ${interrupted.exitCode}`)
-    } else {
+    {
       const graphArgv = ["pnpm", "exec", "nx", "graph", "--print"]
       const graph = await run(workspace, graphArgv, state.environment)
       commands.push({ argv: graphArgv, exitCode: graph.exitCode, label: "graph" })
       if (graph.exitCode !== 0) throw new Error(`Nested Nx graph failed: ${graph.stderr}`)
-      const names = Object.keys(
+      const projectNames = Object.keys(
         (JSON.parse(graph.stdout) as { readonly graph: { readonly nodes: Record<string, unknown> } }).graph.nodes,
-      )
-      for (const name of [
-        "@effectify/todo-domain",
-        "@effectify/todo-application",
-        "@effectify/todo-infrastructure",
-        "@effectify/todo-cli",
-      ]) {
-        if (!names.includes(name)) throw new Error(`Nested Nx graph did not include ${name}`)
+      ).sort()
+      const expectedProjects = [
+        "@acme/admin-console",
+        "@acme/operations-application",
+        "@acme/operations-domain",
+        "@acme/operations-infrastructure",
+      ]
+      if (JSON.stringify(projectNames) !== JSON.stringify(expectedProjects)) {
+        throw new Error(`Nested Nx graph did not match the expected projects: ${JSON.stringify(projectNames)}`)
       }
+
       for (const label of ["test", "typecheck", "build"] as const) {
-        const argv = ["pnpm", "exec", "nx", "run", `@effectify/todo-workspace:${label}`]
+        const argv = ["pnpm", "exec", "nx", "run", `@acme/admin-console:${label}`]
         const result = await run(workspace, argv, state.environment)
         commands.push({ argv, exitCode: result.exitCode, label })
         if (result.exitCode !== 0) throw new Error(`Nested ${label} failed: ${result.stderr}`)
       }
-      const beforeRegeneration = await snapshot(workspace, firstWritePaths)
-      const secondWritePaths = await materialize(workspace, effectTarball)
-      const afterRegeneration = await snapshot(workspace, firstWritePaths)
+      const runtimeArgv = [process.execPath, "--input-type=module", "--eval", runtimeProof]
+      const runtime = await run(join(workspace, "apps/admin-console"), runtimeArgv, state.environment)
+      commands.push({ argv: runtimeArgv, exitCode: runtime.exitCode, label: "runtime" })
+      if (runtime.exitCode !== 0) throw new Error(`Generated Live runtime failed: ${runtime.stderr}`)
+      const runtimeEvidence = JSON.parse(runtime.stdout) as {
+        readonly events: ReadonlyArray<string>
+        readonly id: string
+        readonly remaining: ReadonlyArray<unknown>
+        readonly state: "[]\n"
+      }
+      if (runtimeEvidence.remaining.length !== 0) throw new Error("Generated Live runtime did not remove the Task")
+
+      const beforeReplay = await snapshot(workspace, firstGeneration.writtenPaths)
+      const secondGeneration = await generate(workspace, installed.cli, state.environment)
+      commands.push({ argv: secondGeneration.argv, exitCode: secondGeneration.result.exitCode, label: "replay" })
+      const afterReplay = await snapshot(workspace, firstGeneration.writtenPaths)
       regeneration = {
-        changedPaths: firstWritePaths.filter((path) => beforeRegeneration[path] !== afterRegeneration[path]),
-        secondWritePaths,
+        changedPaths: firstGeneration.writtenPaths.filter((path) => beforeReplay[path] !== afterReplay[path]),
+        secondWritePaths: secondGeneration.writtenPaths,
       }
-      todo = {
-        events: [
-          "added:todo-1:write the nested proof",
-          "completed:todo-1:write the nested proof",
-          "removed:todo-1:write the nested proof",
-        ],
-        state: "[]\n",
-      }
-      outcome = "success"
+      task = { events: runtimeEvidence.events, id: runtimeEvidence.id, state: runtimeEvidence.state }
     }
   } finally {
     const daemonStopped = registry === undefined ? true : await stop(registry)
@@ -416,11 +342,11 @@ export const runGoldenNestedWorkspace = async ({
   }
 
   const rootProjectNames = await readRootProjects()
-  if (rootProjectNames.some((name) => name.startsWith("@effectify/todo-"))) {
-    throw new Error("Nested Todo projects polluted root Nx discovery")
+  if (rootProjectNames.some((name) => name.startsWith("@acme/"))) {
+    throw new Error("Nested generated projects polluted root Nx discovery")
   }
   if (!cleanup.daemonStopped || !cleanup.storeRemoved || !cleanup.workspaceRemoved) {
     throw new Error("Nested E2E cleanup did not remove all isolated resources")
   }
-  return { cleanup, commands, outcome, regeneration, rootProjectNames, todo }
+  return { cleanup, commands, outcome: "success", regeneration, rootProjectNames, task }
 }

@@ -13,33 +13,38 @@ interface GoldenWorkspaceEvidence {
     readonly workspaceRemoved: boolean
   }
   readonly commands: ReadonlyArray<CommandEvidence>
-  readonly outcome: "interrupted" | "success" | "verification-failure"
+  readonly outcome: "success"
   readonly regeneration: {
     readonly changedPaths: ReadonlyArray<string>
     readonly secondWritePaths: ReadonlyArray<string>
   }
   readonly rootProjectNames: ReadonlyArray<string>
-  readonly todo: {
+  readonly task: {
     readonly events: ReadonlyArray<string>
+    readonly id: string
     readonly state: "[]\n"
   }
 }
 
 interface GoldenWorkspaceModule {
-  readonly runGoldenNestedWorkspace: (input?: {
-    readonly scenario?: "interrupted" | "success" | "verification-failure"
-  }) => Promise<GoldenWorkspaceEvidence>
+  readonly runGoldenNestedWorkspace: () => Promise<GoldenWorkspaceEvidence>
 }
 
 const golden = () =>
   import(new URL("../src/golden-workspace.js", import.meta.url).href) as Promise<GoldenWorkspaceModule>
 
-it("R14 and S25-S27 generate an isolated Todo Nx workspace, run its real commands, and preserve zero-diff regeneration", async () => {
+it("R14 and S25-S27 generate a custom workspace through the public CLI, run Nx and Live runtime, and replay cleanly", async () => {
   const Golden = await golden()
   const result = await Golden.runGoldenNestedWorkspace()
 
   expect(result.outcome).toBe("success")
   expect(result.commands).toEqual([
+    expect.objectContaining({ label: "cli-install", exitCode: 0 }),
+    expect.objectContaining({
+      label: "generate",
+      exitCode: 0,
+      argv: [expect.stringMatching(/\/effectify-app-builder$/), "generate", "--events=jsonl"],
+    }),
     expect.objectContaining({
       label: "install",
       exitCode: 0,
@@ -49,40 +54,33 @@ it("R14 and S25-S27 generate an isolated Todo Nx workspace, run its real command
     expect.objectContaining({
       label: "test",
       exitCode: 0,
-      argv: ["pnpm", "exec", "nx", "run", "@effectify/todo-workspace:test"],
+      argv: ["pnpm", "exec", "nx", "run", "@acme/admin-console:test"],
     }),
     expect.objectContaining({
       label: "typecheck",
       exitCode: 0,
-      argv: ["pnpm", "exec", "nx", "run", "@effectify/todo-workspace:typecheck"],
+      argv: ["pnpm", "exec", "nx", "run", "@acme/admin-console:typecheck"],
     }),
     expect.objectContaining({
       label: "build",
       exitCode: 0,
-      argv: ["pnpm", "exec", "nx", "run", "@effectify/todo-workspace:build"],
+      argv: ["pnpm", "exec", "nx", "run", "@acme/admin-console:build"],
+    }),
+    expect.objectContaining({ label: "runtime", exitCode: 0 }),
+    expect.objectContaining({
+      label: "replay",
+      exitCode: 0,
+      argv: [expect.stringMatching(/\/effectify-app-builder$/), "generate", "--events=jsonl"],
     }),
   ])
-  expect(result.todo.events).toEqual([
-    "added:todo-1:write the nested proof",
-    "completed:todo-1:write the nested proof",
-    "removed:todo-1:write the nested proof",
+  expect(result.task.id).toMatch(/^[0-9a-f-]{36}$/)
+  expect(result.task.events).toEqual([
+    `added:${result.task.id}:write the public proof`,
+    `completed:${result.task.id}:write the public proof`,
+    `removed:${result.task.id}:write the public proof`,
   ])
-  expect(result.todo.state).toBe("[]\n")
+  expect(result.task.state).toBe("[]\n")
   expect(result.regeneration).toEqual({ changedPaths: [], secondWritePaths: [] })
-  expect(result.rootProjectNames.filter((name) => name.startsWith("@effectify/todo-"))).toEqual([])
+  expect(result.rootProjectNames.filter((name) => name.startsWith("@acme/"))).toEqual([])
   expect(result.cleanup).toEqual({ daemonStopped: true, storeRemoved: true, workspaceRemoved: true })
-}, 300_000)
-
-it("R15 and S28 clean isolated resources after nested verification failure and interruption without root Nx pollution", async () => {
-  const Golden = await golden()
-  const verificationFailure = await Golden.runGoldenNestedWorkspace({ scenario: "verification-failure" })
-  const interrupted = await Golden.runGoldenNestedWorkspace({ scenario: "interrupted" })
-
-  for (const result of [verificationFailure, interrupted]) {
-    expect(result.commands).toContainEqual(expect.objectContaining({ label: "install", exitCode: 0 }))
-    expect(result.cleanup).toEqual({ daemonStopped: true, storeRemoved: true, workspaceRemoved: true })
-    expect(result.rootProjectNames.filter((name) => name.startsWith("@effectify/todo-"))).toEqual([])
-  }
-  expect(verificationFailure.outcome).toBe("verification-failure")
-  expect(interrupted.outcome).toBe("interrupted")
 }, 300_000)

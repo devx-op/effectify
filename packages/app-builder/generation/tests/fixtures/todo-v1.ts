@@ -4,7 +4,7 @@ export const TodoV1Fixture: ReadonlyArray<Entry> = Object.freeze(
   `apps/todo-cli/package.json|1f7e39c504515ed23d106e172ccc2f0ef91186021b3a02e9066fe14ea4e2783e|@effectify/app-builder/workspace/1|package-surface-presentation-manifest
 apps/todo-cli/src/index.ts|40f8ce0bfcb8db9c548ef19dd3509319e2c69ad03b27c57914d4788536b43eb5|@effectify/app-builder/presentation/1|package-surface-presentation-barrel
 apps/todo-cli/tests/todo.test.ts|77b9145ff6a68b6c4660948ab8066e3e3091500e61135cbba4f748395f3d8074|@effectify/app-builder/presentation/1|todo-presentation-apps-todo-cli-tests-todo-test-ts
-nx.json|2f79ffcab40a80ced827e38e9871be1e666c3d648e4550ac09893459a8ab42a0|@effectify/app-builder/workspace/1|workspace-surface-nx-json
+nx.json|36ebfd6eabb0aa4a5a4060dd694d745b9ce16717f4027bb9107c63b1e782af52|@effectify/app-builder/workspace/1|workspace-surface-nx-json
 package.json|3b369e67b69581211e14df72d231a2331399888fe8f16c5095bab03b4616e426|@effectify/app-builder/workspace/1|workspace-surface-package-json
 packages/todo/application/package.json|74a25e6b222c0e8e6ce8cf39df7e7a68d7b68faaaf01a1321d6d1c521f147f00|@effectify/app-builder/workspace/1|package-surface-application-manifest
 packages/todo/application/src/index.ts|a606cc63ce4e3ab6eeb2345cdaf9c4bbd3bfb43f5a20f26bff250439194a154b|@effectify/app-builder/port/1|package-surface-application-barrel
