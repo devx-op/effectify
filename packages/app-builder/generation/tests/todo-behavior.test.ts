@@ -1,5 +1,5 @@
 import { expect, it } from "@effect/vitest"
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises"
 import { dirname, join } from "node:path"
 import { pathToFileURL } from "node:url"
 import * as Effect from "effect/Effect"
@@ -49,6 +49,19 @@ const modules = () =>
     TodoPreset: Effect.promise<TodoPresetModule>(() => import(new URL("../src/todo-preset.js", import.meta.url).href)),
   })
 
+const linkGeneratedPackages = async (workspace: string): Promise<void> => {
+  for (const [name, root] of [
+    ["todo-domain", "packages/todo/domain"],
+    ["todo-application", "packages/todo/application"],
+    ["todo-infrastructure", "packages/todo/infrastructure"],
+    ["todo-cli", "apps/todo-cli"],
+  ] as const) {
+    const target = join(workspace, "node_modules", "@effectify", name)
+    await mkdir(dirname(target), { recursive: true })
+    await symlink(join(workspace, root), target, "dir")
+  }
+}
+
 const withGeneratedTodo = <Value, Error>(
   use: (cli: TodoCliModule, workspace: string) => Effect.Effect<Value, Error>,
 ): Effect.Effect<Value, Error | unknown> =>
@@ -60,6 +73,7 @@ const withGeneratedTodo = <Value, Error>(
       yield* Effect.tryPromise(() => mkdir(dirname(join(workspace, file.path)), { recursive: true }))
       yield* Effect.tryPromise(() => writeFile(join(workspace, file.path), file.content))
     }
+    yield* Effect.tryPromise(() => linkGeneratedPackages(workspace))
     const cli = yield* Effect.promise<TodoCliModule>(
       () => import(pathToFileURL(join(workspace, "apps/todo-cli/src/index.ts")).href),
     )

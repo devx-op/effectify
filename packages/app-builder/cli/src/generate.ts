@@ -76,9 +76,9 @@ const workspacePath = (workspace: string): Effect.Effect<string, GenerateInputEr
     : Effect.succeed(target)
 }
 
-const outputPath = (workspace: string, path: string): string => {
+const outputPath = (workspace: string, path: string, roots: ReadonlyArray<string>): string => {
   const segments = safeSegments(path, safeOutputSegment)
-  const isOwned = TodoPreset.isTodoTopologyPath(path)
+  const isOwned = TodoPreset.isTodoTopologyPath(path, roots)
   if (segments === undefined || !isOwned) {
     throw new GenerateHostError({ reason: "generated topology contains an unsafe output path" })
   }
@@ -118,7 +118,7 @@ const prevalidate = async (
   for (const file of [...topology.files].sort((left, right) => left.path.localeCompare(right.path))) {
     if (paths.has(file.path)) throw new GenerateConflictError({ path: file.path })
     paths.add(file.path)
-    const target = outputPath(workspace, file.path)
+    const target = outputPath(workspace, file.path, topology.roots)
     const output = { content: file.content, path: file.path, target }
     await requireSafeDirectories(workspace, output)
     const existing = await existingEntry(target)
