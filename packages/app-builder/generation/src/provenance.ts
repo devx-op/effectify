@@ -106,7 +106,7 @@ const decodeOutputs = (input: unknown): Effect.Effect<ReadonlyArray<ReplayOutput
     outputs.push({ content: Cjson.normalizeSource(content), mode, owner, path })
   }
   const ordered = outputs.sort((left, right) => left.path.localeCompare(right.path))
-  return ordered.some((output, index) => output.path === ordered[index - 1]?.path)
+  return ordered.length === 0 || ordered.some((output, index) => output.path === ordered[index - 1]?.path)
     ? failure("outputs")
     : Effect.succeed(Object.freeze(ordered))
 }
@@ -161,6 +161,10 @@ const digest = (identity: ReplayIdentity, input: unknown): Effect.Effect<string,
 export const semanticDependencyDigest = (input: unknown): Effect.Effect<string, ReplayProvenanceError> =>
   Effect.flatMap(semanticDependencies(input), (dependencies) => digest("dependencies", dependencies))
 
+export const outputIdentityDigest = (
+  outputIdentities: ReadonlyArray<OutputIdentity>,
+): Effect.Effect<string, ReplayProvenanceError> => digest("outputs", outputIdentities)
+
 /** Captures normalized, frozen semantic provenance without acquiring a mutation adapter. */
 export const captureReplayProvenance = (input: unknown): Effect.Effect<ReplayProvenance, ReplayProvenanceError> =>
   Effect.gen(function* () {
@@ -177,7 +181,7 @@ export const captureReplayProvenance = (input: unknown): Effect.Effect<ReplayPro
       catalog: yield* digest("catalog", candidate.catalog),
       dependencies: yield* semanticDependencyDigest(candidate.dependencies),
       intent: yield* digest("intent", candidate.intent),
-      outputs: yield* digest("outputs", outputIdentities),
+      outputs: yield* outputIdentityDigest(outputIdentities),
       pins: yield* digest("pins", candidate.pins),
       plan: yield* digest("plan", candidate.plan),
     })

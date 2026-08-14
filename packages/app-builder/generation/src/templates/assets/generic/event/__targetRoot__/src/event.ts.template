@@ -1,0 +1,9 @@
+import * as Data from "effect/Data"
+import type { <%- entitySingular %> } from "./model.js"
+
+export type <%- entitySingular %>Event = Data.TaggedEnum<{
+  <%- entitySingular %>Added: { readonly <%- entityIdentifier %>: <%- entitySingular %> }
+  <%- entitySingular %>Completed: { readonly <%- entityIdentifier %>: <%- entitySingular %> }
+  <%- entitySingular %>Removed: { readonly <%- entityIdentifier %>: <%- entitySingular %> }
+}>
+export const <%- entitySingular %>Event = Data.taggedEnum<<%- entitySingular %>Event>()

@@ -1,0 +1,42 @@
+{
+  "name": "@effectify/app-builder-e2e",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/app-builder/e2e/src",
+  "projectType": "library",
+  "tags": ["app-builder", "type:e2e", "npm:private"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc -p tsconfig.lib.json",
+        "cwd": "packages/app-builder/e2e"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit -p tsconfig.lib.json && tsc --noEmit -p tsconfig.spec.json",
+        "cwd": "packages/app-builder/e2e"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "dependsOn": [
+        {
+          "projects": ["@effectify/app-builder-cli"],
+          "target": "build"
+        }
+      ],
+      "options": {
+        "command": "../../../node_modules/.bin/vitest run --config vitest.config.mts",
+        "cwd": "packages/app-builder/e2e"
+      }
+    },
+    "lint": {
+      "executor": "nx-oxlint:lint",
+      "options": {
+        "lintFilePatterns": ["packages/app-builder/e2e/**/*.{ts,mts}"]
+      }
+    }
+  }
+}

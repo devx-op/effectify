@@ -1,9 +1,9 @@
-export const applicationTemplate = String.raw`import * as Context from "effect/Context"
+import * as Context from "effect/Context"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import * as Option from "effect/Option"
 import * as Schema from "effect/Schema"
-import { TodoEvent, TodoId, type Todo, type TodoEvent as Event, TodoAlreadyCompleted, TodoIdExhausted, TodoNotFound, TodoPersistenceError, TodoTextInvalid } from "../../domain/src/index.js"
+import { TodoEvent, TodoId, type Todo, type TodoEvent as Event, TodoAlreadyCompleted, TodoIdExhausted, TodoNotFound, TodoPersistenceError, TodoTextInvalid } from "@effectify/todo-domain"
 
 export interface TodoRepositoryApi {
   readonly find: (id: TodoId) => Effect.Effect<Todo | undefined, TodoPersistenceError>
@@ -65,4 +65,3 @@ export const layer = Layer.effect(TodoApplication, Effect.gen(function* () {
   })
   return TodoApplication.of({ add, complete, list: repository.list, remove })
 }))
-`
