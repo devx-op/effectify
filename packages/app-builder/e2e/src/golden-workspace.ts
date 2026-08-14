@@ -1,5 +1,5 @@
 import { spawn, type ChildProcess } from "node:child_process"
-import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises"
+import { appendFile, mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { createServer } from "node:net"
 import { tmpdir } from "node:os"
@@ -23,10 +23,13 @@ const commandTimeout = 90_000
 const shutdownTimeout = 5_000
 const repositoryRoot = fileURLToPath(new URL("../../../../", import.meta.url))
 
+type Scenario = "interrupted" | "success" | "verification-failure"
+
 export interface CommandEvidence {
   readonly argv: ReadonlyArray<string>
   readonly exitCode: number
   readonly label: string
+  readonly output?: string
 }
 
 export interface GoldenWorkspaceEvidence {
@@ -36,19 +39,35 @@ export interface GoldenWorkspaceEvidence {
     readonly workspaceRemoved: boolean
   }
   readonly commands: ReadonlyArray<CommandEvidence>
-  readonly outcome: "success"
+  readonly outcome: Scenario
   readonly regeneration: {
     readonly changedPaths: ReadonlyArray<string>
     readonly secondWritePaths: ReadonlyArray<string>
   }
   readonly rootProjectNames: ReadonlyArray<string>
   readonly task: { readonly events: ReadonlyArray<string>; readonly id: string; readonly state: "[]\n" }
+  readonly termination?: TerminationEvidence
 }
 
 interface ProcessResult {
   readonly exitCode: number
   readonly stderr: string
   readonly stdout: string
+  readonly termination?: TerminationEvidence
+}
+
+interface TerminationEvidence {
+  readonly descendantPid?: number
+  readonly descendantGone: boolean
+  readonly directChildClosed: boolean
+  readonly directChildClosedBeforeKill: boolean
+  readonly escalated: boolean
+  readonly groupId: number
+  readonly groupGone: boolean
+  readonly killSent: boolean
+  readonly readinessObserved: boolean
+  readonly stopped: boolean
+  readonly termSent: boolean
 }
 
 interface WorkspaceState {
@@ -63,6 +82,114 @@ const exists = async (path: string): Promise<boolean> =>
 
 const sleep = (milliseconds: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, milliseconds))
 
+class ProcessTimeoutError extends Error {}
+
+const waitForClose = <Value>(closed: Promise<Value>, timeout: number): Promise<Value> =>
+  new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      clearTimeout(timer)
+      reject(new ProcessTimeoutError(`Process did not close within ${timeout}ms`))
+    }, timeout)
+    closed.then(
+      (value) => {
+        clearTimeout(timer)
+        resolve(value)
+      },
+      (error: unknown) => {
+        clearTimeout(timer)
+        reject(error)
+      },
+    )
+  })
+
+const isAbsent = (error: unknown): boolean =>
+  typeof error === "object" && error !== null && Reflect.get(error, "code") === "ESRCH"
+
+const signalGroup = (pgid: number, signal: NodeJS.Signals): boolean => {
+  try {
+    process.kill(-pgid, signal)
+    return true
+  } catch (error) {
+    if (isAbsent(error)) return false
+    throw error
+  }
+}
+
+const processExists = (pid: number): boolean => {
+  try {
+    process.kill(pid, 0)
+    return true
+  } catch (error) {
+    if (isAbsent(error)) return false
+    if (typeof error === "object" && error !== null && Reflect.get(error, "code") === "EPERM") return true
+    throw error
+  }
+}
+
+const waitUntil = async (predicate: () => boolean, timeout: number): Promise<boolean> => {
+  const deadline = Date.now() + timeout
+  while (!predicate()) {
+    if (Date.now() >= deadline) return false
+    await sleep(25)
+  }
+  return true
+}
+
+const waitForReadiness = async (path: string, assertRunning: () => void): Promise<number> => {
+  const deadline = Date.now() + commandTimeout
+  while (Date.now() < deadline) {
+    assertRunning()
+    try {
+      const value = JSON.parse(await readFile(path, "utf8")) as { readonly descendantPid?: unknown }
+      if (typeof value.descendantPid === "number" && value.descendantPid > 0) return value.descendantPid
+    } catch {
+      // The generated Vitest test has not completed its descendant handshake yet.
+    }
+    await sleep(25)
+  }
+  throw new Error("Generated Vitest workflow did not publish deterministic readiness evidence")
+}
+
+const terminateGroup = async (
+  pgid: number,
+  directClose: Promise<unknown>,
+  isDirectChildClosed: () => boolean,
+  readinessObserved: boolean,
+  descendantPid?: number,
+): Promise<TerminationEvidence> => {
+  const termSent = signalGroup(pgid, "SIGTERM")
+  let groupGone = await waitUntil(() => !processExists(-pgid), shutdownTimeout)
+  const escalated = !groupGone
+  const directChildClosedBeforeKill = isDirectChildClosed()
+  let killSent = false
+  if (escalated) {
+    killSent = signalGroup(pgid, "SIGKILL")
+    groupGone = await waitUntil(() => !processExists(-pgid), shutdownTimeout)
+  }
+  const directChildClosed = await waitForClose(directClose, shutdownTimeout).then(
+    () => true,
+    (error) => {
+      if (error instanceof ProcessTimeoutError) return false
+      throw error
+    },
+  )
+  const descendantGone =
+    descendantPid === undefined || (await waitUntil(() => !processExists(descendantPid), shutdownTimeout))
+  return {
+    descendantPid,
+    descendantGone,
+    directChildClosed,
+    directChildClosedBeforeKill,
+    escalated,
+    groupId: pgid,
+    groupGone,
+    killSent,
+    readinessObserved,
+    stopped: directChildClosed && groupGone && descendantGone,
+    termSent,
+  }
+}
+
 const environmentFor = (workspace: string): NodeJS.ProcessEnv => ({
   CI: "true",
   HOME: join(workspace, "home"),
@@ -74,57 +201,98 @@ const environmentFor = (workspace: string): NodeJS.ProcessEnv => ({
   PNPM_HOME: join(workspace, "pnpm-home"),
 })
 
-const run = (
+const run = async (
   cwd: string,
   argv: ReadonlyArray<string>,
   environment: NodeJS.ProcessEnv,
   timeout = commandTimeout,
   input = "",
-): Promise<ProcessResult> =>
-  new Promise((resolve, reject) => {
-    const [command, ...args] = argv
-    if (command === undefined) {
-      reject(new Error("E2E subprocess requires an executable"))
-      return
-    }
-    const child = spawn(command, args, { cwd, env: environment, shell: false, stdio: ["pipe", "pipe", "pipe"] })
-    let stdout = ""
-    let stderr = ""
-    let timedOut = false
-    const timer = setTimeout(() => {
-      timedOut = true
-      child.kill("SIGTERM")
-      setTimeout(() => child.kill("SIGKILL"), shutdownTimeout).unref()
-    }, timeout)
-    child.stdout.setEncoding("utf8")
-    child.stderr.setEncoding("utf8")
-    child.stdout.on("data", (chunk: string) => {
-      stdout += chunk
-    })
-    child.stderr.on("data", (chunk: string) => {
-      stderr += chunk
-    })
-    child.stdin.end(input)
+  readinessPath?: string,
+): Promise<ProcessResult> => {
+  const [command, ...args] = argv
+  if (command === undefined) throw new Error("E2E subprocess requires an executable")
+  const child = spawn(command, args, {
+    cwd,
+    detached: true,
+    env: environment,
+    shell: false,
+    stdio: ["pipe", "pipe", "pipe"],
+  })
+  let directChildClosed = false
+  let childError: unknown
+  const closed = new Promise<number | null>((resolve, reject) => {
     child.once("error", (error) => {
-      clearTimeout(timer)
+      childError = error
       reject(error)
     })
     child.once("close", (code) => {
-      clearTimeout(timer)
-      resolve({ exitCode: timedOut ? 130 : (code ?? 1), stderr, stdout })
+      directChildClosed = true
+      resolve(code)
     })
   })
+  void closed.catch(() => undefined)
+  if (child.pid === undefined) {
+    await closed
+    throw new Error("E2E subprocess did not expose a process-group identifier")
+  }
+  const pgid = child.pid
+  let stdout = ""
+  let stderr = ""
+  child.stdout.setEncoding("utf8")
+  child.stderr.setEncoding("utf8")
+  child.stdout.on("data", (chunk: string) => {
+    stdout += chunk
+  })
+  child.stderr.on("data", (chunk: string) => {
+    stderr += chunk
+  })
+  child.stdin.end(input)
+
+  if (readinessPath !== undefined) {
+    let descendantPid: number
+    try {
+      descendantPid = await waitForReadiness(readinessPath, () => {
+        if (childError !== undefined) throw childError
+        if (directChildClosed) throw new Error("Generated Vitest workflow closed before publishing readiness evidence")
+      })
+    } catch (error) {
+      const cleanup = await terminateGroup(pgid, closed, () => directChildClosed, false)
+      if (!cleanup.stopped)
+        throw new Error(`Unready generated workflow process group did not stop: ${JSON.stringify(cleanup)}`)
+      throw error
+    }
+    const termination = await terminateGroup(pgid, closed, () => directChildClosed, true, descendantPid)
+    if (!termination.stopped)
+      throw new Error(`Generated workflow process group did not stop: ${JSON.stringify(termination)}`)
+    return { exitCode: 130, stderr, stdout, termination }
+  }
+
+  try {
+    const completed = await waitForClose(closed, timeout)
+    return { exitCode: completed ?? 1, stderr, stdout }
+  } catch (error) {
+    const termination = await terminateGroup(pgid, closed, () => directChildClosed, false)
+    if (!termination.stopped) throw new Error(`Failed process group did not stop: ${JSON.stringify(termination)}`)
+    throw error
+  }
+}
+
+export const runGoldenCommandTimeout = (timeout = 50): Promise<ProcessResult> =>
+  run(
+    tmpdir(),
+    [process.execPath, "-e", 'require("node:net").createServer().listen(0, "127.0.0.1")'],
+    process.env,
+    timeout,
+  )
 
 const stop = async (child: ChildProcess): Promise<boolean> => {
-  if (child.exitCode !== null) return true
-  child.kill("SIGTERM")
-  const stopped = await Promise.race([
-    new Promise<boolean>((resolve) => child.once("close", () => resolve(true))),
-    sleep(shutdownTimeout).then(() => false),
-  ])
-  if (stopped) return true
-  child.kill("SIGKILL")
-  return new Promise((resolve) => child.once("close", () => resolve(true)))
+  if (child.pid === undefined) return true
+  const pgid = child.pid
+  if (!processExists(-pgid)) return true
+  signalGroup(pgid, "SIGTERM")
+  if (await waitUntil(() => !processExists(-pgid), shutdownTimeout)) return true
+  signalGroup(pgid, "SIGKILL")
+  return waitUntil(() => !processExists(-pgid), shutdownTimeout)
 }
 
 const freePort = (): Promise<number> =>
@@ -248,13 +416,17 @@ const verdaccioPath = fileURLToPath(
 )
 
 /** Runs a real installed public CLI proof and removes its isolated registry and files. */
-export const runGoldenNestedWorkspace = async (): Promise<GoldenWorkspaceEvidence> => {
+export const runGoldenNestedWorkspace = async ({
+  scenario = "success",
+}: { readonly scenario?: Scenario } = {}): Promise<GoldenWorkspaceEvidence> => {
   const workspace = await mkdtemp(join(tmpdir(), "effectify-app-builder-e2e-"))
   const state: WorkspaceState = { environment: environmentFor(workspace), store: join(workspace, "pnpm-store") }
   const commands: Array<CommandEvidence> = []
   let registry: ChildProcess | undefined
+  let outcome = scenario
   let regeneration = { changedPaths: [] as ReadonlyArray<string>, secondWritePaths: [] as ReadonlyArray<string> }
   let task = { events: [] as ReadonlyArray<string>, id: "", state: "[]\n" as const }
+  let termination: TerminationEvidence | undefined
   let cleanup = { daemonStopped: false, storeRemoved: false, workspaceRemoved: false }
 
   try {
@@ -264,6 +436,7 @@ export const runGoldenNestedWorkspace = async (): Promise<GoldenWorkspaceEvidenc
     await write(config, registryConfig(workspace))
     registry = spawn(process.execPath, [verdaccioPath, "--config", config, "--listen", `127.0.0.1:${port}`], {
       cwd: workspace,
+      detached: true,
       env: state.environment,
       shell: false,
       stdio: "ignore",
@@ -284,7 +457,36 @@ export const runGoldenNestedWorkspace = async (): Promise<GoldenWorkspaceEvidenc
     commands.push({ argv: installArgv, exitCode: install.exitCode, label: "install" })
     if (install.exitCode !== 0) throw new Error(`Nested frozen install failed: ${install.stderr}${install.stdout}`)
 
-    {
+    if (scenario === "verification-failure") {
+      await appendFile(join(workspace, "apps/admin-console/src/index.ts"), "\nexport const invalidProof: string = 1\n")
+      const argv = ["pnpm", "exec", "nx", "run", "@acme/admin-console:typecheck"]
+      const failure = await run(workspace, argv, state.environment)
+      commands.push({
+        argv,
+        exitCode: failure.exitCode,
+        label: "verification-failure",
+        output: `${failure.stdout}${failure.stderr}`,
+      })
+      const output = `${failure.stdout}${failure.stderr}`
+      if (failure.exitCode === 0 || !output.includes("src/index.ts") || !output.includes("TS2322")) {
+        throw new Error("Generated Nx typecheck did not report the intentional TypeScript corruption")
+      }
+    } else if (scenario === "interrupted") {
+      const ready = join(workspace, ".interruption-ready.json")
+      await appendFile(
+        join(workspace, "apps/admin-console/tests/task.test.ts"),
+        `\nit("publishes interruption readiness", async () => {\n  const { spawn } = await import("node:child_process")\n  const descendant = spawn(process.execPath, ["-e", ${JSON.stringify(`const { writeFileSync } = require("node:fs"); const { createServer } = require("node:net"); process.on("SIGTERM", () => {}); createServer().listen(0, "127.0.0.1", () => writeFileSync(${JSON.stringify(ready)}, JSON.stringify({ descendantPid: process.pid })))`)}], { stdio: "ignore" })\n  if (descendant.pid === undefined) throw new Error("resistant descendant did not start")\n  await new Promise((resolve) => descendant.once("exit", resolve))\n})\n`,
+      )
+      const argv = ["pnpm", "exec", "nx", "run", "@acme/admin-console:test"]
+      const interrupted = await run(workspace, argv, state.environment, commandTimeout, "", ready)
+      termination = interrupted.termination
+      commands.push({ argv, exitCode: interrupted.exitCode, label: "interruption" })
+      if (interrupted.exitCode !== 130 || termination?.stopped !== true || termination.escalated !== true) {
+        throw new Error(
+          `Generated Vitest interruption lacked truthful termination evidence: ${JSON.stringify(termination)}`,
+        )
+      }
+    } else {
       const graphArgv = ["pnpm", "exec", "nx", "graph", "--print"]
       const graph = await run(workspace, graphArgv, state.environment)
       commands.push({ argv: graphArgv, exitCode: graph.exitCode, label: "graph" })
@@ -329,6 +531,7 @@ export const runGoldenNestedWorkspace = async (): Promise<GoldenWorkspaceEvidenc
         secondWritePaths: secondGeneration.writtenPaths,
       }
       task = { events: runtimeEvidence.events, id: runtimeEvidence.id, state: runtimeEvidence.state }
+      outcome = "success"
     }
   } finally {
     const daemonStopped = registry === undefined ? true : await stop(registry)
@@ -348,5 +551,5 @@ export const runGoldenNestedWorkspace = async (): Promise<GoldenWorkspaceEvidenc
   if (!cleanup.daemonStopped || !cleanup.storeRemoved || !cleanup.workspaceRemoved) {
     throw new Error("Nested E2E cleanup did not remove all isolated resources")
   }
-  return { cleanup, commands, outcome: "success", regeneration, rootProjectNames, task }
+  return { cleanup, commands, outcome, regeneration, rootProjectNames, task, termination }
 }
