@@ -1,0 +1,21 @@
+import * as Data from "effect/Data"
+import * as Schema from "effect/Schema"
+
+export const <%- entitySingular %>Id = Schema.NonEmptyString.pipe(Schema.brand("<%- brandNamespace %>.<%- entitySingular %>Id"))
+export type <%- entitySingular %>Id = typeof <%- entitySingular %>Id.Type
+
+export const <%- entitySingular %> = Schema.Struct({
+  completed: Schema.Boolean,
+  createdAt: Schema.String,
+  id: <%- entitySingular %>Id,
+  text: Schema.NonEmptyString,
+})
+export type <%- entitySingular %> = typeof <%- entitySingular %>.Type
+
+export class <%- entitySingular %>TextInvalid extends Data.TaggedError("<%- entitySingular %>TextInvalid")<{ readonly reason: "empty" }> {}
+export class <%- entitySingular %>NotFound extends Data.TaggedError("<%- entitySingular %>NotFound")<{ readonly id: string }> {}
+export class <%- entitySingular %>AlreadyCompleted extends Data.TaggedError("<%- entitySingular %>AlreadyCompleted")<{ readonly id: string }> {}
+export class <%- entitySingular %>IdExhausted extends Data.TaggedError("<%- entitySingular %>IdExhausted")<{}> {}
+export class <%- entitySingular %>PersistenceError extends Data.TaggedError("<%- entitySingular %>PersistenceError")<{
+  readonly operation: "read" | "write"
+}> {}

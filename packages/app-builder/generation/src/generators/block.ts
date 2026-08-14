@@ -1,4 +1,5 @@
-import { todoTemplateContent } from "../templates/todo/index.js"
+import { renderTemplate, templateAsset, templateSubstitutions } from "../templates.js"
+import { DefaultTodoRenderContext } from "./todo-v1-atomic.js"
 
 export type TodoGenerationBlockId = "model" | "port" | "event" | "use-case" | "integration-adapter" | "presentation"
 
@@ -6,6 +7,7 @@ export interface GenerationBlockFile {
   readonly content: string
   readonly owner: string
   readonly path: string
+  readonly template?: import("../templates.js").TemplateAsset
 }
 
 export interface GenerationBlock {
@@ -24,10 +26,23 @@ interface Definition {
   readonly requires: ReadonlyArray<TodoGenerationBlockId>
 }
 
-export const fromTodoTemplate = (path: string): Readonly<{ content: string; path: string }> => ({
-  content: todoTemplateContent(path),
-  path,
-})
+export const fromTodoTemplate = (
+  path: string,
+): Readonly<{ content: string; path: string; template?: import("../templates.js").TemplateAsset }> => {
+  const target = DefaultTodoRenderContext.packages.find(({ root }) => path.startsWith(`${root}/`))!
+  const layer = `layer-${DefaultTodoRenderContext.packages.indexOf(target) + 1}`
+  const relative = path
+    .slice(target.root.length + 1)
+    .replace("todo-runtime.test.ts", "__entityId__-runtime.test.ts")
+    .replace("todo.test.ts", "__entityId__.test.ts")
+  const template = templateAsset({
+    directory: `blueprint/${layer}`,
+    group: `todo-v1-${layer}`,
+    sourcePath: `__targetRoot__/${relative}.template`,
+    substitutions: templateSubstitutions(DefaultTodoRenderContext, { targetRoot: target.root }),
+  })
+  return Object.freeze({ content: renderTemplate(template), path, template })
+}
 
 export const defineTodoGenerationBlock = (definition: Definition): GenerationBlock => {
   const owner = `@effectify/app-builder/${definition.id}/1`

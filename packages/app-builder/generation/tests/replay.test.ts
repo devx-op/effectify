@@ -1,4 +1,4 @@
-import { createTreeWithEmptyWorkspace } from "@nx/devkit/testing"
+import { createTree } from "@nx/devkit/testing"
 import { expect, it } from "@effect/vitest"
 import * as Effect from "effect/Effect"
 
@@ -28,7 +28,7 @@ interface TodoPresetModule {
 
 interface ApplyPlanModule {
   readonly applyTodoTopology: (
-    tree: ReturnType<typeof createTreeWithEmptyWorkspace>,
+    tree: ReturnType<typeof createTree>,
     topology: Topology,
   ) => Effect.Effect<{ readonly writtenPaths: ReadonlyArray<string> }, unknown>
 }
@@ -126,7 +126,7 @@ const candidateFor = (plan: TodoPlan, topology: Topology, dependencyInput: unkno
   plan,
 })
 
-const valuesAt = (tree: ReturnType<typeof createTreeWithEmptyWorkspace>, paths: ReadonlyArray<string>) =>
+const valuesAt = (tree: ReturnType<typeof createTree>, paths: ReadonlyArray<string>) =>
   Object.fromEntries(paths.map((path) => [path, tree.read(path, "utf8")]))
 
 it.effect("S21 canonicalizes source digests and semantic dependencies without lock transport metadata", () =>
@@ -160,7 +160,7 @@ it.effect("R13 and S22-S23 record frozen provenance then replay a fresh Tree wit
       ...candidate,
       pins: { ...pins, frozenInstall: false },
     }).pipe(Effect.flip)
-    const tree = createTreeWithEmptyWorkspace()
+    const tree = createTree()
     yield* ApplyPlan.applyTodoTopology(tree, topology)
     tree.write("notes/user-authored.ts", "export const preserved = true\n")
     const paths = topology.files.map((file) => file.path)
@@ -187,7 +187,7 @@ it.effect("R12 and S24 reject dependency or output mismatch before writes and pr
     const topology = yield* TodoPreset.createTodoTopology(plan)
     const candidate = candidateFor(plan, topology)
     const provenance = yield* Provenance.captureReplayProvenance(candidate)
-    const tree = createTreeWithEmptyWorkspace()
+    const tree = createTree()
     yield* ApplyPlan.applyTodoTopology(tree, topology)
     tree.write("notes/user-authored.ts", "export const keep = 'unchanged'\n")
     const paths = topology.files.map((file) => file.path)

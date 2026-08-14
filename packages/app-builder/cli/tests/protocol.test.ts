@@ -49,6 +49,22 @@ const generateRequest = (workspace: string) => ({
     workspace,
   },
 })
+const customGenerateRequest = (workspace: string) => ({
+  ...generateRequest(workspace),
+  payload: {
+    ...generateRequest(workspace).payload,
+    intent: {
+      ...request.payload,
+      naming: {
+        workspace: "operations-workspace",
+        npmScope: "@acme",
+        domain: { id: "operations", name: "Operations" },
+        entity: { id: "task", singular: "Task", plural: "Tasks" },
+        entrypoint: { id: "admin-console", name: "AdminConsole" },
+      },
+    },
+  },
+})
 
 const main = () => Effect.promise<MainModule>(() => import(new URL("../src/main.js", import.meta.url).href))
 
@@ -166,7 +182,7 @@ effect("R16 prerequisite generates deterministic consumer output through the pub
 
   return Effect.gen(function* () {
     yield* Effect.promise(() => rm(workspacePath, { force: true, recursive: true }))
-    const input = JSON.stringify(generateRequest(workspace))
+    const input = JSON.stringify(customGenerateRequest(workspace))
 
     return yield* Effect.gen(function* () {
       const first = yield* invoke(["generate", "--events=jsonl"], input)
@@ -195,8 +211,22 @@ effect("R16 prerequisite generates deterministic consumer output through the pub
       })
       expect(firstTerminal.result.writtenPaths).not.toEqual([])
       expect(
-        yield* Effect.promise(() => readFile(join(workspacePath, "apps/todo-cli/src/index.ts"), "utf8")),
+        yield* Effect.promise(() => readFile(join(workspacePath, "apps/admin-console/src/index.ts"), "utf8")),
       ).toContain("createLiveRuntime")
+
+      const { Generation } = yield* publicSurface()
+      const direct = yield* Generation.TodoPreset.createTodoTopology(
+        yield* Generation.Planner.planTodo(customGenerateRequest(workspace).payload.intent),
+      )
+      const rootFiles = direct.files.filter((file) =>
+        Generation.TodoGeneration.WorkspaceRootFiles.some((path) => path === file.path),
+      )
+
+      expect(rootFiles).toHaveLength(5)
+      expect(firstTerminal.result.writtenPaths).toEqual(expect.arrayContaining(rootFiles.map((file) => file.path)))
+      for (const file of rootFiles) {
+        expect(yield* Effect.promise(() => readFile(join(workspacePath, file.path), "utf8"))).toBe(file.content)
+      }
 
       const second = yield* invoke(["generate"], input)
       const secondTerminal = JSON.parse(second.stdout).terminal

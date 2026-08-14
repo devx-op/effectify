@@ -1,7 +1,18 @@
-import { createTreeWithEmptyWorkspace } from "@nx/devkit/testing"
+import { createTree } from "@nx/devkit/testing"
 import { expect, it } from "@effect/vitest"
 import * as Effect from "effect/Effect"
+import { vi } from "vitest"
 import { surfaceRequest } from "../../generation/tests/surface-request.js"
+
+vi.mock("@nx/devkit", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@nx/devkit")>()
+  return {
+    ...actual,
+    generateFiles: (...args: Parameters<typeof actual.generateFiles>) => {
+      actual.generateFiles(...args)
+    },
+  }
+})
 
 type ApplyPlanModule = typeof import("../src/apply-plan.js")
 type PublicModule = typeof import("../src/index.js")
@@ -15,6 +26,13 @@ const roots = [
   "packages/todo/infrastructure",
   "apps/todo-cli",
 ] as const
+const workspaceRootFiles = [
+  "nx.json",
+  "package.json",
+  "pnpm-workspace.yaml",
+  "tsconfig.build.json",
+  "vitest.config.mts",
+]
 
 const modules = () =>
   Effect.all({
@@ -36,21 +54,72 @@ const canonicalPlan = (Planner: PlannerModule) =>
     capabilities: ["todo.events"],
   })
 
-const isAllowedPath = (path: string): boolean => roots.some((root) => path.startsWith(`${root}/`))
+const isAllowedPath = (path: string): boolean =>
+  workspaceRootFiles.includes(path) || roots.some((root) => path.startsWith(`${root}/`))
 
 it.effect("S05 and R06 apply an approved Todo plan through Tree with exactly four roots", () =>
   Effect.gen(function* () {
-    const { ApplyPlan, Planner } = yield* modules()
-    const tree = createTreeWithEmptyWorkspace()
-    const result = yield* ApplyPlan.applyTodoPlan(tree, yield* canonicalPlan(Planner))
+    const { ApplyPlan, Generation, Planner } = yield* modules()
+    const tree = createTree()
+    const plan = yield* canonicalPlan(Planner)
+    const result = yield* ApplyPlan.applyTodoPlan(tree, plan)
+    const direct = yield* Generation.TodoGeneration.composeTodoAtomic(Generation.TodoPreset.DefaultTodoRenderContext)
+    const rootPaths = new Set<string>(Generation.TodoGeneration.WorkspaceRootFiles)
+    const rootFiles = direct.contributions.filter((file) => rootPaths.has(file.path))
 
     expect(result.generatedRoots).toEqual(roots)
     expect(result.writtenPaths).not.toHaveLength(0)
     expect(result.writtenPaths.every(isAllowedPath)).toBe(true)
+    expect(rootFiles).toHaveLength(5)
+    expect(result.writtenPaths).toEqual(expect.arrayContaining(rootFiles.map((file) => file.path)))
+    for (const file of rootFiles) {
+      expect(tree.read(file.path, "utf8")).toBe(new TextDecoder().decode(file.bytes))
+    }
     for (const root of roots) {
       expect(tree.exists(`${root}/package.json`)).toBe(true)
       expect(tree.exists(`${root}/src/index.ts`)).toBe(true)
     }
+  }),
+)
+
+it.effect("materializes custom public naming through real Nx generateFiles", () => {
+  const intent = {
+    version: "effectify.creation-intent/1",
+    preset: "todo",
+    capabilities: ["todo.events"],
+    naming: {
+      workspace: "operations-workspace",
+      npmScope: "@acme",
+      domain: { id: "operations", name: "Operations" },
+      entity: { id: "task", singular: "Task", plural: "Tasks" },
+      entrypoint: { id: "admin-console", name: "AdminConsole" },
+    },
+  }
+  return Effect.gen(function* () {
+    const { ApplyPlan, Planner, TodoPreset } = yield* modules()
+    const plan = yield* Planner.planTodo(intent)
+    const topology = yield* TodoPreset.createTodoTopology(plan)
+    const tree = createTree()
+    const result = yield* ApplyPlan.applyTodoPlan(tree, plan)
+    expect(result.writtenPaths).toEqual(topology.files.map(({ path }) => path))
+    expect(tree.read("apps/admin-console/src/index.ts", "utf8")).toContain("TaskApplication")
+    expect(tree.read("packages/operations/domain/package.json", "utf8")).toContain("@acme/operations-domain")
+  })
+})
+
+it.effect("accepts only canonical workspace-root files before mutating the Tree", () =>
+  Effect.gen(function* () {
+    const { ApplyPlan, Planner, TodoPreset } = yield* modules()
+    const tree = createTree()
+    const topology = yield* TodoPreset.createTodoTopology(yield* canonicalPlan(Planner))
+
+    const failure = yield* ApplyPlan.applyTodoTopology(tree, {
+      ...topology,
+      files: [...topology.files, { content: "untrusted root file\n", owner: "test", path: "README.md" }],
+    }).pipe(Effect.flip)
+
+    expect(failure).toMatchObject({ _tag: "TodoTopologyApplyError", path: "README.md", reason: "ownership-conflict" })
+    expect(tree.exists("nx.json")).toBe(false)
   }),
 )
 
@@ -73,7 +142,7 @@ it.effect("generic Nx planning behaviorally composes actual surface catalogs", (
 it.effect("S06 reapplies the same canonical Todo plan without changing generated files", () =>
   Effect.gen(function* () {
     const { ApplyPlan, Planner } = yield* modules()
-    const tree = createTreeWithEmptyWorkspace()
+    const tree = createTree()
     const plan = yield* canonicalPlan(Planner)
     yield* ApplyPlan.applyTodoPlan(tree, plan)
     const before = roots.map((root) => tree.read(`${root}/package.json`, "utf8"))
@@ -87,7 +156,7 @@ it.effect("S06 reapplies the same canonical Todo plan without changing generated
 it.effect("S07 rejects an existing unowned target before any Tree mutation", () =>
   Effect.gen(function* () {
     const { ApplyPlan, Planner } = yield* modules()
-    const tree = createTreeWithEmptyWorkspace()
+    const tree = createTree()
     const path = "packages/todo/domain/package.json"
     const userContent = '{"name":"user-authored-domain"}\n'
     tree.write(path, userContent)
@@ -103,7 +172,7 @@ it.effect("S07 rejects an existing unowned target before any Tree mutation", () 
 it.effect("S08 rejects duplicate ownership claims before applying any files", () =>
   Effect.gen(function* () {
     const { ApplyPlan, Planner, TodoPreset } = yield* modules()
-    const tree = createTreeWithEmptyWorkspace()
+    const tree = createTree()
     const topology = yield* TodoPreset.createTodoTopology(yield* canonicalPlan(Planner))
     const [first] = topology.files
     if (first === undefined) {
@@ -140,7 +209,7 @@ it.effect("S10 emits the inward-only Todo dependency direction", () =>
 it.effect("S11 rejects outward Domain dependencies before any Tree mutation", () =>
   Effect.gen(function* () {
     const { ApplyPlan, Planner, TodoPreset } = yield* modules()
-    const tree = createTreeWithEmptyWorkspace()
+    const tree = createTree()
     const topology = yield* TodoPreset.createTodoTopology(yield* canonicalPlan(Planner))
     const [domain, ...remaining] = topology.projects
     if (domain === undefined) {

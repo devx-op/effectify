@@ -5,7 +5,7 @@
     "rootDir": "./src",
     "lib": ["ES2022"],
     "target": "ES2022",
-    "types": []
+    "types": ["node"]
   },
   "include": ["src/**/*.ts"]
 }
