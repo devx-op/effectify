@@ -2,6 +2,9 @@
   "name": "@effectify/app-builder-cli",
   "version": "0.0.0",
   "type": "module",
+  "bin": {
+    "effectify-app-builder": "./dist/src/main.js"
+  },
   "dependencies": {
     "@effectify/app-builder-generation": "workspace:*",
     "tslib": "catalog:"

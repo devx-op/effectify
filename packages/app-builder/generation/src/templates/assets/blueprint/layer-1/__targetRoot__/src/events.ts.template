@@ -1,0 +1,1 @@
+export type { <%- entitySingular %>Event } from "./index.js"
