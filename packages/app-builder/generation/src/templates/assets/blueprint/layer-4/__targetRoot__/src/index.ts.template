@@ -1,0 +1,21 @@
+import * as Effect from "effect/Effect"
+import * as Layer from "effect/Layer"
+import * as Application from "<%- applicationImport %>"
+import type { <%- entitySingular %>Event } from "<%- domainImport %>"
+import * as Infrastructure from "<%- infrastructureImport %>"
+
+export const createTestRuntime = (input: { readonly ids: ReadonlyArray<string>; readonly now: string }) => Effect.gen(function* () {
+  const layer = Application.layer.pipe(Layer.provideMerge(Infrastructure.testLayer(input)))
+  const services = yield* Effect.all({ application: Application.<%- entitySingular %>Application, probe: Infrastructure.<%- entitySingular %>TestProbe }).pipe(Effect.provide(layer))
+  return Object.freeze({ ...services.application, events: services.probe.events })
+})
+
+export const createLiveRuntime = (path: string) => Effect.gen(function* () {
+  const layer = Application.layer.pipe(Layer.provide(Infrastructure.liveLayer(path)))
+  return yield* Application.<%- entitySingular %>Application.pipe(Effect.provide(layer))
+})
+
+export const renderEvent = (event: <%- entitySingular %>Event): string =>
+  event._tag === "<%- entitySingular %>Added" ? "added:" + event.<%- entityIdentifier %>.id + ":" + event.<%- entityIdentifier %>.text
+  : event._tag === "<%- entitySingular %>Completed" ? "completed:" + event.<%- entityIdentifier %>.id + ":" + event.<%- entityIdentifier %>.text
+  : "removed:" + event.<%- entityIdentifier %>.id + ":" + event.<%- entityIdentifier %>.text

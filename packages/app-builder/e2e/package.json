@@ -1,0 +1,16 @@
+{
+  "name": "@effectify/app-builder-e2e",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@effectify/app-builder-generation": "workspace:*",
+    "effect": "4.0.0-beta.102"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "nx": "23.1.0",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

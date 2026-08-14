@@ -43,11 +43,22 @@ const selectedPlugin = (entry: CatalogEntry): SelectedPlugin | undefined =>
       }
     : undefined
 
-const canonicalIntent = (intent: CreationIntent): CreationIntent => ({
-  capabilities: [...new Set(intent.capabilities)].sort(compareCapability),
-  preset: intent.preset,
-  version: intent.version,
-})
+const canonicalIntent = (intent: CreationIntent): CreationIntent =>
+  Object.freeze({
+    capabilities: Object.freeze([...new Set(intent.capabilities)].sort(compareCapability)),
+    ...(intent.naming === undefined
+      ? {}
+      : {
+          naming: Object.freeze({
+            ...intent.naming,
+            domain: Object.freeze(intent.naming.domain),
+            entity: Object.freeze(intent.naming.entity),
+            entrypoint: Object.freeze(intent.naming.entrypoint),
+          }),
+        }),
+    preset: intent.preset,
+    version: intent.version,
+  })
 
 /** Produces the versioned Todo plan before any Nx adapter or workspace mutation exists. */
 export const planTodo = (input: unknown): Effect.Effect<TodoPlan, InvalidCreationIntent | CatalogResolutionError> =>

@@ -53,20 +53,20 @@ R01–R17/S01–S32 are ordered below; T1/T2 are mandatory RED tests. PR 07 defi
 
 ## Phase 5: Closed CLI Protocol (PR 05)
 
-- [ ] 5.1 RED `packages/app-builder/cli/tests/protocol.test.ts`: R09–R11 S16–S20, T1/T2; reject docs, shell/traversal/env, signals, automation.
-- [ ] 5.2 GREEN/REFACTOR `packages/app-builder/cli/src/{main,protocol,commands}.ts`: stdin XOR file, exits, stderr, JSONL, one terminal envelope.
+- [x] 5.1 RED `packages/app-builder/cli/tests/protocol.test.ts`: R09–R11 S16–S20, T1/T2; reject docs, shell/traversal/env, signals, automation.
+- [x] 5.2 GREEN/REFACTOR `packages/app-builder/cli/src/{main,protocol,commands}.ts`: stdin XOR file, exits, stderr, JSONL, one terminal envelope.
 
 ## Phase 6: Replay (PR 06)
 
-- [ ] 6.1 RED `packages/app-builder/generation/tests/replay.test.ts`: R12/R13 S21–S24; semantic dependencies and changed-output pre-write failure.
-- [ ] 6.2 GREEN/REFACTOR `packages/app-builder/generation/src/{cjson,provenance,replay}.ts`: pinned frozen replay, canonical digests, zero-diff evidence.
+- [x] 6.1 RED `packages/app-builder/generation/tests/replay.test.ts`: R12/R13 S21–S24; semantic dependencies and changed-output pre-write failure.
+- [x] 6.2 GREEN/REFACTOR `packages/app-builder/generation/src/{cjson,provenance,replay}.ts`: pinned frozen replay, canonical digests, zero-diff evidence.
 
 ## Phase 7: Nested E2E (PR 07)
 
-- [ ] 7.1 RED `packages/app-builder/e2e/tests/golden.e2e.test.ts`: R14/R15 S25–S28; failed/interrupted cleanup and root exclusion.
-- [ ] 7.2 GREEN/REFACTOR `packages/app-builder/e2e/**`: OS-temp distribution, isolated registry/Nx/pnpm, nested graph/test/typecheck/build/CRUD/regeneration.
+- [x] 7.1 RED `packages/app-builder/e2e/tests/golden.e2e.test.ts`: R14/R15 S25–S28; failed/interrupted cleanup and root exclusion.
+- [x] 7.2 GREEN/REFACTOR `packages/app-builder/e2e/**`: OS-temp distribution, isolated registry/Nx/pnpm, nested graph/test/typecheck/build/CRUD/regeneration.
 
 ## Phase 8: Showcase and Closure (PR 08)
 
-- [ ] 8.1 RED `examples/app-builder-todo`, `.github/workflows/ci.yml`: R16/R17 S29–S32; drift fails without rewrite.
-- [ ] 8.2 GREEN/REFACTOR `examples/app-builder-todo/**`, `.github/workflows/ci.yml`: public-command exclusion; final R01–R17/S01–S32, T, typecheck, build, clean-diff matrix.
+- [x] 8.1 RED `examples/app-builder-todo`, `.github/workflows/ci.yml`: R16/R17 S29–S32; drift fails without rewrite.
+- [x] 8.2 GREEN/REFACTOR `examples/app-builder-todo/**`, `.github/workflows/ci.yml`: public-command exclusion; final R01–R17/S01–S32, T, typecheck, build, clean-diff matrix.

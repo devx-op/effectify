@@ -1,0 +1,62 @@
+import * as Effect from "effect/Effect"
+import { Catalog, Planner, Replay } from "@effectify/app-builder-generation"
+import { generateTodo } from "./generate.js"
+import {
+  ConflictError,
+  type CliFailure,
+  type CliRequest,
+  type CliTerminal,
+  HostError,
+  InputError,
+  success,
+  unavailable,
+} from "./protocol.js"
+
+export interface CommandDispatcher {
+  readonly dispatch: (request: CliRequest) => Effect.Effect<CliTerminal, CliFailure>
+}
+
+const catalogResult = () => ({
+  version: Catalog.TodoCatalog.version,
+  capabilities: Catalog.TodoCatalog.entries.map((entry) => entry.capability),
+})
+
+/** Dispatches only the finite command map; no payload can name executable code or a plugin. */
+export const commandDispatcher: CommandDispatcher = {
+  dispatch: (request) => {
+    switch (request.command) {
+      case "catalog":
+        return Effect.succeed(success(request.command, catalogResult()))
+      case "plan":
+        return Planner.planTodo(request.payload).pipe(
+          Effect.map((plan) => success(request.command, plan)),
+          Effect.catchTags({
+            InvalidCreationIntent: () =>
+              Effect.fail(new InputError({ reason: "plan payload is not a valid CreationIntent" })),
+            CatalogResolutionError: () =>
+              Effect.fail(new InputError({ reason: "plan payload is not a valid CreationIntent" })),
+          }),
+        )
+      case "generate":
+        return generateTodo(request.payload).pipe(
+          Effect.map((result) => success(request.command, result)),
+          Effect.mapError((error) =>
+            error._tag === "GenerateInputError"
+              ? new InputError({ reason: error.reason })
+              : error._tag === "GenerateConflictError"
+                ? new ConflictError({ reason: `generated output conflicts at ${error.path}` })
+                : new HostError({ reason: error.reason }),
+          ),
+        )
+      case "verify":
+      case "explain":
+      case "doctor":
+        return Effect.succeed(unavailable(request.command))
+      case "replay":
+        return Replay.validateReplayPayload(request.payload).pipe(
+          Effect.map((result) => success(request.command, result)),
+          Effect.mapError(() => new InputError({ reason: "replay payload does not match trusted provenance" })),
+        )
+    }
+  },
+}

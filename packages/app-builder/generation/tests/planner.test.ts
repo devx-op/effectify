@@ -17,6 +17,13 @@ const intent = {
   preset: "todo",
   capabilities: ["todo.events", "todo.community-labels", "todo.cli-presentation"],
 }
+const naming = {
+  workspace: "operations-workspace",
+  npmScope: "@acme",
+  domain: { id: "operations", name: "Operations" },
+  entity: { id: "task", singular: "Task", plural: "Tasks" },
+  entrypoint: { id: "admin-console", name: "AdminConsole" },
+}
 
 const modules = () =>
   Effect.all({
@@ -35,13 +42,23 @@ it.effect("S01 returns the canonical Todo envelope and visible plan fixture", ()
   }),
 )
 
-it.effect("R01 rejects arbitrary module, template, callback, and command selectors", () =>
+it.effect("accepts bounded naming authority and rejects unsafe or excess input", () =>
   Effect.gen(function* () {
-    const { Intent } = yield* modules()
+    const { Intent, Planner } = yield* modules()
+    const plan = yield* Planner.planTodo({ ...intent, naming })
+    expect(plan.intent.naming).toEqual(naming)
+    expect(Object.isFrozen(plan.intent.naming?.entity)).toBe(true)
     for (const selector of ["module", "template", "callback", "command"]) {
       const failure = yield* Intent.decodeCreationIntent({ ...intent, [selector]: "node:child_process" }).pipe(
         Effect.flip,
       )
+      expect(failure).toMatchObject({ _tag: "InvalidCreationIntent", reason: "schema" })
+    }
+    for (const invalid of [
+      { ...naming, domain: { ...naming.domain, id: "../operations" } },
+      { ...naming, entrypoint: { ...naming.entrypoint, command: "rm -rf /" } },
+    ]) {
+      const failure = yield* Intent.decodeCreationIntent({ ...intent, naming: invalid }).pipe(Effect.flip)
       expect(failure).toMatchObject({ _tag: "InvalidCreationIntent", reason: "schema" })
     }
   }),
@@ -85,9 +102,10 @@ it.effect("R02 rejects unavailable and incompatible community metadata without l
 it.effect("S03 and S04 close dependencies in a deterministic order for equivalent selectors", () =>
   Effect.gen(function* () {
     const { Planner } = yield* modules()
-    const first = yield* Planner.planTodo(intent)
-    const second = yield* Planner.planTodo({ ...intent, capabilities: [...intent.capabilities].reverse() })
+    const first = yield* Planner.planTodo({ ...intent, naming })
+    const second = yield* Planner.planTodo({ ...intent, naming, capabilities: [...intent.capabilities].reverse() })
     expect(first).toEqual(second)
+    expect(first.intent.naming).toEqual(naming)
     expect(first.orderedCapabilities).toEqual(JSON.parse(fixture).orderedCapabilities)
   }),
 )
