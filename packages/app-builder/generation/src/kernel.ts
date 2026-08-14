@@ -1,6 +1,8 @@
 import * as Effect from "effect/Effect"
 import * as Schema from "effect/Schema"
+import type { TemplateAsset } from "./templates.js"
 const IdentifierSchema = Schema.String.check(Schema.isPattern(/^[a-z][a-z0-9-]*$/))
+const TypeNameSchema = Schema.String.check(Schema.isPattern(/^[A-Z][A-Za-z0-9]{0,62}$/))
 const SafeRelativePathSchema = Schema.String.check(
   Schema.isPattern(/^(?!.*(?:^|\/)\.\.(?:\/|$))[A-Za-z0-9][A-Za-z0-9._-]*(?:\/[A-Za-z0-9][A-Za-z0-9._-]*)*$/),
 )
@@ -34,6 +36,7 @@ export interface FileContribution {
   readonly path: SafeRelativePath
   readonly sourceDigest: SourceDigest
   readonly surface: SurfaceId
+  readonly template?: TemplateAsset
 }
 export interface AtomicGenerator<
   Input,
@@ -93,13 +96,13 @@ export type PackageTarget = Schema.Schema.Type<typeof PackageTargetSchema>
 export const RenderContextSchema = Schema.Struct({
   version: Schema.Literal("effectify.render-context/1"),
   workspace: Schema.Struct({ name: IdentifierSchema, npmScope: ScopeSchema }),
-  domain: Schema.Struct({ id: IdentifierSchema, importName: PackageNameSchema }),
+  domain: Schema.Struct({ id: IdentifierSchema, name: TypeNameSchema, importName: PackageNameSchema }),
   entity: Schema.Struct({
     id: IdentifierSchema,
-    singular: Schema.String.check(Schema.isPattern(/^[A-Z][A-Za-z0-9]*$/)),
-    plural: Schema.String.check(Schema.isPattern(/^[A-Z][A-Za-z0-9]*$/)),
-    importName: PackageNameSchema,
+    singular: TypeNameSchema,
+    plural: TypeNameSchema,
   }),
+  entrypoint: Schema.Struct({ id: IdentifierSchema, name: TypeNameSchema, importName: PackageNameSchema }),
   packages: Schema.Array(PackageTargetSchema),
 })
 export type RenderContext = Schema.Schema.Type<typeof RenderContextSchema>
@@ -114,7 +117,7 @@ const validate = (context: RenderContext): Effect.Effect<RenderContext, SchemaCo
     unique(packages.map((target) => target.root)) &&
     packages.every((target) => target.name.startsWith(`${context.workspace.npmScope}/`)) &&
     names.has(context.domain.importName) &&
-    names.has(context.entity.importName)
+    names.has(context.entrypoint.importName)
   return valid
     ? Effect.succeed(
         Object.freeze({ ...context, packages: Object.freeze(packages.map((target) => Object.freeze({ ...target }))) }),

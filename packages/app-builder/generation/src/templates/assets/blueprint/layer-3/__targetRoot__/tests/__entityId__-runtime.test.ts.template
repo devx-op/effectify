@@ -1,0 +1,13 @@
+import { expect, it } from "@effect/vitest"
+import * as Application from "<%- applicationImport %>"
+import * as Effect from "effect/Effect"
+import * as Layer from "effect/Layer"
+import { <%- entitySingular %>TestProbe, testLayer } from "../src/index.js"
+
+it.effect("publishes ordered Test Layer events after writes", () => Effect.gen(function* () {
+  const layer = Application.layer.pipe(Layer.provideMerge(testLayer({ ids: ["<%- entityId %>-1"], now: "2026-01-01T00:00:00.000Z" })))
+  const services = yield* Effect.all({ app: Application.<%- entitySingular %>Application, probe: <%- entitySingular %>TestProbe }).pipe(Effect.provide(layer))
+  const added = yield* services.app.add("write tests")
+  yield* services.app.complete(added.id)
+  expect(yield* services.probe.events()).toEqual([{ _tag: "<%- entitySingular %>Added", <%- entityIdentifier %>: added }, { _tag: "<%- entitySingular %>Completed", <%- entityIdentifier %>: { ...added, completed: true } }])
+}))

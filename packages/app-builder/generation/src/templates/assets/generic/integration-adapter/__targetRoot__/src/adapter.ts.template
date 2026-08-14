@@ -1,0 +1,91 @@
+import { access, mkdir, readFile, writeFile } from "node:fs/promises"
+import { randomUUID } from "node:crypto"
+import { dirname } from "node:path"
+import * as Context from "effect/Context"
+import * as Effect from "effect/Effect"
+import * as Layer from "effect/Layer"
+import * as PubSub from "effect/PubSub"
+import * as Ref from "effect/Ref"
+import * as Stream from "effect/Stream"
+import * as Schema from "effect/Schema"
+import * as Application from "<%- applicationImport %>"
+import { <%- entitySingular %>, <%- entitySingular %>Id, <%- entitySingular %>IdExhausted, <%- entitySingular %>PersistenceError, type <%- entitySingular %> as Model, type <%- entitySingular %>Event as Event } from "<%- domainImport %>"
+
+export interface <%- entitySingular %>TestProbeApi { readonly events: () => Effect.Effect<ReadonlyArray<Event>> }
+export class <%- entitySingular %>TestProbe extends Context.Service<<%- entitySingular %>TestProbe, <%- entitySingular %>TestProbeApi>()("<%- workspaceScope %>/<%- entityId %>/<%- entitySingular %>TestProbe") {}
+
+const decodeValues = Schema.decodeUnknownEffect(Schema.Array(<%- entitySingular %>))
+const events = Effect.gen(function* () {
+  const visible = yield* Ref.make<ReadonlyArray<Event>>([])
+  const published = yield* PubSub.unbounded<Event>()
+  return {
+    probe: <%- entitySingular %>TestProbe.of({ events: () => Ref.get(visible) }),
+    service: Application.<%- entitySingular %>Events.of({
+      publish: (event) => Ref.update(visible, (current) => [...current, event]).pipe(
+        Effect.andThen(PubSub.publish(published, event)),
+        Effect.asVoid,
+      ),
+    }),
+    stream: Stream.fromPubSub(published),
+  }
+})
+
+const repository = (read: () => Effect.Effect<ReadonlyArray<Model>, <%- entitySingular %>PersistenceError>, write: (values: ReadonlyArray<Model>) => Effect.Effect<void, <%- entitySingular %>PersistenceError>) =>
+  Application.<%- entitySingular %>Repository.of({
+    find: (id) => read().pipe(Effect.map((values) => values.find((value) => value.id === id))),
+    list: read,
+    remove: (id) => Effect.gen(function* () {
+      const values = yield* read()
+      const value = values.find((candidate) => candidate.id === id)
+      if (value === undefined) return yield* Effect.fail(new <%- entitySingular %>PersistenceError({ operation: "write" }))
+      yield* write(values.filter((candidate) => candidate.id !== id))
+      return value
+    }),
+    save: (value) => read().pipe(
+      Effect.flatMap((values) => write([...values.filter((candidate) => candidate.id !== value.id), value])),
+    ),
+  })
+
+const fixedIds = (ids: ReadonlyArray<string>) => Effect.gen(function* () {
+  const remaining = yield* Ref.make(ids)
+  return Application.<%- entitySingular %>IdGenerator.of({ next: () => Effect.gen(function* () {
+    const [next, ...rest] = yield* Ref.get(remaining)
+    if (next === undefined) return yield* Effect.fail(new <%- entitySingular %>IdExhausted())
+    yield* Ref.set(remaining, rest)
+    return yield* Schema.decodeUnknownEffect(<%- entitySingular %>Id)(next).pipe(Effect.mapError(() => new <%- entitySingular %>IdExhausted()))
+  }) })
+})
+
+export const testLayer = (input: { readonly ids: ReadonlyArray<string>; readonly now: string }) => Layer.effectContext(Effect.gen(function* () {
+  const values = yield* Ref.make<ReadonlyArray<Model>>([])
+  const eventServices = yield* events
+  return Context.empty().pipe(
+    Context.add(Application.<%- entitySingular %>Repository, repository(() => Ref.get(values), (next) => Ref.set(values, next))),
+    Context.add(Application.<%- entitySingular %>Clock, Application.<%- entitySingular %>Clock.of({ now: () => Effect.succeed(input.now) })),
+    Context.add(Application.<%- entitySingular %>IdGenerator, yield* fixedIds(input.ids)),
+    Context.add(Application.<%- entitySingular %>Events, eventServices.service),
+    Context.add(<%- entitySingular %>TestProbe, eventServices.probe),
+  )
+}))
+
+export const liveLayer = (path: string) => Layer.effectContext(Effect.gen(function* () {
+  yield* Effect.tryPromise({ try: () => mkdir(dirname(path), { recursive: true }), catch: () => new <%- entitySingular %>PersistenceError({ operation: "write" }) })
+  const exists = yield* Effect.promise(() => access(path).then(() => true, () => false))
+  if (!exists) yield* Effect.tryPromise({ try: () => writeFile(path, "[]\n"), catch: () => new <%- entitySingular %>PersistenceError({ operation: "write" }) })
+  const read = () => Effect.tryPromise({ try: () => readFile(path, "utf8"), catch: () => new <%- entitySingular %>PersistenceError({ operation: "read" }) }).pipe(
+    Effect.flatMap((source) => Effect.try({ try: () => JSON.parse(source), catch: () => new <%- entitySingular %>PersistenceError({ operation: "read" }) })),
+    Effect.flatMap(decodeValues),
+    Effect.mapError(() => new <%- entitySingular %>PersistenceError({ operation: "read" })),
+  )
+  const write = (values: ReadonlyArray<Model>) => Effect.tryPromise({
+    try: () => writeFile(path, JSON.stringify(values, null, 2) + "\n"),
+    catch: () => new <%- entitySingular %>PersistenceError({ operation: "write" }),
+  })
+  const eventServices = yield* events
+  return Context.empty().pipe(
+    Context.add(Application.<%- entitySingular %>Repository, repository(read, write)),
+    Context.add(Application.<%- entitySingular %>Clock, Application.<%- entitySingular %>Clock.of({ now: () => Effect.sync(() => new Date().toISOString()) })),
+    Context.add(Application.<%- entitySingular %>IdGenerator, Application.<%- entitySingular %>IdGenerator.of({ next: () => Schema.decodeUnknownEffect(<%- entitySingular %>Id)(randomUUID()).pipe(Effect.mapError(() => new <%- entitySingular %>IdExhausted())) })),
+    Context.add(Application.<%- entitySingular %>Events, eventServices.service),
+  )
+}))

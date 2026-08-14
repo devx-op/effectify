@@ -211,7 +211,6 @@ export const composeCatalog = <
     }
 
     const contributions: Array<FileContribution> = []
-    const owners = new Set<string>()
     const paths = new Set<string>()
     for (const id of generatorIds) {
       const generator = byId.get(id)
@@ -220,15 +219,9 @@ export const composeCatalog = <
         Effect.mapError(() => new SchemaContextFailure({ boundary: "intent", reason: "schema" })),
       )
       for (const contribution of yield* generator.render(input, context)) {
-        if (owners.has(contribution.owner)) {
-          return yield* Effect.fail(
-            new ContributionConflict({ identity: contribution.owner, reason: "duplicate-owner" }),
-          )
-        }
         if (paths.has(contribution.path)) {
           return yield* Effect.fail(new ContributionConflict({ identity: contribution.path, reason: "duplicate-path" }))
         }
-        owners.add(contribution.owner)
         paths.add(contribution.path)
         contributions.push(Object.freeze({ ...contribution }))
       }

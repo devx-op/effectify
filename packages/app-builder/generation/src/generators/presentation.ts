@@ -1,9 +1,8 @@
-import { cliTemplate } from "../templates/todo/cli.js"
 import { defineTodoGenerationBlock, fromTodoTemplate } from "./block.js"
 import { defineTodoGenerator } from "./todo.js"
 
 export const presentationGenerator = defineTodoGenerator({
-  files: [{ content: cliTemplate, relativePath: "src/presentation.ts" }],
+  files: [{ relativePath: "src/presentation.ts", sourcePath: "__targetRoot__/src/entrypoint.ts.template" }],
   id: "presentation",
   packageId: "presentation",
   provides: ["todo-cli-presentation"],
