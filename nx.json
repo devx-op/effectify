@@ -20,6 +20,7 @@
   "plugins": [
     {
       "plugin": "@nx/js/typescript",
+      "exclude": ["examples/app-builder-todo/**/*"],
       "options": {
         "compiler": "tsgo",
         "typecheck": {
@@ -70,7 +71,12 @@
       "options": {
         "testTargetName": "test"
       },
-      "exclude": ["apps/solid-app-start/**/*", "apps/react-remix-example/**/*", "apps/minimal-example/**/*"]
+      "exclude": [
+        "apps/solid-app-start/**/*",
+        "apps/react-remix-example/**/*",
+        "apps/minimal-example/**/*",
+        "examples/app-builder-todo/**/*"
+      ]
     },
     {
       "plugin": "@nx/cypress/plugin",
