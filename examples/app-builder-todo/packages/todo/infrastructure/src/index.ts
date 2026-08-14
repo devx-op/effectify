@@ -1,4 +1,4 @@
-export const infrastructureTemplate = String.raw`import { access, mkdir, readFile, writeFile } from "node:fs/promises"
+import { access, mkdir, readFile, writeFile } from "node:fs/promises"
 import { randomUUID } from "node:crypto"
 import { dirname } from "node:path"
 import * as Context from "effect/Context"
@@ -8,8 +8,8 @@ import * as PubSub from "effect/PubSub"
 import * as Ref from "effect/Ref"
 import * as Stream from "effect/Stream"
 import * as Schema from "effect/Schema"
-import * as Application from "../../application/src/index.js"
-import { Todo, TodoId, TodoIdExhausted, TodoPersistenceError, type Todo as TodoModel, type TodoEvent as Event } from "../../domain/src/index.js"
+import * as Application from "@effectify/todo-application"
+import { Todo, TodoId, TodoIdExhausted, TodoPersistenceError, type Todo as TodoModel, type TodoEvent as Event } from "@effectify/todo-domain"
 
 export interface TodoTestProbeApi { readonly events: () => Effect.Effect<ReadonlyArray<Event>> }
 export class TodoTestProbe extends Context.Service<TodoTestProbe, TodoTestProbeApi>()("@effectify/todo/TodoTestProbe") {}
@@ -89,4 +89,3 @@ export const liveLayer = (path: string) => Layer.effectContext(Effect.gen(functi
     Context.add(Application.TodoEvents, eventServices.service),
   )
 }))
-`

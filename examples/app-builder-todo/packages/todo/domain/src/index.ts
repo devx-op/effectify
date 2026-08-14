@@ -1,4 +1,4 @@
-export const domainTemplate = String.raw`import * as Data from "effect/Data"
+import * as Data from "effect/Data"
 import * as Schema from "effect/Schema"
 
 export const TodoId = Schema.NonEmptyString.pipe(Schema.brand("Effectify.TodoId"))
@@ -26,4 +26,3 @@ export type TodoEvent = Data.TaggedEnum<{
   TodoRemoved: { readonly todo: Todo }
 }>
 export const TodoEvent = Data.taggedEnum<TodoEvent>()
-`

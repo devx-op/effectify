@@ -3,6 +3,8 @@
   "version": "0.0.0",
   "type": "module",
   "dependencies": {
+    "@effectify/app-builder-contracts": "workspace:*",
+    "ejs": "5.0.1",
     "tslib": "catalog:"
   },
   "peerDependencies": {
@@ -19,6 +21,7 @@
   "devDependencies": {
     "@effect/vitest": "catalog:",
     "@nx/devkit": "23.1.0",
+    "@types/ejs": "3.1.5",
     "@types/node": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
