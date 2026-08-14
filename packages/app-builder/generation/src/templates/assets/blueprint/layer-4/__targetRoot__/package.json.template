@@ -1,0 +1,19 @@
+{
+  "name": "<%- presentationImport %>",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "pnpm -w exec tsc -p tsconfig.build.json",
+    "test": "pnpm -w exec vitest run --config vitest.config.mts",
+    "typecheck": "pnpm -w exec tsc --noEmit -p tsconfig.build.json"
+  },
+  "dependencies": {
+    "effect": "catalog:",
+    "<%- infrastructureImport %>": "workspace:*",
+    "<%- applicationImport %>": "workspace:*",
+    "<%- domainImport %>": "workspace:*"
+  }
+}

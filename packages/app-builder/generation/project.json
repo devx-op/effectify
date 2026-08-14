@@ -10,7 +10,14 @@
       "options": {
         "main": "packages/app-builder/generation/src/index.ts",
         "tsConfig": "packages/app-builder/generation/tsconfig.lib.json",
-        "outputPath": "packages/app-builder/generation/dist"
+        "outputPath": "packages/app-builder/generation/dist",
+        "assets": [
+          {
+            "input": "packages/app-builder/generation/src/templates/assets",
+            "glob": "**/*",
+            "output": "src/templates/assets"
+          }
+        ]
       }
     },
     "typecheck": {
@@ -22,6 +29,7 @@
     },
     "test": {
       "executor": "nx:run-commands",
+      "dependsOn": ["build"],
       "options": {
         "command": "../../../node_modules/.bin/vitest run --config vitest.config.mts",
         "cwd": "packages/app-builder/generation"
