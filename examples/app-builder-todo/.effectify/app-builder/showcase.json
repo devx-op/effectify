@@ -1,0 +1,140 @@
+{
+  "version": "effectify.app-builder-showcase/1",
+  "command": "generate",
+  "request": {
+    "version": "effectify.app-builder-cli-request/1",
+    "command": "generate",
+    "payload": {
+      "intent": {
+        "version": "effectify.creation-intent/1",
+        "preset": "todo",
+        "capabilities": ["todo.events"]
+      },
+      "workspace": "app-builder-todo"
+    }
+  },
+  "provenance": {
+    "canonicalJson": "effectify-cjson/1",
+    "evidence": {
+      "blocks": "sha256:84da002bcb1cdf7ba5d492806f02cbb1fffbd0a5e872c452ffb514997153456b",
+      "catalog": "sha256:9a279207ce20bee7378d3e0ea2cfaf31de996a5371b2be07b425d50a95dbe2ad",
+      "dependencies": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "intent": "sha256:96b9f1671258586740db7423e0d5e5971a3e9eef8f5e24ac8686efbf9b405c01",
+      "outputs": "sha256:1d502d90d9bb8fcc603544c9acf46ab8e57b2433a6076300013601f0a3ca0ad9",
+      "pins": "sha256:01444b6cd4c1748f19561ca13a2d58c2c7d88aa479fb6100d88d230d0deffdb0",
+      "plan": "sha256:0db8472dc2518641b89e560304c60f7172939da780346403b5931c2c7f3d070b"
+    },
+    "outputIdentities": [
+      {
+        "mode": "100644",
+        "owner": "package-surface-presentation-manifest",
+        "path": "apps/todo-cli/package.json",
+        "sourceDigest": "sha256:1f7e39c504515ed23d106e172ccc2f0ef91186021b3a02e9066fe14ea4e2783e"
+      },
+      {
+        "mode": "100644",
+        "owner": "package-surface-presentation-barrel",
+        "path": "apps/todo-cli/src/index.ts",
+        "sourceDigest": "sha256:40f8ce0bfcb8db9c548ef19dd3509319e2c69ad03b27c57914d4788536b43eb5"
+      },
+      {
+        "mode": "100644",
+        "owner": "todo-presentation-apps-todo-cli-tests-todo-test-ts",
+        "path": "apps/todo-cli/tests/todo.test.ts",
+        "sourceDigest": "sha256:77b9145ff6a68b6c4660948ab8066e3e3091500e61135cbba4f748395f3d8074"
+      },
+      {
+        "mode": "100644",
+        "owner": "workspace-surface-nx-json",
+        "path": "nx.json",
+        "sourceDigest": "sha256:36ebfd6eabb0aa4a5a4060dd694d745b9ce16717f4027bb9107c63b1e782af52"
+      },
+      {
+        "mode": "100644",
+        "owner": "workspace-surface-package-json",
+        "path": "package.json",
+        "sourceDigest": "sha256:3b369e67b69581211e14df72d231a2331399888fe8f16c5095bab03b4616e426"
+      },
+      {
+        "mode": "100644",
+        "owner": "package-surface-application-manifest",
+        "path": "packages/todo/application/package.json",
+        "sourceDigest": "sha256:74a25e6b222c0e8e6ce8cf39df7e7a68d7b68faaaf01a1321d6d1c521f147f00"
+      },
+      {
+        "mode": "100644",
+        "owner": "package-surface-application-barrel",
+        "path": "packages/todo/application/src/index.ts",
+        "sourceDigest": "sha256:a606cc63ce4e3ab6eeb2345cdaf9c4bbd3bfb43f5a20f26bff250439194a154b"
+      },
+      {
+        "mode": "100644",
+        "owner": "todo-use-case-packages-todo-application-src-use-case-ts",
+        "path": "packages/todo/application/src/use-case.ts",
+        "sourceDigest": "sha256:fce13645ef2926c343137b96fd0b2a0cd9b2e73046d8608ff3daa7204755c7df"
+      },
+      {
+        "mode": "100644",
+        "owner": "package-surface-domain-manifest",
+        "path": "packages/todo/domain/package.json",
+        "sourceDigest": "sha256:9ed2f277b6b9bf848e1c077d7a600aea00c391a05d558cc6ba0ca8134023baca"
+      },
+      {
+        "mode": "100644",
+        "owner": "todo-event-packages-todo-domain-src-events-ts",
+        "path": "packages/todo/domain/src/events.ts",
+        "sourceDigest": "sha256:3826f139fcac911e8b84298d319400e2265730c62460b40501b3c1668be950f8"
+      },
+      {
+        "mode": "100644",
+        "owner": "package-surface-domain-barrel",
+        "path": "packages/todo/domain/src/index.ts",
+        "sourceDigest": "sha256:e003ca3479b14b5d3f94fdd0c8db7ffe20269aad29628e0d09f7f367cd2cc7f8"
+      },
+      {
+        "mode": "100644",
+        "owner": "todo-model-packages-todo-domain-tests-todo-test-ts",
+        "path": "packages/todo/domain/tests/todo.test.ts",
+        "sourceDigest": "sha256:99e4f463a497275f7bf6dacbe0402dde1b054dbe8e0568256dccd6a6a5448514"
+      },
+      {
+        "mode": "100644",
+        "owner": "package-surface-infrastructure-manifest",
+        "path": "packages/todo/infrastructure/package.json",
+        "sourceDigest": "sha256:5a28a70e873ee887a1819bafa2f11ae4d47cd44aaaac410d621493346d186889"
+      },
+      {
+        "mode": "100644",
+        "owner": "package-surface-infrastructure-barrel",
+        "path": "packages/todo/infrastructure/src/index.ts",
+        "sourceDigest": "sha256:73bfa06f4aac3cfee6fad9425490d86dbfab70ec79a69d2559a41c93bd391e35"
+      },
+      {
+        "mode": "100644",
+        "owner": "todo-integration-adapter-packages-todo-infrastructure-tests-todo-runtime-test-ts",
+        "path": "packages/todo/infrastructure/tests/todo-runtime.test.ts",
+        "sourceDigest": "sha256:8a305172097e942a07398ee5bfeec90e2a84a07ea5b97050138c8549dcf9949a"
+      },
+      {
+        "mode": "100644",
+        "owner": "workspace-surface-pnpm-workspace-yaml",
+        "path": "pnpm-workspace.yaml",
+        "sourceDigest": "sha256:38153e8982dc83ad4f576c62dd12e80fd222668b7ebd29c9c89092a41bf10544"
+      },
+      {
+        "mode": "100644",
+        "owner": "workspace-surface-tsconfig-build-json",
+        "path": "tsconfig.build.json",
+        "sourceDigest": "sha256:a12ff29d34e79ed58b9d9540572968f6f32721482f776500b2f2495810926138"
+      },
+      {
+        "mode": "100644",
+        "owner": "workspace-surface-vitest-config-mts",
+        "path": "vitest.config.mts",
+        "sourceDigest": "sha256:3d6177cfd34114394a841bb24fdf661f2879b0b75cfe2d793ae414d2191081de"
+      }
+    ],
+    "provenanceDigest": "sha256:62a41dcb635db627d5531abb58266493cfb56367960b6175ff2908132fa0dea9",
+    "version": "effectify.app-builder-replay-provenance/1"
+  }
+}

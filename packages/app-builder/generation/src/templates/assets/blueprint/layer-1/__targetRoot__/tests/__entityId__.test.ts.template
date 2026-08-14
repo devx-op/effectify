@@ -1,0 +1,7 @@
+import { expect, it } from "vitest"
+import * as Schema from "effect/Schema"
+import { <%- entitySingular %> } from "../src/index.js"
+
+it("decodes a <%- entitySingular %> schema", () => {
+  expect(Schema.is(<%- entitySingular %>)({ completed: false, createdAt: "2026-01-01T00:00:00.000Z", id: "<%- entityId %>-1", text: "write tests" })).toBe(true)
+})

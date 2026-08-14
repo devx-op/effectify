@@ -1,6 +1,16 @@
 import * as Effect from "effect/Effect"
 import { Catalog, Planner, Replay } from "@effectify/app-builder-generation"
-import { type CliFailure, type CliRequest, type CliTerminal, InputError, success, unavailable } from "./protocol.js"
+import { generateTodo } from "./generate.js"
+import {
+  ConflictError,
+  type CliFailure,
+  type CliRequest,
+  type CliTerminal,
+  HostError,
+  InputError,
+  success,
+  unavailable,
+} from "./protocol.js"
 
 export interface CommandDispatcher {
   readonly dispatch: (request: CliRequest) => Effect.Effect<CliTerminal, CliFailure>
@@ -28,6 +38,16 @@ export const commandDispatcher: CommandDispatcher = {
           }),
         )
       case "generate":
+        return generateTodo(request.payload).pipe(
+          Effect.map((result) => success(request.command, result)),
+          Effect.mapError((error) =>
+            error._tag === "GenerateInputError"
+              ? new InputError({ reason: error.reason })
+              : error._tag === "GenerateConflictError"
+                ? new ConflictError({ reason: `generated output conflicts at ${error.path}` })
+                : new HostError({ reason: error.reason }),
+          ),
+        )
       case "verify":
       case "explain":
       case "doctor":

@@ -21,6 +21,12 @@
     },
     "test": {
       "executor": "nx:run-commands",
+      "dependsOn": [
+        {
+          "projects": ["@effectify/app-builder-cli"],
+          "target": "build"
+        }
+      ],
       "options": {
         "command": "../../../node_modules/.bin/vitest run --config vitest.config.mts",
         "cwd": "packages/app-builder/e2e"

@@ -14,10 +14,21 @@ export const Capability = Schema.Literals([
 ])
 export type Capability = typeof Capability.Type
 
+const Identifier = Schema.String.check(Schema.isPattern(/^[a-z][a-z0-9-]{0,62}$/))
+const TypeName = Schema.String.check(Schema.isPattern(/^[A-Z][A-Za-z0-9]{0,62}$/))
+const Naming = Schema.Struct({
+  workspace: Identifier,
+  npmScope: Schema.String.check(Schema.isPattern(/^@[a-z][a-z0-9-]{0,62}$/)),
+  domain: Schema.Struct({ id: Identifier, name: TypeName }),
+  entity: Schema.Struct({ id: Identifier, singular: TypeName, plural: TypeName }),
+  entrypoint: Schema.Struct({ id: Identifier, name: TypeName }),
+})
+
 export const CreationIntentSchema = Schema.Struct({
   version: Schema.Literal("effectify.creation-intent/1"),
   preset: Schema.Literal("todo"),
   capabilities: Schema.Array(Capability),
+  naming: Schema.optionalKey(Naming),
 })
 export type CreationIntent = typeof CreationIntentSchema.Type
 

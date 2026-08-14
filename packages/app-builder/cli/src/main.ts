@@ -1,4 +1,8 @@
+#!/usr/bin/env node
+
+import { realpathSync } from "node:fs"
 import { readFile } from "node:fs/promises"
+import { pathToFileURL } from "node:url"
 import * as Effect from "effect/Effect"
 import {
   type CliCommand,
@@ -64,7 +68,11 @@ const parseJson = (value: string): Effect.Effect<unknown, InputError> =>
     catch: () => new InputError({ reason: "input must be canonical JSON" }),
   })
 
-const exitCode = (failure: CliFailure): number => (failure._tag === "InputError" ? 2 : 7)
+const exitCode = (failure: CliFailure): number =>
+  failure._tag === "InputError" ? 2 : failure._tag === "ConflictError" ? 4 : 7
+
+const failureKind = (failure: CliFailure): "conflict" | "host" | "input" =>
+  failure._tag === "InputError" ? "input" : failure._tag === "ConflictError" ? "conflict" : "host"
 
 const terminalEnvelope = (terminal: CliTerminal | { readonly _tag: "Failure"; readonly error: CliFailure }) => ({
   version: "effectify.app-builder-cli-terminal/1",
@@ -80,7 +88,7 @@ const writeTerminal = (
     .pipe(Effect.mapError(() => new HostError({ reason: "unable to write stdout" })))
 
 const writeFailure = (runtime: CliRuntime, failure: CliFailure) =>
-  runtime.writeStderr(`${failure._tag === "InputError" ? "input" : "host"}: ${failure.reason}\n`).pipe(
+  runtime.writeStderr(`${failureKind(failure)}: ${failure.reason}\n`).pipe(
     Effect.mapError(() => new HostError({ reason: "unable to write stderr" })),
     Effect.andThen(() => writeTerminal(runtime, { _tag: "Failure", error: failure })),
   )
@@ -167,3 +175,7 @@ export const runNodeCli = (args: ReadonlyArray<string> = process.argv.slice(2)):
     process.exitCode = code
     return code
   })
+
+if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
+  await runNodeCli()
+}

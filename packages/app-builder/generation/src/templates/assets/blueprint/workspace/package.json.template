@@ -1,0 +1,20 @@
+{
+  "name": "<%- workspacePackageName %>",
+  "packageManager": "pnpm@10.14.0",
+  "private": true,
+  "scripts": {
+    "build": "pnpm exec tsc -p tsconfig.build.json",
+    "test": "pnpm exec vitest run --config vitest.config.mts",
+    "typecheck": "pnpm exec tsc --noEmit -p tsconfig.build.json"
+  },
+  "devDependencies": {
+    "@effect/vitest": "catalog:",
+    "@types/node": "catalog:",
+    "@nx/js": "catalog:",
+    "@nx/vitest": "23.1.0",
+    "effect": "catalog:",
+    "nx": "23.1.0",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

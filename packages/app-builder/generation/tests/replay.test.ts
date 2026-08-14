@@ -1,4 +1,4 @@
-import { createTreeWithEmptyWorkspace } from "@nx/devkit/testing"
+import { createTree } from "@nx/devkit/testing"
 import { expect, it } from "@effect/vitest"
 import * as Effect from "effect/Effect"
 
@@ -28,7 +28,7 @@ interface TodoPresetModule {
 
 interface ApplyPlanModule {
   readonly applyTodoTopology: (
-    tree: ReturnType<typeof createTreeWithEmptyWorkspace>,
+    tree: ReturnType<typeof createTree>,
     topology: Topology,
   ) => Effect.Effect<{ readonly writtenPaths: ReadonlyArray<string> }, unknown>
 }
@@ -37,7 +37,18 @@ interface CjsonModule {
   readonly canonicalDigest: (input: unknown) => Effect.Effect<string, unknown>
 }
 
+interface ReplayOutputIdentity {
+  readonly mode: string
+  readonly owner: string
+  readonly path: string
+  readonly sourceDigest: string
+}
+
 interface ReplayProvenance {
+  readonly canonicalJson: string
+  readonly evidence: Readonly<Record<string, string>>
+  readonly outputIdentities: ReadonlyArray<ReplayOutputIdentity>
+  readonly provenanceDigest: string
   readonly version: string
 }
 
@@ -115,7 +126,7 @@ const candidateFor = (plan: TodoPlan, topology: Topology, dependencyInput: unkno
   plan,
 })
 
-const valuesAt = (tree: ReturnType<typeof createTreeWithEmptyWorkspace>, paths: ReadonlyArray<string>) =>
+const valuesAt = (tree: ReturnType<typeof createTree>, paths: ReadonlyArray<string>) =>
   Object.fromEntries(paths.map((path) => [path, tree.read(path, "utf8")]))
 
 it.effect("S21 canonicalizes source digests and semantic dependencies without lock transport metadata", () =>
@@ -149,7 +160,7 @@ it.effect("R13 and S22-S23 record frozen provenance then replay a fresh Tree wit
       ...candidate,
       pins: { ...pins, frozenInstall: false },
     }).pipe(Effect.flip)
-    const tree = createTreeWithEmptyWorkspace()
+    const tree = createTree()
     yield* ApplyPlan.applyTodoTopology(tree, topology)
     tree.write("notes/user-authored.ts", "export const preserved = true\n")
     const paths = topology.files.map((file) => file.path)
@@ -176,7 +187,7 @@ it.effect("R12 and S24 reject dependency or output mismatch before writes and pr
     const topology = yield* TodoPreset.createTodoTopology(plan)
     const candidate = candidateFor(plan, topology)
     const provenance = yield* Provenance.captureReplayProvenance(candidate)
-    const tree = createTreeWithEmptyWorkspace()
+    const tree = createTree()
     yield* ApplyPlan.applyTodoTopology(tree, topology)
     tree.write("notes/user-authored.ts", "export const keep = 'unchanged'\n")
     const paths = topology.files.map((file) => file.path)
@@ -210,5 +221,161 @@ it.effect("R12 and S24 reject dependency or output mismatch before writes and pr
     expect(workspaceFailure).toMatchObject({ _tag: "ReplayEvidenceError", identity: "outputs", phase: "workspace" })
     expect(valuesAt(tree, paths)).toEqual({ ...before, [firstOutput.path]: "workspace-drift\n" })
     expect(tree.read("notes/user-authored.ts", "utf8")).toBe("export const keep = 'unchanged'\n")
+  }),
+)
+
+it.effect("requires non-empty output identities before recording replay provenance", () =>
+  Effect.gen(function* () {
+    const { Planner, Provenance, TodoPreset } = yield* modules()
+    const plan = yield* Planner.planTodo(intent)
+    const topology = yield* TodoPreset.createTodoTopology(plan)
+    const attempt = yield* Provenance.captureReplayProvenance({ ...candidateFor(plan, topology), outputs: [] }).pipe(
+      Effect.match({
+        onFailure: (error) => ({ _tag: "failure" as const, error }),
+        onSuccess: () => ({ _tag: "success" as const }),
+      }),
+    )
+
+    expect(attempt).toMatchObject({
+      _tag: "failure",
+      error: { _tag: "ReplayProvenanceError", field: "outputs", reason: "invalid-candidate" },
+    })
+  }),
+)
+
+it.effect("rejects re-digested truncated or reordered output identities before workspace reads", () =>
+  Effect.gen(function* () {
+    const { Cjson, Planner, Provenance, Replay, TodoPreset } = yield* modules()
+    const plan = yield* Planner.planTodo(intent)
+    const topology = yield* TodoPreset.createTodoTopology(plan)
+    const candidate = candidateFor(plan, topology)
+    const provenance = yield* Provenance.captureReplayProvenance(candidate)
+    const [firstOutputIdentity] = provenance.outputIdentities
+    if (firstOutputIdentity === undefined) throw new Error("replay fixture requires multiple output identities")
+
+    const truncatedIdentities = provenance.outputIdentities.slice(1)
+    const truncatedEvidence = {
+      ...provenance.evidence,
+      outputs: yield* Cjson.canonicalDigest(truncatedIdentities),
+    }
+    const truncated = {
+      ...provenance,
+      evidence: truncatedEvidence,
+      outputIdentities: truncatedIdentities,
+      provenanceDigest: yield* Cjson.canonicalDigest({
+        canonicalJson: provenance.canonicalJson,
+        evidence: truncatedEvidence,
+        outputIdentities: truncatedIdentities,
+        version: provenance.version,
+      }),
+    }
+    const reorderedIdentities = [...provenance.outputIdentities].reverse()
+    const reordered = {
+      ...provenance,
+      outputIdentities: reorderedIdentities,
+      provenanceDigest: yield* Cjson.canonicalDigest({
+        canonicalJson: provenance.canonicalJson,
+        evidence: provenance.evidence,
+        outputIdentities: reorderedIdentities,
+        version: provenance.version,
+      }),
+    }
+
+    for (const [recorded, expected] of [
+      [truncated, { identity: "outputs", phase: "candidate" }],
+      [reordered, { identity: "outputs", phase: "recorded", reason: "mismatch" }],
+    ] as const) {
+      let reads = 0
+      const attempt = yield* Replay.validateReplay(recorded, candidate, {
+        readOutput: (path) => {
+          reads += 1
+          return candidate.outputs.find((output) => output.path === path)?.content
+        },
+      }).pipe(
+        Effect.match({
+          onFailure: (error) => ({ _tag: "failure" as const, error }),
+          onSuccess: () => ({ _tag: "success" as const }),
+        }),
+      )
+
+      expect(attempt).toMatchObject({ _tag: "failure", error: { _tag: "ReplayEvidenceError", ...expected } })
+      expect(reads).toBe(0)
+    }
+  }),
+)
+
+it.effect("rejects coherently re-digested reordered recorded outputs against the candidate before reads", () =>
+  Effect.gen(function* () {
+    const { Cjson, Planner, Provenance, Replay, TodoPreset } = yield* modules()
+    const plan = yield* Planner.planTodo(intent)
+    const topology = yield* TodoPreset.createTodoTopology(plan)
+    const candidate = candidateFor(plan, topology)
+    const provenance = yield* Provenance.captureReplayProvenance(candidate)
+    const outputIdentities = [...provenance.outputIdentities].reverse()
+    const evidence = { ...provenance.evidence, outputs: yield* Cjson.canonicalDigest(outputIdentities) }
+    const recorded = {
+      ...provenance,
+      evidence,
+      outputIdentities,
+      provenanceDigest: yield* Cjson.canonicalDigest({
+        canonicalJson: provenance.canonicalJson,
+        evidence,
+        outputIdentities,
+        version: provenance.version,
+      }),
+    }
+    let reads = 0
+
+    const failure = yield* Replay.validateReplay(recorded, candidate, {
+      readOutput: (path) => {
+        reads += 1
+        return candidate.outputs.find((output) => output.path === path)?.content
+      },
+    }).pipe(Effect.flip)
+
+    expect(failure).toMatchObject({ _tag: "ReplayEvidenceError", identity: "outputs", phase: "candidate" })
+    expect(reads).toBe(0)
+  }),
+)
+
+it.effect("rejects candidate output identity drift before reads", () =>
+  Effect.gen(function* () {
+    const { Planner, Provenance, Replay, TodoPreset } = yield* modules()
+    const plan = yield* Planner.planTodo(intent)
+    const topology = yield* TodoPreset.createTodoTopology(plan)
+    const candidate = candidateFor(plan, topology)
+    const provenance = yield* Provenance.captureReplayProvenance(candidate)
+    const [firstOutput] = candidate.outputs
+    if (firstOutput === undefined) throw new Error("replay fixture requires an owned output")
+    const originalIdentity = provenance.outputIdentities.find((identity) => identity.path === firstOutput.path)
+    if (originalIdentity === undefined) throw new Error("replay fixture requires matching output identity")
+
+    const drifts = [
+      ["path", { ...firstOutput, path: "apps/todo-drift.ts" }],
+      ["mode", { ...firstOutput, mode: "100755" }],
+      ["owner", { ...firstOutput, owner: "drift-owner" }],
+      ["sourceDigest", { ...firstOutput, content: `${firstOutput.content}drift\n` }],
+    ] as const
+
+    for (const [field, replacement] of drifts) {
+      const driftedCandidate = {
+        ...candidate,
+        outputs: [replacement, ...candidate.outputs.slice(1)],
+      }
+      const driftedProvenance = yield* Provenance.captureReplayProvenance(driftedCandidate)
+      const driftedIdentity = driftedProvenance.outputIdentities.find((identity) => identity.path === replacement.path)
+      if (driftedIdentity === undefined) throw new Error("replay fixture requires drifted output identity")
+      let reads = 0
+      const failure = yield* Replay.validateReplay(provenance, driftedCandidate, {
+        readOutput: () => {
+          reads += 1
+          return undefined
+        },
+      }).pipe(Effect.flip)
+
+      expect(driftedIdentity[field]).not.toBe(originalIdentity[field])
+      expect(failure).toMatchObject({ _tag: "ReplayEvidenceError", identity: "outputs", phase: "candidate" })
+      expect(reads).toBe(0)
+    }
   }),
 )
