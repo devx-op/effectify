@@ -1,4 +1,8 @@
+#!/usr/bin/env node
+
+import { realpathSync } from "node:fs"
 import { readFile } from "node:fs/promises"
+import { pathToFileURL } from "node:url"
 import * as Effect from "effect/Effect"
 import {
   type CliCommand,
@@ -171,3 +175,7 @@ export const runNodeCli = (args: ReadonlyArray<string> = process.argv.slice(2)):
     process.exitCode = code
     return code
   })
+
+if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
+  await runNodeCli()
+}
