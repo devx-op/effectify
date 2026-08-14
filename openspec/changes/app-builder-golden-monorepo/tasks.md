@@ -68,5 +68,5 @@ R01–R17/S01–S32 are ordered below; T1/T2 are mandatory RED tests. PR 07 defi
 
 ## Phase 8: Showcase and Closure (PR 08)
 
-- [ ] 8.1 RED `examples/app-builder-todo`, `.github/workflows/ci.yml`: R16/R17 S29–S32; drift fails without rewrite.
-- [ ] 8.2 GREEN/REFACTOR `examples/app-builder-todo/**`, `.github/workflows/ci.yml`: public-command exclusion; final R01–R17/S01–S32, T, typecheck, build, clean-diff matrix.
+- [x] 8.1 RED `examples/app-builder-todo`, `.github/workflows/ci.yml`: R16/R17 S29–S32; drift fails without rewrite.
+- [x] 8.2 GREEN/REFACTOR `examples/app-builder-todo/**`, `.github/workflows/ci.yml`: public-command exclusion; final R01–R17/S01–S32, T, typecheck, build, clean-diff matrix.
