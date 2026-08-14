@@ -3,6 +3,7 @@
   "plugins": [
     {
       "plugin": "@nx/js/typescript",
+      "exclude": ["tsconfig.build.json"],
       "options": {
         "typecheck": {
           "targetName": "typecheck"
@@ -11,6 +12,7 @@
     },
     {
       "plugin": "@nx/vitest",
+      "exclude": ["vitest.config.mts"],
       "options": {
         "testTargetName": "test"
       }
