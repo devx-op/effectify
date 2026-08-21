@@ -64,7 +64,7 @@
     "@nx/vite": "catalog:",
     "@nx/vitest": "23.1.0",
     "@nx/web": "catalog:",
-    "@react-router/dev": "8.2.0",
+    "@react-router/dev": "8.3.0",
     "@swc-node/register": "catalog:",
     "@swc/core": "catalog:",
     "@swc/helpers": "catalog:",
@@ -113,7 +113,8 @@
     },
     "overrides": {
       "@types/react": "19.2.17",
-      "@types/react-dom": "19.2.3"
+      "@types/react-dom": "19.2.3",
+      "cacache>tar": "7.5.21"
     },
     "onlyBuiltDependencies": [
       "@hatchet-dev/typescript-sdk",
@@ -136,8 +137,8 @@
   "packageManager": "pnpm@10.14.0",
   "dependencies": {
     "@prisma/client": "catalog:",
-    "@react-router/node": "8.2.0",
-    "@react-router/serve": "8.2.0",
+    "@react-router/node": "8.3.0",
+    "@react-router/serve": "8.3.0",
     "isbot": "catalog:",
     "prisma": "catalog:",
     "react": "catalog:",

@@ -8,7 +8,7 @@ packages:
 catalog:
   "@astrojs/starlight": 0.36.3
   "@astrojs/starlight-tailwind": 4.0.2
-  "@better-auth/cli": 1.4.10
+  "@better-auth/cli": 1.7.1
   "@corvu/drawer": 0.2.4
   "@effect/atom-solid": 4.0.0-beta.102
   "@effect/build-utils": 0.8.9
@@ -36,13 +36,13 @@ catalog:
   "@radix-ui/react-form": 0.1.12
   "@radix-ui/react-label": 2.1.11
   "@radix-ui/react-slot": 1.3.0
-  "@react-router/dev": 8.2.0
-  "@react-router/node": 8.2.0
-  "@react-router/serve": 8.2.0
-  "@remix-run/node": 2.17.4
+  "@react-router/dev": 8.3.0
+  "@react-router/node": 8.3.0
+  "@react-router/serve": 8.3.0
+  "@remix-run/node": 2.17.5
   "@remix-run/node-fetch-server": 0.12.0
-  "@remix-run/react": 2.17.4
-  "@remix-run/serve": 2.17.2
+  "@remix-run/react": 2.17.5
+  "@remix-run/serve": 2.17.5
   "@solidjs/start": 1.2.0
   "@solidjs/testing-library": 0.8.10
   "@swc-node/register": 1.11.1
@@ -51,7 +51,7 @@ catalog:
   "@tailwindcss/postcss": 4.3.2
   "@tailwindcss/typography": 0.5.19
   "@tailwindcss/vite": 4.3.2
-  "@tanstack/devtools-vite": ^0.8.1
+  "@tanstack/devtools-vite": 0.8.5
   "@tanstack/query-core": 5.101.2
   "@tanstack/react-form": 1.33.0
   "@tanstack/react-query": 5.101.2
@@ -86,7 +86,7 @@ catalog:
   "@vitest/ui": ^4.1.10
   astro: 5.17.1
   autoprefixer: 10.4.22
-  better-auth: 1.4.10
+  better-auth: 1.7.1
   better-sqlite3: 12.11.1
   class-variance-authority: 0.7.1
   clsx: 2.1.1
@@ -117,7 +117,7 @@ catalog:
   prisma: 7.8.0
   react: 19.2.7
   react-dom: 19.2.7
-  react-router: 8.2.0
+  react-router: 8.3.0
   sharp: 0.35.3
   solid-js: ^1.9.14
   starlight-sidebar-topics: 0.6.2

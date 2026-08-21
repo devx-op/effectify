@@ -1,5 +1,5 @@
 import { describe, it } from "@effect/vitest"
-import { betterAuth } from "better-auth"
+import { getMigrations } from "better-auth/db/migration"
 import Database from "better-sqlite3"
 import { Effect } from "effect"
 import { assert, expect } from "vitest"
@@ -14,35 +14,31 @@ describe("AuthService", () => {
     },
   }
 
-  // Helper to run migrations
   const runMigrations = async () => {
-    // We need to initialize betterAuth to register the schema/plugins internally if needed,
-    // even if we don't use the instance directly here.
-    // However, getMigrations takes options directly.
-    // If betterAuth(authOptions) is strictly required for side effects:
-    betterAuth(authOptions)
-    const { runMigrations: run } = await import("better-auth/db").then((m) => m.getMigrations(authOptions))
+    const { runMigrations: run } = await getMigrations(authOptions)
     await run()
   }
 
   const AuthLayer = AuthService.AuthServiceContext.layer(authOptions)
 
   it.effect("should create the layer and provide the service", () =>
-    Effect.gen(function*() {
+    Effect.gen(function* () {
       const { auth } = yield* AuthService.AuthServiceContext
       assert.ok(auth)
       assert.ok(auth.api)
       assert.ok(auth.handler)
-    }).pipe(Effect.provide(AuthLayer)))
+    }).pipe(Effect.provide(AuthLayer)),
+  )
 
   it.effect("should handle session verification simulation", () =>
-    Effect.gen(function*() {
+    Effect.gen(function* () {
       const { auth } = yield* AuthService.AuthServiceContext
       expect(!!auth).toBe(true)
-    }).pipe(Effect.provide(AuthLayer)))
+    }).pipe(Effect.provide(AuthLayer)),
+  )
 
   it.effect("should create user and login", () =>
-    Effect.gen(function*() {
+    Effect.gen(function* () {
       // Run migrations before testing DB operations
       yield* Effect.promise(() => runMigrations())
 
@@ -58,7 +54,7 @@ describe("AuthService", () => {
       const user = yield* Effect.promise(() =>
         auth.api.signUpEmail({
           body: testUser,
-        })
+        }),
       )
 
       assert.ok(user)
@@ -71,10 +67,11 @@ describe("AuthService", () => {
             email: testUser.email,
             password: testUser.password,
           },
-        })
+        }),
       )
 
       assert.ok(session)
       expect(session.user.email).toBe(testUser.email)
-    }).pipe(Effect.provide(AuthLayer)))
+    }).pipe(Effect.provide(AuthLayer)),
+  )
 })
