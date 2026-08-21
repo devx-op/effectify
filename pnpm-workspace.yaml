@@ -17,7 +17,7 @@ catalog:
   # 0.17+ requires TypeScript >=7; keep the latest native-preview-compatible release.
   "@effect/tsgo": 0.16.3
   "@effect/vitest": 4.0.0-beta.102
-  "@hatchet-dev/typescript-sdk": 1.21.0
+  "@hatchet-dev/typescript-sdk": 1.28.2
   "@kobalte/core": 0.13.12
   "@nx/js": 23.1.0
   "@nx/node": 23.1.0
