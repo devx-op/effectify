@@ -6,8 +6,8 @@ packages:
   - "!packages/*/*/dist"
 
 catalog:
-  "@astrojs/starlight": 0.36.3
-  "@astrojs/starlight-tailwind": 4.0.2
+  "@astrojs/starlight": 0.41.7
+  "@astrojs/starlight-tailwind": 5.0.0
   "@better-auth/cli": 1.7.1
   "@corvu/drawer": 0.2.4
   "@effect/atom-solid": 4.0.0-beta.102
@@ -84,7 +84,7 @@ catalog:
   "@vitest/browser-webdriverio": 4.1.10
   "@vitest/coverage-v8": 4.1.10
   "@vitest/ui": ^4.1.10
-  astro: 5.17.1
+  astro: 7.2.4
   autoprefixer: 10.4.22
   better-auth: 1.7.1
   better-sqlite3: 12.11.1
@@ -120,9 +120,9 @@ catalog:
   react-router: 8.3.0
   sharp: 0.35.3
   solid-js: ^1.9.14
-  starlight-sidebar-topics: 0.6.2
-  starlight-sidebar-topics-dropdown: 0.5.2
-  starlight-theme-nova: 0.10.0
+  starlight-sidebar-topics: 0.8.0
+  starlight-sidebar-topics-dropdown: 0.6.0
+  starlight-theme-nova: 0.12.2
   tailwind-merge: 3.6.0
   tailwindcss: 4.3.2
   tailwindcss-animate: 1.0.7
