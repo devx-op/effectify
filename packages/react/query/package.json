@@ -29,12 +29,12 @@
     "tslib": "catalog:",
     "@tanstack/react-query": "catalog:",
     "@tanstack/query-core": "catalog:",
-    "effect": "catalog:",
     "react": "catalog:"
   },
   "devDependencies": {
     "typescript": "catalog:",
-    "@types/react": "catalog:"
+    "@types/react": "catalog:",
+    "effect": "catalog:"
   },
   "optionalDependencies": {},
   "peerDependencies": {

@@ -27,7 +27,6 @@
 
     // Vite takes care of building everything, not tsc.
     "noEmit": true,
-    "noUncheckedSideEffectImports": false,
-    "ignoreDeprecations": "6.0"
+    "noUncheckedSideEffectImports": false
   }
 }

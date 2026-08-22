@@ -12,14 +12,9 @@ export class TaskSchemaError extends Data.TaggedError("TaskSchemaError")<{
   readonly issue: unknown
 }> {}
 
-export type TaskDeclarationFailureReason =
-  | "DuplicateIdentity"
-  | "InvalidKind"
-  | "InvalidMetadata"
+export type TaskDeclarationFailureReason = "DuplicateIdentity" | "InvalidKind" | "InvalidMetadata"
 
-export class TaskDeclarationError extends Data.TaggedError(
-  "TaskDeclarationError",
-)<{
+export class TaskDeclarationError extends Data.TaggedError("TaskDeclarationError")<{
   readonly taskName: string
   readonly field: string
   readonly reason: TaskDeclarationFailureReason
@@ -38,7 +33,7 @@ export class TaskDeclarationError extends Data.TaggedError(
   }
 }
 
-export class InvalidHatchetConfiguration extends Schema.TaggedErrorClass<InvalidHatchetConfiguration>()(
+export class InvalidHatchetConfiguration extends Schema.TaggedError<InvalidHatchetConfiguration>()(
   "InvalidHatchetConfiguration",
   {
     field: Schema.String,
@@ -73,10 +68,7 @@ const statusOf = (cause: unknown): number | undefined => {
   return undefined
 }
 
-const classifyFailure = (
-  operation: string,
-  cause: unknown,
-): HatchetFailureReason => {
+const classifyFailure = (operation: string, cause: unknown): HatchetFailureReason => {
   if (
     typeof cause === "object" &&
     cause !== null &&
@@ -87,28 +79,20 @@ const classifyFailure = (
   }
   const status = statusOf(cause)
   if (status === 401 || status === 403) return "Unauthorized"
-  if (
-    status === 408 ||
-    status === 429 ||
-    (status !== undefined && status >= 500)
-  ) {
+  if (status === 408 || status === 429 || (status !== undefined && status >= 500)) {
     return "Unavailable"
   }
   if (
     typeof cause === "object" &&
     cause !== null &&
     "code" in cause &&
-    ["ECONNREFUSED", "ECONNRESET", "ENETUNREACH", "ETIMEDOUT"].includes(
-      String(cause.code),
-    )
+    ["ECONNREFUSED", "ECONNRESET", "ENETUNREACH", "ETIMEDOUT"].includes(String(cause.code))
   ) {
     return "Unavailable"
   }
   if (
     operation === "config.config" ||
-    (operation.startsWith("config") &&
-      cause instanceof Error &&
-      /missing|required|token|config/i.test(cause.message))
+    (operation.startsWith("config") && cause instanceof Error && /missing|required|token|config/i.test(cause.message))
   ) {
     return "NotConfigured"
   }
@@ -122,10 +106,7 @@ export class HatchetConfigError extends Data.TaggedError("HatchetConfigError")<{
   readonly field: string
   readonly reason: HatchetFailureReason
 }> {
-  constructor(args: {
-    readonly field: string
-    readonly originalCause: unknown
-  }) {
+  constructor(args: { readonly field: string; readonly originalCause: unknown }) {
     super({
       field: args.field,
       reason: classifyFailure(`config.${args.field}`, args.originalCause),
@@ -139,11 +120,7 @@ export class HatchetSdkError extends Data.TaggedError("HatchetSdkError")<{
   readonly resourceId?: string
   readonly reason: HatchetFailureReason
 }> {
-  constructor(args: {
-    readonly operation: string
-    readonly resourceId?: string
-    readonly originalCause: unknown
-  }) {
+  constructor(args: { readonly operation: string; readonly resourceId?: string; readonly originalCause: unknown }) {
     super({
       operation: args.operation,
       ...(args.resourceId === undefined ? {} : { resourceId: args.resourceId }),
@@ -171,9 +148,7 @@ export class InvalidCronError extends Data.TaggedError("InvalidCronError")<{
   readonly originalCause: unknown
 }> {}
 
-export class InvalidCronFilterError extends Data.TaggedError(
-  "InvalidCronFilterError",
-)<{
+export class InvalidCronFilterError extends Data.TaggedError("InvalidCronFilterError")<{
   readonly field: "taskName" | "name" | "offset" | "limit"
   readonly originalCause: unknown
 }> {}

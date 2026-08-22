@@ -59,6 +59,6 @@
   },
   "editor.formatOnPaste": true,
   "emmet.showExpandedAbbreviation": "never",
-  "typescript.native-preview.tsdk": "node_modules/@typescript/native-preview",
+  "typescript.native-preview.tsdk": "node_modules/@typescript/native",
   "js/ts.experimental.useTsgo": true
 }

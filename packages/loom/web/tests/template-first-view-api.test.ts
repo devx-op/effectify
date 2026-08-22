@@ -22,15 +22,13 @@ const withDocumentRemoved = <Result>(run: () => Result): Result => {
 describe("@effectify/loom template-first view API", () => {
   it("renders SSR-safe hydration metadata and lambda values without a global document", () => {
     const result = withDocumentRemoved(() =>
-      Html.renderToString(
-        html`
+      Html.renderToString(html`
           <section class="inventory" web:hydrate=${Hydration.strategy.visible()}>
             <button type="button" web:click=${() => undefined}>increment</button>
             <input type="text" value=${() => "count:1"} />
             <p>${() => 1}</p>
           </section>
-        `,
-      )
+        `),
     )
 
     expect(result).toContain('data-loom-hydrate="visible"')
@@ -66,13 +64,11 @@ describe("@effectify/loom template-first view API", () => {
           <input type="text" web:value=${() => `count:${state.count()}`} />
           <p>${() => state.count()}</p>
           <div>${null}${undefined}${false}${0}${""}</div>
-          ${
-          View.for(() => state.items(), {
+          ${View.for(() => state.items(), {
             key: (item: any) => item.id,
             render: (item: any) => html`<p>${item.label}</p>`,
             empty: html`<p>empty</p>`,
-          })
-        }
+          })}
         </section>
       `
       }),
@@ -107,33 +103,28 @@ describe("@effectify/loom template-first view API", () => {
       readonly save: (value: string) => string
     }
 
-    const child = Component.make("template-child").pipe(
-      Component.view(() => html`<span>child</span>`),
+    const child = Component.make("template-child").pipe(Component.view(() => html`<span>child</span>`))
+
+    const boundary = View.use(child).pipe(
+      View.catchTag("SaveFailure", () => html`<span>handled</span>`),
+      View.provideService({ save: (value: string) => value } satisfies SaveGateway),
     )
 
-    const boundary = View.use(child)
-      .pipe(View.catchTag("SaveFailure", () => html`<span>handled</span>`))
-      .pipe(View.provideService({ save: (value: string) => value } satisfies SaveGateway))
-
     const host = Component.make("template-host").pipe(
-      Component.view(() =>
-        html`
+      Component.view(
+        () => html`
         <article>
           ${boundary}
-          ${
-          View.match(Result.succeed("ready"), {
+          ${View.match(Result.succeed("ready"), {
             onSuccess: (value) => html`<strong>${value}</strong>`,
             onFailure: (error) => html`<strong>${String(error)}</strong>`,
-          })
-        }
-          ${
-          View.match({ _tag: "Ready", label: "go" } as const, {
+          })}
+          ${View.match({ _tag: "Ready", label: "go" } as const, {
             Ready: ({ label }) => html`<em>${label}</em>`,
             orElse: () => html`<em>fallback</em>`,
-          })
-        }
+          })}
         </article>
-      `
+      `,
       ),
     )
 
@@ -147,9 +138,7 @@ describe("@effectify/loom template-first view API", () => {
   })
 
   it("guides simple component interpolation toward View.of and advanced composition toward View.use", () => {
-    const child = Component.make().pipe(
-      Component.view(() => html`<span>child</span>`),
-    )
+    const child = Component.make().pipe(Component.view(() => html`<span>child</span>`))
 
     expect(() => html`<article>${child}</article>`).toThrowError(
       /Use View\.of\(\.\.\.\) for simple components or View\.use\(\.\.\.\) for props, children, or slots\./,
@@ -170,18 +159,16 @@ describe("@effectify/loom template-first view API", () => {
     )
 
     const page = Component.make("html-page").pipe(
-      Component.view(() =>
-        html`
+      Component.view(
+        () => html`
         <div>
           ${View.use(card, ["lead ", html`<strong>body</strong>`, 2])}
-          ${
-          View.use(layout, {
+          ${View.use(layout, {
             header: ["Header ", html`<span>slot</span>`],
             default: [html`<p>content</p>`, " tail"],
-          })
-        }
+          })}
         </div>
-      `
+      `,
       ),
     )
 
@@ -200,8 +187,8 @@ describe("@effectify/loom template-first view API", () => {
       Component.actions({
         increment: ({ count }) => count.update((value) => value + 1),
       }),
-      Component.view(({ state }) =>
-        html`
+      Component.view(
+        ({ state }) => html`
           <section>
             <div
               class="counter-card"
@@ -213,7 +200,7 @@ describe("@effectify/loom template-first view API", () => {
               card
             </div>
           </section>
-        `
+        `,
       ),
     )
 
@@ -238,8 +225,8 @@ describe("@effectify/loom template-first view API", () => {
         increment: ({ count }) => count.update((value) => value + 1),
         toggle: ({ enabled }) => enabled.update((value) => !value),
       }),
-      Component.view(({ state }) =>
-        html`
+      Component.view(
+        ({ state }) => html`
           <section>
             <div
               class="counter-card"
@@ -251,7 +238,7 @@ describe("@effectify/loom template-first view API", () => {
               card
             </div>
           </section>
-        `
+        `,
       ),
     )
 
@@ -280,9 +267,7 @@ describe("@effectify/loom template-first view API", () => {
   })
 
   it("keeps rejecting unknown web directives", () => {
-    expect(() => html`<div web:foo=${() => "active"}></div>`).toThrowError(
-      /Unsupported template directive 'web:foo'/,
-    )
+    expect(() => html`<div web:foo=${() => "active"}></div>`).toThrowError(/Unsupported template directive 'web:foo'/)
   })
 
   it("binds web:input through the same event context path as Web.on", () => {
@@ -292,21 +277,21 @@ describe("@effectify/loom template-first view API", () => {
       Component.actions(({ model }) => ({
         syncDraft: (value: string) => model.draft.set(value),
       })),
-      Component.view(({ state, actions }) =>
-        html`
+      Component.view(
+        ({ state, actions }) => html`
           <label>
             <span>${() => state.draft()}</span>
             <input
               type="text"
               web:value=${() => state.draft()}
               web:input=${({ currentTarget }) => {
-          if (currentTarget instanceof HTMLInputElement) {
-            actions.syncDraft(currentTarget.value)
-          }
-        }}
+                if (currentTarget instanceof HTMLInputElement) {
+                  actions.syncDraft(currentTarget.value)
+                }
+              }}
             />
           </label>
-        `
+        `,
       ),
     )
 
@@ -336,19 +321,19 @@ describe("@effectify/loom template-first view API", () => {
           model.tagName.set(element instanceof HTMLFormElement ? element.tagName : "invalid")
         },
       })),
-      Component.view(({ state, actions }) =>
-        html`
+      Component.view(
+        ({ state, actions }) => html`
           <form
             web:submit=${({ currentTarget, event }) => {
-          event.preventDefault()
-          actions.submit(currentTarget)
-        }}
+              event.preventDefault()
+              actions.submit(currentTarget)
+            }}
           >
             <button type="submit">Save</button>
             <output data-submit-count="true">${() => state.submits()}</output>
             <output data-submit-tag="true">${() => state.tagName()}</output>
           </form>
-        `
+        `,
       ),
     )
 
@@ -376,8 +361,8 @@ describe("@effectify/loom template-first view API", () => {
         increment: () => model.count.update((value) => value + 1),
         syncDraft: (value: string) => model.draft.set(value),
       })),
-      Component.view(({ state, actions }) =>
-        html`
+      Component.view(
+        ({ state, actions }) => html`
           <section>
             <button type="button" data-action="increment" web:click=${actions.increment}>Increment</button>
             <input
@@ -385,14 +370,14 @@ describe("@effectify/loom template-first view API", () => {
               data-draft-input="true"
               web:inputValue=${() => `${state.draft()}:${state.count()}`}
               web:input=${({ currentTarget }) => {
-          if (currentTarget instanceof HTMLInputElement) {
-            actions.syncDraft(currentTarget.value)
-          }
-        }}
+                if (currentTarget instanceof HTMLInputElement) {
+                  actions.syncDraft(currentTarget.value)
+                }
+              }}
             />
             <div
               data-runtime-card="true"
-              data-tone=${() => state.count() > 1 ? "active" : "idle"}
+              data-tone=${() => (state.count() > 1 ? "active" : "idle")}
               title=${() => `draft:${state.draft()}`}
               web:class=${() => ["status-card", state.count() > 1 ? "status-card--active" : "status-card--idle"]}
               web:style=${() => `transform:translateY(${state.count()}px);opacity:${state.count() > 1 ? 1 : 0.5}`}
@@ -400,7 +385,7 @@ describe("@effectify/loom template-first view API", () => {
               ${() => `${state.draft()}#${state.count()}`}
             </div>
           </section>
-        `
+        `,
       ),
     )
 
@@ -410,7 +395,8 @@ describe("@effectify/loom template-first view API", () => {
     const card = root.querySelector('[data-runtime-card="true"]')
 
     if (
-      !(button instanceof HTMLButtonElement) || !(input instanceof HTMLInputElement) ||
+      !(button instanceof HTMLButtonElement) ||
+      !(input instanceof HTMLInputElement) ||
       !(card instanceof HTMLDivElement)
     ) {
       throw new Error("expected template runtime elements")
@@ -460,20 +446,18 @@ describe("@effectify/loom template-first view API", () => {
         error: ({ result }) => result.set({ _tag: "Error", error: new Error("boom") }),
         defect: ({ result }) => result.set({ _tag: "Defect", defect: "kaput" }),
       }),
-      Component.view(({ state }) =>
-        html`
+      Component.view(
+        ({ state }) => html`
         <section>
-          ${
-          View.match(() => state.result(), {
+          ${View.match(() => state.result(), {
             onWaiting: () => html`<p>waiting</p>`,
             onSuccess: (value) => html`<p>${value}</p>`,
             onFailure: (failure) => html`<p>${failure}</p>`,
             onError: (error) => html`<p>${error.message}</p>`,
             onDefect: (defect) => html`<p>${String(defect)}</p>`,
-          })
-        }
+          })}
         </section>
-      `
+      `,
       ),
     )
 
@@ -499,13 +483,13 @@ describe("@effectify/loom template-first view API", () => {
       Component.actions({
         increment: ({ count }) => count.update((value) => value + 1),
       }),
-      Component.view(({ state }) =>
-        html`
+      Component.view(
+        ({ state }) => html`
         <section>
           <p data-kind="eager">${state.count()}</p>
           <p data-kind="lazy">${() => state.count()}</p>
         </section>
-      `
+      `,
       ),
     )
 
@@ -534,14 +518,14 @@ describe("@effectify/loom template-first view API", () => {
           title.set(`Count ${count.get()}`)
         },
       }),
-      Component.view(({ state }) =>
-        html`
+      Component.view(
+        ({ state }) => html`
           <section>
             <p data-kind="broad-expression">${state.count() + 1}</p>
             <p data-kind="formatted-helper">${formatTitle(state.title())}</p>
             <p data-kind="accessor">${state.count}</p>
           </section>
-        `
+        `,
       ),
     )
 
@@ -572,14 +556,14 @@ describe("@effectify/loom template-first view API", () => {
           title.set(`Count ${count.get()}`)
         },
       }),
-      Component.view(({ state }) =>
-        html`
+      Component.view(
+        ({ state }) => html`
           <section>
             <p data-kind="accessor">${state.count}</p>
             <p data-kind="snapshot">${state.count()}</p>
             <input type="text" title=${state.title} web:value=${state.count} />
           </section>
-        `
+        `,
       ),
     )
 
@@ -631,9 +615,7 @@ describe("@effectify/loom template-first view API", () => {
   })
 
   it("rejects direct component and array interpolation in the template path", () => {
-    const child = Component.make("template-child").pipe(
-      Component.view(() => html`<span>child</span>`),
-    )
+    const child = Component.make("template-child").pipe(Component.view(() => html`<span>child</span>`))
 
     expect(() => html`<div>${child as never}</div>`).toThrowError(/View\.use/)
     expect(() => html`<div>${[View.text("invalid")] as never}</div>`).toThrowError(/View\.for/)

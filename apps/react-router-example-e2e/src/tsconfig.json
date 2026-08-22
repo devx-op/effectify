@@ -7,7 +7,6 @@
     "module": "commonjs",
     "types": ["cypress", "node"],
     "sourceMap": false,
-    "ignoreDeprecations": "6.0",
     "rootDir": ".."
   },
   "include": [

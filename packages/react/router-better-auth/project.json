@@ -14,14 +14,14 @@
     "typecheck:no-build": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "tsgo --project tsconfig.no-build.json --noEmit",
+        "command": "tsc --project tsconfig.no-build.json --noEmit",
         "cwd": "packages/react/router-better-auth"
       }
     },
     "build": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "tsgo --build tsconfig.lib.json",
+        "command": "tsc --build tsconfig.lib.json",
         "cwd": "packages/react/router-better-auth"
       }
     },
@@ -29,9 +29,7 @@
       "executor": "nx-oxlint:lint",
       "outputs": ["{options.outputFile}"],
       "options": {
-        "lintFilePatterns": [
-          "packages/react/router-better-auth/**/*.{ts,tsx,js,jsx}"
-        ]
+        "lintFilePatterns": ["packages/react/router-better-auth/**/*.{ts,tsx,js,jsx}"]
       }
     }
   },

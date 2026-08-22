@@ -10,46 +10,26 @@ describe("React Router final-v8 safety", () => {
     expect(config.ssr).toBe(true)
   })
 
-  it("removes obsolete future flags and pins the final 8.2.0 family", async () => {
+  it("removes obsolete future flags and pins the final 8.3.0 family", async () => {
     expect("future" in config).toBe(false)
-    const catalog = await readFile(
-      resolve(import.meta.dirname, "../../../pnpm-workspace.yaml"),
-      "utf8",
-    )
-    for (
-      const dependency of [
-        "react-router",
-        "@react-router/dev",
-        "@react-router/node",
-        "@react-router/serve",
-      ]
-    ) {
-      expect(catalog).toMatch(
-        new RegExp(`['"]?${dependency.replace("/", "\\/")}['"]?: 8\\.2\\.0`),
-      )
+    const catalog = await readFile(resolve(import.meta.dirname, "../../../pnpm-workspace.yaml"), "utf8")
+    for (const dependency of ["react-router", "@react-router/dev", "@react-router/node", "@react-router/serve"]) {
+      expect(catalog).toMatch(new RegExp(`['"]?${dependency.replace("/", "\\/")}['"]?: 8\\.3\\.0`))
     }
   })
 
-  it.each([
-    "development",
-    "production",
-  ])("resolves the React Router Vite plugin for %s mode", async (mode) => {
+  it.each(["development", "production"])("resolves the React Router Vite plugin for %s mode", async (mode) => {
     const resolved = await resolveConfig(
       { configFile: resolve(import.meta.dirname, "../vite.config.ts") },
       "serve",
       mode,
     )
 
-    expect(
-      resolved.plugins.some((plugin) => plugin.name === "react-router"),
-    ).toBe(true)
+    expect(resolved.plugins.some((plugin) => plugin.name === "react-router")).toBe(true)
   })
 
   it("decodes generated Todo IDs with the Effect Schema v4 API", async () => {
-    const route = await readFile(
-      resolve(import.meta.dirname, "../app/routes/todo-app.tsx"),
-      "utf8",
-    )
+    const route = await readFile(resolve(import.meta.dirname, "../app/routes/todo-app.tsx"), "utf8")
 
     expect(route).toContain("Schema.decodeUnknownSync(TodoId)(randomUUID())")
     expect(route).not.toContain("TodoId.makeUnsafe")
@@ -75,28 +55,18 @@ describe("React Router final-v8 safety", () => {
       },
     ] satisfies MiddlewareFunction[]
     requestContext.set(requestValue, "request-local")
-    const handler = createStaticHandler([
-      { id: "root", path: "/", middleware, loader: () => response },
-    ])
+    const handler = createStaticHandler([{ id: "root", path: "/", middleware, loader: () => response }])
 
-    const result = await handler.queryRoute(
-      new Request("https://effectify.dev/"),
-      {
-        requestContext,
-        generateMiddlewareResponse: async (query) => {
-          const value = await query(new Request("https://effectify.dev/"))
-          return value instanceof Response ? value : Response.json(value)
-        },
+    const result = await handler.queryRoute(new Request("https://effectify.dev/"), {
+      requestContext,
+      generateMiddlewareResponse: async (query) => {
+        const value = await query(new Request("https://effectify.dev/"))
+        return value instanceof Response ? value : Response.json(value)
       },
-    )
+    })
 
     expect(result).toBe(response)
-    expect(calls).toEqual([
-      "outer-before:request-local",
-      "inner-before",
-      "inner-after",
-      "outer-after",
-    ])
+    expect(calls).toEqual(["outer-before:request-local", "inner-before", "inner-after", "outer-after"])
   })
 
   it("rejects a native middleware that calls next twice", async () => {
@@ -126,10 +96,7 @@ describe("React Router final-v8 safety", () => {
 
   it.each([
     ["document", "https://effectify.dev/todo-app"],
-    [
-      "client-navigation data",
-      "https://effectify.dev/todo-app.data?_routes=routes/todo-app",
-    ],
+    ["client-navigation data", "https://effectify.dev/todo-app.data?_routes=routes/todo-app"],
   ])("preserves the %s request URL through native middleware", async (_kind, url) => {
     const seenUrls: string[] = []
     const handler = createStaticHandler([
@@ -167,9 +134,7 @@ describe("React Router final-v8 safety", () => {
       },
     })
 
-    expect(result.headers.get("X-Effectify-Request")).toBe(
-      url.includes(".data") ? "data" : "document",
-    )
+    expect(result.headers.get("X-Effectify-Request")).toBe(url.includes(".data") ? "data" : "document")
     expect(seenUrls).toEqual([url])
   })
 })

@@ -30,7 +30,7 @@
   "scripts": {
     "lint-staged": "lint-staged --allow-empty",
     "clean": "rm -rf node_modules dist pnpm-lock.yaml && pnpm store prune & find . -type d \\( -name 'node_modules' -o -name 'dist' -o -name '.output' -o -name '.vinxi' -o -name '.cache' -o -name '.expo' -o -name '.nx' \\) -prune -exec rm -rf {} + & wait",
-    "prepare": "husky && ts-patch install -s && effect-tsgo patch",
+    "prepare": "husky && effect-tsgo patch",
     "build:affected": "pnpm nx affected --target=build",
     "test:affected": "pnpm nx affected --target=test",
     "typecheck:affected": "pnpm nx affected --target=typecheck",
@@ -62,16 +62,16 @@
     "@nx/node": "catalog:",
     "@nx/react": "catalog:",
     "@nx/vite": "catalog:",
-    "@nx/vitest": "23.1.0",
+    "@nx/vitest": "23.1.1",
     "@nx/web": "catalog:",
-    "@react-router/dev": "8.2.0",
+    "@react-router/dev": "8.3.0",
     "@swc-node/register": "catalog:",
     "@swc/core": "catalog:",
     "@swc/helpers": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
-    "@typescript/native-preview": "catalog:",
+    "@typescript/native": "npm:typescript@7.0.2",
     "@vitejs/plugin-react": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "@vitest/ui": "catalog:",
@@ -80,12 +80,11 @@
     "jiti": "catalog:",
     "jsdom": "catalog:",
     "lint-staged": "catalog:",
-    "nx": "23.1.0",
+    "nx": "23.1.1",
     "nx-oxlint": "catalog:",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
     "prettier": "catalog:",
-    "ts-patch": "catalog:",
     "tslib": "catalog:",
     "typescript": "catalog:",
     "ultracite": "catalog:",
@@ -98,6 +97,11 @@
       "starlight-sidebar-topics": {
         "peerDependencies": {
           "astro": "*"
+        }
+      },
+      "@astrojs/mdx": {
+        "dependencies": {
+          "satteri": "^0.10.3"
         }
       },
       "better-auth": {
@@ -113,7 +117,8 @@
     },
     "overrides": {
       "@types/react": "19.2.17",
-      "@types/react-dom": "19.2.3"
+      "@types/react-dom": "19.2.3",
+      "cacache>tar": "7.5.21"
     },
     "onlyBuiltDependencies": [
       "@hatchet-dev/typescript-sdk",
@@ -136,8 +141,8 @@
   "packageManager": "pnpm@10.14.0",
   "dependencies": {
     "@prisma/client": "catalog:",
-    "@react-router/node": "8.2.0",
-    "@react-router/serve": "8.2.0",
+    "@react-router/node": "8.3.0",
+    "@react-router/serve": "8.3.0",
     "isbot": "catalog:",
     "prisma": "catalog:",
     "react": "catalog:",
