@@ -14,7 +14,7 @@
     "typecheck:no-build": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "tsgo --project tsconfig.lib.json --noEmit",
+        "command": "tsc --project tsconfig.lib.json --noEmit",
         "cwd": "packages/react/router"
       }
     },

@@ -39,11 +39,9 @@ type LiveRunReference = {
   readonly cancel: () => Promise<void>
 }
 
-type LiveDeclaration =
-  & ReturnType<
-    ReturnType<typeof HatchetClient.init>["task"]
-  >
-  & { readonly runNoWait: (input: JsonObject) => Promise<LiveRunReference> }
+type LiveDeclaration = ReturnType<ReturnType<typeof HatchetClient.init>["task"]> & {
+  readonly runNoWait: (input: JsonObject) => Promise<LiveRunReference>
+}
 
 class LiveCallbackError extends Error {
   constructor(override readonly cause: unknown) {
@@ -79,10 +77,7 @@ const isTransportValue = (value: unknown): value is JsonValue => {
     return true
   }
   if (Array.isArray(value)) return value.every(isTransportValue)
-  if (
-    typeof value !== "object" ||
-    Object.getPrototypeOf(value) !== Object.prototype
-  ) {
+  if (typeof value !== "object" || Object.getPrototypeOf(value) !== Object.prototype) {
     return false
   }
   return Object.values(value).every(isTransportValue)
@@ -95,11 +90,7 @@ const isTransportObject = (value: unknown): value is JsonObject =>
   Object.getPrototypeOf(value) === Object.prototype &&
   Object.values(value).every(isTransportValue)
 
-const sdkError = (
-  operation: string,
-  originalCause: unknown,
-  resourceId?: string,
-): HatchetSdkError =>
+const sdkError = (operation: string, originalCause: unknown, resourceId?: string): HatchetSdkError =>
   new HatchetSdkError({
     operation,
     originalCause,
@@ -121,36 +112,26 @@ const isNotFound = (error: HatchetSdkError): boolean => {
 
 const isAmbiguousCronCreateCause = (cause: unknown, depth = 0): boolean => {
   if (typeof cause !== "object" || cause === null || depth > 2) return false
-  const status = "status" in cause && typeof cause.status === "number"
-    ? cause.status
-    : "response" in cause &&
-        typeof cause.response === "object" &&
-        cause.response !== null &&
-        "status" in cause.response &&
-        typeof cause.response.status === "number"
-    ? cause.response.status
-    : undefined
-  if (
-    status === 408 ||
-    (status !== undefined && status >= 500 && status < 600)
-  ) {
+  const status =
+    "status" in cause && typeof cause.status === "number"
+      ? cause.status
+      : "response" in cause &&
+          typeof cause.response === "object" &&
+          cause.response !== null &&
+          "status" in cause.response &&
+          typeof cause.response.status === "number"
+        ? cause.response.status
+        : undefined
+  if (status === 408 || (status !== undefined && status >= 500 && status < 600)) {
     return true
   }
-  if (
-    "code" in cause &&
-    ["ECONNREFUSED", "ECONNRESET", "ENETUNREACH", "ETIMEDOUT"].includes(
-      String(cause.code),
-    )
-  ) {
+  if ("code" in cause && ["ECONNREFUSED", "ECONNRESET", "ENETUNREACH", "ETIMEDOUT"].includes(String(cause.code))) {
     return true
   }
   return "cause" in cause && isAmbiguousCronCreateCause(cause.cause, depth + 1)
 }
 
-const scheduleRecord = (
-  value: unknown,
-  operation: string,
-): Effect.Effect<ScheduleRecord, HatchetSdkError> => {
+const scheduleRecord = (value: unknown, operation: string): Effect.Effect<ScheduleRecord, HatchetSdkError> => {
   if (
     typeof value !== "object" ||
     value === null ||
@@ -170,19 +151,14 @@ const scheduleRecord = (
   return Number.isNaN(triggerAt.getTime())
     ? Effect.fail(sdkError(operation, value))
     : Effect.succeed({
-      id: makeScheduleId(value.metadata.id),
-      taskName: value.workflowName,
-      triggerAt,
-    })
+        id: makeScheduleId(value.metadata.id),
+        taskName: value.workflowName,
+        triggerAt,
+      })
 }
 
 const cronListIds = (value: unknown): ReadonlyArray<string> | undefined => {
-  if (
-    typeof value !== "object" ||
-    value === null ||
-    !("rows" in value) ||
-    !Array.isArray(value.rows)
-  ) {
+  if (typeof value !== "object" || value === null || !("rows" in value) || !Array.isArray(value.rows)) {
     return undefined
   }
   const ids: Array<string> = []
@@ -207,10 +183,7 @@ const pageNumber = (value: unknown): value is number =>
   typeof value === "number" && Number.isSafeInteger(value) && value >= 0
 
 export const verifyCronAbsent = async (
-  list: (query: {
-    readonly offset: number
-    readonly limit: number
-  }) => Promise<unknown>,
+  list: (query: { readonly offset: number; readonly limit: number }) => Promise<unknown>,
   id: string,
   maxPages = 1_000,
 ): Promise<boolean> => {
@@ -221,11 +194,7 @@ export const verifyCronAbsent = async (
     const response = await list({ offset, limit })
     const ids = cronListIds(response)
     if (!ids || ids.length > limit || ids.includes(id)) return false
-    if (
-      typeof response !== "object" ||
-      response === null ||
-      !("pagination" in response)
-    ) {
+    if (typeof response !== "object" || response === null || !("pagination" in response)) {
       if (ids.length < limit) return true
       offset += limit
       if (!Number.isSafeInteger(offset)) return false
@@ -236,12 +205,7 @@ export const verifyCronAbsent = async (
     const current = "current_page" in pagination ? pagination.current_page : undefined
     const next = "next_page" in pagination ? pagination.next_page : undefined
     const total = "num_pages" in pagination ? pagination.num_pages : undefined
-    if (
-      !pageNumber(current) ||
-      !pageNumber(total) ||
-      seen.has(current) ||
-      (next !== undefined && !pageNumber(next))
-    ) {
+    if (!pageNumber(current) || !pageNumber(total) || seen.has(current) || (next !== undefined && !pageNumber(next))) {
       return false
     }
     seen.add(current)
@@ -265,10 +229,7 @@ const verifyCronAbsentWithinBound = (
     Effect.map(Option.getOrElse(() => false)),
   )
 
-const cronRecord = (
-  value: unknown,
-  operation: string,
-): Effect.Effect<CronRecord, HatchetSdkError> => {
+const cronRecord = (value: unknown, operation: string): Effect.Effect<CronRecord, HatchetSdkError> => {
   if (
     typeof value !== "object" ||
     value === null ||
@@ -291,22 +252,15 @@ const cronRecord = (
   return Effect.succeed({
     id: makeCronId(value.metadata.id),
     taskName: value.workflowName,
-    ...("name" in value && typeof value.name === "string"
-      ? { name: value.name }
-      : {}),
+    ...("name" in value && typeof value.name === "string" ? { name: value.name } : {}),
     expression: value.cron,
-    ...("input" in value && isTransportObject(value.input)
-      ? { input: value.input }
-      : {}),
-    ...("additionalMetadata" in value &&
-        isTransportObject(value.additionalMetadata)
+    ...("input" in value && isTransportObject(value.input) ? { input: value.input } : {}),
+    ...("additionalMetadata" in value && isTransportObject(value.additionalMetadata)
       ? { additionalMetadata: value.additionalMetadata }
       : {}),
     enabled: value.enabled,
     method: value.method,
-    ...("priority" in value && typeof value.priority === "number"
-      ? { priority: value.priority }
-      : {}),
+    ...("priority" in value && typeof value.priority === "number" ? { priority: value.priority } : {}),
   })
 }
 
@@ -317,41 +271,28 @@ const reconcileCronCreateWithinBound = (
 ): Effect.Effect<Option.Option<CronRecord>> =>
   Effect.tryPromise(list).pipe(
     Effect.flatMap((response) => {
-      if (
-        typeof response !== "object" ||
-        response === null ||
-        !("rows" in response) ||
-        !Array.isArray(response.rows)
-      ) {
+      if (typeof response !== "object" || response === null || !("rows" in response) || !Array.isArray(response.rows)) {
         return Effect.succeed(Option.none())
       }
       return Effect.forEach(response.rows, (row) => cronRecord(row, "cron.list")).pipe(
         Effect.map((records) => {
-          const matches = records.filter(
-            (record) => record.taskName === taskName && record.name === name,
-          )
+          const matches = records.filter((record) => record.taskName === taskName && record.name === name)
           const [only] = matches
-          return matches.length === 1 && only !== undefined
-            ? Option.some(only)
-            : Option.none()
+          return matches.length === 1 && only !== undefined ? Option.some(only) : Option.none()
         }),
       )
     }),
     Effect.timeoutOption(cronVerificationListTimeout),
     Effect.catch(() => Effect.succeed(Option.none())),
-    Effect.map((result) => Option.isSome(result) ? result.value : Option.none()),
+    Effect.map((result) => (Option.isSome(result) ? result.value : Option.none())),
   )
 
 const makeService = <Requirements>(
   client: ReturnType<typeof HatchetClient.init>,
   options: HatchetOptions,
   declarationsToLoad: ReadonlyArray<Task.Any<Requirements>>,
-): Effect.Effect<
-  Hatchet.Service,
-  HatchetSdkError,
-  Scope.Scope | Requirements
-> =>
-  Effect.gen(function*() {
+): Effect.Effect<Hatchet.Service, HatchetSdkError, Scope.Scope | Requirements> =>
+  Effect.gen(function* () {
     const tasks = Registry.make()
     const declarations = new Map<string, LiveDeclaration>()
     const taskIdentities = new Set<object>()
@@ -383,41 +324,34 @@ const makeService = <Requirements>(
           input,
           task._tag === "Durable"
             ? {
-              ...baseContext,
-              invocationCount: sdkContext.invocationCount ?? 0,
-            }
+                ...baseContext,
+                invocationCount: sdkContext.invocationCount ?? 0,
+              }
             : baseContext,
         )
         if (!stored) {
           return Promise.reject(new MissingTaskError({ taskName: task.name }))
         }
-        const encoded = Effect.raceFirst(
-          abortSignalEffect(sdkContext.abortController.signal),
-          stored,
-        ).pipe(
+        const encoded = Effect.raceFirst(abortSignalEffect(sdkContext.abortController.signal), stored).pipe(
           Effect.flatMap((value) =>
             task.outputSchema
               ? Schema.encodeUnknownEffect(task.outputSchema)(value).pipe(
-                Effect.mapError(
-                  (issue) =>
-                    new TaskSchemaError({
-                      taskName: task.name,
-                      phase: "output",
-                      issue,
-                    }),
-                ),
-              )
-              : Effect.succeed(value)
+                  Effect.mapError(
+                    (issue) =>
+                      new TaskSchemaError({
+                        taskName: task.name,
+                        phase: "output",
+                        issue,
+                      }),
+                  ),
+                )
+              : Effect.succeed(value),
           ),
         )
         return Effect.runPromiseExit(Effect.scoped(encoded)).then((exit) => {
           if (!Exit.isSuccess(exit)) throw new LiveCallbackError(exit.cause)
           if (!isTransportValue(exit.value)) {
-            throw new LiveCallbackError(
-              Cause.die(
-                new TypeError("live callback output is not transportable"),
-              ),
-            )
+            throw new LiveCallbackError(Cause.die(new TypeError("live callback output is not transportable")))
           }
           return { value: exit.value }
         })
@@ -428,11 +362,10 @@ const makeService = <Requirements>(
         ...(on === undefined ? {} : { on }),
         fn,
       }
-      const declaration = task._tag === "Durable"
-        ? client.durableTask<JsonObject, LiveOutputEnvelope>(
-          declarationOptions,
-        )
-        : client.task<JsonObject, LiveOutputEnvelope>(declarationOptions)
+      const declaration =
+        task._tag === "Durable"
+          ? client.durableTask<JsonObject, LiveOutputEnvelope>(declarationOptions)
+          : client.task<JsonObject, LiveOutputEnvelope>(declarationOptions)
       declarations.set(task.name, declaration)
       taskIdentities.add(task)
     }
@@ -447,32 +380,22 @@ const makeService = <Requirements>(
         try: () =>
           client.worker(options.worker.name, {
             workflows,
-            ...(options.worker.slots === undefined
-              ? {}
-              : { slots: options.worker.slots }),
-            ...(options.worker.labels === undefined
-              ? {}
-              : { labels: options.worker.labels }),
-            ...(options.worker.handleKill === undefined
-              ? {}
-              : { handleKill: options.worker.handleKill }),
+            ...(options.worker.slots === undefined ? {} : { slots: options.worker.slots }),
+            ...(options.worker.labels === undefined ? {} : { labels: options.worker.labels }),
+            ...(options.worker.handleKill === undefined ? {} : { handleKill: options.worker.handleKill }),
           }),
         catch: (originalCause) => sdkError("client.worker", originalCause, options.worker.name),
       }),
       (worker, exit) =>
         Effect.uninterruptible(
-          Effect.gen(function*() {
+          Effect.gen(function* () {
             closing = true
             const stopped = yield* Effect.tryPromise({
               try: () => worker.stop(),
               catch: (originalCause) => new WorkerStopDefect(originalCause),
             }).pipe(
               Effect.timeout(options.worker.stopTimeoutMs ?? 5_000),
-              Effect.mapError((cause) =>
-                cause instanceof WorkerStopDefect
-                  ? cause
-                  : new WorkerStopDefect(cause)
-              ),
+              Effect.mapError((cause) => (cause instanceof WorkerStopDefect ? cause : new WorkerStopDefect(cause))),
               Effect.interruptible,
               Effect.exit,
             )
@@ -484,9 +407,7 @@ const makeService = <Requirements>(
               }
               const timedOut = Cause.isTimeoutError(stopDefect.originalCause)
               yield* Effect.logError(
-                timedOut
-                  ? "Hatchet worker stop timed out"
-                  : "Hatchet worker stop failed during failed scope cleanup",
+                timedOut ? "Hatchet worker stop timed out" : "Hatchet worker stop failed during failed scope cleanup",
                 { workerName: options.worker.name, operation: "worker.stop" },
               )
               if (Exit.isFailure(exit)) {
@@ -497,87 +418,60 @@ const makeService = <Requirements>(
           }),
         ),
     )
-    const started = yield* Effect.try({
+    startFiber = yield* Effect.tryPromise({
       try: () => worker.start(),
       catch: (originalCause) => sdkError("worker.start", originalCause, options.worker.name),
-    })
-    startFiber = yield* Effect.tryPromise({
-      try: () => started,
-      catch: (originalCause) => sdkError("worker.start", originalCause, options.worker.name),
-    }).pipe(Effect.forkScoped)
+    }).pipe(Effect.forkScoped({ startImmediately: true }))
     yield* Effect.tryPromise({
       try: () => worker.waitUntilReady(options.worker.readyTimeoutMs),
       catch: (originalCause) => sdkError("worker.waitUntilReady", originalCause, options.worker.name),
     })
 
     const ensureKnown = (task: object & { readonly name: string }) =>
-      taskIdentities.has(task)
-        ? Effect.void
-        : Effect.fail(new MissingTaskError({ taskName: task.name }))
+      taskIdentities.has(task) ? Effect.void : Effect.fail(new MissingTaskError({ taskName: task.name }))
 
     const ensureOpen = (operation: string) =>
       closing
-        ? Effect.fail(
-          sdkError(
-            operation,
-            new Error("worker scope is closing"),
-            options.worker.name,
-          ),
-        )
+        ? Effect.fail(sdkError(operation, new Error("worker scope is closing"), options.worker.name))
         : Effect.void
 
-    const encodeInput = <
-      Name extends string,
-      Input,
-      Output,
-      Error,
-      TaskRequirements,
-    >(
+    const encodeInput = <Name extends string, Input, Output, Error, TaskRequirements>(
       task: Task.Of<Name, Input, Output, Error, TaskRequirements>,
       input: unknown,
       operation: string,
-    ): Effect.Effect<
-      JsonObject,
-      MissingTaskError | TaskSchemaError | HatchetSdkError
-    > =>
+    ): Effect.Effect<JsonObject, MissingTaskError | TaskSchemaError | HatchetSdkError> =>
       ensureKnown(task).pipe(
         Effect.andThen(
           task.inputSchema
             ? Schema.encodeUnknownEffect(task.inputSchema)(input).pipe(
-              Effect.mapError(
-                (issue) =>
-                  new TaskSchemaError({
-                    taskName: task.name,
-                    phase: "input",
-                    issue,
-                  }),
-              ),
-            )
+                Effect.mapError(
+                  (issue) =>
+                    new TaskSchemaError({
+                      taskName: task.name,
+                      phase: "input",
+                      issue,
+                    }),
+                ),
+              )
             : Effect.succeed(input),
         ),
         Effect.flatMap((value) =>
           isTransportObject(value)
             ? Effect.succeed(value)
             : Effect.fail(
-              sdkError(
-                operation,
-                new TypeError(
-                  "live task input must encode to a transportable JsonObject",
+                sdkError(
+                  operation,
+                  new TypeError("live task input must encode to a transportable JsonObject"),
+                  task.name,
                 ),
-                task.name,
               ),
-            )
         ),
       )
 
     const runNoWait: Hatchet.Service["runNoWait"] = (task, input) =>
-      Effect.gen(function*() {
+      Effect.gen(function* () {
         yield* ensureOpen("worker.run")
-        const encodedInput = yield* encodeInput(
-          task,
-          input,
-          "task.runNoWait.input",
-        )
+        const encodedInput = yield* encodeInput(task, input, "task.runNoWait.input")
         const declaration = declarations.get(task.name)
         if (!declaration) {
           return yield* new MissingTaskError({ taskName: task.name })
@@ -598,11 +492,11 @@ const makeService = <Requirements>(
             Effect.try({
               try: () => makeRunId(rawId),
               catch: (originalCause) => sdkError("run.runId", originalCause, task.name),
-            })
+            }),
           ),
           Effect.tapError(() => compensate),
         )
-        const awaitOutput = Effect.gen(function*() {
+        const awaitOutput = Effect.gen(function* () {
           const envelope = yield* Effect.tryPromise({
             try: () => reference.output,
             catch: (originalCause) => sdkError("run.output", originalCause, id),
@@ -616,9 +510,7 @@ const makeService = <Requirements>(
             return yield* sdkError("run.output", envelope, id)
           }
           if (!task.outputSchema) return envelope.value as never
-          return yield* Schema.decodeUnknownEffect(task.outputSchema)(
-            envelope.value,
-          ).pipe(
+          return yield* Schema.decodeUnknownEffect(task.outputSchema)(envelope.value).pipe(
             Effect.mapError(
               (issue) =>
                 new TaskSchemaError({
@@ -639,22 +531,20 @@ const makeService = <Requirements>(
       })
 
     const createCron: Hatchet.Service["createCron"] = (task, cronOptions) =>
-      Effect.gen(function*() {
+      Effect.gen(function* () {
         yield* CronValidation.validateCreate(cronOptions)
         yield* ensureKnown(task)
         const encoded = task.inputSchema
-          ? yield* Schema.encodeUnknownEffect(task.inputSchema)(
-            cronOptions.input,
-          ).pipe(
-            Effect.mapError(
-              (issue) =>
-                new TaskSchemaError({
-                  taskName: task.name,
-                  phase: "input",
-                  issue,
-                }),
-            ),
-          )
+          ? yield* Schema.encodeUnknownEffect(task.inputSchema)(cronOptions.input).pipe(
+              Effect.mapError(
+                (issue) =>
+                  new TaskSchemaError({
+                    taskName: task.name,
+                    phase: "input",
+                    issue,
+                  }),
+              ),
+            )
           : cronOptions.input
         const input = yield* CronValidation.validateInput(encoded)
         const result = yield* Effect.tryPromise({
@@ -666,9 +556,7 @@ const makeService = <Requirements>(
               ...(cronOptions.additionalMetadata === undefined
                 ? {}
                 : { additionalMetadata: cronOptions.additionalMetadata }),
-              ...(cronOptions.priority === undefined
-                ? {}
-                : { priority: cronOptions.priority }),
+              ...(cronOptions.priority === undefined ? {} : { priority: cronOptions.priority }),
             }),
           catch: (cause) => sdkError("cron.create", cause),
         }).pipe(Effect.result)
@@ -695,11 +583,7 @@ const makeService = <Requirements>(
         return yield* result.failure
       })
 
-    const pushEvent: Hatchet.Service["pushEvent"] = (
-      key,
-      payload,
-      eventOptions,
-    ) =>
+    const pushEvent: Hatchet.Service["pushEvent"] = (key, payload, eventOptions) =>
       Hatchet.validateEvent(key, payload, eventOptions).pipe(
         Effect.andThen(ensureOpen("event.push")),
         Effect.andThen(
@@ -710,24 +594,20 @@ const makeService = <Requirements>(
         ),
         Effect.flatMap((event) =>
           typeof event === "object" &&
-            event !== null &&
-            "eventId" in event &&
-            typeof event.eventId === "string" &&
-            event.eventId.length > 0
+          event !== null &&
+          "eventId" in event &&
+          typeof event.eventId === "string" &&
+          event.eventId.length > 0
             ? Effect.succeed({
-              eventId: event.eventId,
-              key,
-              payload,
-              ...(eventOptions?.additionalMetadata === undefined
-                ? {}
-                : { additionalMetadata: eventOptions.additionalMetadata }),
-              ...(eventOptions?.scope === undefined
-                ? {}
-                : { scope: eventOptions.scope }),
-            })
-            : Effect.fail(
-              sdkError("event.push", { reason: "InvalidResponse" }, key),
-            )
+                eventId: event.eventId,
+                key,
+                payload,
+                ...(eventOptions?.additionalMetadata === undefined
+                  ? {}
+                  : { additionalMetadata: eventOptions.additionalMetadata }),
+                ...(eventOptions?.scope === undefined ? {} : { scope: eventOptions.scope }),
+              })
+            : Effect.fail(sdkError("event.push", { reason: "InvalidResponse" }, key)),
         ),
       )
 
@@ -736,20 +616,11 @@ const makeService = <Requirements>(
       run: (task, input) => runNoWait(task, input).pipe(Effect.flatMap((handle) => handle.await)),
       runNoWait,
       schedule: (task, input, timing) =>
-        Effect.gen(function*() {
-          const encodedInput = yield* encodeInput(
-            task,
-            input,
-            "task.schedule.input",
-          )
+        Effect.gen(function* () {
+          const encodedInput = yield* encodeInput(task, input, "task.schedule.input")
           const now = yield* Clock.currentTimeMillis
-          const triggerAt = timing._tag === "At"
-            ? timing.at
-            : new Date(now + Duration.toMillis(timing.delay))
-          if (
-            !Number.isFinite(triggerAt.getTime()) ||
-            triggerAt.getTime() <= now
-          ) {
+          const triggerAt = timing._tag === "At" ? timing.at : new Date(now + Duration.toMillis(timing.delay))
+          if (!Number.isFinite(triggerAt.getTime()) || triggerAt.getTime() <= now) {
             return yield* new InvalidTimeError({
               field: timing._tag === "At" ? "at" : "delay",
               originalCause: timing,
@@ -770,11 +641,7 @@ const makeService = <Requirements>(
           try: () => client.scheduled.get(id),
           catch: (cause) => sdkError("schedule.get", cause, id),
         }).pipe(
-          Effect.flatMap((response) =>
-            scheduleRecord(response, "schedule.get").pipe(
-              Effect.map(Option.some),
-            )
-          ),
+          Effect.flatMap((response) => scheduleRecord(response, "schedule.get").pipe(Effect.map(Option.some))),
           Effect.catchIf(isNotFound, () => Effect.succeed(Option.none())),
         ),
       deleteSchedule: (id) =>
@@ -800,23 +667,15 @@ const makeService = <Requirements>(
           Effect.catchIf(isNotFound, () => Effect.succeed(Option.none())),
         ),
       listCrons: (listOptions = {}) =>
-        Effect.gen(function*() {
+        Effect.gen(function* () {
           yield* CronValidation.validateList(listOptions)
           const response = yield* Effect.tryPromise({
             try: () =>
               client.crons.list({
-                ...(listOptions.taskName === undefined
-                  ? {}
-                  : { workflow: listOptions.taskName }),
-                ...(listOptions.name === undefined
-                  ? {}
-                  : { name: listOptions.name }),
-                ...(listOptions.offset === undefined
-                  ? {}
-                  : { offset: listOptions.offset }),
-                ...(listOptions.limit === undefined
-                  ? {}
-                  : { limit: listOptions.limit }),
+                ...(listOptions.taskName === undefined ? {} : { workflow: listOptions.taskName }),
+                ...(listOptions.name === undefined ? {} : { name: listOptions.name }),
+                ...(listOptions.offset === undefined ? {} : { offset: listOptions.offset }),
+                ...(listOptions.limit === undefined ? {} : { limit: listOptions.limit }),
               }),
             catch: (cause) => sdkError("cron.list", cause),
           })
@@ -834,11 +693,8 @@ const makeService = <Requirements>(
             () => true,
             (deleteError: HatchetSdkError) => {
               if (isNotFound(deleteError)) return Effect.succeed(false)
-              return verifyCronAbsentWithinBound(
-                (query) => client.crons.list(query),
-                id,
-              ).pipe(
-                Effect.flatMap((absent) => absent ? Effect.succeed(false) : Effect.fail(deleteError)),
+              return verifyCronAbsentWithinBound((query) => client.crons.list(query), id).pipe(
+                Effect.flatMap((absent) => (absent ? Effect.succeed(false) : Effect.fail(deleteError))),
               )
             },
           ),
@@ -846,15 +702,11 @@ const makeService = <Requirements>(
     }
   })
 
-const invalid = (
-  field: string,
-  message: string,
-): Effect.Effect<never, InvalidHatchetConfiguration> => Effect.fail(new InvalidHatchetConfiguration({ field, message }))
+const invalid = (field: string, message: string): Effect.Effect<never, InvalidHatchetConfiguration> =>
+  Effect.fail(new InvalidHatchetConfiguration({ field, message }))
 
-const validate = (
-  options: HatchetOptions,
-): Effect.Effect<void, InvalidHatchetConfiguration> =>
-  Effect.gen(function*() {
+const validate = (options: HatchetOptions): Effect.Effect<void, InvalidHatchetConfiguration> =>
+  Effect.gen(function* () {
     if (Redacted.value(options.client.token).trim().length === 0) {
       return yield* invalid("client.token", "client.token is required")
     }
@@ -863,20 +715,13 @@ const validate = (
     }
     if (
       options.worker.slots !== undefined &&
-      (options.worker.labels !== undefined ||
-        options.worker.handleKill !== undefined)
+      (options.worker.labels !== undefined || options.worker.handleKill !== undefined)
     ) {
-      return yield* invalid(
-        "worker",
-        "slots cannot be combined with labels or handleKill",
-      )
+      return yield* invalid("worker", "slots cannot be combined with labels or handleKill")
     }
     for (const [field, value] of Object.entries(options.client)) {
       if (typeof value === "string" && value.length === 0) {
-        return yield* invalid(
-          `client.${field}`,
-          "explicit client strings must not be empty",
-        )
+        return yield* invalid(`client.${field}`, "explicit client strings must not be empty")
       }
     }
   })
@@ -886,14 +731,11 @@ export const layer = <Requirements>(
   tasks: ReadonlyArray<Task.Any<Requirements>>,
 ): Layer.Layer<
   Hatchet.Hatchet,
-  | InvalidHatchetConfiguration
-  | HatchetConfigError
-  | HatchetSdkError
-  | TaskDeclarationError,
+  InvalidHatchetConfiguration | HatchetConfigError | HatchetSdkError | TaskDeclarationError,
   Requirements
 > =>
   Layer.effect(Hatchet.Hatchet)(
-    Effect.gen(function*() {
+    Effect.gen(function* () {
       yield* validate(options)
       yield* Effect.try({
         try: () => Declarations.declarations(tasks),
@@ -901,32 +743,22 @@ export const layer = <Requirements>(
           cause instanceof TaskDeclarationError
             ? cause
             : new TaskDeclarationError({
-              taskName: "<unknown>",
-              field: "declaration",
-              reason: "InvalidMetadata",
-            }),
+                taskName: "<unknown>",
+                field: "declaration",
+                reason: "InvalidMetadata",
+              }),
       })
       const client = options.client
       const sdkClient = yield* Effect.try({
         try: () =>
           HatchetClient.init({
             token: Redacted.value(client.token),
-            ...(client.hostPort === undefined
-              ? {}
-              : { host_port: client.hostPort }),
+            ...(client.hostPort === undefined ? {} : { host_port: client.hostPort }),
             ...(client.apiUrl === undefined ? {} : { api_url: client.apiUrl }),
-            ...(client.tenantId === undefined
-              ? {}
-              : { tenant_id: client.tenantId }),
-            ...(client.namespace === undefined
-              ? {}
-              : { namespace: client.namespace }),
-            ...(client.logLevel === undefined
-              ? {}
-              : { log_level: client.logLevel }),
-            ...(client.tlsStrategy === undefined
-              ? {}
-              : { tls_config: { tls_strategy: client.tlsStrategy } }),
+            ...(client.tenantId === undefined ? {} : { tenant_id: client.tenantId }),
+            ...(client.namespace === undefined ? {} : { namespace: client.namespace }),
+            ...(client.logLevel === undefined ? {} : { log_level: client.logLevel }),
+            ...(client.tlsStrategy === undefined ? {} : { tls_config: { tls_strategy: client.tlsStrategy } }),
           }),
         catch: (originalCause) => new HatchetConfigError({ field: "client", originalCause }),
       })

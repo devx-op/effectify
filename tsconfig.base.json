@@ -37,8 +37,7 @@
       }
     ],
     "noUncheckedSideEffectImports": false,
-    "types": ["*"],
-    "ignoreDeprecations": "6.0"
+    "types": ["*"]
   },
   "$schema": "https://raw.githubusercontent.com/Effect-TS/tsgo/refs/heads/main/schema.json"
 }

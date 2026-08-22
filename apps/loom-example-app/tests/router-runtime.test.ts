@@ -16,7 +16,7 @@ const makeTestTodoService = (seed: ReadonlyArray<TodoItem>) => {
 
   const todoService: TodoServiceApi = {
     dispatch: (command) =>
-      Effect.gen(function*() {
+      Effect.gen(function* () {
         calls.dispatch += 1
 
         switch (command.intent) {
@@ -25,14 +25,14 @@ const makeTestTodoService = (seed: ReadonlyArray<TodoItem>) => {
             return { intent: command.intent }
           case "toggle":
             if (!todos.some((todo) => todo.id === command.id)) {
-              return yield* Effect.fail(new TodoNotFoundError({ id: command.id }))
+              return yield* new TodoNotFoundError({ id: command.id })
             }
 
-            todos = todos.map((todo) => todo.id === command.id ? { ...todo, completed: !todo.completed } : todo)
+            todos = todos.map((todo) => (todo.id === command.id ? { ...todo, completed: !todo.completed } : todo))
             return { intent: command.intent }
           case "remove":
             if (!todos.some((todo) => todo.id === command.id)) {
-              return yield* Effect.fail(new TodoNotFoundError({ id: command.id }))
+              return yield* new TodoNotFoundError({ id: command.id })
             }
 
             todos = todos.filter((todo) => todo.id !== command.id)
@@ -79,9 +79,7 @@ describe("loom example app todo router runtime", () => {
   })
 
   it("executes the initial loader through the route runtime", async () => {
-    const { calls, todoService } = makeTestTodoService([
-      { completed: false, id: 1, title: "Ship the loader demo" },
-    ])
+    const { calls, todoService } = makeTestTodoService([{ completed: false, id: 1, title: "Ship the loader demo" }])
     const runtime = createTodoRouteRuntime({ todoService })
 
     const loaded = await runtime.load()
@@ -95,9 +93,7 @@ describe("loom example app todo router runtime", () => {
   })
 
   it("revalidates the loader after a successful action", async () => {
-    const { calls, todoService } = makeTestTodoService([
-      { completed: false, id: 1, title: "Ship the loader demo" },
-    ])
+    const { calls, todoService } = makeTestTodoService([{ completed: false, id: 1, title: "Ship the loader demo" }])
     const runtime = createTodoRouteRuntime({ todoService })
 
     await runtime.load()
@@ -123,9 +119,7 @@ describe("loom example app todo router runtime", () => {
   })
 
   it("returns invalid-input results without dispatching the action", async () => {
-    const { calls, todoService } = makeTestTodoService([
-      { completed: false, id: 1, title: "Ship the loader demo" },
-    ])
+    const { calls, todoService } = makeTestTodoService([{ completed: false, id: 1, title: "Ship the loader demo" }])
     const runtime = createTodoRouteRuntime({ todoService })
 
     await runtime.load()
@@ -136,11 +130,13 @@ describe("loom example app todo router runtime", () => {
     expect(result).toEqual({
       action: {
         _tag: "invalid-input",
-        issues: [{
-          _tag: "LoomRouterActionInputFailure",
-          input: { intent: "create", title: "   " },
-          message: expect.stringContaining("length of at least 1"),
-        }],
+        issues: [
+          {
+            _tag: "LoomRouterActionInputFailure",
+            input: { intent: "create", title: "   " },
+            message: expect.stringContaining("length of at least 1"),
+          },
+        ],
         route: result.action.route,
         submission: { intent: "create", title: "   " },
       },
@@ -149,9 +145,7 @@ describe("loom example app todo router runtime", () => {
   })
 
   it("surfaces typed route action failures without revalidating the loader", async () => {
-    const { calls, todoService } = makeTestTodoService([
-      { completed: false, id: 1, title: "Ship the loader demo" },
-    ])
+    const { calls, todoService } = makeTestTodoService([{ completed: false, id: 1, title: "Ship the loader demo" }])
     const runtime = createTodoRouteRuntime({ todoService })
 
     await runtime.load()

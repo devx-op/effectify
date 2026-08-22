@@ -13,7 +13,6 @@
   "compilerOptions": {
     "paths": {
       "@effectify/hatchet": ["./src/index.ts"]
-    },
-    "ignoreDeprecations": "6.0"
+    }
   }
 }

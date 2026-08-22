@@ -42,9 +42,13 @@ describe("@effectify/loom-router loaders/actions runtime", () => {
           content: "user-screen",
         }),
         {
-          load: async (
-            { context, services }: { readonly context: Router.Context; readonly services: { readonly prefix: string } },
-          ) => {
+          load: async ({
+            context,
+            services,
+          }: {
+            readonly context: Router.Context
+            readonly services: { readonly prefix: string }
+          }) => {
             calls.loader += 1
 
             return `${services.prefix}:${context.params.userId}`
@@ -53,12 +57,13 @@ describe("@effectify/loom-router loaders/actions runtime", () => {
         },
       ),
       {
-        handle: async (
-          { input, services }: {
-            readonly input: { readonly title: string }
-            readonly services: { readonly suffix: string }
-          },
-        ) => {
+        handle: async ({
+          input,
+          services,
+        }: {
+          readonly input: { readonly title: string }
+          readonly services: { readonly suffix: string }
+        }) => {
           calls.action += 1
 
           return `${input.title}:${services.suffix}`
@@ -85,9 +90,13 @@ describe("@effectify/loom-router loaders/actions runtime", () => {
         content: "user-screen",
       }),
       {
-        load: async (
-          { context, services }: { readonly context: Router.Context; readonly services: { readonly prefix: string } },
-        ) => `${services.prefix}:${context.params.userId}`,
+        load: async ({
+          context,
+          services,
+        }: {
+          readonly context: Router.Context
+          readonly services: { readonly prefix: string }
+        }) => `${services.prefix}:${context.params.userId}`,
         mapError: (cause: unknown) => ({ message: String(cause) }),
       },
     )
@@ -200,12 +209,13 @@ describe("@effectify/loom-router loaders/actions runtime", () => {
             ? Submission.succeed({ title })
             : Submission.fail("title is required", input)
         }),
-        handle: async (
-          { input, services }: {
-            readonly input: { readonly title: string }
-            readonly services: { readonly suffix: string }
-          },
-        ) => {
+        handle: async ({
+          input,
+          services,
+        }: {
+          readonly input: { readonly title: string }
+          readonly services: { readonly suffix: string }
+        }) => {
           if (input.title === "fail") {
             throw new Error("action failed")
           }
@@ -352,7 +362,7 @@ describe("@effectify/loom-router loaders/actions runtime", () => {
           input: Submission.make((submission) =>
             typeof submission.title === "string"
               ? Submission.succeed({ title: submission.title })
-              : Submission.fail("title is required", submission)
+              : Submission.fail("title is required", submission),
           ),
           handle: ({
             input,
@@ -404,10 +414,7 @@ describe("@effectify/loom-router loaders/actions runtime", () => {
       identifier: "users.failure",
       module: {
         component: "user-screen",
-        loader: pipe(
-          () => Effect.fail(new SaveFailure({ message: "loader failed" })),
-          Route.loader(),
-        ),
+        loader: pipe(() => Effect.fail(new SaveFailure({ message: "loader failed" })), Route.loader()),
       },
       path: "/users/:userId",
     })
@@ -421,7 +428,7 @@ describe("@effectify/loom-router loaders/actions runtime", () => {
             input: Submission.make((submission) =>
               typeof submission.title === "string"
                 ? Submission.succeed({ title: submission.title })
-                : Submission.fail("title is required", submission)
+                : Submission.fail("title is required", submission),
             ),
           }),
         ),
@@ -499,7 +506,7 @@ describe("@effectify/loom-router loaders/actions runtime", () => {
           input: Schema.Struct({ title: Schema.String }),
           output: ActionOutput,
           error: SaveFailureSchema,
-          handle: () => Effect.fail(JSON.parse('{"nope":true}')),
+          handle: () => Effect.fail({ nope: true }),
         }),
       },
       path: "/users/:userId/invalid-action",
@@ -516,9 +523,9 @@ describe("@effectify/loom-router loaders/actions runtime", () => {
     )
 
     if (
-      !Router.isResolveSuccess(schemaResolved)
-      || !Router.isResolveSuccess(invalidLoaderResolved)
-      || !Router.isResolveSuccess(invalidActionResolved)
+      !Router.isResolveSuccess(schemaResolved) ||
+      !Router.isResolveSuccess(invalidLoaderResolved) ||
+      !Router.isResolveSuccess(invalidActionResolved)
     ) {
       throw new Error("expected resolved routes")
     }

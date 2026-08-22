@@ -13,8 +13,7 @@
     "emitDeclarationOnly": false,
     "forceConsistentCasingInFileNames": true,
     "types": [],
-    "preserveSymlinks": true,
-    "ignoreDeprecations": "6.0"
+    "preserveSymlinks": true
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],
   "references": []

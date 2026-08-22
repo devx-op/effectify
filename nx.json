@@ -21,7 +21,7 @@
     {
       "plugin": "@nx/js/typescript",
       "options": {
-        "compiler": "tsgo",
+        "compiler": "tsc",
         "typecheck": {
           "targetName": "typecheck"
         },

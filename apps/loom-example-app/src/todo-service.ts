@@ -39,14 +39,14 @@ export const initialTodoItems: ReadonlyArray<TodoItem> = [
 export const cloneInitialTodos = (): Array<TodoItem> => initialTodoItems.map((todo) => ({ ...todo }))
 
 export class TodoService extends Context.Service<TodoService>()("LoomExampleTodoService", {
-  make: Effect.gen(function*() {
+  make: Effect.gen(function* () {
     const todosRef = yield* Ref.make(cloneInitialTodos())
     const nextIdRef = yield* Ref.make(initialTodoItems.length + 1)
 
     return {
       list: () => Ref.get(todosRef),
       dispatch: (command: TodoCommand) =>
-        Effect.gen(function*() {
+        Effect.gen(function* () {
           switch (command.intent) {
             case "create": {
               const nextId = yield* Ref.get(nextIdRef)
@@ -65,23 +65,20 @@ export class TodoService extends Context.Service<TodoService>()("LoomExampleTodo
               const current = yield* Ref.get(todosRef)
 
               if (!current.some((todo) => todo.id === command.id)) {
-                return yield* Effect.fail(new TodoNotFoundError({ id: command.id }))
+                return yield* new TodoNotFoundError({ id: command.id })
               }
 
               yield* Ref.update(todosRef, (todos) =>
-                todos.map((todo) => todo.id === command.id ? { ...todo, completed: !todo.completed } : todo))
+                todos.map((todo) => (todo.id === command.id ? { ...todo, completed: !todo.completed } : todo)),
+              )
 
               return { intent: command.intent } satisfies TodoCommandResult
             }
             case "remove": {
               const current = yield* Ref.get(todosRef)
 
-              if (
-                !current.some((todo) =>
-                  todo.id === command.id
-                )
-              ) {
-                return yield* Effect.fail(new TodoNotFoundError({ id: command.id }))
+              if (!current.some((todo) => todo.id === command.id)) {
+                return yield* new TodoNotFoundError({ id: command.id })
               }
 
               yield* Ref.update(todosRef, (todos) => todos.filter((todo) => todo.id !== command.id))
@@ -96,7 +93,7 @@ export class TodoService extends Context.Service<TodoService>()("LoomExampleTodo
           }
         }),
       reset: () =>
-        Effect.gen(function*() {
+        Effect.gen(function* () {
           yield* Ref.set(todosRef, cloneInitialTodos())
           yield* Ref.set(nextIdRef, initialTodoItems.length + 1)
         }),

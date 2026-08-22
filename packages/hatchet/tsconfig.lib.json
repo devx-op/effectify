@@ -12,8 +12,7 @@
     "types": ["node"],
     "paths": {
       "@/*": ["./src/*"]
-    },
-    "ignoreDeprecations": "6.0"
+    }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],
   "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx"],

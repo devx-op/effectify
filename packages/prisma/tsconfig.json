@@ -18,7 +18,6 @@
       "@prisma/effect/*": ["./prisma/generated/effect/*"],
       "@prisma/*": ["./prisma/generated/*"],
       "@effectify/prisma": ["./src/runtime/index.ts"]
-    },
-    "ignoreDeprecations": "6.0"
+    }
   }
 }
