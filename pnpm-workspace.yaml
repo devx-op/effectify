@@ -24,7 +24,6 @@ catalog:
   "@nx/vite": 23.1.1
   "@nx/web": 23.1.1
   "@nx/cypress": 23.1.1
-  "@picocss/pico": ^2.1.1
   "@prisma/adapter-better-sqlite3": 7.9.1
   "@prisma/adapter-pg": 7.9.1
   "@prisma/client": 7.9.1
