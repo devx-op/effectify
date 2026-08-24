@@ -308,6 +308,7 @@ overrides:
   astro>svgo: 4.0.2
   cacache>tar: 7.5.21
   '@remix-run/node>undici': 6.28.0
+  unifont>undici: 8.10.0
   protobufjs: 7.6.5
 
 packageExtensionsChecksum: sha256-HjxFQUIxJewJiwUiMEvcufx4FnW306LFMAT8QY6umFM=
@@ -11675,10 +11676,6 @@ packages:
 
   undici@8.10.0:
     resolution: {integrity: sha512-HvltHd7avK13QIw/oLe4qoOLyoVSoafqJ2jYOrtMRBkbYT31eiBQ8O0ehRKZiEZCMEyLFQNIADpgCWC5fALvYQ==}
-    engines: {node: '>=22.19.0'}
-
-  undici@8.7.0:
-    resolution: {integrity: sha512-N7iQtfyLhIMOFgQubvmLV26svHpO0bqKnAiWotTQCVKCmWrcGbBotPuW1x+xwYZ2VHdSTVUfPQQnlEt1/LouTQ==}
     engines: {node: '>=22.19.0'}
 
   unicode-canonical-property-names-ecmascript@2.0.1:
@@ -25648,8 +25645,6 @@ snapshots:
 
   undici@8.10.0: {}
 
-  undici@8.7.0: {}
-
   unicode-canonical-property-names-ecmascript@2.0.1: {}
 
   unicode-match-property-ecmascript@2.0.0:
@@ -25685,7 +25680,7 @@ snapshots:
     dependencies:
       css-tree: 3.2.1
       ohash: 2.0.11
-      undici: 8.7.0
+      undici: 8.10.0
 
   union@0.5.0:
     dependencies:
