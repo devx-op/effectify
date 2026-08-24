@@ -2,7 +2,7 @@
 
 ## WU1 latest-v7 checkpoint
 
-React Router family is aligned at `7.18.1`; Node is `>=22.22`, React/ReactDOM `19.2.7`, Vite `8.1.3` (`>=7`), verified on Node `25.2.1`, and CI selects Node `22.22.0`. Rollback restores the `7.12.0` catalog and lockfile together and removes WU1 declarations, flags, targets, tests, workflows, and this record.
+React Router family is aligned at `7.18.1`; Node is `>=22.22`, React/ReactDOM `19.2.7`, Vite `8.1.3` (`>=7`), verified on Node `25.2.1`, and CI selects Node `24.19.0`. Rollback restores the `7.12.0` catalog and lockfile together and removes WU1 declarations, flags, targets, tests, workflows, and this record.
 
 Authority: <https://reactrouter.com/upgrading/v7>. Framework Mode uses the Vite plugin, SSR, a custom server entry, nested routes, and route modules. Flags are enabled separately in `apps/react-router-example/react-router.config.ts`; this evidence does not claim browser behavior without a safe no-build request harness.
 
