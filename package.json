@@ -118,7 +118,15 @@
     "overrides": {
       "@types/react": "19.2.17",
       "@types/react-dom": "19.2.3",
-      "cacache>tar": "7.5.21"
+      "@grpc/grpc-js": "1.14.4",
+      "@opentelemetry/core": "2.10.0",
+      "@opentelemetry/resources": "2.10.0",
+      "@opentelemetry/sdk-trace": "2.10.0",
+      "@opentelemetry/sdk-trace-base": "2.10.0",
+      "@protobufjs/utf8": "1.1.2",
+      "axios": "1.19.0",
+      "cacache>tar": "7.5.21",
+      "protobufjs": "7.6.5"
     },
     "onlyBuiltDependencies": [
       "@hatchet-dev/typescript-sdk",
