@@ -127,6 +127,7 @@
       "axios": "1.19.0",
       "astro>svgo": "4.0.2",
       "cacache>tar": "7.5.21",
+      "jsdom>undici": "7.29.0",
       "@remix-run/node>undici": "6.28.0",
       "unifont>undici": "8.10.0",
       "protobufjs": "7.6.5"
