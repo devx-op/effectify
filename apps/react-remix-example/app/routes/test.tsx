@@ -4,7 +4,7 @@ import * as Effect from "effect/Effect"
 import { withActionEffect, withLoaderEffect } from "~/lib/runtime.server"
 
 export const loader = withLoaderEffect(
-  Effect.gen(function*() {
+  Effect.gen(function* () {
     const { request } = yield* LoaderArgsContext
     yield* Effect.log("request", request)
 
@@ -14,12 +14,12 @@ export const loader = withLoaderEffect(
 )
 
 export const action = withActionEffect(
-  Effect.gen(function*() {
+  Effect.gen(function* () {
     const { request } = yield* ActionArgsContext
 
     // Get form data
     const formData = yield* Effect.tryPromise(() => request.formData())
-    const inputValue = formData instanceof FormData ? formData.get("inputValue") as string : ""
+    const inputValue = formData instanceof FormData ? (formData.get("inputValue") as string) : ""
 
     yield* Effect.log("Form value received:", inputValue)
 
@@ -45,19 +45,10 @@ export default function TestRoute() {
       <h2>Test Route - Form with Effect</h2>
 
       {/* Show loader data */}
-      {loaderData.ok ?
-        (
-          <div style={{ marginBottom: "20px", padding: "10px", backgroundColor: "#e8f5e8", borderRadius: "4px" }}>
-            <h3>Loader Data:</h3>
-            <p>{loaderData.data.message}</p>
-          </div>
-        ) :
-        (
-          <div style={{ marginBottom: "20px", padding: "10px", backgroundColor: "#f5e8e8", borderRadius: "4px" }}>
-            <h3>Loader Error:</h3>
-            <p>{loaderData.errors.join(", ")}</p>
-          </div>
-        )}
+      <div style={{ marginBottom: "20px", padding: "10px", backgroundColor: "#e8f5e8", borderRadius: "4px" }}>
+        <h3>Loader Data:</h3>
+        <p>{loaderData.data.message}</p>
+      </div>
 
       {/* Form */}
       <Form method="post" style={{ marginBottom: "20px" }}>
@@ -99,18 +90,18 @@ export default function TestRoute() {
       {actionData && (
         <div style={{ padding: "10px", backgroundColor: "#e8f4fd", borderRadius: "4px" }}>
           <h3>Action Result:</h3>
-          {actionData.ok ?
-            (
-              <div>
-                <p>
-                  <strong>Message:</strong> {actionData.response.message}
-                </p>
-                <p>
-                  <strong>Sent value:</strong> "{actionData.response.inputValue}"
-                </p>
-              </div>
-            ) :
-            <p style={{ color: "red" }}>Error: {String(actionData.errors)}</p>}
+          {actionData.ok ? (
+            <div>
+              <p>
+                <strong>Message:</strong> {actionData.response.message}
+              </p>
+              <p>
+                <strong>Sent value:</strong> "{actionData.response.inputValue}"
+              </p>
+            </div>
+          ) : (
+            <p style={{ color: "red" }}>Error: {String(actionData.errors)}</p>
+          )}
         </div>
       )}
 
