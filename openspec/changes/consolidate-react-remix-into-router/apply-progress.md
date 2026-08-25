@@ -1321,3 +1321,12 @@ Deferred parent-owned actions, preserved byte-for-byte:
 - [ ] After work unit 11, evaluate the final RR8-only evidence and close the OpenSpec change only if cleanup, release surfaces, scenario ledger, rollback record, and protected RR8 `8.3.0` matrix are all complete; otherwise reopen the applicable gate. <!-- sdd-owner: parent -->
 
 Lifecycle routing returns to the parent for the deletion decision. No WU10/WU11 work, source deletion, commit, push, PR, review, receipt, attempt settlement, or parent-owned gate action was performed.
+
+## Parent Gate Decision — Retirement Deletion Authorized
+
+- Decision date: 2026-08-25.
+- Reviewer/maintainer: `kattsushi`.
+- Preconditions accepted: verifier OPEN, 24/24 consumers complete, 29/29 scenarios complete, 0 pending rows, rollback `@effectify/react-remix@0.5.12-alpha.1`, protected React Router exact `8.3.0`, and green CI through PR9.
+- Authorization: execute WU10a source deletion and WU10b graph/release/lockfile cleanup as one non-releasable feature-branch transaction. Do not release between them.
+- Scope guard: delete only the transitional bridge package, RR7 example/local adapter, and their obsolete workspace/release/docs/lockfile references; do not simplify transferred RR8 scenarios or change RR8 `8.3.0`.
+- Rollback remains the exact recorded bridge version and matching RR7 `7.18.2` importer state until final RR8-only verification closes the change.
