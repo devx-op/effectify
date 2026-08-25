@@ -828,3 +828,14 @@ Deferred parent-owned lifecycle actions, preserved byte-for-byte:
 - [ ] After work unit 11, evaluate the final RR8-only evidence and close the OpenSpec change only if cleanup, release surfaces, scenario ledger, rollback record, and protected RR8 `8.3.0` matrix are all complete; otherwise reopen the applicable gate. <!-- sdd-owner: parent -->
 
 Mandatory next boundary: parent-owned human uniqueness/reviewer gate. Return to `parent-lifecycle`; do not recommend or start apply/WU8.
+
+## Parent Gate Decision — Reviewed RR8 Scenario Matrix
+
+- Decision date: 2026-08-25.
+- Reviewer: `kattsushi`.
+- Accepted complete `existing-rr8` rows: `shell`, `navigation`, `auth-loader-guard`, `auth-action-guard`, `test-loader-success`, `test-blank-validation`, `pico-styling`, `rr7-typegen`, `rr7-hydration`, and `rr7-build`.
+- Accepted product transfer: exactly the six `/demo` loader/action success, failure, and redirect rows as one coherent RR8 slice.
+- Accepted removals: `api-placeholder` because it has no executable behavior, and `mock-store` because copying example-local state would duplicate and weaken the protected Prisma-backed example.
+- Accepted `existing-rr8` rows requiring focused evidence before completion: `login`, `signup`, `auth-api`, `todo-create`, `todo-update`, `todo-delete`, `todo-toggle`, `todo-validation`, `test-action-success`, `rr7-route-map`, and `rr7-ssr`.
+- WU8 is released only for the bounded `/demo` product transfer and focused evidence-hardening tests for those 11 existing rows. No other product behavior is authorized.
+- Retirement remains **CLOSED** until all scenario and consumer rows are complete and the later parent-owned deletion gate is explicitly accepted.
