@@ -1,4 +1,4 @@
-import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node"
+import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router"
 import * as Context from "effect/Context"
 
 /**
@@ -9,16 +9,10 @@ import * as Context from "effect/Context"
  * For request-scoped contexts that are provided at runtime, we use
  * Context.Service with a minimal make constructor.
  */
-export class ActionArgsContext extends Context.Service<
-  ActionArgsContext,
-  ActionFunctionArgs
->()("ActionArgsContext") {}
+export class ActionArgsContext extends Context.Service<ActionArgsContext, ActionFunctionArgs>()("ActionArgsContext") {}
 
 /**
  * LoaderArgsContext provides access to React Router loader arguments.
  * Used in Effect handlers to access request data during route loading.
  */
-export class LoaderArgsContext extends Context.Service<
-  LoaderArgsContext,
-  LoaderFunctionArgs
->()("LoaderArgsContext") {}
+export class LoaderArgsContext extends Context.Service<LoaderArgsContext, LoaderFunctionArgs>()("LoaderArgsContext") {}

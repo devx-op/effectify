@@ -1,4 +1,4 @@
-import { type ActionFunctionArgs, json, type LoaderFunctionArgs, redirect } from "@remix-run/node"
+import { type ActionFunctionArgs, type LoaderFunctionArgs, redirect } from "react-router"
 import * as Cause from "effect/Cause"
 import * as Effect from "effect/Effect"
 import * as Exit from "effect/Exit"
@@ -7,6 +7,7 @@ import * as Layer from "effect/Layer"
 import * as ManagedRuntime from "effect/ManagedRuntime"
 import { ActionArgsContext, LoaderArgsContext } from "./context.js"
 import { type HttpResponse, matchHttpResponse } from "./http-response.js"
+import { json } from "./json.js"
 
 // Safe type for redirect init parameter to avoid undici/undici-types conflicts
 type SafeRedirectInit = {

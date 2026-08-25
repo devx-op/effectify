@@ -18,6 +18,14 @@
         "cwd": "packages/react/remix"
       }
     },
+    "dependency:isolation": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "command": "node scripts/verify-react-router-manifests.mjs --stage=dependency-isolation",
+        "cwd": "{workspaceRoot}"
+      }
+    },
     "build": {
       "executor": "@nx/js:tsc",
       "outputs": ["{options.outputPath}"],

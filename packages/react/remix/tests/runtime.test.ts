@@ -1,4 +1,4 @@
-import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node"
+import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import * as Logger from "effect/Logger"
@@ -10,13 +10,17 @@ import { make } from "../src/lib/runtime.js"
 const loaderArgs = (): LoaderFunctionArgs => ({
   context: {},
   params: { routeId: "private" },
+  pattern: "/private",
   request: new Request("https://effectify.dev/private"),
+  url: new URL("https://effectify.dev/private"),
 })
 
 const actionArgs = (): ActionFunctionArgs => ({
   context: {},
   params: { routeId: "todos" },
+  pattern: "/todos",
   request: new Request("https://effectify.dev/todos", { method: "POST" }),
+  url: new URL("https://effectify.dev/todos"),
 })
 
 const runtimeWithLogs = () => {

@@ -3,4 +3,5 @@ export * from "./lib/context.js"
 // export * as HttpApiHandler from "./lib/http-api-handler.js"
 export * from "./lib/http-response.js"
 export * as Runtime from "./lib/runtime.js"
-export { json } from "@remix-run/node"
+/** @deprecated Use native `Response.json` when migrating to `@effectify/react-router`. */
+export { json } from "./lib/json.js"
