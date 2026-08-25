@@ -15,7 +15,7 @@ const loadRouteConfig = async () => {
 }
 
 describe("React Router 7 framework configuration", () => {
-  it("pins the complete app-owned RR7 family and uses official framework scripts", async () => {
+  it("stages the complete app-owned RR7 family while Remix remains executable", async () => {
     const manifest = await readJson("package.json")
 
     expect({
@@ -29,32 +29,39 @@ describe("React Router 7 framework configuration", () => {
       node: "7.18.2",
       serve: "7.18.2",
     })
+    expect({
+      dev: manifest.devDependencies?.["@remix-run/dev"],
+      node: manifest.dependencies?.["@remix-run/node"],
+      react: manifest.dependencies?.["@remix-run/react"],
+      serve: manifest.dependencies?.["@remix-run/serve"],
+    }).toEqual({ dev: "2.17.5", node: "2.17.5", react: "2.17.5", serve: "2.17.5" })
     expect(manifest.scripts).toMatchObject({
-      build: "react-router build",
-      dev: "react-router dev",
-      start: "react-router-serve build/server/index.js",
+      build: "remix vite:build",
+      dev: "remix vite:dev",
+      start: "remix-serve ./build/server/index.js",
       typegen: "react-router typegen",
       typecheck: "tsc",
     })
   })
 
-  it("uses the native React Router Vite plugin with server rendering enabled", async () => {
+  it("keeps Remix execution active beside the declarative RR7 SSR config", async () => {
     const [viteSource, frameworkConfig] = await Promise.all([
       readSource("vite.config.ts"),
       import(new URL("react-router.config.ts", appRoot).href),
     ])
 
-    expect(viteSource).toContain('import { reactRouter } from "@react-router/dev/vite"')
-    expect(viteSource).toContain("plugins: [reactRouter()]")
-    expect(viteSource).not.toContain("@remix-run/dev")
+    expect(viteSource).toContain('import { vitePlugin as remix } from "@remix-run/dev"')
+    expect(viteSource).toContain("plugins: [remix()]")
+    expect(viteSource).not.toContain("@react-router/dev/vite")
     expect(frameworkConfig.default).toEqual({ ssr: true })
   })
 
-  it("includes generated route types and orders typegen before typecheck and build", async () => {
+  it("includes generated route types with their root and orders typegen before consumers", async () => {
     const [tsconfigSource, project] = await Promise.all([readSource("tsconfig.json"), readJson("project.json")])
 
     expect(tsconfigSource).toContain('".react-router/types/**/*"')
     expect(tsconfigSource).toContain('"@react-router/node"')
+    expect(tsconfigSource).toContain('"rootDirs": [".", "./.react-router/types"]')
     expect(project.targets?.typegen).toMatchObject({
       executor: "nx:run-commands",
       options: {

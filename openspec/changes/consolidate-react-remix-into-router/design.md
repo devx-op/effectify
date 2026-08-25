@@ -22,6 +22,7 @@ The implementation route is limited to the React integrations and examples; `pac
 | Port RR8 contract tests before changing bridge imports                                         | Test only after migration                                                   | A red/green port freezes behavior independently from framework rewiring and exposes existing bridge defects first. |
 | Implement bridge `json` locally with native `Response.json`                                    | Keep `@remix-run/node`; add `json` to RR8                                   | Preserves the bridge-only import without retaining Remix or contaminating RR8.                                     |
 | Treat retirement as Checkpoint B of this change                                                | Close after RR7; open a future change                                       | The accepted final-state requirements prohibit indefinite dual-major support.                                      |
+| Keep WU5 declarative and green under Remix execution                                           | Activate RR7 scripts/plugin before source migration                         | RR7 declarations and generated types can stage independently; the compiler/runtime switch must stay atomic.        |
 | Use a reviewed scenario ledger                                                                 | Copy the whole RR7 example                                                  | Only unique scenarios transfer; protected RR8 behavior and demonstrations are never replaced.                      |
 
 ## Dependency and Ownership Boundaries
@@ -111,17 +112,13 @@ A numeric init becomes `{ status: init }`; an object init passes status, status 
 
 ## Official RR7 Application Migration
 
-`apps/react-remix-example` remains the bridge demonstration during Checkpoint A but becomes a real React Router 7 Framework Mode app:
+`apps/react-remix-example` remains the bridge demonstration during Checkpoint A and reaches RR7 Framework Mode through two green boundaries.
 
-1. Replace all `@remix-run/dev/node/react/serve` dependencies and imports with the exact RR7 family.
-2. Change scripts to `react-router dev`, `react-router build`, `react-router typegen`, and `react-router-serve build/server/index.js`.
-3. Use `reactRouter()` from `@react-router/dev/vite`; remove the Remix plugin and Nx exclusions that only existed for the Remix app where native plugin inference is safe.
-4. Add `react-router.config.ts` with SSR enabled and `app/routes.ts` with explicit route declarations.
-5. Include `.react-router/types/**/*` in TypeScript inputs. Nx `typecheck` and `build` depend on a dedicated `typegen` target; clean-checkout verification runs typegen first.
-6. Replace UI/route types and components with `react-router`, stream conversion with `@react-router/node`, hydration with `HydratedRouter` from `react-router/dom`, and SSR with `ServerRouter` plus RR7 `EntryContext`/`AppLoadContext`.
-7. Replace imports of the protected RR8 Better Auth adapter with the application-owned RR7 adapter.
+**WU5 — declarative staging under Remix execution (forecast 550–720 changed lines).** Add exact direct RR7 `7.18.2` dependencies, `react-router.config.ts` with SSR enabled, `app/routes.ts`, `.react-router/types/**/*`, `rootDirs: [".", "./.react-router/types"]`, and a dedicated RR7 `typegen` target ordered before typecheck/build. Keep the WU4 Remix `build`/`dev`/`start` scripts, Remix Vite plugin, active entries/source, and exact legacy Remix dependencies executable. RR7 packages and declarations are dormant preparation, not evidence that RR7 runtime activation is complete.
 
-The explicit Checkpoint A route map preserves existing URLs and splats:
+**WU6 — atomic RR7 activation (forecast 580–900 changed lines).** In one green transaction, switch scripts to `react-router dev`/`react-router build`/`react-router-serve`, switch Vite to `reactRouter()`, remove all legacy Remix dependencies, replace UI/route APIs with `react-router`, stream conversion with `@react-router/node`, hydration with `HydratedRouter` from `react-router/dom`, and SSR with `ServerRouter` plus RR7 `EntryContext`/`AppLoadContext`. The same transaction migrates entries and remaining source, preserves the application-owned RR7 Better Auth adapter, and proves no active Remix residue. A state with RR7 execution and Remix-shaped source is never a publishable PR boundary.
+
+The explicit Checkpoint A route map staged in WU5 preserves existing URLs and splats:
 
 | URL                 | Route module/role                                                                                           |
 | ------------------- | ----------------------------------------------------------------------------------------------------------- |
@@ -169,22 +166,22 @@ At Checkpoint B remove the bridge package listing/install command/status row, mi
 
 ## File Changes
 
-| Area/file                                                                  | Checkpoint A action                                                            | Checkpoint B action                                                         |
-| -------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | --------------------------------------------------------------------------- |
-| `packages/react/remix/src/lib/{context,runtime}.ts`, `src/index.ts`        | Port RR8 behavior to RR7 imports and deprecate exports                         | Delete package.                                                             |
-| `packages/react/remix/src/lib/json.ts`                                     | Add bridge-only compatibility helper                                           | Delete with bridge.                                                         |
-| `packages/react/remix/tests/**`, `vitest.config.ts`, TypeScript/Nx config  | Add contract, identity, json, typecheck, test targets                          | Delete with bridge after evidence is archived.                              |
-| `packages/react/remix/package.json`, README/changelog                      | Exact `react-router: 7.18.2` peer/dev pins and deprecation docs                | Remove release/package surfaces.                                            |
-| `apps/react-remix-example/package.json`, project/Nx/TS/Vite configs        | Exact four-package RR7 pins, official commands, typegen ordering               | Delete app/importer.                                                        |
-| `apps/react-remix-example/react-router.config.ts`, `app/routes.ts`         | Add official SSR/config and explicit route map                                 | Delete app.                                                                 |
-| `apps/react-remix-example/app/**`                                          | Replace Remix imports/entries; consume local adapter                           | Delete after scenario gate.                                                 |
-| `apps/react-remix-example/app/lib/react-router7-better-auth.server.ts`     | Add workspace-only handlers and guards using bridge contexts                   | Delete.                                                                     |
-| `apps/react-remix-example/tests/**`                                        | Add adapter identity/headers, route map, SSR, residue tests                    | Delete after evidence is captured.                                          |
-| `docs/migrations/react-remix-to-react-router.md`                           | Add migration, support gate, consumer/scenario ledger                          | Mark complete; retain historical migration note only per docs policy.       |
-| `apps/react-router-example/**`                                             | No behavior change                                                             | Add only ledger rows classified unique; preserve all existing routes/tests. |
-| `pnpm-workspace.yaml`, root `package.json`                                 | Protected RR8 values unchanged; remove Remix catalog entries only when unused  | Remove RR7/Remix-only entries; retain all RR8 `8.3.0` entries.              |
-| `pnpm-lock.yaml`                                                           | Regenerate with isolated 7.18.2 and 8.3.0 graphs                               | Regenerate to remove all RR7/Remix importers/resolutions.                   |
-| `nx.json`, root README/CHANGELOG, `.github/SETUP.md`, global Vitest config | Deprecation/checkpoint wiring; bridge remains releasable, local adapter absent | Remove bridge/example release, exclusion, docs, and setup references.       |
+| Area/file                                                                  | Checkpoint A action                                                                                              | Checkpoint B action                                                         |
+| -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `packages/react/remix/src/lib/{context,runtime}.ts`, `src/index.ts`        | Port RR8 behavior to RR7 imports and deprecate exports                                                           | Delete package.                                                             |
+| `packages/react/remix/src/lib/json.ts`                                     | Add bridge-only compatibility helper                                                                             | Delete with bridge.                                                         |
+| `packages/react/remix/tests/**`, `vitest.config.ts`, TypeScript/Nx config  | Add contract, identity, json, typecheck, test targets                                                            | Delete with bridge after evidence is archived.                              |
+| `packages/react/remix/package.json`, README/changelog                      | Exact `react-router: 7.18.2` peer/dev pins and deprecation docs                                                  | Remove release/package surfaces.                                            |
+| `apps/react-remix-example/package.json`, project/Nx/TS/Vite configs        | WU5 stages RR7 pins/config/typegen under Remix; WU6 activates RR7 commands/plugin and removes Remix dependencies | Delete app/importer.                                                        |
+| `apps/react-remix-example/react-router.config.ts`, `app/routes.ts`         | WU5 adds dormant SSR/config and explicit route map                                                               | Delete app.                                                                 |
+| `apps/react-remix-example/app/**`                                          | WU6 atomically replaces Remix imports/entries while retaining the local adapter                                  | Delete after scenario gate.                                                 |
+| `apps/react-remix-example/app/lib/react-router7-better-auth.server.ts`     | Add workspace-only handlers and guards using bridge contexts                                                     | Delete.                                                                     |
+| `apps/react-remix-example/tests/**`                                        | Add adapter identity/headers, route map, SSR, residue tests                                                      | Delete after evidence is captured.                                          |
+| `docs/migrations/react-remix-to-react-router.md`                           | Add migration, support gate, consumer/scenario ledger                                                            | Mark complete; retain historical migration note only per docs policy.       |
+| `apps/react-router-example/**`                                             | No behavior change                                                                                               | Add only ledger rows classified unique; preserve all existing routes/tests. |
+| `pnpm-workspace.yaml`, root `package.json`                                 | Protected RR8 values unchanged; remove Remix catalog entries only when unused                                    | Remove RR7/Remix-only entries; retain all RR8 `8.3.0` entries.              |
+| `pnpm-lock.yaml`                                                           | Regenerate with isolated 7.18.2 and 8.3.0 graphs                                                                 | Regenerate to remove all RR7/Remix importers/resolutions.                   |
+| `nx.json`, root README/CHANGELOG, `.github/SETUP.md`, global Vitest config | Deprecation/checkpoint wiring; bridge remains releasable, local adapter absent                                   | Remove bridge/example release, exclusion, docs, and setup references.       |
 
 Generated build output and `.react-router/types` are not committed unless existing repository policy says otherwise.
 
@@ -195,7 +192,7 @@ Generated build output and `.react-router/types` are not committed unless existi
 | Version isolation     | Manifest assertions and lockfile/importer resolution show RR7 `7.18.2` only for bridge/example and RR8 `8.3.0` for protected importers; catalog diff is empty. | Repository/lockfile scan contains no 7.x or Remix-only framework resolution; RR8 remains 8.3.0.                                                                  |
 | Bridge package        | Nx test, typecheck/no-build, lint, build; runtime/json/context contracts.                                                                                      | Package absent from Nx graph, workspace, docs, and release projects.                                                                                             |
 | RR7 adapter           | Positive exact-context tests, negative RR8/lookalike test, auth body/status/Location/multiple-cookie tests, publication scan.                                  | Source and references absent.                                                                                                                                    |
-| RR7 app               | Route manifest/matching, no-Remix scan, typegen then typecheck, focused route tests, SSR entries/response tests, production build.                             | App and importer absent after ledger completion.                                                                                                                 |
+| RR7 app               | WU5 declarations/routes, clean typegen→typecheck, Remix build/tests; WU6 atomic RR7 activation, no-Remix scan, RR7 SSR/runtime/build.                          | App and importer absent after ledger completion.                                                                                                                 |
 | Protected RR8 package | Existing `test`, `typecheck:no-build`, lint, build against 8.3.0, run separately from RR7.                                                                     | Same checks after all RR7 deletion.                                                                                                                              |
 | Protected RR8 adapter | Existing tests, no-build typecheck, lint, build; source dependency remains RR8-only.                                                                           | Same checks; no transitional import.                                                                                                                             |
 | Protected RR8 app     | Existing migration manifest/verify/test, full tests, typegen, typecheck, lint where defined, SSR/readiness, production build.                                  | Same plus focused tests for each transferred unique scenario.                                                                                                    |
@@ -213,8 +210,8 @@ Each implementation PR is independently reviewable, targets fewer than 1,000 cha
 2. **Bridge contract implementation:** smallest runtime/cause/response changes to pass the ported tests while still on the pre-migration dependency, plus local `json` contract tests if separable under the limit.
 3. **RR7 dependency isolation:** exact bridge pin/import changes, local `json` implementation/export, lockfile assertions; protected RR8 regression run.
 4. **Workspace-only adapter:** add the app-local handlers/guards and exact/negative context and header tests; remove all app use of protected RR8 adapter.
-5. **RR7 framework configuration:** manifest scripts/pins, Vite plugin, React Router config, explicit routes, TypeScript/typegen/Nx wiring.
-6. **RR7 source and entry migration:** route/UI imports, `HydratedRouter`, `ServerRouter`, node stream types, route/SSR/residue tests. Split route batches if the PR would exceed 1,000 lines.
+5. **RR7 declarative staging under Remix execution:** exact direct pins, React Router config/routes, generated inputs/rootDirs, and typegen/Nx wiring; retain WU4 Remix scripts/plugin and legacy dependencies so CI stays green (forecast 550–720).
+6. **Atomic RR7 activation and source migration:** switch scripts/plugin, remove legacy Remix dependencies, and migrate entries/route/UI imports, `HydratedRouter`, `ServerRouter`, node stream types, and SSR/residue tests together (forecast 580–900). Do not publish a mixed execution/source boundary.
 7. **Deprecation and inventory:** package/root docs, migration/consumer/scenario ledger, final bridge release metadata; verify retirement gate remains closed.
 8. **Unique-scenario transfers:** one or more RR8-only PRs, grouped by coherent unique scenario and below 1,000 lines; no duplicate rows transfer.
 9. **Retirement-gate evidence:** documentation-only/evidence slice marking every consumer and scenario disposition complete and naming the rollback version. It authorizes but does not perform deletion.
@@ -243,18 +240,19 @@ Auto-chain may proceed through Checkpoint A and documentation. It pauses before 
 
 ## Failure Modes and Safeguards
 
-| Failure                                                         | Safeguard / fail-closed behavior                                                          |
-| --------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| RR7 resolves through catalog to RR8                             | Exact direct pins plus importer/lockfile assertion fail Checkpoint A.                     |
-| Adapter imports structurally similar/RR8 context                | Positive identity and negative lookalike tests fail; source scan blocks merge.            |
-| Redirect is thrown/returned inconsistently or headers disappear | Runtime and adapter contract tests assert identity, status, `Location`, and all cookies.  |
-| `json` keeps Remix installed                                    | Dependency/residue scan fails; helper must be bridge-local.                               |
-| Typecheck passes only with stale generated types                | Clean generated directory, run Nx typegen, then typecheck/build.                          |
-| Filename routing changes a URL or splat                         | Explicit route map and matcher tests block Checkpoint A.                                  |
-| Duplicate scenario is copied to RR8                             | Ledger requires proof of absence and reviewed `transfer` disposition.                     |
-| Example/package is deleted early                                | Any incomplete consumer/scenario row keeps retirement gate closed.                        |
-| Release includes local adapter                                  | Adapter has no package manifest; release-project and package enumeration tests reject it. |
-| Cleanup mutates protected RR8                                   | Recorded catalog diff and complete RR8 regression matrix block release.                   |
+| Failure                                                         | Safeguard / fail-closed behavior                                                                      |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| RR7 resolves through catalog to RR8                             | Exact direct pins plus importer/lockfile assertion fail Checkpoint A.                                 |
+| Adapter imports structurally similar/RR8 context                | Positive identity and negative lookalike tests fail; source scan blocks merge.                        |
+| Redirect is thrown/returned inconsistently or headers disappear | Runtime and adapter contract tests assert identity, status, `Location`, and all cookies.              |
+| `json` keeps Remix installed                                    | Dependency/residue scan fails; helper must be bridge-local.                                           |
+| Typecheck passes only with stale generated types                | Clean generated directory, run Nx typegen, then typecheck/build.                                      |
+| RR7 execution activates against Remix-shaped source             | WU5 retains Remix scripts/plugin; WU6 switches runtime, dependencies, entries, and source atomically. |
+| Filename routing changes a URL or splat                         | Explicit route map and matcher tests block Checkpoint A.                                              |
+| Duplicate scenario is copied to RR8                             | Ledger requires proof of absence and reviewed `transfer` disposition.                                 |
+| Example/package is deleted early                                | Any incomplete consumer/scenario row keeps retirement gate closed.                                    |
+| Release includes local adapter                                  | Adapter has no package manifest; release-project and package enumeration tests reject it.             |
+| Cleanup mutates protected RR8                                   | Recorded catalog diff and complete RR8 regression matrix block release.                               |
 
 ## Open Questions
 
