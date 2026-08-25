@@ -1,12 +1,11 @@
-import { Link } from "@remix-run/react"
+import { Link } from "react-router"
 
 export default function Index() {
   return (
     <article>
       <h1>Welcome to Effectify + Remix</h1>
       <p>
-        This is a demonstration application showing how to integrate <strong>Effect</strong> with <strong>Remix</strong>
-        {" "}
+        This is a demonstration application showing how to integrate <strong>Effect</strong> with <strong>Remix</strong>{" "}
         using the <code>@effectify/react-remix</code> package.
       </p>
 

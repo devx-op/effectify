@@ -8,7 +8,7 @@ const routerPackages = [
   "@react-router/node",
   "@react-router/serve",
 ];
-const finalVersion = "8.2.0";
+const finalVersion = "8.3.0";
 
 const readWorkspaceFile = (path) =>
   readFile(resolve(workspaceRoot, path), "utf8");
@@ -63,9 +63,12 @@ const getRunBlock = (job) => {
 };
 
 const normalizeExpression = (expression) => expression.replace(/\s+/g, "");
-const affectedBaseSelection = normalizeExpression(
-  'if [[ "${{ github.event_name }}" == "pull_request" ]]; then BASE="origin/${{ github.base_ref }}" else BASE="HEAD~1" fi'
-);
+const affectedBaseSelection = [
+  'if [[ "${{ github.event_name }}" == "pull_request" ]]; then',
+  'BASE="origin/${{ github.base_ref }}"',
+  'BEFORE="${{ github.event.before }}"',
+  'DEFAULT_BASE="origin/${{ github.event.repository.default_branch }}"',
+].map(normalizeExpression);
 const assert = (condition, message) => {
   if (!condition) {
     throw new Error(message);
@@ -107,8 +110,8 @@ for (const jobName of ["lint", "typecheck", "build", "test"]) {
   );
   const runBlock = getRunBlock(job);
   assert(
-    runBlock && normalizeExpression(runBlock).includes(affectedBaseSelection),
-    `${jobName} must map pull_request to origin/${"${{ github.base_ref }}"} and push to HEAD~1`
+    runBlock && affectedBaseSelection.every((selection) => normalizeExpression(runBlock).includes(selection)),
+    `${jobName} must derive pull-request and push affected bases from GitHub event data`
   );
 }
 

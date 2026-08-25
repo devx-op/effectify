@@ -1,6 +1,6 @@
-import { NavLink } from "@remix-run/react"
+import { NavLink } from "react-router"
 import { authClient } from "../lib/auth-client.js"
-import { useNavigate } from "@remix-run/react"
+import { useNavigate } from "react-router"
 
 export function Nav() {
   const navigate = useNavigate()

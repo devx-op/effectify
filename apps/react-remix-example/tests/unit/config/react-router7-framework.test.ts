@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises"
+import { readdir, readFile } from "node:fs/promises"
 import { matchRoutes, type RouteObject } from "react-router"
 import { describe, expect, it } from "vitest"
 
@@ -9,13 +9,24 @@ const readJson = async (file: string) =>
 
 const readSource = (file: string) => readFile(new URL(file, appRoot), "utf8")
 
+const readTree = async (directory: URL): Promise<string> => {
+  const entries = await readdir(directory, { withFileTypes: true })
+  const contents = await Promise.all(
+    entries.map((entry) => {
+      const url = new URL(entry.name + (entry.isDirectory() ? "/" : ""), directory)
+      return entry.isDirectory() ? readTree(url) : readFile(url, "utf8")
+    }),
+  )
+  return contents.join("\n")
+}
+
 const loadRouteConfig = async () => {
   const module = await import(new URL("app/routes.ts", appRoot).href)
   return module.default as RouteObject[]
 }
 
 describe("React Router 7 framework configuration", () => {
-  it("stages the complete app-owned RR7 family while Remix remains executable", async () => {
+  it("activates the complete app-owned RR7 family while retaining temporary manifest residue", async () => {
     const manifest = await readJson("package.json")
 
     expect({
@@ -36,24 +47,38 @@ describe("React Router 7 framework configuration", () => {
       serve: manifest.dependencies?.["@remix-run/serve"],
     }).toEqual({ dev: "2.17.5", node: "2.17.5", react: "2.17.5", serve: "2.17.5" })
     expect(manifest.scripts).toMatchObject({
-      build: "remix vite:build",
-      dev: "remix vite:dev",
-      start: "remix-serve ./build/server/index.js",
+      build: "react-router build",
+      dev: "react-router dev",
+      start: "react-router-serve ./build/server/index.js",
       typegen: "react-router typegen",
       typecheck: "tsc",
     })
   })
 
-  it("keeps Remix execution active beside the declarative RR7 SSR config", async () => {
+  it("activates the React Router Vite plugin beside the RR7 SSR config", async () => {
     const [viteSource, frameworkConfig] = await Promise.all([
       readSource("vite.config.ts"),
       import(new URL("react-router.config.ts", appRoot).href),
     ])
 
-    expect(viteSource).toContain('import { vitePlugin as remix } from "@remix-run/dev"')
-    expect(viteSource).toContain("plugins: [remix()]")
-    expect(viteSource).not.toContain("@react-router/dev/vite")
+    expect(viteSource).toContain('import { reactRouter } from "@react-router/dev/vite"')
+    expect(viteSource).toContain("plugins: [reactRouter()]")
+    expect(viteSource).not.toContain("@remix-run/dev")
     expect(frameworkConfig.default).toEqual({ ssr: true })
+  })
+
+  it("uses only RR7 browser, server, and framework source contracts", async () => {
+    const [clientSource, serverSource, appSource] = await Promise.all([
+      readSource("app/entry.client.tsx"),
+      readSource("app/entry.server.tsx"),
+      readTree(new URL("app/", appRoot)),
+    ])
+
+    expect(clientSource).toContain('import { HydratedRouter } from "react-router/dom"')
+    expect(serverSource).toContain('import { createReadableStreamFromReadable } from "@react-router/node"')
+    expect(serverSource).toContain('import { ServerRouter, type EntryContext } from "react-router"')
+    expect(appSource).not.toMatch(/@remix-run\//)
+    expect(appSource).not.toMatch(/\bRemix(?:Browser|Server)\b/)
   })
 
   it("includes generated route types with their root and orders typegen before consumers", async () => {

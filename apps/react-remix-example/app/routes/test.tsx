@@ -1,5 +1,5 @@
 import { ActionArgsContext, httpFailure, httpSuccess, LoaderArgsContext } from "@effectify/react-remix"
-import { Form, useActionData, useLoaderData } from "@remix-run/react"
+import { Form, useActionData, useLoaderData } from "react-router"
 import * as Effect from "effect/Effect"
 import { withActionEffect, withLoaderEffect } from "~/lib/runtime.server"
 
@@ -90,18 +90,14 @@ export default function TestRoute() {
       {actionData && (
         <div style={{ padding: "10px", backgroundColor: "#e8f4fd", borderRadius: "4px" }}>
           <h3>Action Result:</h3>
-          {actionData.ok ? (
-            <div>
-              <p>
-                <strong>Message:</strong> {actionData.response.message}
-              </p>
-              <p>
-                <strong>Sent value:</strong> "{actionData.response.inputValue}"
-              </p>
-            </div>
-          ) : (
-            <p style={{ color: "red" }}>Error: {String(actionData.errors)}</p>
-          )}
+          <div>
+            <p>
+              <strong>Message:</strong> {actionData.response.message}
+            </p>
+            <p>
+              <strong>Sent value:</strong> "{actionData.response.inputValue}"
+            </p>
+          </div>
         </div>
       )}
 
