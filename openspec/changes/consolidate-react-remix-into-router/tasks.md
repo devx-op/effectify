@@ -109,9 +109,9 @@ The historical WU5 RED/GREEN evidence above remains valid for the declarative RR
 
 #### PR 6b — Remove unused legacy dependencies and prune generated lockfile
 
-- [ ] RED: update the manifest/isolation guard to reject the four now-unused `@remix-run/{node,react,serve,dev}` declarations and run it against green PR6a, recording the expected dependency-residue failure without changing runtime/source. <!-- sdd-owner: implementation -->
-- [ ] GREEN: remove only the four legacy Remix manifest dependencies and run `pnpm install --lockfile-only`; retain the deterministic generated prune (~2,727 changed lockfile lines) under the explicitly authorized generated-line exception, with authored changes kept tiny. <!-- sdd-owner: implementation -->
-- [ ] TRIANGULATE/REFACTOR: prove no Remix dependency resolution remains, rerun focused/full RR7 app and independent RR8 `8.3.0` checks, format, clean generated output, record authored/generated counts separately, and confirm PR6b contains no runtime/source behavior change. <!-- sdd-owner: implementation -->
+- [x] RED: update the manifest/isolation guard to reject the four now-unused `@remix-run/{node,react,serve,dev}` declarations and run it against green PR6a, recording the expected dependency-residue failure without changing runtime/source. <!-- sdd-owner: implementation -->
+- [x] GREEN: remove only the four legacy Remix manifest dependencies and run `pnpm install --lockfile-only`; retain the deterministic generated prune (~2,727 changed lockfile lines) under the explicitly authorized generated-line exception, with authored changes kept tiny. <!-- sdd-owner: implementation -->
+- [x] TRIANGULATE/REFACTOR: prove no Remix dependency resolution remains, rerun focused/full RR7 app and independent RR8 `8.3.0` checks, format, clean generated output, record authored/generated counts separately, and confirm PR6b contains no runtime/source behavior change. <!-- sdd-owner: implementation -->
 
 ### Work unit 7 / PR 7 — Deprecation, migration guidance, and fail-closed inventory
 

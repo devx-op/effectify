@@ -9,6 +9,12 @@ const rrFamily = [
 	"@react-router/node",
 	"@react-router/serve",
 ];
+const legacyRemixFamily = [
+	"@remix-run/node",
+	"@remix-run/react",
+	"@remix-run/serve",
+	"@remix-run/dev",
+];
 
 const readJson = async (file) => JSON.parse(await readFile(file, "utf8"));
 
@@ -34,8 +40,16 @@ const resolveRootVersion = (rootManifest, workspaceYaml, packageName) => {
 };
 
 const verifyDependencyIsolation = async () => {
-	const [bridgeManifest, rootManifest, protectedPackage, protectedApp, workspaceYaml] = await Promise.all([
+	const [
+		bridgeManifest,
+		legacyApp,
+		rootManifest,
+		protectedPackage,
+		protectedApp,
+		workspaceYaml,
+	] = await Promise.all([
 		readJson("packages/react/remix/package.json"),
+		readJson("apps/react-remix-example/package.json"),
 		readJson("package.json"),
 		readJson("packages/react/router/package.json"),
 		readJson("apps/react-router-example/package.json"),
@@ -50,6 +64,14 @@ const verifyDependencyIsolation = async () => {
 		for (const dependency of Object.keys(bridgeManifest[section] ?? {})) {
 			if (dependency.startsWith("@remix-run/")) {
 				failures.push(`@effectify/react-remix ${section} retains ${dependency}`);
+			}
+		}
+	}
+
+	for (const packageName of legacyRemixFamily) {
+		for (const section of ["dependencies", "devDependencies"]) {
+			if (legacyApp[section]?.[packageName] !== undefined) {
+				failures.push(`@effectify/react-remix-example ${section} retains ${packageName}`);
 			}
 		}
 	}

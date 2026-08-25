@@ -26,7 +26,7 @@ const loadRouteConfig = async () => {
 }
 
 describe("React Router 7 framework configuration", () => {
-  it("activates the complete app-owned RR7 family while retaining temporary manifest residue", async () => {
+  it("activates the complete app-owned RR7 family without legacy Remix declarations", async () => {
     const manifest = await readJson("package.json")
 
     expect({
@@ -40,12 +40,12 @@ describe("React Router 7 framework configuration", () => {
       node: "7.18.2",
       serve: "7.18.2",
     })
-    expect({
-      dev: manifest.devDependencies?.["@remix-run/dev"],
-      node: manifest.dependencies?.["@remix-run/node"],
-      react: manifest.dependencies?.["@remix-run/react"],
-      serve: manifest.dependencies?.["@remix-run/serve"],
-    }).toEqual({ dev: "2.17.5", node: "2.17.5", react: "2.17.5", serve: "2.17.5" })
+    expect([
+      manifest.dependencies?.["@remix-run/node"],
+      manifest.dependencies?.["@remix-run/react"],
+      manifest.dependencies?.["@remix-run/serve"],
+      manifest.devDependencies?.["@remix-run/dev"],
+    ]).toEqual([undefined, undefined, undefined, undefined])
     expect(manifest.scripts).toMatchObject({
       build: "react-router build",
       dev: "react-router dev",
