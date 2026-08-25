@@ -9,6 +9,7 @@ export default defineConfig({
   root: __dirname,
   resolve: {
     alias: {
+      "@effectify/react-remix": resolve(__dirname, "../../packages/react/remix/src/index.ts"),
       "~": resolve(__dirname, "app"),
     },
     conditions: ["@effectify/source"],

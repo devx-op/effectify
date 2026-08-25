@@ -5,7 +5,7 @@ import { useState } from "react"
 import { createTodo, deleteTodo, getTodos, type Todo, toggleTodo, updateTodo } from "~/lib/mockStore.js"
 import { withActionEffect, withLoaderEffect } from "~/lib/runtime.server.js"
 
-import { withBetterAuthGuard, withBetterAuthGuardAction } from "@effectify/react-router-better-auth"
+import { withBetterAuthGuard, withBetterAuthGuardAction } from "~/lib/react-router7-better-auth.server.js"
 
 export const loader = Effect.gen(function* () {
   const todos = getTodos()
