@@ -290,3 +290,12 @@ Test summary: 5 JSON tests authored and passing; bridge package total 15/15; pro
 - Every exact unchecked implementation row from Work unit 4 onward remains listed above and visibly unchecked in `tasks.md`; Work unit 4 is the next implementation boundary.
 - All three parent-owned human evidence gates remain deferred and byte-for-byte unchanged.
 - Apply is not globally complete; return to `parent-lifecycle` without starting Work unit 4.
+
+## Bounded Fixture Correction — `rr7-fixture-integration-correction`
+
+- Parent-authorized PR #175 correction only; authoritative status remained `applyState: ready`, repo-local root `/Users/skynet/devx-op/effectify`, with no edit-root warnings. The feature-branch-chain boundary and 150-line cap were preserved.
+- RED: the exact affected typecheck against `origin/test/react-remix-contract-green` reproduced five TS2345 errors because two route-test helpers returned Remix-v2 argument types without RR7 `url` and `pattern`.
+- GREEN: both test files now derive helper outputs from `Parameters<typeof loader/action>[0]`, use stable `URL` values, and identify the matched patterns as `/api/auth/*` and `/test`; no runtime or product code changed.
+- Verification passed: focused route tests (2 files, 5/5 tests), bridge runtime/JSON suites (2 files, 15/15 tests), exact affected typecheck (19 projects and 16 dependency tasks), repository format check, and `git diff --check`.
+- Correction source count before this evidence entry: 24 additions + deletions across two test files. Generated cleanup restored both tracked React tsbuildinfo files and removed the untracked Prisma tsbuildinfo; final status retained only the two fixture files and this cumulative evidence file.
+- Task state is unchanged: Work Unit 3 remains complete, Work Unit 4+ remains unchecked, and parent-owned rows remain deferred byte-for-byte. Parent owns attempt settlement and delivery; no commit, push, CI retry, receipt, or lifecycle actor was started.

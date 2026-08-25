@@ -1,4 +1,3 @@
-import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node"
 import * as Context from "effect/Context"
 import * as Layer from "effect/Layer"
 import { describe, expect, it, vi } from "vitest"
@@ -40,16 +39,20 @@ vi.mock("@effectify/node-better-auth", () => {
 
 import { action, loader } from "../../../app/routes/test.js"
 
-const makeLoaderArgs = (request: Request): LoaderFunctionArgs => ({
+const makeLoaderArgs = (request: Request): Parameters<typeof loader>[0] => ({
   context: {},
   params: {},
+  pattern: "/test",
   request,
+  url: new URL("https://example.com/test"),
 })
 
-const makeActionArgs = (request: Request): ActionFunctionArgs => ({
+const makeActionArgs = (request: Request): Parameters<typeof action>[0] => ({
   context: {},
   params: {},
+  pattern: "/test",
   request,
+  url: new URL("https://example.com/test"),
 })
 
 describe("test route runtime integration", () => {

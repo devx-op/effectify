@@ -1,4 +1,3 @@
-import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node"
 import * as Context from "effect/Context"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
@@ -62,23 +61,27 @@ vi.mock("@effectify/react-router-better-auth", () => ({
 
 import { action, loader } from "../../../app/routes/api.auth.$.js"
 
-const makeLoaderArgs = (request: Request): LoaderFunctionArgs => ({
+const makeLoaderArgs = (request: Request): Parameters<typeof loader>[0] => ({
   context: {},
   params: { "*": "session" },
+  pattern: "/api/auth/*",
   request,
+  url: new URL("https://example.com/api/auth/session"),
 })
 
-const makeActionArgs = (request: Request): ActionFunctionArgs => ({
+const makeActionArgs = (request: Request): Parameters<typeof action>[0] => ({
   context: {},
   params: { "*": "session" },
+  pattern: "/api/auth/*",
   request,
+  url: new URL("https://example.com/api/auth/session"),
 })
 
 describe("api.auth route runtime integration", () => {
   it("preserves auth loader responses through withLoaderEffect", async () => {
-    const response = await loader(
-      makeLoaderArgs(new Request("https://example.com/api/auth/session")),
-    ).catch((error) => error)
+    const response = await loader(makeLoaderArgs(new Request("https://example.com/api/auth/session"))).catch(
+      (error) => error,
+    )
 
     expect(response).toBeInstanceOf(Response)
     expect(response.status).toBe(200)
