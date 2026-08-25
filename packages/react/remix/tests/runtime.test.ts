@@ -90,6 +90,57 @@ describe("Remix bridge runtime contracts", () => {
     }
   })
 
+  it("triangulates redirect status and custom headers independently for loader and action", async () => {
+    const runtime = make(Layer.empty)
+    const loader = runtime.withLoaderEffect(
+      Effect.succeed(
+        new HttpResponseRedirect({
+          to: "/loader-login",
+          init: { headers: { "X-Bridge-Path": "loader" }, status: 308 },
+        }),
+      ),
+    )
+    const action = runtime.withActionEffect(
+      Effect.succeed(
+        new HttpResponseRedirect({
+          to: "/action-login",
+          init: { headers: { "X-Bridge-Path": "action" }, status: 303 },
+        }),
+      ),
+    )
+
+    const loaderResult = await loader(loaderArgs())
+    const actionResult = await action(actionArgs())
+    expect(loaderResult).toBeInstanceOf(Response)
+    expect(actionResult).toBeInstanceOf(Response)
+    if (!(loaderResult instanceof Response) || !(actionResult instanceof Response)) {
+      throw new Error("expected redirect Responses")
+    }
+    expect([
+      loaderResult.status,
+      loaderResult.headers.get("location"),
+      loaderResult.headers.get("x-bridge-path"),
+    ]).toEqual([308, "/loader-login", "loader"])
+    expect([
+      actionResult.status,
+      actionResult.headers.get("location"),
+      actionResult.headers.get("x-bridge-path"),
+    ]).toEqual([303, "/action-login", "action"])
+  })
+
+  it("triangulates exact throwable identity across both runtime paths", async () => {
+    const runtime = make(Layer.empty)
+    const loaderResponse = new Response("loader denied", { status: 403 })
+    const actionResponse = new Response("action denied", { status: 409 })
+    const loaderError = new TypeError("loader identity")
+    const actionError = new RangeError("action identity")
+
+    await expect(runtime.withLoaderEffect(Effect.fail(loaderResponse))(loaderArgs())).rejects.toBe(loaderResponse)
+    await expect(runtime.withActionEffect(Effect.fail(actionResponse))(actionArgs())).rejects.toBe(actionResponse)
+    await expect(runtime.withLoaderEffect(Effect.fail(loaderError))(loaderArgs())).rejects.toBe(loaderError)
+    await expect(runtime.withActionEffect(Effect.fail(actionError))(actionArgs())).rejects.toBe(actionError)
+  })
+
   it("throws modeled loader failures as explicit status-500 JSON Responses", async () => {
     const loader = make(Layer.empty).withLoaderEffect(Effect.succeed(new HttpResponseFailure({ cause: "unavailable" })))
 
