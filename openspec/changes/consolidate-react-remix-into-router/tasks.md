@@ -137,9 +137,9 @@ The historical WU5 RED/GREEN evidence above remains valid for the declarative RR
 
 #### PR 8b — Login, signup, and authentication evidence
 
-- [ ] RED: add focused evidence tests only for `login`, `signup`, and `auth-api`, recording behavior-specific missing evidence without changing product code. <!-- sdd-owner: implementation -->
-- [ ] GREEN/TRIANGULATE: complete those three existing-RR8 rows through tests at their accepted destinations, including UI interaction/error and redirect/multiple-cookie fidelity; no product transfer is allowed. <!-- sdd-owner: implementation -->
-- [ ] REFACTOR/VERIFY: run the focused tests, complete app harness, migration tests, protected package/adapter matrix, typegen/typecheck/build, consolidation CLOSED, version, format, and cleanup gates for PR8b. <!-- sdd-owner: implementation -->
+- [x] RED: add focused evidence tests only for `login`, `signup`, and `auth-api`, recording behavior-specific missing evidence without changing product code. <!-- sdd-owner: implementation -->
+- [x] GREEN/TRIANGULATE: complete those three existing-RR8 rows through tests at their accepted destinations, including UI interaction/error and redirect/multiple-cookie fidelity; no product transfer is allowed. <!-- sdd-owner: implementation -->
+- [x] REFACTOR/VERIFY: run the focused tests, complete app harness, migration tests, protected package/adapter matrix, typegen/typecheck/build, consolidation CLOSED, version, format, and cleanup gates for PR8b. <!-- sdd-owner: implementation -->
 
 #### PR 8c — Todo intent and validation evidence
 
