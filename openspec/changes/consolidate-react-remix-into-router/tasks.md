@@ -149,9 +149,9 @@ The historical WU5 RED/GREEN evidence above remains valid for the declarative RR
 
 #### PR 8d — Route-map and SSR evidence
 
-- [ ] RED: add focused evidence tests only for `rr7-route-map` and `rr7-ssr`, recording missing matcher/splat and readiness/status/header/error evidence without changing product code. <!-- sdd-owner: implementation -->
-- [ ] GREEN/TRIANGULATE: complete the two existing-RR8 rows through route matcher/splat and server-rendering tests only; no product transfer is allowed. <!-- sdd-owner: implementation -->
-- [ ] REFACTOR/VERIFY: run the focused tests, complete app and migration harnesses, protected package/adapter matrix, typegen/typecheck/build, consolidation CLOSED, version, format, and cleanup gates for PR8d; WU8 remains incomplete until PR8a–PR8d are all complete. <!-- sdd-owner: implementation -->
+- [x] RED: add focused evidence tests only for `rr7-route-map` and `rr7-ssr`, recording missing matcher/splat and readiness/status/header/error evidence without changing product code. <!-- sdd-owner: implementation -->
+- [x] GREEN/TRIANGULATE: complete the two existing-RR8 rows through route matcher/splat and server-rendering tests only; no product transfer is allowed. <!-- sdd-owner: implementation -->
+- [x] REFACTOR/VERIFY: run the focused tests, complete app and migration harnesses, protected package/adapter matrix, typegen/typecheck/build, consolidation CLOSED, version, format, and cleanup gates for PR8d; WU8 remains incomplete until PR8a–PR8d are all complete. <!-- sdd-owner: implementation -->
 
 ### Work unit 9 / PR 9 — Retirement-gate evidence
 
