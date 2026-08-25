@@ -1,7 +1,7 @@
 {
   "name": "@effectify/react-remix",
   "version": "0.5.12-alpha.1",
-  "description": "Integration of Remix with Effect for React applications",
+  "description": "Deprecated temporary Effect bridge for React Router 7.18.2; migrate to @effectify/react-router",
   "repository": {
     "type": "git",
     "url": "https://github.com/devx-op/effectify",

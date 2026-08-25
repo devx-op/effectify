@@ -23,6 +23,11 @@ const failure = <E>(cause: Cause.Cause<E>): E | undefined => {
   return undefined
 }
 
+/**
+ * Creates loader and action wrappers for the temporary React Router 7.18.2 bridge.
+ *
+ * @deprecated Migrate to `Runtime.make` from `@effectify/react-router` on React Router 8.
+ */
 export const make = <R, E>(layer: Layer.Layer<R, E, never>) => {
   const runtime = ManagedRuntime.make(layer)
 

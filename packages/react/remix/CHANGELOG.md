@@ -1,6 +1,9 @@
 ## 0.5.12-alpha.1 (2026-07-12)
 
-This was a version bump only for @effectify/react-remix to align it with other projects, there were no code changes.
+### ⚠️ Deprecated
+
+- This is the final supported rollback version of the temporary React Router 7.18.2 bridge. Migrate to `@effectify/react-router` on React Router 8.3.0 using `docs/migrations/react-remix-to-react-router.md`.
+- The bridge remains available only until the reviewed repository consumer and scenario retirement gate opens.
 
 ## 0.5.12-alpha.0 (2026-07-11)
 

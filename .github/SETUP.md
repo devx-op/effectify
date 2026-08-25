@@ -64,8 +64,8 @@ Configure these secrets in your GitHub repository settings (`Settings > Secrets 
 
 The workflow automatically detects if any of the configured release projects have changes:
 
-- `packages/react/remix`
-- `packages/react/router`
+- `packages/react/remix` — deprecated temporary RR7 bridge; release only the final supported rollback artifact while its retirement gate is CLOSED
+- `packages/react/router` — maintained RR8 integration
 - `packages/node/better-auth`
 - `packages/solid/query`
 
@@ -127,6 +127,8 @@ always-auth=true
   }
 }
 ```
+
+`packages/react/remix` remains in release configuration only to preserve the final supported `0.5.12-alpha.1` rollback artifact while the evidence gate is CLOSED. The app-local RR7 Better Auth adapter is not a release project. New releases and consumers should target the maintained RR8 packages.
 
 ## 🚀 Usage
 

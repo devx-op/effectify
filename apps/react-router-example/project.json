@@ -22,6 +22,14 @@
         "cwd": "{workspaceRoot}"
       }
     },
+    "consolidation:verify": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "command": "node scripts/verify-react-router-consolidation.mjs",
+        "cwd": "{workspaceRoot}"
+      }
+    },
     "migration:test": {
       "executor": "nx:run-commands",
       "options": {

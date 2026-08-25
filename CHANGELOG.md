@@ -9,7 +9,7 @@ This changelog summarizes releases for the following packages:
 - @effectify/react-router-better-auth
 - @effectify/node-better-auth
 - @effectify/react-router
-- @effectify/react-remix
+- @effectify/react-remix (deprecated temporary React Router 7 bridge)
 - @effectify/solid-query
 - @effectify/hatchet
 
@@ -30,6 +30,8 @@ This changelog summarizes releases for the following packages:
 ## 1.0.0-alpha.7 (2026-07-12)
 
 ## @effectify/react-remix
+
+> Deprecated temporary React Router 7.18.2 bridge. `0.5.12-alpha.1` is the final supported rollback version; migrate to `@effectify/react-router` on React Router 8.3.0.
 
 ## 0.5.12-alpha.1 (2026-07-12)
 
