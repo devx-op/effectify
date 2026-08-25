@@ -128,10 +128,30 @@ The historical WU5 RED/GREEN evidence above remains valid for the declarative RR
 
 **Start:** work unit 7 is complete and reviewer `kattsushi` has approved exactly six `/demo` rows for product transfer, 11 `existing-rr8` rows for focused evidence hardening, 10 already-complete equivalences, and two removals. **Finish:** the six unique demo behaviors and every incomplete evidence-hardening row have focused RR8 evidence and complete ledger rows; removals and already-complete rows add no product code. **Dependency boundary:** product changes are limited to one coherent RR8 `/demo` destination; evidence-only rows may change only focused tests at their accepted existing destinations. Never remove/simplify protected scenarios or change RR8 `8.3.0`. **Ledger gate:** no unreviewed product transfer is permitted. **Rollback:** revert one coherent demo/evidence slice and its tests, mark its rows incomplete, and retain the RR7 bridge/app.
 
-- [ ] RED: add focused failing tests for the six accepted `/demo` transfer rows and focused evidence tests for the 11 incomplete `existing-rr8` rows at the exact RR8 destinations named in the ledger; run each accepted test path and record behavior-specific failures or missing evidence without changing product code for `existing-rr8` rows. <!-- sdd-owner: implementation -->
-- [ ] GREEN: implement only the coherent `/demo` product slice under `apps/react-router-example/app/**`; complete `existing-rr8` rows through tests only, preserve every current RR8 scenario, rerun each focused path, and update only the accepted ledger rows with concrete evidence. <!-- sdd-owner: implementation -->
-- [ ] TRIANGULATE each accepted transfer/evidence row via its focused path, the complete RR8 app harness, and `migration:test` when the row crosses SSR/routes; runtime evidence must record the user-visible result and no row may rely only on route presence. <!-- sdd-owner: implementation -->
-- [ ] REFACTOR and verify each PR with `pnpm nx run @effectify/react-router-example:consolidation:verify`, `pnpm nx run @effectify/react-router-example:typegen`, `pnpm nx run @effectify/react-router-example:typecheck`, `pnpm nx run @effectify/react-router-example:build`, `pnpm nx run-many --targets=test,typecheck:no-build,lint,build --projects=@effectify/react-router,@effectify/react-router-better-auth`, and `pnpm nx run @effectify/repo:format:check`; `pnpm why react-router --filter @effectify/react-router-example` must remain `8.3.0`, and authored/generated counts must stay within each PR8.x boundary. <!-- sdd-owner: implementation -->
+#### PR 8a — Coherent `/demo` transfer
+
+- [x] RED: add `apps/react-router-example/tests/routes/demo.test.tsx` first and record failure because the RR8 `/demo` module is absent; cover loader/action success, modeled failure, and deliberate redirect status/`Location` through the protected RR8 runtime/context APIs. <!-- sdd-owner: implementation -->
+- [x] GREEN: implement only `apps/react-router-example/app/routes/demo.tsx` plus `/demo` route/navigation wiring, preserve every existing RR8 route/test and exact RR8 `8.3.0`, and make the focused demo suite pass. <!-- sdd-owner: implementation -->
+- [x] TRIANGULATE the six accepted demo rows and `test-action-success` with focused runtime/UI assertions, the complete RR8 app harness, and `migration:test`; update exactly those seven ledger rows with passing evidence, reviewer `kattsushi`, and completion. <!-- sdd-owner: implementation -->
+- [x] REFACTOR and verify PR8a with consolidation CLOSED, clean typegen/typecheck/build, the protected package/adapter matrix, format, exact RR8 `8.3.0` resolution, generated cleanup, and a maximum 1,000-line child diff. <!-- sdd-owner: implementation -->
+
+#### PR 8b — Login, signup, and authentication evidence
+
+- [ ] RED: add focused evidence tests only for `login`, `signup`, and `auth-api`, recording behavior-specific missing evidence without changing product code. <!-- sdd-owner: implementation -->
+- [ ] GREEN/TRIANGULATE: complete those three existing-RR8 rows through tests at their accepted destinations, including UI interaction/error and redirect/multiple-cookie fidelity; no product transfer is allowed. <!-- sdd-owner: implementation -->
+- [ ] REFACTOR/VERIFY: run the focused tests, complete app harness, migration tests, protected package/adapter matrix, typegen/typecheck/build, consolidation CLOSED, version, format, and cleanup gates for PR8b. <!-- sdd-owner: implementation -->
+
+#### PR 8c — Todo intent and validation evidence
+
+- [ ] RED: add focused evidence tests only for `todo-create`, `todo-update`, `todo-delete`, `todo-toggle`, and `todo-validation`, recording behavior-specific missing evidence without changing product code. <!-- sdd-owner: implementation -->
+- [ ] GREEN/TRIANGULATE: complete the five existing-RR8 todo rows through focused mutation, redirect, render, and title/identifier validation tests only; no product transfer is allowed. <!-- sdd-owner: implementation -->
+- [ ] REFACTOR/VERIFY: run the focused tests, complete app harness, migration tests, protected package/adapter matrix, typegen/typecheck/build, consolidation CLOSED, version, format, and cleanup gates for PR8c. <!-- sdd-owner: implementation -->
+
+#### PR 8d — Route-map and SSR evidence
+
+- [ ] RED: add focused evidence tests only for `rr7-route-map` and `rr7-ssr`, recording missing matcher/splat and readiness/status/header/error evidence without changing product code. <!-- sdd-owner: implementation -->
+- [ ] GREEN/TRIANGULATE: complete the two existing-RR8 rows through route matcher/splat and server-rendering tests only; no product transfer is allowed. <!-- sdd-owner: implementation -->
+- [ ] REFACTOR/VERIFY: run the focused tests, complete app and migration harnesses, protected package/adapter matrix, typegen/typecheck/build, consolidation CLOSED, version, format, and cleanup gates for PR8d; WU8 remains incomplete until PR8a–PR8d are all complete. <!-- sdd-owner: implementation -->
 
 ### Work unit 9 / PR 9 — Retirement-gate evidence
 

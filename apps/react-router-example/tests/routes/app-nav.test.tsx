@@ -20,6 +20,7 @@ describe("AppNav", () => {
       { to: "/todo-app", label: "Todo App" },
       { to: "/hatchet-crons", label: "Hatchet Crons" },
       { to: "/chat", label: "Chat Demo" },
+      { to: "/demo", label: "Response Demo" },
     ])
   })
 
