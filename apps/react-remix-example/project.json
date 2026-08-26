@@ -22,14 +22,6 @@
         "script": "dev"
       }
     },
-    "start": {
-      "executor": "nx:run-script",
-      "cache": false,
-      "dependsOn": ["build"],
-      "options": {
-        "script": "start"
-      }
-    },
     "typecheck": {
       "executor": "nx:run-script",
       "cache": true,
