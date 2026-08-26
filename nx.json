@@ -35,7 +35,7 @@
     },
     {
       "plugin": "@nx/vite/plugin",
-      "exclude": ["apps/solid-app-start/**/*", "apps/react-remix-example/**/*"],
+      "exclude": ["apps/solid-app-start/**/*"],
       "options": {
         "buildTargetName": "build",
         "serveTargetName": "serve",
@@ -70,7 +70,7 @@
       "options": {
         "testTargetName": "test"
       },
-      "exclude": ["apps/solid-app-start/**/*", "apps/react-remix-example/**/*", "apps/minimal-example/**/*"]
+      "exclude": ["apps/solid-app-start/**/*", "apps/minimal-example/**/*"]
     },
     {
       "plugin": "@nx/cypress/plugin",
