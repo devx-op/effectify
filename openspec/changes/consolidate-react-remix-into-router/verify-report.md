@@ -1,13 +1,17 @@
 ```yaml
 schema: gentle-ai.verify-result/v1
-status: completed
-executive_summary: Native verify artifact contract remediated using the already-valid WU11 evidence without rerunning verification matrices.
-artifacts:
-  - openspec/changes/consolidate-react-remix-into-router/verify-report.md
-next_recommended: sync
-risks:
-  - Non-blocking focused line-coverage risk remains documented in the preserved verification report.
-skill_resolution: none
+evidence_revision: sha256:92d65c6fb44465fc7bc31981805d759930476392080f18dfcc4dc93a75168d63
+verdict: pass_with_warnings
+blockers: 0
+critical_findings: 0
+requirements: 10/10
+scenarios: 27/27
+test_command: pnpm nx run @effectify/react-router-example:consolidation:verify -- --expect=retired && node --test scripts/verify-react-router-consolidation.test.mjs
+test_exit_code: 0
+test_output_hash: sha256:97a9c728fa304af69ad6229eebe9948adda79613af065802ec70c53dec5f0ea1
+build_command: pnpm nx run-many --targets=build --projects=@effectify/react-router,@effectify/react-router-better-auth,@effectify/react-router-example
+build_exit_code: 0
+build_output_hash: sha256:d5ead68091c15dd3ef930980efdebf618a8ee8c6d55f1a1c2f04df2ad02a9dc2
 ```
 
 # Verification Report: Consolidate React Remix into React Router
