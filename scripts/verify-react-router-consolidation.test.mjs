@@ -2,15 +2,16 @@ import assert from "node:assert/strict"
 import { execFile } from "node:child_process"
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
-import { join, resolve } from "node:path"
+import { dirname, join, resolve } from "node:path"
 import { promisify } from "node:util"
 import test from "node:test"
 
 const execFileAsync = promisify(execFile)
 const repositoryRoot = resolve(import.meta.dirname, "..")
 const verifier = resolve(import.meta.dirname, "verify-react-router-consolidation.mjs")
+const manifestVerifier = resolve(import.meta.dirname, "verify-react-router-manifests.mjs")
 const ledgerPath = resolve(repositoryRoot, "docs/migrations/react-remix-to-react-router.md")
-const bridgeManifestPath = resolve(repositoryRoot, "packages/react/remix/package.json")
+const bridgeManifest = JSON.stringify({ name: "@effectify/react-remix", version: "0.5.12-alpha.1" })
 
 const openLedger = (source) => {
   const [beforeConsumers, consumerAndScenarios] = source.split("## Repository consumer inventory")
@@ -41,15 +42,23 @@ const fixture = async (mutate = (ledger) => ledger) => {
   const root = await mkdtemp(join(tmpdir(), "react-router-consolidation-"))
   await mkdir(join(root, "docs/migrations"), { recursive: true })
   await mkdir(join(root, "packages/react/remix"), { recursive: true })
-  const [ledger, manifest] = await Promise.all([
-    readFile(ledgerPath, "utf8"),
-    readFile(bridgeManifestPath, "utf8"),
-  ])
+  const ledger = await readFile(ledgerPath, "utf8")
   await writeFile(join(root, "docs/migrations/react-remix-to-react-router.md"), mutate(openLedger(ledger)))
-  await writeFile(join(root, "packages/react/remix/package.json"), manifest)
+  await writeFile(join(root, "packages/react/remix/package.json"), bridgeManifest)
   await execFileAsync("git", ["init", "--quiet"], { cwd: root })
   await execFileAsync("git", ["add", "."], { cwd: root })
   return root
+}
+
+const writeFixtureFile = async (root, file, source) => {
+  const target = join(root, file)
+  await mkdir(dirname(target), { recursive: true })
+  await writeFile(target, source)
+  await execFileAsync("git", ["add", file], { cwd: root })
+}
+
+const retireFixture = async (root) => {
+  await rm(join(root, "packages"), { recursive: true })
 }
 
 const verify = async (root, expected = "open") => {
@@ -64,6 +73,40 @@ const verify = async (root, expected = "open") => {
   }
 }
 
+test("the protected manifest verifier is RR8-only", async () => {
+  const { stdout } = await execFileAsync(process.execPath, [manifestVerifier], { cwd: repositoryRoot })
+  const result = JSON.parse(stdout)
+
+  assert.equal(result.stage, "protected-rr8")
+  assert.equal(result.version, "8.3.0")
+  assert.equal(result.packagePeer, "^8.3.0")
+  assert.deepEqual(result.family, {
+    "react-router": "8.3.0",
+    "@react-router/dev": "8.3.0",
+    "@react-router/node": "8.3.0",
+    "@react-router/serve": "8.3.0",
+  })
+})
+
+test("the app consolidation target requires retired state", async () => {
+  const project = JSON.parse(await readFile(join(repositoryRoot, "apps/react-router-example/project.json"), "utf8"))
+  assert.equal(
+    project.targets["consolidation:verify"].options.command,
+    "node scripts/verify-react-router-consolidation.mjs --expect=retired",
+  )
+})
+
+test("the retained ledger records completed retirement and historical path semantics", async () => {
+  const ledger = await readFile(ledgerPath, "utf8")
+
+  assert.match(ledger, /Retirement completed:/)
+  assert.match(ledger, /kattsushi/)
+  assert.match(ledger, /no release occurred between the serial cleanup heads/i)
+  assert.match(ledger, /0\.5\.12-alpha\.1/)
+  assert.match(ledger, /React Router 8\.3\.0/)
+  assert.match(ledger, /historical paths?[^\n]*do not assert current filesystem presence/i)
+})
+
 test("the complete OPEN fixture passes", async (context) => {
   const root = await fixture()
   context.after(() => rm(root, { recursive: true, force: true }))
@@ -76,12 +119,37 @@ test("the complete OPEN fixture passes", async (context) => {
 test("the complete retired fixture passes only with --expect=retired", async (context) => {
   const root = await fixture()
   context.after(() => rm(root, { recursive: true, force: true }))
-  await rm(join(root, "packages"), { recursive: true })
+  await retireFixture(root)
 
   const result = await verify(root, "retired")
 
   assert.equal(result.exitCode, 0, result.output)
   assert.match(result.output, /"status": "retired"/)
+})
+
+test("retired verification allows only the migration ledger, change history, validator fixtures, and RR8 transitive metadata", async (context) => {
+  const root = await fixture()
+  context.after(() => rm(root, { recursive: true, force: true }))
+  await retireFixture(root)
+  await writeFixtureFile(
+    root,
+    "openspec/changes/consolidate-react-remix-into-router/history.md",
+    "Historical @effectify/react-remix 7.18.2 evidence\n",
+  )
+  await writeFixtureFile(
+    root,
+    "scripts/fixtures/react-router-consolidation/retired-history.txt",
+    "Historical packages/react/remix and react-remix-example validator input\n",
+  )
+  await writeFixtureFile(
+    root,
+    "pnpm-lock.yaml",
+    "react-router@8.3.0:\n  '@remix-run/node-fetch-server@0.13.3': {}\n",
+  )
+
+  const result = await verify(root, "retired")
+
+  assert.equal(result.exitCode, 0, result.output)
 })
 
 test("the retired expectation reports retained transitional surfaces", async (context) => {
@@ -96,8 +164,32 @@ test("the retired expectation reports retained transitional surfaces", async (co
   assert.notEqual(result.exitCode, 0, result.output)
   assert.match(result.output, /retirement path still exists: packages\/react\/remix/)
   assert.match(result.output, /retirement path still exists: apps\/react-remix-example/)
-  assert.match(result.output, /retirement residue react-router7-better-auth in apps\/react-remix-example/)
 })
+
+const retiredResidue = {
+  "bridge package": ["packages/react/remix/package.json", bridgeManifest],
+  "retired app": ["apps/react-remix-example/package.json", "{}\n"],
+  "Nx release graph": ["nx.json", '{"release":{"projects":["packages/react/remix"]}}\n'],
+  "release setup": [".github/SETUP.md", "Build @effectify/react-remix\n"],
+  "root install docs": ["README.md", "pnpm add @effectify/react-remix\n"],
+  "root release status": ["CHANGELOG.md", "@effectify/react-remix 0.5.12-alpha.1\n"],
+  "workspace RR7 pin": ["pnpm-workspace.yaml", "catalog:\n  react-router: 7.18.2\n"],
+  "lock importer": ["pnpm-lock.yaml", "packages/react/remix:\n  react-router@7.18.2: {}\n"],
+}
+
+for (const [name, [file, source]] of Object.entries(retiredResidue)) {
+  test(`retired verification rejects ${name} residue`, async (context) => {
+    const root = await fixture()
+    context.after(() => rm(root, { recursive: true, force: true }))
+    await retireFixture(root)
+    await writeFixtureFile(root, file, source)
+
+    const result = await verify(root, "retired")
+
+    assert.notEqual(result.exitCode, 0, result.output)
+    assert.match(result.output, new RegExp(file.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")))
+  })
+}
 
 for (const [name, mutate] of Object.entries(mutations)) {
   test(`${name} fails closed with a nonzero exit`, async (context) => {

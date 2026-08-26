@@ -1976,3 +1976,51 @@ The first full protected app test attempt failed only because the clean worktree
   - [ ] Finalize release evidence in `docs/migrations/react-remix-to-react-router.md` (or the repository-approved retained historical evidence location) with consumer status, reviewed scenario dispositions, transitional-surface absence, protected RR8 results, authored/generated diff counts, and the exact final bridge rollback version; do not add or modify product code. <!-- sdd-owner: implementation -->
 
 Deferred parent lifecycle action remains byte-for-byte unchanged: after work unit 11, evaluate final RR8-only evidence before closing the OpenSpec change.
+
+## Work Unit 10 / PR10d — Retire Bridge Release Graph
+
+### Exact Phase Contract
+
+- **Status:** completed for final WU10 head `retire-bridge-release-graph`; WU11 and parent closure were not started.
+- Authoritative OpenSpec status was `applyState: ready`, `nextRecommended: apply`, with 64/72 total checkbox rows complete; ownership-aware count was 62/69 implementation rows. Repo-local edits were allowed only under `/Users/skynet/devx-op/effectify`, with no warnings or blockers.
+- Parent native `proceed` was authenticated for this exact work unit, evidence goal `bridge-release-graph-retired-green`, and maximum 1,000 changed lines. Parent owns settlement and delivery.
+- Delivery remained `auto-chain`, `feature-branch-chain`; maintainer-authorized deletion used clean parent `7c2dd21`, and no release occurred between serial cleanup heads.
+
+### Completed Tasks, Boundary, and Counts
+
+- The PR10d GREEN, final absence/TRIANGULATE, and cleanup/REFACTOR implementation rows are visibly `- [x]` in `tasks.md`; WU11's four implementation rows and final parent closure remain unchecked.
+- Deleted all 10 remaining tracked files under `packages/react/remix/**` (322 lines), including the manifest, project, source, `json`, and build TypeScript configurations.
+- Removed the bridge from `nx.json` release projects and active setup/package/install/status/release references from `.github/SETUP.md`, `README.md`, and `CHANGELOG.md`.
+- Replaced bridge/RR7 manifest stages with local protected-RR8-only verification and exact 8.3.0 checks; hardened RETIRED fixtures/scans and made the app consolidation target require retirement.
+- Final counts including tasks/progress artifacts: **812 authored additions + deletions** (247 additions, 565 deletions), **38 generated lockfile deletions**, **850 total**, below 1,000.
+- Rollback boundary: restore bridge `0.5.12-alpha.1`, release/docs references, previous validators/project targets, and the exact prior lockfile together; protected RR8 remains unchanged.
+
+### Lock Provenance and Historical Evidence
+
+- Only `pnpm install --lockfile-only` under Node 24.19.0 / pnpm 10.14.0 changed `pnpm-lock.yaml`; SHA-256 changed `d83c3f56f1ff7398fe91b4b38907ce04769d0b5c5e74067c517c0a6cdf418cc8` → `3a50b512a4ce21f35ab6a6e1d6758fd1ed74324af8ffdd271eeb32d83ba32e80`.
+- The generated prune removed the bridge importer and final `react-router@7.18.2` snapshot. Maintained RR8 transitive `@remix-run/node-fetch-server` metadata remains valid and is not transitional residue.
+- `docs/migrations/react-remix-to-react-router.md` remains the approved historical ledger and now records retirement complete, reviewer `kattsushi`, no inter-head release, rollback `0.5.12-alpha.1`, maintained RR8 8.3.0, and historical-path semantics.
+
+### TDD Cycle Evidence
+
+| Task                | Layer                | Safety Net / RED                                      | GREEN                             | TRIANGULATE / REFACTOR                                                                                      |
+| ------------------- | -------------------- | ----------------------------------------------------- | --------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Protected manifest  | Manifest integration | New no-stage test failed on retained RR7 stages       | Local RR8-only output passed      | Catalog/root/app exact 8.3.0 and package peer `^8.3.0` passed                                               |
+| RETIRED verifier    | CLI fixtures         | 5/20 tests failed on target/docs/history/Nx gaps      | 20/20 passed                      | App/package/Nx/release/workspace/docs/lock residue cases and allowed history/RR8 transitive metadata passed |
+| Readiness coupling  | Nx integration       | Readiness failed on stale `--stage=final-v8` contract | Protected-RR8 readiness passed    | Full manifest/readiness/migration/app/package and affected matrices passed                                  |
+| Structural deletion | Repository graph     | RETIRED failed on the retained bridge graph           | RETIRED reports `status: retired` | Nx, release, docs, workspace, lockfile, exact-version, format, and cleanup scans passed                     |
+
+No pure function or product behavior was added. Runtime harness is N/A for deletion; protected RR8 executable evidence passed router 8/8, adapter 9/9, migration 9/9, and app 115/115 tests.
+
+### Verification, Cleanup, and Deviations
+
+- Frozen install passed for 19 workspace projects. Protected manifest, readiness, migration tests, clean typegen/typecheck/build/lint, package matrices, four protected `pnpm why` queries, RETIRED, and exact 8.3.0 checks passed.
+- Affected checks passed for 19 lint, 17 typecheck, 6 test, and 15 build projects. Established non-failing warnings remained unchanged.
+- The first full protected app test run failed only because clean `node_modules` lacked built `@effectify/hatchet`; building that declared workspace prerequisite and rerunning passed 24 files / 115 tests without product changes.
+- Repository formatting and `git diff --check` passed. Generated app/package/docs output, Prisma database/generation, and command-touched tsbuildinfo were removed or restored.
+- Deviation: the readiness validator required a bounded wording/command-contract update after removal of the obsolete `final-v8` stage. No design, product, RR8 version, release, commit, push, PR, review, receipt, or settlement deviation occurred.
+
+### Remaining Tasks
+
+- WU11 retains its four exact unchecked implementation rows in `tasks.md`; do not infer their completion from PR10d verification.
+- The final parent-owned closure row remains unchecked and byte-for-byte unchanged. Next routing is `parent-lifecycle`.

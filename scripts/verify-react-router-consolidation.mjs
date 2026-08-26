@@ -47,12 +47,18 @@ const VALID_DISPOSITIONS = new Set([
   "deprecate-reference",
   "remove-at-retirement",
 ])
+const VALIDATOR_FIXTURE_ROOT = "scripts/fixtures/react-router-consolidation/"
+const HISTORICAL_CHANGE_ROOT = "openspec/changes/consolidate-react-remix-into-router/"
 const SKIPPED_SCAN_PATHS = new Set([
   LEDGER,
   "scripts/verify-react-router-consolidation.mjs",
   "scripts/verify-react-router-consolidation.test.mjs",
   "pnpm-lock.yaml",
 ])
+const isAllowedHistoricalPath = (file) =>
+  (file !== "pnpm-lock.yaml" && SKIPPED_SCAN_PATHS.has(file)) ||
+  file.startsWith(HISTORICAL_CHANGE_ROOT) ||
+  file.startsWith(VALIDATOR_FIXTURE_ROOT)
 
 const fail = (failures) => {
   throw new Error(`React Router consolidation ledger failed:\n- ${failures.join("\n- ")}`)
@@ -141,8 +147,7 @@ const trackedConsumerSurfaces = async () => {
     .trim()
     .split("\n")
     .filter(Boolean)
-    .filter((file) => !file.startsWith("openspec/"))
-    .filter((file) => !SKIPPED_SCAN_PATHS.has(file))
+    .filter((file) => !isAllowedHistoricalPath(file))
     .filter((file) => /(?:^|\/)(?:[^/]+\.(?:[cm]?[jt]sx?|json|md|ya?ml)|nx\.json)$/.test(file))
   const surfaces = []
   for (const file of candidates) {
@@ -186,19 +191,36 @@ if (finalBridgeVersion && bridgeManifest && finalBridgeVersion !== bridgeManifes
   failures.push(`rollback version ${finalBridgeVersion} must match bridge package ${bridgeManifest.version}`)
 }
 if (retired) {
-  for (const path of ["packages/react/remix", "apps/react-remix-example"]) {
-    await access(path).then(
-      () => failures.push(`retirement path still exists: ${path}`),
+  const retiredRoots = ["packages/react/remix", "apps/react-remix-example"]
+  for (const retiredRoot of retiredRoots) {
+    await access(retiredRoot).then(
+      () => failures.push(`retirement path still exists: ${retiredRoot}`),
       () => {},
     )
   }
+
   const { stdout } = await execFileAsync("git", ["ls-files", "-co", "--exclude-standard"])
   for (const file of stdout.trim().split("\n").filter(Boolean)) {
-    if (file.startsWith("openspec/") || [LEDGER, "scripts/verify-react-router-consolidation.mjs", "scripts/verify-react-router-consolidation.test.mjs"].includes(file)) continue
+    if (isAllowedHistoricalPath(file)) continue
     const source = await readFile(file, "utf8").catch(() => null)
     if (source === null) continue
-    for (const term of ["@effectify/react-remix", "react-remix-example", "@remix-run/", "7.18.2", "react-router7-better-auth"]) {
+
+    for (const term of [
+      "@effectify/react-remix",
+      "react-remix-example",
+      "packages/react/remix",
+      "react-router7-better-auth",
+      "7.18.2",
+    ]) {
       if (`${file}\n${source}`.includes(term)) failures.push(`retirement residue ${term} in ${file}`)
+    }
+    if (["package.json", "pnpm-workspace.yaml", "nx.json"].includes(file) && source.includes("@remix-run/")) {
+      failures.push(`retirement dependency residue @remix-run/ in ${file}`)
+    }
+    if (file === "pnpm-lock.yaml") {
+      for (const pattern of [/^\s+(?:apps\/react-remix-example|packages\/react\/remix):/m, /^\s+react-router@7\./m]) {
+        if (pattern.test(source)) failures.push(`retirement lock residue ${pattern} in ${file}`)
+      }
     }
   }
 }
