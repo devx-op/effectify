@@ -1573,3 +1573,62 @@ Runtime harness is N/A for a dependency-edge prune. The static production build 
 - [ ] Finalize release evidence in `docs/migrations/react-remix-to-react-router.md` (or the repository-approved retained historical evidence location) with consumer status, reviewed scenario dispositions, transitional-surface absence, protected RR8 results, authored/generated diff counts, and the exact final bridge rollback version; do not add or modify product code. <!-- sdd-owner: implementation -->
 
 Deferred parent lifecycle action remains byte-for-byte unchanged: after work unit 11, evaluate final RR8-only evidence before closing the OpenSpec change.
+
+## Work Unit 10 / PR10c Recovery — Prune Static App Database Dependencies
+
+### Exact Phase Contract
+
+- Status: **completed** for recovery head `prune-static-app-database-deps` only.
+- Evidence revision: `sha256:d20982abdafae8d3658d2ac8f30f7aaf69407e0c5ea8b2a080813996e1c37ab7`, computed from the final manifest/lockfile implementation patch.
+- Authored implementation lines: **1 addition + 9 deletions = 10** in `apps/react-remix-example/package.json`; the addition is the retained `react-dom` line without its former trailing comma.
+- Generated lockfile lines: **0 additions + 158 deletions = 158** in `pnpm-lock.yaml`.
+- Implementation total: **168 changed lines**, below the native 1,000-line cap; no Prisma-versus-SQLite/Kysely split was needed. Final worktree total including tasks/progress is **70 authored + 158 generated = 228 changed lines**.
+- Parent owns settlement, commit, push, PR, release, and lifecycle continuation; none was performed here.
+
+### Structured Status and Boundary
+
+- Authoritative OpenSpec status was `applyState: ready`, `nextRecommended: apply`; proposal, spec, design, tasks, cumulative progress, and their Engram mirrors were read before editing.
+- Action context was `repo-local`, workspace/allowed edit root `/Users/skynet/devx-op/effectify`, with no warnings or blockers. The parent-owned active attempt was authenticated as `proceed` for this exact recovery head with a 1,000-line maximum.
+- Delivery remains `auto-chain`, `feature-branch-chain`. This head changes only the static app manifest and generated lockfile plus this one tasks/progress recovery record.
+- Product source, project/root/workspace/release/bridge/PR10d surfaces, protected RR8, RR7 framework dependencies, React dependencies, TypeScript/Vite dependencies, and all other remaining manifest/config values remain unchanged.
+
+### Completed Task, Lockfile Provenance, and Files
+
+- [x] GREEN PR10c recovery head: prune only the static app's unused `@prisma/client`, `@prisma/client-runtime-utils`, `better-sqlite3`, `dotenv`, `kysely`, `@prisma/generator`, `@types/better-sqlite3`, and `prisma` dependency edges, regenerate the lockfile only, and preserve RR7 framework, React, TypeScript/Vite, and remaining dependencies/config unchanged. <!-- sdd-owner: implementation -->
+- Files changed: `apps/react-remix-example/package.json`, generated `pnpm-lock.yaml`, and cumulative `tasks.md` / `apply-progress.md` evidence.
+- `pnpm install --lockfile-only` under Node `v24.19.0` and pnpm `10.14.0` was the only command that modified `pnpm-lock.yaml`.
+- Lockfile SHA-256 changed from `691c32f2f3fc79647b4e35c1179f951652c22dcaff1da99e770d299bdab171c1` to `17c80b112a30b3a02c70ed3a358ff9b5a50926b978426a13f99257c5314a8954`; manifest SHA-256 changed from `0783276125498f5b14f2d076e5811201333d218ba790331d02099c662d6fc070` to `20a2d632c0db14abf57fd1aa13c3f495626c390d4dda46a7da7b5039dfee4f33`.
+- Exact manifest comparison proved only the eight named keys disappeared. Exact RR7 `7.18.2`, React `18.2.0`, TypeScript/Vite, and every other manifest/config value are unchanged.
+- Rollback boundary: restore `apps/react-remix-example/package.json` and `pnpm-lock.yaml` together to the recorded parent hashes; task/progress evidence can be reverted independently.
+
+### TDD Cycle and Verification Evidence
+
+| Stage       | Evidence                                                                                                                          | Result                                                                                                                                                                 |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Safety net  | Frozen install; clean static app typegen/typecheck/build/lint                                                                     | Passed under Node 24.19.0; static production client/server builds completed and lint reported 0 warnings/errors.                                                       |
+| RED         | Eight app-filtered direct-depth `pnpm why` queries before edits; staged `consolidation:verify -- --expect=retired`                | All eight assigned direct edges were present at their resolved versions; RETIRED exited 1 on retained transitional surfaces.                                           |
+| GREEN       | Remove exactly eight manifest keys; `pnpm install --lockfile-only`; frozen install; clean static app typegen/typecheck/build/lint | Manifest changed by 10 authored lines and lockfile by 158 generated deletions; frozen install and all four static app targets passed.                                  |
+| TRIANGULATE | Exact manifest delta, eight absent direct-depth queries, lockfile importer assertion, RR7 isolation, OPEN/RETIRED gates           | No removed direct edge remained; Prisma assets/database stayed absent; bridge/app RR7 remained 7.18.2; OPEN passed and RETIRED stayed expected-red with exit 1.        |
+| REFACTOR    | Protected RR8 matrices, exact 8.3.0 checks, format/diff/scope checks, generated cleanup                                           | Router 8/8 and adapter 9/9 passed; protected migration 9/9 and app 115/115 passed with typegen/typecheck/build/lint; format, scope, exact catalog, and cleanup passed. |
+
+No tests or pure functions were added because this is a one-output structural manifest/lockfile prune. Triangulation used the generated importer, resolved dependency graph, clean production builds, and independent protected regression matrices. Runtime harness is N/A for a dependency-edge prune.
+
+### Cleanup and Deviations
+
+- Removed generated `apps/react-remix-example/{.react-router,build}` and `apps/react-router-example/{.react-router,build}` and restored command-touched `packages/react/router/tsconfig.lib.tsbuildinfo`; no generated output or protected mutation remains.
+- Repository format check, `git diff --check`, exact manifest comparison, exact assigned-scope assertion, bridge isolation, and protected catalog checks passed.
+- Two initial lockfile-importer helper attempts failed because Python `yaml` and root-level JavaScript `yaml` modules were unavailable; the same assertion was rerun successfully with a dependency-free importer-section parser. No product or lockfile remediation was required.
+- No design, dependency, source, configuration, or scope deviation occurred.
+
+### Remaining Implementation and Parent Tasks
+
+- [ ] GREEN PR10c: delete the remaining old app/importer and remove its Nx graph wiring while retaining the bridge package and release/workspace/lockfile cleanup for PR10d. <!-- sdd-owner: implementation -->
+- [ ] GREEN PR10d: delete the bridge package and `json`, remove obsolete release/docs/workspace references, regenerate the lockfile, and preserve protected RR8 `8.3.0`. <!-- sdd-owner: implementation -->
+- [ ] TRIANGULATE final absence/version isolation with `consolidation:verify -- --expect=retired`, Nx graph, protected manifest/`pnpm why`, and repository/lockfile scans; runtime harness: N/A for deletion, with RR8 behavior verified in work unit 11. <!-- sdd-owner: implementation -->
+- [ ] REFACTOR cleanup wording only after absence passes; run affected lint/typecheck/test/build and format, and record authored/generated counts for every PR10 head. <!-- sdd-owner: implementation -->
+- [ ] Verify the maintained packages with `pnpm nx run-many --targets=test,typecheck:no-build,lint,build --projects=@effectify/react-router,@effectify/react-router-better-auth`; runtime harness: `packages/react/router/tests/runtime.test.ts` and the adapter suite must record payload, modeled failure, redirect/header, cookie, and throwable-identity results against RR8 `8.3.0`. <!-- sdd-owner: implementation -->
+- [ ] Verify the maintained app with `pnpm nx run @effectify/react-router-example:migration:manifest`, `pnpm nx run @effectify/react-router-example:migration:verify`, `pnpm nx run @effectify/react-router-example:migration:test`, `pnpm nx run @effectify/react-router-example:test`, `rm -rf apps/react-router-example/.react-router && pnpm nx run @effectify/react-router-example:typegen`, `pnpm nx run @effectify/react-router-example:typecheck`, and `pnpm nx run @effectify/react-router-example:build`; runtime harness evidence must include routes, auth, SSR/readiness, status, headers, and each transferred unique scenario. <!-- sdd-owner: implementation -->
+- [ ] Verify final graph/release absence with `pnpm nx run @effectify/react-router-example:consolidation:verify -- --expect=retired`, `pnpm nx show projects --json`, `pnpm why react-router --filter @effectify/react-router-example`, `pnpm nx affected --target=lint`, `pnpm nx affected --target=typecheck`, `pnpm nx affected --target=test`, `pnpm nx affected --target=build`, and `pnpm nx run @effectify/repo:format:check`; record no RR7/Remix dependency, project, publish, release, docs, workspace, or lockfile residue. <!-- sdd-owner: implementation -->
+- [ ] Finalize release evidence in `docs/migrations/react-remix-to-react-router.md` (or the repository-approved retained historical evidence location) with consumer status, reviewed scenario dispositions, transitional-surface absence, protected RR8 results, authored/generated diff counts, and the exact final bridge rollback version; do not add or modify product code. <!-- sdd-owner: implementation -->
+
+Deferred parent lifecycle action remains byte-for-byte unchanged: after work unit 11, evaluate final RR8-only evidence before closing the OpenSpec change.

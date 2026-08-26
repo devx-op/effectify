@@ -21,18 +21,10 @@
     "react-router": "7.18.2",
     "isbot": "^4.4.0",
     "react": "18.2.0",
-    "react-dom": "18.2.0",
-    "@prisma/client": "catalog:",
-    "@prisma/client-runtime-utils": "catalog:",
-    "better-sqlite3": "catalog:",
-    "dotenv": "catalog:",
-    "kysely": "catalog:"
+    "react-dom": "18.2.0"
   },
   "devDependencies": {
-    "@prisma/generator": "catalog:",
     "@react-router/dev": "7.18.2",
-    "@types/better-sqlite3": "7.6.13",
-    "prisma": "catalog:",
     "@types/react": "^18.2.20",
     "@types/react-dom": "^18.2.7",
     "eslint": "^8.23.1",
