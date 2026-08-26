@@ -1366,3 +1366,54 @@ Lifecycle routing returns to the parent for the deletion decision. No WU10/WU11 
 - [ ] Finalize release evidence in `docs/migrations/react-remix-to-react-router.md` (or the repository-approved retained historical evidence location) with consumer status, reviewed scenario dispositions, transitional-surface absence, protected RR8 results, authored/generated diff counts, and the exact final bridge rollback version; do not add or modify product code. <!-- sdd-owner: implementation -->
 
 The final parent-owned closure row remains deferred and unchanged. PR10a rollback restores only the six deleted test/config files, explicit test target, validator staging, topology docs, and PR10a checkboxes.
+
+## Work Unit 10 / PR10b — Remove Retired RR7 Scenarios
+
+### Status, Boundary, and Counts
+
+- Authoritative OpenSpec status was `applyState: ready`, `nextRecommended: apply`; planning artifacts were complete, action context was repo-local at `/Users/skynet/devx-op/effectify`, allowed edit root matched the workspace, and warnings/blockers were empty.
+- Parent supplied native `proceed` for `retire-rr7-scenarios`, maximum 1,000 lines; the executor authenticated the same attempt token, and the parent owns settlement.
+- Delivery remained `auto-chain`, `feature-branch-chain`; status is **completed for PR10b only**, with PR10c–PR10d non-releasable and deferred.
+- Product source: **3 additions + 855 deletions = 858 authored lines** across 10 files; generated retained: **0**. Final child diff including tasks/progress: **55 additions + 856 deletions = 911 authored lines**, below 1,000.
+
+### Completed Task, Files, and Persisted Checkbox
+
+- [x] GREEN PR10b: delete the retired RR7 app scenario/source files, including the local adapter, without deleting remaining app/graph files or changing package/release/lockfile surfaces. <!-- sdd-owner: implementation -->
+- Deleted exactly seven files: `app/lib/mockStore.ts`, `app/routes/api.$.ts`, `demo.tsx`, `login.tsx`, `signup.tsx`, `test.tsx`, and `todos.tsx`.
+- Modified only `app/routes.ts`, `app/components/Nav.tsx`, and `app/routes/_index.tsx`: routes now contain index plus `api/auth/*`; navigation is home-only; stale deleted-route links, sign-out redirect behavior, Remix wording, and mock-store claims are gone.
+- Persisted ownership is **54/62 implementation rows complete, 8 remaining; 2/3 parent rows complete, 1 deferred; 0 malformed markers**. The PR10b row is visibly checked in OpenSpec and Engram.
+
+### TDD Cycle Evidence
+
+| Task                      | Layer / harness              | Safety net                                                   | RED                                                                        | GREEN                                                        | TRIANGULATE                                                                                                                                   | REFACTOR                                                                                  |
+| ------------------------- | ---------------------------- | ------------------------------------------------------------ | -------------------------------------------------------------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Retired scenario deletion | Structural build integration | Reduced app typegen/typecheck/build/lint passed before edits | Existing staged `--expect=retired` failed on retained app/package surfaces | Clean reduced-app typegen, typecheck, build, and lint passed | OPEN remained green; RETIRED remained explicitly red only because later-head app/package/graph surfaces remain; protected RR8 matrices passed | Format/diff/scope scans passed; generated outputs removed and router tsbuildinfo restored |
+
+No new tests or pure functions were added; PR10a's staged fail-closed validator is the RED harness for this deletion sequence. Runtime harness is N/A for source deletion; the reduced production build and protected RR8 runtime suites provide executable safety evidence.
+
+### Verification Evidence
+
+- Node `v24.19.0`: reduced RR7 app clean `typegen` → `typecheck` → `build` and lint all passed; build emitted only established non-failing framework warnings, and lint retained one established warning in untouched `app/lib/http.server.ts`.
+- Consolidation OPEN passed with rollback `0.5.12-alpha.1`, 24 consumers, 29 scenarios, and 0 pending. Explicit RETIRED returned nonzero as required on the remaining app/package, bridge, graph, docs, workspace, and lockfile surfaces reserved for PR10c/PR10d.
+- Protected RR8 app passed migration manifest/readiness, migration tests 9/9, full tests 115/115, clean typegen/typecheck/build, and lint.
+- Protected packages passed router 8/8 and adapter 9/9 tests plus both no-build typecheck/lint/build matrices. Manifest and `pnpm why` evidence resolved protected React Router only at exact `8.3.0`.
+- Repository format check and `git diff --check` passed after generated cleanup. Scope scans proved exactly 7 deletions and 3 app-source modifications before artifact updates, no stale deleted-route references, and no protected/config/dependency/lockfile/release/workspace diff.
+
+### Cleanup, Rollback, and Deviations
+
+- Removed generated `apps/react-remix-example/{.react-router,build}` and `apps/react-router-example/{.react-router,build}` output; restored command-touched `packages/react/router/tsconfig.lib.tsbuildinfo`; retained no generated mutation.
+- Rollback boundary: restore the exact seven deleted scenario files and the prior three reduced-app source files; do not change protected RR8 or later PR10 graph/package cleanup.
+- Delegated scope intentionally refines the generic task phrase “including the local adapter”: the explicit PR10b file list and prohibition on changing the remaining runtime/auth adapter controlled, so `react-router7-better-auth.server.ts` remains for the later app-removal head. No other design deviation occurred.
+
+### Remaining Implementation Tasks
+
+- [ ] GREEN PR10c: delete the remaining old app/importer and remove its Nx graph wiring while retaining the bridge package and release/workspace/lockfile cleanup for PR10d. <!-- sdd-owner: implementation -->
+- [ ] GREEN PR10d: delete the bridge package and `json`, remove obsolete release/docs/workspace references, regenerate the lockfile, and preserve protected RR8 `8.3.0`. <!-- sdd-owner: implementation -->
+- [ ] TRIANGULATE final absence/version isolation with `consolidation:verify -- --expect=retired`, Nx graph, protected manifest/`pnpm why`, and repository/lockfile scans; runtime harness: N/A for deletion, with RR8 behavior verified in work unit 11. <!-- sdd-owner: implementation -->
+- [ ] REFACTOR cleanup wording only after absence passes; run affected lint/typecheck/test/build and format, and record authored/generated counts for every PR10 head. <!-- sdd-owner: implementation -->
+- [ ] Verify the maintained packages with `pnpm nx run-many --targets=test,typecheck:no-build,lint,build --projects=@effectify/react-router,@effectify/react-router-better-auth`; runtime harness: `packages/react/router/tests/runtime.test.ts` and the adapter suite must record payload, modeled failure, redirect/header, cookie, and throwable-identity results against RR8 `8.3.0`. <!-- sdd-owner: implementation -->
+- [ ] Verify the maintained app with `pnpm nx run @effectify/react-router-example:migration:manifest`, `pnpm nx run @effectify/react-router-example:migration:verify`, `pnpm nx run @effectify/react-router-example:migration:test`, `pnpm nx run @effectify/react-router-example:test`, `rm -rf apps/react-router-example/.react-router && pnpm nx run @effectify/react-router-example:typegen`, `pnpm nx run @effectify/react-router-example:typecheck`, and `pnpm nx run @effectify/react-router-example:build`; runtime harness evidence must include routes, auth, SSR/readiness, status, headers, and each transferred unique scenario. <!-- sdd-owner: implementation -->
+- [ ] Verify final graph/release absence with `pnpm nx run @effectify/react-router-example:consolidation:verify -- --expect=retired`, `pnpm nx show projects --json`, `pnpm why react-router --filter @effectify/react-router-example`, `pnpm nx affected --target=lint`, `pnpm nx affected --target=typecheck`, `pnpm nx affected --target=test`, `pnpm nx affected --target=build`, and `pnpm nx run @effectify/repo:format:check`; record no RR7/Remix dependency, project, publish, release, docs, workspace, or lockfile residue. <!-- sdd-owner: implementation -->
+- [ ] Finalize release evidence in `docs/migrations/react-remix-to-react-router.md` (or the repository-approved retained historical evidence location) with consumer status, reviewed scenario dispositions, transitional-surface absence, protected RR8 results, authored/generated diff counts, and the exact final bridge rollback version; do not add or modify product code. <!-- sdd-owner: implementation -->
+
+The final parent-owned closure row remains deferred byte-for-byte. No dependency, lockfile, project/package/Vite configuration, remaining runtime/auth adapter, bridge, release/workspace graph, protected RR8 source, commit, push, PR, release, review, receipt, or attempt settlement occurred.
