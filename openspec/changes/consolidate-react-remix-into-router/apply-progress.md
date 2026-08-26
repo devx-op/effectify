@@ -1884,3 +1884,33 @@ No test file or pure function was added because this is structural deletion/conf
   - [ ] Finalize release evidence in `docs/migrations/react-remix-to-react-router.md` (or the repository-approved retained historical evidence location) with consumer status, reviewed scenario dispositions, transitional-surface absence, protected RR8 results, authored/generated diff counts, and the exact final bridge rollback version; do not add or modify product code. <!-- sdd-owner: implementation -->
 
 Deferred parent lifecycle action remains byte-for-byte unchanged: after work unit 11, evaluate the final RR8-only evidence before closing the OpenSpec change.
+
+## Work Unit 10 / PR10c Recovery — Prune Retired App Importer
+
+- **Status:** completed for `prune-retired-app-importer`; authoritative OpenSpec status was `applyState: ready`, `nextRecommended: apply`, with repo-local edits allowed only under `/Users/skynet/devx-op/effectify` and no warnings/blockers.
+- **Boundary:** removed only four stale Remix catalog entries, the root `@remix-run/node>undici` override, and the generated retired app importer/app-only snapshots. Bridge/package/release/docs, validators, generic globs, and protected RR8 surfaces were unchanged.
+- **Persisted task:** the original implementation-owned PR10c app/importer/graph cleanup row is visibly `- [x]` in `tasks.md`; PR10d and later implementation rows remain unchecked, and the final parent-owned closure action is deferred byte-for-byte.
+- **Files:** `pnpm-workspace.yaml`, `package.json`, generated `pnpm-lock.yaml`, `tasks.md`, and this cumulative progress artifact.
+- **Counts:** 5 authored implementation deletions; generated lockfile 287 additions + 622 deletions = 909; implementation total 914. Including the checkbox and this concise artifact, the final worktree remains below the hard 1,000-line cap.
+- **Lock provenance:** only `pnpm install --lockfile-only` under Node 24.19.0 / pnpm 10.14.0 changed `pnpm-lock.yaml`; SHA-256 changed `3406aefc6b0e9fe3a041a881ec4f5aeda0609fb9e93720a457a11cc6e4fff2e1` → `d83c3f56f1ff7398fe91b4b38907ce04769d0b5c5e74067c517c0a6cdf418cc8`.
+- **Rollback:** restore `pnpm-workspace.yaml`, `package.json`, and `pnpm-lock.yaml` together; task/progress evidence may be reverted separately.
+
+### TDD Cycle Evidence
+
+| Stage       | Evidence                                                                                | Result                                                                                                                                                                                   |
+| ----------- | --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| RED         | Structural catalog/override/importer/snapshot harness                                   | Exit 1 on four catalog entries, one override, and the stale app importer.                                                                                                                |
+| GREEN       | Exact removals plus lockfile-only regeneration, structural rerun, frozen install        | Assigned residue and RR7 app-only dev/node/serve snapshots absent; all 20 workspace projects installed frozen.                                                                           |
+| TRIANGULATE | Bridge/protected manifest targets, OPEN/RETIRED gates, `pnpm why`, package/app matrices | Bridge importer and RR7 7.18.2 survived; protected family resolved exact 8.3.0; OPEN passed; RETIRED failed only on retained bridge/release/docs and existing generic validator residue. |
+| REFACTOR    | Affected lint/typecheck/test/build, format, diff, generated cleanup                     | 20 lint, 18 typecheck, 7 test, and 16 build projects passed; format/diff checks passed; generated outputs and touched tracked artifacts were removed/restored.                           |
+
+Runtime harness is N/A for generated dependency-graph pruning; protected runtime evidence passed 8 router tests, 9 adapter tests, 9 migration tests, and 115 protected app tests. The first protected app run failed only because the clean workspace lacked built `@effectify/hatchet` output; building that declared workspace prerequisite and rerunning produced 115/115 without product changes.
+
+### Remaining Implementation Tasks
+
+- [ ] GREEN PR10d: delete the bridge package and `json`, remove obsolete release/docs/workspace references, regenerate the lockfile, and preserve protected RR8 `8.3.0`. <!-- sdd-owner: implementation -->
+- [ ] TRIANGULATE final absence/version isolation with `consolidation:verify -- --expect=retired`, Nx graph, protected manifest/`pnpm why`, and repository/lockfile scans; runtime harness: N/A for deletion, with RR8 behavior verified in work unit 11. <!-- sdd-owner: implementation -->
+- [ ] REFACTOR cleanup wording only after absence passes; run affected lint/typecheck/test/build and format, and record authored/generated counts for every PR10 head. <!-- sdd-owner: implementation -->
+- [ ] Work unit 11 retains its four exact verification/evidence rows in `tasks.md`. <!-- sdd-owner: implementation -->
+
+No commit, push, PR, release, review, receipt, or parent settlement was performed. Next routing is `parent-lifecycle` for the bounded PR boundary.

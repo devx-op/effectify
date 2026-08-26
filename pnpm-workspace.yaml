@@ -37,10 +37,6 @@ catalog:
   "@react-router/dev": 8.3.0
   "@react-router/node": 8.3.0
   "@react-router/serve": 8.3.0
-  "@remix-run/node": 2.17.5
-  "@remix-run/node-fetch-server": 0.12.0
-  "@remix-run/react": 2.17.5
-  "@remix-run/serve": 2.17.5
   "@solidjs/start": 1.2.0
   "@solidjs/testing-library": 0.8.10
   "@swc-node/register": 1.11.1
