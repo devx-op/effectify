@@ -1,3 +1,15 @@
+```yaml
+schema: gentle-ai.verify-result/v1
+status: completed
+executive_summary: Native verify artifact contract remediated using the already-valid WU11 evidence without rerunning verification matrices.
+artifacts:
+  - openspec/changes/consolidate-react-remix-into-router/verify-report.md
+next_recommended: sync
+risks:
+  - Non-blocking focused line-coverage risk remains documented in the preserved verification report.
+skill_resolution: none
+```
+
 # Verification Report: Consolidate React Remix into React Router
 
 ## Status
