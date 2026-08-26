@@ -127,7 +127,7 @@ Reviewer `kattsushi` approved the 10 complete `existing-rr8` rows, the two accep
 
 ## Final RR8-only release evidence
 
-Work unit 11 completed on clean child head `4535fc42f2eec9ec18e74c92e21b8d8f0784303d` under Node 24.19.0 and pnpm 10.14.0. This is implementation evidence only: the final parent-owned closure decision remains pending, and no commit, push, PR, release, archive, or settlement was performed.
+Work unit 11 completed on clean child head `4535fc42f2eec9ec18e74c92e21b8d8f0784303d` under Node 24.19.0 and pnpm 10.14.0. Reviewer `kattsushi` accepted the complete RR8-only evidence on 2026-08-26 and authorized verify → sync → archive. This authorization does not publish a release.
 
 ### Maintained RR8 matrix
 

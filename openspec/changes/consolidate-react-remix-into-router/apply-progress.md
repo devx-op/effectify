@@ -2105,3 +2105,11 @@ No tests, production functions, product behavior, or dependency changes were add
 - Established package language-service suggestions and app bundler warnings were non-failing and unchanged. There was no design, scope, product, version, dependency, graph, lockfile, release, commit, push, PR, archive, review, receipt, settlement, or historical-validator-behavior deviation.
 - All implementation work is complete. The exact remaining row is parent-owned and remains unchecked: `- [ ] After work unit 11, evaluate the final RR8-only evidence and close the OpenSpec change only if cleanup, release surfaces, scenario ledger, rollback record, and protected RR8 8.3.0 matrix are all complete; otherwise reopen the applicable gate.`
 - Next routing is `parent-lifecycle`; this executor does not close or archive the change.
+
+## Parent Gate Decision — Final RR8-Only Closure Accepted
+
+- Decision date: 2026-08-26.
+- Reviewer/maintainer: `kattsushi`.
+- Accepted evidence: RETIRED status, 24 complete consumers, 29 complete scenarios, 0 pending rows, absent retired graph/release/workspace/lock surfaces, exact RR8 `8.3.0`, green package/app/affected matrices, serial cleanup accounting, no-release transaction record, and rollback `0.5.12-alpha.1`.
+- Authorization: close the implementation change and proceed through native SDD verify → sync → archive.
+- Release boundary: this closure authorization does not publish or release any package.
