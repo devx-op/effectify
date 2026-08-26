@@ -2,14 +2,14 @@
 
 ## Review Workload Forecast
 
-| Field                   | Value                                                                                                             |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| Estimated changed lines | 4,000–7,500 authored lines across the chain, plus 3,000–4,500 generated lockfile lines; see per-PR forecast below |
-| 400-line budget risk    | High                                                                                                              |
-| Chained PRs recommended | Yes                                                                                                               |
-| Suggested split         | PR 1 → PR 2 → PR 3 → PR 4 → PR 5 → PR 6a → PR 6b → PR 7 → gated PR 8 slice(s) → PR 9 → gated PR 10a/10b → PR 11   |
-| Delivery strategy       | auto-chain                                                                                                        |
-| Chain strategy          | feature-branch-chain                                                                                              |
+| Field                   | Value                                                                                                                   |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Estimated changed lines | 4,000–7,500 authored lines across the chain, plus 3,000–4,500 generated lockfile lines; see per-PR forecast below       |
+| 400-line budget risk    | High                                                                                                                    |
+| Chained PRs recommended | Yes                                                                                                                     |
+| Suggested split         | PR 1 → PR 2 → PR 3 → PR 4 → PR 5 → PR 6a → PR 6b → PR 7 → gated PR 8 slice(s) → PR 9 → gated PR 10a/10b/10c/10d → PR 11 |
+| Delivery strategy       | auto-chain                                                                                                              |
+| Chain strategy          | feature-branch-chain                                                                                                    |
 
 Decision needed before apply: No
 Chained PRs recommended: Yes
@@ -19,21 +19,23 @@ Chain strategy: feature-branch-chain
 
 The feature-branch chain is required because the RED contract slice and the final cleanup transaction must integrate before landing on `master`. Create a draft/no-merge tracker branch; PR 1 targets it and each later PR targets its immediate parent. Generated `pnpm-lock.yaml` churn is reported separately from authored changes, but complete lockfile identity remains part of dependency evidence. The maintainer explicitly approved splitting WU6 into green PR6a runtime/source activation and PR6b dependency pruning, plus a generated-lockfile exception for PR6b’s deterministic ~2,727-line prune while authored changes remain tiny. No other size exception is implied.
 
-| PR / work unit                         | Authored additions + deletions |                           Generated additions + deletions | 1,000-line risk | Boundary                                                              |
-| -------------------------------------- | -----------------------------: | --------------------------------------------------------: | --------------- | --------------------------------------------------------------------- |
-| PR 1 — bridge contract RED             |                        300–450 |                                                         0 | Low             | Tests and test/typecheck wiring only                                  |
-| PR 2 — bridge runtime GREEN            |                        220–380 |                                                         0 | Low             | Runtime behavior and refactor only                                    |
-| PR 3 — RR7 dependency isolation        |                        180–320 |                                          150–450 lockfile | Medium          | Exact pins, imports, `json`, isolation checks                         |
-| PR 4 — workspace-only adapter          |                        350–650 |                                            0–100 lockfile | Medium          | App-local adapter and focused tests                                   |
-| PR 5 — RR7 declarative staging         |                        550–720 |                                          150–450 lockfile | Medium          | RR7 declarations/typegen remain green under Remix execution           |
-| PR 6a — RR7 runtime/source activation  |                        350–500 |                                                         0 | Medium          | Scripts/plugin/entries/source activate; legacy deps stay declared     |
-| PR 6b — legacy dependency prune        |                          20–60 |                      ~2,727 lockfile (approved exception) | High            | Remove unused legacy deps and deterministically prune lockfile only   |
-| PR 7 — deprecation and inventory       |                        300–550 |                                                         0 | Medium          | Docs, fail-closed ledger, release metadata                            |
-| PR 8.x — each accepted unique scenario |                        150–700 |                                                         0 | Medium          | One coherent reviewed RR8 scenario per PR                             |
-| PR 9 — retirement evidence             |                        100–250 |                                                         0 | Low             | Evidence only; no deletion                                            |
-| PR 10a — source deletion               |                        700–950 |                                                         0 | High            | Bridge/app/adapter source removal                                     |
-| PR 10b — graph/release cleanup         |                        250–550 |                                          300–900 lockfile | High            | Workspace, release, docs, lockfile cleanup; merge atomically with 10a |
-| PR 11 — RR8-only verification          |                         80–180 | 0–250 evidence snapshots if repository policy tracks them | Low             | Verification/evidence only; no product code                           |
+| PR / work unit                         | Authored additions + deletions |                           Generated additions + deletions | 1,000-line risk | Boundary                                                            |
+| -------------------------------------- | -----------------------------: | --------------------------------------------------------: | --------------- | ------------------------------------------------------------------- |
+| PR 1 — bridge contract RED             |                        300–450 |                                                         0 | Low             | Tests and test/typecheck wiring only                                |
+| PR 2 — bridge runtime GREEN            |                        220–380 |                                                         0 | Low             | Runtime behavior and refactor only                                  |
+| PR 3 — RR7 dependency isolation        |                        180–320 |                                          150–450 lockfile | Medium          | Exact pins, imports, `json`, isolation checks                       |
+| PR 4 — workspace-only adapter          |                        350–650 |                                            0–100 lockfile | Medium          | App-local adapter and focused tests                                 |
+| PR 5 — RR7 declarative staging         |                        550–720 |                                          150–450 lockfile | Medium          | RR7 declarations/typegen remain green under Remix execution         |
+| PR 6a — RR7 runtime/source activation  |                        350–500 |                                                         0 | Medium          | Scripts/plugin/entries/source activate; legacy deps stay declared   |
+| PR 6b — legacy dependency prune        |                          20–60 |                      ~2,727 lockfile (approved exception) | High            | Remove unused legacy deps and deterministically prune lockfile only |
+| PR 7 — deprecation and inventory       |                        300–550 |                                                         0 | Medium          | Docs, fail-closed ledger, release metadata                          |
+| PR 8.x — each accepted unique scenario |                        150–700 |                                                         0 | Medium          | One coherent reviewed RR8 scenario per PR                           |
+| PR 9 — retirement evidence             |                        100–250 |                                                         0 | Low             | Evidence only; no deletion                                          |
+| PR 10a — test retirement/validator     |                        850–980 |                                                         0 | High            | RR7-only tests removed; retired mode staged                         |
+| PR 10b — retired scenarios             |                        350–650 |                                                         0 | Medium          | Retired app source scenarios                                        |
+| PR 10c — remaining app/graph           |                        150–400 |                                                         0 | Medium          | Remaining app files and graph node                                  |
+| PR 10d — package/release graph         |                        250–550 |                                          300–900 lockfile | High            | Bridge, workspace, release, docs, lockfile cleanup                  |
+| PR 11 — RR8-only verification          |                         80–180 | 0–250 evidence snapshots if repository policy tracks them | Low             | Verification/evidence only; no product code                         |
 
 ## Execution and Evidence Rules
 
@@ -162,15 +164,17 @@ The historical WU5 RED/GREEN evidence above remains valid for the declarative RR
 - [x] TRIANGULATE gate evidence with `pnpm nx run @effectify/react-router-example:migration:manifest`, `pnpm nx run @effectify/react-router-example:migration:verify`, `pnpm nx run @effectify/react-router-example:migration:test`, `pnpm nx run @effectify/react-router-example:test`, and `pnpm nx run-many --targets=test,typecheck:no-build,lint,build --projects=@effectify/react-router,@effectify/react-router-better-auth`; runtime harness: the RR8 app/package focused suites supply the referenced evidence, while this evidence-only slice itself is `N/A`. <!-- sdd-owner: implementation -->
 - [x] Record the rollback boundary and clean evidence diff using `git diff --stat`, `git diff -- docs/migrations/react-remix-to-react-router.md scripts/verify-react-router-consolidation.mjs`, and `pnpm nx run @effectify/repo:format:check`; confirm no bridge/app/local-adapter file is deleted in this PR. <!-- sdd-owner: implementation -->
 
-### Work unit 10 / PR 10a–10b — Final RR8 consolidation cleanup
+### Work unit 10 / PR 10a–10d — Final RR8 consolidation cleanup
 
-**Start:** work unit 9 reports OPEN and the parent-owned deletion gate is accepted. **Finish:** all RR7/Remix transitional source, dependencies, docs/release/workspace references, importer snapshots, and lockfile resolutions are absent while RR8 remains exact `8.3.0`. PR 10a and 10b form one non-releasable cleanup transaction; do not release between them. **Dependency boundary:** deletion/cleanup only; no protected RR8 behavior changes. **Ledger gate:** any reopened/incomplete row blocks deletion. **Rollback:** restore the recorded final bridge release coherently—bridge package, old app, local adapter, all four exact RR7 `7.18.2` pins, workspace/release metadata, and matching lockfile—without changing RR8.
+**Start:** work unit 9 reports OPEN and deletion is authorized. **Finish:** four green heads remove every transitional surface while RR8 stays exact `8.3.0`; no release is allowed between PR10a–PR10d. **Rollback:** restore bridge `0.5.12-alpha.1`, the RR7 app/importers, workspace/release metadata, and matching lockfile without changing RR8.
 
-- [ ] RED: add final-absence assertions to `scripts/verify-react-router-consolidation.mjs` for `@effectify/react-remix`, `react-remix-example`, local adapter, bridge `json`, `@remix-run/*`, RR7-only pins/resolutions, release projects, setup/docs/workspace references, and Nx graph nodes; run `pnpm nx run @effectify/react-router-example:consolidation:verify -- --expect=retired` and record expected failures before deletion. <!-- sdd-owner: implementation -->
-- [ ] GREEN PR 10a: delete `packages/react/remix/**` and `apps/react-remix-example/**`, including the local adapter and bridge `json`, while preserving evidence needed in the migration ledger; keep this source-deletion slice below 1,000 changed lines or split by coherent package/app deletion without releasing an intermediate state. <!-- sdd-owner: implementation -->
-- [ ] GREEN PR 10b: remove obsolete entries from `nx.json`, `pnpm-workspace.yaml`, root/package docs and setup/release surfaces, regenerate `pnpm-lock.yaml` with `pnpm install --lockfile-only`, and remove all now-unused Remix/RR7-only resolutions while preserving React Router catalog/root `8.3.0`. <!-- sdd-owner: implementation -->
-- [ ] TRIANGULATE absence/version isolation with `pnpm nx run @effectify/react-router-example:consolidation:verify -- --expect=retired`, `pnpm nx show projects --json`, `pnpm why react-router --filter @effectify/react-router-example`, `pnpm nx run @effectify/react-router-example:migration:manifest`, and repository scans over source, docs, release config, workspace config, and `pnpm-lock.yaml`; runtime harness: N/A for deletion itself, with executable RR8 behavior verified in work unit 11. <!-- sdd-owner: implementation -->
-- [ ] REFACTOR only cleanup-script/docs wording after absence checks pass, then run `pnpm nx affected --target=lint`, `pnpm nx affected --target=typecheck`, `pnpm nx affected --target=test`, `pnpm nx affected --target=build`, and `pnpm nx run @effectify/repo:format:check`; record authored and generated line counts separately for PR 10a/10b and verify neither child contains dangling references. <!-- sdd-owner: implementation -->
+- [x] RED PR10a: stage tested optional `--expect=retired` absence assertions while default verification remains OPEN; record failure against retained transitional surfaces. <!-- sdd-owner: implementation -->
+- [x] GREEN PR10a: delete only the five RR7-only test files and app Vitest config, remove only the explicit app `test` target, and pass app typegen/typecheck/build/lint plus protected RR8 and OPEN gates below 1,000 lines. <!-- sdd-owner: implementation -->
+- [ ] GREEN PR10b: delete the retired RR7 app scenario/source files, including the local adapter, without deleting remaining app/graph files or changing package/release/lockfile surfaces. <!-- sdd-owner: implementation -->
+- [ ] GREEN PR10c: delete the remaining old app/importer and remove its Nx graph wiring while retaining the bridge package and release/workspace/lockfile cleanup for PR10d. <!-- sdd-owner: implementation -->
+- [ ] GREEN PR10d: delete the bridge package and `json`, remove obsolete release/docs/workspace references, regenerate the lockfile, and preserve protected RR8 `8.3.0`. <!-- sdd-owner: implementation -->
+- [ ] TRIANGULATE final absence/version isolation with `consolidation:verify -- --expect=retired`, Nx graph, protected manifest/`pnpm why`, and repository/lockfile scans; runtime harness: N/A for deletion, with RR8 behavior verified in work unit 11. <!-- sdd-owner: implementation -->
+- [ ] REFACTOR cleanup wording only after absence passes; run affected lint/typecheck/test/build and format, and record authored/generated counts for every PR10 head. <!-- sdd-owner: implementation -->
 
 ### Work unit 11 / PR 11 — RR8-only release verification
 

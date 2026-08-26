@@ -1330,3 +1330,39 @@ Lifecycle routing returns to the parent for the deletion decision. No WU10/WU11 
 - Authorization: execute WU10a source deletion and WU10b graph/release/lockfile cleanup as one non-releasable feature-branch transaction. Do not release between them.
 - Scope guard: delete only the transitional bridge package, RR7 example/local adapter, and their obsolete workspace/release/docs/lockfile references; do not simplify transferred RR8 scenarios or change RR8 `8.3.0`.
 - Rollback remains the exact recorded bridge version and matching RR7 `7.18.2` importer state until final RR8-only verification closes the change.
+
+## Work Unit 10 / PR10a — Retire RR7-Only Tests; Stage Retired Validator
+
+### Status, Boundary, and Counts
+
+- Authoritative OpenSpec status was ready/apply with complete planning artifacts, repo-local root `/Users/skynet/devx-op/effectify`, and no warnings. Parent `proceed` was authenticated for `retire-rr7-tests-stage-validator`, Node 24.19.0, maximum 1,000 lines; parent owns settlement and delivery.
+- Status: **completed for PR10a only**. PR10b–PR10d remain non-releasable. Design/tasks now record the accepted tests → retired scenarios → remaining app/graph → package/release graph topology.
+- Deleted exactly five RR7-only tests plus app `vitest.config.ts` (**756 lines**) and only the explicit app test target (**7 lines**). Final diff: **132 additions + 804 deletions = 936 authored lines**; generated retained: **0**.
+
+### TDD Cycle Evidence
+
+| Task                      | Safety net      | RED                                            | GREEN / TRIANGULATE / REFACTOR                                                                                   |
+| ------------------------- | --------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Retired validator staging | Fixtures 6/6    | 6/8; retired mode rejected                     | 8/8; complete retired fixture passes, retained package/app/adapter fail; default real-repo verifier remains OPEN |
+| RR7 test retirement       | App tests 38/38 | Existing test files/target proved the boundary | Test target absent; typegen/typecheck/build/lint pass; deletion needed no refactor                               |
+
+### Verification, Cleanup, and Deviations
+
+- OPEN consolidation passed by default: 24 consumers, 29 scenarios, 0 pending. Explicit RETIRED remains RED on retained surfaces before PR10b–PR10d.
+- Protected RR8 passed migration manifest/readiness/test, app 115/115, clean typegen/typecheck/build, router 8/8, adapter 9/9, package no-build typecheck/lint/build, and exact 8.3.0 resolution.
+- Format and diff checks passed. Generated app outputs were removed and router tsbuildinfo restored. No product source, package, lockfile, or release surface changed; no release occurred.
+- Runtime harness: N/A for deletion; CLI fixtures and protected RR8 suites supply executable evidence. Deviation: stale default CLOSED became current OPEN; RETIRED remains optional.
+
+### Remaining Implementation Tasks
+
+- [ ] GREEN PR10b: delete the retired RR7 app scenario/source files, including the local adapter, without deleting remaining app/graph files or changing package/release/lockfile surfaces. <!-- sdd-owner: implementation -->
+- [ ] GREEN PR10c: delete the remaining old app/importer and remove its Nx graph wiring while retaining the bridge package and release/workspace/lockfile cleanup for PR10d. <!-- sdd-owner: implementation -->
+- [ ] GREEN PR10d: delete the bridge package and `json`, remove obsolete release/docs/workspace references, regenerate the lockfile, and preserve protected RR8 `8.3.0`. <!-- sdd-owner: implementation -->
+- [ ] TRIANGULATE final absence/version isolation with `consolidation:verify -- --expect=retired`, Nx graph, protected manifest/`pnpm why`, and repository/lockfile scans; runtime harness: N/A for deletion, with RR8 behavior verified in work unit 11. <!-- sdd-owner: implementation -->
+- [ ] REFACTOR cleanup wording only after absence passes; run affected lint/typecheck/test/build and format, and record authored/generated counts for every PR10 head. <!-- sdd-owner: implementation -->
+- [ ] Verify the maintained packages with `pnpm nx run-many --targets=test,typecheck:no-build,lint,build --projects=@effectify/react-router,@effectify/react-router-better-auth`; runtime harness: `packages/react/router/tests/runtime.test.ts` and the adapter suite must record payload, modeled failure, redirect/header, cookie, and throwable-identity results against RR8 `8.3.0`. <!-- sdd-owner: implementation -->
+- [ ] Verify the maintained app with `pnpm nx run @effectify/react-router-example:migration:manifest`, `pnpm nx run @effectify/react-router-example:migration:verify`, `pnpm nx run @effectify/react-router-example:migration:test`, `pnpm nx run @effectify/react-router-example:test`, `rm -rf apps/react-router-example/.react-router && pnpm nx run @effectify/react-router-example:typegen`, `pnpm nx run @effectify/react-router-example:typecheck`, and `pnpm nx run @effectify/react-router-example:build`; runtime harness evidence must include routes, auth, SSR/readiness, status, headers, and each transferred unique scenario. <!-- sdd-owner: implementation -->
+- [ ] Verify final graph/release absence with `pnpm nx run @effectify/react-router-example:consolidation:verify -- --expect=retired`, `pnpm nx show projects --json`, `pnpm why react-router --filter @effectify/react-router-example`, `pnpm nx affected --target=lint`, `pnpm nx affected --target=typecheck`, `pnpm nx affected --target=test`, `pnpm nx affected --target=build`, and `pnpm nx run @effectify/repo:format:check`; record no RR7/Remix dependency, project, publish, release, docs, workspace, or lockfile residue. <!-- sdd-owner: implementation -->
+- [ ] Finalize release evidence in `docs/migrations/react-remix-to-react-router.md` (or the repository-approved retained historical evidence location) with consumer status, reviewed scenario dispositions, transitional-surface absence, protected RR8 results, authored/generated diff counts, and the exact final bridge rollback version; do not add or modify product code. <!-- sdd-owner: implementation -->
+
+The final parent-owned closure row remains deferred and unchanged. PR10a rollback restores only the six deleted test/config files, explicit test target, validator staging, topology docs, and PR10a checkboxes.
