@@ -124,3 +124,51 @@ Reviewer `kattsushi` accepted every disposition on 2026-08-25. Rows marked compl
 ## Human gate before scenario transfer
 
 Reviewer `kattsushi` approved the 10 complete `existing-rr8` rows, the two accepted removals, the 11 evidence-hardening rows, and only the six `/demo` rows for product transfer. Work unit 8 may implement that bounded `/demo` slice and focused evidence tests; no other product scenario is authorized.
+
+## Final RR8-only release evidence
+
+Work unit 11 completed on clean child head `4535fc42f2eec9ec18e74c92e21b8d8f0784303d` under Node 24.19.0 and pnpm 10.14.0. This is implementation evidence only: the final parent-owned closure decision remains pending, and no commit, push, PR, release, archive, or settlement was performed.
+
+### Maintained RR8 matrix
+
+| Surface                          | Exact result                                                                                                                                                                                                                                                                                  |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Packages                         | `@effectify/react-router` passed 8/8 runtime tests and `@effectify/react-router-better-auth` passed 9/9 adapter tests; both passed `typecheck:no-build`, lint, and build against resolved React Router 8.3.0.                                                                                 |
+| Runtime payload/failure          | Loader payload `{ ok: true, data }`, action payload `{ ok: true, response }`, loader modeled failure status 500/body, and action modeled failure status 400/body passed.                                                                                                                      |
+| Redirect/headers/identity        | Runtime redirects preserved status 307, `Location`, and `Set-Cookie`; failed native `Response` and `Error` values preserved exact identity; defect/interruption fallback and logging assertions passed.                                                                                       |
+| Better Auth                      | Loader/action request identity, successful response status/body, unauthorized status 302, `Location: /login`, and `Set-Cookie: returnTo=/todo-app` passed. App auth tests additionally preserved status 307, body, `Location`, trace header, exact response identity, and both cookie values. |
+| Maintained app                   | Manifest and readiness passed at Node 24.19.0, React 19.2.7, and RR8 8.3.0; migration tests passed 9/9 and the full app passed 115/115 after building its declared `@effectify/hatchet` workspace prerequisite.                                                                               |
+| Routes and transferred scenarios | Route-map/splat, shell/navigation, login/signup, auth, Todo create/update/delete/toggle/validation, test-equivalent scenarios, and all six transferred `/demo` loader/action success/failure/redirect outcomes passed. Demo redirects retained 307/303 and `Location: /demo?outcome=success`. |
+| SSR                              | Browser shell readiness retained status 207, route header, HTML content type/body; bot and SPA mode used all-content readiness; stream failure returned 500; initial shell failure preserved exact throwable identity.                                                                        |
+| Generated/type/build quality     | Clean typegen, typecheck, client/SSR production build, and lint passed. Generated `.react-router`, build/dist, Prisma generation/database changes, and touched tsbuildinfo were removed or restored.                                                                                          |
+
+### Final absence and release proof
+
+- `consolidation:verify -- --expect=retired` returned `status: retired`, 24 consumer rows, 29 scenario rows, 0 pending rows, and rollback `0.5.12-alpha.1`.
+- Nx listed 19 maintained projects and no bridge or retired app project. Release projects contain neither retired project.
+- Protected-app `pnpm why` resolved `react-router`, `@react-router/dev`, `@react-router/node`, and `@react-router/serve` only at 8.3.0.
+- Frozen install passed for all 19 workspace projects. Affected lint/typecheck/test/build passed for 19/17/6/15 projects, and repository formatting passed.
+- Exact active-tree scans found zero physical retired roots; zero RR7/bridge/app terms outside the historical ledger, OpenSpec record, validator, and validator fixtures; zero active docs/workspace/release residue; and zero retired lockfile importer, React Router 7 snapshot, `7.18.2`, bridge package, or Remix framework package.
+- The only lockfile `@remix-run/*` token is maintained RR8 transitive metadata `@remix-run/node-fetch-server`; it is explicitly allowed and is not RR7/bridge residue.
+- The RR8 catalog resolves all four framework packages exactly to 8.3.0, the app resolves the same family to 8.3.0, and the package peer remains `^8.3.0`.
+- The protected source/test/dependency/lock tree inventory stayed identical to the clean WU11 start; final lockfile SHA-256 remains `3a50b512a4ce21f35ab6a6e1d6758fd1ed74324af8ffdd271eeb32d83ba32e80`.
+
+### Serial cleanup accounting
+
+No release occurred between any serial cleanup heads. Generated counts are lockfile additions plus deletions; binary counts are tracked bytes deleted.
+
+| Green cleanup head                       | Authored lines | Generated lines | Binary deletion |
+| ---------------------------------------- | -------------: | --------------: | --------------: |
+| PR10a retire RR7 tests / stage validator |            936 |               0 |         0 bytes |
+| PR10b remove retired scenarios           |            911 |               0 |         0 bytes |
+| PR10c reduce app to static shell         |            455 |               0 |    57,344 bytes |
+| PR10c prune auth dependencies            |             63 |              56 |         0 bytes |
+| PR10c prune database dependencies        |             70 |             158 |         0 bytes |
+| PR10c prune serve edge                   |             95 |               8 |         0 bytes |
+| PR10c normalize React catalog            |              8 |              82 |         0 bytes |
+| PR10c retire static app node             |            358 |               0 |         0 bytes |
+| PR10c prune retired importer             |              5 |             909 |         0 bytes |
+| PR10d retire bridge tests/docs           |            610 |               0 |         0 bytes |
+| PR10d retire bridge release graph        |            812 |              38 |         0 bytes |
+
+The supported rollback remains bridge release `0.5.12-alpha.1` plus its matching RR7 importer, workspace, release, and lockfile graph; restoring it reopens the retirement gate and does not alter maintained RR8 8.3.0.
