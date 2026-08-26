@@ -18,13 +18,13 @@
     "@react-router/node": "7.18.2",
     "react-router": "7.18.2",
     "isbot": "^4.4.0",
-    "react": "18.2.0",
-    "react-dom": "18.2.0"
+    "react": "catalog:",
+    "react-dom": "catalog:"
   },
   "devDependencies": {
     "@react-router/dev": "7.18.2",
-    "@types/react": "^18.2.20",
-    "@types/react-dom": "^18.2.7",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
     "eslint": "^8.23.1",
     "typescript": "catalog:",
     "vite": "catalog:"
