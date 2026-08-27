@@ -77,13 +77,13 @@ Test summary: 8 contract tests authored; 4 currently pass and 4 intentionally fa
 
 None. The RED suite uses Remix `LoaderFunctionArgs` / `ActionFunctionArgs` construction because dependency migration is explicitly deferred.
 
-## Remaining Tasks
+## Cumulative Task State
 
-The following exact unchecked rows remain in the persisted tasks artifact:
+The following Work unit 2 rows are now complete in the persisted tasks artifact; every exact unchecked Work unit 3+ row below remains outstanding:
 
-- [ ] GREEN: port the smallest RR8 cause traversal and response mapping behavior into `packages/react/remix/src/lib/runtime.ts` without importing RR8 implementation code or context classes; make `pnpm nx run @effectify/react-remix:test -- tests/runtime.test.ts` pass. <!-- sdd-owner: implementation -->
-- [ ] TRIANGULATE: add focused edge cases in `packages/react/remix/tests/runtime.test.ts` for both loader and action paths, non-default redirect status/custom headers, exact throwable identity, defect/interruption generic bodies, and logger observation; run `pnpm nx run @effectify/react-remix:test -- tests/runtime.test.ts -t "redirect|identity|defect|interrupt"`. Runtime harness: the focused tests execute real `ManagedRuntime` exits and inspect returned/thrown native `Response` values. <!-- sdd-owner: implementation -->
-- [ ] REFACTOR only after green, then run `pnpm nx run-many --targets=test,typecheck:no-build,lint,build --projects=@effectify/react-remix,@effectify/react-router` and `pnpm nx run @effectify/repo:format:check`; separately record bridge and RR8 results and confirm the protected RR8 diff remains empty with `git diff --exit-code -- pnpm-workspace.yaml package.json pnpm-lock.yaml packages/react/router packages/react/router-better-auth apps/react-router-example`. <!-- sdd-owner: implementation -->
+- [x] GREEN: port the smallest RR8 cause traversal and response mapping behavior into `packages/react/remix/src/lib/runtime.ts` without importing RR8 implementation code or context classes; make `pnpm nx run @effectify/react-remix:test -- tests/runtime.test.ts` pass. <!-- sdd-owner: implementation -->
+- [x] TRIANGULATE: add focused edge cases in `packages/react/remix/tests/runtime.test.ts` for both loader and action paths, non-default redirect status/custom headers, exact throwable identity, defect/interruption generic bodies, and logger observation; run `pnpm nx run @effectify/react-remix:test -- tests/runtime.test.ts -t "redirect|identity|defect|interrupt"`. Runtime harness: the focused tests execute real `ManagedRuntime` exits and inspect returned/thrown native `Response` values. <!-- sdd-owner: implementation -->
+- [x] REFACTOR only after green, then run `pnpm nx run-many --targets=test,typecheck:no-build,lint,build --projects=@effectify/react-remix,@effectify/react-router` and `pnpm nx run @effectify/repo:format:check`; separately record bridge and RR8 results and confirm the protected RR8 diff remains empty with `git diff --exit-code -- pnpm-workspace.yaml package.json pnpm-lock.yaml packages/react/router packages/react-router-better-auth apps/react-router-example`. <!-- sdd-owner: implementation -->
 - [ ] RED: add `packages/react/remix/tests/json.test.ts` and a concrete dependency-isolation check under `scripts/verify-react-router-manifests.mjs` (or its exact consolidation-specific successor) that fails until bridge peer/dev `react-router` pins are exactly `7.18.2`, catalog/root RR8 remains `8.3.0`, and no bridge import uses `@remix-run/*`; run `pnpm nx run @effectify/react-remix:test -- tests/json.test.ts` and `pnpm nx run @effectify/react-router-example:migration:manifest` and record the expected failures. <!-- sdd-owner: implementation -->
 - [ ] GREEN: change `packages/react/remix/package.json` and `src/lib/{context,runtime}.ts` to exact direct RR7 `7.18.2`; implement `src/lib/json.ts` with `Response.json`, numeric/object init handling, native serialization, caller headers, and `@deprecated` export from `src/index.ts`; regenerate `pnpm-lock.yaml` with `pnpm install --lockfile-only`. <!-- sdd-owner: implementation -->
 - [ ] TRIANGULATE dependency isolation using `pnpm nx run @effectify/react-remix:test -- tests/json.test.ts`, `pnpm nx run @effectify/react-remix:test -- tests/runtime.test.ts`, `pnpm nx run @effectify/react-router-example:migration:manifest`, `pnpm why react-router --filter @effectify/react-remix`, and `pnpm why react-router --filter @effectify/react-router-example`; evidence must show RR7 `7.18.2` for the bridge and RR8 `8.3.0` for the protected app in distinct importer snapshots. Runtime harness: `json.test.ts` reads native response bodies/status/headers; dependency commands are non-runtime evidence. <!-- sdd-owner: implementation -->
@@ -126,4 +126,92 @@ The following exact unchecked rows remain in the persisted tasks artifact:
 - [ ] After work unit 9 and before work unit 10, confirm the validator reports OPEN, every documented consumer is migrated, every scenario disposition is reviewed and complete with passing evidence, and the final bridge rollback version is recorded; explicitly authorize or reject retirement deletion without bypassing any failed row. <!-- sdd-owner: parent -->
 - [ ] After work unit 11, evaluate the final RR8-only evidence and close the OpenSpec change only if cleanup, release surfaces, scenario ledger, rollback record, and protected RR8 `8.3.0` matrix are all complete; otherwise reopen the applicable gate. <!-- sdd-owner: parent -->
 
-Parent-owned rows above are deferred lifecycle actions and were preserved byte-for-byte. The next implementation PR boundary is Work unit 2 / PR 2; lifecycle routing remains parent-owned.
+Parent-owned rows above are deferred lifecycle actions and were preserved byte-for-byte. The next implementation PR boundary is Work unit 3 / PR 3; lifecycle routing remains parent-owned.
+
+## Work Unit 2 / PR 2 — Bridge Contract Implementation GREEN/TRIANGULATE/REFACTOR
+
+### Structured Status Consumed
+
+- Native OpenSpec status was authoritative: change `consolidate-react-remix-into-router`, `applyState: ready`, planning dependencies complete, and `nextRecommended: apply`.
+- Action context was `repo-local` with workspace root and allowed edit root `/Users/skynet/devx-op/effectify`; warnings: none.
+- Parent delivery authority was `auto-chain`, `feature-branch-chain`, Work unit 2 only, maximum 1,000 changed lines. The live parent-owned attempt was authenticated using its token without creating another attempt.
+- Skill resolution used the globally installed Gentle AI skill as a degraded fallback because no parent-injected skill path was supplied.
+
+### Workload / PR Boundary
+
+- Completed boundary: **PR 2 — bridge runtime GREEN**.
+- Product/test changes are limited to `packages/react/remix/src/lib/runtime.ts` and behavior-preserving triangulation in `packages/react/remix/tests/runtime.test.ts`.
+- No manifest, catalog, lockfile, RR8 package, RR8 adapter, RR8 app, dependency migration, or Work unit 3 change was made.
+- Authored changed-line count: **334 additions + deletions** (245 product/test lines, 6 task-checkbox line changes, and 83 cumulative apply-progress lines). Generated mutations: **0 retained**. Nx typecheck touched the tracked RR8 tsbuildinfo; it was restored exactly to `HEAD` before the protected-diff check.
+
+### Completed Tasks and Persisted Checkboxes
+
+All three implementation-owned Work unit 2 rows are visibly marked `- [x]` in `tasks.md` and mirrored to Engram:
+
+1. GREEN: ported local Cause traversal, whole-cause logging, redirect return behavior, and exact native throwable propagation; bridge suite passed 8/8 before triangulation.
+2. TRIANGULATE: added independent loader/action redirect status/header cases and second exact-identity inputs; the exact focused filter passed 7 tests with 3 unrelated tests skipped.
+3. REFACTOR: formatted the local runtime/tests, reran focused and full bridge checks, passed the two-project Nx matrix and format check, and proved the protected RR8 diff empty.
+
+### Files Changed
+
+- `packages/react/remix/src/lib/runtime.ts`
+- `packages/react/remix/tests/runtime.test.ts`
+- `openspec/changes/consolidate-react-remix-into-router/tasks.md` (Work unit 2 checkboxes only)
+- `openspec/changes/consolidate-react-remix-into-router/apply-progress.md` (cumulative evidence)
+
+### RED → GREEN → TRIANGULATE → REFACTOR Evidence
+
+| Stage          | Exact command / action                                                                                                                                                                                          | Result                                                                                                                                                                    |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| RED safety net | `pnpm nx run @effectify/react-remix:test -- tests/runtime.test.ts`                                                                                                                                              | Exit 1: 4 passed, 4 failed. Redirect returned a fallback object; action `Error` identity was lost; loader/action defect/interruption log counts were each 0 instead of 2. |
+| GREEN          | Port smallest local runtime behavior, then rerun the same focused command                                                                                                                                       | Exit 0: 8/8 passed.                                                                                                                                                       |
+| TRIANGULATE    | Add distinct loader 308/action 303 redirects with custom headers and additional loader/action `Response`/`Error` identities; run `pnpm nx run @effectify/react-remix:test -- tests/runtime.test.ts -t "redirect | identity                                                                                                                                                                  | defect | interrupt"` | Exit 0: 7 passed, 3 skipped. Existing defect/interruption assertions retained generic bodies and logger observations. |
+| REFACTOR       | `pnpm nx run @effectify/repo:format`, focused bridge test, exact two-project matrix, then format check                                                                                                          | Exit 0: bridge 10/10; RR8 8/8; both package typecheck:no-build/lint/build targets passed; formatting passed.                                                              |
+
+### Commands Run
+
+| Command                                                                                                                                                     |     Exit | Observed result                                                                                             |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------- | -------: | ----------------------------------------------------------------------------------------------------------- |
+| `pnpm nx run @effectify/react-remix:test -- tests/runtime.test.ts` (RED)                                                                                    |        1 | Expected documented RED: 4/8 failed.                                                                        |
+| `pnpm nx run @effectify/react-remix:test -- tests/runtime.test.ts` (GREEN)                                                                                  |        0 | 8/8 passed.                                                                                                 |
+| `pnpm nx run @effectify/react-remix:test -- tests/runtime.test.ts -t "redirect                                                                              | identity | defect                                                                                                      | interrupt"` | 0   | 7 passed, 3 skipped. |
+| `pnpm nx run-many --targets=test,typecheck:no-build,lint,build --projects=@effectify/react-remix,@effectify/react-router`                                   |        0 | Bridge 10/10 and RR8 8/8; all typecheck:no-build, lint, and build targets passed.                           |
+| `pnpm nx run @effectify/repo:format:check` (before formatting)                                                                                              |        1 | Detected format changes in the two assigned package files; remediated with the repository Nx format target. |
+| `pnpm nx run @effectify/repo:format`                                                                                                                        |        0 | Formatted only changed files.                                                                               |
+| `pnpm nx run @effectify/repo:format:check` (final)                                                                                                          |        0 | All matched files correctly formatted.                                                                      |
+| `git diff --exit-code -- pnpm-workspace.yaml package.json pnpm-lock.yaml packages/react/router packages/react/router-better-auth apps/react-router-example` |        0 | Protected RR8/dependency diff empty after restoring command-generated tsbuildinfo mutation.                 |
+
+### TDD Cycle Evidence
+
+| Task                         | Test File                                    | Layer               | Safety Net                                     | RED                                                        | GREEN                                 | TRIANGULATE                                                        | REFACTOR                                              |
+| ---------------------------- | -------------------------------------------- | ------------------- | ---------------------------------------------- | ---------------------------------------------------------- | ------------------------------------- | ------------------------------------------------------------------ | ----------------------------------------------------- |
+| Work unit 2 runtime behavior | `packages/react/remix/tests/runtime.test.ts` | Runtime integration | Expected 4/8 RED from committed contract suite | Four documented failures reproduced before production edit | 8/8 passed after minimal runtime port | Added two behavioral tests; focused filter passed 7 with 3 skipped | Formatted and reran focused/full matrix; bridge 10/10 |
+
+Test summary: 2 triangulation tests added; 10 bridge tests and 8 protected RR8 tests passed. No pure functions were added beyond the local `failure` Cause traversal helper; no approval-only tests were needed because the committed RED suite was the behavioral specification.
+
+### Deviations From Design
+
+None. The bridge remains on pre-migration Remix dependencies, implementation code is local rather than imported from RR8, and protected RR8 surfaces remain unchanged.
+
+### Remaining Tasks and Deferred Lifecycle Actions
+
+- Exact unchecked implementation rows for Work unit 3 onward remain in the cumulative list above and in `tasks.md`; Work unit 3 is the next implementation boundary.
+- All three parent-owned human evidence gates remain deferred and byte-for-byte unchanged in `tasks.md`.
+- Apply is not globally complete; routing returns to the parent lifecycle/auto-chain orchestrator rather than starting Work unit 3 here.
+
+## Bounded CI Correction — `bridge-contract-integration-correction`
+
+- Parent-authorized PR 2 correction only; authoritative status remained `applyState: ready`, repo-local root `/Users/skynet/devx-op/effectify`, with no edit-root warnings.
+- RED: focused app typecheck and the exact affected typecheck against `origin/docs/react-remix-consolidation-plan` each failed only on three impossible `loaderData.errors` reads in `demo.tsx`, `test.tsx`, and `todos.tsx`.
+- GREEN: removed only those unreachable loader-failure render branches; loader success types remain narrow and runtime/framework/dependency contracts are unchanged.
+- Verification passed: `pnpm nx run @effectify/react-remix-example:typecheck`; `pnpm nx affected --target=typecheck --base=origin/docs/react-remix-consolidation-plan --head=HEAD --parallel=1 --verbose`; and `pnpm nx run @effectify/react-remix:test -- tests/runtime.test.ts` (10/10).
+- Formatting: repository format check initially identified pre-existing whole-file drift in the three touched routes; broad formatter output was reverted to preserve the bounded correction. No generated mutation is retained.
+- Authored correction size before this evidence entry: 15 additions + 49 deletions across the three route files. Work Unit 3+ and parent-owned task checkboxes remain unchanged.
+- Deviation: this source-compatible integration correction touches the pre-migration app earlier than its planned work unit solely to reconcile PR 2's narrowed loader success contract with affected CI.
+
+## Bounded Format Correction — `bridge-contract-format-correction`
+
+- Ran `pnpm nx run @effectify/repo:format`; Nx naturally formatted the three corrected route files and this already-touched progress file, with no semantic or task-checkbox changes.
+- Verification passed: repository format check; exact affected typecheck against `origin/docs/react-remix-consolidation-plan`; bridge runtime tests (10/10); and `git diff --check`.
+- Final correction objective: **390 changed lines** (170 additions, 220 deletions). Entire child versus the planning base: **952 changed lines** (595 additions, 357 deletions), below the 1,000-line boundary.
+- Boundaries preserved: no manifest, dependency, lockfile, protected RR8 surface, task checkbox, or Work Unit 3 change; parent retains attempt settlement and delivery ownership.

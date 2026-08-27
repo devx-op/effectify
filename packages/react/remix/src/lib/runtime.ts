@@ -1,4 +1,5 @@
 import { type ActionFunctionArgs, json, type LoaderFunctionArgs, redirect } from "@remix-run/node"
+import * as Cause from "effect/Cause"
 import * as Effect from "effect/Effect"
 import * as Exit from "effect/Exit"
 import { pipe } from "effect/Function"
@@ -14,143 +15,80 @@ type SafeRedirectInit = {
   headers?: Record<string, string> | Headers
 }
 
+const failure = <E>(cause: Cause.Cause<E>): E | undefined => {
+  for (const reason of cause.reasons) {
+    if (Cause.isFailReason(reason)) return reason.error
+  }
+  return undefined
+}
+
 export const make = <R, E>(layer: Layer.Layer<R, E, never>) => {
   const runtime = ManagedRuntime.make(layer)
 
-  const withLoaderEffect = <A, B, R0 extends R | LoaderArgsContext>(
-    self: Effect.Effect<HttpResponse<A> | Response, B, R0>,
-  ) =>
-  (args: LoaderFunctionArgs) => {
-    // v4 pattern: Use Layer.succeed to provide context values
-    const argsLayer = Layer.succeed(LoaderArgsContext, args)
-    const runnable = pipe(
-      self,
-      Effect.provide(argsLayer),
-      Effect.tapError((cause) => Effect.logError("Loader effect failed", cause)),
-    )
-    return runtime.runPromiseExit(runnable).then(
-      Exit.match({
-        onFailure: (cause) => {
-          if (cause.reasons[0]._tag === "Fail") {
-            // Preserve the original error for ErrorBoundary
-            const error = cause.reasons[0].error
-            if (error instanceof Response) {
+  const withLoaderEffect =
+    <A, B, R0 extends R | LoaderArgsContext>(self: Effect.Effect<HttpResponse<A> | Response, B, R0>) =>
+    (args: LoaderFunctionArgs) => {
+      const runnable = pipe(
+        self,
+        Effect.provide(Layer.succeed(LoaderArgsContext, args)),
+        Effect.tapCause((cause) => Effect.logError("Loader effect failed", Cause.squash(cause))),
+      )
+      return runtime.runPromiseExit(runnable).then(
+        Exit.match({
+          onFailure: (cause) => {
+            const error = failure(cause)
+            if (error instanceof Response || error instanceof Error) {
               throw error
             }
-            if (error instanceof Error) {
-              throw error
-            }
-            // Convert other errors to Response for ErrorBoundary with ok: false
-            const errorData = { ok: false as const, errors: [String(error)] }
-            throw new Response(JSON.stringify(errorData), {
-              status: 500,
-              headers: { "Content-Type": "application/json" },
-            })
-          }
-          // Handle other types of failures (interrupts, defects, etc.)
-          const errorData = {
-            ok: false as const,
-            errors: ["Internal server error"],
-          }
-          throw new Response(JSON.stringify(errorData), {
-            status: 500,
-            headers: { "Content-Type": "application/json" },
-          })
-        },
-        onSuccess: (result) => {
-          // If the result is a Response, throw it directly to preserve headers (including Set-Cookie)
-          // This is how React Router expects to handle Responses from loaders/actions
-          if (result instanceof Response) {
-            throw result
-          }
-          // Otherwise, match the HttpResponse types
-          return matchHttpResponse<A>()({
-            HttpResponseSuccess: ({ data: response }) => ({
-              ok: true as const,
-              data: response,
-            }),
-            HttpResponseFailure: ({ cause }) => {
-              // Convert HttpResponseFailure to Response for ErrorBoundary with ok: false
-              const errorMessage = typeof cause === "string" ? cause : String(cause)
-              const errorData = {
-                ok: false as const,
-                errors: [errorMessage],
-              }
-              throw new Response(JSON.stringify(errorData), {
-                status: 500,
-                headers: { "Content-Type": "application/json" },
-              })
-            },
-            HttpResponseRedirect: ({ to, init = {} }) => {
-              redirect(to, init as SafeRedirectInit)
-              return { ok: false as const, errors: ["Redirecting..."] }
-            },
-          })(result)
-        },
-      }),
-    )
-  }
+            throw json({ ok: false as const, errors: ["Internal server error"] }, { status: 500 })
+          },
+          onSuccess: (result) => {
+            if (result instanceof Response) throw result
+            return matchHttpResponse<A>()({
+              HttpResponseSuccess: ({ data }) => ({ ok: true as const, data }),
+              HttpResponseFailure: ({ cause }) => {
+                throw json({ ok: false as const, errors: [String(cause)] }, { status: 500 })
+              },
+              HttpResponseRedirect: ({ to, init = {} }) => redirect(to, init as SafeRedirectInit),
+            })(result)
+          },
+        }),
+      )
+    }
 
-  // Don't throw the Error requests, handle them in the normal UI. No ErrorBoundary
-  const withActionEffect = <A, B, R0 extends R | ActionArgsContext>(
-    self: Effect.Effect<HttpResponse<A> | Response, B, R0>,
-  ) =>
-  (args: ActionFunctionArgs) => {
-    // v4 pattern: Use Layer.succeed to provide context values
-    const argsLayer = Layer.succeed(ActionArgsContext, args)
-    const runnable = pipe(
-      self,
-      Effect.provide(argsLayer),
-      Effect.tapError((cause) => {
-        if (!(cause instanceof Response)) {
-          return Effect.logError("Action effect failed", cause)
-        }
-        return Effect.void
-      }),
-    )
+  const withActionEffect =
+    <A, B, R0 extends R | ActionArgsContext>(self: Effect.Effect<HttpResponse<A> | Response, B, R0>) =>
+    (args: ActionFunctionArgs) => {
+      const runnable = pipe(
+        self,
+        Effect.provide(Layer.succeed(ActionArgsContext, args)),
+        Effect.tapCause((cause) => Effect.logError("Action effect failed", Cause.squash(cause))),
+      )
 
-    return runtime.runPromiseExit(runnable).then(
-      Exit.match({
-        onFailure: (cause) => {
-          if (cause.reasons[0]._tag === "Fail") {
-            const error = cause.reasons[0].error
-            // If the error is a Response, throw it directly to preserve headers
-            if (error instanceof Response) {
+      return runtime.runPromiseExit(runnable).then(
+        Exit.match({
+          onFailure: (cause) => {
+            const error = failure(cause)
+            if (error instanceof Response || error instanceof Error) {
               throw error
             }
-            return json(
-              { ok: false as const, errors: [String(error)] },
-              { status: 400 },
-            )
-          }
-          return json(
-            { ok: false as const, errors: ["Internal server error"] },
-            { status: 400 },
-          )
-        },
-        onSuccess: (result) => {
-          // If the result is a Response, throw it directly to preserve headers (including Set-Cookie)
-          // This is how React Router expects to handle Responses from actions
-          if (result instanceof Response) {
-            throw result
-          }
-          // Otherwise, match the HttpResponse types
-          return matchHttpResponse<A>()({
-            HttpResponseSuccess: ({ data: response }) => ({
-              ok: true as const,
-              response,
-            }),
-            HttpResponseFailure: ({ cause }) =>
-              json(
-                { ok: false as const, errors: [String(cause)] },
-                { status: 400 },
-              ),
-            HttpResponseRedirect: ({ to, init = {} }) => redirect(to, init as SafeRedirectInit),
-          })(result)
-        },
-      }),
-    )
-  }
+            return json({ ok: false as const, errors: ["Internal server error"] }, { status: 400 })
+          },
+          onSuccess: (result) => {
+            if (result instanceof Response) throw result
+            return matchHttpResponse<A>()({
+              HttpResponseSuccess: ({ data }) => ({
+                ok: true as const,
+                response: data,
+              }),
+              HttpResponseFailure: ({ cause }) =>
+                json({ ok: false as const, errors: [String(cause)] }, { status: 400 }),
+              HttpResponseRedirect: ({ to, init = {} }) => redirect(to, init as SafeRedirectInit),
+            })(result)
+          },
+        }),
+      )
+    }
 
   return { withLoaderEffect, withActionEffect }
 }

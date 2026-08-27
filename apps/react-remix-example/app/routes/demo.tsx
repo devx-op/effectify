@@ -4,7 +4,7 @@ import * as Effect from "effect/Effect"
 import { withActionEffect, withLoaderEffect } from "~/lib/runtime.server"
 
 export const loader = withLoaderEffect(
-  Effect.gen(function*() {
+  Effect.gen(function* () {
     const { request } = yield* LoaderArgsContext
     const url = new URL(request.url)
     const demo = url.searchParams.get("demo")
@@ -30,12 +30,12 @@ export const loader = withLoaderEffect(
 )
 
 export const action = withActionEffect(
-  Effect.gen(function*() {
+  Effect.gen(function* () {
     const { request } = yield* ActionArgsContext
 
     // Get form data
     const formData = yield* Effect.tryPromise(() => request.formData())
-    const actionType = formData instanceof FormData ? formData.get("actionType") as string : ""
+    const actionType = formData instanceof FormData ? (formData.get("actionType") as string) : ""
 
     yield* Effect.log("Demo action called with type:", actionType)
 
@@ -69,27 +69,17 @@ export default function DemoRoute() {
       {/* Show loader data */}
       <div style={{ marginBottom: "20px" }}>
         <h3>Loader Data:</h3>
-        {loaderData.ok ?
-          (
-            <div style={{ padding: "10px", backgroundColor: "#e8f5e8", borderRadius: "4px" }}>
-              <p>
-                <strong>Message:</strong> {loaderData.data.message}
-              </p>
-              <p>
-                <strong>Demo:</strong> {loaderData.data.demo}
-              </p>
-              <p>
-                <strong>Timestamp:</strong> {loaderData.data.timestamp}
-              </p>
-            </div>
-          ) :
-          (
-            <div style={{ padding: "10px", backgroundColor: "#f5e8e8", borderRadius: "4px" }}>
-              <p>
-                <strong>Error:</strong> {loaderData.errors.join(", ")}
-              </p>
-            </div>
-          )}
+        <div style={{ padding: "10px", backgroundColor: "#e8f5e8", borderRadius: "4px" }}>
+          <p>
+            <strong>Message:</strong> {loaderData.data.message}
+          </p>
+          <p>
+            <strong>Demo:</strong> {loaderData.data.demo}
+          </p>
+          <p>
+            <strong>Timestamp:</strong> {loaderData.data.timestamp}
+          </p>
+        </div>
       </div>
 
       {/* Demo buttons for loader */}
@@ -190,25 +180,23 @@ export default function DemoRoute() {
       {actionData && (
         <div style={{ padding: "10px", backgroundColor: "#e8f4fd", borderRadius: "4px" }}>
           <h3>Action Result:</h3>
-          {actionData.ok ?
-            (
-              <div>
-                <p>
-                  <strong>Message:</strong> {actionData.response.message}
-                </p>
-                <p>
-                  <strong>Action Type:</strong> {actionData.response.actionType}
-                </p>
-                <p>
-                  <strong>Timestamp:</strong> {actionData.response.timestamp}
-                </p>
-              </div>
-            ) :
-            (
-              <p style={{ color: "red" }}>
-                <strong>Error:</strong> {String(actionData.errors)}
+          {actionData.ok ? (
+            <div>
+              <p>
+                <strong>Message:</strong> {actionData.response.message}
               </p>
-            )}
+              <p>
+                <strong>Action Type:</strong> {actionData.response.actionType}
+              </p>
+              <p>
+                <strong>Timestamp:</strong> {actionData.response.timestamp}
+              </p>
+            </div>
+          ) : (
+            <p style={{ color: "red" }}>
+              <strong>Error:</strong> {String(actionData.errors)}
+            </p>
+          )}
         </div>
       )}
 
