@@ -9,17 +9,14 @@ Monorepo of utilities for integrating [Effect](https://effect.website/) with dif
 
 ## Packages
 
-| Package                                                                                                  | Version                                                                                                                                                   | Documentation                                                 | Description                                                                    |
-| -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| [@effectify/solid-query](https://www.npmjs.com/package/@effectify/solid-query)                           | [![npm version](https://img.shields.io/npm/v/@effectify/solid-query.svg)](https://www.npmjs.com/package/@effectify/solid-query)                           | [Docs](./packages/solid/query/README.md)                      | Integration of Effect with TanStack Query for Solid.js                         |
-| [@effectify/react-query](https://www.npmjs.com/package/@effectify/react-query)                           | [![npm version](https://img.shields.io/npm/v/@effectify/react-query.svg)](https://www.npmjs.com/package/@effectify/react-query)                           | [Docs](./packages/react/query/README.md)                      | Integration of Effect with TanStack Query for React                            |
-| [@effectify/react-router](https://www.npmjs.com/package/@effectify/react-router)                         | [![npm version](https://img.shields.io/npm/v/@effectify/react-router.svg)](https://www.npmjs.com/package/@effectify/react-router)                         | [Docs](./packages/react/router/README.md)                     | Integration of React Router with Effect for React applications                 |
-| [@effectify/react-remix](https://www.npmjs.com/package/@effectify/react-remix)                           | [![npm version](https://img.shields.io/npm/v/@effectify/react-remix.svg)](https://www.npmjs.com/package/@effectify/react-remix)                           | [Migration](./docs/migrations/react-remix-to-react-router.md) | Deprecated temporary React Router 7.18.2 bridge; use `@effectify/react-router` |
-| [@effectify/node-better-auth](https://www.npmjs.com/package/@effectify/node-better-auth)                 | [![npm version](https://img.shields.io/npm/v/@effectify/node-better-auth.svg)](https://www.npmjs.com/package/@effectify/node-better-auth)                 | [Docs](./packages/node/better-auth/README.md)                 | Integration of better-auth with Effect for Node.js applications                |
-| [@effectify/react-router-better-auth](https://www.npmjs.com/package/@effectify/react-router-better-auth) | [![npm version](https://img.shields.io/npm/v/@effectify/react-router-better-auth.svg)](https://www.npmjs.com/package/@effectify/react-router-better-auth) | [Docs](./packages/react/router-better-auth/)                  | Integration of React Router + better-auth with Effect for React applications   |
-| [@effectify/prisma](https://www.npmjs.com/package/@effectify/prisma)                                     | [![npm version](https://img.shields.io/npm/v/@effectify/prisma.svg)](https://www.npmjs.com/package/@effectify/prisma)                                     | [Docs](./packages/prisma/README.md)                           | Prisma generator and runtime utilities for Effect                              |
-
-> **React Router migration:** `@effectify/react-remix` is deprecated and temporary. New users should install `@effectify/react-router` for React Router 8.3.0. Existing bridge users can follow the [migration guide and retirement ledger](./docs/migrations/react-remix-to-react-router.md); the final supported rollback version is `0.5.12-alpha.1`.
+| Package                                                                                                  | Version                                                                                                                                                   | Documentation                                 | Description                                                                  |
+| -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- | ---------------------------------------------------------------------------- |
+| [@effectify/solid-query](https://www.npmjs.com/package/@effectify/solid-query)                           | [![npm version](https://img.shields.io/npm/v/@effectify/solid-query.svg)](https://www.npmjs.com/package/@effectify/solid-query)                           | [Docs](./packages/solid/query/README.md)      | Integration of Effect with TanStack Query for Solid.js                       |
+| [@effectify/react-query](https://www.npmjs.com/package/@effectify/react-query)                           | [![npm version](https://img.shields.io/npm/v/@effectify/react-query.svg)](https://www.npmjs.com/package/@effectify/react-query)                           | [Docs](./packages/react/query/README.md)      | Integration of Effect with TanStack Query for React                          |
+| [@effectify/react-router](https://www.npmjs.com/package/@effectify/react-router)                         | [![npm version](https://img.shields.io/npm/v/@effectify/react-router.svg)](https://www.npmjs.com/package/@effectify/react-router)                         | [Docs](./packages/react/router/README.md)     | Integration of React Router with Effect for React applications               |
+| [@effectify/node-better-auth](https://www.npmjs.com/package/@effectify/node-better-auth)                 | [![npm version](https://img.shields.io/npm/v/@effectify/node-better-auth.svg)](https://www.npmjs.com/package/@effectify/node-better-auth)                 | [Docs](./packages/node/better-auth/README.md) | Integration of better-auth with Effect for Node.js applications              |
+| [@effectify/react-router-better-auth](https://www.npmjs.com/package/@effectify/react-router-better-auth) | [![npm version](https://img.shields.io/npm/v/@effectify/react-router-better-auth.svg)](https://www.npmjs.com/package/@effectify/react-router-better-auth) | [Docs](./packages/react/router-better-auth/)  | Integration of React Router + better-auth with Effect for React applications |
+| [@effectify/prisma](https://www.npmjs.com/package/@effectify/prisma)                                     | [![npm version](https://img.shields.io/npm/v/@effectify/prisma.svg)](https://www.npmjs.com/package/@effectify/prisma)                                     | [Docs](./packages/prisma/README.md)           | Prisma generator and runtime utilities for Effect                            |
 
 ## Solid Atom Integration
 
@@ -35,8 +32,6 @@ npm install @effectify/react-query@alpha
 npm install @effectify/solid-query@alpha
 npm install @effectify/react-router@alpha
 npm install @effectify/node-better-auth@alpha
-# Existing bridge consumers only; deprecated RR7 7.18.2 bridge
-npm install @effectify/react-remix@0.5.12-alpha.1
 npm install @effectify/prisma@alpha
 
 # pnpm
@@ -48,14 +43,13 @@ yarn add @effectify/react-query@alpha
 
 ### Migration Status
 
-| Package                     | v4 Alpha Status          | Stable Version            |
-| --------------------------- | ------------------------ | ------------------------- |
-| @effectify/react-query      | 🚧 In Progress           | ✅ v3                     |
-| @effectify/solid-query      | 🚧 In Progress           | ✅ v3                     |
-| @effectify/react-router     | 🚧 In Progress           | ✅ v3                     |
-| @effectify/node-better-auth | 🚧 In Progress           | ✅ v3                     |
-| @effectify/react-remix      | ⚠️ Deprecated RR7 bridge | `0.5.12-alpha.1` rollback |
-| @effectify/prisma           | 🚧 In Progress           | ✅ v3                     |
+| Package                     | v4 Alpha Status | Stable Version |
+| --------------------------- | --------------- | -------------- |
+| @effectify/react-query      | 🚧 In Progress  | ✅ v3          |
+| @effectify/solid-query      | 🚧 In Progress  | ✅ v3          |
+| @effectify/react-router     | 🚧 In Progress  | ✅ v3          |
+| @effectify/node-better-auth | 🚧 In Progress  | ✅ v3          |
+| @effectify/prisma           | 🚧 In Progress  | ✅ v3          |
 
 **Legend**: ✅ Available | 🚧 Migrating | ⏳ Pending
 

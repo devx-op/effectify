@@ -182,9 +182,9 @@ The historical WU5 RED/GREEN evidence above remains valid for the declarative RR
 - [x] GREEN PR10c recovery head: delete every remaining file under `apps/react-remix-example`, remove only its Nx Vite/Vitest and root Vitest exclusions, and adapt the manifest verifier for app absence while retaining the stale lockfile importer, workspace catalog, root override, bridge, release, and documentation cleanup for a separate head. <!-- sdd-owner: implementation -->
 - [x] GREEN PR10c: delete the remaining old app/importer and remove its Nx graph wiring while retaining the bridge package and release/workspace/lockfile cleanup for PR10d. <!-- sdd-owner: implementation -->
 - [x] GREEN PR10d recovery head: delete only the bridge README, changelog, package-owned tests and Vitest/spec configuration, remove only test-specific project/TypeScript references, and preserve the buildable/typecheckable/lintable published bridge package and all final graph surfaces. <!-- sdd-owner: implementation -->
-- [ ] GREEN PR10d: delete the bridge package and `json`, remove obsolete release/docs/workspace references, regenerate the lockfile, and preserve protected RR8 `8.3.0`. <!-- sdd-owner: implementation -->
-- [ ] TRIANGULATE final absence/version isolation with `consolidation:verify -- --expect=retired`, Nx graph, protected manifest/`pnpm why`, and repository/lockfile scans; runtime harness: N/A for deletion, with RR8 behavior verified in work unit 11. <!-- sdd-owner: implementation -->
-- [ ] REFACTOR cleanup wording only after absence passes; run affected lint/typecheck/test/build and format, and record authored/generated counts for every PR10 head. <!-- sdd-owner: implementation -->
+- [x] GREEN PR10d: delete the bridge package and `json`, remove obsolete release/docs/workspace references, regenerate the lockfile, and preserve protected RR8 `8.3.0`. <!-- sdd-owner: implementation -->
+- [x] TRIANGULATE final absence/version isolation with `consolidation:verify -- --expect=retired`, Nx graph, protected manifest/`pnpm why`, and repository/lockfile scans; runtime harness: N/A for deletion, with RR8 behavior verified in work unit 11. <!-- sdd-owner: implementation -->
+- [x] REFACTOR cleanup wording only after absence passes; run affected lint/typecheck/test/build and format, and record authored/generated counts for every PR10 head. <!-- sdd-owner: implementation -->
 
 ### Work unit 11 / PR 11 — RR8-only release verification
 

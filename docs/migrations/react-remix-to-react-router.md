@@ -1,9 +1,14 @@
 # Migrate from the React Remix bridge to React Router
 
-`@effectify/react-remix` is a deprecated, temporary React Router 7 bridge. New work should use `@effectify/react-router` and React Router 8.3.0; the bridge supports only the exact React Router 7.18.2 family while this repository completes the evidence-gated migration below.
+This retained historical ledger records the completed migration from the temporary `@effectify/react-remix` React Router 7 bridge to the maintained `@effectify/react-router` integration on React Router 8.3.0.
 
 Retirement gate: **OPEN**
+Retirement completed: **YES**
 Final supported bridge rollback version: `0.5.12-alpha.1`
+
+Reviewer `kattsushi` authorized retirement. No release occurred between the serial cleanup heads. The maintained React Router family remains exact 8.3.0, and rollback restores bridge release `0.5.12-alpha.1` without changing RR8.
+
+Historical paths in this ledger are evidence snapshots and do not assert current filesystem presence. OpenSpec records and consolidation-validator fixtures use the same historical-path semantics; active application, package, Nx, release, workspace, documentation, and lockfile surfaces must remain free of the retired graph.
 
 ## Quick migration
 

@@ -173,7 +173,7 @@ if (/\bfuture\s*:/.test(config)) {
 const verificationTarget = project.targets?.["migration:verify"];
 const manifestTarget = project.targets?.["migration:manifest"];
 if (!verificationTarget || !manifestTarget) {
-  throw new Error("Missing final-v8 migration verification target");
+  throw new Error("Missing protected-RR8 migration verification target");
 }
 
 const serializedTargets = JSON.stringify({
@@ -182,11 +182,11 @@ const serializedTargets = JSON.stringify({
 });
 if (/\b(build|start)\b/.test(serializedTargets)) {
   throw new Error(
-    "Final-v8 migration targets must not depend on build or start"
+    "Protected-RR8 migration targets must not depend on build or start"
   );
 }
-if (!serializedTargets.includes("--stage=final-v8")) {
-  throw new Error("migration:manifest must verify final-v8 registry metadata");
+if (manifestTarget.options?.command !== "node scripts/verify-react-router-manifests.mjs") {
+  throw new Error("migration:manifest must run protected-RR8-only manifest verification");
 }
 
 console.log(

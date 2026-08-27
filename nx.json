@@ -85,7 +85,6 @@
   "release": {
     "projectsRelationship": "independent",
     "projects": [
-      "packages/react/remix",
       "packages/react/router",
       "packages/react/query",
       "packages/node/better-auth",

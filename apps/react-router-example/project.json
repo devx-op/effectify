@@ -10,7 +10,7 @@
       "executor": "nx:run-commands",
       "cache": false,
       "options": {
-        "command": "node scripts/verify-react-router-manifests.mjs --stage=final-v8",
+        "command": "node scripts/verify-react-router-manifests.mjs",
         "cwd": "{workspaceRoot}"
       }
     },
@@ -26,7 +26,7 @@
       "executor": "nx:run-commands",
       "cache": false,
       "options": {
-        "command": "node scripts/verify-react-router-consolidation.mjs",
+        "command": "node scripts/verify-react-router-consolidation.mjs --expect=retired",
         "cwd": "{workspaceRoot}"
       }
     },
