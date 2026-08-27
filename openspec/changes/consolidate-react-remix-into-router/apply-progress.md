@@ -657,3 +657,70 @@ All five implementation-owned PR6a rows are visibly `- [x]` in `tasks.md`: RED, 
 - [ ] After work unit 11, evaluate the final RR8-only evidence and close the OpenSpec change only if cleanup, release surfaces, scenario ledger, rollback record, and protected RR8 `8.3.0` matrix are all complete; otherwise reopen the applicable gate. <!-- sdd-owner: parent -->
 
 PR6b is the next implementation work-unit boundary. No PR6b dependency removal, lockfile regeneration, WU7 work, commit, push, PR, review, receipt, or attempt settlement was performed.
+
+## Work Unit 6 / PR6b — Legacy Dependency and Generated Lockfile Prune
+
+### Structured Status and Delivery Boundary
+
+- Authoritative native OpenSpec status selected `consolidate-react-remix-into-router`; pre-run `applyState: ready`, `nextRecommended: apply`, planning artifacts complete, and no blockers.
+- Action context was `repo-local`; workspace and sole allowed edit root were `/Users/skynet/devx-op/effectify`; warnings: none.
+- The delegated executor authenticated the parent-owned `proceed` attempt for `rr7-legacy-dependency-prune`, maximum 3,500 changed lines. Parent owns settlement, commit, push, and PR creation.
+- Delivery remained `auto-chain`, `feature-branch-chain`; the human-approved generated-lockfile exception applied to PR6b only. This run completed only the three PR6b rows and did not start WU7.
+- Strict TDD was active. Skill resolution was `paths-injected` from `/Users/skynet/.agents/skills/work-unit-commits/SKILL.md`.
+
+### Completed Tasks and Persisted Checkboxes
+
+All three implementation-owned PR6b rows are visibly `- [x]` in `tasks.md`:
+
+1. RED strengthened the manifest/isolation guard and reproduced all four exact residue failures on green PR6a.
+2. GREEN removed only the four app declarations and regenerated `pnpm-lock.yaml` with `pnpm install --lockfile-only`.
+3. TRIANGULATE/REFACTOR passed RR7 and independent RR8 matrices, exact dependency scans, formatting, generated-output cleanup, and the no-runtime/source-diff boundary.
+
+### Files Changed and Counts
+
+- `apps/react-remix-example/package.json`: removed only `@remix-run/node`, `@remix-run/react`, `@remix-run/serve`, and `@remix-run/dev`.
+- `apps/react-remix-example/tests/unit/config/react-router7-framework.test.ts`: replaced the temporary-residue expectation with exact absence assertions.
+- `scripts/verify-react-router-manifests.mjs`: rejects those four declarations from either app dependency section.
+- `pnpm-lock.yaml`: generated deterministic prune.
+- `openspec/changes/consolidate-react-remix-into-router/tasks.md`: PR6b checkboxes only.
+- `openspec/changes/consolidate-react-remix-into-router/apply-progress.md`: this cumulative evidence.
+- Final PR6b count including evidence: **115 authored additions + deletions** (`100` additions, `15` deletions), plus **2,727 generated lockfile additions + deletions** (`36` additions, `2,691` deletions), for **2,842 total** within the approved 3,500-line bound. Non-lockfile implementation/test/guard work before this evidence was 48 authored lines.
+- No file under `apps/react-remix-example/app/**`, no Vite/project/TypeScript config, and no protected RR8 product/app file changed in PR6b.
+
+### RED → GREEN → TRIANGULATE → REFACTOR Evidence
+
+| Stage       | Exact command/action                                                                                                              | Result                                                                                                                                     |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Safety net  | `pnpm nx run @effectify/react-router-example:migration:manifest`; focused RR7 framework test                                      | Exit 0; protected manifest/isolation passed and focused suite was 15/15 before edits.                                                      |
+| RED guard   | Strengthen `scripts/verify-react-router-manifests.mjs`, then run `pnpm nx run @effectify/react-router-example:migration:manifest` | Expected exit 1 with four exact failures: dependencies retained node/react/serve and devDependencies retained dev.                         |
+| RED focused | Replace the temporary-residue expectation, then run the focused framework test                                                    | Expected 14/15 passed and one failure showing all four received values were `2.17.5` instead of absent.                                    |
+| GREEN       | Remove only four manifest lines; run `pnpm install --lockfile-only`; rerun guard and focused test                                 | Install exit 0; guard passed at RR7 `7.18.2` / RR8 `8.3.0`; focused suite 15/15.                                                           |
+| TRIANGULATE | Focused four-file RR7 harness, full app, scans, importer-specific `pnpm why`, and protected matrices                              | RR7 focused 25/25 and full 38/38; exact four Remix packages had no app resolution; RR8 package 8/8, adapter 9/9, migration 9/9, app 71/71. |
+| REFACTOR    | Clean RR7 and RR8 typegen/typecheck/build, RR7 lint, format check, generated cleanup, protected diff and `git diff --check`       | All passed; lint retained one pre-existing commented-file warning and no errors; no generated output or protected mutation remained.       |
+
+### Verification and Dependency Evidence
+
+- RR7 app: focused four-file runtime/route/SSR suite passed 25/25; full target passed 38/38.
+- RR7 clean compiler/build sequence: removed `.react-router` and build output, then typegen, typecheck, production client/server build, and lint passed.
+- Exact app scans found zero targeted Remix declarations, active imports, `RemixBrowser`/`RemixServer`, commands, serving script, or Vite plugin matches.
+- `pnpm why react-router --filter @effectify/react-remix-example` showed only RR7 `7.18.2`; each of `@remix-run/node`, `react`, `serve`, and `dev` returned no resolution after `pnpm install --frozen-lockfile` synchronized `node_modules` without changing the lockfile.
+- Exact lockfile resolution scans found zero package snapshots/importer entries for those four legacy framework packages.
+- The broader `@remix-run` namespace is not globally empty: React Router 7/8 themselves resolve `@remix-run/node-fetch-server@0.13.3`, and pre-existing root workspace override/catalog references remain outside this exact four-package PR6b boundary. These are not the removed Remix framework runtime/dev/serve/UI packages.
+- Protected RR8 `8.3.0`: package/adapter test, no-build typecheck, lint, and build matrix passed; manifest and readiness verification passed; migration suite 9/9 and full app 71/71 passed; clean typegen, typecheck, and production build passed.
+- Repository format check and `git diff --check` passed after generated cleanup.
+
+### Lockfile Provenance, Cleanup, and Deviations
+
+- `pnpm-lock.yaml` was regenerated only by `pnpm install --lockfile-only`; the deterministic result exactly matched the forecast at 2,727 changed generated lines.
+- `pnpm install --frozen-lockfile` later synchronized stale `node_modules` for truthful `pnpm why` evidence and did not mutate the lockfile.
+- Cleanup removed both apps’ `.react-router` and `build` directories and restored command-touched `packages/react/router/tsconfig.lib.tsbuildinfo` from `HEAD`.
+- One initial full RR7 test run raced a concurrently rebuilding `@effectify/node-better-auth` package and failed module resolution before tests executed; the independent package matrix completed, node_modules was synchronized, and the sequential full rerun passed 38/38. No implementation change was made for that harness-order issue.
+- An initial namespace-wide lockfile scan correctly found React Router’s `@remix-run/node-fetch-server` transitive. The final gate was narrowed to the four task-owned legacy framework packages rather than falsely claiming the upstream namespace is absent.
+- No design deviation. The approved generated exception was used exactly as authorized; authored behavior remained review-small and runtime/source behavior was unchanged.
+
+### Remaining Work and Rollback Boundary
+
+- Current implementation state is 30/51 complete with 21 implementation-owned rows remaining. The exact unchecked WU7+ rows are already reproduced byte-for-byte in the cumulative `Exact Remaining Implementation Tasks` section above and remain visibly `- [ ]` in `tasks.md`.
+- All three parent-owned human evidence gates remain unchecked, deferred, and byte-for-byte unchanged.
+- Rollback PR6b by restoring the four exact `2.17.5` declarations, the PR6a lockfile, the temporary-residue test expectation, and the prior guard behavior; do not revert green PR6a runtime/source activation.
+- Lifecycle routing returns to the parent. No WU7 work, commit, push, PR, review, receipt, attempt settlement, or parent-owned gate action was started.

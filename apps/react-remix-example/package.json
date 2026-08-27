@@ -22,9 +22,6 @@
     "@effectify/node-better-auth": "workspace:*",
     "@react-router/node": "7.18.2",
     "@react-router/serve": "7.18.2",
-    "@remix-run/node": "2.17.5",
-    "@remix-run/react": "2.17.5",
-    "@remix-run/serve": "2.17.5",
     "react-router": "7.18.2",
     "isbot": "^4.4.0",
     "react": "18.2.0",
@@ -39,7 +36,6 @@
   "devDependencies": {
     "@prisma/generator": "catalog:",
     "@react-router/dev": "7.18.2",
-    "@remix-run/dev": "2.17.5",
     "@types/better-sqlite3": "7.6.13",
     "prisma": "catalog:",
     "@types/react": "^18.2.20",
