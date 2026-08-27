@@ -3,6 +3,7 @@ import { index, route, type RouteConfig } from "@react-router/dev/routes"
 export default [
   index("./app.tsx"),
   route("chat", "./routes/chat.tsx"),
+  route("demo", "./routes/demo.tsx"),
   route("api/auth/*", "./routes/api.auth.ts"),
   route("api/hatchet/runs", "./routes/api.hatchet.runs.ts"),
   route("login", "./routes/login.tsx"),
