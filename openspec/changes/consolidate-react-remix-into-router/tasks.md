@@ -143,9 +143,9 @@ The historical WU5 RED/GREEN evidence above remains valid for the declarative RR
 
 #### PR 8c — Todo intent and validation evidence
 
-- [ ] RED: add focused evidence tests only for `todo-create`, `todo-update`, `todo-delete`, `todo-toggle`, and `todo-validation`, recording behavior-specific missing evidence without changing product code. <!-- sdd-owner: implementation -->
-- [ ] GREEN/TRIANGULATE: complete the five existing-RR8 todo rows through focused mutation, redirect, render, and title/identifier validation tests only; no product transfer is allowed. <!-- sdd-owner: implementation -->
-- [ ] REFACTOR/VERIFY: run the focused tests, complete app harness, migration tests, protected package/adapter matrix, typegen/typecheck/build, consolidation CLOSED, version, format, and cleanup gates for PR8c. <!-- sdd-owner: implementation -->
+- [x] RED: add focused evidence tests only for `todo-create`, `todo-update`, `todo-delete`, `todo-toggle`, and `todo-validation`, recording behavior-specific missing evidence without changing product code. <!-- sdd-owner: implementation -->
+- [x] GREEN/TRIANGULATE: complete the five existing-RR8 todo rows through focused mutation, redirect, render, and title/identifier validation tests only; no product transfer is allowed. <!-- sdd-owner: implementation -->
+- [x] REFACTOR/VERIFY: run the focused tests, complete app harness, migration tests, protected package/adapter matrix, typegen/typecheck/build, consolidation CLOSED, version, format, and cleanup gates for PR8c. <!-- sdd-owner: implementation -->
 
 #### PR 8d — Route-map and SSR evidence
 

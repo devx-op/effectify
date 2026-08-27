@@ -1052,3 +1052,95 @@ Deferred parent-owned lifecycle actions remain byte-for-byte unchanged:
 - [ ] After work unit 11, evaluate the final RR8-only evidence and close the OpenSpec change only if cleanup, release surfaces, scenario ledger, rollback record, and protected RR8 `8.3.0` matrix are all complete; otherwise reopen the applicable gate. <!-- sdd-owner: parent -->
 
 Lifecycle routing returns to the parent. No PR8c/d, retirement/deletion, product edit, commit, push, PR, review, receipt, attempt settlement, or parent-owned gate action was performed.
+
+## Work Unit 8 / PR8c — Todo Intent and Validation Evidence
+
+### Structured Status and Delivery Boundary
+
+- Authoritative native OpenSpec status selected `consolidate-react-remix-into-router`; pre-run `applyState: ready`, `nextRecommended: apply`, planning artifacts complete, 42/63 total checkbox rows complete, and no blockers.
+- Action context was `repo-local`; workspace and sole allowed edit root were `/Users/skynet/devx-op/effectify`; warnings: none.
+- The executor authenticated the parent-owned `proceed` attempt for `rr8-todo-evidence`, maximum 1,000 changed lines. Parent owns settlement, commit, push, PR creation, and later lifecycle decisions.
+- Delivery remained `auto-chain`, `feature-branch-chain`; this run completed only PR8c. PR8d, bridge/RR7, retirement, deletion, and all product code were untouched.
+- Strict TDD was active. Skill resolution was `paths-injected`. Every runtime-bearing command ran under Node `v24.19.0` through `fnm exec --using 24.19.0`.
+
+### Completed Tasks and Persisted Checkboxes
+
+All three implementation-owned PR8c rows are visibly `- [x]` in `tasks.md`:
+
+1. RED recorded the honest missing-evidence state: no focused todo route test existed and all five reviewer-accepted rows were `NO`; no failing product behavior was manufactured.
+2. GREEN/TRIANGULATE added tests only and passed 11 focused cases against unchanged RR8 product code. Exactly `todo-create`, `todo-update`, `todo-delete`, `todo-toggle`, and `todo-validation` now cite concrete app/test paths, retain reviewer `kattsushi`, and are `YES`.
+3. REFACTOR/VERIFY passed the focused/full app, migration, package/adapter, clean compiler/build, consolidation CLOSED, exact version, format, and cleanup gates.
+
+Final ownership state is 44/60 implementation rows complete with 16 remaining; parent state remains 1/3 complete with two deferred rows; malformed ownership markers: 0.
+
+### Files Changed and PR Boundary
+
+- `apps/react-router-example/tests/routes/todo-app.test.tsx` (new focused tests)
+- `docs/migrations/react-remix-to-react-router.md` (exactly five accepted todo rows)
+- `openspec/changes/consolidate-react-remix-into-router/tasks.md` (PR8c checkboxes only)
+- `openspec/changes/consolidate-react-remix-into-router/apply-progress.md` (this cumulative section)
+
+Final PR8c size is **383 authored additions + 8 deletions = 391 changed lines**, with **0 generated retained lines**, below the 1,000-line boundary. No product, package implementation, manifest, dependency, lockfile, bridge, RR7, PR8d, retirement, or deletion file changed. Rollback removes the focused todo test, restores only the five todo ledger rows to their required-evidence text and `NO`, and restores only the three PR8c task rows to unchecked.
+
+### RED → GREEN → TRIANGULATE → REFACTOR Evidence
+
+| Stage       | Exact evidence / action                                                                                 | Result                                                                                                                                                                                                                                                      |
+| ----------- | ------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Safety net  | `pnpm nx run @effectify/react-router-example:test` before test creation                                 | Exit 0: 21 files, 86/86 passed.                                                                                                                                                                                                                             |
+| RED         | Repository test inventory and five accepted ledger rows before test creation                            | No todo-focused route test existed; `todo-create`, `todo-update`, `todo-delete`, `todo-toggle`, and `todo-validation` were reviewer `kattsushi` / `NO`. This was the task-defined missing-evidence RED because product edits were forbidden.                |
+| GREEN       | Add `tests/routes/todo-app.test.tsx` and run the focused app target                                     | First execution exposed only an invalid full generated-module mock, not product behavior. After correcting the test harness to mock its generated model/repository boundary, exit 0: 11/11 passed against unchanged product code.                           |
+| TRIANGULATE | Exercise create/update/delete, pending/completed toggle, loader/render, title failures, and ID failures | Exact repository calls and `/todo-app` redirects passed; loader returned both todos; markup showed count/content and one completed checkbox; create/update blank titles and delete/update/toggle missing IDs returned exact 400 bodies with zero mutations. |
+| REFACTOR    | Format the focused test/evidence, rerun it, execute the complete matrix, then remove generated output   | Focused remained 11/11; all required gates passed.                                                                                                                                                                                                          |
+
+### Commands and Verification
+
+- Focused tests before and after formatting: 1 file, 11/11 passed.
+- Complete RR8 app harness: 22 files, 97/97 passed.
+- Migration gates: `migration:manifest` passed with bridge 7.18.2 and protected RR8 8.3.0; `migration:verify` reported Node v24.19.0 and router 8.3.0; `migration:test` passed 9/9.
+- Protected router/adapter matrix: router 8/8 and Better Auth adapter 9/9; both no-build typechecks, lints, and builds passed. Existing suggestion-only diagnostics under node Better Auth remained non-failing and untouched.
+- Clean app `typegen` → `typecheck` → production `build` passed. Existing dependency externalization and chunk-size warnings remained non-failing.
+- `consolidation:verify` passed with retirement `CLOSED`, 24 consumer rows, 29 scenario rows, and 26 pending rows.
+- `pnpm why react-router --filter @effectify/react-router-example` showed every protected app/package/adapter edge at 8.3.0.
+- Repository format/check and `git diff --check` passed.
+
+### TDD Cycle Evidence
+
+| Task                         | Test File                        | Layer                                       | Safety Net / RED                                                           | GREEN                                                    | TRIANGULATE                                                                                                         | REFACTOR                                              |
+| ---------------------------- | -------------------------------- | ------------------------------------------- | -------------------------------------------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| Create/update/delete intents | `tests/routes/todo-app.test.tsx` | App route + repository boundary integration | Full app 86/86; accepted intents lacked focused mutation/redirect evidence | Exact mutation payloads and redirects passed             | Independent create/update/delete inputs plus non-target mutation exclusions                                         | Shared request/response helpers; focused stayed 11/11 |
+| Toggle and render contract   | `tests/routes/todo-app.test.tsx` | Route runtime plus server-rendered UI       | Accepted toggle lacked focused mutation/render evidence                    | COMPLETED mutation and rendered state passed             | PENDING mutation, two-item loader result, content, count, and exactly one checked item                              | Shared repository fixture reset; focused stayed green |
+| Todo validation              | `tests/routes/todo-app.test.tsx` | Route runtime integration                   | Accepted validation lacked focused title/identifier evidence               | Create blank-title and delete missing-ID failures passed | Update blank title plus update/toggle missing IDs; every failure asserted status/body and zero repository mutations | Shared validation helper; focused stayed green        |
+
+Test summary: one focused file and 11 tests were added; no approval-only test or product function was introduced.
+
+### Deviations, Cleanup, and Remaining Work
+
+- No design or product-scope deviation. The task-defined RED was absent focused evidence rather than an intentionally failing behavioral assertion because reviewer `kattsushi` classified all five destinations `existing-rr8` and explicitly prohibited product changes.
+- The first focused execution failed before test collection because the initial generated repository mock omitted a model helper export. The correction stayed entirely in the new test harness; no absent product behavior was exposed.
+- Cleanup removed `apps/react-router-example/.react-router` and `build`, restored command-touched `packages/react/router/tsconfig.lib.tsbuildinfo`, and retained no generated mutation.
+- PR8d is the next WU8 implementation slice. Retirement remains CLOSED; parent-owned settlement and lifecycle actions remain deferred.
+- Exact remaining implementation tasks:
+
+- [ ] RED: add focused evidence tests only for `rr7-route-map` and `rr7-ssr`, recording missing matcher/splat and readiness/status/header/error evidence without changing product code. <!-- sdd-owner: implementation -->
+- [ ] GREEN/TRIANGULATE: complete the two existing-RR8 rows through route matcher/splat and server-rendering tests only; no product transfer is allowed. <!-- sdd-owner: implementation -->
+- [ ] REFACTOR/VERIFY: run the focused tests, complete app and migration harnesses, protected package/adapter matrix, typegen/typecheck/build, consolidation CLOSED, version, format, and cleanup gates for PR8d; WU8 remains incomplete until PR8a–PR8d are all complete. <!-- sdd-owner: implementation -->
+- [ ] RED: strengthen `scripts/verify-react-router-consolidation.mjs` tests/fixtures so one missing consumer, incomplete scenario, reviewer-empty row, missing evidence target, or absent rollback version returns nonzero; run `pnpm nx run @effectify/react-router-example:consolidation:verify -- --expect=open` and record expected failure before completion. <!-- sdd-owner: implementation -->
+- [ ] GREEN: update only `docs/migrations/react-remix-to-react-router.md` and permitted evidence metadata so every repository consumer and scenario has a reviewed completed disposition, all evidence references exist and pass, and the final supported bridge version is explicit; then run `pnpm nx run @effectify/react-router-example:consolidation:verify -- --expect=open`. <!-- sdd-owner: implementation -->
+- [ ] TRIANGULATE gate evidence with `pnpm nx run @effectify/react-router-example:migration:manifest`, `pnpm nx run @effectify/react-router-example:migration:verify`, `pnpm nx run @effectify/react-router-example:migration:test`, `pnpm nx run @effectify/react-router-example:test`, and `pnpm nx run-many --targets=test,typecheck:no-build,lint,build --projects=@effectify/react-router,@effectify/react-router-better-auth`; runtime harness: the RR8 app/package focused suites supply the referenced evidence, while this evidence-only slice itself is `N/A`. <!-- sdd-owner: implementation -->
+- [ ] Record the rollback boundary and clean evidence diff using `git diff --stat`, `git diff -- docs/migrations/react-remix-to-react-router.md scripts/verify-react-router-consolidation.mjs`, and `pnpm nx run @effectify/repo:format:check`; confirm no bridge/app/local-adapter file is deleted in this PR. <!-- sdd-owner: implementation -->
+- [ ] RED: add final-absence assertions to `scripts/verify-react-router-consolidation.mjs` for `@effectify/react-remix`, `react-remix-example`, local adapter, bridge `json`, `@remix-run/*`, RR7-only pins/resolutions, release projects, setup/docs/workspace references, and Nx graph nodes; run `pnpm nx run @effectify/react-router-example:consolidation:verify -- --expect=retired` and record expected failures before deletion. <!-- sdd-owner: implementation -->
+- [ ] GREEN PR 10a: delete `packages/react/remix/**` and `apps/react-remix-example/**`, including the local adapter and bridge `json`, while preserving evidence needed in the migration ledger; keep this source-deletion slice below 1,000 changed lines or split by coherent package/app deletion without releasing an intermediate state. <!-- sdd-owner: implementation -->
+- [ ] GREEN PR 10b: remove obsolete entries from `nx.json`, `pnpm-workspace.yaml`, root/package docs and setup/release surfaces, regenerate `pnpm-lock.yaml` with `pnpm install --lockfile-only`, and remove all now-unused Remix/RR7-only resolutions while preserving React Router catalog/root `8.3.0`. <!-- sdd-owner: implementation -->
+- [ ] TRIANGULATE absence/version isolation with `pnpm nx run @effectify/react-router-example:consolidation:verify -- --expect=retired`, `pnpm nx show projects --json`, `pnpm why react-router --filter @effectify/react-router-example`, `pnpm nx run @effectify/react-router-example:migration:manifest`, and repository scans over source, docs, release config, workspace config, and `pnpm-lock.yaml`; runtime harness: N/A for deletion itself, with executable RR8 behavior verified in work unit 11. <!-- sdd-owner: implementation -->
+- [ ] REFACTOR only cleanup-script/docs wording after absence checks pass, then run `pnpm nx affected --target=lint`, `pnpm nx affected --target=typecheck`, `pnpm nx affected --target=test`, `pnpm nx affected --target=build`, and `pnpm nx run @effectify/repo:format:check`; record authored and generated line counts separately for PR 10a/10b and verify neither child contains dangling references. <!-- sdd-owner: implementation -->
+- [ ] Verify the maintained packages with `pnpm nx run-many --targets=test,typecheck:no-build,lint,build --projects=@effectify/react-router,@effectify/react-router-better-auth`; runtime harness: `packages/react/router/tests/runtime.test.ts` and the adapter suite must record payload, modeled failure, redirect/header, cookie, and throwable-identity results against RR8 `8.3.0`. <!-- sdd-owner: implementation -->
+- [ ] Verify the maintained app with `pnpm nx run @effectify/react-router-example:migration:manifest`, `pnpm nx run @effectify/react-router-example:migration:verify`, `pnpm nx run @effectify/react-router-example:migration:test`, `pnpm nx run @effectify/react-router-example:test`, `rm -rf apps/react-router-example/.react-router && pnpm nx run @effectify/react-router-example:typegen`, `pnpm nx run @effectify/react-router-example:typecheck`, and `pnpm nx run @effectify/react-router-example:build`; runtime harness evidence must include routes, auth, SSR/readiness, status, headers, and each transferred unique scenario. <!-- sdd-owner: implementation -->
+- [ ] Verify final graph/release absence with `pnpm nx run @effectify/react-router-example:consolidation:verify -- --expect=retired`, `pnpm nx show projects --json`, `pnpm why react-router --filter @effectify/react-router-example`, `pnpm nx affected --target=lint`, `pnpm nx affected --target=typecheck`, `pnpm nx affected --target=test`, `pnpm nx affected --target=build`, and `pnpm nx run @effectify/repo:format:check`; record no RR7/Remix dependency, project, publish, release, docs, workspace, or lockfile residue. <!-- sdd-owner: implementation -->
+- [ ] Finalize release evidence in `docs/migrations/react-remix-to-react-router.md` (or the repository-approved retained historical evidence location) with consumer status, reviewed scenario dispositions, transitional-surface absence, protected RR8 results, authored/generated diff counts, and the exact final bridge rollback version; do not add or modify product code. <!-- sdd-owner: implementation -->
+
+Deferred parent-owned lifecycle actions remain byte-for-byte unchanged in `tasks.md`:
+
+- [ ] After work unit 9 and before work unit 10, confirm the validator reports OPEN, every documented consumer is migrated, every scenario disposition is reviewed and complete with passing evidence, and the final bridge rollback version is recorded; explicitly authorize or reject retirement deletion without bypassing any failed row. <!-- sdd-owner: parent -->
+- [ ] After work unit 11, evaluate the final RR8-only evidence and close the OpenSpec change only if cleanup, release surfaces, scenario ledger, rollback record, and protected RR8 `8.3.0` matrix are all complete; otherwise reopen the applicable gate. <!-- sdd-owner: parent -->
+
+Lifecycle routing returns to the parent. No PR8d, retirement/deletion, product edit, commit, push, PR, review, receipt, attempt settlement, or parent-owned gate action was performed.
