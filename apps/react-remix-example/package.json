@@ -16,10 +16,6 @@
   "license": "ISC",
   "packageManager": "pnpm@10.14.0",
   "dependencies": {
-    "effect": "catalog:",
-    "@effect/platform-node": "catalog:",
-    "@effectify/react-remix": "workspace:*",
-    "@effectify/node-better-auth": "workspace:*",
     "@react-router/node": "7.18.2",
     "@react-router/serve": "7.18.2",
     "react-router": "7.18.2",
@@ -28,7 +24,6 @@
     "react-dom": "18.2.0",
     "@prisma/client": "catalog:",
     "@prisma/client-runtime-utils": "catalog:",
-    "better-auth": "catalog:",
     "better-sqlite3": "catalog:",
     "dotenv": "catalog:",
     "kysely": "catalog:"
