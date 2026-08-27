@@ -1,5 +1,5 @@
-import { ActionArgsContext, httpFailure, httpRedirect, httpSuccess, LoaderArgsContext } from "@effectify/react-remix"
-import { Form, useActionData, useLoaderData, useSubmit } from "@remix-run/react"
+import { ActionArgsContext, httpFailure, httpRedirect, httpSuccess } from "@effectify/react-remix"
+import { Form, useLoaderData, useSubmit } from "react-router"
 import * as Effect from "effect/Effect"
 import { useState } from "react"
 import { createTodo, deleteTodo, getTodos, type Todo, toggleTodo, updateTodo } from "~/lib/mockStore.js"
@@ -68,7 +68,6 @@ export const action = Effect.gen(function* () {
 
 export default function TodosRoute() {
   const loaderData = useLoaderData<typeof loader>()
-  const actionData = useActionData<typeof action>()
   const submit = useSubmit()
   const [editingId, setEditingId] = useState<string | null>(null)
 
@@ -90,12 +89,6 @@ export default function TodosRoute() {
         </fieldset>
 
         <input type="hidden" name="intent" value="create" />
-
-        {actionData && !actionData.ok && actionData.errors?.length > 0 && (
-          <small role="alert" aria-live="assertive" style={{ color: "var(--pico-color-red-500)" }}>
-            {String(actionData.errors[0])}
-          </small>
-        )}
 
         <button type="submit">Add Todo</button>
       </Form>

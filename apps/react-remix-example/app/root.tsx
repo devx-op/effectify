@@ -1,5 +1,4 @@
-import type { HtmlLinkDescriptor } from "@remix-run/react"
-import { Links, Meta, Outlet, Scripts, ScrollRestoration } from "@remix-run/react"
+import { Links, type LinksFunction, Meta, Outlet, Scripts, ScrollRestoration } from "react-router"
 import { Nav } from "./components/Nav.js"
 
 export default function App() {
@@ -23,7 +22,7 @@ export default function App() {
   )
 }
 
-export function links(): HtmlLinkDescriptor[] {
+export const links: LinksFunction = () => {
   return [
     { rel: "icon", href: "data:image/x-icon;base64,AA" },
     {

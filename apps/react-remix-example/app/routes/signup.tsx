@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { authClient } from "./../lib/auth-client.js"
-import { Link, useNavigate } from "@remix-run/react"
+import { Link, useNavigate } from "react-router"
 
 export default function SignUp() {
   const [name, setName] = useState("")
@@ -75,7 +75,9 @@ export default function SignUp() {
             />
           </div>
           {error && (
-            <small role="alert" aria-live="polite" style={{ color: "var(--pico-color-red-500)" }}>{error}</small>
+            <small role="alert" aria-live="polite" style={{ color: "var(--pico-color-red-500)" }}>
+              {error}
+            </small>
           )}
           <button type="submit">Sign up</button>
         </form>
