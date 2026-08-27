@@ -49,6 +49,9 @@ const VALID_DISPOSITIONS = new Set([
 ])
 const VALIDATOR_FIXTURE_ROOT = "scripts/fixtures/react-router-consolidation/"
 const HISTORICAL_CHANGE_ROOT = "openspec/changes/consolidate-react-remix-into-router/"
+const ARCHIVED_CHANGE_PATTERN =
+  /^openspec\/changes\/archive\/\d{4}-\d{2}-\d{2}-consolidate-react-remix-into-router\//
+const CANONICAL_SPEC_ROOT = "openspec/specs/react-router-major-consolidation/"
 const SKIPPED_SCAN_PATHS = new Set([
   LEDGER,
   "scripts/verify-react-router-consolidation.mjs",
@@ -58,6 +61,8 @@ const SKIPPED_SCAN_PATHS = new Set([
 const isAllowedHistoricalPath = (file) =>
   (file !== "pnpm-lock.yaml" && SKIPPED_SCAN_PATHS.has(file)) ||
   file.startsWith(HISTORICAL_CHANGE_ROOT) ||
+  ARCHIVED_CHANGE_PATTERN.test(file) ||
+  file.startsWith(CANONICAL_SPEC_ROOT) ||
   file.startsWith(VALIDATOR_FIXTURE_ROOT)
 
 const fail = (failures) => {

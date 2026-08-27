@@ -152,6 +152,46 @@ test("retired verification allows only the migration ledger, change history, val
   assert.equal(result.exitCode, 0, result.output)
 })
 
+test("retired verification allows the dated consolidation archive and canonical consolidation spec", async (context) => {
+  const root = await fixture()
+  context.after(() => rm(root, { recursive: true, force: true }))
+  await retireFixture(root)
+  await writeFixtureFile(
+    root,
+    "openspec/changes/archive/2026-08-26-consolidate-react-remix-into-router/evidence.md",
+    "Historical @effectify/react-remix 7.18.2 evidence\n",
+  )
+  await writeFixtureFile(
+    root,
+    "openspec/specs/react-router-major-consolidation/spec.md",
+    "Canonical packages/react/remix and react-remix-example history\n",
+  )
+
+  const result = await verify(root, "retired")
+
+  assert.equal(result.exitCode, 0, result.output)
+})
+
+const unrelatedHistoricalPaths = {
+  "similarly named archive":
+    "openspec/changes/archive/2026-08-26-consolidate-react-remix-into-router-followup/evidence.md",
+  "similarly named spec": "openspec/specs/react-router-major-consolidation-followup/spec.md",
+}
+
+for (const [name, file] of Object.entries(unrelatedHistoricalPaths)) {
+  test(`retired verification rejects a ${name}`, async (context) => {
+    const root = await fixture()
+    context.after(() => rm(root, { recursive: true, force: true }))
+    await retireFixture(root)
+    await writeFixtureFile(root, file, "Historical @effectify/react-remix 7.18.2 evidence\n")
+
+    const result = await verify(root, "retired")
+
+    assert.notEqual(result.exitCode, 0, result.output)
+    assert.match(result.output, new RegExp(file.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")))
+  })
+}
+
 test("the retired expectation reports retained transitional surfaces", async (context) => {
   const root = await fixture()
   context.after(() => rm(root, { recursive: true, force: true }))
