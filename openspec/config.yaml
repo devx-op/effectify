@@ -1,0 +1,26 @@
+schema: spec-driven
+
+context: |
+  Effectify is a TypeScript monorepo of Effect integrations for frameworks and libraries.
+  Use pnpm (workspace package manager) and run project tasks through Nx, preferring
+  `pnpm nx run <project>:<target>`, `pnpm nx affected`, or `pnpm nx run-many` over
+  invoking underlying tools directly. The workspace requires Node.js >=22.22.
+
+  Treat Effect v4 as the implementation target. The canonical source is the ignored,
+  standalone `.effect-reference/effect` depth-1 clone of Effect-TS/effect `main`; the
+  repository's `v3` branch and stale examples are not authoritative for v4 APIs.
+  Consult current source patterns before introducing or changing Effect APIs.
+
+  Use strict TDD for behavior changes where project test capabilities exist: first add
+  a focused failing test, implement the smallest passing change, then refactor. Verify
+  affected work with the relevant Nx test, typecheck, lint, and build targets, plus
+  repository formatting checks when applicable. Do not claim browser, integration, or
+  build evidence that was not actually executed.
+
+  Write proposals, specifications, designs, tasks, and verification reports in English.
+  Keep requirements testable and preserve package-owned Effect-friendly boundaries over
+  awkward upstream SDK contracts.
+
+  Strategic context: the React Router 7 compatibility work is a transitional bridge
+  toward React Router 8 consolidation. Avoid expanding the RR7 surface unless required
+  for the bridge, and prefer decisions that support the eventual RR8-only direction.
