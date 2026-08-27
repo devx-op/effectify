@@ -2,25 +2,56 @@
   "name": "@effectify/repo",
   "version": "1.0.0",
   "license": "MIT",
+  "nx": {
+    "targets": {
+      "format": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "node tools/format-changed.mjs --write"
+        }
+      },
+      "format:check": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "node tools/format-changed.mjs --check"
+        }
+      },
+      "format:all:check": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "pnpm exec oxfmt --check '**/*.{ts,tsx,js,jsx,json,jsonc,md,mdx,css,scss,html}'"
+        }
+      }
+    }
+  },
+  "engines": {
+    "node": ">=22.22"
+  },
   "scripts": {
     "lint-staged": "lint-staged --allow-empty",
     "clean": "rm -rf node_modules dist pnpm-lock.yaml && pnpm store prune & find . -type d \\( -name 'node_modules' -o -name 'dist' -o -name '.output' -o -name '.vinxi' -o -name '.cache' -o -name '.expo' -o -name '.nx' \\) -prune -exec rm -rf {} + & wait",
-    "prepare": "husky && ts-patch install -s && effect-tsgo patch",
+    "prepare": "husky && effect-tsgo patch",
     "build:affected": "pnpm nx affected --target=build",
     "test:affected": "pnpm nx affected --target=test",
     "typecheck:affected": "pnpm nx affected --target=typecheck",
-    "lint": "pnpm exec oxlint && pnpm exec dprint check",
-    "lint:fix": "pnpm exec oxlint --fix && pnpm exec dprint fmt",
+    "format": "pnpm nx run @effectify/repo:format",
+    "format:check": "pnpm nx run @effectify/repo:format:check",
+    "format:all:check": "pnpm nx run @effectify/repo:format:all:check",
+    "lint": "pnpm exec oxlint && pnpm format:check",
+    "lint:fix": "pnpm exec oxlint --fix && pnpm format",
     "lint:affected": "pnpm nx affected --target=lint",
-    "lint:many": "pnpm nx run-many --target=lint && pnpm exec dprint check",
+    "lint:many": "pnpm nx run-many --target=lint && pnpm format:check",
     "publish:affected": "pnpm nx publish-affected",
     "release:affected": "pnpm nx release-affected",
     "release:affected:dry-run": "pnpm nx release-affected-dry-run"
   },
   "lint-staged": {
-    "*.{js,jsx,ts,tsx,json,jsonc,css,scss,md,mdx}": [
+    "*.{js,jsx,ts,tsx}": [
       "pnpm exec oxlint --fix",
-      "pnpm exec dprint fmt --allow-no-files"
+      "pnpm exec oxfmt"
+    ],
+    "*.{json,jsonc,md,mdx,css,scss,html}": [
+      "pnpm exec oxfmt"
     ]
   },
   "devDependencies": {
@@ -31,30 +62,29 @@
     "@nx/node": "catalog:",
     "@nx/react": "catalog:",
     "@nx/vite": "catalog:",
-    "@nx/vitest": "23.0.1",
+    "@nx/vitest": "23.1.1",
     "@nx/web": "catalog:",
-    "@react-router/dev": "catalog:",
+    "@react-router/dev": "8.3.0",
     "@swc-node/register": "catalog:",
     "@swc/core": "catalog:",
     "@swc/helpers": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
-    "@typescript/native-preview": "catalog:",
+    "@typescript/native": "npm:typescript@7.0.2",
     "@vitejs/plugin-react": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "@vitest/ui": "catalog:",
     "cypress": "catalog:",
-    "dprint": "catalog:",
     "husky": "catalog:",
     "jiti": "catalog:",
     "jsdom": "catalog:",
     "lint-staged": "catalog:",
-    "nx": "23.0.1",
+    "nx": "23.1.1",
     "nx-oxlint": "catalog:",
-    "oxlint": "1.42.0",
+    "oxfmt": "catalog:",
+    "oxlint": "catalog:",
     "prettier": "catalog:",
-    "ts-patch": "catalog:",
     "tslib": "catalog:",
     "typescript": "catalog:",
     "ultracite": "catalog:",
@@ -69,6 +99,11 @@
           "astro": "*"
         }
       },
+      "@astrojs/mdx": {
+        "dependencies": {
+          "satteri": "^0.10.3"
+        }
+      },
       "better-auth": {
         "dependencies": {
           "zod": "^4.4.3"
@@ -81,9 +116,21 @@
       }
     },
     "overrides": {
-      "@effect/platform-node-shared": "4.0.0-beta.94",
+      "@module-federation/node>@module-federation/enhanced": "2.9.0",
       "@types/react": "19.2.17",
-      "@types/react-dom": "19.2.3"
+      "@types/react-dom": "19.2.3",
+      "@grpc/grpc-js": "1.14.4",
+      "@opentelemetry/core": "2.10.0",
+      "@opentelemetry/resources": "2.10.0",
+      "@opentelemetry/sdk-trace": "2.10.0",
+      "@opentelemetry/sdk-trace-base": "2.10.0",
+      "@protobufjs/utf8": "1.1.2",
+      "axios": "1.19.0",
+      "astro>svgo": "4.0.2",
+      "cacache>tar": "7.5.21",
+      "jsdom>undici": "7.29.0",
+      "unifont>undici": "8.10.0",
+      "protobufjs": "7.6.5"
     },
     "onlyBuiltDependencies": [
       "@hatchet-dev/typescript-sdk",
@@ -106,8 +153,8 @@
   "packageManager": "pnpm@10.14.0",
   "dependencies": {
     "@prisma/client": "catalog:",
-    "@react-router/node": "catalog:",
-    "@react-router/serve": "catalog:",
+    "@react-router/node": "8.3.0",
+    "@react-router/serve": "8.3.0",
     "isbot": "catalog:",
     "prisma": "catalog:",
     "react": "catalog:",

@@ -50,7 +50,10 @@ function Counter() {
 }
 
 function DoubledCounter() {
-  const doubled = useAtomValue(() => counterAtom, (n: number) => n * 2)
+  const doubled = useAtomValue(
+    () => counterAtom,
+    (n: number) => n * 2,
+  )
   return (
     <div class="p-6 bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl">
       <h3 class="text-xl font-semibold text-white mb-4">Doubled (useAtomValue)</h3>
@@ -130,9 +133,12 @@ function SetOnlyDemo() {
 function SubscribeDemo() {
   const [logs, setLogs] = createSignal<string[]>([])
 
-  useAtomSubscribe(() => subscribeAtom, (val: number) => {
-    setLogs((prev) => [`Value changed to: ${val}`, ...prev].slice(0, 3))
-  })
+  useAtomSubscribe(
+    () => subscribeAtom,
+    (val: number) => {
+      setLogs((prev) => [`Value changed to: ${val}`, ...prev].slice(0, 3))
+    },
+  )
 
   const setCount = useAtomSet(() => subscribeAtom)
 
@@ -146,7 +152,9 @@ function SubscribeDemo() {
         Trigger Change
       </button>
       <div class="bg-slate-900/50 p-3 rounded font-mono text-sm text-gray-300">
-        {logs().map((log) => <div>{log}</div>)}
+        {logs().map((log) => (
+          <div>{log}</div>
+        ))}
         {logs().length === 0 && <div class="text-gray-500">No changes yet...</div>}
       </div>
     </div>
@@ -176,14 +184,12 @@ function AtomDemo() {
       <div class="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white p-8">
         <div class="max-w-7xl mx-auto">
           <h1 class="text-4xl font-black mb-8">
-            <span class="bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
-              Effect Atom
-            </span>{" "}
+            <span class="bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">Effect Atom</span>{" "}
             Demo
           </h1>
 
           <p class="text-xl text-gray-300 mb-12">
-            Demonstrating @effectify/solid-effect-atom v0.3.0
+            Effect v4 Atom and AtomRef with the official @effect/atom-solid bindings
           </p>
 
           <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">

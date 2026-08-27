@@ -179,7 +179,8 @@ const runtime = make(pipe(
 
 ## Requirements
 
-- React Router v7+
+- React Router `^8.2.0` (v7 consumers remain on the preceding release line)
+- Node.js `>=22.22`
 - Effect ecosystem (`effect`)
 
 ## License

@@ -6,5 +6,6 @@
     {
       "path": "./tsconfig.lib.json"
     }
-  ]
+  ],
+  "compilerOptions": {}
 }

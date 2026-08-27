@@ -1,30 +1,26 @@
-import { HatchetClientService } from "@effectify/hatchet"
 import { Runtime } from "@effectify/react-router"
-import * as Effect from "effect/Effect"
-import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router"
+import { type ActionFunctionArgs, type LoaderFunctionArgs, RouterContextProvider } from "react-router"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
-const { adapterConfigMock, authHandlerMock, hatchetInitMock, prismaLayerMock } = vi.hoisted(() => {
+const { adapterConfigMock, authHandlerMock, prismaLayerMock } = vi.hoisted(() => {
   process.env.DATABASE_URL = "file:./runtime-contract.db"
-  process.env.HATCHET_HOST = "hatchet.example:7077"
-  process.env.HATCHET_CLIENT_TOKEN = "runtime-client-token"
-  delete process.env.HATCHET_TOKEN
-  process.env.HATCHET_NAMESPACE = "runtime-namespace"
 
   return {
     adapterConfigMock: vi.fn(),
     authHandlerMock: vi.fn(),
-    hatchetInitMock: vi.fn(),
     prismaLayerMock: vi.fn(),
   }
 })
 
-vi.mock("../../../app/lib/better-auth-options.server.js", () => ({
-  authOptions: {
-    baseURL: "http://localhost:4200",
-    secret: "runtime-test-secret",
-  },
-}))
+vi.mock("../../../app/lib/better-auth-options.server.js", async () => {
+  const Effect = await import("effect/Effect")
+  return {
+    authOptionsConfig: Effect.succeed({
+      baseURL: "http://localhost:4200",
+      secret: "runtime-test-secret",
+    }),
+  }
+})
 
 vi.mock("@effectify/node-better-auth", async () => {
   const Context = await import("effect/Context")
@@ -53,59 +49,11 @@ vi.mock("@effectify/node-better-auth", async () => {
   }
 })
 
-vi.mock("@effectify/hatchet", async () => {
-  const Context = await import("effect/Context")
-  const Effect = await import("effect/Effect")
-  const Layer = await import("effect/Layer")
-
-  class MockHatchetConfig extends Context.Service<
-    MockHatchetConfig,
-    {
-      readonly host: string
-      readonly token: string
-      readonly namespace?: string
-    }
-  >()("HatchetConfig") {}
-
-  class MockHatchetClientService extends Context.Service<
-    MockHatchetClientService,
-    {
-      readonly initializedWith: {
-        readonly host: string
-        readonly token: string
-        readonly namespace?: string
-      }
-    }
-  >()("HatchetClient") {}
-
-  return {
-    HatchetConfig: MockHatchetConfig,
-    HatchetConfigLayer: (config: {
-      host: string
-      token: string
-      namespace?: string
-    }) => Layer.succeed(MockHatchetConfig, config),
-    HatchetClientService: MockHatchetClientService,
-    HatchetClientLive: Layer.effect(MockHatchetClientService)(
-      Effect.gen(function*() {
-        const config = yield* MockHatchetConfig
-        hatchetInitMock(config)
-        return { initializedWith: config }
-      }),
-    ),
-  }
-})
-
 vi.mock("../../../prisma/generated/effect/index.js", async () => {
   const Context = await import("effect/Context")
   const Layer = await import("effect/Layer")
 
-  class MockPrismaService extends Context.Service<
-    MockPrismaService,
-    {
-      readonly label: "prisma"
-    }
-  >()("Prisma") {}
+  class MockPrismaService extends Context.Service<MockPrismaService, { readonly label: "prisma" }>()("Prisma") {}
 
   return {
     Prisma: Object.assign(MockPrismaService, {
@@ -129,17 +77,19 @@ import { action, loader } from "../../../app/routes/api.auth.js"
 import { AppLayer, withActionEffect, withLoaderEffect } from "../../../app/lib/runtime.server.js"
 
 const makeLoaderArgs = (request: Request): LoaderFunctionArgs => ({
-  context: {},
+  context: new RouterContextProvider(),
   params: {},
+  pattern: "/api/auth",
   request,
-  unstable_pattern: "/api/auth",
+  url: new URL(request.url),
 })
 
 const makeActionArgs = (request: Request): ActionFunctionArgs => ({
-  context: {},
+  context: new RouterContextProvider(),
   params: {},
+  pattern: "/api/auth",
   request,
-  unstable_pattern: "/api/auth",
+  url: new URL(request.url),
 })
 
 describe("runtime.server runtime contract", () => {
@@ -147,7 +97,7 @@ describe("runtime.server runtime contract", () => {
     authHandlerMock.mockReset()
   })
 
-  it("builds an AppLayer that Runtime.make accepts without casts", () => {
+  it("builds an AppLayer that Runtime.make accepts without Hatchet services", () => {
     const runtime = Runtime.make(AppLayer)
 
     expect(runtime.withLoaderEffect).toBeTypeOf("function")
@@ -168,9 +118,7 @@ describe("runtime.server runtime contract", () => {
     )
 
     const request = new Request("https://example.com/api/auth")
-    const response = await loader(makeLoaderArgs(request)).catch(
-      (error) => error,
-    )
+    const response = await loader(makeLoaderArgs(request)).catch((error) => error)
 
     expect(response).toBeInstanceOf(Response)
     expect(response.status).toBe(200)
@@ -188,7 +136,7 @@ describe("runtime.server runtime contract", () => {
     })
   })
 
-  it("executes the auth action through withActionEffect and initializes hatchet with env config", async () => {
+  it("executes the auth action through withActionEffect", async () => {
     authHandlerMock.mockResolvedValueOnce(
       new Response("action ok", {
         headers: {
@@ -203,10 +151,7 @@ describe("runtime.server runtime contract", () => {
       body: new URLSearchParams({ intent: "sign-in" }),
       method: "POST",
     })
-
-    const response = await action(makeActionArgs(request)).catch(
-      (error) => error,
-    )
+    const response = await action(makeActionArgs(request)).catch((error) => error)
 
     expect(response).toBeInstanceOf(Response)
     expect(response.status).toBe(201)
@@ -214,25 +159,5 @@ describe("runtime.server runtime contract", () => {
     expect(response.headers.get("x-runtime")).toBe("action")
     expect(await response.text()).toBe("action ok")
     expect(authHandlerMock).toHaveBeenCalledWith(request)
-
-    const hatchetResponse = await withLoaderEffect(
-      Effect.gen(function*() {
-        yield* HatchetClientService
-        return new Response(JSON.stringify({ initialized: true }), {
-          headers: { "content-type": "application/json" },
-          status: 200,
-        })
-      }),
-    )(makeLoaderArgs(new Request("https://example.com/hatchet"))).catch(
-      (error) => error,
-    )
-
-    expect(hatchetResponse).toBeInstanceOf(Response)
-    expect(await hatchetResponse.json()).toEqual({ initialized: true })
-    expect(hatchetInitMock).toHaveBeenCalledWith({
-      host: "hatchet.example:7077",
-      namespace: "runtime-namespace",
-      token: "runtime-client-token",
-    })
   })
 })

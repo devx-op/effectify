@@ -3,13 +3,10 @@
  */
 
 /**
- * Generate standard file header for generated files
- *
- * @param timestamp - Optional timestamp (defaults to current time)
+ * Generate the static file header for generated files.
  */
-export function generateFileHeader(timestamp: Date = new Date()) {
+export function generateFileHeader() {
   return `/**
- * Generated: ${timestamp.toISOString()}
  * DO NOT EDIT MANUALLY
  */`
 }

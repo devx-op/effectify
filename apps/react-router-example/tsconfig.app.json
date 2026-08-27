@@ -24,6 +24,7 @@
   ],
   "compilerOptions": {
     "composite": true,
-    "outDir": "./dist/out-tsc"
+    "outDir": "./dist/out-tsc",
+    "rootDir": "."
   }
 }

@@ -1,6 +1,6 @@
 {
   "name": "@effectify/node-better-auth",
-  "version": "1.0.0-alpha.2",
+  "version": "0.5.12-alpha.1",
   "description": "Integration of better-auth with Effect for Node.js applications",
   "repository": {
     "type": "git",

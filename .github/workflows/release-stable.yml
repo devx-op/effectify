@@ -1,0 +1,184 @@
+name: 🚀 Release Stable
+
+on:
+  workflow_dispatch:
+    inputs:
+      projects:
+        description: "Comma-separated Nx release project names to graduate or recover"
+        required: true
+        type: string
+      publish_only:
+        description: "Publish selected existing stable versions without version, tag, changelog, or git mutation"
+        required: true
+        type: boolean
+        default: false
+
+concurrency:
+  group: release-stable
+  cancel-in-progress: false
+
+env:
+  DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/effectify"
+
+jobs:
+  release-stable:
+    name: 🚀 Release Stable
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: effectify
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: 📥 Checkout current master
+        uses: actions/checkout@v5
+        with:
+          ref: master
+          fetch-depth: 0
+          token: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: 🔒 Confirm current master
+        run: |
+          git fetch origin master --no-tags
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/master)" || {
+            echo "Stable release checkout is not current origin/master" >&2
+            exit 1
+          }
+
+      - name: 📦 Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.14.0
+
+      - name: 🏗️ Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "24.19.0"
+          cache: "pnpm"
+          registry-url: "https://registry.npmjs.org/"
+
+      - name: 📦 Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: 🛡️ Verify release policy contract
+        run: node --test scripts/release-policy-contract.test.mjs
+
+      - name: 🔍 Validate Explicit Stable Projects
+        id: selected
+        env:
+          REQUESTED_PROJECTS: ${{ inputs.projects }}
+          PUBLISH_ONLY: ${{ inputs.publish_only }}
+        run: |
+          if [ -z "$REQUESTED_PROJECTS" ]; then
+            echo "Stable release requires explicit selected projects" >&2
+            exit 1
+          fi
+
+          RELEASE_PROJECTS=$(jq -r '.release.projects[]' nx.json | while read -r path; do
+            pnpm nx show project "$path" --json | jq -r '.name'
+          done | sort -u)
+          SELECTED_PROJECTS=$(printf '%s' "$REQUESTED_PROJECTS" | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed '/^$/d' | sort -u)
+
+          if [ -z "$SELECTED_PROJECTS" ]; then
+            echo "Stable release requires at least one selected project" >&2
+            exit 1
+          fi
+
+          while IFS= read -r project; do
+            if ! printf '%s\n' "$RELEASE_PROJECTS" | grep -Fx -- "$project" >/dev/null; then
+              echo "Invalid release project: $project" >&2
+              exit 1
+            fi
+
+            PROJECT_ROOT=$(pnpm nx show project "$project" --json | jq -r '.root')
+            VERSION=$(jq -r '.version // empty' "$PROJECT_ROOT/package.json")
+            if [ -z "$VERSION" ]; then
+              echo "Release project has no manifest version: $project" >&2
+              exit 1
+            fi
+
+            if [ "$PUBLISH_ONLY" = "true" ]; then
+              # publish-only recovery requires explicit selected existing stable projects.
+              if [[ "$VERSION" == *-* ]]; then
+                echo "Publish-only stable recovery rejects prerelease version $project@$VERSION" >&2
+                exit 1
+              fi
+            elif [[ "$VERSION" != *-* ]]; then
+              echo "Normal stable release only graduates selected prereleases: $project@$VERSION" >&2
+              exit 1
+            fi
+          done <<< "$SELECTED_PROJECTS"
+
+          echo "projects=$(printf '%s' "$SELECTED_PROJECTS" | paste -sd, -)" >> "$GITHUB_OUTPUT"
+
+      - name: 🔧 Configure Git for graduation
+        if: ${{ inputs.publish_only != true }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: 🔐 Verify npm authentication
+        run: npm whoami
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: 🏗️ Build Selected Projects
+        env:
+          PROJECTS: ${{ steps.selected.outputs.projects }}
+        run: pnpm nx run-many -t build "--projects=$PROJECTS" --parallel=3
+
+      - name: 🧪 Test Selected Projects
+        env:
+          PROJECTS: ${{ steps.selected.outputs.projects }}
+        run: pnpm nx run-many -t test "--projects=$PROJECTS" --parallel=3 --passWithNoTests
+
+      - name: ✅ Verify React Router 8 readiness
+        run: |
+          pnpm nx test @effectify/react-router
+          pnpm nx run @effectify/react-router-example:migration:test
+          pnpm nx run @effectify/react-router-example:migration:verify
+          pnpm nx run @effectify/react-router-example:migration:manifest
+          pnpm nx run @effectify/react-router-example:consolidation:verify
+
+      - name: 🔖 Graduate Selected Prereleases
+        if: ${{ inputs.publish_only != true }}
+        env:
+          PROJECTS: ${{ steps.selected.outputs.projects }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # Relative patch removes the prerelease suffix without selecting unrequested projects.
+        run: pnpm nx release patch "--projects=$PROJECTS" --skip-publish
+
+      - name: 🚀 Publish Stable
+        env:
+          PROJECTS: ${{ steps.selected.outputs.projects }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_CONFIG_PROVENANCE: true
+        # No prerelease dist-tag is supplied: npm's default stable tag is intentional.
+        run: pnpm nx release publish "--projects=$PROJECTS"
+
+      - name: 📊 Release Summary
+        if: always()
+        env:
+          PROJECTS: ${{ steps.selected.outputs.projects }}
+          PUBLISH_ONLY: ${{ inputs.publish_only }}
+        run: |
+          echo "## 🚀 Stable Release Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Projects:** $PROJECTS" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$PUBLISH_ONLY" = "true" ]; then
+            echo "**Mode:** publish-only recovery of selected existing stable versions; no version, tag, changelog, or git mutation was requested." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "**Mode:** selected prereleases graduated with Nx relative patch." >> "$GITHUB_STEP_SUMMARY"
+          fi

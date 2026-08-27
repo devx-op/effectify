@@ -12,7 +12,8 @@
       "@prisma/effect/*": ["./prisma/generated/effect/*"],
       "@prisma/*": ["./prisma/generated/*"],
       "@effectify/prisma": ["./src/runtime/index.ts"]
-    }
+    },
+    "rootDir": "."
   },
   "include": ["test/**/*.ts", "src/**/*.ts", "prisma/generated/**/*.ts"]
 }

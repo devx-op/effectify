@@ -4,6 +4,20 @@
   "sourceRoot": "packages/react/router/src",
   "projectType": "library",
   "targets": {
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm exec vitest run --config vitest.config.ts",
+        "cwd": "packages/react/router"
+      }
+    },
+    "typecheck:no-build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --project tsconfig.lib.json --noEmit",
+        "cwd": "packages/react/router"
+      }
+    },
     "build": {
       "executor": "@nx/js:tsc",
       "outputs": ["{options.outputPath}"],

@@ -1,163 +1,129 @@
 # React Router Example with Effect
 
-This example demonstrates using Effect with React Router 7 and better-auth for authentication.
+This example combines React Router, Effect, better-auth, Prisma, and authenticated Hatchet task and cron workflows.
 
-## Stable app entrypoints
+## App entrypoints
 
-The example app is intended to be understandable on its own, without relying on the separate e2e app.
+- `/` — landing page
+- `/login` — email/password sign-in
+- `/signup` — account creation
+- `/todo-app` — protected Prisma loader/action example
+- `/hatchet-crons` — protected Hatchet cron list/create/preview example
+- `/chat` — shell/runtime smoke example
+- `/api/auth/*` — better-auth handler
+- `POST /api/hatchet/runs` — Schema-backed greeting task
 
-For local development, the app serves from `http://localhost:4200` and handles better-auth on the same origin.
-
-- `/` — landing page with a quick overview of the available example slices
-- `/login` — email/password sign-in flow
-- `/signup` — account creation flow
-- `/todo-app` — protected loader/action example backed by Prisma + auth runtime
-- `/chat` — simple UI demo route for smoke-checking the shell/runtime
-- `/api/auth/*` — better-auth handler entrypoint used by the reachable auth flows
-
-The root document shell loads Pico CSS and Inter through the React Router `links()` contract so SSR and hydration stay deterministic.
-
-## Features
-
-- **React Router 7** - Modern routing with loaders and actions
-- **Effect** - Functional programming and error handling
-- **better-auth** - Authentication with email/password
-- **Prisma + SQLite** - Database without Docker requirement
-- **TailwindCSS** - Styling
+Normal development, auth, Prisma, tests, typecheck, and builds do not require Hatchet configuration or Docker.
 
 ## Setup
 
 ```bash
-# Install dependencies
 pnpm install
-
-# Start development server
+export BETTER_AUTH_SECRET="$(openssl rand -base64 32)"
 pnpm nx run @effectify/react-router-example:dev
 ```
 
-## Hatchet local development
+Generate a new local `BETTER_AUTH_SECRET` for each development environment. Do not commit the generated value.
 
-The default app dev flow stays Docker-free on purpose. Only the Hatchet demo slice needs
-the Hatchet Lite stack.
-
-Use the explicit Hatchet-aware targets when you want to test the UI and the
-`@effectify/hatchet` integration locally:
-
-```bash
-# Check whether Hatchet is already available on localhost:7177 / :8899
-pnpm nx run @effectify/react-router-example:hatchet:status
-
-# Ensure Hatchet is available, then start React Router dev
-pnpm nx run @effectify/react-router-example:dev:hatchet
-```
-
-Available helper targets:
-
-- `hatchet:status` — reports whether Hatchet is already reachable locally
-- `hatchet:ensure` — reuses an existing Hatchet instance if one is already running, otherwise starts this app's compose stack, and fails fast if `HATCHET_CLIENT_TOKEN` / `HATCHET_TOKEN` do not match the stack bound to `7177/8899`
-- `hatchet:up` — forces this app's compose stack to start and fails if another Hatchet instance already owns the ports
-- `hatchet:down` — stops this app's compose stack
-- `dev:hatchet` — runs `hatchet:ensure` first, then starts the normal React Router dev server
-
-This matters because Hatchet Lite publishes fixed ports:
-
-- UI: `http://localhost:8899`
-- gRPC: `localhost:7177`
-
-If another Hatchet stack is already using those ports, `hatchet:ensure` will only reuse it when the configured
-`HATCHET_CLIENT_TOKEN` (preferred) or `HATCHET_TOKEN` (legacy fallback) can actually authenticate against that stack. Otherwise it fails fast with a clear message,
-because booting the app against incompatible Hatchet credentials just leads to 403s and broken demo navigation.
-
-The Nx targets already inject the local Hatchet contract for this example:
-
-- `HATCHET_UI_PORT=8899`
-- `HATCHET_GRPC_PORT=7177`
-- `HATCHET_HOST=localhost:7177`
-- `HATCHET_API_URL=http://localhost:8899`
-
-So this app can coexist with another Hatchet project that still owns `8888` / `7077`.
-
-The example now bootstraps the local SQLite schema on startup for ergonomic local dev:
-
-- better-auth tables: `user`, `session`, `account`, `verification`
-- Prisma todo table: `Todo`
-
-If you change `prisma/schema.prisma`, regenerate the Prisma client before restarting the app:
+The app bootstraps its local SQLite auth and todo tables. Regenerate Prisma after changing its schema:
 
 ```bash
 pnpm nx run @effectify/react-router-example:prisma:generate
 ```
 
-## Database
+## Hatchet greeting task
 
-This example uses **SQLite** (file-based database) instead of PostgreSQL. No Docker required!
+`app/lib/hatchet/greeting-task.server.ts` declares one `Task` with Effect Schema input and output. `app/lib/runtime.server.ts` composes `Hatchet.layer({ tasks: [greetingTask] })` into the shared `AppLayer`. The Layer is inert until the endpoint invokes `Hatchet.run`.
 
-- Database file: `dev.db` (created automatically if missing)
-- Connection: `DATABASE_URL=file:./dev.db` (defaults automatically for local dev)
-- Tables: `user`, `session`, `account`, `verification` (better-auth), `Todo` (Prisma/local bootstrap)
+The package owns configuration loading, SDK acquisition, task registration, worker startup, lazy initialization, retries, and scope cleanup. The app declares only the Task, Layer composition, and endpoint.
 
-## Authentication
+### Start local Hatchet
 
-The app includes a complete authentication system powered by better-auth:
+Hatchet Lite requires unique local database values. Export them in your shell or store them in an untracked `.env` based on `.env-example`:
 
-- **Signup**: `/signup` - Create new account
-- **Login**: `/login` - Sign in with existing account
-- **Auth API**: `/api/auth/*` - better-auth loader/action endpoint on the same server/origin
-
-## Tech Stack
-
-| Technology   | Version        |
-| ------------ | -------------- |
-| React        | 19.x           |
-| React Router | 7.x            |
-| Effect       | 3.x            |
-| better-auth  | 1.x            |
-| Prisma       | 7.x            |
-| SQLite       | better-sqlite3 |
-| TailwindCSS  | 4.x            |
-
-## Project Structure
-
+```bash
+export HATCHET_DB_USER="hatchet_$(openssl rand -hex 8)"
+export HATCHET_DB_PASSWORD="$(openssl rand -hex 32)"
+export HATCHET_DB_NAME="hatchet_$(openssl rand -hex 8)"
+docker compose up -d
 ```
+
+Compose binds PostgreSQL, Hatchet gRPC, and the dashboard to loopback. Open <http://localhost:8888>, create an API token, then start the app with the package configuration:
+
+```bash
+export HATCHET_CLIENT_TOKEN='<dashboard token>'
+export HATCHET_HOST_PORT='localhost:7077'
+export HATCHET_API_URL='http://localhost:8888'
+export HATCHET_TLS_STRATEGY='none'
+export HATCHET_WORKER_NAME='react-router-example-worker'
+pnpm nx run @effectify/react-router-example:dev
+```
+
+`HATCHET_TLS_STRATEGY=none` is only for local Hatchet Lite. Omitting it preserves the SDK secure default.
+
+Stop the local services directly:
+
+```bash
+docker compose down
+```
+
+### Invoke the task
+
+Sign in first, then send the Better Auth session cookie with the request:
+
+```bash
+curl -i -X POST http://localhost:4200/api/hatchet/runs \
+  -H 'content-type: application/json' \
+  -H 'cookie: better-auth.session_token=<session-cookie>' \
+  -d '{"name":"Ada"}'
+```
+
+An authenticated request receives immediate `202 Accepted` confirmation:
+
+```json
+{ "ok": true, "runId": "..." }
+```
+
+`202` confirms the workflow was accepted and started; it does not await workflow output.
+
+Invalid JSON or Schema input returns a safe `400` response through the existing React Router Effect adapter.
+
+### Manage greeting crons
+
+Open <http://localhost:4200/hatchet-crons> after signing in. The protected screen queries `Hatchet.listCrons` and creates five-field schedules for `greetingTask` with `Hatchet.createCron`. Its loader and action use the shared Effect runtime adapters and Better Auth guards, matching the protected todo workflow.
+
+The create form reuses `greetingInput`: provide a cron name, an expression such as `0 9 * * 1-5`, and the greeting name passed to the task. `CronExpression` validates the schedule once at the form boundary and renders the next three local occurrences before submission.
+
+## Project structure
+
+```text
 app/
-├── app.tsx                # Stable landing page overview for the example slices
-├── app-nav.tsx            # Deterministic top-level navigation
+├── app.tsx
+├── app-nav.tsx
 ├── lib/
-│   ├── auth-client.ts      # Client-side auth
-│   ├── better-auth-options.server.ts  # Server auth config
-│   └── runtime.server.ts   # Shared Effect runtime wrappers and AppLayer
+│   ├── auth-client.ts
+│   ├── better-auth-options.server.ts
+│   ├── hatchet/
+│   │   └── greeting-task.server.ts
+│   └── runtime.server.ts
 ├── routes/
-│   ├── signup.tsx          # Signup page
-│   ├── login.tsx           # Login page
-│   ├── todo-app.tsx        # Protected todo workflow
-│   ├── chat.tsx            # Simple chat demo
-│   └── api.auth.ts         # Auth API endpoints
-└── root.tsx                # Document shell + global navigation
-```
-
-## Environment Variables
-
-Optional `.env` file for overriding the local SQLite path:
-
-```
-DATABASE_URL=file:./dev.db
+│   ├── api.auth.ts
+│   ├── api.hatchet.runs.ts
+│   ├── chat.tsx
+│   ├── hatchet-crons.tsx
+│   ├── login.tsx
+│   ├── signup.tsx
+│   └── todo-app.tsx
+└── root.tsx
 ```
 
 ## Development
 
 ```bash
-# Type checking
+pnpm nx run @effectify/react-router-example:test
 pnpm nx run @effectify/react-router-example:typecheck
-
-# Serve the production build through the Nx start contract
-pnpm nx start @effectify/react-router-example
+pnpm nx run @effectify/react-router-example:lint
+pnpm nx run @effectify/react-router-example:build --skip-nx-cache
 ```
 
-If you run the production server on a non-default origin, set `BETTER_AUTH_URL` to match it before starting the app.
-
-## Notes
-
-- SQLite is used for simplicity (no Docker needed)
-- Local dev bootstraps auth + todo tables automatically from `app/lib/prisma.ts`
-- `prisma/better-auth-init.sql` remains available if you want to inspect or run the auth schema manually
-- The database file (`dev.db`) is gitignored - each dev has their own local DB
+SQLite defaults to `DATABASE_URL=file:./dev.db`. Set `BETTER_AUTH_URL` when serving from a non-default production origin.

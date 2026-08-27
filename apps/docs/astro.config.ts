@@ -30,9 +30,7 @@ export default defineConfig({
               },
               {
                 label: "Reference",
-                autogenerate: {
-                  directory: "react/reference",
-                },
+                items: [{ autogenerate: { directory: "react/reference" } }],
               },
             ],
           },
@@ -52,9 +50,7 @@ export default defineConfig({
               },
               {
                 label: "Reference",
-                autogenerate: {
-                  directory: "solid/reference",
-                },
+                items: [{ autogenerate: { directory: "solid/reference" } }],
               },
             ],
           },
@@ -74,9 +70,7 @@ export default defineConfig({
               },
               {
                 label: "Reference",
-                autogenerate: {
-                  directory: "backend/reference",
-                },
+                items: [{ autogenerate: { directory: "backend/reference" } }],
               },
             ],
           },
@@ -96,9 +90,7 @@ export default defineConfig({
               },
               {
                 label: "Reference",
-                autogenerate: {
-                  directory: "universal/reference",
-                },
+                items: [{ autogenerate: { directory: "universal/reference" } }],
               },
             ],
           },

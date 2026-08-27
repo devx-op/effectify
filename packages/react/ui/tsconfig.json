@@ -6,7 +6,5 @@
       "@/*": ["./src/*"]
     }
   },
-  "references": [
-    { "path": "./tsconfig.lib.json" }
-  ]
+  "references": [{ "path": "./tsconfig.lib.json" }]
 }

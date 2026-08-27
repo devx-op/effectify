@@ -11,7 +11,8 @@
     "lib": ["DOM", "DOM.Iterable", "ES2022"],
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+    "rootDir": "."
   },
   "include": ["src/**/*.ts"],
   "references": []

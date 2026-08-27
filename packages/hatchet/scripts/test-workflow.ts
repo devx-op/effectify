@@ -1,63 +1,42 @@
 /**
- * Example: Running a worker with @effectify/hatchet
+ * Example: dispatch without waiting, do independent Effect work, then await.
  *
- * This demonstrates how to integrate @effectify/hatchet with Hatchet Lite.
- *
- * Usage:
- *   HATCHET_TOKEN="your-token" pnpm tsx packages/hatchet/scripts/test-workflow.ts
+ * Usage: configure HATCHET_CLIENT_TOKEN and run
+ * `node --experimental-strip-types packages/hatchet/scripts/test-workflow.ts`.
  */
 
-import { Hatchet } from "@hatchet-dev/typescript-sdk"
+import { Hatchet, Task } from "@effectify/hatchet"
+import * as Effect from "effect/Effect"
+import * as Schema from "effect/Schema"
 
-const token = process.env.HATCHET_TOKEN
-if (!token) {
-  console.error("❌ Please set HATCHET_TOKEN")
-  console.log("   Get it from: http://localhost:8888 → Settings → API Tokens")
-  process.exit(1)
-}
-
-// For Hatchet Lite:
-// - UI Dashboard: http://localhost:8888
-// - gRPC API: localhost:7077 (use this!)
-const hatchet = Hatchet.init({
-  token,
-  host_port: "localhost:7077", // gRPC port, NOT UI port
-  tls_config: {
-    tls_strategy: "none",
-  },
-})
-
-console.log("✅ Hatchet client initialized")
-console.log("   gRPC: localhost:7077")
-console.log("   UI: http://localhost:8888\n")
-
-// Define your Effect-based tasks
-const myTask = hatchet.task({
+const greeting = Task.make({
   name: "my-effect-task",
-  fn: async (input: { message: string }) => {
-    // Your Effect logic would go here
-    console.log("   📝 Processing:", input.message)
-    return { result: "done", message: input.message }
-  },
+  input: Schema.Struct({ message: Schema.String }),
+  output: Schema.Struct({ result: Schema.String, message: Schema.String }),
+  fn: ({ message }) => Effect.succeed({ result: "done", message }),
 })
 
-async function main() {
-  const worker = await hatchet.worker("my-worker", {
-    workflows: [myTask],
-    slots: 10,
+const program = Effect.gen(function* () {
+  const handle = yield* Hatchet.runNoWait(greeting, {
+    message: "Hello from Effect",
   })
+  yield* Effect.log("Hatchet task dispatched", { runId: handle.id })
+  yield* Effect.log("Independent Effect work completed")
+  const output = yield* handle.await
+  yield* Effect.log("Hatchet task completed", output)
+}).pipe(Effect.provide(Hatchet.layer({ tasks: [greeting] })))
 
-  console.log("✅ Worker registered")
-  await worker.start()
-  console.log("✅ Worker started!\n")
-
-  console.log("📋 To trigger:")
-  console.log("   1. Go to http://localhost:8888")
-  console.log("   2. Find 'my-effect-task' → Run")
-  console.log('   3. Input: { "message": "Hello!" }')
-  console.log("")
-
-  await new Promise(() => {})
+const terminateAfterFinalizers = (exitCode: number): never => {
+  // Hatchet SDK 1.21 has no public close/dispose API for its run-result gRPC
+  // listener. Effect.runPromise settles only after Layer finalizers have completed,
+  // so forced termination is intentionally limited to this executable CLI example.
+  process.exit(exitCode)
 }
 
-main().catch(console.error)
+Effect.runPromise(program).then(
+  () => terminateAfterFinalizers(0),
+  (error) => {
+    console.error(error)
+    return terminateAfterFinalizers(1)
+  },
+)

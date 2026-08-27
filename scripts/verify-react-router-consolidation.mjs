@@ -1,0 +1,273 @@
+import { execFile } from "node:child_process"
+import { access, readFile } from "node:fs/promises"
+import { resolve } from "node:path"
+import { promisify } from "node:util"
+
+const execFileAsync = promisify(execFile)
+const LEDGER = "docs/migrations/react-remix-to-react-router.md"
+const FINAL_VERSION_PATTERN = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/
+const EXPECTED_SCENARIOS = [
+  "shell",
+  "navigation",
+  "login",
+  "signup",
+  "auth-api",
+  "auth-loader-guard",
+  "auth-action-guard",
+  "todo-create",
+  "todo-update",
+  "todo-delete",
+  "todo-toggle",
+  "todo-validation",
+  "test-loader-success",
+  "test-blank-validation",
+  "test-action-success",
+  "demo-loader-success",
+  "demo-loader-failure",
+  "demo-loader-redirect",
+  "demo-action-success",
+  "demo-action-failure",
+  "demo-action-redirect",
+  "api-placeholder",
+  "pico-styling",
+  "mock-store",
+  "rr7-typegen",
+  "rr7-route-map",
+  "rr7-hydration",
+  "rr7-ssr",
+  "rr7-build",
+]
+const VALID_DISPOSITIONS = new Set([
+  "pending-review",
+  "existing-rr8",
+  "transfer-to-rr8",
+  "remove-with-justification",
+  "pending-migration",
+  "retained-until-retirement",
+  "deprecate-reference",
+  "remove-at-retirement",
+])
+const VALIDATOR_FIXTURE_ROOT = "scripts/fixtures/react-router-consolidation/"
+const HISTORICAL_CHANGE_ROOT = "openspec/changes/consolidate-react-remix-into-router/"
+const ARCHIVED_CHANGE_PATTERN =
+  /^openspec\/changes\/archive\/\d{4}-\d{2}-\d{2}-consolidate-react-remix-into-router\//
+const CANONICAL_SPEC_ROOT = "openspec/specs/react-router-major-consolidation/"
+const SKIPPED_SCAN_PATHS = new Set([
+  LEDGER,
+  "scripts/verify-react-router-consolidation.mjs",
+  "scripts/verify-react-router-consolidation.test.mjs",
+  "pnpm-lock.yaml",
+])
+const isAllowedHistoricalPath = (file) =>
+  (file !== "pnpm-lock.yaml" && SKIPPED_SCAN_PATHS.has(file)) ||
+  file.startsWith(HISTORICAL_CHANGE_ROOT) ||
+  ARCHIVED_CHANGE_PATTERN.test(file) ||
+  file.startsWith(CANONICAL_SPEC_ROOT) ||
+  file.startsWith(VALIDATOR_FIXTURE_ROOT)
+
+const fail = (failures) => {
+  throw new Error(`React Router consolidation ledger failed:\n- ${failures.join("\n- ")}`)
+}
+
+const table = (source, heading) => {
+  const lines = source.split("\n")
+  const start = lines.findIndex((line) => line.trim() === `## ${heading}`)
+  if (start === -1) return []
+  const rows = []
+  for (const line of lines.slice(start + 1)) {
+    if (line.startsWith("## ")) break
+    if (!line.trim().startsWith("|")) continue
+    const cells = line
+      .trim()
+      .slice(1, -1)
+      .split("|")
+      .map((cell) => cell.trim())
+    if (cells.every((cell) => /^:?-+:?$/.test(cell))) continue
+    rows.push(cells)
+  }
+  if (rows.length < 2) return []
+  const [headers, ...values] = rows
+  return values.map((cells) => Object.fromEntries(headers.map((header, index) => [header, cells[index] ?? ""])))
+}
+
+const validateRows = (rows, kind, failures) => {
+  const required = ["ID", "Surface", "Disposition", "Evidence / justification", "Reviewer", "Complete"]
+  for (const field of required) {
+    if (!rows.every((row) => row[field])) failures.push(`${kind} rows require ${field}`)
+  }
+  for (const row of rows) {
+    if (!VALID_DISPOSITIONS.has(row.Disposition)) {
+      failures.push(`${kind} ${row.ID || "<unknown>"} has invalid disposition ${row.Disposition || "<empty>"}`)
+    }
+    if (!/^(YES|NO)$/.test(row.Complete)) {
+      failures.push(`${kind} ${row.ID || "<unknown>"} completion must be YES or NO`)
+    }
+    if (/^(?:-|TBD|TODO|N\/A)$/i.test(row["Evidence / justification"])) {
+      failures.push(`${kind} ${row.ID || "<unknown>"} lacks concrete evidence or justification`)
+    }
+  }
+}
+
+const expandBraces = (target) => {
+  const match = target.match(/\{([^{}]+)\}/)
+  if (!match) return [target]
+  return match[1]
+    .split(",")
+    .flatMap((value) => expandBraces(`${target.slice(0, match.index)}${value}${target.slice(match.index + match[0].length)}`))
+}
+
+const evidenceTargets = (row) =>
+  [...row["Evidence / justification"].matchAll(/`([^`]+)`/g)]
+    .map((match) => match[1])
+    .filter((target) => !/[\s:]/.test(target) && /\.(?:[cm]?[jt]sx?|json)$/.test(target))
+    .flatMap(expandBraces)
+    .map((target) => {
+      if (target.startsWith("tests/")) return `apps/react-router-example/${target}`
+      if (target === "project.json") return "apps/react-router-example/project.json"
+      if (!target.includes("/")) return `apps/react-router-example/tests/unit/config/${target}`
+      return target
+    })
+
+const validateEvidenceTargets = async (rows, failures) => {
+  const evidenceRoot = process.env.CONSOLIDATION_EVIDENCE_ROOT ?? "."
+  for (const row of rows.filter((candidate) => candidate.Disposition !== "remove-with-justification")) {
+    const targets = evidenceTargets(row)
+    if (targets.length === 0) {
+      failures.push(`scenario ${row.ID || "<unknown>"} lacks a concrete evidence target`)
+      continue
+    }
+    for (const target of targets) {
+      try {
+        await access(resolve(evidenceRoot, target))
+      } catch {
+        failures.push(`scenario ${row.ID || "<unknown>"} evidence target does not exist: ${target}`)
+      }
+    }
+  }
+}
+
+const trackedConsumerSurfaces = async () => {
+  const { stdout } = await execFileAsync("git", ["ls-files", "-co", "--exclude-standard"])
+  const candidates = stdout
+    .trim()
+    .split("\n")
+    .filter(Boolean)
+    .filter((file) => !isAllowedHistoricalPath(file))
+    .filter((file) => /(?:^|\/)(?:[^/]+\.(?:[cm]?[jt]sx?|json|md|ya?ml)|nx\.json)$/.test(file))
+  const surfaces = []
+  for (const file of candidates) {
+    const source = await readFile(file, "utf8").catch(() => "")
+    if (source.includes("@effectify/react-remix") || source.includes("react-remix-example")) {
+      surfaces.push(file)
+    }
+  }
+  surfaces.push("pnpm-lock.yaml")
+  return [...new Set(surfaces)].sort()
+}
+
+const expected = process.argv.find((argument) => argument.startsWith("--expect="))?.slice(9) ?? "open"
+if (!["closed", "open", "retired"].includes(expected)) {
+  throw new Error("Expected --expect=closed, --expect=open, or --expect=retired")
+}
+const retired = expected === "retired"
+
+let ledger
+try {
+  ledger = await readFile(LEDGER, "utf8")
+} catch {
+  fail([`missing ${LEDGER}`])
+}
+
+const failures = []
+const gate = ledger.match(/^Retirement gate:\s*\*\*(CLOSED|OPEN)\*\*$/m)?.[1]
+const finalBridgeVersion = ledger.match(/^Final supported bridge rollback version:\s*`([^`]+)`$/m)?.[1]
+if (!gate) failures.push("missing explicit Retirement gate: **CLOSED|OPEN**")
+if (!finalBridgeVersion || !FINAL_VERSION_PATTERN.test(finalBridgeVersion)) {
+  failures.push("missing concrete final supported bridge rollback version")
+}
+
+let bridgeManifest
+try {
+  bridgeManifest = JSON.parse(await readFile("packages/react/remix/package.json", "utf8"))
+} catch {
+  if (!retired) failures.push("missing packages/react/remix/package.json before retirement")
+}
+if (finalBridgeVersion && bridgeManifest && finalBridgeVersion !== bridgeManifest.version) {
+  failures.push(`rollback version ${finalBridgeVersion} must match bridge package ${bridgeManifest.version}`)
+}
+if (retired) {
+  const retiredRoots = ["packages/react/remix", "apps/react-remix-example"]
+  for (const retiredRoot of retiredRoots) {
+    await access(retiredRoot).then(
+      () => failures.push(`retirement path still exists: ${retiredRoot}`),
+      () => {},
+    )
+  }
+
+  const { stdout } = await execFileAsync("git", ["ls-files", "-co", "--exclude-standard"])
+  for (const file of stdout.trim().split("\n").filter(Boolean)) {
+    if (isAllowedHistoricalPath(file)) continue
+    const source = await readFile(file, "utf8").catch(() => null)
+    if (source === null) continue
+
+    for (const term of [
+      "@effectify/react-remix",
+      "react-remix-example",
+      "packages/react/remix",
+      "react-router7-better-auth",
+      "7.18.2",
+    ]) {
+      if (`${file}\n${source}`.includes(term)) failures.push(`retirement residue ${term} in ${file}`)
+    }
+    if (["package.json", "pnpm-workspace.yaml", "nx.json"].includes(file) && source.includes("@remix-run/")) {
+      failures.push(`retirement dependency residue @remix-run/ in ${file}`)
+    }
+    if (file === "pnpm-lock.yaml") {
+      for (const pattern of [/^\s+(?:apps\/react-remix-example|packages\/react\/remix):/m, /^\s+react-router@7\./m]) {
+        if (pattern.test(source)) failures.push(`retirement lock residue ${pattern} in ${file}`)
+      }
+    }
+  }
+}
+
+const consumers = table(ledger, "Repository consumer inventory")
+const scenarios = table(ledger, "Behavior scenario inventory")
+if (consumers.length === 0) failures.push("missing repository consumer rows")
+if (scenarios.length === 0) failures.push("missing behavior scenario rows")
+validateRows(consumers, "consumer", failures)
+validateRows(scenarios, "scenario", failures)
+await validateEvidenceTargets(scenarios, failures)
+
+const consumerSurfaces = new Set(consumers.map((row) => row.Surface))
+for (const surface of await trackedConsumerSurfaces()) {
+  if (!consumerSurfaces.has(`\`${surface}\``)) failures.push(`unmapped repository consumer ${surface}`)
+}
+const scenarioIds = new Set(scenarios.map((row) => row.ID))
+for (const scenario of EXPECTED_SCENARIOS) {
+  if (!scenarioIds.has(scenario)) failures.push(`missing behavior scenario ${scenario}`)
+}
+
+const pendingRows = [...consumers, ...scenarios].filter(
+  (row) => row.Complete !== "YES" || row.Reviewer === "PENDING" || row.Disposition.startsWith("pending-"),
+)
+if (gate === "OPEN" && pendingRows.length > 0) {
+  failures.push(`OPEN gate has ${pendingRows.length} pending reviewer/disposition/completion rows`)
+}
+const expectedGate = retired ? "OPEN" : expected.toUpperCase()
+if (expectedGate !== gate) failures.push(`expected ${expectedGate} gate but ledger declares ${gate ?? "missing"}`)
+if (failures.length > 0) fail(failures)
+
+console.log(
+  JSON.stringify(
+    {
+      retirementGate: gate,
+      finalBridgeVersion,
+      consumerRows: consumers.length,
+      scenarioRows: scenarios.length,
+      pendingRows: pendingRows.length,
+      status: retired ? "retired" : gate === "CLOSED" ? "inventory-complete-retirement-blocked" : "retirement-eligible",
+    },
+    null,
+    2,
+  ),
+)

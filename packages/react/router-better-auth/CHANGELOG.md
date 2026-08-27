@@ -1,3 +1,36 @@
+## 0.5.12-alpha.1 (2026-07-12)
+
+### 🚀 Features
+
+- ⚠️ **react-router:** support React Router 8
+
+### ⚠️ Breaking Changes
+
+- **react-router:** support React Router 8
+
+### 🧱 Updated Dependencies
+
+- Updated @effectify/react-router to 0.5.11-alpha.1
+- Updated @effectify/node-better-auth to 0.5.12-alpha.1
+
+### ❤️ Thank You
+
+- Andres David Jimenez @kattsushi
+
+## Unreleased
+
+### Compatibility
+
+- Verified React Router 8.2.0 loader/action request access without unsafe context assertions. Public exports and package version remain unchanged; Nx release policy determines any future version.
+- Verified both Better Auth guard variants preserve redirect status, location, and `Set-Cookie` headers for v8-compatible requests.
+
+## 0.5.12-alpha.0 (2026-07-11)
+
+### 🧱 Updated Dependencies
+
+- Updated @effectify/react-router to 0.5.11-alpha.0
+- Updated @effectify/node-better-auth to 0.5.12-alpha.0
+
 ## 1.0.0-alpha.3 (2026-04-27)
 
 This was a version bump only for @effectify/react-router-better-auth to align it with other projects, there were no code changes.

@@ -1,4 +1,4 @@
-import { dirname, resolve } from "node:path"
+import { dirname } from "node:path"
 import { fileURLToPath } from "node:url"
 import { defineConfig } from "vitest/config"
 
@@ -8,9 +8,6 @@ const __dirname = dirname(__filename)
 export default defineConfig({
   root: __dirname,
   resolve: {
-    alias: {
-      "@effectify/hatchet": resolve(__dirname, "../../packages/hatchet/src/index.ts"),
-    },
     conditions: ["@effectify/source"],
   },
   test: {

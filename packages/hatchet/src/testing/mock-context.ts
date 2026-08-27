@@ -5,29 +5,21 @@
  */
 
 import * as Effect from "effect/Effect"
-import * as Exit from "effect/Exit"
+import type * as Exit from "effect/Exit"
 import * as Layer from "effect/Layer"
 import { HatchetStepContext, type HatchetTaskContext } from "../core/context.js"
 
 type MockHatchetTaskContext<I, U extends Record<string, unknown>> = Pick<
   HatchetTaskContext<I, U>,
-  | "input"
-  | "taskName"
-  | "workflowName"
-  | "workflowRunId"
-  | "retryCount"
-  | "parentOutput"
-  | "log"
-  | "logger"
+  "input" | "taskName" | "workflowName" | "workflowRunId" | "retryCount" | "parentOutput" | "log" | "logger"
 >
 
 const toHatchetTaskContext = <I, U extends Record<string, unknown>>(
   context: MockHatchetTaskContext<I, U>,
 ): HatchetTaskContext<I, U> => context as unknown as HatchetTaskContext<I, U>
 
-const createProvidedMockLayer = (
-  mockContext: HatchetTaskContext,
-): Layer.Layer<HatchetStepContext, never, never> => Layer.succeed(HatchetStepContext, mockContext)
+const createProvidedMockLayer = (mockContext: HatchetTaskContext): Layer.Layer<HatchetStepContext, never, never> =>
+  Layer.succeed(HatchetStepContext, mockContext)
 
 /**
  * Creates a mock HatchetStepContext for testing.
@@ -35,10 +27,7 @@ const createProvidedMockLayer = (
  * @param options - Optional configuration for the mock context
  * @returns A mock context object
  */
-export const createMockContext = <
-  I = unknown,
-  U extends Record<string, unknown> = Record<string, never>,
->(
+export const createMockContext = <I = unknown, U extends Record<string, unknown> = Record<string, never>>(
   options: {
     readonly input?: I
     readonly taskName?: string
@@ -85,20 +74,16 @@ export const createMockContext = <
  * @param mockContext - The mock context to provide
  * @returns A Layer that provides the mock context
  */
-export const createMockLayer = (
-  mockContext: HatchetTaskContext,
-): Layer.Layer<HatchetStepContext, never, never> => createProvidedMockLayer(mockContext)
+export const createMockLayer = (mockContext: HatchetTaskContext): Layer.Layer<HatchetStepContext, never, never> =>
+  createProvidedMockLayer(mockContext)
 
 /**
  * Creates a Layer with a default mock context.
  *
  * @returns A Layer with default mock context
  */
-export const createDefaultMockLayer = (): Layer.Layer<
-  HatchetStepContext,
-  never,
-  never
-> => createProvidedMockLayer(createMockContext())
+export const createDefaultMockLayer = (): Layer.Layer<HatchetStepContext, never, never> =>
+  createProvidedMockLayer(createMockContext())
 
 /**
  * Runs an Effect with a mock HatchetStepContext using provide.
@@ -149,8 +134,3 @@ export const testTaskExit = async <A, E>(
   const effectWithContext = Effect.provide(effect, mockLayer)
   return Effect.runPromiseExit(effectWithContext)
 }
-
-/**
- * @deprecated Use createMockContext instead
- */
-export const createMockStepContext = createMockContext

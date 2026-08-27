@@ -8,7 +8,8 @@
     "moduleResolution": "bundler",
     "paths": {
       "@effectify/hatchet": ["./src/index.ts"]
-    }
+    },
+    "rootDir": "."
   },
-  "include": ["test/**/*.ts", "src/**/*.ts"]
+  "include": ["tests/types/**/*.ts", "src/**/*.ts"]
 }

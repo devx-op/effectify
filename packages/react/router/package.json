@@ -1,6 +1,6 @@
 {
   "name": "@effectify/react-router",
-  "version": "1.0.0-alpha.2",
+  "version": "0.5.11-alpha.1",
   "description": "Integration of React Router with Effect for React applications",
   "repository": {
     "type": "git",
@@ -27,9 +27,12 @@
     "dist",
     "!**/*.tsbuildinfo"
   ],
+  "engines": {
+    "node": ">=22.22"
+  },
   "peerDependencies": {
     "effect": "catalog:",
-    "react-router": "catalog:"
+    "react-router": "^8.3.0"
   },
   "devDependencies": {},
   "dependencies": {},

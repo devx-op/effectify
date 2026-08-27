@@ -15,9 +15,11 @@ El objetivo de este documento es definir los requerimientos para completar la mi
 
 ## 2. Contexto Técnico y Herramientas de IA
 
-- **Worktree Skill Activo:** El agente de IA cuenta con la habilidad de consultar el directorio `.effect-reference` (un git worktree local apuntando a `effect-smol` / `effect` v4 con `--depth 1`).
-- **Fuentes de Verdad:** - `MIGRATION.md` interno de la librería.
-  - Patrones arquitectónicos actuales encontrados directamente en el código fuente del worktree.
+- **Skill de Referencia Activo:** El agente de IA puede consultar `.effect-reference/effect`, un clon independiente, ignorado y depth-1 de `https://github.com/Effect-TS/effect.git` rama `main`, como fuente canónica de Effect v4. Effect v3 corresponde a la rama `v3` del mismo repositorio.
+- **Referencia de Alchemy:** `.effect-reference/alchemy` es un clon independiente, ignorado y depth-1 de `https://github.com/alchemy-run/alchemy.git` rama `main`, la referencia canónica de Alchemy next/alpha basada en Effect. `alchemy-run/alchemy-async` es la implementación async anterior.
+- **Fuentes de Verdad:**
+  - `MIGRATION.md` interno de la librería.
+  - Patrones arquitectónicos actuales encontrados directamente en los clones locales de referencia.
 - **Estado Actual:** El CLI y los servicios base están parcialmente migrados. Existe un bloqueante crítico de inyección de dependencias / manejo de errores en el `make` de `/packages/prisma/src/services/generator-service.ts`.
 
 ## 3. Estrategia de Ramas y Soporte Técnico

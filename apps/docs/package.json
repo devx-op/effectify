@@ -20,7 +20,9 @@
     "starlight-sidebar-topics": "catalog:",
     "starlight-sidebar-topics-dropdown": "catalog:"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "typescript": "catalog:"
+  },
   "peerDependencies": {},
   "optionalDependencies": {}
 }

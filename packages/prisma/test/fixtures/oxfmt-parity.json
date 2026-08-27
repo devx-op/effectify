@@ -1,0 +1,43 @@
+{
+  "typescript": [
+    {
+      "name": "asi-leading-semicolon",
+      "fileName": "asi.ts",
+      "source": "const values=[1,2,3]\n;[...values].forEach(console.log)\n",
+      "expected": "const values = [1, 2, 3]\n;[...values].forEach(console.log)\n"
+    },
+    {
+      "name": "accepted-operator-position",
+      "fileName": "operator.ts",
+      "source": "const result = firstVeryLongOperand\n  || secondVeryLongOperand\n",
+      "options": {
+        "printWidth": 30
+      },
+      "expected": "const result =\n  firstVeryLongOperand ||\n  secondVeryLongOperand\n",
+      "note": "dprint's operatorPosition=maintain is unsupported by oxfmt. The accepted behavior uses oxfmt's default trailing operator placement."
+    },
+    {
+      "name": "generated-prisma-output",
+      "fileName": "generated-user.ts",
+      "source": "export type User={id:string;email:string}\nexport const makeUser=(id:string,email:string):User=>({id,email})\n",
+      "expected": "export type User = { id: string; email: string }\nexport const makeUser = (id: string, email: string): User => ({ id, email })\n"
+    }
+  ],
+  "json": {
+    "fileName": "package.json",
+    "source": "{\"z\":1,\"name\":\"fixture\",\"scripts\":{\"z\":\"z\",\"a\":\"a\"},\"a\":2}",
+    "expected": "{\n  \"z\": 1,\n  \"name\": \"fixture\",\n  \"scripts\": {\n    \"z\": \"z\",\n    \"a\": \"a\"\n  },\n  \"a\": 2\n}\n"
+  },
+  "markdown": {
+    "fileName": "fixture.md",
+    "source": "# Heading\n\nThis intentionally long paragraph stays on its original line so proseWrap preserve retains the repository's existing Markdown behavior.\n",
+    "expected": "# Heading\n\nThis intentionally long paragraph stays on its original line so proseWrap preserve retains the repository's existing Markdown behavior.\n"
+  },
+  "range": {
+    "fileName": "range.ts",
+    "source": "const untouched = {already: \"formatted\"}\nconst selected={needs: \"formatting\"}\n",
+    "start": { "line": 1, "character": 0 },
+    "end": { "line": 1, "character": 44 },
+    "expectedReplacement": "const selected = { needs: \"formatting\" }"
+  }
+}

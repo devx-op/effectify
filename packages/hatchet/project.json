@@ -15,7 +15,7 @@
         "format": ["esm"],
         "generatePackageJson": false,
         "updateBuildableProjectDepsInPackageJson": false,
-        "additionalEntryPoints": []
+        "additionalEntryPoints": ["packages/hatchet/src/testing/index.ts"]
       },
       "configurations": {
         "development": {},

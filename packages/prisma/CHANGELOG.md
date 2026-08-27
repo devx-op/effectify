@@ -1,3 +1,11 @@
+## 1.1.13-alpha.1 (2026-07-12)
+
+This was a version bump only for @effectify/prisma to align it with other projects, there were no code changes.
+
+## 1.1.13-alpha.0 (2026-07-11)
+
+This was a version bump only for @effectify/prisma to align it with other projects, there were no code changes.
+
 ## 2.0.0-alpha.3 (2026-04-27)
 
 ### 🚀 Features

@@ -2,7 +2,7 @@ name: 🧪 CI
 
 on:
   pull_request:
-    branches: [master, dev]
+    types: [opened, synchronize, reopened, ready_for_review]
   push:
     branches: [dev]
 
@@ -15,115 +15,189 @@ env:
   NODE_OPTIONS: "--max-old-space-size=4096"
 
 jobs:
-  # Lint and format check
-  lint:
-    name: 🔍 Lint & Format
+  release-policy:
+    name: 🛡️ Release Policy Contract
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
+
+      - name: 🏗️ Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "24.19.0"
+          package-manager-cache: false
+
+      - name: 🛡️ Verify release policy contract
+        run: node --test scripts/release-policy-contract.test.mjs
+
+  # Lint and format check
+  lint:
+    name: 🔍 Lint & Format
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
       - name: 📦 Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: 10.14.0
 
       - name: 🏗️ Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: "20"
+          node-version: "24.19.0"
           cache: "pnpm"
 
       - name: 📦 Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: 🔍 Run oxlint on affected projects
+      - name: 🎯 Resolve affected base
+        id: affected-base
+        shell: bash
         run: |
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             BASE="origin/${{ github.base_ref }}"
           else
-            BASE="HEAD~1"
+            BEFORE="${{ github.event.before }}"
+            DEFAULT_BASE="origin/${{ github.event.repository.default_branch }}"
+            ZERO_SHA="0000000000000000000000000000000000000000"
+            if [[ -n "$BEFORE" && "$BEFORE" != "$ZERO_SHA" ]] && git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
+              BASE="$BEFORE"
+            elif git cat-file -e "${DEFAULT_BASE}^{commit}" 2>/dev/null; then
+              BASE="$DEFAULT_BASE"
+            elif git rev-parse --verify HEAD^ >/dev/null 2>&1; then
+              BASE="HEAD^"
+            else
+              BASE="HEAD"
+            fi
           fi
-          pnpm nx affected --target=lint --base=$BASE --head=HEAD --parallel=1
+          echo "sha=$BASE" >> "$GITHUB_OUTPUT"
 
-      - name: 🎨 Check code formatting with dprint
-        run: pnpm exec dprint check || (echo "❌ Some files are not formatted. Run 'pnpm exec dprint fmt' to fix formatting." && exit 1)
+      - name: 🔍 Run oxlint on affected projects
+        run: pnpm nx affected --target=lint --base="${{ steps.affected-base.outputs.sha }}" --head=HEAD --parallel=1
+
+      - name: 🎨 Check changed files with oxfmt
+        run: pnpm nx run @effectify/repo:format:check --args="--base=${{ steps.affected-base.outputs.sha }} --head=HEAD" || (echo "❌ Some changed files are not formatted. Run 'pnpm format' to fix formatting." && exit 1)
 
   # Type checking
   typecheck:
     name: 🔍 Type Check
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
       - name: 📦 Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: 10.14.0
 
       - name: 🏗️ Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: "20"
+          node-version: "24.19.0"
           cache: "pnpm"
 
       - name: 📦 Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: 🔍 Type check affected projects
+      - name: 🎯 Resolve affected base
+        id: affected-base
+        shell: bash
         run: |
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             BASE="origin/${{ github.base_ref }}"
           else
-            BASE="HEAD~1"
+            BEFORE="${{ github.event.before }}"
+            DEFAULT_BASE="origin/${{ github.event.repository.default_branch }}"
+            ZERO_SHA="0000000000000000000000000000000000000000"
+            if [[ -n "$BEFORE" && "$BEFORE" != "$ZERO_SHA" ]] && git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
+              BASE="$BEFORE"
+            elif git cat-file -e "${DEFAULT_BASE}^{commit}" 2>/dev/null; then
+              BASE="$DEFAULT_BASE"
+            elif git rev-parse --verify HEAD^ >/dev/null 2>&1; then
+              BASE="HEAD^"
+            else
+              BASE="HEAD"
+            fi
           fi
-          pnpm nx affected --target=typecheck --base=$BASE --head=HEAD --parallel=1 --verbose
+          echo "sha=$BASE" >> "$GITHUB_OUTPUT"
+
+      - name: 🔍 Type check affected projects
+        run: pnpm nx affected --target=typecheck --base="${{ steps.affected-base.outputs.sha }}" --head=HEAD --parallel=1 --verbose
 
   # Build affected projects
   build:
     name: 🏗️ Build
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     outputs:
       has-build-artifacts: ${{ steps.build.outputs.has-artifacts }}
     steps:
       - name: 📥 Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
       - name: 📦 Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: 10.14.0
 
       - name: 🏗️ Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: "20"
+          node-version: "24.19.0"
           cache: "pnpm"
 
       - name: 📦 Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: 🎯 Resolve affected base
+        id: affected-base
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            BASE="origin/${{ github.base_ref }}"
+          else
+            BEFORE="${{ github.event.before }}"
+            DEFAULT_BASE="origin/${{ github.event.repository.default_branch }}"
+            ZERO_SHA="0000000000000000000000000000000000000000"
+            if [[ -n "$BEFORE" && "$BEFORE" != "$ZERO_SHA" ]] && git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
+              BASE="$BEFORE"
+            elif git cat-file -e "${DEFAULT_BASE}^{commit}" 2>/dev/null; then
+              BASE="$DEFAULT_BASE"
+            elif git rev-parse --verify HEAD^ >/dev/null 2>&1; then
+              BASE="HEAD^"
+            else
+              BASE="HEAD"
+            fi
+          fi
+          echo "sha=$BASE" >> "$GITHUB_OUTPUT"
+
       - name: 🏗️ Build affected projects
         id: build
         run: |
-          BASE=$(git merge-base HEAD origin/dev)
+          BASE="${{ steps.affected-base.outputs.sha }}"
 
           # Build affected projects with caching
-          pnpm nx affected --target=build --base=$BASE --head=HEAD --parallel=1 --verbose
+          pnpm nx affected --target=build --base="$BASE" --head=HEAD --parallel=1 --verbose
 
           # Check if any projects were built
-          AFFECTED_PROJECTS=$(pnpm nx show projects --affected --base=$BASE --head=HEAD --json | jq -r '.[]' | tr '\n' ' ')
+          AFFECTED_PROJECTS=$(pnpm nx show projects --affected --base="$BASE" --head=HEAD --json | jq -r '.[]' | tr '\n' ' ')
           if [ -n "$AFFECTED_PROJECTS" ]; then
             echo "has-artifacts=true" >> $GITHUB_OUTPUT
             echo "📦 Built projects: $AFFECTED_PROJECTS"
-            
+
             # Create build manifest for artifact upload
             echo "BUILT_PROJECTS=$AFFECTED_PROJECTS" >> $GITHUB_ENV
           else
@@ -146,27 +220,50 @@ jobs:
   # Test affected projects
   test:
     name: 🧪 Test
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     needs: [build]
     steps:
       - name: 📥 Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
       - name: 📦 Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: 10.14.0
 
       - name: 🏗️ Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: "20"
+          node-version: "24.19.0"
           cache: "pnpm"
 
       - name: 📦 Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: 🎯 Resolve affected base
+        id: affected-base
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            BASE="origin/${{ github.base_ref }}"
+          else
+            BEFORE="${{ github.event.before }}"
+            DEFAULT_BASE="origin/${{ github.event.repository.default_branch }}"
+            ZERO_SHA="0000000000000000000000000000000000000000"
+            if [[ -n "$BEFORE" && "$BEFORE" != "$ZERO_SHA" ]] && git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
+              BASE="$BEFORE"
+            elif git cat-file -e "${DEFAULT_BASE}^{commit}" 2>/dev/null; then
+              BASE="$DEFAULT_BASE"
+            elif git rev-parse --verify HEAD^ >/dev/null 2>&1; then
+              BASE="HEAD^"
+            else
+              BASE="HEAD"
+            fi
+          fi
+          echo "sha=$BASE" >> "$GITHUB_OUTPUT"
 
       - name: 📦 Download build artifacts
         if: needs.build.outputs.has-build-artifacts == 'true'
@@ -175,22 +272,21 @@ jobs:
           name: build-artifacts-${{ github.sha }}
 
       - name: 🧪 Test affected projects
-        run: |
-          BASE=$(git merge-base HEAD origin/dev)
-          pnpm nx affected --target=test --base=$BASE --head=HEAD --parallel=1 --verbose --passWithNoTests
+        run: pnpm nx affected --target=test --base="${{ steps.affected-base.outputs.sha }}" --head=HEAD --parallel=1 --verbose --passWithNoTests
   # Summary job
   ci-summary:
     name: 📊 CI Summary
     runs-on: ubuntu-latest
-    needs: [lint, typecheck, build, test]
-    if: always()
+    needs: [release-policy, lint, typecheck, build, test]
+    if: always() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
     steps:
       - name: 📊 CI Summary
         run: |
           echo "## 🧪 CI Results Summary" >> $GITHUB_STEP_SUMMARY
           echo "| Job | Status | Details |" >> $GITHUB_STEP_SUMMARY
           echo "|-----|--------|---------|" >> $GITHUB_STEP_SUMMARY
-          echo "| 🔍 Lint & Format | ${{ needs.lint.result == 'success' && '✅ Success' || '❌ Failed' }} | Uses oxlint + dprint |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🛡️ Release Policy | ${{ needs.release-policy.result == 'success' && '✅ Success' || '❌ Failed' }} | Enforces alpha, beta, and stable separation |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔍 Lint & Format | ${{ needs.lint.result == 'success' && '✅ Success' || '❌ Failed' }} | Uses oxlint + oxfmt |" >> $GITHUB_STEP_SUMMARY
           echo "| 🔍 Type Check | ${{ needs.typecheck.result == 'success' && '✅ Success' || '❌ Failed' }} | TypeScript compiler checks |" >> $GITHUB_STEP_SUMMARY
           echo "| 🏗️ Build | ${{ needs.build.result == 'success' && '✅ Success' || '❌ Failed' }} | Nx affected build |" >> $GITHUB_STEP_SUMMARY
           echo "| 🧪 Test | ${{ needs.test.result == 'success' && '✅ Success' || '❌ Failed' }} | Unit tests with Vitest |" >> $GITHUB_STEP_SUMMARY
@@ -204,6 +300,6 @@ jobs:
           if [[ "${{ needs.lint.result }}" != "success" ]]; then
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "### ❌ Linting Issues" >> $GITHUB_STEP_SUMMARY
-            echo "Please run 'pnpm exec dprint fmt' to fix formatting issues" >> $GITHUB_STEP_SUMMARY
+            echo "Please run 'pnpm format' to fix formatting issues" >> $GITHUB_STEP_SUMMARY
           fi
             # NEW: Add this step at the end of your job
