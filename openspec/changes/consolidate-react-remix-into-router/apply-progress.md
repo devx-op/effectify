@@ -79,15 +79,15 @@ None. The RED suite uses Remix `LoaderFunctionArgs` / `ActionFunctionArgs` const
 
 ## Cumulative Task State
 
-The following Work unit 2 rows are now complete in the persisted tasks artifact; every exact unchecked Work unit 3+ row below remains outstanding:
+The following Work unit 2 and Work unit 3 rows are now complete in the persisted tasks artifact; every exact unchecked Work unit 4+ row below remains outstanding:
 
 - [x] GREEN: port the smallest RR8 cause traversal and response mapping behavior into `packages/react/remix/src/lib/runtime.ts` without importing RR8 implementation code or context classes; make `pnpm nx run @effectify/react-remix:test -- tests/runtime.test.ts` pass. <!-- sdd-owner: implementation -->
 - [x] TRIANGULATE: add focused edge cases in `packages/react/remix/tests/runtime.test.ts` for both loader and action paths, non-default redirect status/custom headers, exact throwable identity, defect/interruption generic bodies, and logger observation; run `pnpm nx run @effectify/react-remix:test -- tests/runtime.test.ts -t "redirect|identity|defect|interrupt"`. Runtime harness: the focused tests execute real `ManagedRuntime` exits and inspect returned/thrown native `Response` values. <!-- sdd-owner: implementation -->
 - [x] REFACTOR only after green, then run `pnpm nx run-many --targets=test,typecheck:no-build,lint,build --projects=@effectify/react-remix,@effectify/react-router` and `pnpm nx run @effectify/repo:format:check`; separately record bridge and RR8 results and confirm the protected RR8 diff remains empty with `git diff --exit-code -- pnpm-workspace.yaml package.json pnpm-lock.yaml packages/react/router packages/react-router-better-auth apps/react-router-example`. <!-- sdd-owner: implementation -->
-- [ ] RED: add `packages/react/remix/tests/json.test.ts` and a concrete dependency-isolation check under `scripts/verify-react-router-manifests.mjs` (or its exact consolidation-specific successor) that fails until bridge peer/dev `react-router` pins are exactly `7.18.2`, catalog/root RR8 remains `8.3.0`, and no bridge import uses `@remix-run/*`; run `pnpm nx run @effectify/react-remix:test -- tests/json.test.ts` and `pnpm nx run @effectify/react-router-example:migration:manifest` and record the expected failures. <!-- sdd-owner: implementation -->
-- [ ] GREEN: change `packages/react/remix/package.json` and `src/lib/{context,runtime}.ts` to exact direct RR7 `7.18.2`; implement `src/lib/json.ts` with `Response.json`, numeric/object init handling, native serialization, caller headers, and `@deprecated` export from `src/index.ts`; regenerate `pnpm-lock.yaml` with `pnpm install --lockfile-only`. <!-- sdd-owner: implementation -->
-- [ ] TRIANGULATE dependency isolation using `pnpm nx run @effectify/react-remix:test -- tests/json.test.ts`, `pnpm nx run @effectify/react-remix:test -- tests/runtime.test.ts`, `pnpm nx run @effectify/react-router-example:migration:manifest`, `pnpm why react-router --filter @effectify/react-remix`, and `pnpm why react-router --filter @effectify/react-router-example`; evidence must show RR7 `7.18.2` for the bridge and RR8 `8.3.0` for the protected app in distinct importer snapshots. Runtime harness: `json.test.ts` reads native response bodies/status/headers; dependency commands are non-runtime evidence. <!-- sdd-owner: implementation -->
-- [ ] REFACTOR and verify `pnpm nx run-many --targets=test,typecheck:no-build,lint,build --projects=@effectify/react-remix,@effectify/react-router`, `pnpm nx run @effectify/repo:format:check`, and scans proving no `json` export was added under `packages/react/router/**` and no RR7 entry was added to root `package.json` or the `pnpm-workspace.yaml` React Router catalog. <!-- sdd-owner: implementation -->
+- [x] RED: add `packages/react/remix/tests/json.test.ts` and a concrete dependency-isolation check under `scripts/verify-react-router-manifests.mjs` (or its exact consolidation-specific successor) that fails until bridge peer/dev `react-router` pins are exactly `7.18.2`, catalog/root RR8 remains `8.3.0`, and no bridge import uses `@remix-run/*`; run `pnpm nx run @effectify/react-remix:test -- tests/json.test.ts` and `pnpm nx run @effectify/react-router-example:migration:manifest` and record the expected failures. <!-- sdd-owner: implementation -->
+- [x] GREEN: change `packages/react/remix/package.json` and `src/lib/{context,runtime}.ts` to exact direct RR7 `7.18.2`; implement `src/lib/json.ts` with `Response.json`, numeric/object init handling, native serialization, caller headers, and `@deprecated` export from `src/index.ts`; regenerate `pnpm-lock.yaml` with `pnpm install --lockfile-only`. <!-- sdd-owner: implementation -->
+- [x] TRIANGULATE dependency isolation using `pnpm nx run @effectify/react-remix:test -- tests/json.test.ts`, `pnpm nx run @effectify/react-remix:test -- tests/runtime.test.ts`, `pnpm nx run @effectify/react-router-example:migration:manifest`, `pnpm why react-router --filter @effectify/react-remix`, and `pnpm why react-router --filter @effectify/react-router-example`; evidence must show RR7 `7.18.2` for the bridge and RR8 `8.3.0` for the protected app in distinct importer snapshots. Runtime harness: `json.test.ts` reads native response bodies/status/headers; dependency commands are non-runtime evidence. <!-- sdd-owner: implementation -->
+- [x] REFACTOR and verify `pnpm nx run-many --targets=test,typecheck:no-build,lint,build --projects=@effectify/react-remix,@effectify/react-router`, `pnpm nx run @effectify/repo:format:check`, and scans proving no `json` export was added under `packages/react/router/**` and no RR7 entry was added to root `package.json` or the `pnpm-workspace.yaml` React Router catalog. <!-- sdd-owner: implementation -->
 - [ ] RED: add `apps/react-remix-example/tests/unit/react-router7-better-auth.test.ts` covering exact bridge action/loader contexts, rejection of RR8/lookalike contexts, request identity, body/status/`Location`, and every `Headers.getSetCookie()` value; run `pnpm nx run @effectify/react-remix-example:test -- tests/unit/react-router7-better-auth.test.ts` and record expected failures. <!-- sdd-owner: implementation -->
 - [ ] GREEN: implement `apps/react-remix-example/app/lib/react-router7-better-auth.server.ts` using direct imports from `@effectify/react-remix` and `@effectify/node-better-auth`, preserve the native auth `Response`, implement RR7 redirect/typed `Unauthorized` guard policy, and replace all app imports of `@effectify/react-router-better-auth`. <!-- sdd-owner: implementation -->
 - [ ] TRIANGULATE with `pnpm nx run @effectify/react-remix-example:test -- tests/unit/react-router7-better-auth.test.ts -t "context|cookie|redirect|Unauthorized"` and `pnpm nx run @effectify/react-remix-example:test -- tests/unit/routes/api-auth.test.ts`; runtime harness: execute adapter effects under `@effectify/react-remix` runtime and record exact request identity and multiple-cookie observations. <!-- sdd-owner: implementation -->
@@ -215,3 +215,87 @@ None. The bridge remains on pre-migration Remix dependencies, implementation cod
 - Verification passed: repository format check; exact affected typecheck against `origin/docs/react-remix-consolidation-plan`; bridge runtime tests (10/10); and `git diff --check`.
 - Final correction objective: **390 changed lines** (170 additions, 220 deletions). Entire child versus the planning base: **952 changed lines** (595 additions, 357 deletions), below the 1,000-line boundary.
 - Boundaries preserved: no manifest, dependency, lockfile, protected RR8 surface, task checkbox, or Work Unit 3 change; parent retains attempt settlement and delivery ownership.
+
+## Work Unit 3 / PR 3 — RR7 Dependency Isolation and Bridge-Local `json`
+
+### Structured Status Consumed
+
+- Authoritative native OpenSpec status: change `consolidate-react-remix-into-router`, `applyState: ready`, `nextRecommended: apply`, 6/47 implementation tasks complete before this slice, and no blockers.
+- Action context: `repo-local`; workspace root and sole allowed edit root `/Users/skynet/devx-op/effectify`; warnings: none.
+- Parent delivery authority: `auto-chain`, `feature-branch-chain`, work unit `rr7-dependency-isolation-json`, maximum 1,000 changed lines; parent owns settlement and delivery.
+- Strict TDD was active. Injected skills were loaded from the two parent-provided paths.
+
+### Workload / PR Boundary
+
+- Completed boundary: **PR 3 — RR7 dependency isolation and bridge-local `json`**.
+- Protected `packages/react/router/**`, `packages/react/router-better-auth/**`, `apps/react-router-example/**`, root `package.json`, and `pnpm-workspace.yaml` remained byte-for-byte unchanged.
+- Work unit 4 and later behavior was not started. The Better Auth adapter/example state inherited from the parent was not edited.
+- Rollback boundary: restore the bridge manifest/imports, `json.ts` and export, JSON tests, verifier/Nx target, and matching lockfile importer together; protected RR8 values are outside the rollback.
+- Authored/generated counts against `test/react-remix-contract-green`: **310** authored additions + deletions, plus **95** generated `pnpm-lock.yaml` additions + deletions; total **405**, below 1,000.
+
+### Completed Tasks and Persisted Checkboxes
+
+All four implementation-owned Work unit 3 rows are visibly marked `- [x]` in `tasks.md`:
+
+1. RED added the native-delegation JSON contract plus a fail-closed local dependency-isolation verifier and Nx target.
+2. GREEN pinned bridge peer/dev `react-router` exactly `7.18.2`, replaced active bridge Remix imports, added local deprecated `json`, and regenerated the lockfile with `pnpm install --lockfile-only`.
+3. TRIANGULATE proved native response behavior, RR7 runtime behavior, exact bridge RR7 resolution, and distinct protected RR8 resolution.
+4. REFACTOR passed the two-package matrix, formatting, isolation target, protected manifest, residue scans, and protected diff.
+
+### Files Changed
+
+- `packages/react/remix/package.json`
+- `packages/react/remix/project.json`
+- `packages/react/remix/src/index.ts`
+- `packages/react/remix/src/lib/context.ts`
+- `packages/react/remix/src/lib/runtime.ts`
+- `packages/react/remix/src/lib/json.ts` (new)
+- `packages/react/remix/tests/runtime.test.ts`
+- `packages/react/remix/tests/json.test.ts` (new)
+- `scripts/verify-react-router-manifests.mjs`
+- `pnpm-lock.yaml` (generated)
+- `openspec/changes/consolidate-react-remix-into-router/tasks.md` (Work unit 3 checkboxes only)
+- `openspec/changes/consolidate-react-remix-into-router/apply-progress.md` (cumulative evidence)
+
+### RED → GREEN → TRIANGULATE → REFACTOR Evidence
+
+| Stage         | Exact command/action                                                                                                                 | Result                                                                                                                           |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| Safety net    | `pnpm nx run @effectify/react-remix:test -- tests/runtime.test.ts`; `pnpm nx run @effectify/react-router-example:migration:manifest` | Exit 0: bridge 10/10; pre-change protected manifest command passed its prior 8.2 registry check.                                 |
+| RED           | `pnpm nx run @effectify/react-remix:test -- tests/json.test.ts` after adding the native delegation assertion                         | Exit 1: 1 failed, 4 passed; existing Remix helper made zero calls to `Response.json`.                                            |
+| RED isolation | `pnpm nx run @effectify/react-router-example:migration:manifest`; `pnpm nx run @effectify/react-remix:dependency:isolation`          | Exit 1: missing exact bridge RR7 peer/dev pins, retained Remix dependencies/imports, while protected 8.3 checks remained intact. |
+| GREEN         | Local helper/import/manifest implementation, `pnpm install --lockfile-only`, then focused JSON test                                  | Exit 0: 5/5 JSON tests passed.                                                                                                   |
+| TRIANGULATE   | Exact focused JSON/runtime/manifest and two `pnpm why` commands                                                                      | JSON 5/5 and runtime 10/10 passed; bridge showed `react-router 7.18.2`; protected app showed only `8.3.0`.                       |
+| REFACTOR      | Exact two-project Nx matrix, format check, isolation target, scans, and protected diff                                               | Exit 0: bridge 15/15, RR8 8/8, both typecheck:no-build/lint/build sets passed, formatting and all isolation guards passed.       |
+
+### TDD Cycle Evidence
+
+| Task                 | Test File / Harness                                            | Layer                | Safety Net                             | RED                                               | GREEN                   | TRIANGULATE                                            | REFACTOR                                    |
+| -------------------- | -------------------------------------------------------------- | -------------------- | -------------------------------------- | ------------------------------------------------- | ----------------------- | ------------------------------------------------------ | ------------------------------------------- |
+| Bridge-local `json`  | `packages/react/remix/tests/json.test.ts`                      | Runtime unit         | Existing runtime 10/10                 | 1 failed, 4 passed on native delegation           | 5/5 passed              | Defaults, numeric/object init, headers, native failure | Matrix and format green                     |
+| Dependency isolation | `scripts/verify-react-router-manifests.mjs` via two Nx targets | Manifest integration | Protected command passed before change | Both targets rejected missing pins/import residue | Isolation target passed | Distinct `pnpm why` snapshots: 7.18.2 / 8.3.0          | Fail-closed scans and protected diff passed |
+
+Test summary: 5 JSON tests authored and passing; bridge package total 15/15; protected RR8 package 8/8. The local `json` function is a pure input-to-native-response adapter. No approval-only tests were needed.
+
+### Commands and Deviations
+
+- Final evidence ran under Node `v24.19.0` and pnpm `10.14.0`.
+- `pnpm install --lockfile-only` was the only command that changed `pnpm-lock.yaml`. A later `pnpm install --frozen-lockfile` synchronized `node_modules` without changing the lockfile so the exact `pnpm why` and runtime commands executed RR7; a preceding offline frozen attempt failed because the RR7 tarball was not cached.
+- The first JSON test run was 4/4 green because the old Remix helper already matched response shapes. Before production edits, the test was strengthened with the specified native `Response.json` delegation contract, producing the required RED failure.
+- RR7 `LoaderFunctionArgs`/`ActionFunctionArgs` in 7.18.2 require `url` and `pattern`; test fixtures were completed after the first matrix exposed those type errors, then the full matrix passed.
+- The verifier's stale `final-v8` registry expectation was corrected from 8.2.0 to the protected 8.3.0 fixed by this change's contract.
+
+### Remaining Tasks and Deferred Lifecycle Actions
+
+- Every exact unchecked implementation row from Work unit 4 onward remains listed above and visibly unchecked in `tasks.md`; Work unit 4 is the next implementation boundary.
+- All three parent-owned human evidence gates remain deferred and byte-for-byte unchanged.
+- Apply is not globally complete; return to `parent-lifecycle` without starting Work unit 4.
+
+## Bounded Fixture Correction — `rr7-fixture-integration-correction`
+
+- Parent-authorized PR #175 correction only; authoritative status remained `applyState: ready`, repo-local root `/Users/skynet/devx-op/effectify`, with no edit-root warnings. The feature-branch-chain boundary and 150-line cap were preserved.
+- RED: the exact affected typecheck against `origin/test/react-remix-contract-green` reproduced five TS2345 errors because two route-test helpers returned Remix-v2 argument types without RR7 `url` and `pattern`.
+- GREEN: both test files now derive helper outputs from `Parameters<typeof loader/action>[0]`, use stable `URL` values, and identify the matched patterns as `/api/auth/*` and `/test`; no runtime or product code changed.
+- Verification passed: focused route tests (2 files, 5/5 tests), bridge runtime/JSON suites (2 files, 15/15 tests), exact affected typecheck (19 projects and 16 dependency tasks), repository format check, and `git diff --check`.
+- Correction source count before this evidence entry: 24 additions + deletions across two test files. Generated cleanup restored both tracked React tsbuildinfo files and removed the untracked Prisma tsbuildinfo; final status retained only the two fixture files and this cumulative evidence file.
+- Task state is unchanged: Work Unit 3 remains complete, Work Unit 4+ remains unchecked, and parent-owned rows remain deferred byte-for-byte. Parent owns attempt settlement and delivery; no commit, push, CI retry, receipt, or lifecycle actor was started.
