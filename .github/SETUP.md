@@ -1,272 +1,124 @@
-# 🚀 CI/CD Setup Guide
+# CI and npm release setup
 
-This guide explains how to set up the automated CI/CD pipeline for publishing packages to NPM and JSR (Deno).
+Effectify has three intentionally separate release channels. Alpha and beta are branch-driven prereleases; stable publication is always a manual decision.
 
-## 📋 Prerequisites
+## Release channel map
 
-1. **NPM Account**: You need an NPM account with publish permissions
-2. **JSR Account**: You need a JSR account for Deno packages (optional)
-3. **GitHub Repository**: With admin access to configure secrets
+| Channel | Trigger                                  | npm tag            | Workflow                               |
+| ------- | ---------------------------------------- | ------------------ | -------------------------------------- |
+| Alpha   | Push to `dev`                            | `alpha`            | `.github/workflows/release-alpha.yml`  |
+| Beta    | Push to `master`                         | `beta`             | `.github/workflows/cd.yml`             |
+| Stable  | Manual workflow against current `master` | default (`latest`) | `.github/workflows/release-stable.yml` |
 
-## 🔐 Required Secrets
+A `chore(release):` commit pushed by a release workflow does not start another beta publication. Stable has no push trigger and cannot be reached by a normal branch push.
 
-Configure these secrets in your GitHub repository settings (`Settings > Secrets and variables > Actions`):
+## Required repository setup
 
-### NPM Token
+Use Node.js 24.19.0 and pnpm 10.14.0 locally when reproducing workflow checks.
 
-- **Name**: `NPM_TOKEN`
-- **Description**: NPM authentication token for publishing packages
-- **How to get**:
-  1. Go to [npmjs.com](https://www.npmjs.com/) and log in
-  2. Go to `Account Settings > Access Tokens`
-  3. Click `Generate New Token`
-  4. Select `Automation` type (for CI/CD)
-  5. Copy the token and add it as `NPM_TOKEN` secret
+Configure these GitHub Actions secrets under **Settings > Secrets and variables > Actions**:
 
-### JSR OIDC Configuration (Recommended)
+| Secret          | Purpose                                                                                   |
+| --------------- | ----------------------------------------------------------------------------------------- |
+| `NPM_TOKEN`     | npm authentication and provenance publication                                             |
+| `RELEASE_TOKEN` | Optional checkout token for stable release git operations; `GITHUB_TOKEN` is the fallback |
 
-- **Method**: OIDC (OpenID Connect) - more secure than personal tokens
-- **Setup**: Link your package to your GitHub repository in JSR
-- **How to configure**:
-  1. Go to your package `@effectify/solid-query` on [jsr.io](https://jsr.io/)
-  2. Go to the **"Settings"** tab
-  3. In **"GitHub repository"** field, enter your repository name (e.g., `your-username/effectify`)
-  4. Click **"Link"** to connect the package to your repository
-  5. No secrets needed in GitHub - OIDC handles authentication automatically
-- **Reference**: [JSR Publishing from GitHub Actions](https://jsr.io/docs/publishing-packages#publishing-from-github-actions)
+The release jobs request `contents: write` for Nx release commits, tags, and GitHub releases, and `id-token: write` for npm provenance.
 
-## 🏗️ Workflow Overview
+## Nx release projects
 
-### CI Workflow (`.github/workflows/ci.yml`)
+All release workflows derive their allowlist from `nx.json`. The seven current Nx project names are:
 
-- **Triggers**: Push to `master`, `main`, `develop` branches and PRs
-- **Purpose**: Development and PR validation
-- **Jobs**:
-  - 🔍 **Lint & Format**: Checks code style and formatting
-  - 🔍 **Type Check**: Validates TypeScript types
-  - 🏗️ **Build**: Builds affected projects and uploads artifacts
-  - 🧪 **Test**: Runs tests for affected projects
-  - 📊 **Summary**: CI results dashboard
+1. `@effectify/react-router`
+2. `@effectify/react-query`
+3. `@effectify/node-better-auth`
+4. `@effectify/solid-query`
+5. `@effectify/react-router-better-auth`
+6. `@effectify/prisma`
+7. `@effectify/hatchet`
 
-### Release Workflow (`.github/workflows/release.yml`)
+Use these project names—not filesystem paths—in manual workflow inputs.
 
-- **Triggers**: Push to `master` branch only
-- **Purpose**: Production release and publishing
-- **Optimized**: Tries to reuse build artifacts from CI
-- **Jobs**:
-  - 🔍 **Detect Changes**: Determines if release is needed
-  - 🚀 **Release & Publish**: Handles versioning, changelog, and publishing
-  - 📢 **Notify**: Provides status notifications
+## Exact workflow behavior
 
-## 🎯 How It Works
+### CI: `.github/workflows/ci.yml`
 
-### 1. Change Detection
+**Triggers:** pull requests that are opened, synchronized, reopened, or marked ready for review, plus pushes to `dev`.
 
-The workflow automatically detects if any of the configured release projects have changes:
-
-- `packages/react/router` — maintained RR8 integration
-- `packages/node/better-auth`
-- `packages/solid/query`
-
-### 2. Affected Projects
-
-Uses Nx's native `affected` commands to:
-
-- Build only changed projects: `nx affected --target=build`
-- Test only changed projects: `nx affected --target=test`
-- Lint only changed projects: `nx affected --target=lint`
-
-### 3. Release Process
-
-When changes are detected on master:
-
-1. **Try to reuse** build artifacts from CI (if available)
-2. **Build** affected projects (only if artifacts not found)
-3. **Test** affected projects
-4. **Version** packages using Nx Release
-5. **Generate** changelogs automatically
-6. **Publish** to NPM and JSR
-7. **Create** GitHub release
-
-## 🔧 Configuration Files
-
-### `.npmrc`
-
-```ini
-registry=https://registry.npmjs.org/
-always-auth=true
-@jsr:registry=https://npm.jsr.io/
-```
-
-### `nx.json` (Release Configuration)
-
-```json
-{
-  "release": {
-    "projects": [
-      "packages/react/router",
-      "packages/node/better-auth",
-      "packages/solid/query"
-    ],
-    "changelog": {
-      "projectChangelogs": {
-        "renderOptions": {
-          "authors": true,
-          "commitReferences": false,
-          "versionTitleDate": true,
-          "applyUsernameToAuthors": true
-        }
-      }
-    },
-    "releaseTagPattern": "release/{version}",
-    "version": {
-      "preVersionCommand": "pnpm nx build @effectify/react-router"
-    }
-  }
-}
-```
-
-## 🚀 Usage
-
-### Automatic Release
-
-- Push changes to `master` branch
-- The workflow automatically detects affected packages
-- If changes are found, it triggers the release process
-
-### Manual Release
-
-- Go to `Actions` tab in GitHub
-- Select `🚀 Release & Publish` workflow
-- Click `Run workflow` button
-
-### Check Status
-
-- Go to `Actions` tab to see workflow status
-- Check the `📊 CI Summary` for detailed results
-- Review published packages in NPM and JSR
-
-## 🛠️ Troubleshooting
-
-### Common Issues
-
-1. **NPM Token Issues**
-
-   - Ensure token has `Automation` type
-   - Check token permissions include publish access
-   - Verify token is not expired
-
-2. **JSR Token Issues**
-
-   - Ensure JSR account has publish permissions
-   - Check if package name conflicts exist
-   - Verify JSR token is valid
-
-3. **Build Failures**
-
-   - Check if all dependencies are installed
-   - Verify TypeScript compilation
-   - Review test failures
-
-4. **No Release Triggered**
-   - Ensure changes are in release-configured projects
-   - Check if changes are in configuration files
-   - Verify branch is `master`
-
-## 🧪 Testing Workflows Locally
-
-### Using Act (GitHub Actions Local Runner)
-
-We've set up **act** to test GitHub Actions workflows locally before pushing to GitHub.
-
-#### Prerequisites
+For non-draft pull requests, CI runs the static release-policy contract, affected lint and format checks, affected type checks, affected builds, and affected tests. The release-policy contract is dependency-free and runs with Node.js 24.19.0:
 
 ```bash
-# Install act (if not already installed)
-brew install act
-
-# Install Docker (required for act)
-# Download from https://www.docker.com/products/docker-desktop
+node --test scripts/release-policy-contract.test.mjs
 ```
 
-#### Quick Testing
+### Alpha: `.github/workflows/release-alpha.yml`
+
+**Triggers:** pushes to `dev` and optional manual dispatch.
+
+A normal run calculates projects affected across the GitHub push event's exact `before`-to-`github.sha` range, then intersects those exact project names with the seven-project release allowlist. Invalid or zero `before` SHAs safely fall back to the current commit's parent. If the intersection is empty, publication is skipped. Otherwise the workflow builds, tests, versions with Nx `--preid=alpha`, rebuilds the versioned packages, and publishes with npm `--tag=alpha`.
+
+Manual publish-only recovery requires an explicit comma-separated `projects` input. It publishes the selected existing manifests with `--tag=alpha` and skips version, changelog, and git mutation.
+
+### Beta: `.github/workflows/cd.yml`
+
+**Triggers:** pushes to `master` and optional manual dispatch.
+
+A normal run uses the same exact push-range and exact-membership affected-project policy as alpha, versions with Nx `--preid=beta`, and publishes with npm `--tag=beta`. It never publishes to npm's default tag. Pushes whose head commit contains `chore(release):` or `[skip release]` are skipped, preventing release-commit recursion.
+
+Manual publish-only recovery requires explicit existing project names and still publishes with `--tag=beta`; it skips version, changelog, and git mutation.
+
+### Stable: `.github/workflows/release-stable.yml`
+
+**Trigger:** manual dispatch only. The workflow has no push trigger.
+
+The workflow always checks out `master`, fetches `origin/master`, and fails unless the checkout is the current remote commit. The `projects` input is required and is validated against all seven Nx release projects.
+
+#### Normal stable graduation
+
+1. Select one or more existing prerelease projects in the comma-separated `projects` input.
+2. Leave `publish_only` disabled.
+3. The workflow verifies the release-policy contract, exact checked-out HEAD equality with fetched `origin/master`, the selected-project allowlist, and npm authentication.
+4. It builds and tests the selected projects, then runs React Router 8 tests, consolidation, readiness, and manifest verification.
+5. Only after validation passes, Nx applies the relative `patch` specifier to the selected prereleases, producing their stable versions and release metadata.
+6. Nx publishes only the selected projects without a prerelease dist-tag, so npm uses the stable default tag.
+
+The workflow rejects a selected normal-mode project whose local manifest is already stable. This keeps graduation explicit and prevents an accidental extra patch release.
+
+#### Publish-only stable recovery
+
+Use this only when selected stable versions already exist in the checked-out manifests but need publication retried:
+
+1. Enter the exact existing stable project names in `projects`.
+2. Enable `publish_only`.
+3. The workflow rejects missing versions, prerelease versions, unknown projects, and empty selections.
+4. It builds, tests, and verifies before publishing the selected manifests.
+5. It performs no version, changelog, tag, release commit, or git push mutation and supplies no prerelease npm dist-tag.
+
+## Release safety checks
+
+Before any Nx version or publish command, every release workflow runs:
 
 ```bash
-# Test all workflows
-./scripts/test-workflows.sh
-
-# Test specific workflow
-./scripts/test-workflows.sh ci
-./scripts/test-workflows.sh release
-
-# List available workflows
-./scripts/test-workflows.sh list
-
-# Get help
-./scripts/test-workflows.sh help
+node --test scripts/release-policy-contract.test.mjs
 ```
 
-#### Manual Testing with Act
+The contract rejects explicitly modeled structural regressions: a stable push trigger, missing beta or alpha prerelease flags, weakened project or current-`master` checks, known version/publish commands moving ahead of required validation, and channel documentation drifting from the workflows.
+
+React Router publication readiness is verified with the maintained React Router 8 project and example targets:
 
 ```bash
-# List jobs in a workflow
-act -W .github/workflows/ci.yml --list
-act -W .github/workflows/release.yml --list
-
-# Run specific job
-act -W .github/workflows/ci.yml -j build
-act -W .github/workflows/ci.yml -j test
-
-# Run with M1/M2 Mac compatibility
-act -W .github/workflows/ci.yml --container-architecture linux/amd64
-
-# Run with local secrets
-act -W .github/workflows/ci.yml --secret-file .secrets
+pnpm nx test @effectify/react-router
+pnpm nx run @effectify/react-router-example:migration:test
+pnpm nx run @effectify/react-router-example:migration:verify
+pnpm nx run @effectify/react-router-example:migration:manifest
+pnpm nx run @effectify/react-router-example:consolidation:verify
 ```
 
-### Testing Nx Commands Locally
+## Recovery checklist
 
-```bash
-# Check affected projects locally
-pnpm nx show projects --affected --base=origin/master~1 --head=HEAD
-
-# Test release process locally
-pnpm nx release --dry-run
-
-# Build affected projects locally
-pnpm nx affected --target=build --base=origin/master~1 --head=HEAD
-
-# Test JSR publish locally (dry run)
-cd packages/solid/query
-pnpm dlx jsr publish --dry-run
-
-# Test JSR publish locally (real publish)
-cd packages/solid/query
-pnpm dlx jsr publish
-```
-
-### Local Testing Files
-
-- **`.actrc`**: Act configuration file
-- **`.secrets`**: Local secrets for testing (not committed to git)
-- **`scripts/test-workflows.sh`**: Helper script for testing workflows
-
-## 📚 Additional Resources
-
-- [Nx Release Documentation](https://nx.dev/nx-api/nx/documents/release)
-- [Nx Affected Commands](https://nx.dev/nx-api/nx/documents/affected)
-- [GitHub Actions Documentation](https://docs.github.com/en/actions)
-- [NPM Publishing Guide](https://docs.npmjs.com/packages-and-modules/contributing-packages-to-the-registry)
-- [JSR Publishing Guide](https://jsr.io/docs/publishing)
-
-## 🎉 Benefits
-
-- ✅ **Automated**: No manual publishing required
-- ✅ **Optimized**: Reuses build artifacts when possible
-- ✅ **Efficient**: Only builds and tests affected projects
-- ✅ **Reliable**: Comprehensive testing before release
-- ✅ **Transparent**: Clear changelogs and release notes
-- ✅ **Multi-platform**: Supports both NPM and JSR (Deno)
-- ✅ **Scalable**: Easy to add new packages to release process
-- ✅ **Separated**: Clear separation between CI and Release concerns
-- ✅ **Fast**: Parallel execution and smart artifact reuse
+- Confirm the workflow run is using the intended channel.
+- Copy exact project names from the seven-project list above.
+- For alpha or beta recovery, confirm the existing versions carry the matching prerelease suffix.
+- For stable recovery, confirm every selected manifest version has no prerelease suffix.
+- Use publish-only mode only to retry existing versions; use normal stable mode to graduate prereleases.
+- Review the workflow summary and npm package pages after completion.
