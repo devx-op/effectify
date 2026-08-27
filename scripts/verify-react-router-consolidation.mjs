@@ -1,5 +1,6 @@
 import { execFile } from "node:child_process"
-import { readFile } from "node:fs/promises"
+import { access, readFile } from "node:fs/promises"
+import { resolve } from "node:path"
 import { promisify } from "node:util"
 
 const execFileAsync = promisify(execFile)
@@ -95,6 +96,44 @@ const validateRows = (rows, kind, failures) => {
   }
 }
 
+const expandBraces = (target) => {
+  const match = target.match(/\{([^{}]+)\}/)
+  if (!match) return [target]
+  return match[1]
+    .split(",")
+    .flatMap((value) => expandBraces(`${target.slice(0, match.index)}${value}${target.slice(match.index + match[0].length)}`))
+}
+
+const evidenceTargets = (row) =>
+  [...row["Evidence / justification"].matchAll(/`([^`]+)`/g)]
+    .map((match) => match[1])
+    .filter((target) => !/[\s:]/.test(target) && /\.(?:[cm]?[jt]sx?|json)$/.test(target))
+    .flatMap(expandBraces)
+    .map((target) => {
+      if (target.startsWith("tests/")) return `apps/react-router-example/${target}`
+      if (target === "project.json") return "apps/react-router-example/project.json"
+      if (!target.includes("/")) return `apps/react-router-example/tests/unit/config/${target}`
+      return target
+    })
+
+const validateEvidenceTargets = async (rows, failures) => {
+  const evidenceRoot = process.env.CONSOLIDATION_EVIDENCE_ROOT ?? "."
+  for (const row of rows.filter((candidate) => candidate.Disposition !== "remove-with-justification")) {
+    const targets = evidenceTargets(row)
+    if (targets.length === 0) {
+      failures.push(`scenario ${row.ID || "<unknown>"} lacks a concrete evidence target`)
+      continue
+    }
+    for (const target of targets) {
+      try {
+        await access(resolve(evidenceRoot, target))
+      } catch {
+        failures.push(`scenario ${row.ID || "<unknown>"} evidence target does not exist: ${target}`)
+      }
+    }
+  }
+}
+
 const trackedConsumerSurfaces = async () => {
   const { stdout } = await execFileAsync("git", ["ls-files", "-co", "--exclude-standard"])
   const candidates = stdout
@@ -146,6 +185,7 @@ if (consumers.length === 0) failures.push("missing repository consumer rows")
 if (scenarios.length === 0) failures.push("missing behavior scenario rows")
 validateRows(consumers, "consumer", failures)
 validateRows(scenarios, "scenario", failures)
+await validateEvidenceTargets(scenarios, failures)
 
 const consumerSurfaces = new Set(consumers.map((row) => row.Surface))
 for (const surface of await trackedConsumerSurfaces()) {

@@ -1232,3 +1232,101 @@ Deferred parent-owned lifecycle actions remain byte-for-byte unchanged in `tasks
 - [ ] After work unit 11, evaluate the final RR8-only evidence and close the OpenSpec change only if cleanup, release surfaces, scenario ledger, rollback record, and protected RR8 `8.3.0` matrix are all complete; otherwise reopen the applicable gate. <!-- sdd-owner: parent -->
 
 Lifecycle routing returns to the parent. No WU9, retirement/deletion, product edit, commit, push, PR, review, receipt, attempt settlement, or parent-owned gate action was performed.
+
+## Work Unit 9 / PR9 — Retirement-Gate Evidence
+
+### Structured Status and Delivery Boundary
+
+- Authoritative native OpenSpec status selected `consolidate-react-remix-into-router`; pre-run `applyState: ready`, `nextRecommended: apply`, planning artifacts complete, and no blockers.
+- Action context was `repo-local`; workspace and sole allowed edit root were `/Users/skynet/devx-op/effectify`; warnings: none.
+- Parent supplied native `proceed` for `retirement-gate-evidence`, maximum 1,000 changed lines. The executor authenticated the existing parent-owned attempt token without mutation; parent owns settlement and delivery.
+- Delivery remained `auto-chain`, `feature-branch-chain`; only WU9 / PR9 was implemented. Strict TDD was active, skill resolution was `paths-injected`, and runtime commands used Node `v24.19.0` through `fnm`.
+
+### Phase Contract and Counts
+
+- Status: **completed** for WU9 only; the change remains in apply.
+- Retirement gate: **OPEN**.
+- Consumers: **24/24 reviewed and Complete YES**; scenarios: **29/29 reviewed and Complete YES**; pending: **0**.
+- Final bridge rollback version: **0.5.12-alpha.1**, matching the bridge manifest.
+- Persisted ownership: **51/60 implementation rows complete, 9 remaining; 1/3 parent rows complete, 2 deferred; 0 malformed markers**.
+- Final PR9 size: **248 additions + 34 deletions = 282 authored changed lines**, with **0 generated retained lines**, below 1,000.
+
+### Completed Tasks and Files
+
+All four WU9 implementation rows are visibly `- [x]` in `tasks.md` and mirrored to Engram:
+
+1. RED added process-level fixtures proving nonzero failure for a missing consumer, incomplete scenario, reviewer-empty row, missing evidence target, and absent rollback version; pre-completion OPEN verification failed as expected.
+2. GREEN completed every reviewed consumer disposition, retained all 29 complete scenarios and rollback 0.5.12-alpha.1, and made the verifier report OPEN.
+3. TRIANGULATE passed app migration/test, protected router/adapter, clean typegen/typecheck/build, and exact RR8 8.3.0 matrices.
+4. REFACTOR/CLEANUP passed format/diff checks, cleaned generated output, restored tsbuildinfo, recorded rollback, and proved no transitional deletion or protected source change.
+
+Files changed: `scripts/verify-react-router-consolidation.{mjs,test.mjs}`, `docs/migrations/react-remix-to-react-router.md`, and the cumulative OpenSpec tasks/progress artifacts. No bridge, RR7 app, local adapter, RR8 product source, manifest, dependency, lockfile, implementation, or release configuration changed.
+
+### RED → GREEN → TRIANGULATE → REFACTOR Evidence
+
+| Stage        | Evidence                                                                               | Result                                                                                                                                  |
+| ------------ | -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Safety net   | Closed consolidation verifier                                                          | Exit 0: rollback 0.5.12-alpha.1, 24 consumers, 29 scenarios, 24 pending.                                                                |
+| RED          | New Node fixture suite                                                                 | Exit 1: 5/6 passed; missing evidence target incorrectly returned zero.                                                                  |
+| Required RED | `consolidation:verify -- --expect=open` before completion                              | Exit 1: expected OPEN but ledger declared CLOSED.                                                                                       |
+| GREEN        | Add evidence-target existence guard and complete reviewed consumer metadata            | Fixtures 6/6; OPEN passed with 24 consumers, 29 scenarios, 0 pending.                                                                   |
+| TRIANGULATE  | App migration/test, package/adapter, manifest/readiness, and compiler/build matrices   | All required commands passed. This evidence-only slice has no direct runtime boundary; referenced RR8 suites supplied runtime evidence. |
+| REFACTOR     | Format, rerun fixtures/OPEN, clean generated output, restore tsbuildinfo, inspect diff | Format and `git diff --check` passed; no transitional deletion or protected source diff.                                                |
+
+### Commands and Verification
+
+| Command                                                                             |     Exit | Result                                                                                 |
+| ----------------------------------------------------------------------------------- | -------: | -------------------------------------------------------------------------------------- |
+| `node --test scripts/verify-react-router-consolidation.test.mjs`                    | 1 then 0 | RED 5/6; final 6/6.                                                                    |
+| `pnpm nx run @effectify/react-router-example:consolidation:verify -- --expect=open` | 1 then 0 | Initially rejected CLOSED; final OPEN with 24/29/0 counts and rollback 0.5.12-alpha.1. |
+| `pnpm nx run @effectify/react-router-example:migration:manifest`                    |        0 | Bridge 7.18.2 and protected RR8 8.3.0; two prior runs had transient registry timeouts. |
+| `migration:verify`; `migration:test`; full app `test`                               |        0 | Node 24.19.0 / RR8 8.3.0; migration 9/9; app 115/115.                                  |
+| router/adapter `test,typecheck:no-build,lint,build` matrix                          |        0 | Router 8/8 and adapter 9/9; all static/build targets passed.                           |
+| clean app `typegen` → `typecheck` → `build`                                         |        0 | All passed; existing non-failing build warnings only.                                  |
+| format check; `git diff --check`; bounded diff/deletion scans                       |        0 | Clean evidence diff; no deleted transitional file or protected product/source diff.    |
+
+### TDD Cycle Evidence
+
+| Task                  | Harness                                              | Layer                   | Safety Net              | RED                    | GREEN                                    | TRIANGULATE                             | REFACTOR                                               |
+| --------------------- | ---------------------------------------------------- | ----------------------- | ----------------------- | ---------------------- | ---------------------------------------- | --------------------------------------- | ------------------------------------------------------ |
+| Fail-closed validator | `scripts/verify-react-router-consolidation.test.mjs` | CLI fixture integration | CLOSED inventory passed | 5/6 exposed target gap | 6/6 passed                               | Five malformed fixtures plus valid OPEN | Formatted; 6/6 and real OPEN rerun                     |
+| Consumer completion   | Nx consolidation target and ledger                   | Evidence integration    | 24 pending consumers    | OPEN returned nonzero  | 24/24 consumers and 29/29 scenarios OPEN | Independent RR8 matrices passed         | Clarified OPEN eligibility does not authorize deletion |
+
+Test summary: one Node test file with six process-level fixture cases was added; all six pass. No product or runtime behavior was introduced.
+
+### Rollback, Cleanup, and Deviations
+
+- Rollback boundary: restore the migration ledger's consumer completion fields and gate to CLOSED; revert the WU9 verifier/test evidence and four WU9 checkboxes. Retain `@effectify/react-remix@0.5.12-alpha.1`, bridge, RR7 app, local adapter, exact RR7 pins, workspace/release metadata, and lockfile unchanged.
+- Cleanup removed ignored `apps/react-router-example/{.react-router,build}` and restored command-touched `packages/react/router/tsconfig.lib.tsbuildinfo`; no generated mutation remains.
+- Deviation: the manifest matrix had two transient `registry.npmjs.org` connect timeouts before an unchanged retry passed. No design, scope, product, or dependency deviation occurred.
+- Parent deletion authorization remains unchecked. OPEN establishes eligibility only and does not authorize WU10.
+
+### Remaining Tasks and Deferred Parent Actions
+
+Exact unchecked implementation rows:
+
+- [ ] RED: add final-absence assertions to `scripts/verify-react-router-consolidation.mjs` for `@effectify/react-remix`, `react-remix-example`, local adapter, bridge `json`, `@remix-run/*`, RR7-only pins/resolutions, release projects, setup/docs/workspace references, and Nx graph nodes; run `pnpm nx run @effectify/react-router-example:consolidation:verify -- --expect=retired` and record expected failures before deletion. <!-- sdd-owner: implementation -->
+- [ ] GREEN PR 10a: delete `packages/react/remix/**` and `apps/react-remix-example/**`, including the local adapter and bridge `json`, while preserving evidence needed in the migration ledger; keep this source-deletion slice below 1,000 changed lines or split by coherent package/app deletion without releasing an intermediate state. <!-- sdd-owner: implementation -->
+- [ ] GREEN PR 10b: remove obsolete entries from `nx.json`, `pnpm-workspace.yaml`, root/package docs and setup/release surfaces, regenerate `pnpm-lock.yaml` with `pnpm install --lockfile-only`, and remove all now-unused Remix/RR7-only resolutions while preserving React Router catalog/root `8.3.0`. <!-- sdd-owner: implementation -->
+- [ ] TRIANGULATE absence/version isolation with `pnpm nx run @effectify/react-router-example:consolidation:verify -- --expect=retired`, `pnpm nx show projects --json`, `pnpm why react-router --filter @effectify/react-router-example`, `pnpm nx run @effectify/react-router-example:migration:manifest`, and repository scans over source, docs, release config, workspace config, and `pnpm-lock.yaml`; runtime harness: N/A for deletion itself, with executable RR8 behavior verified in work unit 11. <!-- sdd-owner: implementation -->
+- [ ] REFACTOR only cleanup-script/docs wording after absence checks pass, then run `pnpm nx affected --target=lint`, `pnpm nx affected --target=typecheck`, `pnpm nx affected --target=test`, `pnpm nx affected --target=build`, and `pnpm nx run @effectify/repo:format:check`; record authored and generated line counts separately for PR 10a/10b and verify neither child contains dangling references. <!-- sdd-owner: implementation -->
+- [ ] Verify the maintained packages with `pnpm nx run-many --targets=test,typecheck:no-build,lint,build --projects=@effectify/react-router,@effectify/react-router-better-auth`; runtime harness: `packages/react/router/tests/runtime.test.ts` and the adapter suite must record payload, modeled failure, redirect/header, cookie, and throwable-identity results against RR8 `8.3.0`. <!-- sdd-owner: implementation -->
+- [ ] Verify the maintained app with `pnpm nx run @effectify/react-router-example:migration:manifest`, `pnpm nx run @effectify/react-router-example:migration:verify`, `pnpm nx run @effectify/react-router-example:migration:test`, `pnpm nx run @effectify/react-router-example:test`, `rm -rf apps/react-router-example/.react-router && pnpm nx run @effectify/react-router-example:typegen`, `pnpm nx run @effectify/react-router-example:typecheck`, and `pnpm nx run @effectify/react-router-example:build`; runtime harness evidence must include routes, auth, SSR/readiness, status, headers, and each transferred unique scenario. <!-- sdd-owner: implementation -->
+- [ ] Verify final graph/release absence with `pnpm nx run @effectify/react-router-example:consolidation:verify -- --expect=retired`, `pnpm nx show projects --json`, `pnpm why react-router --filter @effectify/react-router-example`, `pnpm nx affected --target=lint`, `pnpm nx affected --target=typecheck`, `pnpm nx affected --target=test`, `pnpm nx affected --target=build`, and `pnpm nx run @effectify/repo:format:check`; record no RR7/Remix dependency, project, publish, release, docs, workspace, or lockfile residue. <!-- sdd-owner: implementation -->
+- [ ] Finalize release evidence in `docs/migrations/react-remix-to-react-router.md` (or the repository-approved retained historical evidence location) with consumer status, reviewed scenario dispositions, transitional-surface absence, protected RR8 results, authored/generated diff counts, and the exact final bridge rollback version; do not add or modify product code. <!-- sdd-owner: implementation -->
+
+Deferred parent-owned actions, preserved byte-for-byte:
+
+- [ ] After work unit 9 and before work unit 10, confirm the validator reports OPEN, every documented consumer is migrated, every scenario disposition is reviewed and complete with passing evidence, and the final bridge rollback version is recorded; explicitly authorize or reject retirement deletion without bypassing any failed row. <!-- sdd-owner: parent -->
+- [ ] After work unit 11, evaluate the final RR8-only evidence and close the OpenSpec change only if cleanup, release surfaces, scenario ledger, rollback record, and protected RR8 `8.3.0` matrix are all complete; otherwise reopen the applicable gate. <!-- sdd-owner: parent -->
+
+Lifecycle routing returns to the parent for the deletion decision. No WU10/WU11 work, source deletion, commit, push, PR, review, receipt, attempt settlement, or parent-owned gate action was performed.
+
+## Parent Gate Decision — Retirement Deletion Authorized
+
+- Decision date: 2026-08-25.
+- Reviewer/maintainer: `kattsushi`.
+- Preconditions accepted: verifier OPEN, 24/24 consumers complete, 29/29 scenarios complete, 0 pending rows, rollback `@effectify/react-remix@0.5.12-alpha.1`, protected React Router exact `8.3.0`, and green CI through PR9.
+- Authorization: execute WU10a source deletion and WU10b graph/release/lockfile cleanup as one non-releasable feature-branch transaction. Do not release between them.
+- Scope guard: delete only the transitional bridge package, RR7 example/local adapter, and their obsolete workspace/release/docs/lockfile references; do not simplify transferred RR8 scenarios or change RR8 `8.3.0`.
+- Rollback remains the exact recorded bridge version and matching RR7 `7.18.2` importer state until final RR8-only verification closes the change.
