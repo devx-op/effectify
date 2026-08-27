@@ -1,4 +1,4 @@
-import { readFile, readdir } from "node:fs/promises";
+import { access, readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 
 const RR7_VERSION = "7.18.2";
@@ -9,14 +9,19 @@ const rrFamily = [
 	"@react-router/node",
 	"@react-router/serve",
 ];
-const legacyRemixFamily = [
-	"@remix-run/node",
-	"@remix-run/react",
-	"@remix-run/serve",
-	"@remix-run/dev",
-];
+const retiredAppRoot = "apps/react-remix-example";
 
 const readJson = async (file) => JSON.parse(await readFile(file, "utf8"));
+
+const pathExists = async (target) => {
+	try {
+		await access(target);
+		return true;
+	} catch (error) {
+		if (error.code === "ENOENT") return false;
+		throw error;
+	}
+};
 
 const collectSourceFiles = async (directory) => {
 	const entries = await readdir(directory, { withFileTypes: true });
@@ -42,20 +47,24 @@ const resolveRootVersion = (rootManifest, workspaceYaml, packageName) => {
 const verifyDependencyIsolation = async () => {
 	const [
 		bridgeManifest,
-		legacyApp,
+		retiredAppPresent,
 		rootManifest,
 		protectedPackage,
 		protectedApp,
 		workspaceYaml,
 	] = await Promise.all([
 		readJson("packages/react/remix/package.json"),
-		readJson("apps/react-remix-example/package.json"),
+		pathExists(retiredAppRoot),
 		readJson("package.json"),
 		readJson("packages/react/router/package.json"),
 		readJson("apps/react-router-example/package.json"),
 		readFile("pnpm-workspace.yaml", "utf8"),
 	]);
 	const failures = [];
+
+	if (retiredAppPresent) {
+		failures.push(`${retiredAppRoot} must be retired`);
+	}
 
 	for (const section of ["peerDependencies", "devDependencies"]) {
 		if (bridgeManifest[section]?.["react-router"] !== RR7_VERSION) {
@@ -68,13 +77,6 @@ const verifyDependencyIsolation = async () => {
 		}
 	}
 
-	for (const packageName of legacyRemixFamily) {
-		for (const section of ["dependencies", "devDependencies"]) {
-			if (legacyApp[section]?.[packageName] !== undefined) {
-				failures.push(`@effectify/react-remix-example ${section} retains ${packageName}`);
-			}
-		}
-	}
 
 	for (const packageName of rrFamily) {
 		if (catalogVersion(workspaceYaml, packageName) !== RR8_VERSION) {
