@@ -170,7 +170,7 @@ The historical WU5 RED/GREEN evidence above remains valid for the declarative RR
 
 - [x] RED PR10a: stage tested optional `--expect=retired` absence assertions while default verification remains OPEN; record failure against retained transitional surfaces. <!-- sdd-owner: implementation -->
 - [x] GREEN PR10a: delete only the five RR7-only test files and app Vitest config, remove only the explicit app `test` target, and pass app typegen/typecheck/build/lint plus protected RR8 and OPEN gates below 1,000 lines. <!-- sdd-owner: implementation -->
-- [ ] GREEN PR10b: delete the retired RR7 app scenario/source files, including the local adapter, without deleting remaining app/graph files or changing package/release/lockfile surfaces. <!-- sdd-owner: implementation -->
+- [x] GREEN PR10b: delete the retired RR7 app scenario/source files, including the local adapter, without deleting remaining app/graph files or changing package/release/lockfile surfaces. <!-- sdd-owner: implementation -->
 - [ ] GREEN PR10c: delete the remaining old app/importer and remove its Nx graph wiring while retaining the bridge package and release/workspace/lockfile cleanup for PR10d. <!-- sdd-owner: implementation -->
 - [ ] GREEN PR10d: delete the bridge package and `json`, remove obsolete release/docs/workspace references, regenerate the lockfile, and preserve protected RR8 `8.3.0`. <!-- sdd-owner: implementation -->
 - [ ] TRIANGULATE final absence/version isolation with `consolidation:verify -- --expect=retired`, Nx graph, protected manifest/`pnpm why`, and repository/lockfile scans; runtime harness: N/A for deletion, with RR8 behavior verified in work unit 11. <!-- sdd-owner: implementation -->
