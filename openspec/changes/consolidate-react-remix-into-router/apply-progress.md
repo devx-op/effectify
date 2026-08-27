@@ -1417,3 +1417,102 @@ No new tests or pure functions were added; PR10a's staged fail-closed validator 
 - [ ] Finalize release evidence in `docs/migrations/react-remix-to-react-router.md` (or the repository-approved retained historical evidence location) with consumer status, reviewed scenario dispositions, transitional-surface absence, protected RR8 results, authored/generated diff counts, and the exact final bridge rollback version; do not add or modify product code. <!-- sdd-owner: implementation -->
 
 The final parent-owned closure row remains deferred byte-for-byte. No dependency, lockfile, project/package/Vite configuration, remaining runtime/auth adapter, bridge, release/workspace graph, protected RR8 source, commit, push, PR, release, review, receipt, or attempt settlement occurred.
+
+## Work Unit 10 / PR10c — Hard-Budget Blocker
+
+### Status and Boundary
+
+- Authoritative OpenSpec status was `applyState: ready`, `nextRecommended: apply`; planning artifacts were complete and the repo-local allowed edit root was `/Users/skynet/devx-op/effectify` with no warnings or blockers.
+- Parent `proceed` for `retire-rr7-app-graph` was authenticated with the live token under the supplied maximum of 2 attempts and 1,000 changed lines. Delivery remained PR10c only; parent owns settlement.
+- Node `v24.19.0` and pnpm `10.14.0` were used for the provisional lockfile-only regeneration. Strict TDD used PR10a's staged RETIRED verifier as the RED harness.
+
+### Exact Provisional Measurement
+
+- Authored/config/app text: **10 additions + 753 deletions = 763 changed lines**.
+- Generated `pnpm-lock.yaml`: **318 additions + 909 deletions = 1,227 changed lines**.
+- Combined textual change: **1,990 lines**, exceeding the hard 1,000-line maximum by **990 lines**.
+- Binary deletion measured separately: tracked `apps/react-remix-example/dev.db`, **57,344 bytes**.
+- The generated lockfile diff removed the app importer and app-owned transitives while retaining the bridge importer and RR7 `7.18.2` snapshot, but its 1,227 lines alone exceeded the allowed total.
+
+### Rollback and Evidence
+
+- Per the hard-budget guard, every provisional PR10c product/config/app/lockfile change was restored to clean PR10b base `d36c0ff79bfbd90d6fbd12c10b51ee288459bb0f`; no partial app deletion or graph cleanup remains.
+- Before provisioning, OPEN passed with 24 consumers, 29 scenarios, 0 pending, and rollback `0.5.12-alpha.1`; explicit RETIRED failed on the expected retained transitional residue. Protected manifest verification passed with bridge RR7 `7.18.2` and protected RR8 `8.3.0`.
+- The PR10c task remains visibly unchecked. PR10d, commit, push, PR, release, receipt, and attempt settlement were not started.
+- Required decision: explicit `size:exception` approval for at least **1,990 textual changed lines plus the 57,344-byte binary deletion**, or a maintainer-approved revised PR10c split/budget that preserves a green, non-releasable boundary.
+
+### TDD Cycle Evidence
+
+| Task                         | Layer / harness                       | Safety Net                         | RED                                           | GREEN                                                | TRIANGULATE                                                                  | REFACTOR                            |
+| ---------------------------- | ------------------------------------- | ---------------------------------- | --------------------------------------------- | ---------------------------------------------------- | ---------------------------------------------------------------------------- | ----------------------------------- |
+| Remaining app/graph deletion | Structural graph/manifest integration | OPEN and protected manifest passed | RETIRED failed on retained surfaces as staged | Blocked by hard size budget before retaining changes | Provisional lockfile/app/graph measurement completed, then fully rolled back | N/A; no provisional change retained |
+
+## Work Unit 10 / PR10c Recovery — Reduce RR7 App to Static Shell
+
+### Exact Phase Contract
+
+- Status: **completed** for recovery head `reduce-rr7-app-to-static-shell` only.
+- New evidence revision: `sha256:f9d93b9aaf8e8d7f1ddefa7646df2860071dec78db733e381bbd5d2d6264325e`, computed from the final binary-capable implementation patch under `apps/react-remix-example`.
+- Remediates failed evidence: `sha256:d0f1c6565fd1e199b00d72f4b61d50b040644d9ba219ab17cfbc67745e2cf59f`.
+- Native rescope revision: `sha256:997c1a9655ba69bc6e170b860ba2a29cc8f652ccec4c2ece22fb9a3518922b5b` by `kattsushi`.
+- Parent owns the bound passing settlement, commit, push, PR, release, and lifecycle continuation; none was performed here.
+
+### Structured Status and Recovery Boundary
+
+- Authoritative native OpenSpec status was `applyState: ready`, `nextRecommended: apply`; proposal, spec, design, and tasks were complete.
+- Action context was `repo-local` with workspace root and sole allowed edit root `/Users/skynet/devx-op/effectify`; warnings and blocked reasons were empty.
+- The parent-provided `proceed` was authenticated as the same live attempt for `reduce-rr7-app-to-static-shell`, with 2 attempts and a maximum of 1,000 changed lines. The native response retained the mandatory binding to the failed evidence above.
+- Delivery remained `auto-chain`, `feature-branch-chain`. This recovery head deletes only auth/API/Prisma/runtime surfaces and leaves an index-only, buildable transitional app.
+- The app importer, Nx graph node, `package.json`, lockfile, workspace/root configuration, remaining entry/root/Nav/config files, bridge package, release graph, protected RR8, PR10d, and dependency-prune work remain untouched. The original final app-node PR10c row remains pending.
+
+### Counts, Completed Task, and Files
+
+- Product/config textual diff: **4 additions + 377 deletions = 381 changed lines** across **14 textual files**; generated retained: **0**.
+- Recovery-head text including its tasks/progress updates, excluding the pre-existing 29-line blocker record: **78 additions + 377 deletions = 455 changed lines**. The complete worktree candidate against `d36c0ff` is **107 additions + 377 deletions = 484 textual lines**, below 1,000.
+- Binary diff: **1 tracked deletion**, `apps/react-remix-example/dev.db`, exactly **57,344 bytes**.
+- Deleted 11 textual files: six `app/lib` auth/API/Prisma/runtime files, `app/routes/api.auth.$.ts`, and all four tracked files under `prisma/**` (including the tracked empty migration SQL file).
+- Modified only `app/routes.ts` (index-only), `app/routes/_index.tsx` (static-shell wording), and `project.json` (removed `prisma:generate` and its typecheck dependency).
+- Persisted task completion: the new implementation-owned PR10c recovery row is visibly `- [x]`; the original PR10c final app-node cleanup row remains visibly `- [ ]`.
+- Rollback boundary: restore the 11 deleted textual files and 57,344-byte database, then restore the three modified app/config files. Tasks/progress evidence can be reverted independently; protected RR8 and later graph/dependency cleanup are outside this rollback.
+
+### Verification Evidence
+
+All authoritative GREEN and verification commands ran with Node `v24.19.0`, pnpm `10.14.0`, and `NX_DAEMON=false`.
+
+| Verification                  | Exact command(s)                                                                                                                                    | Result                                                                                                                                                                                                  |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Static transitional app       | clean generated output; `pnpm nx run @effectify/react-remix-example:typegen`; `typecheck`; `build`; `lint`                                          | Passed; typecheck no longer invoked Prisma generation, production client/server build completed, lint reported 0 warnings and 0 errors.                                                                 |
+| Retirement gates              | `pnpm nx run @effectify/react-router-example:consolidation:verify`; same command with `-- --expect=retired`                                         | OPEN passed with 24 consumers, 29 scenarios, 0 pending, rollback `0.5.12-alpha.1`; RETIRED failed with exit 1 as expected only because later app/package/graph/docs/workspace/lockfile surfaces remain. |
+| Static-shell absence          | exact path assertions plus scans over route map, index wording, and `project.json`                                                                  | Passed: all requested auth/API/Prisma/runtime paths and `dev.db` are absent, route map is index-only, auth-retention wording and `prisma:generate` are absent.                                          |
+| Protected RR8 app             | `migration:manifest`; `migration:verify`; `migration:test`; `test`; clean `typegen`; `typecheck`; `build`; `lint`                                   | Passed: migration 9/9, app 115/115, type/build/lint green; established non-failing Vite externalization/chunk warnings only.                                                                            |
+| Protected RR8 packages        | `pnpm nx run-many --targets=test,typecheck:no-build,lint,build --projects=@effectify/react-router,@effectify/react-router-better-auth --parallel=1` | Passed: router 8/8, adapter 9/9, both no-build typecheck/lint/build matrices green; existing Effect language-service suggestions were non-failing.                                                      |
+| Graph/version                 | `pnpm nx show projects --json`; four protected-app `pnpm why` queries for the React Router family                                                   | Required app/package/bridge graph nodes remain present; protected `react-router`, `@react-router/dev`, `@react-router/node`, and `@react-router/serve` resolve exactly `8.3.0`.                         |
+| Scope and dependency identity | `git diff --exit-code -- apps/react-remix-example/package.json pnpm-lock.yaml package.json pnpm-workspace.yaml nx.json`; targeted residue scan      | Passed with no manifest, lockfile, root/workspace, or graph delta. Package dependency residue is intentionally deferred and unchanged.                                                                  |
+| Repository quality            | `pnpm nx run @effectify/repo:format`; `pnpm nx run @effectify/repo:format:check`; `git diff --check`                                                | Format/write completed for changed text, final format check and diff check passed after generated cleanup.                                                                                              |
+
+### TDD Cycle Evidence
+
+| Task                  | Layer / harness                                            | Safety Net                                                                                                                         | RED                                                                                                                                                                            | GREEN                                                                                              | TRIANGULATE                                                                                                                              | REFACTOR                                                                                                       |
+| --------------------- | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Static-shell recovery | Structural build and fail-closed consolidation integration | Persisted OPEN gate and staged RETIRED verifier; pre-edit typecheck/build exposed only the targeted retained auth/runtime surfaces | Staged RETIRED remained nonzero while the old app/package existed; the retained auth/runtime files also prevented a clean reduced-app typecheck/build in the ambient preflight | Under Node 24.19.0, index-only typegen/typecheck/build/lint all passed after the bounded deletions | OPEN remained green; RETIRED remained expected-red for later heads; static absence scans and independent RR8 app/package matrices passed | No production refactor beyond the approved structural reduction; formatting and exact scope/diff checks passed |
+
+No tests or pure functions were added. Runtime harness is N/A for deletion; the production static build and protected RR8 runtime/app suites supply executable safety evidence.
+
+### Cleanup and Deviations
+
+- Removed generated `apps/react-remix-example/{.react-router,build}` and `apps/react-router-example/{.react-router,build}` outputs and restored command-touched `packages/react/router/tsconfig.lib.tsbuildinfo`; no generated mutation remains.
+- The first non-authoritative preflight inherited ambient Node `v26.7.0`; it exposed the targeted retained-source failures but is not used as passing evidence. The shell was pinned to the required Node `v24.19.0` before GREEN and every final verification command.
+- Approved deviation from the original PR10c topology: native rescope keeps the app importer/graph node and manifest/lock identity while reducing it to a static shell. There is no deviation from the delegated recovery scope.
+
+### Remaining Implementation and Parent Tasks
+
+- [ ] GREEN PR10c: delete the remaining old app/importer and remove its Nx graph wiring while retaining the bridge package and release/workspace/lockfile cleanup for PR10d. <!-- sdd-owner: implementation -->
+- [ ] GREEN PR10d: delete the bridge package and `json`, remove obsolete release/docs/workspace references, regenerate the lockfile, and preserve protected RR8 `8.3.0`. <!-- sdd-owner: implementation -->
+- [ ] TRIANGULATE final absence/version isolation with `consolidation:verify -- --expect=retired`, Nx graph, protected manifest/`pnpm why`, and repository/lockfile scans; runtime harness: N/A for deletion, with RR8 behavior verified in work unit 11. <!-- sdd-owner: implementation -->
+- [ ] REFACTOR cleanup wording only after absence passes; run affected lint/typecheck/test/build and format, and record authored/generated counts for every PR10 head. <!-- sdd-owner: implementation -->
+- [ ] Verify the maintained packages with `pnpm nx run-many --targets=test,typecheck:no-build,lint,build --projects=@effectify/react-router,@effectify/react-router-better-auth`; runtime harness: `packages/react/router/tests/runtime.test.ts` and the adapter suite must record payload, modeled failure, redirect/header, cookie, and throwable-identity results against RR8 `8.3.0`. <!-- sdd-owner: implementation -->
+- [ ] Verify the maintained app with `pnpm nx run @effectify/react-router-example:migration:manifest`, `pnpm nx run @effectify/react-router-example:migration:verify`, `pnpm nx run @effectify/react-router-example:migration:test`, `pnpm nx run @effectify/react-router-example:test`, `rm -rf apps/react-router-example/.react-router && pnpm nx run @effectify/react-router-example:typegen`, `pnpm nx run @effectify/react-router-example:typecheck`, and `pnpm nx run @effectify/react-router-example:build`; runtime harness evidence must include routes, auth, SSR/readiness, status, headers, and each transferred unique scenario. <!-- sdd-owner: implementation -->
+- [ ] Verify final graph/release absence with `pnpm nx run @effectify/react-router-example:consolidation:verify -- --expect=retired`, `pnpm nx show projects --json`, `pnpm why react-router --filter @effectify/react-router-example`, `pnpm nx affected --target=lint`, `pnpm nx affected --target=typecheck`, `pnpm nx affected --target=test`, `pnpm nx affected --target=build`, and `pnpm nx run @effectify/repo:format:check`; record no RR7/Remix dependency, project, publish, release, docs, workspace, or lockfile residue. <!-- sdd-owner: implementation -->
+- [ ] Finalize release evidence in `docs/migrations/react-remix-to-react-router.md` (or the repository-approved retained historical evidence location) with consumer status, reviewed scenario dispositions, transitional-surface absence, protected RR8 results, authored/generated diff counts, and the exact final bridge rollback version; do not add or modify product code. <!-- sdd-owner: implementation -->
+
+Deferred parent lifecycle action remains unchanged: after work unit 11, evaluate final RR8-only evidence before closing the OpenSpec change.
