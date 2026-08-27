@@ -386,3 +386,149 @@ All four implementation-owned Work unit 4 rows are visibly marked `- [x]` in `ta
 - Exactly 33 implementation-owned rows remain unchecked, beginning with Work unit 5. Their exact `- [ ]` lines are retained byte-for-byte in the cumulative task-state section above and in `tasks.md`.
 - All three parent-owned human evidence gates remain unchecked, deferred, and byte-for-byte unchanged.
 - Work unit 5 is the next implementation boundary. This executor returns to `parent-lifecycle` and does not start it.
+
+## Work Unit 5 / PR 5 — Official RR7 Framework Configuration
+
+### Structured Status Consumed
+
+- Authoritative native OpenSpec status selected `consolidate-react-remix-into-router` with `applyState: ready`, `nextRecommended: apply`, 14/47 implementation tasks complete before this slice, and no blockers.
+- Artifact store was `both` for phase persistence: OpenSpec remained authoritative and the required tasks/spec/design/apply-progress Engram observations were fetched directly.
+- Action context was `repo-local`; workspace root and sole allowed edit root were `/Users/skynet/devx-op/effectify`; warnings: none.
+- Parent runtime authority was authenticated as the existing `proceed` attempt for `rr7-framework-config`, maximum 1,000 changed lines; parent owns settlement and delivery.
+- Delivery path remained `auto-chain`, `feature-branch-chain`; this executor implemented only Work unit 5 / PR 5 under strict TDD.
+
+### Workload / PR Boundary
+
+- Completed boundary: **PR 5 — RR7 framework configuration and explicit routes**.
+- Authored files are limited to the former Remix application's manifest/project/Vite/TypeScript/framework/route-map configuration, its focused structural test, WU5 task checkboxes, and this cumulative evidence.
+- Generated changes are limited to the app importer and required RR7 resolutions in `pnpm-lock.yaml`; it was regenerated only with `pnpm install --lockfile-only`.
+- Final size: **250 authored additions + deletions**, plus **173 generated lockfile additions + deletions**; **423 total**, below the 1,000-line boundary.
+- No executable entries, components, or route modules were migrated; Work unit 6 was not started. Protected RR8 package, adapter, application, catalog, and root versions remained unchanged.
+- Runtime harness: **N/A** because this slice declares framework configuration and routes without migrating executable browser/server entries.
+- Rollback boundary: restore `apps/react-remix-example/{package.json,project.json,vite.config.ts,tsconfig.json}`, remove `react-router.config.ts` and `app/routes.ts`, remove the focused config test, and restore the matching lockfile importer together.
+
+### Completed Tasks and Persisted Checkboxes
+
+All four implementation-owned Work unit 5 rows are visibly marked `- [x]` in `tasks.md`:
+
+1. RED added 14 focused assertions for exact framework pins/scripts, native Vite/SSR config, generated-type inputs, Nx ordering, route modules, URL matching, and splat parameters; all 14 failed before production edits.
+2. GREEN pinned the app-owned React Router family directly to `7.18.2`, switched official scripts and native `reactRouter()`, added SSR config and the explicit route map, included generated types, added Nx `typegen`, wired typecheck/build ordering, and regenerated the lockfile.
+3. TRIANGULATE passed 12 route/splat/typegen-focused cases with two unrelated cases skipped, then cleanly generated RR7 framework types through Nx.
+4. Version isolation passed the protected manifest, both importer-specific `pnpm why` commands, final formatting, and protected-diff checks.
+
+### Files Changed
+
+- `apps/react-remix-example/package.json`
+- `apps/react-remix-example/project.json`
+- `apps/react-remix-example/vite.config.ts`
+- `apps/react-remix-example/tsconfig.json`
+- `apps/react-remix-example/react-router.config.ts` (new)
+- `apps/react-remix-example/app/routes.ts` (new)
+- `apps/react-remix-example/tests/unit/config/react-router7-framework.test.ts` (new)
+- `pnpm-lock.yaml` (generated)
+- `openspec/changes/consolidate-react-remix-into-router/tasks.md` (WU5 checkboxes only)
+- `openspec/changes/consolidate-react-remix-into-router/apply-progress.md` (this cumulative evidence)
+
+### RED → GREEN → TRIANGULATE → REFACTOR Evidence
+
+| Stage       | Exact command/action                                                                                                                                                      | Result                                                                                             |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Safety net  | `pnpm nx run @effectify/react-remix-example:test -- tests/unit/react-router7-better-auth.test.ts tests/unit/routes/api-auth.test.ts tests/unit/routes/test-route.test.ts` | Exit 0: 3 files and 18/18 existing app tests passed before production edits.                       |
+| RED         | `pnpm nx run @effectify/react-remix-example:test -- tests/unit/config/react-router7-framework.test.ts`                                                                    | Exit 1: 14/14 failed on absent RR7 pins/scripts/config/types/Nx ordering/routes.                   |
+| GREEN       | Implement the bounded configuration, then rerun the focused command                                                                                                       | Exit 0: 14/14 passed.                                                                              |
+| TRIANGULATE | `pnpm nx run @effectify/react-remix-example:test -- tests/unit/config/react-router7-framework.test.ts -t "route                                                           | splat                                                                                              | typegen"` | Exit 0: 12 passed, 2 skipped; exact URLs, route precedence, and three splat values passed. |
+| TYPEGEN     | `rm -rf apps/react-remix-example/.react-router && pnpm nx run @effectify/react-remix-example:typegen`                                                                     | Exit 0: RR7 type generation completed; deprecation warnings for upstream `envFile` were non-fatal. |
+| REFACTOR    | `pnpm nx run @effectify/repo:format`, focused test, and `pnpm nx run @effectify/repo:format:check`                                                                        | Exit 0 final: 14/14 and formatting passed after generated output was cleaned.                      |
+
+### Version and Manifest Evidence
+
+- `pnpm nx run @effectify/react-router-example:migration:manifest`: exit 0; bridge isolation remained RR7 `7.18.2`, and the protected manifest family (`react-router`, `@react-router/dev`, `@react-router/node`, `@react-router/serve`) remained RR8 `8.3.0`.
+- `pnpm why react-router --filter @effectify/react-remix-example`: exit 0; every app-owned RR7 framework edge resolved `7.18.2`. Legacy Remix dependencies still resolve their temporary RR6 internals because executable source migration is explicitly deferred to WU6.
+- `pnpm why react-router --filter @effectify/react-router-example`: exit 0; every protected app/package/adapter edge resolved only RR8 `8.3.0`.
+- Focused manifest assertions proved all four direct RR7 app entries equal `7.18.2`; root `package.json` and `pnpm-workspace.yaml` retained RR8 `8.3.0` and gained no RR7 entry.
+- `pnpm nx show project @effectify/react-remix-example --json` exposed dedicated `typegen`; `typecheck` depends on `typegen` plus Prisma generation, and `build` depends on `typegen` plus upstream builds. No obsolete explicit Nx/Remix exclusion existed to remove.
+
+### TDD Cycle Evidence
+
+| Task                 | Test File                                           | Layer                      | Safety Net                      | RED                                                            | GREEN        | TRIANGULATE                                                              | REFACTOR                           |
+| -------------------- | --------------------------------------------------- | -------------------------- | ------------------------------- | -------------------------------------------------------------- | ------------ | ------------------------------------------------------------------------ | ---------------------------------- |
+| RR7 framework config | `tests/unit/config/react-router7-framework.test.ts` | Structural integration     | 18/18 existing app tests        | 3 configuration tests failed                                   | 3/3 passed   | Exact family, SSR/plugin, generated inputs, and two Nx dependency chains | Formatted; 3/3 remained green      |
+| Explicit route map   | same file                                           | Route matching integration | Existing route tests passed 5/5 | 11 route/splat cases failed because `app/routes.ts` was absent | 11/11 passed | Eight URLs and three distinct splat values passed                        | Focused suite remained 14/14 green |
+
+Test summary: 14 assertions/tests authored and passing; layers used were structural and route-matching integration; no approval tests or pure functions were needed for declarative configuration.
+
+### Deviations and Cleanup
+
+- Scope-preserving deferment: legacy `@remix-run/*` dependencies remain while executable app source is intentionally Remix-shaped; WU6 owns source/import/residue removal. All official scripts, Vite/framework config, route declarations, generated types, and direct React Router family entries are RR7 `7.18.2` now.
+- The first lockfile-only regeneration after experimentally removing the legacy dependencies produced 2,824 lockfile additions/deletions and was immediately reverted before further work to honor the 1,000-line boundary. The bounded final manifest retained source-required legacy dependencies and a second `pnpm install --lockfile-only` produced 173 generated lockfile additions/deletions.
+- `pnpm install --frozen-lockfile` synchronized `node_modules` after lockfile-only generation without changing the lockfile, ensuring typegen and `pnpm why` ran against RR7 `7.18.2`.
+- Initial format check saw generated `.react-router` files plus the new test; generated output was removed, authored files were formatted through Nx, and final format check passed.
+- `apps/react-remix-example/.react-router` is absent; no RR7 app tsbuildinfo was generated or retained. Existing protected tracked tsbuildinfo files were not modified.
+- `git diff --exit-code -- package.json pnpm-workspace.yaml packages/react/router packages/react/router-better-auth apps/react-router-example` and `git diff --check` passed.
+
+### Remaining Tasks and Deferred Lifecycle Actions
+
+- Exactly 29 implementation-owned rows remain unchecked, beginning with Work unit 6. Their exact `- [ ]` lines are already preserved byte-for-byte in the earlier cumulative task-state section and the authoritative `tasks.md`; the four historical WU5 lines in that earlier snapshot are superseded by their visible `[x]` state.
+- All three parent-owned human evidence gates remain unchecked, deferred, and byte-for-byte unchanged.
+- Work unit 6 is the next implementation boundary, but this executor returns to `parent-lifecycle` and did not start it.
+
+## Bounded WU5 Green-Split Correction — `rr7-framework-green-split-correction`
+
+### Structured Status and Boundary
+
+- Authoritative OpenSpec status selected `consolidate-react-remix-into-router` with `applyState: ready`, `nextRecommended: apply`, and no blockers. Action context was `repo-local` with `/Users/skynet/devx-op/effectify` as workspace and allowed edit root; warnings: none.
+- Parent runtime authority was authenticated as the existing `proceed` attempt for `rr7-framework-green-split-correction`, maximum 500 correction lines; parent owns settlement and delivery.
+- Delivery remains `auto-chain`, `feature-branch-chain`. This correction changes only WU5 staging and planning evidence; WU6 activation was not started.
+- Accepted boundary: WU5 keeps declarative RR7 `7.18.2` config/routes/typegen green under executable Remix scripts/plugin/source. WU6 atomically switches scripts/plugin, removes Remix dependencies, and migrates entries/source.
+
+### Completed Tasks and Files
+
+All four implementation-owned correction rows are visibly `[x]` in `tasks.md`: RED staging assertions, GREEN config correction, TRIANGULATE app/typegen/build evidence, and REFACTOR planning/verification/cleanup evidence.
+
+Files changed by the correction:
+
+- `apps/react-remix-example/package.json`
+- `apps/react-remix-example/vite.config.ts`
+- `apps/react-remix-example/tsconfig.json`
+- `apps/react-remix-example/app/routes/api.$.ts`
+- `apps/react-remix-example/tests/unit/config/react-router7-framework.test.ts`
+- `openspec/changes/consolidate-react-remix-into-router/design.md`
+- `openspec/changes/consolidate-react-remix-into-router/tasks.md`
+- `openspec/changes/consolidate-react-remix-into-router/apply-progress.md`
+
+Rollback boundary: revert these correction edits to recover committed WU5; no lockfile, RR7 declarations/routes, protected RR8 source, or WU6 source was changed.
+
+### TDD Cycle Evidence
+
+| Task                             | Test File / Harness                                 | Layer                      | Safety Net                                  | RED                                                                                           | GREEN                                                           | TRIANGULATE                                                                               | REFACTOR                                      |
+| -------------------------------- | --------------------------------------------------- | -------------------------- | ------------------------------------------- | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------- | --------------------------------------------- |
+| Green staging gate               | `tests/unit/config/react-router7-framework.test.ts` | Structural integration     | Existing focused suite 14/14                | Revised suite failed 3/14 on RR7 scripts, RR7 Vite plugin, and missing rootDirs               | WU4 Remix scripts/plugin plus rootDirs made 14/14 pass          | Exact pins, legacy pins, routes, splats, SSR declaration, typegen inputs/order all passed | Formatted; final focused suite remained green |
+| Clean generated-type consumption | RR7 typegen followed by app typecheck/build         | Compiler/build integration | Parent verifier identified missing rootDirs | First clean typecheck exposed the explicit commented `/api/*` placeholder was not a TS module | Framework-neutral `export {}` made clean typegen→typecheck pass | Remix production build and full 32-test app suite passed                                  | Generated type/build outputs removed          |
+
+Test summary: no new test count beyond the revised 14-test focused suite; all 32 app tests passed. No approval tests or pure functions were added. The route-module marker is framework-neutral and has no runtime branch to triangulate.
+
+### Verification Evidence
+
+- Focused staging baseline: 14/14 passed before test revision.
+- RED: focused revised suite failed exactly 3/14; scripts were RR7-active, Vite used `reactRouter()`, and `rootDirs` was absent.
+- GREEN/final focused: 14/14 passed; route/staging filter also passed 14/14.
+- Clean `typegen` succeeded; first typecheck failed only because `app/routes/api.$.ts` was not a module. After `export {}`, clean typegen→typecheck passed.
+- Remix production build passed and produced client/server bundles; full app suite passed 4 files, 32/32 tests.
+- Dependency isolation and protected manifest passed: bridge/app-owned RR7 is `7.18.2`, protected family is `8.3.0`; importer-specific `pnpm why` showed the expected isolated graphs and retained Remix 6 internals only under legacy Remix dependencies.
+- Protected package/adapter matrix passed: RR8 package 8/8 tests, adapter 9/9 tests, plus typecheck:no-build, lint, and build.
+- Protected app `migration:test` passed 9/9, full tests passed 71/71, and clean typegen, typecheck, and production build passed.
+- Protected app `migration:verify` remained red on its repository CI-workflow assertion (`lint must map pull_request ... and push to HEAD~1`). The workflow/verifier are unchanged from WU4 and outside this correction; all executable RR8 app/package checks passed.
+- Repository format and `git diff --check` passed after cleanup. Protected RR8 source/config diff from WU4 remained empty.
+
+### Deviations, Cleanup, and Remaining Work
+
+- Necessary framework-neutral deviation: added `export {}` to the fully commented `/api/*` placeholder so RR7-generated declarations can import every explicit route during WU5 without migrating route behavior.
+- No SSR/entry characterization was added: current app tests plus successful Remix production build adequately characterize the WU5 execution boundary, and adding WU6 entry assertions here was unnecessary.
+- Removed both apps' `.react-router` directories and build outputs; restored command-touched protected `packages/react/router/tsconfig.lib.tsbuildinfo`; no generated output remains.
+- Historical WU5 RED/GREEN evidence is retained as history. Its claims that RR7 scripts/plugin were active are superseded by this accepted correction; declarative RR7 pins/config/routes/typegen evidence remains valid.
+- WU5 forecast is 550–720 lines; WU6 forecast is 580–900 lines. The final revised WU5 count is recorded after this evidence block and must remain below 1,000.
+- Exact next WU6 rows remain unchecked in `tasks.md`, beginning with:
+  - [ ] RED: add/extend `apps/react-remix-example/tests/unit/config/react-router7-framework.test.ts`, `tests/unit/entry-server.test.ts`, and focused route tests to assert RR7 imports, `HydratedRouter`, `ServerRouter`, `@react-router/node` streaming, route statuses/headers/content, bot/browser readiness, stream-error status, URLs, and `/api/auth/session` splat params; run the focused files through `pnpm nx run @effectify/react-remix-example:test -- tests/unit/config/react-router7-framework.test.ts tests/unit/entry-server.test.ts tests/unit/routes/api-auth.test.ts tests/unit/routes/test-route.test.ts` and record expected failures. <!-- sdd-owner: implementation -->
+  - [ ] GREEN: atomically switch `build`/`dev`/`start` and Vite plugin execution to RR7, remove exact legacy Remix dependencies with lockfile regeneration, and migrate `apps/react-remix-example/app/{entry.client.tsx,entry.server.tsx,root.tsx,components/**,routes/**,lib/**}` from active `@remix-run/*` APIs to `react-router`, `react-router/dom`, and `@react-router/node`, preserving every explicit route behavior and using only the local RR7 adapter. <!-- sdd-owner: implementation -->
+- The remaining unchanged WU6 verification rows, WU7+ implementation rows, and all three parent-owned lifecycle rows remain unchecked and deferred exactly as persisted in `tasks.md`. Lifecycle routing returns to the parent; no commit, push, PR, review, receipt, or settlement was performed.
+- Final revised WU5 count versus WU4 `5af4464`: **408 authored + 173 generated lockfile = 581 total changed lines**; correction-only delta versus committed WU5: **204 authored lines**, below the 500-line correction cap.
