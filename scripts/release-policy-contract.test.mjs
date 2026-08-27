@@ -45,6 +45,17 @@ const stripComment = (line) => {
 }
 const withoutComments = (source) => source.split("\n").map(stripComment).join("\n")
 
+const extractJob = (source, jobName) => {
+  const lines = source.split("\n")
+  const start = lines.findIndex((line) => new RegExp(`^(\\s*)${jobName}:\\s*$`).test(line))
+  if (start === -1) return ""
+
+  const jobIndent = indentation(lines[start])
+  let end = start + 1
+  while (end < lines.length && (!lines[end].trim() || indentation(lines[end]) > jobIndent)) end += 1
+  return lines.slice(start, end).join("\n")
+}
+
 const extractSteps = (source) => {
   const lines = source.split("\n")
   const steps = []
@@ -54,7 +65,7 @@ const extractSteps = (source) => {
     if (!match || /^\s*#/.test(lines[index])) continue
 
     const stepIndent = match[1].length
-    const step = { name: match[2], condition: "", commands: [] }
+    const step = { name: match[2], condition: "", commands: [], uses: "", packageManagerCache: "" }
     for (index += 1; index < lines.length; index += 1) {
       const line = lines[index]
       if (line.trim() && indentation(line) <= stepIndent) {
@@ -65,6 +76,12 @@ const extractSteps = (source) => {
 
       const condition = line.match(/^\s*if:\s*(.+?)\s*$/)
       if (condition) step.condition = condition[1]
+
+      const uses = line.match(/^\s*uses:\s*(.+?)\s*$/)
+      if (uses) step.uses = uses[1]
+
+      const packageManagerCache = line.match(/^\s*package-manager-cache:\s*(.+?)\s*$/)
+      if (packageManagerCache) step.packageManagerCache = packageManagerCache[1]
 
       const run = line.match(/^(\s*)run:\s*(.*)$/)
       if (!run) continue
@@ -237,6 +254,16 @@ const stableViolations = (source) => {
   return violations
 }
 
+const releasePolicyBootstrapViolations = (source) => {
+  const steps = extractSteps(extractJob(source, "release-policy"))
+  const setupNodeIndex = steps.findIndex((step) => /^actions\/setup-node@/.test(step.uses))
+  if (setupNodeIndex === -1) return ["release-policy setup-node"]
+
+  const pnpmIndex = steps.findIndex((step) => /^pnpm\/action-setup@/.test(step.uses))
+  const cacheDisabled = steps[setupNodeIndex].packageManagerCache === "false"
+  return pnpmIndex !== -1 && pnpmIndex < setupNodeIndex ? [] : cacheDisabled ? [] : ["release-policy setup-node cache"]
+}
+
 const policyViolations = ({ alpha, beta, stable, docs }) => {
   const violations = [
     ...channelViolations("alpha", alpha),
@@ -278,6 +305,20 @@ test("the release policy contract runs in PR CI", () => {
   assert.match(withoutComments(workflows.ci), /pull_request:/)
   requireCommand([], workflows.ci, contractCommand, "CI policy contract")
   assert.notEqual(commandPosition(workflows.ci, contractCommand), -1)
+})
+
+test("the Node-only release policy job can bootstrap setup-node without pnpm", () => {
+  assert.deepEqual(releasePolicyBootstrapViolations(workflows.ci), [])
+
+  const cacheEnabled = mutate(workflows.ci, "package-manager-cache: false", "package-manager-cache: true")
+  assert.notDeepEqual(releasePolicyBootstrapViolations(cacheEnabled), [])
+
+  const pnpmFirst = mutate(
+    cacheEnabled,
+    "      - name: 🏗️ Setup Node.js",
+    "      - name: 📦 Install pnpm\n        uses: pnpm/action-setup@v6\n\n      - name: 🏗️ Setup Node.js",
+  )
+  assert.deepEqual(releasePolicyBootstrapViolations(pnpmFirst), [])
 })
 
 test("release documentation leads with the three-channel mapping", () => {

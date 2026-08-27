@@ -27,6 +27,7 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: "24.19.0"
+          package-manager-cache: false
 
       - name: 🛡️ Verify release policy contract
         run: node --test scripts/release-policy-contract.test.mjs
