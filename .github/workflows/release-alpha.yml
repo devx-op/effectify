@@ -65,6 +65,9 @@ jobs:
       - name: 📦 Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: 🛡️ Verify release policy contract
+        run: node --test scripts/release-policy-contract.test.mjs
+
       - name: 🔧 Configure Git
         if: ${{ inputs.publish_only != true }}
         run: |
@@ -76,25 +79,23 @@ jobs:
         env:
           PUBLISH_ONLY: ${{ inputs.publish_only || false }}
           RECOVERY_PROJECTS: ${{ inputs.projects || '' }}
+          BEFORE_SHA: ${{ github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
         run: |
-          RELEASE_PATHS=$(jq -r '.release.projects[]' nx.json | sort | uniq)
-          RELEASE_PROJECTS=""
-          for path in $RELEASE_PATHS; do
-            PROJECT_NAME=$(pnpm nx show project "$path" --json 2>/dev/null | jq -r '.name' 2>/dev/null)
-            if [ -n "$PROJECT_NAME" ] && [ "$PROJECT_NAME" != "null" ]; then
-              RELEASE_PROJECTS="$RELEASE_PROJECTS $PROJECT_NAME"
-            fi
-          done
-          RELEASE_PROJECTS=$(echo "$RELEASE_PROJECTS" | tr ' ' '\n' | sort | uniq)
+          RELEASE_PROJECTS=$(
+            jq -r '.release.projects[]' nx.json | while read -r path; do
+              pnpm nx show project "$path" --json | jq -r '.name'
+            done | jq -Rsc 'split("\n") | map(select(length > 0)) | unique'
+          )
 
           if [ "$PUBLISH_ONLY" = "true" ]; then
             if [ -z "$RECOVERY_PROJECTS" ]; then
               echo "publish-only recovery requires an explicit comma-separated projects input" >&2
               exit 1
             fi
-            SELECTED_PROJECTS=$(printf '%s' "$RECOVERY_PROJECTS" | tr ',' '\n' | sed '/^$/d' | sort -u)
+            SELECTED_PROJECTS=$(printf '%s' "$RECOVERY_PROJECTS" | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed '/^$/d' | sort -u)
             while IFS= read -r project; do
-              if ! printf '%s\n' "$RELEASE_PROJECTS" | grep -Fx -- "$project" >/dev/null; then
+              if ! printf '%s\n' "$RELEASE_PROJECTS" | jq -r '.[]' | grep -Fx -- "$project" >/dev/null; then
                 echo "Invalid release project: $project" >&2
                 exit 1
               fi
@@ -105,8 +106,22 @@ jobs:
             exit 0
           fi
 
-          AFFECTED_RAW=$(pnpm nx show projects --affected --base=origin/dev~1 --head=HEAD --json 2>/dev/null || echo "[]")
-          AFFECTED_RELEASE_PROJECTS=$(echo "$AFFECTED_RAW" | jq -r --arg release "$RELEASE_PROJECTS" '[.[] | select(. as $p | $release | contains($p))] | join(",")' 2>/dev/null || echo "")
+          ZERO_SHA="0000000000000000000000000000000000000000"
+          BEFORE="$BEFORE_SHA"
+          HEAD="$HEAD_SHA"
+          if ! git cat-file -e "${HEAD}^{commit}" 2>/dev/null; then
+            HEAD=$(git rev-parse HEAD)
+          fi
+          if [ -n "$BEFORE" ] && [ "$BEFORE" != "$ZERO_SHA" ] && git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
+            BASE="$BEFORE"
+          elif git rev-parse --verify HEAD^ >/dev/null 2>&1; then
+            BASE="HEAD^"
+          else
+            BASE="$HEAD"
+          fi
+
+          AFFECTED_RAW=$(pnpm nx show projects --affected --base="$BASE" --head="$HEAD" --json 2>/dev/null || echo "[]")
+          AFFECTED_RELEASE_PROJECTS=$(echo "$AFFECTED_RAW" | jq -r --argjson release "$RELEASE_PROJECTS" '[.[] | select(. as $project | $release | index($project))] | unique | join(",")' 2>/dev/null || echo "")
           if [ -z "$AFFECTED_RELEASE_PROJECTS" ] || [ "$AFFECTED_RELEASE_PROJECTS" = "null" ]; then
             echo "has_projects=false" >> "$GITHUB_OUTPUT"
             echo "projects=" >> "$GITHUB_OUTPUT"

@@ -1,4 +1,4 @@
-name: 🚀 CD
+name: 🚀 Release Beta
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       publish_only:
-        description: "Publish existing stable versions without versioning, changelog, or git changes"
+        description: "Publish existing beta versions without versioning, changelog, or git changes"
         required: true
         type: boolean
         default: false
@@ -16,24 +16,40 @@ on:
         type: string
 
 concurrency:
-  group: cd-release
+  group: release-beta
   cancel-in-progress: false
 
-permissions:
-  contents: write # Needed for creating commits and tags
-  id-token: write # Needed for npm provenance authentication
+env:
+  DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/effectify"
 
 jobs:
-  release:
-    name: 🚀 Release
+  release-beta:
+    name: 🚀 Release Beta
+    if: ${{ github.event_name == 'workflow_dispatch' || (!contains(github.event.head_commit.message, 'chore(release):') && !contains(github.event.head_commit.message, '[skip release]')) }}
     runs-on: ubuntu-latest
-    if: ${{ !contains(github.event.head_commit.message, 'chore(release):') && !contains(github.event.head_commit.message, '[skip release]') }}
+    permissions:
+      contents: write
+      id-token: write
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: effectify
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v5
         with:
-          fetch-depth: 0 # Important for Nx to analyze git history
-          token: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 📦 Install pnpm
         uses: pnpm/action-setup@v6
@@ -44,82 +60,132 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: "24.19.0"
-          registry-url: "https://registry.npmjs.org"
           cache: "pnpm"
+          registry-url: "https://registry.npmjs.org/"
 
       - name: 📦 Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: ⚙️ Git Configuration
+      - name: 🛡️ Verify release policy contract
+        run: node --test scripts/release-policy-contract.test.mjs
+
+      - name: 🔧 Configure Git
         if: ${{ inputs.publish_only != true }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: 🔍 Validate Publish-Only Recovery Projects
-        id: recovery
-        if: ${{ inputs.publish_only == true }}
+      - name: 🔍 Detect Affected Release Projects
+        id: affected
         env:
+          PUBLISH_ONLY: ${{ inputs.publish_only || false }}
           RECOVERY_PROJECTS: ${{ inputs.projects || '' }}
+          BEFORE_SHA: ${{ github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
         run: |
-          if [ -z "$RECOVERY_PROJECTS" ]; then
-            echo "publish-only recovery requires an explicit comma-separated projects input" >&2
-            exit 1
-          fi
-          RELEASE_PROJECTS=$(jq -r '.release.projects[]' nx.json | while read -r path; do
-            pnpm nx show project "$path" --json | jq -r '.name'
-          done | sort -u)
-          SELECTED_PROJECTS=$(printf '%s' "$RECOVERY_PROJECTS" | tr ',' '\n' | sed '/^$/d' | sort -u)
-          while IFS= read -r project; do
-            if ! printf '%s\n' "$RELEASE_PROJECTS" | grep -Fx -- "$project" >/dev/null; then
-              echo "Invalid release project: $project" >&2
+          RELEASE_PROJECTS=$(
+            jq -r '.release.projects[]' nx.json | while read -r path; do
+              pnpm nx show project "$path" --json | jq -r '.name'
+            done | jq -Rsc 'split("\n") | map(select(length > 0)) | unique'
+          )
+
+          if [ "$PUBLISH_ONLY" = "true" ]; then
+            if [ -z "$RECOVERY_PROJECTS" ]; then
+              echo "publish-only recovery requires an explicit comma-separated projects input" >&2
               exit 1
             fi
-          done <<< "$SELECTED_PROJECTS"
-          echo "projects=$(printf '%s' "$SELECTED_PROJECTS" | paste -sd, -)" >> "$GITHUB_OUTPUT"
+            SELECTED_PROJECTS=$(printf '%s' "$RECOVERY_PROJECTS" | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed '/^$/d' | sort -u)
+            while IFS= read -r project; do
+              if ! printf '%s\n' "$RELEASE_PROJECTS" | jq -r '.[]' | grep -Fx -- "$project" >/dev/null; then
+                echo "Invalid release project: $project" >&2
+                exit 1
+              fi
+            done <<< "$SELECTED_PROJECTS"
+            echo "has_projects=true" >> "$GITHUB_OUTPUT"
+            echo "projects=$(printf '%s' "$SELECTED_PROJECTS" | paste -sd, -)" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
 
-      - name: 🔐 Verify npm authentication
-        run: npm whoami
+          ZERO_SHA="0000000000000000000000000000000000000000"
+          BEFORE="$BEFORE_SHA"
+          HEAD="$HEAD_SHA"
+          if ! git cat-file -e "${HEAD}^{commit}" 2>/dev/null; then
+            HEAD=$(git rev-parse HEAD)
+          fi
+          if [ -n "$BEFORE" ] && [ "$BEFORE" != "$ZERO_SHA" ] && git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
+            BASE="$BEFORE"
+          elif git rev-parse --verify HEAD^ >/dev/null 2>&1; then
+            BASE="HEAD^"
+          else
+            BASE="$HEAD"
+          fi
+
+          AFFECTED_RAW=$(pnpm nx show projects --affected --base="$BASE" --head="$HEAD" --json 2>/dev/null || echo "[]")
+          AFFECTED_RELEASE_PROJECTS=$(echo "$AFFECTED_RAW" | jq -r --argjson release "$RELEASE_PROJECTS" '[.[] | select(. as $project | $release | index($project))] | unique | join(",")' 2>/dev/null || echo "")
+          if [ -z "$AFFECTED_RELEASE_PROJECTS" ] || [ "$AFFECTED_RELEASE_PROJECTS" = "null" ]; then
+            echo "has_projects=false" >> "$GITHUB_OUTPUT"
+            echo "projects=" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_projects=true" >> "$GITHUB_OUTPUT"
+            echo "projects=$AFFECTED_RELEASE_PROJECTS" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: 🏗️ Build Affected Projects
+        if: ${{ steps.affected.outputs.has_projects == 'true' }}
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          PROJECTS: ${{ steps.affected.outputs.projects }}
+        run: pnpm nx run-many -t build "--projects=$PROJECTS" --parallel=3
 
-      - name: ✅ Verify React Router migration
+      - name: 🧪 Test Affected Projects
+        if: ${{ steps.affected.outputs.has_projects == 'true' }}
+        env:
+          PROJECTS: ${{ steps.affected.outputs.projects }}
+        run: pnpm nx run-many -t test "--projects=$PROJECTS" --parallel=3 --passWithNoTests
+
+      - name: ✅ Verify React Router 8 readiness
+        if: ${{ steps.affected.outputs.has_projects == 'true' }}
         run: |
           pnpm nx test @effectify/react-router
           pnpm nx run @effectify/react-router-example:migration:test
           pnpm nx run @effectify/react-router-example:migration:verify
           pnpm nx run @effectify/react-router-example:migration:manifest
+          pnpm nx run @effectify/react-router-example:consolidation:verify
 
-      - name: 🔖 Version & Changelog
-        if: ${{ inputs.publish_only != true }}
-        # Nx Release is the sole owner of changelogs, the release commit, and tags.
+      - name: 🔐 Verify npm authentication
+        if: ${{ steps.affected.outputs.has_projects == 'true' }}
+        run: npm whoami
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: pnpm nx release --skip-publish
-
-      - name: 🏗️ Build
-        env:
-          PUBLISH_ONLY: ${{ inputs.publish_only || false }}
-          PROJECTS: ${{ steps.recovery.outputs.projects }}
-        run: |
-          if [ "$PUBLISH_ONLY" = "true" ]; then
-            pnpm nx run-many -t build "--projects=$PROJECTS"
-          else
-            pnpm nx run-many -t build --all
-          fi
-
-      - name: 🚀 Publish
-        env:
-          PUBLISH_ONLY: ${{ inputs.publish_only || false }}
-          PROJECTS: ${{ steps.recovery.outputs.projects }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed for creating GitHub Releases
+
+      - name: 🚀 Version, Changelog & Publish Beta
+        if: ${{ steps.affected.outputs.has_projects == 'true' }}
+        env:
+          PROJECTS: ${{ steps.affected.outputs.projects }}
+          PUBLISH_ONLY: ${{ inputs.publish_only || false }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_CONFIG_PROVENANCE: true
-        # Publish-only recovery uses selected existing manifests; Nx checks registry state.
         run: |
-          if [ "$PUBLISH_ONLY" = "true" ]; then
-            pnpm nx release publish "--projects=$PROJECTS"
+          if [ "$PUBLISH_ONLY" != "true" ]; then
+            pnpm nx release "--projects=$PROJECTS" --preid=beta --skip-publish
+            pnpm nx run-many -t build "--projects=$PROJECTS" --parallel=3
+          fi
+          # Every beta publish is explicitly non-default, including recovery.
+          pnpm nx release publish "--projects=$PROJECTS" --tag=beta
+
+      - name: 📊 Release Summary
+        if: always()
+        env:
+          HAS_PROJECTS: ${{ steps.affected.outputs.has_projects }}
+          PROJECTS: ${{ steps.affected.outputs.projects }}
+          PUBLISH_ONLY: ${{ inputs.publish_only || false }}
+        run: |
+          echo "## 🚀 Beta Release Summary" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$HAS_PROJECTS" = "true" ]; then
+            echo "**Projects:** $PROJECTS" >> "$GITHUB_STEP_SUMMARY"
+            if [ "$PUBLISH_ONLY" = "true" ]; then
+              echo "**Mode:** publish-only recovery; selected existing manifests were built and published with the beta tag." >> "$GITHUB_STEP_SUMMARY"
+            fi
           else
-            pnpm nx release publish
+            echo "⏭️ **Skipped - No affected projects**" >> "$GITHUB_STEP_SUMMARY"
           fi

@@ -15,6 +15,23 @@ env:
   NODE_OPTIONS: "--max-old-space-size=4096"
 
 jobs:
+  release-policy:
+    name: 🛡️ Release Policy Contract
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v5
+
+      - name: 🏗️ Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "24.19.0"
+          package-manager-cache: false
+
+      - name: 🛡️ Verify release policy contract
+        run: node --test scripts/release-policy-contract.test.mjs
+
   # Lint and format check
   lint:
     name: 🔍 Lint & Format
@@ -260,7 +277,7 @@ jobs:
   ci-summary:
     name: 📊 CI Summary
     runs-on: ubuntu-latest
-    needs: [lint, typecheck, build, test]
+    needs: [release-policy, lint, typecheck, build, test]
     if: always() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
     steps:
       - name: 📊 CI Summary
@@ -268,6 +285,7 @@ jobs:
           echo "## 🧪 CI Results Summary" >> $GITHUB_STEP_SUMMARY
           echo "| Job | Status | Details |" >> $GITHUB_STEP_SUMMARY
           echo "|-----|--------|---------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 🛡️ Release Policy | ${{ needs.release-policy.result == 'success' && '✅ Success' || '❌ Failed' }} | Enforces alpha, beta, and stable separation |" >> $GITHUB_STEP_SUMMARY
           echo "| 🔍 Lint & Format | ${{ needs.lint.result == 'success' && '✅ Success' || '❌ Failed' }} | Uses oxlint + oxfmt |" >> $GITHUB_STEP_SUMMARY
           echo "| 🔍 Type Check | ${{ needs.typecheck.result == 'success' && '✅ Success' || '❌ Failed' }} | TypeScript compiler checks |" >> $GITHUB_STEP_SUMMARY
           echo "| 🏗️ Build | ${{ needs.build.result == 'success' && '✅ Success' || '❌ Failed' }} | Nx affected build |" >> $GITHUB_STEP_SUMMARY

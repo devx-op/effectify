@@ -1,72 +1,58 @@
 # Effectify
 
-[![Alpha Release](https://img.shields.io/badge/alpha-v4%20alpha-blue)](https://www.npmjs.com/search?q=%40effectify)
+[![Alpha Release](https://img.shields.io/badge/channel-alpha-blue)](https://www.npmjs.com/search?q=%40effectify)
 [![Documentation](https://img.shields.io/badge/docs-effectify.dev-00C853)](https://devx-op.github.io/effectify/)
 
-Monorepo of utilities for integrating [Effect](https://effect.website/) with different frameworks and libraries.
+Effectify provides Effect integrations for React, Solid, authentication, Prisma, and Hatchet.
 
-> **🚀 Effect v4 Alpha Support**: We are currently migrating packages to support Effect v4 beta. Alpha versions are available on npm with the `@alpha` tag.
+> **Effect v4 RC:** The current workspace targets the Effect v4 release candidate (`effect@4.0.0-rc.111`). Prerelease packages are published on explicit npm tags and never replace the stable default by accident.
+
+## Choose a release channel
+
+| Channel | Trigger                | npm tag            | Use it for                              |
+| ------- | ---------------------- | ------------------ | --------------------------------------- |
+| Alpha   | Push to `dev`          | `alpha`            | Earliest integration builds             |
+| Beta    | Push to `master`       | `beta`             | Master-qualified prereleases            |
+| Stable  | Manual stable workflow | default (`latest`) | Explicitly selected production releases |
+
+Install an explicit channel; do not rely on npm's default tag for prereleases.
 
 ## Packages
 
-| Package                                                                                                  | Version                                                                                                                                                   | Documentation                                 | Description                                                                  |
-| -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- | ---------------------------------------------------------------------------- |
-| [@effectify/solid-query](https://www.npmjs.com/package/@effectify/solid-query)                           | [![npm version](https://img.shields.io/npm/v/@effectify/solid-query.svg)](https://www.npmjs.com/package/@effectify/solid-query)                           | [Docs](./packages/solid/query/README.md)      | Integration of Effect with TanStack Query for Solid.js                       |
-| [@effectify/react-query](https://www.npmjs.com/package/@effectify/react-query)                           | [![npm version](https://img.shields.io/npm/v/@effectify/react-query.svg)](https://www.npmjs.com/package/@effectify/react-query)                           | [Docs](./packages/react/query/README.md)      | Integration of Effect with TanStack Query for React                          |
-| [@effectify/react-router](https://www.npmjs.com/package/@effectify/react-router)                         | [![npm version](https://img.shields.io/npm/v/@effectify/react-router.svg)](https://www.npmjs.com/package/@effectify/react-router)                         | [Docs](./packages/react/router/README.md)     | Integration of React Router with Effect for React applications               |
-| [@effectify/node-better-auth](https://www.npmjs.com/package/@effectify/node-better-auth)                 | [![npm version](https://img.shields.io/npm/v/@effectify/node-better-auth.svg)](https://www.npmjs.com/package/@effectify/node-better-auth)                 | [Docs](./packages/node/better-auth/README.md) | Integration of better-auth with Effect for Node.js applications              |
-| [@effectify/react-router-better-auth](https://www.npmjs.com/package/@effectify/react-router-better-auth) | [![npm version](https://img.shields.io/npm/v/@effectify/react-router-better-auth.svg)](https://www.npmjs.com/package/@effectify/react-router-better-auth) | [Docs](./packages/react/router-better-auth/)  | Integration of React Router + better-auth with Effect for React applications |
-| [@effectify/prisma](https://www.npmjs.com/package/@effectify/prisma)                                     | [![npm version](https://img.shields.io/npm/v/@effectify/prisma.svg)](https://www.npmjs.com/package/@effectify/prisma)                                     | [Docs](./packages/prisma/README.md)           | Prisma generator and runtime utilities for Effect                            |
+| Package                                                                                                    | Documentation                                                                   | Scope                                      |
+| ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------ |
+| [`@effectify/react-router`](https://www.npmjs.com/package/@effectify/react-router)                         | [Docs](./packages/react/router/README.md)                                       | Maintained React Router 8 integration      |
+| [`@effectify/react-query`](https://www.npmjs.com/package/@effectify/react-query)                           | [Docs](./packages/react/query/README.md)                                        | TanStack Query integration for React       |
+| [`@effectify/node-better-auth`](https://www.npmjs.com/package/@effectify/node-better-auth)                 | [Docs](./packages/node/better-auth/README.md)                                   | better-auth integration for Node.js        |
+| [`@effectify/solid-query`](https://www.npmjs.com/package/@effectify/solid-query)                           | [Docs](./packages/solid/query/README.md)                                        | TanStack Query integration for Solid       |
+| [`@effectify/react-router-better-auth`](https://www.npmjs.com/package/@effectify/react-router-better-auth) | [Usage reference](./packages/react/router-better-auth/tests/auth-guard.test.ts) | React Router 8 and better-auth integration |
+| [`@effectify/prisma`](https://www.npmjs.com/package/@effectify/prisma)                                     | [Docs](./packages/prisma/README.md)                                             | Prisma generator and runtime utilities     |
+| [`@effectify/hatchet`](https://www.npmjs.com/package/@effectify/hatchet)                                   | [Package](./packages/hatchet/)                                                  | Hatchet workflow integration               |
 
-## Solid Atom Integration
+The supported router surface is React Router 8 only. The Solid example uses Effect v4's `Atom` and `AtomRef` modules with the official [`@effect/atom-solid`](https://www.npmjs.com/package/@effect/atom-solid) bindings.
 
-The Solid example uses Effect v4's core `Atom` and `AtomRef` modules with the official [`@effect/atom-solid`](https://www.npmjs.com/package/@effect/atom-solid) bindings. See the [Solid example](./apps/solid-example/) for the current provider and hook integration.
+## Install alpha packages
 
-## Alpha Installation (Effect v4)
-
-We are actively migrating packages to support Effect v4 beta. You can install alpha versions using the `@alpha` npm tag:
+Every Nx release package is available through the explicit alpha channel when an alpha version has been published:
 
 ```bash
-# npm
-npm install @effectify/react-query@alpha
-npm install @effectify/solid-query@alpha
 npm install @effectify/react-router@alpha
+npm install @effectify/react-query@alpha
 npm install @effectify/node-better-auth@alpha
+npm install @effectify/solid-query@alpha
+npm install @effectify/react-router-better-auth@alpha
 npm install @effectify/prisma@alpha
-
-# pnpm
-pnpm add @effectify/react-query@alpha
-
-# yarn
-yarn add @effectify/react-query@alpha
+npm install @effectify/hatchet@alpha
 ```
 
-### Migration Status
-
-| Package                     | v4 Alpha Status | Stable Version |
-| --------------------------- | --------------- | -------------- |
-| @effectify/react-query      | 🚧 In Progress  | ✅ v3          |
-| @effectify/solid-query      | 🚧 In Progress  | ✅ v3          |
-| @effectify/react-router     | 🚧 In Progress  | ✅ v3          |
-| @effectify/node-better-auth | 🚧 In Progress  | ✅ v3          |
-| @effectify/prisma           | 🚧 In Progress  | ✅ v3          |
-
-**Legend**: ✅ Available | 🚧 Migrating | ⏳ Pending
-
-### Effect v3 vs v4
-
-- **Stable releases** (v3.x) continue to work with Effect v3.19.x
-- **Alpha releases** (v4.x) require Effect v4 beta
-- Both versions maintain the same API where possible
-
-For migration details, see the [Effect v4 Migration Guide](https://effect.website/docs/migration/v4).
+Use the same package names with `pnpm add` or `yarn add` if those are your package managers. Alpha and beta releases require the current Effect v4 RC. Stable compatibility is documented by each package release.
 
 ## Development
 
 ### Requirements
 
-- [pnpm](https://pnpm.io/)
-- [Node.js](https://nodejs.org/)
+- Node.js 24.19.0
+- pnpm 10.14.0
 
 ### Commands
 
@@ -74,32 +60,27 @@ For migration details, see the [Effect v4 Migration Guide](https://effect.websit
 # Install dependencies
 pnpm install
 
-# Run example application
-pnpm nx dev tanstack-solid-app
+# Run the maintained Solid example
+pnpm nx dev @effectify/solid-example
 
-# Build all packages
+# Build affected packages
 pnpm nx affected -t build
 
-# Check or apply pinned oxfmt to changed files
+# Check or apply pinned formatting to changed files
 pnpm format:check
 pnpm format
 
-# Audit the full repository before the dedicated formatting follow-up
-pnpm format:all:check
-
-# Clean project
-pnpm clean
+# Verify React Router 8 consolidation and readiness
+pnpm nx run @effectify/react-router-example:consolidation:verify
+pnpm nx run @effectify/react-router-example:migration:manifest
+pnpm nx run @effectify/react-router-example:migration:verify
 ```
 
-The workspace pins Oxfmt 0.60.0 and Oxlint 1.75.0, whose published Node engine range is `^20.19.0 || >=22.12.0`. Oxfmt provides full-document formatting through the OXC editor extension, its LSP, and the contextual Node API used by the Prisma generator. Changed-file enforcement covers TypeScript, JavaScript, JSON, Markdown, CSS, SCSS, and HTML. Oxfmt 0.60.0 does not support Eta filepath parsing, so changed Eta files fail the formatter check with an explicit manual-formatting requirement until upstream support is available. LSP range formatting is also unavailable, so formatting a selection remains an upstream follow-up rather than claimed parity.
-
-### Release Management
-
-To skip a release for documentation updates or other non-release changes, include `[skip release]` in your commit message.
+See [`.github/SETUP.md`](./.github/SETUP.md) for exact CI triggers, release behavior, and stable recovery.
 
 ## Credits & Inspiration
 
-This project was inspired by the excellent educational content from [Lucas Barake](https://www.youtube.com/@lucas-barake), particularly his [video on Effect and TanStack Query](https://www.youtube.com/watch?v=zl4w3BQAoJM&t=1011s) which provides great insights into these technologies.
+This project was inspired by the educational content from [Lucas Barake](https://www.youtube.com/@lucas-barake), particularly his [Effect and TanStack Query video](https://www.youtube.com/watch?v=zl4w3BQAoJM&t=1011s).
 
 ## License
 
