@@ -18,11 +18,9 @@ const sdk = vi.hoisted(() => {
   const stop = vi.fn(async () => {
     events.push("stop")
   })
-  const registerWorkflows = vi.fn(
-    async (tasks: ReadonlyArray<{ readonly name: string }>) => {
-      events.push(`register:${tasks.map((task) => task.name).join(",")}`)
-    },
-  )
+  const registerWorkflows = vi.fn(async (tasks: ReadonlyArray<{ readonly name: string }>) => {
+    events.push(`register:${tasks.map((task) => task.name).join(",")}`)
+  })
   const worker = vi.fn(async (_name?: string, _options?: unknown) => {
     events.push("worker")
     return { registerWorkflows, start, waitUntilReady, stop }
@@ -100,9 +98,7 @@ const directLayer = () =>
 
 const runtimeOf = <E>(layer: Layer.Layer<Hatchet.Hatchet, E>) => ManagedRuntime.make(layer)
 
-const configuredTasks = (
-  options: unknown,
-): ReadonlyArray<{ readonly name: string }> => {
+const configuredTasks = (options: unknown): ReadonlyArray<{ readonly name: string }> => {
   if (
     typeof options !== "object" ||
     options === null ||
@@ -113,10 +109,7 @@ const configuredTasks = (
   }
   return options.workflows.filter(
     (value): value is { readonly name: string } =>
-      typeof value === "object" &&
-      value !== null &&
-      "name" in value &&
-      typeof value.name === "string",
+      typeof value === "object" && value !== null && "name" in value && typeof value.name === "string",
   )
 }
 
@@ -171,15 +164,9 @@ describe("Hatchet lazy Layer", () => {
 
   it("acquires only lazy package state and does not read config or construct the SDK", async () => {
     const provider = ConfigProvider.fromEnv({ env: {} })
-    const runtime = runtimeOf(
-      Hatchet.layer({ tasks: [first] }).pipe(
-        Layer.provide(ConfigProvider.layer(provider)),
-      ),
-    )
+    const runtime = runtimeOf(Hatchet.layer({ tasks: [first] }).pipe(Layer.provide(ConfigProvider.layer(provider))))
 
-    await expect(
-      runtime.runPromise(Effect.as(Hatchet.Hatchet, "ready")),
-    ).resolves.toBe("ready")
+    await expect(runtime.runPromise(Effect.as(Hatchet.Hatchet, "ready"))).resolves.toBe("ready")
     expect(sdk.init).not.toHaveBeenCalled()
     expect(sdk.worker).not.toHaveBeenCalled()
 
@@ -232,9 +219,7 @@ describe("Hatchet lazy Layer", () => {
       Hatchet.schedule(scheduledTask, { value: 1 }, { _tag: "At", at: triggerAt }),
     )
     const missing = await runtime.runPromise(Hatchet.getSchedule(schedule.id))
-    await expect(
-      runtime.runPromise(Hatchet.deleteSchedule(schedule.id)),
-    ).resolves.toBe(true)
+    await expect(runtime.runPromise(Hatchet.deleteSchedule(schedule.id))).resolves.toBe(true)
     await runtime.runPromise(Hatchet.cancelRun(makeRunId("run-1")))
 
     expect(sdk.scheduled.create).toHaveBeenCalledExactlyOnceWith(scheduledTask.name, {
@@ -282,9 +267,7 @@ describe("Hatchet lazy Layer", () => {
     expect(sdk.worker).toHaveBeenCalledTimes(1)
     expect(sdk.stop).toHaveBeenCalledTimes(1)
 
-    await expect(
-      runtime.runPromise(Hatchet.runNoWait(first, {})),
-    ).resolves.toMatchObject({ id: "run-1" })
+    await expect(runtime.runPromise(Hatchet.runNoWait(first, {}))).resolves.toMatchObject({ id: "run-1" })
     expect(sdk.worker).toHaveBeenCalledTimes(2)
     await runtime.dispose()
     await runtime.dispose()

@@ -10,9 +10,8 @@ import { TestClock } from "effect/testing"
 import { Hatchet, Task } from "@effectify/hatchet"
 
 const layer = Layer.merge(Hatchet.layerInMemory, TestClock.layer())
-const run = <A, E>(
-  effect: Effect.Effect<A, E, Hatchet.Hatchet | Scope.Scope>,
-) => Effect.runPromise(Effect.scoped(effect.pipe(Effect.provide(layer))))
+const run = <A, E>(effect: Effect.Effect<A, E, Hatchet.Hatchet | Scope.Scope>) =>
+  Effect.runPromise(Effect.scoped(effect.pipe(Effect.provide(layer))))
 
 describe("Hatchet scheduling lifecycle", () => {
   it("rejects invalid timing and schema input before storing", async () => {
@@ -23,7 +22,7 @@ describe("Hatchet scheduling lifecycle", () => {
       fn: () => Effect.sync(() => (executions += 1)),
     })
     const result = await run(
-      Effect.gen(function*() {
+      Effect.gen(function* () {
         const timings = yield* Effect.forEach(
           [
             { _tag: "At" as const, at: new Date(Number.NaN) },
@@ -33,24 +32,14 @@ describe("Hatchet scheduling lifecycle", () => {
           (timing) => Effect.exit(Hatchet.schedule(task, { name: "Ada" }, timing)),
         )
         const invalidInput = yield* Effect.exit(
-          Hatchet.schedule(
-            task,
-            { name: "" },
-            { _tag: "After", delay: "1 second" },
-          ),
+          Hatchet.schedule(task, { name: "" }, { _tag: "After", delay: "1 second" }),
         )
         yield* TestClock.adjust("1 second")
-        const valid = yield* Hatchet.schedule(
-          task,
-          { name: "Ada" },
-          { _tag: "After", delay: "1 second" },
-        )
+        const valid = yield* Hatchet.schedule(task, { name: "Ada" }, { _tag: "After", delay: "1 second" })
         return { timings, invalidInput, valid }
       }),
     )
-    expect(
-      result.timings.every((exit) => String(exit).includes("InvalidTimeError")),
-    ).toBe(true)
+    expect(result.timings.every((exit) => String(exit).includes("InvalidTimeError"))).toBe(true)
     expect(String(result.invalidInput)).toContain("TaskSchemaError")
     expect(result.valid.id).toBe("schedule-1")
     expect(executions).toBe(0)
@@ -60,9 +49,7 @@ describe("Hatchet scheduling lifecycle", () => {
     let decodes = 0
     let executions = 0
     let collisions = 0
-    const input = Schema.Struct({ value: Schema.Number }).check(
-      Schema.makeFilter(() => (decodes += 1) > 0),
-    )
+    const input = Schema.Struct({ value: Schema.Number }).check(Schema.makeFilter(() => (decodes += 1) > 0))
     const task = Task.make({
       name: "registry-stable",
       input,
@@ -73,16 +60,13 @@ describe("Hatchet scheduling lifecycle", () => {
       fn: () => Effect.sync(() => (collisions += 1)),
     })
     await run(
-      Effect.gen(function*() {
+      Effect.gen(function* () {
         yield* Hatchet.run(collision, undefined)
         const handle = yield* Hatchet.runNoWait(task, { value: 1 })
         yield* handle.await
         yield* Effect.forEach([1, 2, 3], (value) =>
-          Hatchet.schedule(
-            task,
-            { value },
-            { _tag: "After", delay: "1 second" },
-          ))
+          Hatchet.schedule(task, { value }, { _tag: "After", delay: "1 second" }),
+        )
         yield* TestClock.adjust("1 second")
       }),
     )
@@ -96,21 +80,16 @@ describe("Hatchet scheduling lifecycle", () => {
     let executions = 0
     const task = Task.make({
       name: "deadline-schedule",
-      fn: () =>
-        Effect.sync(() => (executions += 1)).pipe(
-          Effect.andThen(Deferred.succeed(fired, undefined)),
-        ),
+      fn: () => Effect.sync(() => (executions += 1)).pipe(Effect.andThen(Deferred.succeed(fired, undefined))),
     })
     await run(
-      Effect.gen(function*() {
+      Effect.gen(function* () {
         const record = yield* Hatchet.schedule(task, undefined, {
           _tag: "After",
           delay: "1 second",
         })
         yield* TestClock.adjust("999 millis")
-        expect(yield* Hatchet.getSchedule(record.id)).toEqual(
-          Option.some(record),
-        )
+        expect(yield* Hatchet.getSchedule(record.id)).toEqual(Option.some(record))
         expect(executions).toBe(0)
         yield* TestClock.adjust("1 millis")
         yield* Deferred.await(fired)
@@ -137,16 +116,14 @@ describe("Hatchet scheduling lifecycle", () => {
         ),
     })
     await run(
-      Effect.gen(function*() {
+      Effect.gen(function* () {
         const record = yield* Hatchet.schedule(task, undefined, {
           _tag: "After",
           delay: "1 second",
         })
         yield* TestClock.adjust("1 second")
         yield* Deferred.await(started)
-        expect(yield* Hatchet.getSchedule(record.id)).toEqual(
-          Option.some(record),
-        )
+        expect(yield* Hatchet.getSchedule(record.id)).toEqual(Option.some(record))
         expect(yield* Hatchet.deleteSchedule(record.id)).toBe(true)
         yield* Deferred.await(finalized)
         expect(interrupted).toBe(true)
@@ -167,7 +144,7 @@ describe("Hatchet scheduling lifecycle", () => {
     })
     await Effect.runPromise(
       Effect.scoped(
-        Effect.gen(function*() {
+        Effect.gen(function* () {
           const record = yield* Hatchet.schedule(task, undefined, {
             _tag: "After",
             delay: "1 second",
@@ -192,7 +169,7 @@ describe("Hatchet scheduling lifecycle", () => {
       fn: () => Effect.sync(() => (executions += 1)),
     })
     await run(
-      Effect.gen(function*() {
+      Effect.gen(function* () {
         const after = yield* Hatchet.schedule(task, undefined, {
           _tag: "After",
           delay: "2 seconds",

@@ -1,18 +1,12 @@
 import * as Schema from "effect/Schema"
 
-export const RunId = Schema.NonEmptyString.pipe(
-  Schema.brand("@effectify/hatchet/RunId"),
-)
+export const RunId = Schema.NonEmptyString.pipe(Schema.brand("@effectify/hatchet/RunId"))
 export type RunId = typeof RunId.Type
 
-export const ScheduleId = Schema.String.pipe(
-  Schema.brand("@effectify/hatchet/ScheduleId"),
-)
+export const ScheduleId = Schema.String.pipe(Schema.brand("@effectify/hatchet/ScheduleId"))
 export type ScheduleId = typeof ScheduleId.Type
 
-export const CronId = Schema.String.pipe(
-  Schema.brand("@effectify/hatchet/CronId"),
-)
+export const CronId = Schema.String.pipe(Schema.brand("@effectify/hatchet/CronId"))
 export type CronId = typeof CronId.Type
 
 export const ScheduleRecord = Schema.Struct({
@@ -28,9 +22,7 @@ export const CronRecord = Schema.Struct({
   name: Schema.optionalKey(Schema.NonEmptyString),
   expression: Schema.NonEmptyString,
   input: Schema.optionalKey(Schema.Unknown),
-  additionalMetadata: Schema.optionalKey(
-    Schema.Record(Schema.String, Schema.Unknown),
-  ),
+  additionalMetadata: Schema.optionalKey(Schema.Record(Schema.String, Schema.Unknown)),
   enabled: Schema.Boolean,
   method: Schema.Literals(["DEFAULT", "API"]),
   priority: Schema.optionalKey(Schema.Number),

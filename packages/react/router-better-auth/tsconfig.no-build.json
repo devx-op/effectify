@@ -8,9 +8,5 @@
       "@effectify/react-router": ["../router/src/index.ts"]
     }
   },
-  "include": [
-    "src/**/*.ts",
-    "../../node/better-auth/src/**/*.ts",
-    "../router/src/**/*.ts"
-  ]
+  "include": ["src/**/*.ts", "../../node/better-auth/src/**/*.ts", "../router/src/**/*.ts"]
 }

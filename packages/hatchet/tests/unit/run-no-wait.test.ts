@@ -9,9 +9,7 @@ import * as Option from "effect/Option"
 import * as Schema from "effect/Schema"
 import { Hatchet, Task } from "@effectify/hatchet"
 
-class Prefix extends Context.Service<Prefix, { readonly value: string }>()(
-  "@effectify/hatchet/test/RunNoWaitPrefix",
-) {}
+class Prefix extends Context.Service<Prefix, { readonly value: string }>()("@effectify/hatchet/test/RunNoWaitPrefix") {}
 
 class TaskFailure {
   readonly _tag = "TaskFailure" as const
@@ -34,7 +32,7 @@ describe("Hatchet.runNoWait in-memory", () => {
           Effect.tap(() => Deferred.succeed(completed, undefined)),
         ),
     })
-    const program = Effect.gen(function*() {
+    const program = Effect.gen(function* () {
       const handle = yield* Hatchet.runNoWait(task, { value: 21 })
       yield* Deferred.await(started)
       const completedAtDispatch = yield* Deferred.poll(completed)
@@ -60,7 +58,7 @@ describe("Hatchet.runNoWait in-memory", () => {
       output: Schema.Struct({ at: Schema.DateFromString }),
       fn: () => Effect.succeed({ at: new Date("2030-01-01T00:00:00.000Z") }),
     })
-    const program = Effect.gen(function*() {
+    const program = Effect.gen(function* () {
       const handle = yield* Hatchet.runNoWait(task, undefined)
       const noWait = yield* handle.await
       const waited = yield* Hatchet.run(task, undefined)
@@ -91,28 +89,20 @@ describe("Hatchet.runNoWait in-memory", () => {
       }),
       fn: () => Effect.succeed({ value: -1 }),
     })
-    const program = Effect.gen(function*() {
-      const inputExit = yield* Effect.exit(
-        Hatchet.runNoWait(invalidInput, { value: "wrong" }),
-      )
+    const program = Effect.gen(function* () {
+      const inputExit = yield* Effect.exit(Hatchet.runNoWait(invalidInput, { value: "wrong" }))
       const handle = yield* Hatchet.runNoWait(invalidOutput, undefined)
       const outputExit = yield* Effect.exit(handle.await)
       return { inputExit, outputExit }
     }).pipe(Effect.provide(Hatchet.layerInMemory))
 
-    const { inputExit, outputExit } = await Effect.runPromise(
-      Effect.scoped(program),
-    )
+    const { inputExit, outputExit } = await Effect.runPromise(Effect.scoped(program))
 
     expect(invocations).toBe(0)
     expect(Exit.isFailure(inputExit)).toBe(true)
     expect(Exit.isFailure(outputExit)).toBe(true)
     if (Exit.isFailure(inputExit)) {
-      expect(
-        inputExit.cause.reasons
-          .filter(Cause.isFailReason)
-          .map((reason) => reason.error),
-      ).toEqual([
+      expect(inputExit.cause.reasons.filter(Cause.isFailReason).map((reason) => reason.error)).toEqual([
         expect.objectContaining({
           _tag: "TaskSchemaError",
           phase: "input",
@@ -121,11 +111,7 @@ describe("Hatchet.runNoWait in-memory", () => {
       ])
     }
     if (Exit.isFailure(outputExit)) {
-      expect(
-        outputExit.cause.reasons
-          .filter(Cause.isFailReason)
-          .map((reason) => reason.error),
-      ).toEqual([
+      expect(outputExit.cause.reasons.filter(Cause.isFailReason).map((reason) => reason.error)).toEqual([
         expect.objectContaining({
           _tag: "TaskSchemaError",
           phase: "output",
@@ -139,21 +125,14 @@ describe("Hatchet.runNoWait in-memory", () => {
     const task = Task.make({
       name: "no-wait-requirement",
       fn: (value: number): Effect.Effect<string, TaskFailure, Prefix> =>
-        value > 0
-          ? Effect.map(Prefix, ({ value: prefix }) => `${prefix}${value}`)
-          : Effect.fail(new TaskFailure()),
+        value > 0 ? Effect.map(Prefix, ({ value: prefix }) => `${prefix}${value}`) : Effect.fail(new TaskFailure()),
     })
-    const program = Effect.gen(function*() {
+    const program = Effect.gen(function* () {
       const handle = yield* Hatchet.runNoWait(task, 7)
       return yield* handle.await
-    }).pipe(
-      Effect.provide(Layer.succeed(Prefix, { value: "captured-" })),
-      Effect.provide(Hatchet.layerInMemory),
-    )
+    }).pipe(Effect.provide(Layer.succeed(Prefix, { value: "captured-" })), Effect.provide(Hatchet.layerInMemory))
 
-    await expect(Effect.runPromise(Effect.scoped(program))).resolves.toBe(
-      "captured-7",
-    )
+    await expect(Effect.runPromise(Effect.scoped(program))).resolves.toBe("captured-7")
   })
 
   it("interrupts outstanding work through the handle and runs its finalizer", async () => {
@@ -166,7 +145,7 @@ describe("Hatchet.runNoWait in-memory", () => {
           Effect.andThen(Effect.never),
         ),
     })
-    const program = Effect.gen(function*() {
+    const program = Effect.gen(function* () {
       const handle = yield* Hatchet.runNoWait(task, undefined)
       yield* Deferred.await(started)
       yield* handle.cancel
@@ -192,7 +171,7 @@ describe("Hatchet.runNoWait in-memory", () => {
           Effect.andThen(Effect.never),
         ),
     })
-    const dispatch = Effect.gen(function*() {
+    const dispatch = Effect.gen(function* () {
       const handle = yield* Hatchet.runNoWait(task, undefined)
       yield* Deferred.await(started)
       return handle.id

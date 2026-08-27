@@ -19,15 +19,7 @@ describe("react-router example app shell", () => {
   it("keeps route config aligned with navigation and auth entrypoints", () => {
     const routeEntries = JSON.stringify(routes)
 
-    for (
-      const path of [
-        "login",
-        "signup",
-        "todo-app",
-        "hatchet-crons",
-        "chat",
-      ]
-    ) {
+    for (const path of ["login", "signup", "todo-app", "hatchet-crons", "chat"]) {
       expect(routeEntries).toContain(`"path":"${path}"`)
     }
 

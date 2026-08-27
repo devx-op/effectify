@@ -3,10 +3,9 @@ import * as Effect from "effect/Effect"
 import * as Schema from "effect/Schema"
 import { RateLimit, Task, TaskDeclarationError, Trigger } from "@effectify/hatchet"
 
-class Dependency extends Context.Service<
-  Dependency,
-  { readonly value: string }
->()("@effectify/hatchet/test/DeclarativeDependency") {}
+class Dependency extends Context.Service<Dependency, { readonly value: string }>()(
+  "@effectify/hatchet/test/DeclarativeDependency",
+) {}
 
 class Failure {
   readonly _tag = "Failure" as const
@@ -20,9 +19,7 @@ const ordinary: Task.Task<"ordinary", Input, Output, Failure, Dependency> = Task
   input: Schema.Struct({ value: Schema.Number }),
   output: Schema.Struct({ rendered: Schema.String }),
   fn: (input): Effect.Effect<Output, Failure, Dependency> =>
-    input.value > 0
-      ? Effect.map(Dependency, ({ value }) => ({ rendered: value }))
-      : Effect.fail(new Failure()),
+    input.value > 0 ? Effect.map(Dependency, ({ value }) => ({ rendered: value })) : Effect.fail(new Failure()),
 })
 
 const durable = Task.durable({

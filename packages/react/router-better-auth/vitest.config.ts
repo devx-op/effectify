@@ -7,10 +7,7 @@ export default defineConfig({
   plugins: [nxViteTsPaths()],
   resolve: {
     alias: {
-      "@effectify/node-better-auth": resolve(
-        __dirname,
-        "../../node/better-auth/src/index.ts",
-      ),
+      "@effectify/node-better-auth": resolve(__dirname, "../../node/better-auth/src/index.ts"),
       "@effectify/react-router": resolve(__dirname, "../router/src/index.ts"),
     },
     conditions: ["@effectify/source"],

@@ -14,74 +14,51 @@ describe("one-task Hatchet example configuration", () => {
     expect(compose).toContain("${HATCHET_DB_USER:?")
     expect(compose).toContain("${HATCHET_DB_PASSWORD:?")
     expect(compose).toContain("${HATCHET_DB_NAME:?")
-    expect(compose).not.toMatch(
-      /postgresql:\/\/hatchet:hatchet|POSTGRES_(?:DB|PASSWORD|USER):\s*hatchet/,
-    )
+    expect(compose).not.toMatch(/postgresql:\/\/hatchet:hatchet|POSTGRES_(?:DB|PASSWORD|USER):\s*hatchet/)
   })
 
   it("documents direct Compose setup, the Task endpoint, and authenticated cron management", async () => {
     const readme = await appFile("README.md")
-    for (
-      const expected of [
-        "docker compose up -d",
-        "docker compose down",
-        "HATCHET_CLIENT_TOKEN",
-        "/api/hatchet/runs",
-        "/hatchet-crons",
-        "Hatchet.layer",
-        "Hatchet.run",
-        "Hatchet.listCrons",
-        "Hatchet.createCron",
-        "CronExpression",
-      ]
-    ) {
+    for (const expected of [
+      "docker compose up -d",
+      "docker compose down",
+      "HATCHET_CLIENT_TOKEN",
+      "/api/hatchet/runs",
+      "/hatchet-crons",
+      "Hatchet.layer",
+      "Hatchet.run",
+      "Hatchet.listCrons",
+      "Hatchet.createCron",
+      "CronExpression",
+    ]) {
       expect(readme).toContain(expected)
     }
-    for (
-      const removed of [
-        "ensure-hatchet",
-        "hatchet:ensure",
-        "hatchet:up",
-        "dev:hatchet",
-        "HatchetRuntime",
-      ]
-    ) {
+    for (const removed of ["ensure-hatchet", "hatchet:ensure", "hatchet:up", "dev:hatchet", "HatchetRuntime"]) {
       expect(readme).not.toContain(removed)
     }
   })
 
   it("keeps cron route transport inside the Effect and Better Auth integrations", async () => {
     const route = await appFile("app/routes/hatchet-crons.tsx")
-    for (
-      const expected of [
-        "Effect.gen",
-        "ActionArgsContext",
-        "Schema.decodeUnknownEffect",
-        "CronExpression.parse",
-        "CronExpression.nextRuns",
-        "withLoaderEffect",
-        "withActionEffect",
-        "withBetterAuthGuard",
-        "withBetterAuthGuardAction",
-        "Hatchet.listCrons",
-        "Hatchet.createCron",
-      ]
-    ) {
+    for (const expected of [
+      "Effect.gen",
+      "ActionArgsContext",
+      "Schema.decodeUnknownEffect",
+      "CronExpression.parse",
+      "CronExpression.nextRuns",
+      "withLoaderEffect",
+      "withActionEffect",
+      "withBetterAuthGuard",
+      "withBetterAuthGuardAction",
+      "Hatchet.listCrons",
+      "Hatchet.createCron",
+    ]) {
       expect(route).toContain(expected)
     }
-    for (
-      const removed of [
-        "Hatchet.deleteCron",
-        "cron-owner",
-        "additionalMetadata",
-        "pattern=",
-      ]
-    ) {
+    for (const removed of ["Hatchet.deleteCron", "cron-owner", "additionalMetadata", "pattern="]) {
       expect(route).not.toContain(removed)
     }
-    expect(route).not.toMatch(
-      /export\s+(?:async\s+)?function\s+(?:loader|action)/,
-    )
+    expect(route).not.toMatch(/export\s+(?:async\s+)?function\s+(?:loader|action)/)
   })
 
   it("keeps Nx free of app-owned Hatchet orchestration", async () => {
@@ -92,18 +69,13 @@ describe("one-task Hatchet example configuration", () => {
 
   it("keeps the public package external without exposing its SDK", async () => {
     const vite = await appFile("vite.config.ts")
-    expect(vite).toMatch(
-      /ssr:\s*\{[\s\S]*external:[\s\S]*"@effectify\/hatchet"/,
-    )
+    expect(vite).toMatch(/ssr:\s*\{[\s\S]*external:[\s\S]*"@effectify\/hatchet"/)
     expect(vite).not.toContain("@hatchet-dev/typescript-sdk")
   })
 
   it("removes the custom Hatchet orchestration script", async () => {
     await expect(
-      access(
-        new URL("../../../scripts/ensure-hatchet.mjs", import.meta.url),
-        constants.F_OK,
-      ),
+      access(new URL("../../../scripts/ensure-hatchet.mjs", import.meta.url), constants.F_OK),
     ).rejects.toThrow()
   })
 })

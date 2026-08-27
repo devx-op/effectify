@@ -41,9 +41,7 @@ class Value implements Encoded {
 const normalize = (input: string): string => input.trim().split(/\s+/).filter(Boolean).join(" ")
 
 const parseCron = (source: string): Result.Result<Cron.Cron, unknown> =>
-  source.split(" ").length === 5
-    ? Cron.parse(source)
-    : Result.fail("Hatchet cron expressions require five fields")
+  source.split(" ").length === 5 ? Cron.parse(source) : Result.fail("Hatchet cron expressions require five fields")
 
 const isEncoded = (value: unknown): value is Encoded =>
   Predicate.hasProperty(value, TypeId) &&
@@ -71,24 +69,16 @@ const state = (self: CronExpression): State => {
 const invalid = (originalCause: unknown) => new InvalidCronError({ field: "expression", originalCause })
 
 /** Parses exactly five Hatchet cron fields and preserves their normalized source. */
-export const parseResult = (
-  input: string,
-): Result.Result<CronExpression, InvalidCronError> => {
+export const parseResult = (input: string): Result.Result<CronExpression, InvalidCronError> => {
   if (typeof input !== "string") {
-    return Result.fail(
-      invalid(new TypeError("Cron expression must be a string")),
-    )
+    return Result.fail(invalid(new TypeError("Cron expression must be a string")))
   }
   const source = normalize(input)
-  return Result.map(parseCron(source), (cron) => new Value(source, cron)).pipe(
-    Result.mapError(invalid),
-  )
+  return Result.map(parseCron(source), (cron) => new Value(source, cron)).pipe(Result.mapError(invalid))
 }
 
 /** Effect-native parser for untrusted cron expression boundaries. */
-export const parse = (
-  input: string,
-): Effect.Effect<CronExpression, InvalidCronError> =>
+export const parse = (input: string): Effect.Effect<CronExpression, InvalidCronError> =>
   Result.match(parseResult(input), {
     onFailure: Effect.fail,
     onSuccess: Effect.succeed,
@@ -98,17 +88,10 @@ export const parse = (
 export const source = (self: CronExpression): string => state(self).source
 
 /** Returns the next occurrence strictly after the supplied instant. */
-export const next = (
-  self: CronExpression,
-  after?: DateTime.DateTime.Input,
-): Date => Cron.next(state(self).cron, after)
+export const next = (self: CronExpression, after?: DateTime.DateTime.Input): Date => Cron.next(state(self).cron, after)
 
 /** Returns a finite preview of upcoming occurrences. */
-export const nextRuns = (
-  self: CronExpression,
-  count: number,
-  after?: DateTime.DateTime.Input,
-): ReadonlyArray<Date> => {
+export const nextRuns = (self: CronExpression, count: number, after?: DateTime.DateTime.Input): ReadonlyArray<Date> => {
   if (!Number.isSafeInteger(count) || count <= 0) return []
   const dates: Array<Date> = []
   for (const date of Cron.sequence(state(self).cron, after)) {

@@ -45,24 +45,15 @@ describe("Nx Cypress target contract", () => {
     }>(resolve(workspaceRoot, "apps/react-router-example/package.json"))
 
     expect(projectJson.targets?.build?.executor).toBe("nx:run-script")
-    expect(projectJson.targets?.build?.dependsOn).toEqual([
-      "typegen",
-      "prisma:generate",
-      "^build",
-    ])
+    expect(projectJson.targets?.build?.dependsOn).toEqual(["typegen", "prisma:generate", "^build"])
     expect(projectJson.targets?.build?.options).toEqual({ script: "build" })
     expect(packageJson.scripts?.build).toBe("react-router build")
   })
 
   it("removes the stale Vite outDir override so build artifacts stay under build/", () => {
-    const viteConfig = readFileSync(
-      resolve(workspaceRoot, "apps/react-router-example/vite.config.ts"),
-      "utf8",
-    )
+    const viteConfig = readFileSync(resolve(workspaceRoot, "apps/react-router-example/vite.config.ts"), "utf8")
 
-    expect(viteConfig).not.toContain(
-      "../../dist/apps/react-app-router-example",
-    )
+    expect(viteConfig).not.toContain("../../dist/apps/react-app-router-example")
     expect(viteConfig).not.toContain("outDir:")
   })
 
@@ -78,9 +69,7 @@ describe("Nx Cypress target contract", () => {
       }
     }>(resolve(workspaceRoot, "apps/react-router-example-e2e/project.json"))
 
-    expect(projectJson.targets?.e2e?.options?.devServerTarget).toBe(
-      "@effectify/react-router-example:start",
-    )
+    expect(projectJson.targets?.e2e?.options?.devServerTarget).toBe("@effectify/react-router-example:start")
     expect(projectJson.targets?.e2e?.options?.port).toBe(3100)
     expect(projectJson.targets?.e2e?.configurations?.manual).toEqual({
       skipServe: true,

@@ -29,12 +29,8 @@ const filterError = (field: InvalidCronFilterError["field"]) =>
     field,
     originalCause: "invalid cron filter value",
   })
-export const validateCreate = (
-  options: CreateCronOptions,
-): Effect.Effect<void, InvalidCronError> => {
-  const fields: ReadonlyArray<
-    readonly [InvalidCronError["field"], Schema.Top, unknown]
-  > = [
+export const validateCreate = (options: CreateCronOptions): Effect.Effect<void, InvalidCronError> => {
+  const fields: ReadonlyArray<readonly [InvalidCronError["field"], Schema.Top, unknown]> = [
     ["name", NonBlank, options.name],
     ["priority", Priority, options.priority],
   ]
@@ -46,15 +42,9 @@ export const validateCreate = (
   return Effect.void
 }
 export const validateInput = (input: unknown) =>
-  Schema.decodeUnknownEffect(TransportObject)(input).pipe(
-    Effect.mapError(() => cronError("input")),
-  )
-export const validateList = (
-  options: ListCronOptions,
-): Effect.Effect<void, InvalidCronFilterError> => {
-  const fields: ReadonlyArray<
-    readonly [InvalidCronFilterError["field"], Schema.Top, unknown]
-  > = [
+  Schema.decodeUnknownEffect(TransportObject)(input).pipe(Effect.mapError(() => cronError("input")))
+export const validateList = (options: ListCronOptions): Effect.Effect<void, InvalidCronFilterError> => {
+  const fields: ReadonlyArray<readonly [InvalidCronFilterError["field"], Schema.Top, unknown]> = [
     ["taskName", NonBlank, options.taskName],
     ["name", NonBlank, options.name],
     ["offset", Offset, options.offset],

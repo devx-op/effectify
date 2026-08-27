@@ -7,17 +7,11 @@ import * as Schema from "effect/Schema"
 import { CronRecord, HatchetConfig, InvalidHatchetConfiguration, ScheduleRecord } from "@effectify/hatchet"
 
 const load = (env: Record<string, string>) =>
-  Effect.runPromise(
-    HatchetConfig.fromEnv.pipe(
-      Effect.provide(ConfigProvider.layer(ConfigProvider.fromEnv({ env }))),
-    ),
-  )
+  Effect.runPromise(HatchetConfig.fromEnv.pipe(Effect.provide(ConfigProvider.layer(ConfigProvider.fromEnv({ env })))))
 
 const loadExit = (env: Record<string, string>) =>
   Effect.runPromiseExit(
-    HatchetConfig.fromEnv.pipe(
-      Effect.provide(ConfigProvider.layer(ConfigProvider.fromEnv({ env }))),
-    ),
+    HatchetConfig.fromEnv.pipe(Effect.provide(ConfigProvider.layer(ConfigProvider.fromEnv({ env })))),
   )
 
 describe("HatchetConfig", () => {
@@ -40,20 +34,12 @@ describe("HatchetConfig", () => {
       field: "client",
       message: "SDK construction failed",
     })
-    const encoded = Schema.encodeUnknownSync(InvalidHatchetConfiguration)(
-      error,
-    )
+    const encoded = Schema.encodeUnknownSync(InvalidHatchetConfiguration)(error)
     expect(JSON.stringify(encoded)).not.toContain(secret)
     expect(encoded).not.toHaveProperty("originalCause")
   })
 
-  it.each(
-    [
-      "tls",
-      "mtls",
-      "none",
-    ] as const,
-  )("accepts the %s TLS literal", async (tlsStrategy) => {
+  it.each(["tls", "mtls", "none"] as const)("accepts the %s TLS literal", async (tlsStrategy) => {
     const config = await load({
       HATCHET_CLIENT_TOKEN: "token",
       HATCHET_TLS_STRATEGY: tlsStrategy,

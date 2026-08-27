@@ -5,17 +5,15 @@ import * as SdkDeclaration from "../../src/internal/sdk-declaration.js"
 
 describe("RateLimit", () => {
   it("creates frozen package-owned values without retaining unknown fields", () => {
-    const limit = RateLimit.make(
-      {
-        units: 1,
-        limit: "input.limit",
-        key: "email",
-        staticKey: "transactional",
-        dynamicKey: "input.tenant",
-        duration: "minute",
-        extra: "ignored",
-      } as RateLimit.Options & { readonly extra: string },
-    )
+    const limit = RateLimit.make({
+      units: 1,
+      limit: "input.limit",
+      key: "email",
+      staticKey: "transactional",
+      dynamicKey: "input.tenant",
+      duration: "minute",
+      extra: "ignored",
+    } as RateLimit.Options & { readonly extra: string })
 
     expect(limit).toEqual({
       _tag: "RateLimit",
@@ -30,19 +28,12 @@ describe("RateLimit", () => {
     expect(limit).not.toHaveProperty("extra")
   })
 
-  it.each(
-    [
-      "second",
-      "minute",
-      "hour",
-      "day",
-      "week",
-      "month",
-      "year",
-    ] as const,
-  )("maps %s through the internal SDK adapter", (duration) => {
-    expect(SdkDeclaration.rateLimitDuration(duration)).toBeDefined()
-  })
+  it.each(["second", "minute", "hour", "day", "week", "month", "year"] as const)(
+    "maps %s through the internal SDK adapter",
+    (duration) => {
+      expect(SdkDeclaration.rateLimitDuration(duration)).toBeDefined()
+    },
+  )
 
   it("preserves duplicate declarations and all supported key fields", () => {
     const limit = RateLimit.make({
@@ -54,29 +45,24 @@ describe("RateLimit", () => {
       duration: "year",
     })
 
-    expect(Declarations.rateLimits("task", [limit, limit])).toEqual([
-      limit,
-      limit,
-    ])
+    expect(Declarations.rateLimits("task", [limit, limit])).toEqual([limit, limit])
   })
 
-  it.each(
-    [
-      ["units", 0],
-      ["units", Number.POSITIVE_INFINITY],
-      ["units", 1.5],
-      ["units", "  "],
-      ["units", true],
-      ["limit", 0],
-      ["limit", "  "],
-      ["limit", false],
-      ["duration", "fortnight"],
-      ["duration", 1],
-      ["key", ""],
-      ["staticKey", " "],
-      ["dynamicKey", " "],
-    ] as const,
-  )("rejects invalid runtime %s value %j", (field, value) => {
+  it.each([
+    ["units", 0],
+    ["units", Number.POSITIVE_INFINITY],
+    ["units", 1.5],
+    ["units", "  "],
+    ["units", true],
+    ["limit", 0],
+    ["limit", "  "],
+    ["limit", false],
+    ["duration", "fortnight"],
+    ["duration", 1],
+    ["key", ""],
+    ["staticKey", " "],
+    ["dynamicKey", " "],
+  ] as const)("rejects invalid runtime %s value %j", (field, value) => {
     const limit = Reflect.apply(RateLimit.make, undefined, [
       {
         units: 1,

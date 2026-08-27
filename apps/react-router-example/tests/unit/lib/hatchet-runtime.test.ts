@@ -12,9 +12,7 @@ describe("Effect-native Hatchet architecture", () => {
       appFile("routes/hatchet-crons.tsx"),
       appFile("routes.tsx"),
     ])
-    const combined = [sharedRuntime, task, runRoute, cronRoute, routes].join(
-      "\n",
-    )
+    const combined = [sharedRuntime, task, runRoute, cronRoute, routes].join("\n")
 
     expect(sharedRuntime).toContain("Hatchet.layer({ tasks: [greetingTask] })")
     expect(sharedRuntime).toMatch(/Layer\.mergeAll\([\s\S]*hatchetLayer/)
@@ -31,15 +29,13 @@ describe("Effect-native Hatchet architecture", () => {
     expect(routes.match(/api\/hatchet/g)?.length).toBe(1)
     expect(routes).toContain('route("hatchet-crons"')
 
-    for (
-      const forbidden of [
-        "HatchetRuntime",
-        "ManagedRuntime",
-        "runPromise",
-        "authorize(",
-        "HATCHET_EXAMPLE_API_KEY",
-      ]
-    ) {
+    for (const forbidden of [
+      "HatchetRuntime",
+      "ManagedRuntime",
+      "runPromise",
+      "authorize(",
+      "HATCHET_EXAMPLE_API_KEY",
+    ]) {
       expect(combined).not.toContain(forbidden)
     }
     expect([task, runRoute, cronRoute].join("\n")).not.toContain("process.env")

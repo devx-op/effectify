@@ -24,9 +24,7 @@ const task = Task.make({
   input: Schema.Struct({ value: Schema.Finite }),
   output: Schema.String,
   fn: ({ value }): Effect.Effect<string, TaskFailure, Prefix> =>
-    value > 0
-      ? Effect.map(Prefix, ({ value: prefix }) => `${prefix}${value}`)
-      : Effect.fail(new TaskFailure()),
+    value > 0 ? Effect.map(Prefix, ({ value: prefix }) => `${prefix}${value}`) : Effect.fail(new TaskFailure()),
 })
 
 const dispatched = Hatchet.runNoWait(task, { value: 1 })
@@ -36,7 +34,7 @@ const exactDispatch: Effect.Effect<
   Hatchet.Hatchet | Prefix
 > = dispatched
 
-const program = Effect.gen(function*() {
+const program = Effect.gen(function* () {
   const handle = yield* Hatchet.runNoWait(task, { value: 1 })
   const id: RunId = handle.id
   const output: string = yield* handle.await
@@ -45,15 +43,10 @@ const program = Effect.gen(function*() {
 })
 
 const prefixLayer = Layer.succeed(Prefix, { value: "typed-" })
-const hatchetLayer: Layer.Layer<Hatchet.Hatchet, never, Prefix> = Hatchet.layer(
-  {
-    tasks: [task],
-  },
-)
-const appLayer = Layer.merge(
-  prefixLayer,
-  hatchetLayer.pipe(Layer.provide(prefixLayer)),
-)
+const hatchetLayer: Layer.Layer<Hatchet.Hatchet, never, Prefix> = Hatchet.layer({
+  tasks: [task],
+})
+const appLayer = Layer.merge(prefixLayer, hatchetLayer.pipe(Layer.provide(prefixLayer)))
 const runnable: Effect.Effect<
   { readonly id: RunId; readonly output: string },
   TaskFailure | TaskSchemaError | MissingTaskError | Hatchet.AcquisitionError

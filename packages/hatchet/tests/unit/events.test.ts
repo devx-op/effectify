@@ -5,11 +5,7 @@ import { Hatchet } from "@effectify/hatchet"
 describe("Hatchet.pushEvent", () => {
   it("validates JSON-object events before side effects and echoes valid in-memory events", async () => {
     const invalid = await Effect.runPromise(
-      Hatchet.pushEvent(" ", { value: "ok" }).pipe(
-        Effect.flip,
-        Effect.provide(Hatchet.layerInMemory),
-        Effect.scoped,
-      ),
+      Hatchet.pushEvent(" ", { value: "ok" }).pipe(Effect.flip, Effect.provide(Hatchet.layerInMemory), Effect.scoped),
     )
     expect(invalid).toMatchObject({
       _tag: "InvalidEventError",
@@ -40,11 +36,9 @@ describe("Hatchet.pushEvent", () => {
   it("rejects sparse JSON arrays without advancing the in-memory event counter", async () => {
     const payload = { nested: ["value"] }
     delete payload.nested[0]
-    const program = Effect.gen(function*() {
+    const program = Effect.gen(function* () {
       const service = yield* Hatchet.Hatchet
-      const failure = yield* service
-        .pushEvent("invalid", payload)
-        .pipe(Effect.flip)
+      const failure = yield* service.pushEvent("invalid", payload).pipe(Effect.flip)
       const receipt = yield* service.pushEvent("valid", { ok: true })
       return { failure, receipt }
     }).pipe(Effect.provide(Hatchet.layerInMemory), Effect.scoped)
