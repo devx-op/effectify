@@ -218,7 +218,7 @@ Each implementation PR is independently reviewable, targets fewer than 1,000 cha
 7. **Deprecation and inventory:** package/root docs, migration/consumer/scenario ledger, final bridge release metadata; verify retirement gate remains closed.
 8. **Unique-scenario transfers:** one or more RR8-only PRs, grouped by coherent unique scenario and below 1,000 lines; no duplicate rows transfer.
 9. **Retirement-gate evidence:** documentation-only/evidence slice marking every consumer and scenario disposition complete and naming the rollback version. It authorizes but does not perform deletion.
-10. **Final RR8 consolidation cleanup:** delete bridge, local adapter, old app, `json`, and release/docs/workspace references; split deletion from lockfile/release cleanup if required by the line cap, but do not release an intermediate state with dangling references.
+10. **Final RR8 consolidation cleanup:** use four green, non-releasable heads—PR10a retires RR7-only tests and stages optional `--expect=retired`; PR10b deletes retired app scenarios; PR10c removes the remaining app and graph node; PR10d removes the bridge package plus release/workspace/lockfile graph. Do not release between heads.
 11. **RR8-only release verification:** regenerated graph/lockfile absence checks and the full protected RR8 matrix; no product code.
 
 Auto-chain may proceed through Checkpoint A and documentation. It pauses before work unit 8 for reviewed uniqueness decisions and before work unit 10 until work unit 9 proves the support gate. Thus “delivery auto-chain” does not bypass human-fixed retirement conditions.

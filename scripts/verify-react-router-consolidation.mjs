@@ -50,6 +50,7 @@ const VALID_DISPOSITIONS = new Set([
 const SKIPPED_SCAN_PATHS = new Set([
   LEDGER,
   "scripts/verify-react-router-consolidation.mjs",
+  "scripts/verify-react-router-consolidation.test.mjs",
   "pnpm-lock.yaml",
 ])
 
@@ -145,7 +146,7 @@ const trackedConsumerSurfaces = async () => {
     .filter((file) => /(?:^|\/)(?:[^/]+\.(?:[cm]?[jt]sx?|json|md|ya?ml)|nx\.json)$/.test(file))
   const surfaces = []
   for (const file of candidates) {
-    const source = await readFile(file, "utf8")
+    const source = await readFile(file, "utf8").catch(() => "")
     if (source.includes("@effectify/react-remix") || source.includes("react-remix-example")) {
       surfaces.push(file)
     }
@@ -154,10 +155,11 @@ const trackedConsumerSurfaces = async () => {
   return [...new Set(surfaces)].sort()
 }
 
-const expected = process.argv.find((argument) => argument.startsWith("--expect="))?.slice(9) ?? "closed"
-if (!["closed", "open"].includes(expected)) {
-  throw new Error("Expected --expect=closed or --expect=open")
+const expected = process.argv.find((argument) => argument.startsWith("--expect="))?.slice(9) ?? "open"
+if (!["closed", "open", "retired"].includes(expected)) {
+  throw new Error("Expected --expect=closed, --expect=open, or --expect=retired")
 }
+const retired = expected === "retired"
 
 let ledger
 try {
@@ -174,9 +176,31 @@ if (!finalBridgeVersion || !FINAL_VERSION_PATTERN.test(finalBridgeVersion)) {
   failures.push("missing concrete final supported bridge rollback version")
 }
 
-const bridgeManifest = JSON.parse(await readFile("packages/react/remix/package.json", "utf8"))
-if (finalBridgeVersion && finalBridgeVersion !== bridgeManifest.version) {
+let bridgeManifest
+try {
+  bridgeManifest = JSON.parse(await readFile("packages/react/remix/package.json", "utf8"))
+} catch {
+  if (!retired) failures.push("missing packages/react/remix/package.json before retirement")
+}
+if (finalBridgeVersion && bridgeManifest && finalBridgeVersion !== bridgeManifest.version) {
   failures.push(`rollback version ${finalBridgeVersion} must match bridge package ${bridgeManifest.version}`)
+}
+if (retired) {
+  for (const path of ["packages/react/remix", "apps/react-remix-example"]) {
+    await access(path).then(
+      () => failures.push(`retirement path still exists: ${path}`),
+      () => {},
+    )
+  }
+  const { stdout } = await execFileAsync("git", ["ls-files", "-co", "--exclude-standard"])
+  for (const file of stdout.trim().split("\n").filter(Boolean)) {
+    if (file.startsWith("openspec/") || [LEDGER, "scripts/verify-react-router-consolidation.mjs", "scripts/verify-react-router-consolidation.test.mjs"].includes(file)) continue
+    const source = await readFile(file, "utf8").catch(() => null)
+    if (source === null) continue
+    for (const term of ["@effectify/react-remix", "react-remix-example", "@remix-run/", "7.18.2", "react-router7-better-auth"]) {
+      if (`${file}\n${source}`.includes(term)) failures.push(`retirement residue ${term} in ${file}`)
+    }
+  }
 }
 
 const consumers = table(ledger, "Repository consumer inventory")
@@ -202,7 +226,8 @@ const pendingRows = [...consumers, ...scenarios].filter(
 if (gate === "OPEN" && pendingRows.length > 0) {
   failures.push(`OPEN gate has ${pendingRows.length} pending reviewer/disposition/completion rows`)
 }
-if (expected.toUpperCase() !== gate) failures.push(`expected ${expected.toUpperCase()} gate but ledger declares ${gate ?? "missing"}`)
+const expectedGate = retired ? "OPEN" : expected.toUpperCase()
+if (expectedGate !== gate) failures.push(`expected ${expectedGate} gate but ledger declares ${gate ?? "missing"}`)
 if (failures.length > 0) fail(failures)
 
 console.log(
@@ -213,7 +238,7 @@ console.log(
       consumerRows: consumers.length,
       scenarioRows: scenarios.length,
       pendingRows: pendingRows.length,
-      status: gate === "CLOSED" ? "inventory-complete-retirement-blocked" : "retirement-eligible",
+      status: retired ? "retired" : gate === "CLOSED" ? "inventory-complete-retirement-blocked" : "retirement-eligible",
     },
     null,
     2,

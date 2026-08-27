@@ -52,9 +52,9 @@ const fixture = async (mutate = (ledger) => ledger) => {
   return root
 }
 
-const verify = async (root) => {
+const verify = async (root, expected = "open") => {
   try {
-    const { stdout } = await execFileAsync(process.execPath, [verifier, "--expect=open"], {
+    const { stdout } = await execFileAsync(process.execPath, [verifier, `--expect=${expected}`], {
       cwd: root,
       env: { ...process.env, CONSOLIDATION_EVIDENCE_ROOT: repositoryRoot },
     })
@@ -71,6 +71,32 @@ test("the complete OPEN fixture passes", async (context) => {
   const result = await verify(root)
 
   assert.equal(result.exitCode, 0, result.output)
+})
+
+test("the complete retired fixture passes only with --expect=retired", async (context) => {
+  const root = await fixture()
+  context.after(() => rm(root, { recursive: true, force: true }))
+  await rm(join(root, "packages"), { recursive: true })
+
+  const result = await verify(root, "retired")
+
+  assert.equal(result.exitCode, 0, result.output)
+  assert.match(result.output, /"status": "retired"/)
+})
+
+test("the retired expectation reports retained transitional surfaces", async (context) => {
+  const root = await fixture()
+  context.after(() => rm(root, { recursive: true, force: true }))
+  await mkdir(join(root, "apps/react-remix-example/app/lib"), { recursive: true })
+  await writeFile(join(root, "apps/react-remix-example/app/lib/react-router7-better-auth.server.ts"), "export {}\n")
+  await execFileAsync("git", ["add", "."], { cwd: root })
+
+  const result = await verify(root, "retired")
+
+  assert.notEqual(result.exitCode, 0, result.output)
+  assert.match(result.output, /retirement path still exists: packages\/react\/remix/)
+  assert.match(result.output, /retirement path still exists: apps\/react-remix-example/)
+  assert.match(result.output, /retirement residue react-router7-better-auth in apps\/react-remix-example/)
 })
 
 for (const [name, mutate] of Object.entries(mutations)) {
