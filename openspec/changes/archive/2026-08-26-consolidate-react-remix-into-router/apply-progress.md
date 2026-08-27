@@ -2024,3 +2024,92 @@ No pure function or product behavior was added. Runtime harness is N/A for delet
 
 - WU11 retains its four exact unchecked implementation rows in `tasks.md`; do not infer their completion from PR10d verification.
 - The final parent-owned closure row remains unchecked and byte-for-byte unchanged. Next routing is `parent-lifecycle`.
+
+## Work Unit 11 / PR11 — Final RR8-Only Release Verification
+
+### Exact Phase Contract and Structured Status
+
+- **Status:** completed for implementation-owned Work unit 11 only. Evidence revision: `sha256:92d65c6fb44465fc7bc31981805d759930476392080f18dfcc4dc93a75168d63`, the binary patch hash of the final historical ledger plus persisted WU11 task state.
+- Authoritative native OpenSpec status selected `consolidate-react-remix-into-router` at clean head `4535fc42f2eec9ec18e74c92e21b8d8f0784303d`; pre-run `applyState: ready`, `nextRecommended: apply`, planning artifacts complete, and blocked reasons empty.
+- Action context was `repo-local`; workspace root and sole allowed edit root were `/Users/skynet/devx-op/effectify`; warnings were empty. Parent `proceed` was authenticated for `rr8-only-release-verification`, maximum 1,000 changed lines; parent owns settlement and closure.
+- Delivery remained `auto-chain`, `feature-branch-chain`. Only the retained historical ledger and OpenSpec tasks/progress were edited. Product code, dependencies, graph, release membership, lockfile, maintained RR8 source/tests, and historical validator behavior were unchanged.
+- Runtime commands used exact Node `v24.19.0` and pnpm `10.14.0`. Four WU11 implementation rows are visibly `- [x]`; implementation ownership is 69/69 complete. The final parent-owned closure row remains visibly `- [ ]` and byte-for-byte unchanged.
+
+### Completed Tasks, Files, Count, and Rollback
+
+- Completed and persisted: maintained package matrix; maintained app matrix; final graph/release/lock absence matrix; and final historical release evidence.
+- Files changed: `docs/migrations/react-remix-to-react-router.md`, `openspec/changes/consolidate-react-remix-into-router/tasks.md`, and this cumulative progress artifact.
+- Final WU11 authored count: **137 additions + deletions**; generated lines: **0**; binary changes: **0**; total remains below 1,000.
+- Rollback boundary: revert only the WU11 ledger section, four WU11 checkbox changes, and this progress section. If evidence later fails, parent reopens the applicable gate and restores the coherent PR10 graph with bridge rollback `0.5.12-alpha.1`; maintained RR8 8.3.0 is not changed.
+
+### Maintained Package Matrix — RR8 8.3.0
+
+| Surface                               | Result                                                                                                                                                                                                               |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@effectify/react-router`             | 8/8 tests passed; `typecheck:no-build`, lint, and build passed. Payloads preserved loader `{ ok: true, data }` and action `{ ok: true, response }`; modeled loader/action failures retained 500/400 and JSON bodies. |
+| Redirect/header behavior              | Loader/action redirect responses retained status 307, `Location: /login`, and `Set-Cookie: session=expired`; defects/interruption retained generic 500/400 bodies and logging.                                       |
+| Throwable identity                    | Successful raw response handling and failed native `Response` / `Error` propagation retained exact object identity for loader/action boundaries and preserved response cookies.                                      |
+| `@effectify/react-router-better-auth` | 9/9 tests passed; `typecheck:no-build`, lint, and build passed. Exact request identity, 404 handler forwarding, successful 201/202 body/status, and unauthorized 302 `Location`/cookie behavior passed.              |
+
+### Maintained App Matrix — RR8 8.3.0
+
+| Gate                         | Result                                                                                                                                                                                                                                                                                                                                                       |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Manifest/readiness           | Protected family reported exact 8.3.0 with package peer `^8.3.0`; readiness reported Node 24.19.0, React 19.2.7, future flags absent, and correct manifest/readiness targets.                                                                                                                                                                                |
+| Migration/full tests         | Migration suite passed 9/9. Initial full test run found only missing built output for declared workspace prerequisite `@effectify/hatchet`; after `pnpm nx run @effectify/hatchet:build`, the unchanged app passed 24 files / 115 tests.                                                                                                                     |
+| Routes/auth/transfers        | Explicit route/splat, shell/navigation, login/signup, exact auth request/response identity, two cookies, Todo create/update/delete/toggle/validation, test-equivalent behavior, and all six transferred `/demo` success/failure/redirect scenarios passed. Demo failures retained 500/400; redirects retained 307/303 and `Location: /demo?outcome=success`. |
+| SSR/readiness/status/headers | Browser shell used shell readiness with status 207, route header, HTML content type/body; bot and SPA mode used all-content readiness; stream error returned 500; initial shell error preserved exact identity.                                                                                                                                              |
+| Clean quality                | Clean typegen, typecheck, client/SSR build, and lint passed. Established non-failing externalization/chunk/dynamic-import warnings remained; lint reported 0 warnings/errors.                                                                                                                                                                                |
+
+### Final Graph, Release, and Absence Proof
+
+- `consolidation:verify -- --expect=retired` passed with status `retired`, gate OPEN, rollback `0.5.12-alpha.1`, 24 consumers, 29 scenarios, and 0 pending rows.
+- `pnpm nx show projects --json` listed 19 maintained projects; the bridge and retired app were absent. Exact release-project scans were also empty for both retired names.
+- `pnpm why` for the app resolved React Router/dev/node/serve only at 8.3.0. Catalog and app effective versions are exactly 8.3.0; package peer remains `^8.3.0`.
+- Exact allowlist-aware scans found no physical retired roots, active RR7/bridge/app terms, active docs residue, workspace/root/Nx residue, or lockfile importer/bridge/RR7/Remix-framework residue. The only lockfile `@remix-run/*` token is allowed maintained-RR8 transitive metadata `@remix-run/node-fetch-server`.
+- Frozen install passed for 19 workspace projects. Affected lint/typecheck/test/build passed for 19/17/6/15 projects, and repository format passed.
+- Before/after protected tracked-tree inventory SHA-256 remained `dd4822e732fde743033e57aee008e79a545516e6d6043fec4e005f03ebd5a0ae`; lockfile SHA-256 remained `3a50b512a4ce21f35ab6a6e1d6758fd1ed74324af8ffdd271eeb32d83ba32e80`.
+
+### Serial Cleanup Accounting
+
+The historical ledger now records every green PR10 serial head's authored/generated/binary counts, no release between heads, rollback `0.5.12-alpha.1`, and maintained RR8 8.3.0. The sequence includes PR10a, PR10b, seven PR10c recovery heads plus importer retirement, and the two PR10d heads; its sole binary deletion was the 57,344-byte retired database.
+
+### Commands Run
+
+| Command group                                                   | Result                                                                                                                                                                                                                                                             |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `pnpm install --frozen-lockfile`                                | Passed; all 19 workspace projects current.                                                                                                                                                                                                                         |
+| Exact two-package `test,typecheck:no-build,lint,build` matrix   | Passed: router 8/8, adapter 9/9, all static/build targets green.                                                                                                                                                                                                   |
+| App manifest/readiness/migration/full test                      | Passed after building the declared Hatchet workspace prerequisite; migration 9/9 and app 115/115.                                                                                                                                                                  |
+| Clean app typegen/typecheck/build/lint                          | Passed; client and SSR bundles completed.                                                                                                                                                                                                                          |
+| RETIRED, Nx projects, four app `pnpm why` queries               | Passed with final graph absent and RR8 exact 8.3.0.                                                                                                                                                                                                                |
+| Exact affected lint/typecheck/test/build                        | Passed for 19/17/6/15 projects.                                                                                                                                                                                                                                    |
+| Allowlist-aware active-tree/workspace/release/docs/lock scans   | Passed with zero forbidden matches. Three preliminary scan-harness attempts failed only on unavailable Python YAML, quoted YAML keys, and the valid app `catalog:` declaration; the dependency-free effective-version scan then passed without repository changes. |
+| Format, `git diff --check`, protected hashes, generated cleanup | Passed; generated outputs removed, tracked database/tsbuildinfo restored, and no forbidden surface changed.                                                                                                                                                        |
+
+### TDD Cycle Evidence
+
+| Task                     | Test File / Harness                        | Layer                   | Safety Net                     | RED                                                     | GREEN                                                | TRIANGULATE                                                                           | REFACTOR                                             |
+| ------------------------ | ------------------------------------------ | ----------------------- | ------------------------------ | ------------------------------------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| Package verification     | Existing router/adapter suites             | Runtime integration     | Existing WU10 matrix           | N/A: verification-only, no behavior or production edit  | 8/8 + 9/9 and full target matrix passed              | Payload/failure, redirect/header, cookie, request/throwable identity paths all passed | No code refactor; generated outputs cleaned          |
+| App verification         | Existing migration and 24-file app suites  | Runtime/SSR integration | Manifest/readiness passed      | N/A: verification-only                                  | Migration 9/9 and app 115/115 passed                 | Routes, auth, Todo, transferred demo, SSR readiness/status/header/error paths passed  | Clean typegen/typecheck/build/lint rerun             |
+| Absence/release evidence | RETIRED validator, Nx/lock/workspace scans | Structural integration  | WU10 RETIRED already green     | N/A: final confirmation of implemented state            | RETIRED and exact absence scan passed                | Nx, `pnpm why`, frozen install, affected matrices, and hashes agreed                  | No graph/code refactor; only evidence docs updated   |
+| Historical ledger        | RETIRED validator plus format              | Documentation evidence  | Existing 24/29/0 ledger passed | N/A: historical evidence update with no behavior branch | Final evidence recorded and validator remained green | Counts, rollback, no-release, runtime matrices, and absence proof cross-recorded      | Cognitive-doc structure and repository format passed |
+
+No tests, production functions, product behavior, or dependency changes were added. Strict TDD did not require a new RED because every assigned row was final verification or historical evidence for already-implemented behavior; existing fail-closed RETIRED and runtime suites were reused.
+
+### Cleanup, Deviations, and Parent Boundary
+
+- Removed all command-generated `.react-router`, `build`, `dist`, Prisma generated output, untracked tsbuildinfo, and restored the tracked Prisma database plus tracked tsbuildinfo files. Final retained changes are evidence artifacts only.
+- Deviation: the first full app run failed solely because `@effectify/hatchet` build output was absent after the frozen clean setup; building that declared workspace prerequisite and rerunning passed 115/115 without source changes. Three provisional absence-parser failures were harness-only and corrected without changing repository behavior.
+- Established package language-service suggestions and app bundler warnings were non-failing and unchanged. There was no design, scope, product, version, dependency, graph, lockfile, release, commit, push, PR, archive, review, receipt, settlement, or historical-validator-behavior deviation.
+- All implementation work is complete. The exact remaining row is parent-owned and remains unchecked: `- [ ] After work unit 11, evaluate the final RR8-only evidence and close the OpenSpec change only if cleanup, release surfaces, scenario ledger, rollback record, and protected RR8 8.3.0 matrix are all complete; otherwise reopen the applicable gate.`
+- Next routing is `parent-lifecycle`; this executor does not close or archive the change.
+
+## Parent Gate Decision — Final RR8-Only Closure Accepted
+
+- Decision date: 2026-08-26.
+- Reviewer/maintainer: `kattsushi`.
+- Accepted evidence: RETIRED status, 24 complete consumers, 29 complete scenarios, 0 pending rows, absent retired graph/release/workspace/lock surfaces, exact RR8 `8.3.0`, green package/app/affected matrices, serial cleanup accounting, no-release transaction record, and rollback `0.5.12-alpha.1`.
+- Authorization: close the implementation change and proceed through native SDD verify → sync → archive.
+- Release boundary: this closure authorization does not publish or release any package.
