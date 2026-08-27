@@ -6,7 +6,7 @@ const greeting = Task.make({
   input: Schema.Struct({ name: Schema.NonEmptyString }),
   fn: ({ name }) => Effect.log(`Hello, ${name}!`),
 })
-const program = Effect.gen(function*() {
+const program = Effect.gen(function* () {
   const schedule = yield* CronExpression.parse("0 9 * * *")
   const cron = yield* Hatchet.createCron(greeting, {
     name: "daily-greeting",

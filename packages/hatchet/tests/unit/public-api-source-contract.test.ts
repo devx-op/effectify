@@ -9,10 +9,7 @@ const publicSourceFiles = [
   "../../src/Error.ts",
   "../../src/Model.ts",
 ].map((path) => new URL(path, import.meta.url))
-const exampleSourceFile = new URL(
-  "../../scripts/test-workflow.ts",
-  import.meta.url,
-)
+const exampleSourceFile = new URL("../../scripts/test-workflow.ts", import.meta.url)
 
 const forbiddenManualLifecycleSymbols = [
   "RegisteredTask",
@@ -27,10 +24,7 @@ describe("public API source contract", () => {
     for (const sourceFile of publicSourceFiles) {
       const source = readFileSync(sourceFile, "utf8")
       for (const forbidden of forbiddenManualLifecycleSymbols) {
-        expect(
-          source,
-          `${sourceFile.pathname} contains ${forbidden}`,
-        ).not.toContain(forbidden)
+        expect(source, `${sourceFile.pathname} contains ${forbidden}`).not.toContain(forbidden)
       }
     }
   })

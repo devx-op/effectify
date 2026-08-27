@@ -33,12 +33,8 @@ const runtimeWithLogs = () => {
 describe("React Router runtime migration contracts", () => {
   it("keeps normal loader and action payloads serializable", async () => {
     const runtime = make(Layer.empty)
-    const loader = runtime.withLoaderEffect(
-      Effect.succeed(new HttpResponseSuccess({ data: { id: "loader" } })),
-    )
-    const action = runtime.withActionEffect(
-      Effect.succeed(new HttpResponseSuccess({ data: { id: "action" } })),
-    )
+    const loader = runtime.withLoaderEffect(Effect.succeed(new HttpResponseSuccess({ data: { id: "loader" } })))
+    const action = runtime.withActionEffect(Effect.succeed(new HttpResponseSuccess({ data: { id: "action" } })))
 
     await expect(loader(loaderArgs())).resolves.toEqual({
       ok: true,
@@ -57,22 +53,13 @@ describe("React Router runtime migration contracts", () => {
       status: 307,
     }
     const loader = runtime.withLoaderEffect(
-      Effect.succeed(
-        new HttpResponseRedirect({ to: "/login", init: redirectInit }),
-      ),
+      Effect.succeed(new HttpResponseRedirect({ to: "/login", init: redirectInit })),
     )
     const action = runtime.withActionEffect(
-      Effect.succeed(
-        new HttpResponseRedirect({ to: "/login", init: redirectInit }),
-      ),
+      Effect.succeed(new HttpResponseRedirect({ to: "/login", init: redirectInit })),
     )
 
-    for (
-      const result of [
-        await loader(loaderArgs()),
-        await action(actionArgs()),
-      ]
-    ) {
+    for (const result of [await loader(loaderArgs()), await action(actionArgs())]) {
       expect(result).toBeInstanceOf(Response)
       if (!(result instanceof Response)) {
         throw new Error("expected redirect Response")
@@ -85,9 +72,7 @@ describe("React Router runtime migration contracts", () => {
 
   it("keeps loader failure status and JSON body explicit", async () => {
     const runtime = make(Layer.empty)
-    const loader = runtime.withLoaderEffect(
-      Effect.succeed(new HttpResponseFailure({ cause: "unavailable" })),
-    )
+    const loader = runtime.withLoaderEffect(Effect.succeed(new HttpResponseFailure({ cause: "unavailable" })))
 
     await expect(loader(loaderArgs())).rejects.toMatchObject({ status: 500 })
     await expect(loader(loaderArgs())).rejects.toMatchObject({
@@ -107,9 +92,7 @@ describe("React Router runtime migration contracts", () => {
 
   it("uses a decodable Response for action failures that need an HTTP status", async () => {
     const runtime = make(Layer.empty)
-    const action = runtime.withActionEffect(
-      Effect.succeed(new HttpResponseFailure({ cause: "invalid" })),
-    )
+    const action = runtime.withActionEffect(Effect.succeed(new HttpResponseFailure({ cause: "invalid" })))
 
     const result = await action(actionArgs())
     expect(result).toBeInstanceOf(Response)
@@ -134,15 +117,9 @@ describe("React Router runtime migration contracts", () => {
       headers: { "Set-Cookie": "session=expired" },
     })
 
-    await expect(
-      runtime.withActionEffect(Effect.succeed(successful))(actionArgs()),
-    ).rejects.toBe(successful)
-    await expect(
-      runtime.withLoaderEffect(Effect.fail(failed))(loaderArgs()),
-    ).rejects.toBe(failed)
-    await expect(
-      runtime.withActionEffect(Effect.fail(failed))(actionArgs()),
-    ).rejects.toBe(failed)
+    await expect(runtime.withActionEffect(Effect.succeed(successful))(actionArgs())).rejects.toBe(successful)
+    await expect(runtime.withLoaderEffect(Effect.fail(failed))(loaderArgs())).rejects.toBe(failed)
+    await expect(runtime.withActionEffect(Effect.fail(failed))(actionArgs())).rejects.toBe(failed)
     expect(successful.headers.get("set-cookie")).toBe("created=yes")
     expect(failed.headers.get("set-cookie")).toBe("session=expired")
   })
@@ -152,23 +129,14 @@ describe("React Router runtime migration contracts", () => {
     const loaderError = new Error("loader failed")
     const actionError = new Error("action failed")
 
-    await expect(
-      runtime.withLoaderEffect(Effect.fail(loaderError))(loaderArgs()),
-    ).rejects.toBe(loaderError)
-    await expect(
-      runtime.withActionEffect(Effect.fail(actionError))(actionArgs()),
-    ).rejects.toBe(actionError)
+    await expect(runtime.withLoaderEffect(Effect.fail(loaderError))(loaderArgs())).rejects.toBe(loaderError)
+    await expect(runtime.withActionEffect(Effect.fail(actionError))(actionArgs())).rejects.toBe(actionError)
   })
 
   it("reports loader defects and interruptions before the generic 500 contract", async () => {
     const { logs, runtime } = runtimeWithLogs()
 
-    for (
-      const effect of [
-        Effect.die(new Error("loader defect")),
-        Effect.interrupt,
-      ]
-    ) {
+    for (const effect of [Effect.die(new Error("loader defect")), Effect.interrupt]) {
       await runtime
         .withLoaderEffect(effect)(loaderArgs())
         .then(
@@ -192,12 +160,7 @@ describe("React Router runtime migration contracts", () => {
   it("reports action defects and interruptions before the generic 400 contract", async () => {
     const { logs, runtime } = runtimeWithLogs()
 
-    for (
-      const effect of [
-        Effect.die(new Error("action defect")),
-        Effect.interrupt,
-      ]
-    ) {
+    for (const effect of [Effect.die(new Error("action defect")), Effect.interrupt]) {
       const result = await runtime.withActionEffect(effect)(actionArgs())
       expect(result).toBeInstanceOf(Response)
       if (!(result instanceof Response)) {

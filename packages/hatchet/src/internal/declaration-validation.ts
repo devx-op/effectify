@@ -3,11 +3,7 @@ import type * as Trigger from "../Trigger.js"
 import { TaskDeclarationError } from "../Error.js"
 import type * as Task from "../Task.js"
 
-const invalid = (
-  taskName: string,
-  field: string,
-  index?: number,
-): TaskDeclarationError =>
+const invalid = (taskName: string, field: string, index?: number): TaskDeclarationError =>
   new TaskDeclarationError({
     taskName,
     field,
@@ -54,10 +50,7 @@ const validateText = (
   }
 }
 
-export const rateLimits = (
-  taskName: string,
-  values: ReadonlyArray<RateLimitValue>,
-): ReadonlyArray<RateLimitValue> => {
+export const rateLimits = (taskName: string, values: ReadonlyArray<RateLimitValue>): ReadonlyArray<RateLimitValue> => {
   for (const [index, value] of values.entries()) {
     validateNumberOrExpression(taskName, index, "units", value.units)
     if (value.limit !== undefined) {
@@ -73,16 +66,10 @@ export const rateLimits = (
   return values
 }
 
-export const triggers = (
-  taskName: string,
-  values: ReadonlyArray<Trigger.Trigger>,
-): ReadonlyArray<Trigger.Trigger> => {
+export const triggers = (taskName: string, values: ReadonlyArray<Trigger.Trigger>): ReadonlyArray<Trigger.Trigger> => {
   for (const [index, value] of values.entries()) {
     if (value._tag === "Event") {
-      if (
-        value.event.trim().length === 0 ||
-        /[\u0000-\u001f\u007f]/.test(value.event)
-      ) {
+      if (value.event.trim().length === 0 || /[\u0000-\u001f\u007f]/.test(value.event)) {
         throw invalid(taskName, "event", index)
       }
       continue

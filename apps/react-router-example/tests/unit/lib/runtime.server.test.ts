@@ -2,17 +2,15 @@ import { Runtime } from "@effectify/react-router"
 import { type ActionFunctionArgs, type LoaderFunctionArgs, RouterContextProvider } from "react-router"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
-const { adapterConfigMock, authHandlerMock, prismaLayerMock } = vi.hoisted(
-  () => {
-    process.env.DATABASE_URL = "file:./runtime-contract.db"
+const { adapterConfigMock, authHandlerMock, prismaLayerMock } = vi.hoisted(() => {
+  process.env.DATABASE_URL = "file:./runtime-contract.db"
 
-    return {
-      adapterConfigMock: vi.fn(),
-      authHandlerMock: vi.fn(),
-      prismaLayerMock: vi.fn(),
-    }
-  },
-)
+  return {
+    adapterConfigMock: vi.fn(),
+    authHandlerMock: vi.fn(),
+    prismaLayerMock: vi.fn(),
+  }
+})
 
 vi.mock("../../../app/lib/better-auth-options.server.js", async () => {
   const Effect = await import("effect/Effect")
@@ -55,10 +53,7 @@ vi.mock("../../../prisma/generated/effect/index.js", async () => {
   const Context = await import("effect/Context")
   const Layer = await import("effect/Layer")
 
-  class MockPrismaService extends Context.Service<
-    MockPrismaService,
-    { readonly label: "prisma" }
-  >()("Prisma") {}
+  class MockPrismaService extends Context.Service<MockPrismaService, { readonly label: "prisma" }>()("Prisma") {}
 
   return {
     Prisma: Object.assign(MockPrismaService, {
@@ -123,9 +118,7 @@ describe("runtime.server runtime contract", () => {
     )
 
     const request = new Request("https://example.com/api/auth")
-    const response = await loader(makeLoaderArgs(request)).catch(
-      (error) => error,
-    )
+    const response = await loader(makeLoaderArgs(request)).catch((error) => error)
 
     expect(response).toBeInstanceOf(Response)
     expect(response.status).toBe(200)
@@ -158,9 +151,7 @@ describe("runtime.server runtime contract", () => {
       body: new URLSearchParams({ intent: "sign-in" }),
       method: "POST",
     })
-    const response = await action(makeActionArgs(request)).catch(
-      (error) => error,
-    )
+    const response = await action(makeActionArgs(request)).catch((error) => error)
 
     expect(response).toBeInstanceOf(Response)
     expect(response.status).toBe(201)

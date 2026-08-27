@@ -14,13 +14,9 @@ const hatchet = vi.hoisted(() => ({
 }))
 
 vi.mock("@effectify/hatchet", async () => {
-  const actual = await vi.importActual<typeof import("@effectify/hatchet")>(
-    "@effectify/hatchet",
-  )
+  const actual = await vi.importActual<typeof import("@effectify/hatchet")>("@effectify/hatchet")
   const Effect = await import("effect/Effect")
-  const CronExpression = await import(
-    "../../../../packages/hatchet/src/CronExpression.js"
-  )
+  const CronExpression = await import("../../../../packages/hatchet/src/CronExpression.js")
   return {
     ...actual,
     CronExpression,
@@ -33,70 +29,45 @@ vi.mock("@effectify/hatchet", async () => {
 })
 
 vi.mock("../../app/lib/runtime.server.js", async () => {
-  const {
-    ActionArgsContext,
-    HttpResponseFailure,
-    HttpResponseRedirect,
-    HttpResponseSuccess,
-    LoaderArgsContext,
-  } = await import("@effectify/react-router")
+  const { ActionArgsContext, HttpResponseFailure, HttpResponseRedirect, HttpResponseSuccess, LoaderArgsContext } =
+    await import("@effectify/react-router")
   const Effect = await import("effect/Effect")
 
   const redirectResponse = (to: string) => new Response(null, { status: 302, headers: { Location: to } })
 
   return {
-    withLoaderEffect: <A, E>(
-      self: Effect.Effect<
-        HttpResponse<A> | Response,
-        E,
-        LoaderArgsContextService
-      >,
-    ) =>
-    (args: LoaderFunctionArgs) =>
-      Effect.runPromise(
-        self.pipe(Effect.provideService(LoaderArgsContext, args)),
-      ).then((result) => {
-        if (result instanceof Response) return result
-        if (result instanceof HttpResponseSuccess) {
-          return { ok: true as const, data: result.data }
-        }
-        if (result instanceof HttpResponseFailure) {
-          return Response.json(
-            { ok: false, errors: [String(result.cause)] },
-            { status: 500 },
-          )
-        }
-        if (result instanceof HttpResponseRedirect) {
-          return redirectResponse(result.to)
-        }
-        throw new Error("unexpected loader response")
-      }),
-    withActionEffect: <A, E>(
-      self: Effect.Effect<
-        HttpResponse<A> | Response,
-        E,
-        ActionArgsContextService
-      >,
-    ) =>
-    (args: ActionFunctionArgs) =>
-      Effect.runPromise(
-        self.pipe(Effect.provideService(ActionArgsContext, args)),
-      ).then((result) => {
-        if (result instanceof Response) return result
-        if (result instanceof HttpResponseSuccess) {
-          return { ok: true as const, response: result.data }
-        }
-        if (result instanceof HttpResponseFailure) {
-          return Response.json(
-            { ok: false, errors: [String(result.cause)] },
-            { status: 400 },
-          )
-        }
-        if (result instanceof HttpResponseRedirect) {
-          return redirectResponse(result.to)
-        }
-        throw new Error("unexpected action response")
-      }),
+    withLoaderEffect:
+      <A, E>(self: Effect.Effect<HttpResponse<A> | Response, E, LoaderArgsContextService>) =>
+      (args: LoaderFunctionArgs) =>
+        Effect.runPromise(self.pipe(Effect.provideService(LoaderArgsContext, args))).then((result) => {
+          if (result instanceof Response) return result
+          if (result instanceof HttpResponseSuccess) {
+            return { ok: true as const, data: result.data }
+          }
+          if (result instanceof HttpResponseFailure) {
+            return Response.json({ ok: false, errors: [String(result.cause)] }, { status: 500 })
+          }
+          if (result instanceof HttpResponseRedirect) {
+            return redirectResponse(result.to)
+          }
+          throw new Error("unexpected loader response")
+        }),
+    withActionEffect:
+      <A, E>(self: Effect.Effect<HttpResponse<A> | Response, E, ActionArgsContextService>) =>
+      (args: ActionFunctionArgs) =>
+        Effect.runPromise(self.pipe(Effect.provideService(ActionArgsContext, args))).then((result) => {
+          if (result instanceof Response) return result
+          if (result instanceof HttpResponseSuccess) {
+            return { ok: true as const, response: result.data }
+          }
+          if (result instanceof HttpResponseFailure) {
+            return Response.json({ ok: false, errors: [String(result.cause)] }, { status: 400 })
+          }
+          if (result instanceof HttpResponseRedirect) {
+            return redirectResponse(result.to)
+          }
+          throw new Error("unexpected action response")
+        }),
   }
 })
 
@@ -123,9 +94,7 @@ const loaderArgs = (): LoaderFunctionArgs => {
   }
 }
 
-const actionArgs = (
-  fields: Readonly<Record<string, string>>,
-): ActionFunctionArgs => {
+const actionArgs = (fields: Readonly<Record<string, string>>): ActionFunctionArgs => {
   const url = routeUrl()
   return {
     context: new RouterContextProvider(),
@@ -167,9 +136,7 @@ describe("/hatchet-crons", () => {
     hatchet.listCrons.mockReset().mockReturnValue(Effect.succeed([cron]))
     vi.stubGlobal(
       "fetch",
-      vi
-        .fn()
-        .mockImplementation(() => Promise.resolve(Response.json(authenticatedSession))),
+      vi.fn().mockImplementation(() => Promise.resolve(Response.json(authenticatedSession))),
     )
   })
 
@@ -179,9 +146,7 @@ describe("/hatchet-crons", () => {
   })
 
   it("redirects unauthenticated loaders before listing crons", async () => {
-    vi.mocked(fetch).mockResolvedValue(
-      Response.json({ session: null, user: null }),
-    )
+    vi.mocked(fetch).mockResolvedValue(Response.json({ session: null, user: null }))
 
     const response = expectResponse(await loader(loaderArgs()))
 
@@ -191,9 +156,7 @@ describe("/hatchet-crons", () => {
   })
 
   it("redirects unauthenticated create actions before mutation", async () => {
-    vi.mocked(fetch).mockResolvedValue(
-      Response.json({ session: null, user: null }),
-    )
+    vi.mocked(fetch).mockResolvedValue(Response.json({ session: null, user: null }))
 
     const response = expectResponse(await action(actionArgs(validForm)))
 
@@ -213,12 +176,10 @@ describe("/hatchet-crons", () => {
   })
 
   it("creates a greeting cron with the package CronExpression value", async () => {
-    hatchet.createCron.mockImplementationOnce(
-      (_task: unknown, options: CreateCronOptions) => {
-        expect(CronExpression.source(options.schedule)).toBe("0 9 * * 1-5")
-        return Effect.succeed(cron)
-      },
-    )
+    hatchet.createCron.mockImplementationOnce((_task: unknown, options: CreateCronOptions) => {
+      expect(CronExpression.source(options.schedule)).toBe("0 9 * * 1-5")
+      return Effect.succeed(cron)
+    })
 
     const response = expectResponse(await action(actionArgs(validForm)))
 
@@ -232,9 +193,7 @@ describe("/hatchet-crons", () => {
   })
 
   it("returns clear feedback for a semantically invalid expression", async () => {
-    const response = expectResponse(
-      await action(actionArgs({ ...validForm, expression: "61 9 * * *" })),
-    )
+    const response = expectResponse(await action(actionArgs({ ...validForm, expression: "61 9 * * *" })))
 
     expect(response.status).toBe(400)
     expect(await response.json()).toEqual({
@@ -266,18 +225,15 @@ describe("/hatchet-crons", () => {
         errors: ["Invalid cron expression"],
       }),
     ).toBe("Invalid cron expression")
-    expect(
-      actionErrorFromData({ ok: true, response: undefined }),
-    ).toBeUndefined()
+    expect(actionErrorFromData({ ok: true, response: undefined })).toBeUndefined()
   })
 
   it("renders create, list, and next-three preview without delete or ownership controls", () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date("2025-01-03T10:00:00.000Z"))
-    const router = createMemoryRouter(
-      [{ path: "/", element: <HatchetCronsScreen crons={[cron]} /> }],
-      { initialEntries: ["/"] },
-    )
+    const router = createMemoryRouter([{ path: "/", element: <HatchetCronsScreen crons={[cron]} /> }], {
+      initialEntries: ["/"],
+    })
     const markup = renderToStaticMarkup(<RouterProvider router={router} />)
 
     expect(markup).toContain("Hatchet Crons")

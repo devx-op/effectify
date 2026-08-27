@@ -8,12 +8,8 @@ const greeting = Task.make({
   fn: ({ name }) => Effect.log(`Hello, ${name}!`),
 })
 
-const program = Effect.gen(function*() {
-  const schedule = yield* Hatchet.schedule(
-    greeting,
-    { name: "Ada" },
-    { _tag: "After", delay: "5 seconds" },
-  )
+const program = Effect.gen(function* () {
+  const schedule = yield* Hatchet.schedule(greeting, { name: "Ada" }, { _tag: "After", delay: "5 seconds" })
   yield* Effect.log("Schedule created", {
     id: schedule.id,
     triggerAt: schedule.triggerAt.toISOString(),

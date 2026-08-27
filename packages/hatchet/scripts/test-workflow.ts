@@ -16,7 +16,7 @@ const greeting = Task.make({
   fn: ({ message }) => Effect.succeed({ result: "done", message }),
 })
 
-const program = Effect.gen(function*() {
+const program = Effect.gen(function* () {
   const handle = yield* Hatchet.runNoWait(greeting, {
     message: "Hello from Effect",
   })

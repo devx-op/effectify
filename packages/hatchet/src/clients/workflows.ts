@@ -23,10 +23,8 @@ export type WorkflowTarget = Parameters<WorkflowsClient["delete"]>[0]
  * @param name - The name of the workflow to get
  * @returns Effect that resolves with the workflow details
  */
-export const getWorkflow = <O = unknown>(
-  name: string,
-): Effect.Effect<O, HatchetWorkflowError, HatchetClientService> =>
-  Effect.gen(function*() {
+export const getWorkflow = <O = unknown>(name: string): Effect.Effect<O, HatchetWorkflowError, HatchetClientService> =>
+  Effect.gen(function* () {
     const client = yield* getHatchetClient()
     const result = yield* Effect.tryPromise({
       try: () => client.workflows.get(name),
@@ -52,7 +50,7 @@ export type ListWorkflowsOpts = Parameters<WorkflowsClient["list"]>[0]
 export const listWorkflows = <O = unknown>(
   options?: ListWorkflowsOpts,
 ): Effect.Effect<O[], HatchetWorkflowError, HatchetClientService> =>
-  Effect.gen(function*() {
+  Effect.gen(function* () {
     const client = yield* getHatchetClient()
     const result = yield* Effect.tryPromise({
       try: () => client.workflows.list(options),
@@ -69,7 +67,7 @@ export const listWorkflows = <O = unknown>(
 export const deleteWorkflow = (
   workflow: WorkflowTarget,
 ): Effect.Effect<void, HatchetWorkflowError, HatchetClientService> =>
-  Effect.gen(function*() {
+  Effect.gen(function* () {
     const client = yield* getHatchetClient()
 
     yield* Effect.tryPromise({

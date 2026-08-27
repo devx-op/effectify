@@ -13,12 +13,8 @@ const runNode = (source: string): string =>
 
 describe("published package contract", () => {
   it("resolves the built testing subpath without exposing testing helpers from the root", () => {
-    expect(
-      existsSync(new URL("../../dist/src/testing/index.js", import.meta.url)),
-    ).toBe(true)
-    expect(
-      existsSync(new URL("../../dist/src/testing/index.d.ts", import.meta.url)),
-    ).toBe(true)
+    expect(existsSync(new URL("../../dist/src/testing/index.js", import.meta.url))).toBe(true)
+    expect(existsSync(new URL("../../dist/src/testing/index.d.ts", import.meta.url))).toBe(true)
 
     const output = runNode(`
       import * as root from "@effectify/hatchet"

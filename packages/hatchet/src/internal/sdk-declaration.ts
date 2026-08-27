@@ -3,9 +3,7 @@ import type * as RateLimit from "../RateLimit.js"
 import * as CronExpression from "../CronExpression.js"
 import type * as Trigger from "../Trigger.js"
 
-export const rateLimitDuration = (
-  duration: RateLimit.Duration,
-): RateLimitDuration => {
+export const rateLimitDuration = (duration: RateLimit.Duration): RateLimitDuration => {
   switch (duration) {
     case "second":
       return RateLimitDuration.SECOND
@@ -41,17 +39,12 @@ export const rateLimits = (
     ...(value.staticKey === undefined ? {} : { staticKey: value.staticKey }),
     ...(value.dynamicKey === undefined ? {} : { dynamicKey: value.dynamicKey }),
     ...(value.limit === undefined ? {} : { limit: value.limit }),
-    ...(value.duration === undefined
-      ? {}
-      : { duration: rateLimitDuration(value.duration) }),
+    ...(value.duration === undefined ? {} : { duration: rateLimitDuration(value.duration) }),
   }))
 
 export const on = (
   values: ReadonlyArray<Trigger.Trigger>,
-):
-  | { readonly event?: Array<string>; readonly cron?: Array<string> }
-  | undefined =>
-{
+): { readonly event?: Array<string>; readonly cron?: Array<string> } | undefined => {
   const event: Array<string> = []
   const cron: Array<string> = []
   for (const value of values) {
@@ -63,7 +56,7 @@ export const on = (
   return event.length === 0 && cron.length === 0
     ? undefined
     : {
-      ...(event.length === 0 ? {} : { event }),
-      ...(cron.length === 0 ? {} : { cron }),
-    }
+        ...(event.length === 0 ? {} : { event }),
+        ...(cron.length === 0 ? {} : { cron }),
+      }
 }

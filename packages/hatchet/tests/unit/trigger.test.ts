@@ -37,13 +37,7 @@ describe("Trigger", () => {
     expect(SdkDeclaration.on([])).toBeUndefined()
   })
 
-  it.each([
-    "",
-    "  ",
-    "event\u0000name",
-  ])("rejects invalid event %j", (event) => {
-    expect(() => Declarations.triggers("task", [Trigger.event(event)])).toThrow(
-      "event",
-    )
+  it.each(["", "  ", "event\u0000name"])("rejects invalid event %j", (event) => {
+    expect(() => Declarations.triggers("task", [Trigger.event(event)])).toThrow("event")
   })
 })

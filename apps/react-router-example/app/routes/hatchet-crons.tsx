@@ -30,35 +30,26 @@ export const actionErrorFromData = (data: unknown): string | undefined => {
   return decoded.success.errors[0]
 }
 
-export const loader = Effect.gen(function*() {
+export const loader = Effect.gen(function* () {
   const crons = yield* Hatchet.listCrons({ taskName: greetingTask.name })
   return yield* httpSuccess({ crons })
-}).pipe(
-  withBetterAuthGuard.with({ redirectOnFail: "/login" }),
-  withLoaderEffect,
-)
+}).pipe(withBetterAuthGuard.with({ redirectOnFail: "/login" }), withLoaderEffect)
 
-export const action = Effect.gen(function*() {
+export const action = Effect.gen(function* () {
   const { request } = yield* ActionArgsContext
-  const formData = yield* Effect.result(
-    Effect.tryPromise(() => request.formData()),
-  )
+  const formData = yield* Effect.result(Effect.tryPromise(() => request.formData()))
   if (Result.isFailure(formData)) {
     return yield* httpFailure("Invalid cron form")
   }
 
   const decoded = yield* Effect.result(
-    Schema.decodeUnknownEffect(cronForm)(
-      Object.fromEntries(formData.success.entries()),
-    ),
+    Schema.decodeUnknownEffect(cronForm)(Object.fromEntries(formData.success.entries())),
   )
   if (Result.isFailure(decoded)) {
     return yield* httpFailure("Invalid cron form")
   }
 
-  const schedule = yield* Effect.result(
-    CronExpression.parse(decoded.success.expression),
-  )
+  const schedule = yield* Effect.result(CronExpression.parse(decoded.success.expression))
   if (Result.isFailure(schedule)) {
     return yield* httpFailure("Invalid cron expression")
   }
@@ -69,50 +60,32 @@ export const action = Effect.gen(function*() {
     input: { name: decoded.success.greetingName },
   })
   return yield* httpRedirect("/hatchet-crons")
-}).pipe(
-  withBetterAuthGuardAction.with({ redirectOnFail: "/login" }),
-  withActionEffect,
-)
+}).pipe(withBetterAuthGuardAction.with({ redirectOnFail: "/login" }), withActionEffect)
 
 interface HatchetCronsScreenProps {
   readonly crons: ReadonlyArray<CronRecord>
   readonly actionError?: string
 }
 
-export function HatchetCronsScreen({
-  crons,
-  actionError,
-}: HatchetCronsScreenProps) {
+export function HatchetCronsScreen({ crons, actionError }: HatchetCronsScreenProps) {
   const [expression, setExpression] = useState(defaultCronSource)
   const schedule = CronExpression.parseResult(expression)
-  const upcoming = Result.isSuccess(schedule)
-    ? CronExpression.nextRuns(schedule.success, 3)
-    : []
+  const upcoming = Result.isSuccess(schedule) ? CronExpression.nextRuns(schedule.success, 3) : []
 
   return (
     <main className="container">
       <article>
         <h2>Hatchet Crons</h2>
-        <p>
-          Create authenticated cron triggers for the registered greeting task.
-        </p>
+        <p>Create authenticated cron triggers for the registered greeting task.</p>
 
         <section aria-labelledby="create-cron-heading">
           <h3 id="create-cron-heading">Create cron</h3>
           <Form method="post">
             <fieldset>
               <label htmlFor="cron-name">Cron name</label>
-              <input
-                id="cron-name"
-                name="name"
-                type="text"
-                required
-                placeholder="weekday-greeting"
-              />
+              <input id="cron-name" name="name" type="text" required placeholder="weekday-greeting" />
 
-              <label htmlFor="cron-expression">
-                Five-field cron expression
-              </label>
+              <label htmlFor="cron-expression">Five-field cron expression</label>
               <input
                 id="cron-expression"
                 name="expression"
@@ -121,50 +94,34 @@ export function HatchetCronsScreen({
                 value={expression}
                 onChange={(event) => setExpression(event.currentTarget.value)}
               />
-              {Result.isFailure(schedule) ?
-                (
-                  <small role="status">
-                    Enter a valid five-field cron expression.
-                  </small>
-                ) :
-                null}
+              {Result.isFailure(schedule) ? (
+                <small role="status">Enter a valid five-field cron expression.</small>
+              ) : null}
 
               <label htmlFor="greeting-name">Greeting name</label>
-              <input
-                id="greeting-name"
-                name="greetingName"
-                type="text"
-                required
-                placeholder="Ada"
-              />
+              <input id="greeting-name" name="greetingName" type="text" required placeholder="Ada" />
             </fieldset>
 
             <section aria-labelledby="cron-preview-heading">
               <h4 id="cron-preview-heading">Next three local occurrences</h4>
-              {upcoming.length === 0 ? <p>Enter a valid expression to preview upcoming runs.</p> : (
+              {upcoming.length === 0 ? (
+                <p>Enter a valid expression to preview upcoming runs.</p>
+              ) : (
                 <ol>
                   {upcoming.map((date) => (
                     <li key={date.toISOString()}>
-                      <time dateTime={date.toISOString()}>
-                        {date.toLocaleString()}
-                      </time>
+                      <time dateTime={date.toISOString()}>{date.toLocaleString()}</time>
                     </li>
                   ))}
                 </ol>
               )}
             </section>
 
-            {actionError ?
-              (
-                <small
-                  role="alert"
-                  aria-live="assertive"
-                  style={{ color: "var(--pico-color-red-500)" }}
-                >
-                  {actionError}
-                </small>
-              ) :
-              null}
+            {actionError ? (
+              <small role="alert" aria-live="assertive" style={{ color: "var(--pico-color-red-500)" }}>
+                {actionError}
+              </small>
+            ) : null}
             <button type="submit" disabled={Result.isFailure(schedule)}>
               Create cron
             </button>
@@ -173,7 +130,9 @@ export function HatchetCronsScreen({
 
         <section aria-labelledby="cron-list-heading">
           <h3 id="cron-list-heading">Cron list</h3>
-          {crons.length === 0 ? <p>No crons found.</p> : (
+          {crons.length === 0 ? (
+            <p>No crons found.</p>
+          ) : (
             <ul>
               {crons.map((cron) => (
                 <li key={cron.id}>
@@ -208,10 +167,5 @@ export default function HatchetCrons({ loaderData }: Route.ComponentProps) {
     )
   }
 
-  return (
-    <HatchetCronsScreen
-      crons={loaderData.data.crons}
-      actionError={actionError}
-    />
-  )
+  return <HatchetCronsScreen crons={loaderData.data.crons} actionError={actionError} />
 }

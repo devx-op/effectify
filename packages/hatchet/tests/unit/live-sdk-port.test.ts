@@ -25,11 +25,9 @@ const sdk = vi.hoisted(() => {
   const stop = vi.fn(async () => {
     events.push("stop")
   })
-  const registerWorkflows = vi.fn(
-    async (tasks: ReadonlyArray<{ readonly name: string }>) => {
-      events.push(`declarations:${tasks.map((task) => task.name).join(",")}`)
-    },
-  )
+  const registerWorkflows = vi.fn(async (tasks: ReadonlyArray<{ readonly name: string }>) => {
+    events.push(`declarations:${tasks.map((task) => task.name).join(",")}`)
+  })
   const worker = vi.fn(async (_name?: string, _options?: unknown) => {
     events.push("worker")
     return { registerWorkflows, start, waitUntilReady, stop }
@@ -142,10 +140,7 @@ const createDailyCron = (schedule: CronExpression.CronExpression) =>
 
 type CallbackDeclaration = {
   readonly name: string
-  readonly fn: (
-    input: unknown,
-    taskContext: ReturnType<typeof context>,
-  ) => Promise<{ readonly value: string }>
+  readonly fn: (input: unknown, taskContext: ReturnType<typeof context>) => Promise<{ readonly value: string }>
 }
 
 type DurableCallbackDeclaration = {
@@ -166,9 +161,7 @@ const isCallbackDeclaration = (value: unknown): value is CallbackDeclaration =>
   "fn" in value &&
   typeof value.fn === "function"
 
-const configuredWorkflows = (
-  options: unknown,
-): ReadonlyArray<CallbackDeclaration> => {
+const configuredWorkflows = (options: unknown): ReadonlyArray<CallbackDeclaration> => {
   if (
     typeof options !== "object" ||
     options === null ||
@@ -195,9 +188,7 @@ describe("live SDK adapter behind Hatchet.layer", () => {
       sdk.events.push("stop")
     })
     sdk.registerWorkflows.mockImplementation(async (tasks) => {
-      sdk.events.push(
-        `declarations:${tasks.map((task) => task.name).join(",")}`,
-      )
+      sdk.events.push(`declarations:${tasks.map((task) => task.name).join(",")}`)
     })
     sdk.worker.mockImplementation(async (_name, options) => {
       sdk.events.push("worker")
@@ -217,15 +208,10 @@ describe("live SDK adapter behind Hatchet.layer", () => {
     })
   })
 
-  it.each([
-    "",
-    "   ",
-  ])("rejects an empty or whitespace token before SDK initialization", async (token) => {
+  it.each(["", "   "])("rejects an empty or whitespace token before SDK initialization", async (token) => {
     const runtime = ManagedRuntime.make(layer(token))
 
-    const error = await runtime.runPromise(
-      Hatchet.runNoWait(upper, { value: "done" }).pipe(Effect.flip),
-    )
+    const error = await runtime.runPromise(Hatchet.runNoWait(upper, { value: "done" }).pipe(Effect.flip))
 
     expect(error).toMatchObject({
       _tag: "InvalidHatchetConfiguration",
@@ -239,18 +225,11 @@ describe("live SDK adapter behind Hatchet.layer", () => {
   it("loads declarations and starts one worker before the first operation", async () => {
     const runtime = ManagedRuntime.make(layer())
 
-    const handle = await runtime.runPromise(
-      Hatchet.runNoWait(upper, { value: "done" }),
-    )
+    const handle = await runtime.runPromise(Hatchet.runNoWait(upper, { value: "done" }))
     await expect(runtime.runPromise(handle.await)).resolves.toBe("DONE")
     await runtime.runPromise(handle.cancel)
 
-    expect(sdk.events.slice(0, 4)).toEqual([
-      "worker",
-      "declarations:upper,durable-upper",
-      "start",
-      "ready",
-    ])
+    expect(sdk.events.slice(0, 4)).toEqual(["worker", "declarations:upper,durable-upper", "start", "ready"])
     expect(sdk.runNoWait).toHaveBeenCalledWith({ value: "done" })
     expect(sdk.cancel).toHaveBeenCalledOnce()
     expect(sdk.task).toHaveBeenCalledExactlyOnceWith({
@@ -273,9 +252,7 @@ describe("live SDK adapter behind Hatchet.layer", () => {
 
   it("shares one cancellation outcome across repeated evaluations", async () => {
     const runtime = ManagedRuntime.make(layer())
-    const successful = await runtime.runPromise(
-      Hatchet.runNoWait(upper, { value: "done" }),
-    )
+    const successful = await runtime.runPromise(Hatchet.runNoWait(upper, { value: "done" }))
 
     await runtime.runPromise(successful.cancel)
     await runtime.runPromise(successful.cancel)
@@ -283,14 +260,9 @@ describe("live SDK adapter behind Hatchet.layer", () => {
 
     const rejection = new Error("cancel rejected")
     sdk.cancel.mockRejectedValueOnce(rejection)
-    const failing = await runtime.runPromise(
-      Hatchet.runNoWait(upper, { value: "done" }),
-    )
+    const failing = await runtime.runPromise(Hatchet.runNoWait(upper, { value: "done" }))
     const concurrent = await runtime.runPromise(
-      Effect.all(
-        [failing.cancel.pipe(Effect.flip), failing.cancel.pipe(Effect.flip)],
-        { concurrency: "unbounded" },
-      ),
+      Effect.all([failing.cancel.pipe(Effect.flip), failing.cancel.pipe(Effect.flip)], { concurrency: "unbounded" }),
     )
     const repeated = await runtime.runPromise(failing.cancel.pipe(Effect.flip))
 
@@ -300,21 +272,17 @@ describe("live SDK adapter behind Hatchet.layer", () => {
     await runtime.dispose()
   })
 
-  it.each(
-    [
-      ["rejection", "Unavailable"],
-      ["empty ID", "Unknown"],
-    ] as const,
-  )("compensates a run ID %s without replacing its error", async (kind, reason) => {
+  it.each([
+    ["rejection", "Unavailable"],
+    ["empty ID", "Unknown"],
+  ] as const)("compensates a run ID %s without replacing its error", async (kind, reason) => {
     const runIdFailure = Object.assign(new Error("run-id-token"), {
       status: 503,
     })
     const cancelFailure = new Error("cancel-token")
     if (kind === "empty ID") sdk.cancel.mockRejectedValueOnce(cancelFailure)
     let rejectRunId: ((reason: unknown) => void) | undefined
-    const runId = kind === "empty ID"
-      ? Promise.resolve("")
-      : new Promise<string>((_, reject) => (rejectRunId = reject))
+    const runId = kind === "empty ID" ? Promise.resolve("") : new Promise<string>((_, reject) => (rejectRunId = reject))
     sdk.runNoWait.mockResolvedValueOnce({
       runId,
       output: Promise.resolve({ value: "DONE" }),
@@ -322,9 +290,7 @@ describe("live SDK adapter behind Hatchet.layer", () => {
     })
     const runtime = ManagedRuntime.make(layer())
 
-    const failure = runtime.runPromise(
-      Hatchet.runNoWait(upper, { value: "done" }).pipe(Effect.flip),
-    )
+    const failure = runtime.runPromise(Hatchet.runNoWait(upper, { value: "done" }).pipe(Effect.flip))
     await vi.waitFor(() => expect(sdk.runNoWait).toHaveBeenCalledOnce())
     rejectRunId?.(runIdFailure)
     const error = await failure
@@ -371,11 +337,7 @@ describe("live SDK adapter behind Hatchet.layer", () => {
     const runtime = ManagedRuntime.make(layer())
 
     await expect(
-      runtime.runPromise(
-        Hatchet.run(upper, { value: "first" }).pipe(
-          Effect.timeout("100 millis"),
-        ),
-      ),
+      runtime.runPromise(Hatchet.run(upper, { value: "first" }).pipe(Effect.timeout("100 millis"))),
     ).resolves.toBe("FIRST")
     expect(sdk.registerWorkflows).toHaveBeenCalledOnce()
 
@@ -383,9 +345,7 @@ describe("live SDK adapter behind Hatchet.layer", () => {
   })
 
   it("returns the handle before output and permits independent Effect work", async () => {
-    let resolveOutput:
-      | ((value: { readonly value: string }) => void)
-      | undefined
+    let resolveOutput: ((value: { readonly value: string }) => void) | undefined
     const output = new Promise<{ readonly value: string }>((resolve) => {
       resolveOutput = resolve
     })
@@ -396,9 +356,7 @@ describe("live SDK adapter behind Hatchet.layer", () => {
     })
     const runtime = ManagedRuntime.make(layer())
 
-    const handle = await runtime.runPromise(
-      Hatchet.runNoWait(upper, { value: "done" }),
-    )
+    const handle = await runtime.runPromise(Hatchet.runNoWait(upper, { value: "done" }))
     expect(sdk.cancel).not.toHaveBeenCalled()
     const independent = await runtime.runPromise(Effect.succeed("independent"))
     resolveOutput?.({ value: "DONE" })
@@ -411,20 +369,14 @@ describe("live SDK adapter behind Hatchet.layer", () => {
   it("retains input and output Schema error phases", async () => {
     const runtime = ManagedRuntime.make(layer())
 
-    const inputError = await runtime.runPromise(
-      Hatchet.runNoWait(upper, { value: 42 }).pipe(Effect.flip),
-    )
+    const inputError = await runtime.runPromise(Hatchet.runNoWait(upper, { value: 42 }).pipe(Effect.flip))
     sdk.runNoWait.mockResolvedValueOnce({
       runId: Promise.resolve("run-invalid-output"),
       output: Promise.resolve({ value: "" }),
       cancel: sdk.cancel,
     })
-    const handle = await runtime.runPromise(
-      Hatchet.runNoWait(upper, { value: "done" }),
-    )
-    const outputError = await runtime.runPromise(
-      handle.await.pipe(Effect.flip),
-    )
+    const handle = await runtime.runPromise(Hatchet.runNoWait(upper, { value: "done" }))
+    const outputError = await runtime.runPromise(handle.await.pipe(Effect.flip))
 
     expect(inputError).toMatchObject({
       _tag: "TaskSchemaError",
@@ -442,40 +394,30 @@ describe("live SDK adapter behind Hatchet.layer", () => {
     const runtime = ManagedRuntime.make(layer())
 
     sdk.runNoWait.mockRejectedValueOnce(new Error(secret))
-    const dispatchError = await runtime.runPromise(
-      Hatchet.runNoWait(upper, { value: "done" }).pipe(Effect.flip),
-    )
+    const dispatchError = await runtime.runPromise(Hatchet.runNoWait(upper, { value: "done" }).pipe(Effect.flip))
     expect(sdk.cancel).not.toHaveBeenCalled()
 
     let rejectOutput: ((reason: unknown) => void) | undefined
-    const output = new Promise<{ readonly value: string }>(
-      (_resolve, reject) => {
-        rejectOutput = reject
-      },
-    )
+    const output = new Promise<{ readonly value: string }>((_resolve, reject) => {
+      rejectOutput = reject
+    })
     sdk.cancel.mockRejectedValueOnce(new Error(secret))
     sdk.runNoWait.mockResolvedValueOnce({
       runId: Promise.resolve("run-failing"),
       output,
       cancel: sdk.cancel,
     })
-    const handle = await runtime.runPromise(
-      Hatchet.runNoWait(upper, { value: "done" }),
-    )
+    const handle = await runtime.runPromise(Hatchet.runNoWait(upper, { value: "done" }))
     const resultFailure = runtime.runPromise(handle.await.pipe(Effect.flip))
     rejectOutput?.(new Error(secret))
     const resultError = await resultFailure
-    const cancelError = await runtime.runPromise(
-      handle.cancel.pipe(Effect.flip),
-    )
+    const cancelError = await runtime.runPromise(handle.cancel.pipe(Effect.flip))
 
-    for (
-      const [error, operation] of [
-        [dispatchError, "task.runNoWait"],
-        [resultError, "run.output"],
-        [cancelError, "run.cancel"],
-      ] as const
-    ) {
+    for (const [error, operation] of [
+      [dispatchError, "task.runNoWait"],
+      [resultError, "run.output"],
+      [cancelError, "run.cancel"],
+    ] as const) {
       expect(error).toMatchObject({ _tag: "HatchetSdkError", operation })
       expect(JSON.stringify(error)).not.toContain(secret)
     }
@@ -487,9 +429,7 @@ describe("live SDK adapter behind Hatchet.layer", () => {
     await runtime.runPromise(Hatchet.runNoWait(upper, { value: "warm" }))
 
     const declaration = sdk.task.mock.calls[0]?.[0]
-    await expect(
-      declaration.fn({ value: "callback" }, context()),
-    ).resolves.toEqual({
+    await expect(declaration.fn({ value: "callback" }, context())).resolves.toEqual({
       value: "CALLBACK",
     })
 
@@ -501,8 +441,7 @@ describe("live SDK adapter behind Hatchet.layer", () => {
     await runtime.runPromise(Hatchet.runNoWait(upper, { value: "warm" }))
 
     expect(sdk.durableTask).toHaveBeenCalledOnce()
-    const declaration = sdk.durableTask.mock
-      .calls[0]?.[0] as DurableCallbackDeclaration
+    const declaration = sdk.durableTask.mock.calls[0]?.[0] as DurableCallbackDeclaration
     await expect(
       declaration.fn(
         { value: "callback" },
@@ -523,9 +462,7 @@ describe("live SDK adapter behind Hatchet.layer", () => {
     })
     const runtime = ManagedRuntime.make(layer())
 
-    await expect(
-      runtime.runPromise(Hatchet.runNoWait(unknown, undefined)),
-    ).rejects.toMatchObject({
+    await expect(runtime.runPromise(Hatchet.runNoWait(unknown, undefined))).rejects.toMatchObject({
       _tag: "MissingTaskError",
       taskName: "unknown-durable",
     })
@@ -536,8 +473,7 @@ describe("live SDK adapter behind Hatchet.layer", () => {
   it("reports durable input Schema failures without invoking the handler", async () => {
     const runtime = ManagedRuntime.make(layer())
     await runtime.runPromise(Hatchet.runNoWait(upper, { value: "warm" }))
-    const declaration = sdk.durableTask.mock
-      .calls[0]?.[0] as DurableCallbackDeclaration
+    const declaration = sdk.durableTask.mock.calls[0]?.[0] as DurableCallbackDeclaration
 
     await expect(
       declaration.fn(
@@ -567,8 +503,7 @@ describe("live SDK adapter behind Hatchet.layer", () => {
       }),
     )
     await runtime.runPromise(Hatchet.runNoWait(interrupted, {}))
-    const declaration = sdk.durableTask.mock
-      .calls[0]?.[0] as DurableCallbackDeclaration
+    const declaration = sdk.durableTask.mock.calls[0]?.[0] as DurableCallbackDeclaration
     const controller = new AbortController()
 
     const result = declaration.fn(
@@ -602,9 +537,7 @@ describe("live SDK adapter behind Hatchet.layer", () => {
       }),
     )
 
-    await expect(
-      runtime.runPromise(Hatchet.runNoWait(upper, { value: "done" })),
-    ).rejects.toMatchObject({
+    await expect(runtime.runPromise(Hatchet.runNoWait(upper, { value: "done" }))).rejects.toMatchObject({
       _tag: "TaskDeclarationError",
       taskName: "upper",
       field: "name",
@@ -629,9 +562,7 @@ describe("live SDK adapter behind Hatchet.layer", () => {
     ])
     const runtime = ManagedRuntime.make(invalidLayer)
 
-    await expect(
-      runtime.runPromise(Hatchet.runNoWait(upper, { value: "done" })),
-    ).rejects.toMatchObject({
+    await expect(runtime.runPromise(Hatchet.runNoWait(upper, { value: "done" }))).rejects.toMatchObject({
       _tag: "TaskDeclarationError",
       field: "_tag",
       reason: "InvalidKind",
@@ -660,14 +591,10 @@ describe("live SDK adapter behind Hatchet.layer", () => {
     })
     sdk.crons.get.mockRejectedValueOnce({ response: { status: 404 } })
     sdk.crons.delete.mockRejectedValueOnce({ response: { status: 404 } })
-    await expect(
-      runtime.runPromise(Hatchet.getCron(created.id)),
-    ).resolves.toMatchObject({
+    await expect(runtime.runPromise(Hatchet.getCron(created.id))).resolves.toMatchObject({
       _tag: "None",
     })
-    await expect(
-      runtime.runPromise(Hatchet.deleteCron(created.id)),
-    ).resolves.toBe(false)
+    await expect(runtime.runPromise(Hatchet.deleteCron(created.id))).resolves.toBe(false)
     expect(sdk.crons.list).not.toHaveBeenCalled()
 
     await runtime.dispose()
@@ -680,10 +607,7 @@ describe("live SDK adapter behind Hatchet.layer", () => {
     const runtime = ManagedRuntime.make(layer())
     sdk.crons.create.mockRejectedValueOnce(failure)
     sdk.crons.list.mockResolvedValueOnce({
-      rows: [
-        cronRow("cron-recovered"),
-        { ...cronRow("cron-unrelated"), name: "other-cron" },
-      ],
+      rows: [cronRow("cron-recovered"), { ...cronRow("cron-unrelated"), name: "other-cron" }],
     })
     const schedule = await Effect.runPromise(CronExpression.parse("0 0 * * *"))
 
@@ -704,21 +628,17 @@ describe("live SDK adapter behind Hatchet.layer", () => {
     await runtime.dispose()
   })
 
-  it.each(
-    [
-      ["authorization", 401, "Unauthorized"],
-      ["validation", 422, "InvalidResponse"],
-    ] as const,
-  )("preserves a definitive %s cron create failure", async (_kind, status, reason) => {
+  it.each([
+    ["authorization", 401, "Unauthorized"],
+    ["validation", 422, "InvalidResponse"],
+  ] as const)("preserves a definitive %s cron create failure", async (_kind, status, reason) => {
     const runtime = ManagedRuntime.make(layer())
     sdk.crons.create.mockRejectedValueOnce({
       response: { status, data: "create-secret" },
     })
     const schedule = await Effect.runPromise(CronExpression.parse("0 0 * * *"))
 
-    const error = await runtime.runPromise(
-      createDailyCron(schedule).pipe(Effect.flip),
-    )
+    const error = await runtime.runPromise(createDailyCron(schedule).pipe(Effect.flip))
 
     expect(error).toMatchObject({
       _tag: "HatchetSdkError",
@@ -739,9 +659,7 @@ describe("live SDK adapter behind Hatchet.layer", () => {
     })
     const schedule = await Effect.runPromise(CronExpression.parse("0 0 * * *"))
 
-    const error = await runtime.runPromise(
-      createDailyCron(schedule).pipe(Effect.flip),
-    )
+    const error = await runtime.runPromise(createDailyCron(schedule).pipe(Effect.flip))
 
     expect(error).toMatchObject({
       _tag: "HatchetSdkError",
@@ -769,9 +687,7 @@ describe("live SDK adapter behind Hatchet.layer", () => {
     })
     const schedule = await Effect.runPromise(CronExpression.parse("0 0 * * *"))
 
-    const error = await runtime.runPromise(
-      createDailyCron(schedule).pipe(Effect.flip),
-    )
+    const error = await runtime.runPromise(createDailyCron(schedule).pipe(Effect.flip))
 
     expect(error).toMatchObject({
       _tag: "HatchetSdkError",
@@ -798,9 +714,7 @@ describe("live SDK adapter behind Hatchet.layer", () => {
     sdk.crons.list.mockResolvedValueOnce({ rows: [] })
 
     const cronId = makeCronId("cron-42")
-    await expect(runtime.runPromise(Hatchet.deleteCron(cronId))).resolves.toBe(
-      false,
-    )
+    await expect(runtime.runPromise(Hatchet.deleteCron(cronId))).resolves.toBe(false)
     expect(sdk.crons.delete).toHaveBeenCalledExactlyOnceWith(cronId)
     expect(sdk.crons.list).toHaveBeenCalledExactlyOnceWith({
       offset: 0,
@@ -819,9 +733,7 @@ describe("live SDK adapter behind Hatchet.layer", () => {
       rows: [{ metadata: { id: "cron-42" } }],
     })
 
-    const error = await runtime.runPromise(
-      Hatchet.deleteCron(makeCronId("cron-42")).pipe(Effect.flip),
-    )
+    const error = await runtime.runPromise(Hatchet.deleteCron(makeCronId("cron-42")).pipe(Effect.flip))
 
     expect(error).toMatchObject({
       _tag: "HatchetSdkError",
@@ -845,9 +757,7 @@ describe("live SDK adapter behind Hatchet.layer", () => {
     })
     sdk.crons.list.mockResolvedValueOnce(response)
 
-    const error = await runtime.runPromise(
-      Hatchet.deleteCron(makeCronId("cron-42")).pipe(Effect.flip),
-    )
+    const error = await runtime.runPromise(Hatchet.deleteCron(makeCronId("cron-42")).pipe(Effect.flip))
 
     expect(error).toMatchObject({
       _tag: "HatchetSdkError",
@@ -855,9 +765,7 @@ describe("live SDK adapter behind Hatchet.layer", () => {
       resourceId: "cron-42",
       reason: "Unavailable",
     })
-    expect(JSON.stringify(error)).not.toMatch(
-      /delete-secret|verification-secret/,
-    )
+    expect(JSON.stringify(error)).not.toMatch(/delete-secret|verification-secret/)
     await runtime.dispose()
   })
 
@@ -870,9 +778,7 @@ describe("live SDK adapter behind Hatchet.layer", () => {
       response: { status: 503, data: "list-secret" },
     })
 
-    const error = await runtime.runPromise(
-      Hatchet.deleteCron(makeCronId("cron-42")).pipe(Effect.flip),
-    )
+    const error = await runtime.runPromise(Hatchet.deleteCron(makeCronId("cron-42")).pipe(Effect.flip))
 
     expect(error).toMatchObject({
       _tag: "HatchetSdkError",
@@ -890,16 +796,13 @@ describe("live SDK adapter behind Hatchet.layer", () => {
     })
 
     const error = await Effect.runPromise(
-      Effect.gen(function*() {
+      Effect.gen(function* () {
         const listStarted = yield* Deferred.make<void>()
         sdk.crons.list.mockImplementationOnce(() => {
           Effect.runSync(Deferred.succeed(listStarted, undefined))
           return new Promise<unknown>(() => undefined)
         })
-        const fiber = yield* Hatchet.deleteCron(makeCronId("cron-42")).pipe(
-          Effect.flip,
-          Effect.forkChild,
-        )
+        const fiber = yield* Hatchet.deleteCron(makeCronId("cron-42")).pipe(Effect.flip, Effect.forkChild)
         yield* Deferred.await(listStarted)
         expect(sdk.crons.list).toHaveBeenCalledExactlyOnceWith({
           offset: 0,
@@ -907,10 +810,7 @@ describe("live SDK adapter behind Hatchet.layer", () => {
         })
         yield* TestClock.adjust("5 seconds")
         return yield* Fiber.join(fiber)
-      }).pipe(
-        Effect.provide(Layer.merge(layer(), TestClock.layer())),
-        Effect.scoped,
-      ),
+      }).pipe(Effect.provide(Layer.merge(layer(), TestClock.layer())), Effect.scoped),
     )
 
     expect(error).toMatchObject({
@@ -922,17 +822,16 @@ describe("live SDK adapter behind Hatchet.layer", () => {
     expect(JSON.stringify(error)).not.toContain("delete-secret")
   })
 
-  it.each(
-    [
-      ["offset", -1],
-      ["limit", 0],
-    ] as const,
-  )("rejects invalid cron %s before the SDK call", async (field, value) => {
+  it.each([
+    ["offset", -1],
+    ["limit", 0],
+  ] as const)("rejects invalid cron %s before the SDK call", async (field, value) => {
     const runtime = ManagedRuntime.make(layer())
 
-    await expect(
-      runtime.runPromise(Hatchet.listCrons({ [field]: value })),
-    ).rejects.toMatchObject({ _tag: "InvalidCronFilterError", field })
+    await expect(runtime.runPromise(Hatchet.listCrons({ [field]: value }))).rejects.toMatchObject({
+      _tag: "InvalidCronFilterError",
+      field,
+    })
     expect(sdk.crons.list).not.toHaveBeenCalled()
     await runtime.dispose()
   })
@@ -946,15 +845,9 @@ describe("live SDK adapter behind Hatchet.layer", () => {
       scope: "tenant-a",
     }
 
-    const receipt = await runtime.runPromise(
-      Hatchet.pushEvent("customer.updated", payload, options),
-    )
+    const receipt = await runtime.runPromise(Hatchet.pushEvent("customer.updated", payload, options))
 
-    expect(sdk.pushEvent).toHaveBeenCalledExactlyOnceWith(
-      "customer.updated",
-      payload,
-      options,
-    )
+    expect(sdk.pushEvent).toHaveBeenCalledExactlyOnceWith("customer.updated", payload, options)
     expect(receipt).toEqual({
       eventId: "event-42",
       key: "customer.updated",
@@ -975,9 +868,7 @@ describe("live SDK adapter behind Hatchet.layer", () => {
     const runtime = ManagedRuntime.make(layer())
 
     const error = await runtime.runPromise(
-      Reflect.apply(Hatchet.pushEvent, undefined, [key, payload, options]).pipe(
-        Effect.flip,
-      ),
+      Reflect.apply(Hatchet.pushEvent, undefined, [key, payload, options]).pipe(Effect.flip),
     )
 
     expect(error).toMatchObject({ _tag: "InvalidEventError" })
@@ -991,13 +882,9 @@ describe("live SDK adapter behind Hatchet.layer", () => {
     const runtime = ManagedRuntime.make(layer())
     const secret = "event-sdk-secret"
     sdk.pushEvent.mockRejectedValueOnce(new Error(secret))
-    const rejection = await runtime.runPromise(
-      Hatchet.pushEvent("customer.updated", { ok: true }).pipe(Effect.flip),
-    )
+    const rejection = await runtime.runPromise(Hatchet.pushEvent("customer.updated", { ok: true }).pipe(Effect.flip))
     sdk.pushEvent.mockResolvedValueOnce({ eventId: "" })
-    const malformed = await runtime.runPromise(
-      Hatchet.pushEvent("customer.updated", { ok: true }).pipe(Effect.flip),
-    )
+    const malformed = await runtime.runPromise(Hatchet.pushEvent("customer.updated", { ok: true }).pipe(Effect.flip))
 
     expect(rejection).toMatchObject({
       _tag: "HatchetSdkError",
@@ -1021,23 +908,17 @@ describe("live SDK adapter behind Hatchet.layer", () => {
     const failure = new Error("scope-failure")
 
     const close = await Effect.runPromise(
-      Effect.gen(function*() {
+      Effect.gen(function* () {
         const scope = yield* Scope.make()
-        const context = yield* Layer.buildWithScope(scope)(
-          Layer.merge(layer(), Logger.layer([logger])),
-        )
-        yield* Hatchet.pushEvent("customer.updated", { ok: true }).pipe(
-          Effect.provide(context),
-        )
+        const context = yield* Layer.buildWithScope(scope)(Layer.merge(layer(), Logger.layer([logger])))
+        yield* Hatchet.pushEvent("customer.updated", { ok: true }).pipe(Effect.provide(context))
         return yield* Scope.close(scope, Exit.fail(failure)).pipe(Effect.exit)
       }),
     )
 
     expect(Exit.isFailure(close)).toBe(true)
     expect(sdk.stop).toHaveBeenCalledOnce()
-    expect(logs.join("\\n")).toContain(
-      "Hatchet worker stop failed during failed scope cleanup",
-    )
+    expect(logs.join("\\n")).toContain("Hatchet worker stop failed during failed scope cleanup")
     expect(logs.join("\\n")).toContain("worker.stop")
     expect(logs.join("\\n")).not.toContain(secret)
   })
@@ -1047,9 +928,7 @@ describe("live SDK adapter behind Hatchet.layer", () => {
       rows: ids.map((id) => ({ metadata: { id } })),
       ...(pagination === undefined ? {} : { pagination }),
     })
-    const full = page(
-      Array.from({ length: 100 }, (_, index) => `other-${index}`),
-    )
+    const full = page(Array.from({ length: 100 }, (_, index) => `other-${index}`))
     const paginated = [
       page([], { current_page: 1, next_page: 2, num_pages: 2 }),
       page(["cron-42"], { current_page: 2, num_pages: 2 }),
@@ -1058,23 +937,15 @@ describe("live SDK adapter behind Hatchet.layer", () => {
       [paginated, false, [0, 100]],
       [[page([], { current_page: 1, num_pages: 1 })], true, [0]],
       [[full, page([])], true, [0, 100]],
-      [
-        [page([], { current_page: 1, next_page: "2", num_pages: 2 })],
-        false,
-        [0],
-      ],
+      [[page([], { current_page: 1, next_page: "2", num_pages: 2 })], false, [0]],
       [[page([], { current_page: 1, next_page: 1, num_pages: 2 })], false, [0]],
       [[full, full], false, [0, 100], 2],
     ] as const
     for (const [responses, absent, offsets, maxPages] of cases) {
       const list = vi.fn()
       for (const response of responses) list.mockResolvedValueOnce(response)
-      await expect(verifyCronAbsent(list, "cron-42", maxPages)).resolves.toBe(
-        absent,
-      )
-      expect(list.mock.calls.map(([query]) => query)).toEqual(
-        offsets.map((offset) => ({ offset, limit: 100 })),
-      )
+      await expect(verifyCronAbsent(list, "cron-42", maxPages)).resolves.toBe(absent)
+      expect(list.mock.calls.map(([query]) => query)).toEqual(offsets.map((offset) => ({ offset, limit: 100 })))
     }
   })
 })

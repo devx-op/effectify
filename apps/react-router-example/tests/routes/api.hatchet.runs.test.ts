@@ -5,9 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 const hatchet = vi.hoisted(() => ({ runNoWait: vi.fn() }))
 vi.mock("@effectify/hatchet", async () => {
-  const actual = await vi.importActual<typeof import("@effectify/hatchet")>(
-    "@effectify/hatchet",
-  )
+  const actual = await vi.importActual<typeof import("@effectify/hatchet")>("@effectify/hatchet")
   const Effect = await import("effect/Effect")
   return {
     ...actual,
@@ -21,23 +19,20 @@ vi.mock("../../app/lib/runtime.server.js", async () => {
   const { ActionArgsContext } = await import("@effectify/react-router")
   const Effect = await import("effect/Effect")
   return {
-    withActionEffect: <A, E>(self: Effect.Effect<A, E, ActionArgsContextService>) => (args: ActionFunctionArgs) =>
-      Effect.runPromise(
-        self.pipe(Effect.provideService(ActionArgsContext, args)),
-      ).catch((error: unknown) => {
-        if (error instanceof Response) return error
-        throw error
-      }),
+    withActionEffect:
+      <A, E>(self: Effect.Effect<A, E, ActionArgsContextService>) =>
+      (args: ActionFunctionArgs) =>
+        Effect.runPromise(self.pipe(Effect.provideService(ActionArgsContext, args))).catch((error: unknown) => {
+          if (error instanceof Response) return error
+          throw error
+        }),
   }
 })
 
 import * as Effect from "effect/Effect"
 import { action } from "../../app/routes/api.hatchet.runs.js"
 
-const args = (
-  body: BodyInit,
-  method: "POST" | "PUT" = "POST",
-): ActionFunctionArgs => {
+const args = (body: BodyInit, method: "POST" | "PUT" = "POST"): ActionFunctionArgs => {
   const request = new Request("http://localhost/api/hatchet/runs", {
     body,
     headers: { "content-type": "application/json" },
@@ -80,9 +75,7 @@ describe("POST /api/hatchet/runs", () => {
   })
 
   it("rejects unauthenticated requests before Hatchet.runNoWait", async () => {
-    vi.mocked(fetch).mockResolvedValue(
-      Response.json({ session: null, user: null }),
-    )
+    vi.mocked(fetch).mockResolvedValue(Response.json({ session: null, user: null }))
 
     const response = await action(args(JSON.stringify({ name: "Ada" })))
 
@@ -93,22 +86,20 @@ describe("POST /api/hatchet/runs", () => {
     expect(hatchet.runNoWait).not.toHaveBeenCalled()
   })
 
-  it.each([
-    ["not-json"],
-    [JSON.stringify({})],
-    [JSON.stringify({ name: "" })],
-    [JSON.stringify({ name: 42 })],
-  ])("returns a safe error for invalid Schema input", async (body) => {
-    const response = await action(args(body))
-    expect(response).toBeInstanceOf(Response)
-    if (!(response instanceof Response)) throw new Error("expected Response")
-    expect(response.status).toBe(400)
-    expect(await read(response)).toEqual({
-      ok: false,
-      errors: ["Request body must contain a non-empty name"],
-    })
-    expect(hatchet.runNoWait).not.toHaveBeenCalled()
-  })
+  it.each([["not-json"], [JSON.stringify({})], [JSON.stringify({ name: "" })], [JSON.stringify({ name: 42 })]])(
+    "returns a safe error for invalid Schema input",
+    async (body) => {
+      const response = await action(args(body))
+      expect(response).toBeInstanceOf(Response)
+      if (!(response instanceof Response)) throw new Error("expected Response")
+      expect(response.status).toBe(400)
+      expect(await read(response)).toEqual({
+        ok: false,
+        errors: ["Request body must contain a non-empty name"],
+      })
+      expect(hatchet.runNoWait).not.toHaveBeenCalled()
+    },
+  )
 
   it("rejects non-POST requests before any operation", async () => {
     const response = await action(args(JSON.stringify({ name: "Ada" }), "PUT"))

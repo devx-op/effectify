@@ -45,12 +45,14 @@ Hatchet.layerInMemory()
 // @ts-expect-error Task input remains the inferred Input type.
 const invalidInput: Parameters<typeof task.execute>[0] = { value: "wrong" }
 
-type TaskOutput = ReturnType<typeof task.execute> extends Effect.Effect<infer Output, infer _Error, infer _Requirements>
-  ? Output
-  : never
-type TaskRequirements = ReturnType<typeof task.execute> extends
-  Effect.Effect<infer _Output, infer _Error, infer Requirements> ? Requirements
-  : never
+type TaskOutput =
+  ReturnType<typeof task.execute> extends Effect.Effect<infer Output, infer _Error, infer _Requirements>
+    ? Output
+    : never
+type TaskRequirements =
+  ReturnType<typeof task.execute> extends Effect.Effect<infer _Output, infer _Error, infer Requirements>
+    ? Requirements
+    : never
 
 // @ts-expect-error Task output remains Output rather than this incompatible shape.
 const wrongOutput: TaskOutput = { wrong: "wrong" }

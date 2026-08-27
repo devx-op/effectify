@@ -14,24 +14,18 @@ const task = Task.make({
     }),
 })
 
-const run = <A, E>(
-  effect: Effect.Effect<A, E, Hatchet.Hatchet | Scope.Scope>,
-) =>
-  Effect.runPromise(
-    Effect.scoped(effect.pipe(Effect.provide(Hatchet.layerInMemory))),
-  )
+const run = <A, E>(effect: Effect.Effect<A, E, Hatchet.Hatchet | Scope.Scope>) =>
+  Effect.runPromise(Effect.scoped(effect.pipe(Effect.provide(Hatchet.layerInMemory))))
 
 describe("time capabilities with public Task identity", () => {
   it("creates, reads, and idempotently deletes a pending schedule", async () => {
     await run(
-      Effect.gen(function*() {
+      Effect.gen(function* () {
         const schedule = yield* Hatchet.schedule(task, "Ada", {
           _tag: "After",
           delay: "5 minutes",
         })
-        expect(yield* Hatchet.getSchedule(schedule.id)).toEqual(
-          Option.some(schedule),
-        )
+        expect(yield* Hatchet.getSchedule(schedule.id)).toEqual(Option.some(schedule))
         expect(yield* Hatchet.deleteSchedule(schedule.id)).toBe(true)
         expect(yield* Hatchet.deleteSchedule(schedule.id)).toBe(false)
       }),
@@ -40,7 +34,7 @@ describe("time capabilities with public Task identity", () => {
 
   it("rejects invalid and past timing", async () => {
     const outcomes = await run(
-      Effect.gen(function*() {
+      Effect.gen(function* () {
         const invalidDelay = yield* Effect.exit(
           Hatchet.schedule(task, undefined, {
             _tag: "After",
@@ -63,7 +57,7 @@ describe("time capabilities with public Task identity", () => {
   it("cancels a direct local run independently from schedules", async () => {
     const waiting = Task.make({ name: "waiting", fn: () => Effect.never })
     const exit = await run(
-      Effect.gen(function*() {
+      Effect.gen(function* () {
         const handle = yield* Hatchet.runNoWait(waiting, undefined)
         yield* handle.cancel
         return yield* Effect.exit(handle.await)
@@ -92,7 +86,7 @@ describe("storage-only cron", () => {
         }),
     })
     await run(
-      Effect.gen(function*() {
+      Effect.gen(function* () {
         const daily = yield* CronExpression.parse("0 9 * * 1-5")
         const other = yield* CronExpression.parse("0 10 * * *")
         const first = yield* Hatchet.createCron(counted, {
@@ -115,7 +109,7 @@ describe("storage-only cron", () => {
 
   it("validates cron expressions, schema input, and pagination", async () => {
     const outcomes = await run(
-      Effect.gen(function*() {
+      Effect.gen(function* () {
         const expression = yield* Effect.exit(CronExpression.parse("bad"))
         const schedule = yield* CronExpression.parse("0 9 * * *")
         const input = yield* Effect.exit(

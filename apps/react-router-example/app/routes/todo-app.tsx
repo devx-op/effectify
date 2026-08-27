@@ -10,19 +10,16 @@ import { AuthService, withBetterAuthGuard, withBetterAuthGuardAction } from "@ef
 import * as PrismaRepository from "./../../prisma/generated/effect/prisma-repository.js"
 import { TodoId, TodoModel } from "./../../prisma/generated/effect/index.js"
 
-export const loader = Effect.gen(function*() {
+export const loader = Effect.gen(function* () {
   const TodoRepo = yield* PrismaRepository.make(TodoModel, {
     modelName: "todo",
     spanPrefix: "Todo",
   })
   const todos = yield* TodoRepo.findMany()
   return yield* httpSuccess({ todos: todos })
-}).pipe(
-  withBetterAuthGuard.with({ redirectOnFail: "/login" }),
-  withLoaderEffect,
-)
+}).pipe(withBetterAuthGuard.with({ redirectOnFail: "/login" }), withLoaderEffect)
 
-export const action = Effect.gen(function*() {
+export const action = Effect.gen(function* () {
   const { request } = yield* ActionArgsContext
   const formData = yield* Effect.tryPromise(() => request.formData())
   const intent = String(formData.get("intent") ?? "create")
@@ -87,10 +84,7 @@ export const action = Effect.gen(function*() {
     },
   })
   return yield* httpRedirect("/todo-app")
-}).pipe(
-  withBetterAuthGuardAction.with({ redirectOnFail: "/login" }),
-  withActionEffect,
-)
+}).pipe(withBetterAuthGuardAction.with({ redirectOnFail: "/login" }), withActionEffect)
 
 export default function TodoApp({ loaderData }: Route.ComponentProps) {
   const actionData = useActionData<typeof action>()
@@ -105,35 +99,16 @@ export default function TodoApp({ loaderData }: Route.ComponentProps) {
           <Form method="post">
             <fieldset>
               <label htmlFor="title">Title</label>
-              <input
-                id="title"
-                name="title"
-                type="text"
-                required
-                placeholder="Title"
-              />
+              <input id="title" name="title" type="text" required placeholder="Title" />
               <label htmlFor="content">Content</label>
-              <textarea
-                id="content"
-                name="content"
-                placeholder="Content"
-                rows={3}
-              />
+              <textarea id="content" name="content" placeholder="Content" rows={3} />
             </fieldset>
             <input type="hidden" name="intent" value="create" />
-            {actionData &&
-                actionData.ok === false &&
-                actionData.errors?.length ?
-              (
-                <small
-                  role="alert"
-                  aria-live="assertive"
-                  style={{ color: "var(--pico-color-red-500)" }}
-                >
-                  {String(actionData.errors[0])}
-                </small>
-              ) :
-              null}
+            {actionData && actionData.ok === false && actionData.errors?.length ? (
+              <small role="alert" aria-live="assertive" style={{ color: "var(--pico-color-red-500)" }}>
+                {String(actionData.errors[0])}
+              </small>
+            ) : null}
             <button type="submit">Add</button>
           </Form>
           <ul>
@@ -155,21 +130,17 @@ export default function TodoApp({ loaderData }: Route.ComponentProps) {
                         {
                           intent: "toggle-status",
                           id: String(todo.id),
-                          status: e.currentTarget.checked
-                            ? "COMPLETED"
-                            : "PENDING",
+                          status: e.currentTarget.checked ? "COMPLETED" : "PENDING",
                         },
                         { method: "post" },
-                      )}
+                      )
+                    }
                   />
                   <div style={{ flex: 1 }}>
                     <strong>{todo.title}</strong>
                     {todo.content ? <span>— {todo.content}</span> : null}
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setEditingId(String(todo.id))}
-                  >
+                  <button type="button" onClick={() => setEditingId(String(todo.id))}>
                     Update
                   </button>
                   <Form method="post">
@@ -180,51 +151,38 @@ export default function TodoApp({ loaderData }: Route.ComponentProps) {
                     </button>
                   </Form>
                 </div>
-                {editingId === String(todo.id) ?
-                  (
-                    <Form
-                      method="post"
-                      style={{
-                        display: "flex",
-                        gap: "0.75rem",
-                        alignItems: "center",
-                        marginTop: "0.5rem",
+                {editingId === String(todo.id) ? (
+                  <Form
+                    method="post"
+                    style={{
+                      display: "flex",
+                      gap: "0.75rem",
+                      alignItems: "center",
+                      marginTop: "0.5rem",
+                    }}
+                  >
+                    <input type="hidden" name="intent" value="update" />
+                    <input type="hidden" name="id" value={String(todo.id)} />
+                    <input name="title" type="text" defaultValue={todo.title} placeholder="Title" />
+                    <input name="content" type="text" defaultValue={todo.content ?? ""} placeholder="Content" />
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        const form = (e.currentTarget as HTMLButtonElement).form
+                        if (form) {
+                          const fd = new FormData(form)
+                          submit(fd, { method: "post" })
+                        }
+                        setEditingId(null)
                       }}
                     >
-                      <input type="hidden" name="intent" value="update" />
-                      <input type="hidden" name="id" value={String(todo.id)} />
-                      <input
-                        name="title"
-                        type="text"
-                        defaultValue={todo.title}
-                        placeholder="Title"
-                      />
-                      <input
-                        name="content"
-                        type="text"
-                        defaultValue={todo.content ?? ""}
-                        placeholder="Content"
-                      />
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          const form = (e.currentTarget as HTMLButtonElement)
-                            .form
-                          if (form) {
-                            const fd = new FormData(form)
-                            submit(fd, { method: "post" })
-                          }
-                          setEditingId(null)
-                        }}
-                      >
-                        Save
-                      </button>
-                      <button type="button" onClick={() => setEditingId(null)}>
-                        Cancel
-                      </button>
-                    </Form>
-                  ) :
-                  null}
+                      Save
+                    </button>
+                    <button type="button" onClick={() => setEditingId(null)}>
+                      Cancel
+                    </button>
+                  </Form>
+                ) : null}
               </li>
             ))}
           </ul>

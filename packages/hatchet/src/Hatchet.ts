@@ -52,12 +52,10 @@ export type EventJsonValue =
   | string
   | ReadonlyArray<EventJsonValue>
   | {
-    readonly [key: string]: EventJsonValue
-  }
+      readonly [key: string]: EventJsonValue
+    }
 export type EventPayload = { readonly [key: string]: EventJsonValue }
-export type PushEventOptions = Parameters<
-  InstanceType<typeof HatchetClientSdk>["events"]["push"]
->[2]
+export type PushEventOptions = Parameters<InstanceType<typeof HatchetClientSdk>["events"]["push"]>[2]
 export interface EventReceipt<TPayload extends EventPayload> {
   readonly eventId: string
   readonly key: string
@@ -80,12 +78,10 @@ const isJsonValue = (value: unknown, seen: Set<object>): boolean => {
   if (typeof value !== "object" || seen.has(value)) return false
   seen.add(value)
   const valid = Array.isArray(value)
-    ? Array.from(
-      { length: value.length },
-      (_, index) => index in value && isJsonValue(value[index], seen),
-    ).every(Boolean)
-    : isPlainObject(value) &&
-      Object.values(value).every((item) => isJsonValue(item, seen))
+    ? Array.from({ length: value.length }, (_, index) => index in value && isJsonValue(value[index], seen)).every(
+        Boolean,
+      )
+    : isPlainObject(value) && Object.values(value).every((item) => isJsonValue(item, seen))
   seen.delete(value)
   return valid
 }
@@ -97,14 +93,10 @@ export const validateEvent = (
 ): Effect.Effect<void, InvalidEventError> =>
   Effect.suspend(() => {
     if (key.trim().length === 0) {
-      return Effect.fail(
-        new InvalidEventError({ field: "key", reason: "EmptyKey" }),
-      )
+      return Effect.fail(new InvalidEventError({ field: "key", reason: "EmptyKey" }))
     }
     if (/[\u0000-\u001F\u007F-\u009F]/.test(key)) {
-      return Effect.fail(
-        new InvalidEventError({ field: "key", reason: "UnsafeKey" }),
-      )
+      return Effect.fail(new InvalidEventError({ field: "key", reason: "UnsafeKey" }))
     }
     if (!isPlainObject(payload) || !isJsonValue(payload, new Set())) {
       return Effect.fail(
@@ -137,9 +129,7 @@ export const validateEvent = (
     if (
       additionalMetadata !== undefined &&
       (!isPlainObject(additionalMetadata) ||
-        !Object.values(additionalMetadata).every(
-          (value) => typeof value === "string",
-        ))
+        !Object.values(additionalMetadata).every((value) => typeof value === "string"))
     ) {
       return Effect.fail(
         new InvalidEventError({
@@ -148,10 +138,7 @@ export const validateEvent = (
         }),
       )
     }
-    if (
-      priority !== undefined &&
-      (typeof priority !== "number" || !Number.isFinite(priority))
-    ) {
+    if (priority !== undefined && (typeof priority !== "number" || !Number.isFinite(priority))) {
       return Effect.fail(
         new InvalidEventError({
           field: "options",
@@ -162,19 +149,16 @@ export const validateEvent = (
     return scope === undefined || typeof scope === "string"
       ? Effect.void
       : Effect.fail(
-        new InvalidEventError({
-          field: "options",
-          reason: "InvalidOptionValue",
-        }),
-      )
+          new InvalidEventError({
+            field: "options",
+            reason: "InvalidOptionValue",
+          }),
+        )
   })
 
 export interface RunHandle<Output, Error> {
   readonly id: RunId
-  readonly await: Effect.Effect<
-    Output,
-    Error | TaskSchemaError | HatchetSdkError
-  >
+  readonly await: Effect.Effect<Output, Error | TaskSchemaError | HatchetSdkError>
   readonly cancel: Effect.Effect<void, HatchetSdkError>
 }
 
@@ -197,37 +181,22 @@ export interface ListCronOptions {
   readonly limit?: number
 }
 
-export type AcquisitionError =
-  | HatchetConfigError
-  | InvalidHatchetConfiguration
-  | HatchetSdkError
-  | TaskDeclarationError
+export type AcquisitionError = HatchetConfigError | InvalidHatchetConfiguration | HatchetSdkError | TaskDeclarationError
 
 export interface Service {
   readonly pushEvent: <const TPayload extends EventPayload>(
     key: string,
     payload: TPayload,
     options?: PushEventOptions,
-  ) => Effect.Effect<
-    EventReceipt<TPayload>,
-    InvalidEventError | AcquisitionError
-  >
+  ) => Effect.Effect<EventReceipt<TPayload>, InvalidEventError | AcquisitionError>
   readonly run: <Name extends string, Input, Output, Error, Requirements>(
     task: Task.Of<Name, Input, Output, Error, Requirements>,
     input: unknown,
-  ) => Effect.Effect<
-    Output,
-    Error | TaskSchemaError | MissingTaskError | AcquisitionError,
-    Requirements
-  >
+  ) => Effect.Effect<Output, Error | TaskSchemaError | MissingTaskError | AcquisitionError, Requirements>
   readonly runNoWait: <Name extends string, Input, Output, Error, Requirements>(
     task: Task.Of<Name, Input, Output, Error, Requirements>,
     input: unknown,
-  ) => Effect.Effect<
-    RunHandle<Output, Error>,
-    MissingTaskError | TaskSchemaError | AcquisitionError,
-    Requirements
-  >
+  ) => Effect.Effect<RunHandle<Output, Error>, MissingTaskError | TaskSchemaError | AcquisitionError, Requirements>
   readonly schedule: <Name extends string, Input, Output, Error, Requirements>(
     task: Task.Of<Name, Input, Output, Error, Requirements>,
     input: unknown,
@@ -237,42 +206,21 @@ export interface Service {
     MissingTaskError | InvalidTimeError | TaskSchemaError | AcquisitionError,
     Requirements
   >
-  readonly getSchedule: (
-    id: ScheduleId,
-  ) => Effect.Effect<Option.Option<ScheduleRecord>, AcquisitionError>
-  readonly deleteSchedule: (
-    id: ScheduleId,
-  ) => Effect.Effect<boolean, AcquisitionError>
+  readonly getSchedule: (id: ScheduleId) => Effect.Effect<Option.Option<ScheduleRecord>, AcquisitionError>
+  readonly deleteSchedule: (id: ScheduleId) => Effect.Effect<boolean, AcquisitionError>
   readonly cancelRun: (id: RunId) => Effect.Effect<void, AcquisitionError>
-  readonly createCron: <
-    Name extends string,
-    Input,
-    Output,
-    Error,
-    Requirements,
-  >(
+  readonly createCron: <Name extends string, Input, Output, Error, Requirements>(
     task: Task.Of<Name, Input, Output, Error, Requirements>,
     options: CreateCronOptions,
-  ) => Effect.Effect<
-    CronRecord,
-    MissingTaskError | InvalidCronError | TaskSchemaError | AcquisitionError,
-    Requirements
-  >
-  readonly getCron: (
-    id: CronId,
-  ) => Effect.Effect<Option.Option<CronRecord>, AcquisitionError>
+  ) => Effect.Effect<CronRecord, MissingTaskError | InvalidCronError | TaskSchemaError | AcquisitionError, Requirements>
+  readonly getCron: (id: CronId) => Effect.Effect<Option.Option<CronRecord>, AcquisitionError>
   readonly listCrons: (
     options?: ListCronOptions,
-  ) => Effect.Effect<
-    ReadonlyArray<CronRecord>,
-    InvalidCronFilterError | AcquisitionError
-  >
+  ) => Effect.Effect<ReadonlyArray<CronRecord>, InvalidCronFilterError | AcquisitionError>
   readonly deleteCron: (id: CronId) => Effect.Effect<boolean, AcquisitionError>
 }
 
-export class Hatchet extends Context.Service<Hatchet, Service>()(
-  "@effectify/hatchet/Hatchet",
-) {}
+export class Hatchet extends Context.Service<Hatchet, Service>()("@effectify/hatchet/Hatchet") {}
 
 const makeInMemoryService = (ownerScope: Scope.Scope): Service => {
   const tasks = Registry.make()
@@ -294,7 +242,7 @@ const makeInMemoryService = (ownerScope: Scope.Scope): Service => {
   const ensureTask = <Name extends string, Input, Output, Error, Requirements>(
     task: Task.Of<Name, Input, Output, Error, Requirements>,
   ): Effect.Effect<void, never, Requirements> =>
-    Effect.gen(function*() {
+    Effect.gen(function* () {
       if (tasks.has(task.name)) return
       const context = yield* Effect.context<Requirements>()
       tasks.add(task, context)
@@ -318,28 +266,20 @@ const makeInMemoryService = (ownerScope: Scope.Scope): Service => {
   const mapTaskSchemaError = (taskName: string, phase: "input" | "output") => (issue: unknown) =>
     new TaskSchemaError({ taskName, phase, issue })
 
-  const executeDecoded = <
-    Name extends string,
-    Input,
-    Output,
-    Error,
-    Requirements,
-  >(
+  const executeDecoded = <Name extends string, Input, Output, Error, Requirements>(
     task: Task.Of<Name, Input, Output, Error, Requirements>,
     input: Input,
     context: Task.Context,
   ) =>
     Effect.scoped(
-      task._tag === "Durable"
-        ? task.execute(input, { ...context, invocationCount: 0 })
-        : task.execute(input, context),
+      task._tag === "Durable" ? task.execute(input, { ...context, invocationCount: 0 }) : task.execute(input, context),
     ).pipe(
       Effect.tap((output) =>
         task.outputSchema
           ? Schema.encodeUnknownEffect(task.outputSchema)(output).pipe(
-            Effect.mapError(mapTaskSchemaError(task.name, "output")),
-          )
-          : Effect.void
+              Effect.mapError(mapTaskSchemaError(task.name, "output")),
+            )
+          : Effect.void,
       ),
     )
 
@@ -347,44 +287,26 @@ const makeInMemoryService = (ownerScope: Scope.Scope): Service => {
     context: Task.Context,
   ) => Effect.Effect<Output, Error | TaskSchemaError, Requirements>
 
-  const prepareInput = <
-    Name extends string,
-    Input,
-    Output,
-    Error,
-    Requirements,
-  >(
+  const prepareInput = <Name extends string, Input, Output, Error, Requirements>(
     task: Task.Of<Name, Input, Output, Error, Requirements>,
     input: unknown,
-  ): Effect.Effect<
-    PreparedExecution<Output, Error, Requirements>,
-    TaskSchemaError
-  > => {
+  ): Effect.Effect<PreparedExecution<Output, Error, Requirements>, TaskSchemaError> => {
     if (!task.inputSchema) {
       return Effect.succeed((context: Task.Context) =>
-        Effect.scoped(
-          tasks.run<Output, Error>(task.name, input, context) ??
-            Effect.die("registered task disappeared"),
-        )
+        Effect.scoped(tasks.run<Output, Error>(task.name, input, context) ?? Effect.die("registered task disappeared")),
       )
     }
     return Schema.decodeUnknownEffect(task.inputSchema)(input).pipe(
       Effect.mapError(mapTaskSchemaError(task.name, "input")),
-      Effect.map(
-        (decoded) => (context: Task.Context) => executeDecoded(task, decoded, context),
-      ),
+      Effect.map((decoded) => (context: Task.Context) => executeDecoded(task, decoded, context)),
     )
   }
 
   const runNoWait = <Name extends string, Input, Output, Error, Requirements>(
     task: Task.Of<Name, Input, Output, Error, Requirements>,
     input: unknown,
-  ): Effect.Effect<
-    RunHandle<Output, Error>,
-    MissingTaskError | TaskSchemaError | HatchetSdkError,
-    Requirements
-  > =>
-    Effect.gen(function*() {
+  ): Effect.Effect<RunHandle<Output, Error>, MissingTaskError | TaskSchemaError | HatchetSdkError, Requirements> =>
+    Effect.gen(function* () {
       yield* ensureTask(task)
       const prepared = yield* prepareInput(task, input)
       const execution = nextContext()
@@ -392,7 +314,7 @@ const makeInMemoryService = (ownerScope: Scope.Scope): Service => {
       const remove = Effect.sync(() => runs.delete(id))
       const registered = yield* Deferred.make<void>()
       return yield* Effect.uninterruptibleMask((restore) =>
-        Effect.gen(function*() {
+        Effect.gen(function* () {
           const fiber = yield* Effect.forkIn(
             Deferred.await(registered).pipe(
               Effect.andThen(prepared(execution.context)),
@@ -406,20 +328,12 @@ const makeInMemoryService = (ownerScope: Scope.Scope): Service => {
           const handle = {
             id,
             await: Fiber.join(fiber).pipe(Effect.ensuring(remove)),
-            cancel: Fiber.interrupt(fiber).pipe(
-              Effect.asVoid,
-              Effect.ensuring(remove),
-            ),
+            cancel: Fiber.interrupt(fiber).pipe(Effect.asVoid, Effect.ensuring(remove)),
           }
           return yield* restore(Effect.succeed(handle)).pipe(
-            Effect.onInterrupt(() =>
-              Fiber.interrupt(fiber).pipe(
-                Effect.asVoid,
-                Effect.ensuring(remove),
-              )
-            ),
+            Effect.onInterrupt(() => Fiber.interrupt(fiber).pipe(Effect.asVoid, Effect.ensuring(remove))),
           )
-        })
+        }),
       )
     })
 
@@ -432,12 +346,10 @@ const makeInMemoryService = (ownerScope: Scope.Scope): Service => {
     MissingTaskError | InvalidTimeError | TaskSchemaError | HatchetSdkError,
     Requirements
   > =>
-    Effect.gen(function*() {
+    Effect.gen(function* () {
       yield* ensureTask(task)
       const now = yield* Clock.currentTimeMillis
-      const triggerAt = timing._tag === "At"
-        ? timing.at.getTime()
-        : now + Duration.toMillis(timing.delay)
+      const triggerAt = timing._tag === "At" ? timing.at.getTime() : now + Duration.toMillis(timing.delay)
       if (!Number.isFinite(triggerAt) || triggerAt <= now) {
         return yield* new InvalidTimeError({
           field: timing._tag === "At" ? "at" : "delay",
@@ -457,9 +369,7 @@ const makeInMemoryService = (ownerScope: Scope.Scope): Service => {
         Effect.onError((cause) =>
           Cause.hasInterruptsOnly(cause)
             ? Effect.void
-            : Effect.logError(
-              `ScheduledTaskFailure scheduleId=${id} taskName=${task.name}`,
-            )
+            : Effect.logError(`ScheduledTaskFailure scheduleId=${id} taskName=${task.name}`),
         ),
         Effect.ignore,
         Effect.ensuring(Effect.sync(() => schedules.delete(id))),
@@ -472,27 +382,21 @@ const makeInMemoryService = (ownerScope: Scope.Scope): Service => {
   const createCron = <Name extends string, Input, Output, Error, Requirements>(
     task: Task.Of<Name, Input, Output, Error, Requirements>,
     options: CreateCronOptions,
-  ): Effect.Effect<
-    CronRecord,
-    MissingTaskError | InvalidCronError | TaskSchemaError | HatchetSdkError,
-    Requirements
-  > =>
-    Effect.gen(function*() {
+  ): Effect.Effect<CronRecord, MissingTaskError | InvalidCronError | TaskSchemaError | HatchetSdkError, Requirements> =>
+    Effect.gen(function* () {
       yield* ensureTask(task)
       yield* CronValidation.validateCreate(options)
       const encoded = task.inputSchema
-        ? yield* Schema.encodeUnknownEffect(task.inputSchema)(
-          options.input,
-        ).pipe(
-          Effect.mapError(
-            (issue) =>
-              new TaskSchemaError({
-                taskName: task.name,
-                phase: "input",
-                issue,
-              }),
-          ),
-        )
+        ? yield* Schema.encodeUnknownEffect(task.inputSchema)(options.input).pipe(
+            Effect.mapError(
+              (issue) =>
+                new TaskSchemaError({
+                  taskName: task.name,
+                  phase: "input",
+                  issue,
+                }),
+            ),
+          )
         : options.input
       const input = yield* CronValidation.validateInput(encoded)
       const record: CronRecord = {
@@ -501,14 +405,10 @@ const makeInMemoryService = (ownerScope: Scope.Scope): Service => {
         name: options.name,
         expression: CronExpression.source(options.schedule),
         input,
-        ...(options.additionalMetadata === undefined
-          ? {}
-          : { additionalMetadata: options.additionalMetadata }),
+        ...(options.additionalMetadata === undefined ? {} : { additionalMetadata: options.additionalMetadata }),
         enabled: true,
         method: "DEFAULT",
-        ...(options.priority === undefined
-          ? {}
-          : { priority: options.priority }),
+        ...(options.priority === undefined ? {} : { priority: options.priority }),
       }
       crons.set(record.id, record)
       return record
@@ -516,27 +416,13 @@ const makeInMemoryService = (ownerScope: Scope.Scope): Service => {
 
   const listCrons = (
     options: ListCronOptions = {},
-  ): Effect.Effect<
-    ReadonlyArray<CronRecord>,
-    InvalidCronFilterError | HatchetSdkError
-  > =>
-    Effect.gen(function*() {
+  ): Effect.Effect<ReadonlyArray<CronRecord>, InvalidCronFilterError | HatchetSdkError> =>
+    Effect.gen(function* () {
       yield* CronValidation.validateList(options)
       return Array.from(crons.values())
-        .filter(
-          (cron) =>
-            options.taskName === undefined ||
-            cron.taskName === options.taskName,
-        )
-        .filter(
-          (cron) => options.name === undefined || cron.name === options.name,
-        )
-        .slice(
-          options.offset ?? 0,
-          options.limit === undefined
-            ? undefined
-            : (options.offset ?? 0) + options.limit,
-        )
+        .filter((cron) => options.taskName === undefined || cron.taskName === options.taskName)
+        .filter((cron) => options.name === undefined || cron.name === options.name)
+        .slice(options.offset ?? 0, options.limit === undefined ? undefined : (options.offset ?? 0) + options.limit)
     })
 
   return {
@@ -547,9 +433,7 @@ const makeInMemoryService = (ownerScope: Scope.Scope): Service => {
             eventId: `event-${nextEventId++}`,
             key,
             payload,
-            ...(options?.additionalMetadata === undefined
-              ? {}
-              : { additionalMetadata: options.additionalMetadata }),
+            ...(options?.additionalMetadata === undefined ? {} : { additionalMetadata: options.additionalMetadata }),
             ...(options?.scope === undefined ? {} : { scope: options.scope }),
           })),
         ),
@@ -559,7 +443,7 @@ const makeInMemoryService = (ownerScope: Scope.Scope): Service => {
     schedule,
     getSchedule: (id) => Effect.sync(() => Option.fromNullishOr(schedules.get(id)?.record)),
     deleteSchedule: (id) =>
-      Effect.gen(function*() {
+      Effect.gen(function* () {
         const schedule = schedules.get(id)
         if (!schedule || schedule.deleting) return false
         schedule.deleting = true
@@ -586,9 +470,7 @@ const makeInMemoryService = (ownerScope: Scope.Scope): Service => {
   }
 }
 
-export const layerInMemory = Layer.effect(Hatchet)(
-  Effect.map(Scope.Scope, makeInMemoryService),
-)
+export const layerInMemory = Layer.effect(Hatchet)(Effect.map(Scope.Scope, makeInMemoryService))
 
 export interface LayerOptions<Tasks extends ReadonlyArray<Task.Any>> {
   readonly tasks: Tasks
@@ -604,10 +486,10 @@ type Ready = {
 type State =
   | { readonly _tag: "Idle" }
   | {
-    readonly _tag: "Initializing"
-    readonly deferred: Deferred.Deferred<Ready, AcquisitionError>
-    readonly scope: Scope.Closeable
-  }
+      readonly _tag: "Initializing"
+      readonly deferred: Deferred.Deferred<Ready, AcquisitionError>
+      readonly scope: Scope.Closeable
+    }
   | ({ readonly _tag: "Ready" } & Ready)
   | { readonly _tag: "Disposed" }
 
@@ -615,20 +497,17 @@ const initialize = <const Tasks extends ReadonlyArray<Task.Any>>(
   options: LayerOptions<Tasks>,
   scope: Scope.Closeable,
 ): Effect.Effect<Ready, AcquisitionError, Task.Requirements<Tasks[number]>> =>
-  Effect.gen(function*() {
-    const liveOptions = options.options === undefined
-      ? yield* (options.config ?? HatchetConfig.fromEnv).pipe(
-        Effect.mapError(
-          (originalCause) => new HatchetConfigError({ field: "config", originalCause }),
-        ),
-      )
-      : options.options
+  Effect.gen(function* () {
+    const liveOptions =
+      options.options === undefined
+        ? yield* (options.config ?? HatchetConfig.fromEnv).pipe(
+            Effect.mapError((originalCause) => new HatchetConfigError({ field: "config", originalCause })),
+          )
+        : options.options
     const services = yield* Layer.buildWithScope(
       Live.layer<Task.Requirements<Tasks[number]>>(
         liveOptions,
-        options.tasks as ReadonlyArray<
-          Task.Any<Task.Requirements<Tasks[number]>>
-        >,
+        options.tasks as ReadonlyArray<Task.Any<Task.Requirements<Tasks[number]>>>,
       ),
       scope,
     )
@@ -645,7 +524,7 @@ export const layer = <const Tasks extends ReadonlyArray<Task.Any>>(
   options: LayerOptions<Tasks>,
 ): Layer.Layer<Hatchet, never, Task.Requirements<Tasks[number]>> =>
   Layer.effect(Hatchet)(
-    Effect.gen(function*() {
+    Effect.gen(function* () {
       const ownerScope = yield* Scope.Scope
       const captured = yield* Effect.context<Task.Requirements<Tasks[number]>>()
       const mutex = yield* Semaphore.make(1)
@@ -669,29 +548,21 @@ export const layer = <const Tasks extends ReadonlyArray<Task.Any>>(
             scope: childScope,
           }
           state = initializing
-          const attempt = Effect.exit(
-            initialize(options, childScope).pipe(
-              Effect.provideContext(captured),
-            ),
-          ).pipe(
+          const attempt = Effect.exit(initialize(options, childScope).pipe(Effect.provideContext(captured))).pipe(
             Effect.flatMap((exit) =>
-              Effect.gen(function*() {
+              Effect.gen(function* () {
                 if (Exit.isFailure(exit)) {
                   yield* Scope.close(childScope, exit)
                 }
                 yield* Deferred.done(deferred, exit)
                 yield* transition(
                   initializing,
-                  Exit.isSuccess(exit)
-                    ? { _tag: "Ready", ...exit.value }
-                    : { _tag: "Idle" },
+                  Exit.isSuccess(exit) ? { _tag: "Ready", ...exit.value } : { _tag: "Idle" },
                 )
-              })
+              }),
             ),
           )
-          return Effect.forkIn(attempt, ownerScope).pipe(
-            Effect.as(Deferred.await(deferred)),
-          )
+          return Effect.forkIn(attempt, ownerScope).pipe(Effect.as(Deferred.await(deferred)))
         }),
       )
 
@@ -718,16 +589,13 @@ export const layer = <const Tasks extends ReadonlyArray<Task.Any>>(
       )
 
       const ready = Effect.flatten(begin)
-      const use = <A, E, R>(
-        operation: (service: Service) => Effect.Effect<A, E, R>,
-      ) => Effect.flatMap(ready, ({ service }) => operation(service))
+      const use = <A, E, R>(operation: (service: Service) => Effect.Effect<A, E, R>) =>
+        Effect.flatMap(ready, ({ service }) => operation(service))
 
       const service = Hatchet.of({
         pushEvent: (key, payload, eventOptions) =>
           validateEvent(key, payload, eventOptions).pipe(
-            Effect.andThen(
-              use((hatchet) => hatchet.pushEvent(key, payload, eventOptions)),
-            ),
+            Effect.andThen(use((hatchet) => hatchet.pushEvent(key, payload, eventOptions))),
           ),
         run: (task, input) => use((hatchet) => hatchet.run(task, input)),
         runNoWait: (task, input) => use((hatchet) => hatchet.runNoWait(task, input)),
@@ -743,14 +611,14 @@ export const layer = <const Tasks extends ReadonlyArray<Task.Any>>(
 
       yield* Effect.addFinalizer(() =>
         mutex.withPermit(
-          Effect.gen(function*() {
+          Effect.gen(function* () {
             const previous = state
             state = { _tag: "Disposed" }
             if (previous._tag === "Ready" || previous._tag === "Initializing") {
               yield* Scope.close(previous.scope, Exit.void)
             }
           }),
-        )
+        ),
       )
       return service
     }),
@@ -760,33 +628,18 @@ export const pushEvent = <const TPayload extends EventPayload>(
   key: string,
   payload: TPayload,
   options?: PushEventOptions,
-): Effect.Effect<
-  EventReceipt<TPayload>,
-  InvalidEventError | AcquisitionError,
-  Hatchet
-> =>
+): Effect.Effect<EventReceipt<TPayload>, InvalidEventError | AcquisitionError, Hatchet> =>
   validateEvent(key, payload, options).pipe(
-    Effect.andThen(
-      Effect.flatMap(Hatchet, (service) => service.pushEvent(key, payload, options)),
-    ),
+    Effect.andThen(Effect.flatMap(Hatchet, (service) => service.pushEvent(key, payload, options))),
   )
 
 export const run = <Name extends string, Input, Output, Error, Requirements>(
   task: Task.Of<Name, Input, Output, Error, Requirements>,
   input: unknown,
-): Effect.Effect<
-  Output,
-  Error | TaskSchemaError | MissingTaskError | AcquisitionError,
-  Hatchet | Requirements
-> => Effect.flatMap(Hatchet, (service) => service.run(task, input))
+): Effect.Effect<Output, Error | TaskSchemaError | MissingTaskError | AcquisitionError, Hatchet | Requirements> =>
+  Effect.flatMap(Hatchet, (service) => service.run(task, input))
 
-export const runNoWait = <
-  Name extends string,
-  Input,
-  Output,
-  Error,
-  Requirements,
->(
+export const runNoWait = <Name extends string, Input, Output, Error, Requirements>(
   task: Task.Of<Name, Input, Output, Error, Requirements>,
   input: unknown,
 ): Effect.Effect<
@@ -795,13 +648,7 @@ export const runNoWait = <
   Hatchet | Requirements
 > => Effect.flatMap(Hatchet, (service) => service.runNoWait(task, input))
 
-export const schedule = <
-  Name extends string,
-  Input,
-  Output,
-  Error,
-  Requirements,
->(
+export const schedule = <Name extends string, Input, Output, Error, Requirements>(
   task: Task.Of<Name, Input, Output, Error, Requirements>,
   input: unknown,
   timing: ScheduleTiming,
@@ -811,26 +658,16 @@ export const schedule = <
   Hatchet | Requirements
 > => Effect.flatMap(Hatchet, (service) => service.schedule(task, input, timing))
 
-export const getSchedule = (
-  id: ScheduleId,
-): Effect.Effect<Option.Option<ScheduleRecord>, AcquisitionError, Hatchet> =>
+export const getSchedule = (id: ScheduleId): Effect.Effect<Option.Option<ScheduleRecord>, AcquisitionError, Hatchet> =>
   Effect.flatMap(Hatchet, (service) => service.getSchedule(id))
 
-export const deleteSchedule = (
-  id: ScheduleId,
-): Effect.Effect<boolean, AcquisitionError, Hatchet> => Effect.flatMap(Hatchet, (service) => service.deleteSchedule(id))
+export const deleteSchedule = (id: ScheduleId): Effect.Effect<boolean, AcquisitionError, Hatchet> =>
+  Effect.flatMap(Hatchet, (service) => service.deleteSchedule(id))
 
-export const cancelRun = (
-  id: RunId,
-): Effect.Effect<void, AcquisitionError, Hatchet> => Effect.flatMap(Hatchet, (service) => service.cancelRun(id))
+export const cancelRun = (id: RunId): Effect.Effect<void, AcquisitionError, Hatchet> =>
+  Effect.flatMap(Hatchet, (service) => service.cancelRun(id))
 
-export const createCron = <
-  Name extends string,
-  Input,
-  Output,
-  Error,
-  Requirements,
->(
+export const createCron = <Name extends string, Input, Output, Error, Requirements>(
   task: Task.Of<Name, Input, Output, Error, Requirements>,
   options: CreateCronOptions,
 ): Effect.Effect<
@@ -839,19 +676,13 @@ export const createCron = <
   Hatchet | Requirements
 > => Effect.flatMap(Hatchet, (service) => service.createCron(task, options))
 
-export const getCron = (
-  id: CronId,
-): Effect.Effect<Option.Option<CronRecord>, AcquisitionError, Hatchet> =>
+export const getCron = (id: CronId): Effect.Effect<Option.Option<CronRecord>, AcquisitionError, Hatchet> =>
   Effect.flatMap(Hatchet, (service) => service.getCron(id))
 
 export const listCrons = (
   options?: ListCronOptions,
-): Effect.Effect<
-  ReadonlyArray<CronRecord>,
-  InvalidCronFilterError | AcquisitionError,
-  Hatchet
-> => Effect.flatMap(Hatchet, (service) => service.listCrons(options))
+): Effect.Effect<ReadonlyArray<CronRecord>, InvalidCronFilterError | AcquisitionError, Hatchet> =>
+  Effect.flatMap(Hatchet, (service) => service.listCrons(options))
 
-export const deleteCron = (
-  id: CronId,
-): Effect.Effect<boolean, AcquisitionError, Hatchet> => Effect.flatMap(Hatchet, (service) => service.deleteCron(id))
+export const deleteCron = (id: CronId): Effect.Effect<boolean, AcquisitionError, Hatchet> =>
+  Effect.flatMap(Hatchet, (service) => service.deleteCron(id))

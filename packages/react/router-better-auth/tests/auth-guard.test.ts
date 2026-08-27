@@ -10,12 +10,9 @@ const request = new Request("https://example.test/todo-app", {
 })
 
 const sessionResponse = (session: unknown) =>
-  new Response(
-    JSON.stringify({ session, user: session ? { id: "user-1" } : null }),
-    {
-      headers: { "Content-Type": "application/json" },
-    },
-  )
+  new Response(JSON.stringify({ session, user: session ? { id: "user-1" } : null }), {
+    headers: { "Content-Type": "application/json" },
+  })
 
 const loaderArgs = { request, params: {}, context: {} }
 const actionArgs = { request, params: {}, context: {} }
@@ -61,12 +58,10 @@ describe("Better Auth guard compatibility", () => {
     vi.restoreAllMocks()
   })
 
-  it.each(
-    [
-      ["loader", runLoaderGuard],
-      ["action", runActionGuard],
-    ] as const,
-  )("preserves redirect status, location, and cookies for an unauthorized %s", async (_name, run) => {
+  it.each([
+    ["loader", runLoaderGuard],
+    ["action", runActionGuard],
+  ] as const)("preserves redirect status, location, and cookies for an unauthorized %s", async (_name, run) => {
     vi.mocked(fetch).mockResolvedValue(sessionResponse(null))
 
     const result = await run()
@@ -76,12 +71,10 @@ describe("Better Auth guard compatibility", () => {
     expect(result.headers.get("Set-Cookie")).toBe("returnTo=/todo-app")
   })
 
-  it.each(
-    [
-      ["loader", runLoaderGuard, 201, "loader-ok"],
-      ["action", runActionGuard, 202, "action-ok"],
-    ] as const,
-  )("preserves successful %s responses", async (_name, run, status, body) => {
+  it.each([
+    ["loader", runLoaderGuard, 201, "loader-ok"],
+    ["action", runActionGuard, 202, "action-ok"],
+  ] as const)("preserves successful %s responses", async (_name, run, status, body) => {
     vi.mocked(fetch).mockResolvedValue(sessionResponse({ id: "session-1" }))
 
     const result = await run()
