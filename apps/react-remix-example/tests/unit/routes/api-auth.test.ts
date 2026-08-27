@@ -38,7 +38,7 @@ vi.mock("@effectify/node-better-auth", () => {
   }
 })
 
-vi.mock("@effectify/react-router-better-auth", () => ({
+vi.mock("../../../app/lib/react-router7-better-auth.server.js", () => ({
   betterAuthLoader: Effect.succeed(
     new Response("loader ok", {
       status: 200,

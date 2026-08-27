@@ -299,3 +299,90 @@ Test summary: 5 JSON tests authored and passing; bridge package total 15/15; pro
 - Verification passed: focused route tests (2 files, 5/5 tests), bridge runtime/JSON suites (2 files, 15/15 tests), exact affected typecheck (19 projects and 16 dependency tasks), repository format check, and `git diff --check`.
 - Correction source count before this evidence entry: 24 additions + deletions across two test files. Generated cleanup restored both tracked React tsbuildinfo files and removed the untracked Prisma tsbuildinfo; final status retained only the two fixture files and this cumulative evidence file.
 - Task state is unchanged: Work Unit 3 remains complete, Work Unit 4+ remains unchecked, and parent-owned rows remain deferred byte-for-byte. Parent owns attempt settlement and delivery; no commit, push, CI retry, receipt, or lifecycle actor was started.
+
+## Work Unit 4 / PR 4 — App-Local RR7 Better Auth Adapter
+
+### Structured Status Consumed
+
+- Authoritative native OpenSpec status selected `consolidate-react-remix-into-router` with `applyState: ready`, `nextRecommended: apply`, 10/47 implementation tasks complete before this slice, and no blockers.
+- Action context was `repo-local`; workspace root and sole allowed edit root were `/Users/skynet/devx-op/effectify`; warnings: none.
+- Parent runtime authority was `proceed` for `rr7-better-auth-adapter`, maximum 1,000 changed lines, with parent-owned settlement and delivery.
+- Delivery path remained `auto-chain`, `feature-branch-chain`; this executor implemented only Work unit 4 / PR 4.
+- Strict TDD was active. Both parent-injected skill paths were loaded before implementation.
+
+### Workload / PR Boundary
+
+- Completed boundary: **PR 4 — workspace-only RR7 Better Auth adapter**.
+- Product/test changes are limited to the former Remix application plus the two bridge context-key strings required for nominal runtime separation.
+- No manifest, lockfile, framework migration, Work unit 5 behavior, RR8 package, RR8 adapter, RR8 application, release metadata, commit, push, PR, or lifecycle settlement was performed.
+- Rollback boundary: revert the local adapter, its focused test/config alias, the two active app import replacements and route-test mock path, and the two bridge context-key strings together; protected RR8 files remain outside rollback.
+- The local adapter is an application file, not an Nx library or release project. The exact project listing identifies `@effectify/react-remix-example` as an application.
+
+### Completed Tasks and Persisted Checkboxes
+
+All four implementation-owned Work unit 4 rows are visibly marked `- [x]` in `tasks.md`:
+
+1. RED added the package-owned app test and recorded module-resolution failure before the adapter existed.
+2. GREEN added the app-local adapter, exact bridge context imports, native auth-response pass-through, bridge-owned redirect model, typed `Unauthorized` policy, and active app import replacements.
+3. TRIANGULATE proved request identity, RR8/lookalike rejection, body/status/Location/multiple-cookie fidelity, typed transport/parse errors, redirects, and route integration.
+4. REFACTOR passed app typecheck, the exact protected package matrix, formatting, publication/import/version scans, and the protected-diff check.
+
+### Files Changed
+
+- `apps/react-remix-example/app/lib/react-router7-better-auth.server.ts` (new)
+- `apps/react-remix-example/tests/unit/react-router7-better-auth.test.ts` (new)
+- `apps/react-remix-example/app/routes/api.auth.$.ts`
+- `apps/react-remix-example/app/routes/todos.tsx`
+- `apps/react-remix-example/tests/unit/routes/api-auth.test.ts`
+- `apps/react-remix-example/vitest.config.ts`
+- `packages/react/remix/src/lib/context.ts`
+- `openspec/changes/consolidate-react-remix-into-router/tasks.md` (Work unit 4 checkboxes only)
+- `openspec/changes/consolidate-react-remix-into-router/apply-progress.md` (this cumulative evidence)
+
+### RED → GREEN → TRIANGULATE → REFACTOR Evidence
+
+| Stage         | Exact command/action                                                                                                                                                                  | Result                                                                                                                                                                                                                                                                                                                              |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| RED           | `pnpm nx run @effectify/react-remix-example:test -- tests/unit/react-router7-better-auth.test.ts` after adding the test first                                                         | Exit 1 before production code: Vitest could not resolve `../../app/lib/react-router7-better-auth.server.js`; 0 tests executed, proving the app-local adapter was absent. An initial harness import of the non-app dependency `@effectify/react-router` was corrected to the protected source context before this authoritative RED. |
+| GREEN         | Add the local adapter and active app imports; run the same focused test                                                                                                               | Exit 0 after minimal implementation and context-key separation: 11/11 passed.                                                                                                                                                                                                                                                       |
+| TRIANGULATE   | Add typed transport/parse `Unauthorized` inputs; run `pnpm nx run @effectify/react-remix-example:test -- tests/unit/react-router7-better-auth.test.ts -t "context                     | cookie                                                                                                                                                                                                                                                                                                                              | redirect | Unauthorized"` | Exit 0: 13/13 passed. Exact bridge request identity, four RR8/lookalike rejection cases, both guard modes, two-cookie arrays, and typed failure cases passed. |
+| Route harness | `pnpm nx run @effectify/react-remix-example:test -- tests/unit/routes/api-auth.test.ts`                                                                                               | Exit 0: 2/2 loader/action route integration tests passed.                                                                                                                                                                                                                                                                           |
+| REFACTOR      | Split loader/action session acquisition to retain exact context requirements, format, app typecheck, exact protected package matrix, project/release/import scans, and protected diff | Exit 0: app typecheck passed; RR8 package 8/8 and RR8 adapter 9/9 tests passed; all requested typecheck:no-build/lint/build targets passed; formatting and scans passed.                                                                                                                                                            |
+
+### TDD Cycle Evidence
+
+| Task                                         | Test File / Harness                                                     | Safety Net                                             | RED                                               | GREEN                                          | TRIANGULATE                                                            | REFACTOR                                                                       |
+| -------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------ | ------------------------------------------------- | ---------------------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| Exact-context handlers and response fidelity | `apps/react-remix-example/tests/unit/react-router7-better-auth.test.ts` | Existing route harness and protected RR8 adapter suite | Missing local module failed before implementation | 11/11 passed                                   | 13/13 passed with transport/parse inputs and both contexts             | Shared request-session logic retained separate exact loader/action acquisition |
+| Active route integration                     | `apps/react-remix-example/tests/unit/routes/api-auth.test.ts`           | Existing 2-test route suite                            | Existing mock targeted the protected adapter      | Mock/import moved with production route import | Loader/action 2/2 passed                                               | No route behavior changes                                                      |
+| Publication and protected boundary           | Nx project enumeration, scans, protected matrix/diff                    | RR8 exact 8.3.0 parent baseline                        | N/A structural gate                               | Local file remained app-owned                  | No adapter library/release node and no active protected-adapter import | Protected RR8 diff empty after generated cleanup                               |
+
+### Commands Run
+
+- Focused adapter RED: exit 1, missing local module, 0 tests.
+- Focused adapter GREEN: exit 0, 11/11 tests.
+- Focused adapter TRIANGULATE/final: exit 0, 13/13 tests.
+- Focused route harness: exit 0, 2/2 tests.
+- `pnpm nx run @effectify/react-remix-example:typecheck`: final exit 0 after the refactor; it also built the bridge and proved the new nominal keys compile.
+- `pnpm nx show projects --type=lib`: passed; no app-local adapter or Remix example library was listed.
+- `pnpm nx show project @effectify/react-remix-example --json`: passed; project type is `application`.
+- `pnpm nx run-many --targets=test,typecheck:no-build,lint,build --projects=@effectify/react-router,@effectify/react-router-better-auth`: passed; RR8 package 8/8, adapter 9/9, and every requested target succeeded.
+- `pnpm nx run @effectify/repo:format:check`: passed after repository formatting.
+- Import/release scans: passed; no active TypeScript import of `@effectify/react-router-better-auth`, no local-adapter release entry, and no local-adapter library project.
+- `pnpm why react-router --filter @effectify/react-router-example`: protected app resolved only React Router `8.3.0`.
+- `git diff --exit-code ac19079 -- package.json pnpm-workspace.yaml pnpm-lock.yaml packages/react/router packages/react/router-better-auth apps/react-router-example`: passed after restoring command-generated `packages/react/router/tsconfig.lib.tsbuildinfo`.
+- `git diff --check`: passed.
+
+### Deviations and Cleanup
+
+- Minimal design-enabling correction: Effect v4 keys services by the `Context.Service` string, and both bridge and protected classes previously used `LoaderArgsContext` / `ActionArgsContext`. The RED identity tests demonstrated RR8/lookalike contexts could satisfy the bridge slot. The bridge-only key strings were therefore namespaced to `@effectify/react-remix/...`; protected RR8 stayed unchanged. This is required by the exact-major context identity specification.
+- The app Vitest configuration aliases `@effectify/react-remix` to package source because the app package link otherwise loaded stale pre-build `dist` during focused tests. Production imports remain the exact package import.
+- The first app typecheck exposed union-context inference in shared verification and expected type errors in deliberate wrong-context tests. Separate loader/action context acquisition and explicit `@ts-expect-error` negative-contract lines resolved those harness issues without type assertions.
+- Command-generated protected RR8 tsbuildinfo was restored. Generated bridge output and Prisma output are ignored and not retained as authored changes.
+- No manifest or lockfile changed, even though the old app manifest dependency remains for a later bounded work unit; all active TypeScript imports now use the local adapter.
+
+### Remaining Tasks and Deferred Lifecycle Actions
+
+- Exactly 33 implementation-owned rows remain unchecked, beginning with Work unit 5. Their exact `- [ ]` lines are retained byte-for-byte in the cumulative task-state section above and in `tasks.md`.
+- All three parent-owned human evidence gates remain unchecked, deferred, and byte-for-byte unchanged.
+- Work unit 5 is the next implementation boundary. This executor returns to `parent-lifecycle` and does not start it.
