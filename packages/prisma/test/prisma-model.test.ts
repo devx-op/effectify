@@ -6,17 +6,23 @@ import { TodoId, TodoModel } from "@prisma/effect/models/Todo.js"
 import * as Effect from "effect/Effect"
 import * as Option from "effect/Option"
 import * as Result from "effect/Result"
-import { beforeEach, expect } from "vitest"
-
-import path from "node:path"
 import { randomUUID } from "node:crypto"
-import { prisma as db } from "./utils.js"
+import { existsSync, readFileSync } from "node:fs"
+import { afterAll, beforeEach, expect } from "vitest"
+
+import {
+  cleanupTestDbDirectory,
+  dbPath,
+  prisma as db,
+  testDbDirectory,
+  trackedDbPath,
+  trackedDbSnapshot,
+} from "./utils.js"
 
 // Helper to create a TodoId from a raw UUID string
 const makeTodoId = (uuid: string): TodoId => uuid as TodoId
 
-// Create the Prisma layer using the SQLite adapter + dev.db
-const dbPath = path.join(import.meta.dirname, "../prisma/dev.db")
+// Create the Prisma layer using the isolated SQLite test database
 const adapter = new PrismaBetterSqlite3({ url: `file:${dbPath}` })
 const PrismaLayer = PrismaClient.layer({ adapter })
 
@@ -39,7 +45,7 @@ layer(PrismaLayer)("Prisma Model Repository", (it) => {
   })
 
   it.effect("create", () =>
-    Effect.gen(function*() {
+    Effect.gen(function* () {
       const todoRepo = yield* PrismaRepository.make(TodoModel, {
         modelName: "todo",
         spanPrefix: "todo",
@@ -56,10 +62,11 @@ layer(PrismaLayer)("Prisma Model Repository", (it) => {
       })
       expect(created.id).toBe(testUUIDs.create)
       expect(created.title).toBe("Create Test")
-    }))
+    }),
+  )
 
   it.effect("createMany", () =>
-    Effect.gen(function*() {
+    Effect.gen(function* () {
       const todoRepo = yield* PrismaRepository.make(TodoModel, {
         modelName: "todo",
         spanPrefix: "todo",
@@ -84,10 +91,11 @@ layer(PrismaLayer)("Prisma Model Repository", (it) => {
         ],
       })
       expect(result.count).toBe(2)
-    }))
+    }),
+  )
 
   it.effect("createManyAndReturn", () =>
-    Effect.gen(function*() {
+    Effect.gen(function* () {
       const todoRepo = yield* PrismaRepository.make(TodoModel, {
         modelName: "todo",
         spanPrefix: "todo",
@@ -114,10 +122,11 @@ layer(PrismaLayer)("Prisma Model Repository", (it) => {
       expect(result).toHaveLength(2)
       expect(result[0].title).toBe("Todo 1")
       expect(result[1].title).toBe("Todo 2")
-    }))
+    }),
+  )
 
   it.effect("findUnique", () =>
-    Effect.gen(function*() {
+    Effect.gen(function* () {
       const todoRepo = yield* PrismaRepository.make(TodoModel, {
         modelName: "todo",
         spanPrefix: "todo",
@@ -145,10 +154,11 @@ layer(PrismaLayer)("Prisma Model Repository", (it) => {
         where: { id: makeTodoId("550e8400-e29b-41d4-a716-446655449999") },
       })
       expect(Option.isNone(notFound)).toBe(true)
-    }))
+    }),
+  )
 
   it.effect("findUniqueOrThrow - success", () =>
-    Effect.gen(function*() {
+    Effect.gen(function* () {
       const todoRepo = yield* PrismaRepository.make(TodoModel, {
         modelName: "todo",
         spanPrefix: "todo",
@@ -168,10 +178,11 @@ layer(PrismaLayer)("Prisma Model Repository", (it) => {
         where: { id: makeTodoId(testUUIDs.findUniqueOrThrow) },
       })
       expect(found.title).toBe("Find Unique Or Throw")
-    }))
+    }),
+  )
 
   it.effect("findUniqueOrThrow - not found", () =>
-    Effect.gen(function*() {
+    Effect.gen(function* () {
       const todoRepo = yield* PrismaRepository.make(TodoModel, {
         modelName: "todo",
         spanPrefix: "todo",
@@ -187,10 +198,11 @@ layer(PrismaLayer)("Prisma Model Repository", (it) => {
       if (Result.isFailure(result)) {
         expect(result.failure._tag).toBe("PrismaRecordNotFoundError")
       }
-    }))
+    }),
+  )
 
   it.effect("findFirst - success", () =>
-    Effect.gen(function*() {
+    Effect.gen(function* () {
       const todoRepo = yield* PrismaRepository.make(TodoModel, {
         modelName: "todo",
         spanPrefix: "todo",
@@ -210,10 +222,11 @@ layer(PrismaLayer)("Prisma Model Repository", (it) => {
         where: { title: "Find First" },
       })
       expect(Option.isSome(found)).toBe(true)
-    }))
+    }),
+  )
 
   it.effect("findFirstOrThrow - success", () =>
-    Effect.gen(function*() {
+    Effect.gen(function* () {
       const todoRepo = yield* PrismaRepository.make(TodoModel, {
         modelName: "todo",
         spanPrefix: "todo",
@@ -233,10 +246,11 @@ layer(PrismaLayer)("Prisma Model Repository", (it) => {
         where: { title: "Find First Or Throw" },
       })
       expect(found.title).toBe("Find First Or Throw")
-    }))
+    }),
+  )
 
   it.effect("findFirstOrThrow - not found", () =>
-    Effect.gen(function*() {
+    Effect.gen(function* () {
       const todoRepo = yield* PrismaRepository.make(TodoModel, {
         modelName: "todo",
         spanPrefix: "todo",
@@ -252,10 +266,11 @@ layer(PrismaLayer)("Prisma Model Repository", (it) => {
       if (Result.isFailure(result)) {
         expect(result.failure._tag).toBe("PrismaRecordNotFoundError")
       }
-    }))
+    }),
+  )
 
   it.effect("findMany", () =>
-    Effect.gen(function*() {
+    Effect.gen(function* () {
       const todoRepo = yield* PrismaRepository.make(TodoModel, {
         modelName: "todo",
         spanPrefix: "todo",
@@ -291,10 +306,11 @@ layer(PrismaLayer)("Prisma Model Repository", (it) => {
         where: { published: true },
       })
       expect(found).toHaveLength(2)
-    }))
+    }),
+  )
 
   it.effect("update", () =>
-    Effect.gen(function*() {
+    Effect.gen(function* () {
       const todoRepo = yield* PrismaRepository.make(TodoModel, {
         modelName: "todo",
         spanPrefix: "todo",
@@ -315,10 +331,11 @@ layer(PrismaLayer)("Prisma Model Repository", (it) => {
         data: { title: "Updated" },
       })
       expect(updated.title).toBe("Updated")
-    }))
+    }),
+  )
 
   it.effect("updateMany", () =>
-    Effect.gen(function*() {
+    Effect.gen(function* () {
       const todoRepo = yield* PrismaRepository.make(TodoModel, {
         modelName: "todo",
         spanPrefix: "todo",
@@ -348,10 +365,11 @@ layer(PrismaLayer)("Prisma Model Repository", (it) => {
         data: { published: true },
       })
       expect(result.count).toBe(2)
-    }))
+    }),
+  )
 
   it.effect("upsert", () =>
-    Effect.gen(function*() {
+    Effect.gen(function* () {
       const todoRepo = yield* PrismaRepository.make(TodoModel, {
         modelName: "todo",
         spanPrefix: "todo",
@@ -384,10 +402,11 @@ layer(PrismaLayer)("Prisma Model Repository", (it) => {
         update: { title: "Upsert Updated" },
       })
       expect(updated.title).toBe("Upsert Updated")
-    }))
+    }),
+  )
 
   it.effect("delete", () =>
-    Effect.gen(function*() {
+    Effect.gen(function* () {
       const todoRepo = yield* PrismaRepository.make(TodoModel, {
         modelName: "todo",
         spanPrefix: "todo",
@@ -412,10 +431,11 @@ layer(PrismaLayer)("Prisma Model Repository", (it) => {
         where: { id: makeTodoId("550e8400-e29b-41d4-a716-446655442222") },
       })
       expect(Option.isNone(found)).toBe(true)
-    }))
+    }),
+  )
 
   it.effect("deleteMany", () =>
-    Effect.gen(function*() {
+    Effect.gen(function* () {
       const todoRepo = yield* PrismaRepository.make(TodoModel, {
         modelName: "todo",
         spanPrefix: "todo",
@@ -444,10 +464,11 @@ layer(PrismaLayer)("Prisma Model Repository", (it) => {
         where: { published: false },
       })
       expect(result.count).toBe(2)
-    }))
+    }),
+  )
 
   it.effect("count", () =>
-    Effect.gen(function*() {
+    Effect.gen(function* () {
       const todoRepo = yield* PrismaRepository.make(TodoModel, {
         modelName: "todo",
         spanPrefix: "todo",
@@ -479,10 +500,11 @@ layer(PrismaLayer)("Prisma Model Repository", (it) => {
         where: { id: makeTodoId("550e8400-e29b-41d4-a716-446655666666") },
       })
       expect(filteredCount).toBe(1)
-    }))
+    }),
+  )
 
   it.effect("aggregate", () =>
-    Effect.gen(function*() {
+    Effect.gen(function* () {
       const todoRepo = yield* PrismaRepository.make(TodoModel, {
         modelName: "todo",
         spanPrefix: "todo",
@@ -516,10 +538,11 @@ layer(PrismaLayer)("Prisma Model Repository", (it) => {
       expect(result._count).toBe(2)
       expect(result._min.id).toBe("550e8400-e29b-41d4-a716-446655666666")
       expect(result._max.id).toBe("550e8400-e29b-41d4-a716-446655666667")
-    }))
+    }),
+  )
 
   it.effect("groupBy", () =>
-    Effect.gen(function*() {
+    Effect.gen(function* () {
       const todoRepo = yield* PrismaRepository.make(TodoModel, {
         modelName: "todo",
         spanPrefix: "todo",
@@ -562,17 +585,31 @@ layer(PrismaLayer)("Prisma Model Repository", (it) => {
       expect(result.length).toBeGreaterThan(0)
 
       // Check for the group with published: true, authorId: 1
-      const group1 = result.find(
-        (g: any) => g.published === true && g.authorId === 1,
-      )
+      const group1 = result.find((g: any) => g.published === true && g.authorId === 1)
       expect(group1).toBeDefined()
       expect(group1._count.id).toBe(2)
 
       // Check for the group with published: false, authorId: 2
-      const group2 = result.find(
-        (g: any) => g.published === false && g.authorId === 2,
-      )
+      const group2 = result.find((g: any) => g.published === false && g.authorId === 2)
       expect(group2).toBeDefined()
       expect(group2._count.id).toBe(1)
-    }))
+    }),
+  )
+})
+
+afterAll(async () => {
+  let temporaryDbAfterSuite: Buffer | undefined
+  let trackedDbAfterSuite: Buffer | undefined
+  try {
+    await db.$disconnect()
+    temporaryDbAfterSuite = readFileSync(dbPath)
+    trackedDbAfterSuite = readFileSync(trackedDbPath)
+  } finally {
+    cleanupTestDbDirectory()
+  }
+
+  expect(dbPath).not.toBe(trackedDbPath)
+  expect(temporaryDbAfterSuite).not.toEqual(trackedDbSnapshot)
+  expect(trackedDbAfterSuite).toEqual(trackedDbSnapshot)
+  expect(existsSync(testDbDirectory)).toBe(false)
 })
