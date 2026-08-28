@@ -306,7 +306,12 @@ const betaViolations = (source) => {
       [/git diff --cached --name-only --no-renames/, "exact index"],
       [/git diff --quiet/, "clean tracked tree"],
       [/git ls-files --others --exclude-standard/, "clean untracked tree"],
-      [/^git add -- "\$\{RELEASE_PATHS\[@\]\}"$/, "explicit staging"],
+      [/^git add --pathspec-from-file=\/tmp\/expected-release-paths$/, "pathspec-file staging"],
+      [/^if ! cmp -s \/tmp\/expected-release-paths \/tmp\/staged-release-paths; then$/, "bytewise staged paths"],
+      [
+        /^echo "::error::expected=\$\(paste -sd, \/tmp\/expected-release-paths\); actual=\$\(paste -sd, \/tmp\/staged-release-paths\)"$/,
+        "safe staged-path annotation",
+      ],
       [/^'@effectify\/solid-query=0\.5\.12-beta\.0' \| sort > "\$EXPECTED_MATRIX"$/, "sorted incident matrix"],
       [/^git commit -m "chore\(release\): prepare beta from \$SOURCE_SHA \[skip release\]"$/, "release commit"],
     ]) {
@@ -314,6 +319,9 @@ const betaViolations = (source) => {
     }
     if ((commands.match(/verify_prepared_tree/g) ?? []).length < 3)
       violations.push("beta PREPARE repeated verification")
+    if (/\bmapfile\b|^git add -- "\$\{RELEASE_PATHS\[@\]\}"$/m.test(commands)) {
+      violations.push("beta PREPARE array staging")
+    }
     if (
       /nx release publish|npm (?:publish|whoami)|gh (?:release|issue|pr)|git tag|workflow run|release-stable|refs\/heads\/master|NODE_AUTH_TOKEN|NPM_CONFIG_PROVENANCE/.test(
         prepare.source,
@@ -638,7 +646,16 @@ test("beta PREPARE and suppression mutations fail closed", () => {
       'test "$REFS_BEFORE" = "$(git for-each-ref',
       'test "$REFS_BEFORE" != "$(git for-each-ref',
     ],
-    ["stage every path", 'git add -- "${RELEASE_PATHS[@]}"', "git add -A"],
+    [
+      "restore array staging",
+      "git add --pathspec-from-file=/tmp/expected-release-paths",
+      'mapfile -t RELEASE_PATHS < /tmp/expected-release-paths\n          git add -- "${RELEASE_PATHS[@]}"',
+    ],
+    [
+      "weaken staged-path comparison",
+      "if ! cmp -s /tmp/expected-release-paths /tmp/staged-release-paths; then",
+      "if test -s /tmp/staged-release-paths; then",
+    ],
     ["change an incident version", "@effectify/hatchet=0.1.0-beta.0", "@effectify/hatchet=0.1.0-beta.1"],
     [
       "bypass deterministic incident matrix sorting",
