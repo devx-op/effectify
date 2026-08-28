@@ -6,12 +6,16 @@ on:
   workflow_dispatch:
     inputs:
       publish_only:
-        description: "Publish existing beta versions without versioning, changelog, or git changes"
+        description: "Finalize beta artifacts from already-merged manifests"
         required: true
         type: boolean
         default: false
       projects:
-        description: "Comma-separated existing Nx release project names; required for publish-only recovery"
+        description: "Comma-separated Nx release project names"
+        required: false
+        type: string
+      expected_sha:
+        description: "Full current master SHA; required for publish-only finalization"
         required: false
         type: string
 
@@ -25,7 +29,6 @@ env:
 jobs:
   release-beta:
     name: 🚀 Release Beta
-    if: ${{ github.event_name == 'workflow_dispatch' || (!contains(github.event.head_commit.message, 'chore(release):') && !contains(github.event.head_commit.message, '[skip release]')) }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -69,38 +72,56 @@ jobs:
       - name: 🛡️ Verify release policy contract
         run: node --test scripts/release-policy-contract.test.mjs
 
-      - name: 🔧 Configure Git
-        if: ${{ inputs.publish_only != true }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: 🔍 Detect Affected Release Projects
-        id: affected
+      - name: 🧭 Resolve beta mode and projects
+        id: release
         env:
+          EVENT_NAME: ${{ github.event_name }}
           PUBLISH_ONLY: ${{ inputs.publish_only || false }}
-          RECOVERY_PROJECTS: ${{ inputs.projects || '' }}
+          REQUESTED_PROJECTS: ${{ inputs.projects || '' }}
+          EXPECTED_SHA: ${{ inputs.expected_sha || '' }}
           BEFORE_SHA: ${{ github.event.before }}
           HEAD_SHA: ${{ github.sha }}
+          HEAD_MESSAGE: ${{ github.event.head_commit.message || '' }}
         run: |
+          set -euo pipefail
           RELEASE_PROJECTS=$(
             jq -r '.release.projects[]' nx.json | while read -r path; do
               pnpm nx show project "$path" --json | jq -r '.name'
             done | jq -Rsc 'split("\n") | map(select(length > 0)) | unique'
           )
+          ALL_PROJECTS=$(printf '%s' "$RELEASE_PROJECTS" | jq -r '.[]' | sort)
+          test "$(printf '%s\n' "$ALL_PROJECTS" | sed '/^$/d' | wc -l | tr -d ' ')" = "7"
 
-          if [ "$PUBLISH_ONLY" = "true" ]; then
-            if [ -z "$RECOVERY_PROJECTS" ]; then
-              echo "publish-only recovery requires an explicit comma-separated projects input" >&2
-              exit 1
-            fi
-            SELECTED_PROJECTS=$(printf '%s' "$RECOVERY_PROJECTS" | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed '/^$/d' | sort -u)
+          select_requested_projects() {
+            test -n "$REQUESTED_PROJECTS" || { echo "manual beta runs require explicit projects" >&2; exit 1; }
+            RAW_PROJECTS=$(printf '%s' "$REQUESTED_PROJECTS" | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed '/^$/d')
+            test -n "$RAW_PROJECTS" || { echo "manual beta runs require nonempty projects" >&2; exit 1; }
+            DUPLICATES=$(printf '%s\n' "$RAW_PROJECTS" | sort | uniq -d)
+            test -z "$DUPLICATES" || { echo "duplicate release project: $DUPLICATES" >&2; exit 1; }
+            SELECTED_PROJECTS=$(printf '%s\n' "$RAW_PROJECTS" | sort)
             while IFS= read -r project; do
-              if ! printf '%s\n' "$RELEASE_PROJECTS" | jq -r '.[]' | grep -Fx -- "$project" >/dev/null; then
+              printf '%s\n' "$ALL_PROJECTS" | grep -Fx -- "$project" >/dev/null || {
                 echo "Invalid release project: $project" >&2
                 exit 1
-              fi
+              }
             done <<< "$SELECTED_PROJECTS"
+          }
+
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            select_requested_projects
+            if [ "$PUBLISH_ONLY" = "true" ]; then
+              [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]] || {
+                echo "FINALIZE requires a full lowercase expected_sha" >&2
+                exit 1
+              }
+              echo "mode=finalize" >> "$GITHUB_OUTPUT"
+            else
+              cmp -s <(printf '%s\n' "$ALL_PROJECTS") <(printf '%s\n' "$SELECTED_PROJECTS") || {
+                echo "manual PREPARE requires all seven release projects" >&2
+                exit 1
+              }
+              echo "mode=prepare" >> "$GITHUB_OUTPUT"
+            fi
             echo "has_projects=true" >> "$GITHUB_OUTPUT"
             echo "projects=$(printf '%s' "$SELECTED_PROJECTS" | paste -sd, -)" >> "$GITHUB_OUTPUT"
             exit 0
@@ -120,30 +141,81 @@ jobs:
             BASE="$HEAD"
           fi
 
+          MANIFESTS=$(mktemp)
+          while IFS= read -r project; do
+            DATA=$(pnpm nx show project "$project" --json)
+            ROOT=$(printf '%s' "$DATA" | jq -er '.root | select(length > 0)')
+            printf '%s/package.json\n' "$ROOT"
+          done <<< "$ALL_PROJECTS" | sort -u > "$MANIFESTS"
+          CHANGED=$(mktemp)
+          git diff --name-only --no-renames "$BASE" "$HEAD" | sort -u > "$CHANGED"
+
+          HAS_CHANGELOG=false
+          UNEXPECTED=false
+          MANIFEST_CHANGES=0
+          BETA_TRANSITIONS=0
+          while IFS= read -r path; do
+            if [ "$path" = "CHANGELOG.md" ]; then
+              HAS_CHANGELOG=true
+            elif grep -Fx -- "$path" "$MANIFESTS" >/dev/null; then
+              MANIFEST_CHANGES=$((MANIFEST_CHANGES + 1))
+              OLD_VERSION=$(git show "$BASE:$path" | jq -er '.version')
+              NEW_VERSION=$(jq -er '.version' "$path")
+              if [ "$OLD_VERSION" != "$NEW_VERSION" ] && [[ "$NEW_VERSION" =~ -beta\.[0-9]+$ ]]; then
+                BETA_TRANSITIONS=$((BETA_TRANSITIONS + 1))
+              fi
+            else
+              UNEXPECTED=true
+              if [[ "$path" == */package.json ]] && [ -f "$path" ]; then
+                NEW_VERSION=$(jq -er '.version' "$path")
+                [[ "$NEW_VERSION" =~ -beta\.[0-9]+$ ]] && BETA_TRANSITIONS=$((BETA_TRANSITIONS + 1))
+              fi
+            fi
+          done < "$CHANGED"
+
+          if [ "$HAS_CHANGELOG" = "true" ] && [ "$UNEXPECTED" = "false" ] && [ "$BETA_TRANSITIONS" -gt 0 ] && [ "$BETA_TRANSITIONS" -eq "$MANIFEST_CHANGES" ]; then
+            echo "mode=suppress" >> "$GITHUB_OUTPUT"
+            echo "has_projects=false" >> "$GITHUB_OUTPUT"
+            echo "projects=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [[ "$HEAD_MESSAGE" == *"chore(release):"* || "$HEAD_MESSAGE" == *"[skip release]"* ]] || [ "$BETA_TRANSITIONS" -gt 0 ]; then
+            echo "suspicious release-shaped master push; refusing preparation" >&2
+            exit 1
+          fi
+
           AFFECTED_RAW=$(pnpm nx show projects --affected --base="$BASE" --head="$HEAD" --json 2>/dev/null || echo "[]")
           AFFECTED_RELEASE_PROJECTS=$(echo "$AFFECTED_RAW" | jq -r --argjson release "$RELEASE_PROJECTS" '[.[] | select(. as $project | $release | index($project))] | unique | join(",")' 2>/dev/null || echo "")
           if [ -z "$AFFECTED_RELEASE_PROJECTS" ] || [ "$AFFECTED_RELEASE_PROJECTS" = "null" ]; then
+            echo "mode=prepare" >> "$GITHUB_OUTPUT"
             echo "has_projects=false" >> "$GITHUB_OUTPUT"
             echo "projects=" >> "$GITHUB_OUTPUT"
           else
+            echo "mode=prepare" >> "$GITHUB_OUTPUT"
             echo "has_projects=true" >> "$GITHUB_OUTPUT"
             echo "projects=$AFFECTED_RELEASE_PROJECTS" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: 🏗️ Build Affected Projects
-        if: ${{ steps.affected.outputs.has_projects == 'true' }}
+      - name: 🔧 Configure Git for PREPARE
+        if: ${{ steps.release.outputs.mode == 'prepare' && steps.release.outputs.has_projects == 'true' }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: 🏗️ Build selected projects
+        if: ${{ steps.release.outputs.mode != 'suppress' && steps.release.outputs.has_projects == 'true' }}
         env:
-          PROJECTS: ${{ steps.affected.outputs.projects }}
+          PROJECTS: ${{ steps.release.outputs.projects }}
         run: pnpm nx run-many -t build "--projects=$PROJECTS" --parallel=3
 
-      - name: 🧪 Test Affected Projects
-        if: ${{ steps.affected.outputs.has_projects == 'true' }}
+      - name: 🧪 Test selected projects
+        if: ${{ steps.release.outputs.mode != 'suppress' && steps.release.outputs.has_projects == 'true' }}
         env:
-          PROJECTS: ${{ steps.affected.outputs.projects }}
+          PROJECTS: ${{ steps.release.outputs.projects }}
         run: pnpm nx run-many -t test "--projects=$PROJECTS" --parallel=3 --passWithNoTests
 
       - name: ✅ Verify React Router 8 readiness
-        if: ${{ steps.affected.outputs.has_projects == 'true' }}
+        if: ${{ steps.release.outputs.mode != 'suppress' && steps.release.outputs.has_projects == 'true' }}
         run: |
           pnpm nx test @effectify/react-router
           pnpm nx run @effectify/react-router-example:migration:test
@@ -151,41 +223,252 @@ jobs:
           pnpm nx run @effectify/react-router-example:migration:manifest
           pnpm nx run @effectify/react-router-example:consolidation:verify
 
-      - name: 🔐 Verify npm authentication
-        if: ${{ steps.affected.outputs.has_projects == 'true' }}
-        run: npm whoami
+      - name: 🌿 PREPARE verified beta branch
+        id: prepare
+        if: ${{ steps.release.outputs.mode == 'prepare' && steps.release.outputs.has_projects == 'true' }}
+        env:
+          PROJECTS: ${{ steps.release.outputs.projects }}
+          MANUAL_PREPARE: ${{ github.event_name == 'workflow_dispatch' }}
+        run: |
+          set -euo pipefail
+          SOURCE_SHA=$(git rev-parse HEAD)
+          SOURCE_REF="$GITHUB_REF"
+          SHA_PREFIX=${SOURCE_SHA:0:12}
+          RELEASE_BRANCH="release/beta-$SHA_PREFIX"
+          git switch --create "$RELEASE_BRANCH"
+          REFS_BEFORE=$(git for-each-ref --format='%(refname) %(objectname)' refs/heads refs/tags | sort)
+
+          RELEASE_PATHS=("CHANGELOG.md")
+          RECORDS=$(mktemp)
+          IFS=',' read -ra SELECTED <<< "$PROJECTS"
+          for project in "${SELECTED[@]}"; do
+            DATA=$(pnpm nx show project "$project" --json)
+            ROOT=$(printf '%s' "$DATA" | jq -er '.root | select(length > 0)')
+            NAME=$(printf '%s' "$DATA" | jq -er '.name | select(length > 0)')
+            MANIFEST="$ROOT/package.json"
+            RELEASE_PATHS+=("$MANIFEST")
+            printf '%s\t%s\t%s\n' "$project" "$NAME" "$MANIFEST" >> "$RECORDS"
+          done
+          printf '%s\n' "${RELEASE_PATHS[@]}" | sort -u > /tmp/expected-release-paths
+          test "$(wc -l < /tmp/expected-release-paths | tr -d ' ')" = "$(( ${#SELECTED[@]} + 1 ))"
+
+          pnpm nx release version "--projects=$PROJECTS" --preid=beta --git-commit=false --git-tag=false --git-push=false --stage-changes=false
+
+          verify_prepared_tree() {
+            ACTUAL_PATHS=$(mktemp)
+            { git diff --name-only --no-renames HEAD; git ls-files --others --exclude-standard; } | sort -u > "$ACTUAL_PATHS"
+            cmp -s /tmp/expected-release-paths "$ACTUAL_PATHS" || {
+              echo "PREPARE changed paths differ from selected manifests plus root CHANGELOG.md" >&2
+              diff -u /tmp/expected-release-paths "$ACTUAL_PATHS" >&2 || true
+              exit 1
+            }
+            test "$REFS_BEFORE" = "$(git for-each-ref --format='%(refname) %(objectname)' refs/heads refs/tags | sort)" || {
+              echo "PREPARE materialization changed a git ref" >&2
+              exit 1
+            }
+            while IFS=$'\t' read -r project name manifest; do
+              VERSION=$(jq -er '.version' "$manifest")
+              [[ "$VERSION" =~ -beta\.[0-9]+$ ]] || { echo "$name did not materialize a beta version" >&2; exit 1; }
+            done < "$RECORDS"
+          }
+          verify_prepared_tree
+
+          if [ "$MANUAL_PREPARE" = "true" ]; then
+            EXPECTED_MATRIX=$(mktemp)
+            printf '%s\n' \
+              '@effectify/hatchet=0.1.0-beta.0' \
+              '@effectify/node-better-auth=0.5.12-beta.0' \
+              '@effectify/prisma=1.1.13-beta.0' \
+              '@effectify/react-query=1.0.0-beta.1' \
+              '@effectify/react-router=0.6.0-beta.0' \
+              '@effectify/react-router-better-auth=0.5.12-beta.0' \
+              '@effectify/solid-query=0.5.12-beta.0' > "$EXPECTED_MATRIX"
+            ACTUAL_MATRIX=$(mktemp)
+            while IFS=$'\t' read -r project name manifest; do
+              printf '%s=%s\n' "$name" "$(jq -er '.version' "$manifest")"
+            done < "$RECORDS" | sort > "$ACTUAL_MATRIX"
+            cmp -s "$EXPECTED_MATRIX" "$ACTUAL_MATRIX" || { echo "incident package/version matrix changed" >&2; exit 1; }
+          fi
+
+          pnpm nx run-many -t build "--projects=$PROJECTS" --parallel=3
+          verify_prepared_tree
+          mapfile -t RELEASE_PATHS < /tmp/expected-release-paths
+          git add -- "${RELEASE_PATHS[@]}"
+          git diff --cached --name-only --no-renames | sort -u > /tmp/staged-release-paths
+          cmp -s /tmp/expected-release-paths /tmp/staged-release-paths || { echo "staged release paths differ" >&2; exit 1; }
+          git diff --quiet
+          test -z "$(git ls-files --others --exclude-standard)"
+          verify_prepared_tree
+          git commit -m "chore(release): prepare beta from $SOURCE_SHA [skip release]"
+          test -z "$(git status --porcelain)"
+          git push origin "HEAD:refs/heads/release/beta-$SHA_PREFIX"
+          VERSIONS=$(while IFS=$'\t' read -r project name manifest; do printf '%s=%s\n' "$name" "$(jq -er '.version' "$manifest")"; done < "$RECORDS" | paste -sd, -)
+          CHANGED_PATHS=$(paste -sd, /tmp/expected-release-paths)
+          echo "source_sha=$SOURCE_SHA" >> "$GITHUB_OUTPUT"
+          echo "source_ref=$SOURCE_REF" >> "$GITHUB_OUTPUT"
+          echo "branch=$RELEASE_BRANCH" >> "$GITHUB_OUTPUT"
+          echo "versions=$VERSIONS" >> "$GITHUB_OUTPUT"
+          echo "changed_paths=$CHANGED_PATHS" >> "$GITHUB_OUTPUT"
+
+      - name: 🔐 Verify npm authentication for FINALIZE
+        if: ${{ steps.release.outputs.mode == 'finalize' && steps.release.outputs.has_projects == 'true' }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm whoami
 
-      - name: 🚀 Version, Changelog & Publish Beta
-        if: ${{ steps.affected.outputs.has_projects == 'true' }}
+      - name: 🚀 FINALIZE exact merged beta
+        if: ${{ steps.release.outputs.mode == 'finalize' && steps.release.outputs.has_projects == 'true' }}
         env:
-          PROJECTS: ${{ steps.affected.outputs.projects }}
-          PUBLISH_ONLY: ${{ inputs.publish_only || false }}
+          PROJECTS: ${{ steps.release.outputs.projects }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_CONFIG_PROVENANCE: true
         run: |
-          if [ "$PUBLISH_ONLY" != "true" ]; then
-            pnpm nx release "--projects=$PROJECTS" --preid=beta --skip-publish
-            pnpm nx run-many -t build "--projects=$PROJECTS" --parallel=3
-          fi
-          # Every beta publish is explicitly non-default, including recovery.
-          pnpm nx release publish "--projects=$PROJECTS" --tag=beta
+          set -euo pipefail
+          git fetch origin master:refs/remotes/origin/master --no-tags
+          HEAD_SHA=$(git rev-parse HEAD)
+          REMOTE_SHA=$(git rev-parse origin/master)
+          test "$HEAD_SHA" = "$EXPECTED_SHA"
+          test "$REMOTE_SHA" = "$EXPECTED_SHA"
 
-      - name: 📊 Release Summary
+          RECORDS=$(mktemp)
+          IFS=',' read -ra SELECTED <<< "$PROJECTS"
+          for PROJECT in "${SELECTED[@]}"; do
+            DATA=$(pnpm nx show project "$PROJECT" --json)
+            ROOT=$(printf '%s' "$DATA" | jq -er '.root | select(length > 0)')
+            MANIFEST="$ROOT/package.json"
+            NAME=$(jq -er '.name | select(length > 0)' "$MANIFEST")
+            VERSION=$(jq -er '.version | select(length > 0)' "$MANIFEST")
+            test "$VERSION" != "${VERSION%-beta.*}"
+            [[ "$VERSION" =~ -beta\.[0-9]+$ ]]
+            TAG="$NAME@$VERSION"
+            printf '%s\t%s\t%s\t%s\t%s\n' "$PROJECT" "$MANIFEST" "$NAME" "$VERSION" "$TAG" >> "$RECORDS"
+          done
+          test "$(sort -u -k3,3 "$RECORDS" | wc -l | tr -d ' ')" = "${#SELECTED[@]}"
+
+          : > /tmp/missing-projects
+          while IFS=$'\t' read -r PROJECT MANIFEST NAME VERSION TAG; do
+            VERSIONS_JSON=$(npm view "$NAME" versions --json) || { echo "unknown npm history for $NAME" >&2; exit 1; }
+            printf '%s' "$VERSIONS_JSON" | jq -e 'type == "array" or type == "string"' >/dev/null
+            BETA_TAG=$(npm view "$NAME" dist-tags.beta --json | jq -r 'if . == null then "" else . end') || {
+              echo "unknown npm beta tag for $NAME" >&2
+              exit 1
+            }
+            if printf '%s' "$VERSIONS_JSON" | jq -e --arg version "$VERSION" 'if type == "array" then index($version) != null else . == $version end' >/dev/null; then
+              test "$BETA_TAG" = "$VERSION" || { echo "conflicting npm beta state for $NAME" >&2; exit 1; }
+            else
+              printf '%s\n' "$PROJECT" >> /tmp/missing-projects
+            fi
+          done < "$RECORDS"
+
+          verify_tags() {
+            MODE=$1
+            [ "$MODE" != "collect" ] || : > /tmp/missing-tags
+            while IFS=$'\t' read -r PROJECT MANIFEST NAME VERSION TAG; do
+              REMOTE_TAGS=$(git ls-remote --tags origin "refs/tags/$TAG" "refs/tags/$TAG^{}") || {
+                echo "unknown remote tag state for $TAG" >&2
+                exit 1
+              }
+              if [ -z "$REMOTE_TAGS" ]; then
+                [ "$MODE" = "collect" ] || { echo "missing pushed tag $TAG" >&2; exit 1; }
+                printf '%s\n' "$TAG" >> /tmp/missing-tags
+                continue
+              fi
+              DIRECT_COUNT=$(printf '%s\n' "$REMOTE_TAGS" | grep -c $'\trefs/tags/'"$TAG"'$' || true)
+              PEELED_COUNT=$(printf '%s\n' "$REMOTE_TAGS" | grep -c $'\trefs/tags/'"$TAG"'\^{}$' || true)
+              PEELED_SHA=$(printf '%s\n' "$REMOTE_TAGS" | awk -v ref="refs/tags/$TAG^{}" '$2 == ref { print $1 }')
+              test "$DIRECT_COUNT" = "1" && test "$PEELED_COUNT" = "1" && test "$PEELED_SHA" = "$EXPECTED_SHA" || {
+                echo "tag must be uniquely annotated at expected_sha: $TAG" >&2
+                exit 1
+              }
+            done < "$RECORDS"
+          }
+          verify_tags collect
+
+          TAG_REFS=()
+          while IFS= read -r TAG; do
+            [ -n "$TAG" ] || continue
+            ! git show-ref --verify --quiet "refs/tags/$TAG" || { echo "conflicting local tag $TAG" >&2; exit 1; }
+            git tag -a "$TAG" "$EXPECTED_SHA" -m "$TAG"
+            TAG_REFS+=("refs/tags/$TAG:refs/tags/$TAG")
+          done < /tmp/missing-tags
+          if [ "${#TAG_REFS[@]}" -gt 0 ]; then
+            git push --atomic origin "${TAG_REFS[@]}"
+          fi
+          verify_tags verify
+
+          verify_releases() {
+            MODE=$1
+            [ "$MODE" != "collect" ] || : > /tmp/missing-releases
+            while IFS=$'\t' read -r PROJECT MANIFEST NAME VERSION TAG; do
+              set +e
+              RELEASE_JSON=$(gh release view "$TAG" --json tagName,isDraft,isPrerelease 2>/tmp/gh-release-error)
+              STATUS=$?
+              set -e
+              if [ "$STATUS" = "0" ]; then
+                printf '%s' "$RELEASE_JSON" | jq -e --arg tag "$TAG" '.tagName == $tag and .isDraft == false and .isPrerelease == true' >/dev/null || {
+                  echo "conflicting GitHub Release for $TAG" >&2
+                  exit 1
+                }
+              elif [ "$STATUS" = "1" ] && grep -Fqi "release not found" /tmp/gh-release-error; then
+                [ "$MODE" = "collect" ] || { echo "missing GitHub prerelease $TAG" >&2; exit 1; }
+                printf '%s\n' "$TAG" >> /tmp/missing-releases
+              else
+                echo "unknown GitHub Release state for $TAG" >&2
+                exit 1
+              fi
+            done < "$RECORDS"
+          }
+          verify_releases collect
+          while IFS= read -r TAG; do
+            [ -n "$TAG" ] || continue
+            gh release create "$TAG" --verify-tag --prerelease --generate-notes
+          done < /tmp/missing-releases
+          verify_releases verify
+
+          MISSING_PROJECTS=$(paste -sd, /tmp/missing-projects)
+          if [ -n "$MISSING_PROJECTS" ]; then
+            PROJECTS="$MISSING_PROJECTS"
+            pnpm nx release publish "--projects=$PROJECTS" --tag=beta
+          fi
+
+          echo "post-verify npm beta state"
+          while IFS=$'\t' read -r PROJECT MANIFEST NAME VERSION TAG; do
+            VERSIONS_JSON=$(npm view "$NAME" versions --json) || { echo "unknown post-publish npm history for $NAME" >&2; exit 1; }
+            printf '%s' "$VERSIONS_JSON" | jq -e --arg version "$VERSION" 'if type == "array" then index($version) != null else . == $version end' >/dev/null
+            BETA_TAG=$(npm view "$NAME" dist-tags.beta --json | jq -er --arg version "$VERSION" 'select(. == $version)') || {
+              echo "npm beta tag did not converge for $NAME" >&2
+              exit 1
+            }
+          done < "$RECORDS"
+
+      - name: 📊 Release summary
         if: always()
         env:
-          HAS_PROJECTS: ${{ steps.affected.outputs.has_projects }}
-          PROJECTS: ${{ steps.affected.outputs.projects }}
-          PUBLISH_ONLY: ${{ inputs.publish_only || false }}
+          MODE: ${{ steps.release.outputs.mode || 'failed' }}
+          HAS_PROJECTS: ${{ steps.release.outputs.has_projects || 'false' }}
+          PROJECTS: ${{ steps.release.outputs.projects || '' }}
+          SOURCE_SHA: ${{ steps.prepare.outputs.source_sha || '' }}
+          SOURCE_REF: ${{ steps.prepare.outputs.source_ref || '' }}
+          RELEASE_BRANCH: ${{ steps.prepare.outputs.branch || '' }}
+          SELECTED_VERSIONS: ${{ steps.prepare.outputs.versions || '' }}
+          CHANGED_PATHS: ${{ steps.prepare.outputs.changed_paths || '' }}
+          EXPECTED_SHA: ${{ inputs.expected_sha || '' }}
         run: |
           echo "## 🚀 Beta Release Summary" >> "$GITHUB_STEP_SUMMARY"
-          if [ "$HAS_PROJECTS" = "true" ]; then
-            echo "**Projects:** $PROJECTS" >> "$GITHUB_STEP_SUMMARY"
-            if [ "$PUBLISH_ONLY" = "true" ]; then
-              echo "**Mode:** publish-only recovery; selected existing manifests were built and published with the beta tag." >> "$GITHUB_STEP_SUMMARY"
-            fi
+          echo "**Mode:** $MODE" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Projects:** ${PROJECTS:-none}" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$MODE" = "prepare" ] && [ "$HAS_PROJECTS" = "true" ]; then
+            echo "**Source:** $SOURCE_SHA ($SOURCE_REF)" >> "$GITHUB_STEP_SUMMARY"
+            echo "**Prepared branch:** $RELEASE_BRANCH" >> "$GITHUB_STEP_SUMMARY"
+            echo "**Selected versions:** $SELECTED_VERSIONS" >> "$GITHUB_STEP_SUMMARY"
+            echo "**Changed paths:** $CHANGED_PATHS" >> "$GITHUB_STEP_SUMMARY"
+            echo 'Create or reuse an approved issue, then manually open one linked PR to protected master; its sole `type:*` label is `type:chore`.' >> "$GITHUB_STEP_SUMMARY"
+          elif [ "$MODE" = "suppress" ]; then
+            echo "Structurally exact beta release output detected; preparation and publication were suppressed." >> "$GITHUB_STEP_SUMMARY"
+          elif [ "$MODE" = "finalize" ]; then
+            echo "**Expected master SHA:** $EXPECTED_SHA" >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "⏭️ **Skipped - No affected projects**" >> "$GITHUB_STEP_SUMMARY"
+            echo "No selected release projects or mode resolution failed." >> "$GITHUB_STEP_SUMMARY"
           fi

@@ -1,6 +1,6 @@
 # CI and npm release setup
 
-Effectify has three intentionally separate release channels. Alpha and beta are branch-driven prereleases; stable publication is always a manual decision.
+Effectify has three separate release channels. Beta now prepares a reviewable branch before a maintainer explicitly finalizes the merged release; alpha and stable behavior is unchanged.
 
 ## Release channel map
 
@@ -61,11 +61,34 @@ Manual publish-only recovery requires an explicit comma-separated `projects` inp
 
 ### Beta: `.github/workflows/cd.yml`
 
-**Triggers:** pushes to `master` and optional manual dispatch.
+**Triggers:** pushes to `master` and manual dispatch. A normal eligible push prepares, but does not publish, a verified `release/beta-<12-character-source-sha>` branch. A beta release-shaped merge is suppressed structurally; `chore(release):` and `[skip release]` are defense-in-depth signals, not sufficient suppression by themselves.
 
-A normal run uses the same exact push-range and exact-membership affected-project policy as alpha, versions with Nx `--preid=beta`, and publishes with npm `--tag=beta`. It never publishes to npm's default tag. Pushes whose head commit contains `chore(release):` or `[skip release]` are skipped, preventing release-commit recursion.
+#### Beta quick path
 
-Manual publish-only recovery requires explicit existing project names and still publishes with `--tag=beta`; it skips version, changelog, and git mutation.
+1. Let an eligible `master` push run PREPARE. For this incident only, manual PREPARE must select all seven projects listed above.
+2. Verify the summary's source SHA, release branch, changed paths, and versions. PREPARE changes only root `CHANGELOG.md` and the selected manifests.
+3. Create or reuse the required approved issue. Manually open one linked PR from the reported release branch to `master`; its sole `type:*` label is `type:chore`.
+4. Use ordinary required checks, human review, and protected merge. Confirm the merge-triggered beta run reports `suppress` and publishes nothing.
+5. Copy the resulting current 40-character lowercase `master` SHA. Manually dispatch `publish_only=true` with the exact projects and that SHA as `expected_sha`.
+6. Verify every exact annotated tag, non-draft GitHub prerelease, npm version, and `beta` dist-tag.
+
+FINALIZE freshly checks that checkout `HEAD`, `origin/master`, and `expected_sha` are equal. It verifies or creates exact annotated tags with one atomic tag-only push, verifies or creates exact prereleases, publishes only missing npm packages through Nx with `--tag=beta`, and post-verifies every selected npm beta. Exact publish-only recovery retries are safe; unknown or conflicting external state stops the run.
+
+#### Authorized incident matrix
+
+| Package                               | Required beta version |
+| ------------------------------------- | --------------------- |
+| `@effectify/react-router`             | `0.6.0-beta.0`        |
+| `@effectify/react-query`              | `1.0.0-beta.1`        |
+| `@effectify/node-better-auth`         | `0.5.12-beta.0`       |
+| `@effectify/solid-query`              | `0.5.12-beta.0`       |
+| `@effectify/react-router-better-auth` | `0.5.12-beta.0`       |
+| `@effectify/prisma`                   | `1.1.13-beta.0`       |
+| `@effectify/hatchet`                  | `0.1.0-beta.0`        |
+
+Do **not** dispatch stable during beta recovery. Stop on a newer `master`, an unexpected generated path or version, an ambiguous remote read, a lightweight or wrong-target tag, a conflicting Release, or inconsistent npm state.
+
+Before publication, rollback is limited to deleting the unprotected prepared branch or closing/reverting the release PR through normal policy. Do not delete published tags, Releases, or npm artifacts as rollback; rerun the exact FINALIZE request or obtain authorization for a fix-forward release.
 
 ### Stable: `.github/workflows/release-stable.yml`
 
@@ -116,9 +139,8 @@ pnpm nx run @effectify/react-router-example:consolidation:verify
 
 ## Recovery checklist
 
-- Confirm the workflow run is using the intended channel.
-- Copy exact project names from the seven-project list above.
-- For alpha or beta recovery, confirm the existing versions carry the matching prerelease suffix.
-- For stable recovery, confirm every selected manifest version has no prerelease suffix.
-- Use publish-only mode only to retry existing versions; use normal stable mode to graduate prereleases.
-- Review the workflow summary and npm package pages after completion.
+- Confirm the workflow run is using the intended channel and exact project names.
+- For alpha recovery, confirm existing versions carry the alpha suffix.
+- For beta recovery, follow the PREPARE → approved issue → linked PR → protected merge → exact-SHA FINALIZE path above.
+- For stable recovery, confirm every selected manifest is stable and use stable's documented publish-only mode only for an existing version.
+- Review workflow summaries, GitHub Releases, and npm package pages after completion.
