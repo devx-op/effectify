@@ -197,8 +197,8 @@ jobs:
             echo "projects=$AFFECTED_RELEASE_PROJECTS" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: 🔧 Configure Git for PREPARE
-        if: ${{ steps.release.outputs.mode == 'prepare' && steps.release.outputs.has_projects == 'true' }}
+      - name: 🔧 Configure Git for release
+        if: ${{ (steps.release.outputs.mode == 'prepare' || steps.release.outputs.mode == 'finalize') && steps.release.outputs.has_projects == 'true' }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"

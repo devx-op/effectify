@@ -176,6 +176,23 @@ const channelPublishCommand = (channel) =>
   new RegExp(`^pnpm nx release publish "--projects=\\$PROJECTS" --tag=${channel}$`)
 const betaVersionCommand =
   /^pnpm nx release version "--projects=\$PROJECTS" --preid=beta --git-commit=false --git-tag=false --git-push=false --stage-changes=false$/
+const betaGitIdentityCondition =
+  "${{ (steps.release.outputs.mode == 'prepare' || steps.release.outputs.mode == 'finalize') && steps.release.outputs.has_projects == 'true' }}"
+const gitIdentityCommands = [
+  'git config user.name "github-actions[bot]"',
+  'git config user.email "github-actions[bot]@users.noreply.github.com"',
+]
+const betaGitIdentityRuns = (source, mode, hasProjects) => {
+  const step = extractSteps(source).find((candidate) =>
+    gitIdentityCommands.every((command) => candidate.commands.includes(command)),
+  )
+  if (!step || !step.condition.includes("steps.release.outputs.has_projects == 'true'")) return false
+
+  const configuredModes = [
+    ...step.condition.matchAll(/steps\.release\.outputs\.mode == '(prepare|finalize|suppress)'/g),
+  ].map(([, configuredMode]) => configuredMode)
+  return hasProjects && configuredModes.includes(mode)
+}
 const terminalGates = [
   {
     command: 'git commit -m "chore(release): prepare beta from $SOURCE_SHA [skip release]"',
@@ -255,10 +272,14 @@ const betaViolations = (source) => {
   const active = withoutComments(source)
   const steps = extractSteps(source)
   const resolve = steps.find((step) => step.commands.some((command) => /mode=prepare/.test(command)))
+  const gitIdentity = steps.find((step) => gitIdentityCommands.every((command) => step.commands.includes(command)))
   const prepare = steps.find((step) => step.commands.some((command) => betaVersionCommand.test(command)))
   const finalize = steps.find((step) => step.commands.some((command) => channelPublishCommand("beta").test(command)))
 
   if (!/push:\s*\n\s*branches: \[master\]/.test(active)) violations.push("beta trigger")
+  if (!gitIdentity || gitIdentity.condition !== betaGitIdentityCondition) {
+    violations.push("beta PREPARE and FINALIZE Git identity")
+  }
   if (!/expected_sha:\s*\n\s*description:[^\n]*\n\s*required: false/.test(active)) {
     violations.push("beta expected SHA input")
   }
@@ -585,6 +606,18 @@ test("beta FINALIZE is exact-SHA, tag-only, prerelease-first, and retryable", ()
   assert.deepEqual(betaViolations(workflows.beta), [])
 })
 
+test("beta Git identity covers project PREPARE and FINALIZE but skips suppression and empty selections", () => {
+  for (const [mode, hasProjects, expected] of [
+    ["prepare", true, true],
+    ["finalize", true, true],
+    ["suppress", true, false],
+    ["prepare", false, false],
+    ["finalize", false, false],
+  ]) {
+    assert.equal(betaGitIdentityRuns(workflows.beta, mode, hasProjects), expected, `${mode}/${hasProjects}`)
+  }
+})
+
 test("stable validates current master and selected projects before every release mutation", () => {
   assert.deepEqual(stableViolations(workflows.stable), [])
 })
@@ -779,6 +812,11 @@ test("beta FINALIZE conflict and ordering mutations fail closed", () => {
   const policy = { ...workflows, docs: readme }
 
   for (const [name, before, after] of [
+    [
+      "skip Git identity in FINALIZE",
+      "(steps.release.outputs.mode == 'prepare' || steps.release.outputs.mode == 'finalize')",
+      "steps.release.outputs.mode == 'prepare'",
+    ],
     ["accept short expected SHA", "^[0-9a-f]{40}$", "^[0-9a-f]{7,40}$"],
     ["weaken checkout equality", 'test "$HEAD_SHA" = "$EXPECTED_SHA"', 'test "$HEAD_SHA" != "$EXPECTED_SHA"'],
     ["weaken remote equality", 'test "$REMOTE_SHA" = "$EXPECTED_SHA"', 'test "$REMOTE_SHA" != "$EXPECTED_SHA"'],
