@@ -1,4 +1,5 @@
 import assert from "node:assert/strict"
+import { spawnSync } from "node:child_process"
 import { readFileSync } from "node:fs"
 import test from "node:test"
 
@@ -175,6 +176,18 @@ const channelPublishCommand = (channel) =>
   new RegExp(`^pnpm nx release publish "--projects=\\$PROJECTS" --tag=${channel}$`)
 const betaVersionCommand =
   /^pnpm nx release version "--projects=\$PROJECTS" --preid=beta --git-commit=false --git-tag=false --git-push=false --stage-changes=false$/
+const terminalGates = [
+  {
+    command: 'git commit -m "chore(release): prepare beta from $SOURCE_SHA [skip release]"',
+    annotation: "PREPARE local commit failed",
+  },
+  { command: 'test -z "$(git status --porcelain)"', annotation: "PREPARE post-commit tree dirty" },
+  {
+    command: 'git push origin "HEAD:refs/heads/release/beta-$SHA_PREFIX"',
+    annotation: "PREPARE release-branch push failed",
+  },
+]
+const exactCommand = (value) => new RegExp(`^${value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`)
 const buildCommand = /^pnpm nx run-many -t build "--projects=\$PROJECTS" --parallel=3$/
 const testCommand = /^pnpm nx run-many -t test "--projects=\$PROJECTS" --parallel=3 --passWithNoTests$/
 const contractCommand = /^node --test scripts\/release-policy-contract\.test\.mjs$/
@@ -292,8 +305,8 @@ const betaViolations = (source) => {
     violations.push("beta PREPARE step")
   } else {
     const commands = prepare.commands.join("\n")
-    const pushes = prepare.commands.filter((command) => /^git push\b/.test(command))
-    if (pushes.length !== 1 || !/^git push origin "HEAD:refs\/heads\/release\/beta-\$SHA_PREFIX"$/.test(pushes[0])) {
+    const pushes = prepare.commands.filter((command) => /^(?:if ! )?git push\b/.test(command))
+    if (pushes.length !== 1 || !exactCommand(`if ! ${terminalGates[2].command}; then`).test(pushes[0])) {
       violations.push("beta PREPARE sole branch push")
     }
     for (const [pattern, name] of [
@@ -313,12 +326,21 @@ const betaViolations = (source) => {
         "safe staged-path annotation",
       ],
       [/^'@effectify\/solid-query=0\.5\.12-beta\.0' \| sort > "\$EXPECTED_MATRIX"$/, "sorted incident matrix"],
-      [/^git commit -m "chore\(release\): prepare beta from \$SOURCE_SHA \[skip release\]"$/, "release commit"],
+      [exactCommand(`if ! ${terminalGates[0].command}; then`), "release commit"],
     ]) {
       if (!prepare.commands.some((command) => pattern.test(command))) violations.push(`beta PREPARE ${name}`)
     }
     if ((commands.match(/verify_prepared_tree/g) ?? []).length < 3)
       violations.push("beta PREPARE repeated verification")
+    for (const gate of terminalGates) {
+      const sequence = [
+        exactCommand(`if ! ${gate.command}; then`),
+        exactCommand(`echo "::error::${gate.annotation}"`),
+        /^exit 1$/,
+        /^fi$/,
+      ]
+      if (!hasCommandSequence(prepare.commands, sequence)) violations.push(`beta PREPARE ${gate.annotation}`)
+    }
     if (/\bmapfile\b|^git add -- "\$\{RELEASE_PATHS\[@\]\}"$/m.test(commands)) {
       violations.push("beta PREPARE array staging")
     }
@@ -623,6 +645,53 @@ test("setup lists all seven Nx release projects", () => {
     assert.match(setup, new RegExp(project.replaceAll("/", "\\/")))
   }
   assert.match(setup, /sole `type:\*` label is `type:chore`/)
+})
+
+test("beta PREPARE terminal gates and annotations fail closed under mutation", () => {
+  const policy = { ...workflows, docs: readme }
+  for (const gate of terminalGates) {
+    const block = `if ! ${gate.command}; then\n            echo "::error::${gate.annotation}"\n            exit 1\n          fi`
+    assertMutationFails(`remove ${gate.annotation} guard`, policy, (candidate) => ({
+      ...candidate,
+      beta: mutate(candidate.beta, block, `          ${gate.command}`),
+    }))
+    assertMutationFails(`remove ${gate.annotation} annotation`, policy, (candidate) => ({
+      ...candidate,
+      beta: mutate(candidate.beta, `::error::${gate.annotation}`, "::error::removed"),
+    }))
+  }
+})
+
+test("beta PREPARE terminal gates emit only fixed diagnostics and stop later commands", () => {
+  const prepare = extractSteps(workflows.beta).find((step) =>
+    step.commands.some((command) => betaVersionCommand.test(command)),
+  )
+  assert.ok(prepare)
+  const start = prepare.commands.indexOf(`if ! ${terminalGates[0].command}; then`)
+  const last = prepare.commands.indexOf(`if ! ${terminalGates.at(-1).command}; then`)
+  const end = prepare.commands.indexOf("fi", last)
+  assert.ok(start >= 0 && last > start && end > last)
+  const block = prepare.commands.slice(start, end + 1).join("\n")
+  const run = (failure) =>
+    spawnSync(
+      "bash",
+      [
+        "-c",
+        `SOURCE_SHA=abc SHA_PREFIX=abc\ngit() {\n  case "$1" in\n    commit) [ "$FAILURE" != commit ] || return 1 ;;\n    status) [ "$FAILURE" != commit ] || echo "LATE status"; [ "$FAILURE" != status ] || printf dirty ;;\n    push) [ "$FAILURE" != commit ] || echo "LATE push"; [ "$FAILURE" != status ] || echo "LATE push"; [ "$FAILURE" != push ] || return 1 ;;\n  esac\n}\n${block}\necho SENTINEL`,
+      ],
+      { encoding: "utf8", env: { FAILURE: failure } },
+    )
+
+  for (const [index, gate] of terminalGates.entries()) {
+    const result = run(["commit", "status", "push"][index])
+    assert.equal(result.status, 1)
+    assert.equal(result.stdout, `::error::${gate.annotation}\n`)
+    assert.equal(result.stderr, "")
+  }
+  const success = run("none")
+  assert.equal(success.status, 0)
+  assert.equal(success.stdout, "SENTINEL\n")
+  assert.equal(success.stderr, "")
 })
 
 test("beta PREPARE and suppression mutations fail closed", () => {
