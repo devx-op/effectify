@@ -302,9 +302,18 @@ jobs:
           git diff --quiet
           test -z "$(git ls-files --others --exclude-standard)"
           verify_prepared_tree
-          git commit -m "chore(release): prepare beta from $SOURCE_SHA [skip release]"
-          test -z "$(git status --porcelain)"
-          git push origin "HEAD:refs/heads/release/beta-$SHA_PREFIX"
+          if ! git commit -m "chore(release): prepare beta from $SOURCE_SHA [skip release]"; then
+            echo "::error::PREPARE local commit failed"
+            exit 1
+          fi
+          if ! test -z "$(git status --porcelain)"; then
+            echo "::error::PREPARE post-commit tree dirty"
+            exit 1
+          fi
+          if ! git push origin "HEAD:refs/heads/release/beta-$SHA_PREFIX"; then
+            echo "::error::PREPARE release-branch push failed"
+            exit 1
+          fi
           VERSIONS=$(while IFS=$'\t' read -r project name manifest; do printf '%s=%s\n' "$name" "$(jq -er '.version' "$manifest")"; done < "$RECORDS" | paste -sd, -)
           CHANGED_PATHS=$(paste -sd, /tmp/expected-release-paths)
           echo "source_sha=$SOURCE_SHA" >> "$GITHUB_OUTPUT"
