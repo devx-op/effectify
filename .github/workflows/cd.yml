@@ -293,10 +293,12 @@ jobs:
 
           pnpm nx run-many -t build "--projects=$PROJECTS" --parallel=3
           verify_prepared_tree
-          mapfile -t RELEASE_PATHS < /tmp/expected-release-paths
-          git add -- "${RELEASE_PATHS[@]}"
+          git add --pathspec-from-file=/tmp/expected-release-paths
           git diff --cached --name-only --no-renames | sort -u > /tmp/staged-release-paths
-          cmp -s /tmp/expected-release-paths /tmp/staged-release-paths || { echo "staged release paths differ" >&2; exit 1; }
+          if ! cmp -s /tmp/expected-release-paths /tmp/staged-release-paths; then
+            echo "::error::expected=$(paste -sd, /tmp/expected-release-paths); actual=$(paste -sd, /tmp/staged-release-paths)"
+            exit 1
+          fi
           git diff --quiet
           test -z "$(git ls-files --others --exclude-standard)"
           verify_prepared_tree
