@@ -307,6 +307,7 @@ const betaViolations = (source) => {
       [/git diff --quiet/, "clean tracked tree"],
       [/git ls-files --others --exclude-standard/, "clean untracked tree"],
       [/^git add -- "\$\{RELEASE_PATHS\[@\]\}"$/, "explicit staging"],
+      [/^'@effectify\/solid-query=0\.5\.12-beta\.0' \| sort > "\$EXPECTED_MATRIX"$/, "sorted incident matrix"],
       [/^git commit -m "chore\(release\): prepare beta from \$SOURCE_SHA \[skip release\]"$/, "release commit"],
     ]) {
       if (!prepare.commands.some((command) => pattern.test(command))) violations.push(`beta PREPARE ${name}`)
@@ -528,6 +529,14 @@ test("beta release-merge suppression is structural and fail-closed", () => {
   assert.deepEqual(betaViolations(workflows.beta), [])
 })
 
+test("beta incident matrix canonicalization matches sorted actual output", () => {
+  const unsortedExpected = ["@effectify/react-router=0.6.0-beta.0", "@effectify/hatchet=0.1.0-beta.0"]
+  const sortedActual = [...unsortedExpected].sort()
+
+  assert.notDeepEqual(unsortedExpected, sortedActual)
+  assert.deepEqual([...unsortedExpected].sort(), sortedActual)
+})
+
 test("beta release message guards classify only the first-line subject", () => {
   const hasReleaseSubjectToken = (message) => {
     const subject = message.split("\n", 1)[0]
@@ -631,6 +640,11 @@ test("beta PREPARE and suppression mutations fail closed", () => {
     ],
     ["stage every path", 'git add -- "${RELEASE_PATHS[@]}"', "git add -A"],
     ["change an incident version", "@effectify/hatchet=0.1.0-beta.0", "@effectify/hatchet=0.1.0-beta.1"],
+    [
+      "bypass deterministic incident matrix sorting",
+      `'@effectify/solid-query=0.5.12-beta.0' | sort > "$EXPECTED_MATRIX"`,
+      `'@effectify/solid-query=0.5.12-beta.0' > "$EXPECTED_MATRIX"`,
+    ],
     [
       "expose npm credentials to PREPARE",
       "          MANUAL_PREPARE: ${{ github.event_name == 'workflow_dispatch' }}",

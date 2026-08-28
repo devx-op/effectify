@@ -283,7 +283,7 @@ jobs:
               '@effectify/react-query=1.0.0-beta.1' \
               '@effectify/react-router=0.6.0-beta.0' \
               '@effectify/react-router-better-auth=0.5.12-beta.0' \
-              '@effectify/solid-query=0.5.12-beta.0' > "$EXPECTED_MATRIX"
+              '@effectify/solid-query=0.5.12-beta.0' | sort > "$EXPECTED_MATRIX"
             ACTUAL_MATRIX=$(mktemp)
             while IFS=$'\t' read -r project name manifest; do
               printf '%s=%s\n' "$name" "$(jq -er '.version' "$manifest")"
