@@ -178,6 +178,8 @@ const betaVersionCommand =
 const buildCommand = /^pnpm nx run-many -t build "--projects=\$PROJECTS" --parallel=3$/
 const testCommand = /^pnpm nx run-many -t test "--projects=\$PROJECTS" --parallel=3 --passWithNoTests$/
 const contractCommand = /^node --test scripts\/release-policy-contract\.test\.mjs$/
+const releaseSubjectGuard =
+  '[[ "$HEAD_SUBJECT" == *"chore(release):"* || "$HEAD_SUBJECT" == *"[skip release]"* ]] || [ "$BETA_TRANSITIONS" -gt 0 ]'
 const rr8Commands = [
   /^pnpm nx test @effectify\/react-router$/,
   /^pnpm nx run @effectify\/react-router-example:migration:test$/,
@@ -251,6 +253,12 @@ const betaViolations = (source) => {
     violations.push("beta mode resolver")
   } else {
     const commands = resolve.commands.join("\n")
+    if (!resolve.commands.includes("HEAD_SUBJECT=${HEAD_MESSAGE%%$'\\n'*}")) {
+      violations.push("beta first-line release subject")
+    }
+    if (!resolve.commands.includes(`if ${releaseSubjectGuard}; then`)) {
+      violations.push("beta subject-only message defense")
+    }
     for (const [pattern, name] of [
       [/mode=prepare/, "prepare mode"],
       [/mode=finalize/, "finalize mode"],
@@ -520,6 +528,20 @@ test("beta release-merge suppression is structural and fail-closed", () => {
   assert.deepEqual(betaViolations(workflows.beta), [])
 })
 
+test("beta release message guards classify only the first-line subject", () => {
+  const hasReleaseSubjectToken = (message) => {
+    const subject = message.split("\n", 1)[0]
+    return subject.includes("chore(release):") || subject.includes("[skip release]")
+  }
+  const mergeMessage =
+    "Merge pull request #232 from devx-op/dev\n\nchore(release): promote protected beta orchestration"
+
+  assert.equal(hasReleaseSubjectToken(mergeMessage), false)
+  assert.equal(hasReleaseSubjectToken("chore(release): prepare beta\nordinary body"), true)
+  assert.equal(hasReleaseSubjectToken("ordinary subject\n[skip release] in body"), false)
+  assert.equal(hasReleaseSubjectToken("ordinary subject [skip release]\nbody"), true)
+})
+
 test("beta FINALIZE is exact-SHA, tag-only, prerelease-first, and retryable", () => {
   assert.deepEqual(betaViolations(workflows.beta), [])
 })
@@ -619,10 +641,11 @@ test("beta PREPARE and suppression mutations fail closed", () => {
       '[ "$HAS_CHANGELOG" = "true" ] && [ "$UNEXPECTED" = "false" ]',
       '[ "$HAS_CHANGELOG" = "true" ] && [ "$UNEXPECTED" = "true" ]',
     ],
+    ["trust release message without structure", releaseSubjectGuard, '[ "$BETA_TRANSITIONS" -gt 0 ]'],
     [
-      "trust release message without structure",
-      '[[ "$HEAD_MESSAGE" == *"chore(release):"* || "$HEAD_MESSAGE" == *"[skip release]"* ]] || [ "$BETA_TRANSITIONS" -gt 0 ]',
-      '[ "$BETA_TRANSITIONS" -gt 0 ]',
+      "classify release tokens from the full merge message",
+      releaseSubjectGuard,
+      releaseSubjectGuard.replaceAll("HEAD_SUBJECT", "HEAD_MESSAGE"),
     ],
     [
       "suppress a suspicious shape",

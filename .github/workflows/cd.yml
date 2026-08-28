@@ -179,7 +179,8 @@ jobs:
             echo "projects=" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          if [[ "$HEAD_MESSAGE" == *"chore(release):"* || "$HEAD_MESSAGE" == *"[skip release]"* ]] || [ "$BETA_TRANSITIONS" -gt 0 ]; then
+          HEAD_SUBJECT=${HEAD_MESSAGE%%$'\n'*}
+          if [[ "$HEAD_SUBJECT" == *"chore(release):"* || "$HEAD_SUBJECT" == *"[skip release]"* ]] || [ "$BETA_TRANSITIONS" -gt 0 ]; then
             echo "suspicious release-shaped master push; refusing preparation" >&2
             exit 1
           fi
