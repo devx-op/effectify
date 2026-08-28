@@ -65,13 +65,14 @@ const extractSteps = (source) => {
     if (!match || /^\s*#/.test(lines[index])) continue
 
     const stepIndent = match[1].length
-    const step = { name: match[2], condition: "", commands: [], uses: "", packageManagerCache: "" }
+    const step = { name: match[2], condition: "", commands: [], uses: "", packageManagerCache: "", source: "" }
     for (index += 1; index < lines.length; index += 1) {
       const line = lines[index]
       if (line.trim() && indentation(line) <= stepIndent) {
         index -= 1
         break
       }
+      step.source += `${line}\n`
       if (/^\s*#/.test(line)) continue
 
       const condition = line.match(/^\s*if:\s*(.+?)\s*$/)
@@ -94,6 +95,7 @@ const extractSteps = (source) => {
 
       for (index += 1; index < lines.length; index += 1) {
         const command = lines[index]
+        step.source += `${command}\n`
         if (command.trim() && indentation(command) <= runIndent) {
           index -= 1
           break
@@ -133,10 +135,46 @@ const requireCommandOrder = (violations, source, patterns, violation) => {
   }
 }
 
+const hasCommandSequence = (commands, patterns) =>
+  commands.some((_, start) => patterns.every((pattern, offset) => pattern.test(commands[start + offset] ?? "")))
+
+const sensitiveShellViolations = (step, label) => {
+  const violations = []
+  if (step.commands.some((command) => /<<-?\s*['"]?[A-Za-z_][A-Za-z0-9_]*['"]?/.test(command))) {
+    violations.push(`${label} heredoc ambiguity`)
+  }
+  if (step.commands.some((command) => /^if\s+(?:false|!\s+true)\s*;?\s*then$/.test(command))) {
+    violations.push(`${label} statically dead wrapper`)
+  }
+
+  const functions = []
+  for (let index = 0; index < step.commands.length; index += 1) {
+    const declaration = step.commands[index].match(/^([A-Za-z_][A-Za-z0-9_]*)\(\)\s*\{$/)
+    if (!declaration) continue
+    let depth = 1
+    let end = index
+    while (++end < step.commands.length && depth > 0) {
+      if (/(?:\|\||&&)\s*\{\s*$/.test(step.commands[end])) depth += 1
+      if (step.commands[end] === "}") depth -= 1
+    }
+    functions.push({ name: declaration[1], start: index, end })
+    index = end - 1
+  }
+  for (const fn of functions) {
+    const invoked = step.commands.some(
+      (command, index) => (index < fn.start || index >= fn.end) && new RegExp(`^${fn.name}(?:\\s|$)`).test(command),
+    )
+    if (!invoked) violations.push(`${label} unused shell function ${fn.name}`)
+  }
+  return violations
+}
+
 const channelVersionCommand = (channel) =>
   new RegExp(`^pnpm nx release "--projects=\\$PROJECTS" --preid=${channel} --skip-publish$`)
 const channelPublishCommand = (channel) =>
   new RegExp(`^pnpm nx release publish "--projects=\\$PROJECTS" --tag=${channel}$`)
+const betaVersionCommand =
+  /^pnpm nx release version "--projects=\$PROJECTS" --preid=beta --git-commit=false --git-tag=false --git-push=false --stage-changes=false$/
 const buildCommand = /^pnpm nx run-many -t build "--projects=\$PROJECTS" --parallel=3$/
 const testCommand = /^pnpm nx run-many -t test "--projects=\$PROJECTS" --parallel=3 --passWithNoTests$/
 const contractCommand = /^node --test scripts\/release-policy-contract\.test\.mjs$/
@@ -193,6 +231,193 @@ const channelViolations = (channel, source) => {
     )
   ) {
     violations.push(`${channel} default publication`)
+  }
+  return violations
+}
+
+const betaViolations = (source) => {
+  const violations = []
+  const active = withoutComments(source)
+  const steps = extractSteps(source)
+  const resolve = steps.find((step) => step.commands.some((command) => /mode=prepare/.test(command)))
+  const prepare = steps.find((step) => step.commands.some((command) => betaVersionCommand.test(command)))
+  const finalize = steps.find((step) => step.commands.some((command) => channelPublishCommand("beta").test(command)))
+
+  if (!/push:\s*\n\s*branches: \[master\]/.test(active)) violations.push("beta trigger")
+  if (!/expected_sha:\s*\n\s*description:[^\n]*\n\s*required: false/.test(active)) {
+    violations.push("beta expected SHA input")
+  }
+  if (!resolve) {
+    violations.push("beta mode resolver")
+  } else {
+    const commands = resolve.commands.join("\n")
+    for (const [pattern, name] of [
+      [/mode=prepare/, "prepare mode"],
+      [/mode=finalize/, "finalize mode"],
+      [/mode=suppress/, "suppress mode"],
+      [/\^\[0-9a-f\]\{40\}\$/, "full expected SHA"],
+      [/git diff --name-only --no-renames/, "structural changed paths"],
+      [/CHANGELOG\.md/, "root changelog shape"],
+      [/-beta\\\.\[0-9\]/, "beta manifest transition"],
+      [/chore\(release\):/, "release message defense"],
+      [/\[skip release\]/, "skip message defense"],
+      [/grep -Fx -- "\$project"/, "exact allowlist membership"],
+      [/sort \| uniq -d/, "duplicate selection rejection"],
+      [/manual PREPARE requires all seven release projects/, "incident project set"],
+    ]) {
+      if (!pattern.test(commands)) violations.push(`beta ${name}`)
+    }
+    for (const [project, version] of [
+      ["@effectify/react-router", "0.6.0-beta.0"],
+      ["@effectify/react-query", "1.0.0-beta.1"],
+      ["@effectify/node-better-auth", "0.5.12-beta.0"],
+      ["@effectify/solid-query", "0.5.12-beta.0"],
+      ["@effectify/react-router-better-auth", "0.5.12-beta.0"],
+      ["@effectify/prisma", "1.1.13-beta.0"],
+      ["@effectify/hatchet", "0.1.0-beta.0"],
+    ]) {
+      if (!active.includes(`${project}=${version}`)) violations.push(`beta incident ${project}`)
+    }
+  }
+
+  if (!prepare) {
+    violations.push("beta PREPARE step")
+  } else {
+    const commands = prepare.commands.join("\n")
+    const pushes = prepare.commands.filter((command) => /^git push\b/.test(command))
+    if (pushes.length !== 1 || !/^git push origin "HEAD:refs\/heads\/release\/beta-\$SHA_PREFIX"$/.test(pushes[0])) {
+      violations.push("beta PREPARE sole branch push")
+    }
+    for (const [pattern, name] of [
+      [betaVersionCommand, "side-effect-free versioning"],
+      [/^git switch --create "\$RELEASE_BRANCH"$/, "release branch creation"],
+      [/^REFS_BEFORE=/, "ref snapshot"],
+      [/verify_prepared_tree/, "prepared tree verification"],
+      [/cmp -s \/tmp\/expected-release-paths "\$ACTUAL_PATHS"/, "exact path equality"],
+      [/test "\$REFS_BEFORE" = "\$\(git for-each-ref/, "unchanged refs"],
+      [/git diff --cached --name-only --no-renames/, "exact index"],
+      [/git diff --quiet/, "clean tracked tree"],
+      [/git ls-files --others --exclude-standard/, "clean untracked tree"],
+      [/^git add -- "\$\{RELEASE_PATHS\[@\]\}"$/, "explicit staging"],
+      [/^git commit -m "chore\(release\): prepare beta from \$SOURCE_SHA \[skip release\]"$/, "release commit"],
+    ]) {
+      if (!prepare.commands.some((command) => pattern.test(command))) violations.push(`beta PREPARE ${name}`)
+    }
+    if ((commands.match(/verify_prepared_tree/g) ?? []).length < 3)
+      violations.push("beta PREPARE repeated verification")
+    if (
+      /nx release publish|npm (?:publish|whoami)|gh (?:release|issue|pr)|git tag|workflow run|release-stable|refs\/heads\/master|NODE_AUTH_TOKEN|NPM_CONFIG_PROVENANCE/.test(
+        prepare.source,
+      )
+    ) {
+      violations.push("beta PREPARE mutation isolation")
+    }
+    violations.push(...sensitiveShellViolations(prepare, "beta PREPARE"))
+  }
+
+  if (!finalize) {
+    violations.push("beta FINALIZE step")
+  } else {
+    const commands = finalize.commands.join("\n")
+    const requiredOrder = [
+      /^git fetch origin master:refs\/remotes\/origin\/master --no-tags$/,
+      /^test "\$HEAD_SHA" = "\$EXPECTED_SHA"$/,
+      /^test "\$REMOTE_SHA" = "\$EXPECTED_SHA"$/,
+      /test "\$VERSION"/,
+      /npm view "\$NAME" versions --json/,
+      /^verify_tags collect$/,
+      /^git tag -a "\$TAG" "\$EXPECTED_SHA" -m "\$TAG"$/,
+      /^git push --atomic origin "\$\{TAG_REFS\[@\]\}"$/,
+      /^verify_tags verify$/,
+      /gh release view "\$TAG" --json tagName,isDraft,isPrerelease/,
+      /^gh release create "\$TAG" --verify-tag --prerelease --generate-notes$/,
+      /^verify_releases verify$/,
+      channelPublishCommand("beta"),
+      /post-verify npm beta state/,
+    ]
+    for (const pattern of requiredOrder) {
+      if (!finalize.commands.some((command) => pattern.test(command))) {
+        violations.push(`beta FINALIZE ${String(pattern)}`)
+      }
+    }
+    requireCommandOrder(violations, source, requiredOrder, "beta FINALIZE mutation ordering")
+    const pushes = finalize.commands.filter((command) => /^git push\b/.test(command))
+    if (
+      !/refs\/tags\/\$TAG:refs\/tags\/\$TAG/.test(commands) ||
+      pushes.length !== 1 ||
+      !/^git push --atomic origin "\$\{TAG_REFS\[@\]\}"$/.test(pushes[0]) ||
+      /refs\/heads\/|--tags|--follow-tags/.test(pushes[0])
+    ) {
+      violations.push("beta FINALIZE explicit tag refspecs")
+    }
+    if (!/PROJECTS="\$MISSING_PROJECTS"/.test(commands) || (commands.match(/dist-tags\.beta/g) ?? []).length < 2) {
+      violations.push("beta FINALIZE exact retry subset")
+    }
+    for (const [pattern, name] of [
+      [/DIRECT_COUNT/, "tag identity"],
+      [/PEELED_COUNT/, "annotated tag type"],
+      [/PEELED_SHA/, "tag target"],
+      [
+        /test "\$DIRECT_COUNT" = "1" && test "\$PEELED_COUNT" = "1" && test "\$PEELED_SHA" = "\$EXPECTED_SHA"/,
+        "annotated exact-target acceptance",
+      ],
+      [/unknown remote tag state/, "unknown tag failure"],
+      [/conflicting npm beta state/, "npm conflict failure"],
+      [/unknown GitHub Release state/, "unknown release failure"],
+    ]) {
+      if (!pattern.test(commands)) violations.push(`beta FINALIZE ${name}`)
+    }
+    for (const [patterns, name] of [
+      [
+        [
+          /^REMOTE_TAGS=\$\(git ls-remote --tags origin "refs\/tags\/\$TAG" "refs\/tags\/\$TAG\^\{}"\) \|\| \{$/,
+          /^echo "unknown remote tag state for \$TAG" >&2$/,
+          /^exit 1$/,
+          /^\}$/,
+        ],
+        "unknown tag fail-closed block",
+      ],
+      [
+        [/^test "\$BETA_TAG" = "\$VERSION" \|\| \{ echo "conflicting npm beta state for \$NAME" >&2; exit 1; \}$/],
+        "conflicting npm fail-closed block",
+      ],
+      [
+        [/^else$/, /^echo "unknown GitHub Release state for \$TAG" >&2$/, /^exit 1$/, /^fi$/],
+        "unknown Release fail-closed block",
+      ],
+    ]) {
+      if (!hasCommandSequence(finalize.commands, patterns)) violations.push(`beta FINALIZE ${name}`)
+    }
+    violations.push(...sensitiveShellViolations(finalize, "beta FINALIZE"))
+    if (!/NODE_AUTH_TOKEN/.test(active) || !/NPM_CONFIG_PROVENANCE:\s*true/.test(active)) {
+      violations.push("beta FINALIZE publication credentials")
+    }
+  }
+
+  if (
+    !/if \[ "\$HAS_CHANGELOG" = "true" \] && \[ "\$UNEXPECTED" = "false" \] && \[ "\$BETA_TRANSITIONS" -gt 0 \] && \[ "\$BETA_TRANSITIONS" -eq "\$MANIFEST_CHANGES" \]; then/.test(
+      active,
+    )
+  ) {
+    violations.push("beta exact suppression shape")
+  }
+  if (!/echo "suspicious release-shaped master push; refusing preparation" >&2\s*\n\s*exit 1/.test(active)) {
+    violations.push("beta suspicious shape rejection")
+  }
+  if (/workflow run[^\n]*stable|release-stable/.test(active)) violations.push("beta stable dispatch")
+  if (
+    !/echo "versions=\$VERSIONS" >> "\$GITHUB_OUTPUT"/.test(active) ||
+    !/echo "changed_paths=\$CHANGED_PATHS" >> "\$GITHUB_OUTPUT"/.test(active) ||
+    !/\*\*Selected versions:\*\* \$SELECTED_VERSIONS/.test(active) ||
+    !/\*\*Changed paths:\*\* \$CHANGED_PATHS/.test(active)
+  ) {
+    violations.push("beta PREPARE summary versions and paths")
+  }
+  if (!/sole `type:\*` label is `type:chore`/.test(active)) violations.push("beta sole type label summary")
+  if (
+    commandEntries(source).some(({ command }) => /nx release publish/.test(command) && !command.endsWith("--tag=beta"))
+  ) {
+    violations.push("beta default publication")
   }
   return violations
 }
@@ -265,11 +490,7 @@ const releasePolicyBootstrapViolations = (source) => {
 }
 
 const policyViolations = ({ alpha, beta, stable, docs }) => {
-  const violations = [
-    ...channelViolations("alpha", alpha),
-    ...channelViolations("beta", beta),
-    ...stableViolations(stable),
-  ]
+  const violations = [...channelViolations("alpha", alpha), ...betaViolations(beta), ...stableViolations(stable)]
   if (!/\|\s*Beta\s*\|[^\n]*`master`[^\n]*`beta`/.test(withoutComments(docs))) {
     violations.push("documented mapping")
   }
@@ -291,10 +512,16 @@ test("dev pushes retain exact-range conditional alpha publication", () => {
   assert.deepEqual(channelViolations("alpha", workflows.alpha), [])
 })
 
-test("master pushes publish beta only across the exact pushed range", () => {
-  assert.deepEqual(channelViolations("beta", workflows.beta), [])
-  assert.match(withoutComments(workflows.beta), /!contains\(github\.event\.head_commit\.message, 'chore\(release\):'\)/)
-  assert.doesNotMatch(withoutComments(workflows.beta), /--tag=(?:latest|stable)/)
+test("beta PREPARE is branch-only, exact-path, and incident-bound", () => {
+  assert.deepEqual(betaViolations(workflows.beta), [])
+})
+
+test("beta release-merge suppression is structural and fail-closed", () => {
+  assert.deepEqual(betaViolations(workflows.beta), [])
+})
+
+test("beta FINALIZE is exact-SHA, tag-only, prerelease-first, and retryable", () => {
+  assert.deepEqual(betaViolations(workflows.beta), [])
 })
 
 test("stable validates current master and selected projects before every release mutation", () => {
@@ -356,6 +583,128 @@ test("setup lists all seven Nx release projects", () => {
   for (const project of releaseProjects) {
     assert.match(setup, new RegExp(project.replaceAll("/", "\\/")))
   }
+  assert.match(setup, /sole `type:\*` label is `type:chore`/)
+})
+
+test("beta PREPARE and suppression mutations fail closed", () => {
+  const policy = { ...workflows, docs: readme }
+
+  for (const [name, before, after] of [
+    ["enable Nx git commit", "--git-commit=false", "--git-commit=true"],
+    [
+      "push PREPARE to protected master",
+      'git push origin "HEAD:refs/heads/release/beta-$SHA_PREFIX"',
+      'git push origin "HEAD:refs/heads/master"',
+    ],
+    [
+      "publish from PREPARE",
+      'pnpm nx release version "--projects=$PROJECTS" --preid=beta --git-commit=false --git-tag=false --git-push=false --stage-changes=false',
+      'pnpm nx release version "--projects=$PROJECTS" --preid=beta --git-commit=false --git-tag=false --git-push=false --stage-changes=false\n          pnpm nx release publish "--projects=$PROJECTS" --tag=beta',
+    ],
+    ["weaken exact generated paths", 'cmp -s /tmp/expected-release-paths "$ACTUAL_PATHS"', 'test -s "$ACTUAL_PATHS"'],
+    [
+      "allow Nx ref mutation",
+      'test "$REFS_BEFORE" = "$(git for-each-ref',
+      'test "$REFS_BEFORE" != "$(git for-each-ref',
+    ],
+    ["stage every path", 'git add -- "${RELEASE_PATHS[@]}"', "git add -A"],
+    ["change an incident version", "@effectify/hatchet=0.1.0-beta.0", "@effectify/hatchet=0.1.0-beta.1"],
+    [
+      "expose npm credentials to PREPARE",
+      "          MANUAL_PREPARE: ${{ github.event_name == 'workflow_dispatch' }}",
+      "          MANUAL_PREPARE: ${{ github.event_name == 'workflow_dispatch' }}\n          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}",
+    ],
+    [
+      "weaken suppression changed-path shape",
+      '[ "$HAS_CHANGELOG" = "true" ] && [ "$UNEXPECTED" = "false" ]',
+      '[ "$HAS_CHANGELOG" = "true" ] && [ "$UNEXPECTED" = "true" ]',
+    ],
+    [
+      "trust release message without structure",
+      '[[ "$HEAD_MESSAGE" == *"chore(release):"* || "$HEAD_MESSAGE" == *"[skip release]"* ]] || [ "$BETA_TRANSITIONS" -gt 0 ]',
+      '[ "$BETA_TRANSITIONS" -gt 0 ]',
+    ],
+    [
+      "suppress a suspicious shape",
+      'echo "suspicious release-shaped master push; refusing preparation" >&2\n            exit 1',
+      'echo "suspicious release-shaped master push; refusing preparation" >&2\n            echo "mode=suppress" >> "$GITHUB_OUTPUT"',
+    ],
+    [
+      "hide PREPARE versioning in a heredoc",
+      'pnpm nx release version "--projects=$PROJECTS" --preid=beta --git-commit=false --git-tag=false --git-push=false --stage-changes=false',
+      "cat <<'DEAD_VERSION'\n          pnpm nx release version \"--projects=$PROJECTS\" --preid=beta --git-commit=false --git-tag=false --git-push=false --stage-changes=false\n          DEAD_VERSION",
+    ],
+    [
+      "hide PREPARE versioning behind false",
+      'pnpm nx release version "--projects=$PROJECTS" --preid=beta --git-commit=false --git-tag=false --git-push=false --stage-changes=false',
+      'if false; then\n            pnpm nx release version "--projects=$PROJECTS" --preid=beta --git-commit=false --git-tag=false --git-push=false --stage-changes=false\n          fi',
+    ],
+    [
+      "hide PREPARE versioning in an unused function",
+      'pnpm nx release version "--projects=$PROJECTS" --preid=beta --git-commit=false --git-tag=false --git-push=false --stage-changes=false',
+      'unused_version() {\n            pnpm nx release version "--projects=$PROJECTS" --preid=beta --git-commit=false --git-tag=false --git-push=false --stage-changes=false\n          }',
+    ],
+  ]) {
+    assertMutationFails(name, policy, (candidate) => ({
+      ...candidate,
+      beta: mutate(candidate.beta, before, after),
+    }))
+  }
+})
+
+test("beta FINALIZE conflict and ordering mutations fail closed", () => {
+  const policy = { ...workflows, docs: readme }
+
+  for (const [name, before, after] of [
+    ["accept short expected SHA", "^[0-9a-f]{40}$", "^[0-9a-f]{7,40}$"],
+    ["weaken checkout equality", 'test "$HEAD_SHA" = "$EXPECTED_SHA"', 'test "$HEAD_SHA" != "$EXPECTED_SHA"'],
+    ["weaken remote equality", 'test "$REMOTE_SHA" = "$EXPECTED_SHA"', 'test "$REMOTE_SHA" != "$EXPECTED_SHA"'],
+    ["create lightweight tags", 'git tag -a "$TAG" "$EXPECTED_SHA" -m "$TAG"', 'git tag "$TAG" "$EXPECTED_SHA"'],
+    ["target tags at moving HEAD", 'git tag -a "$TAG" "$EXPECTED_SHA" -m "$TAG"', 'git tag -a "$TAG" HEAD -m "$TAG"'],
+    ["remove atomic tag push", 'git push --atomic origin "${TAG_REFS[@]}"', 'git push origin "${TAG_REFS[@]}"'],
+    ["push wildcard tags", 'TAG_REFS+=("refs/tags/$TAG:refs/tags/$TAG")', 'TAG_REFS+=("refs/tags/*:refs/tags/*")'],
+    ["accept lightweight remote tags", 'test "$PEELED_COUNT" = "1"', 'test "$DIRECT_COUNT" = "1"'],
+    [
+      "drop GitHub prerelease identity",
+      'gh release create "$TAG" --verify-tag --prerelease --generate-notes',
+      'gh release create "$TAG" --generate-notes',
+    ],
+    [
+      "publish every project on retry",
+      'PROJECTS="$MISSING_PROJECTS"',
+      'PROJECTS="${{ steps.release.outputs.projects }}"',
+    ],
+    ["drop exact npm beta tag reads", "dist-tags.beta", "dist-tags.latest"],
+    [
+      "accept unknown tag reads",
+      'echo "unknown remote tag state for $TAG" >&2\n                exit 1',
+      'echo "unknown remote tag state for $TAG" >&2\n                :',
+    ],
+    [
+      "accept conflicting npm state",
+      'test "$BETA_TAG" = "$VERSION" || { echo "conflicting npm beta state for $NAME" >&2; exit 1; }',
+      'test "$BETA_TAG" = "$VERSION" || { echo "conflicting npm beta state for $NAME" >&2; true; }',
+    ],
+    [
+      "accept unknown Release reads",
+      'echo "unknown GitHub Release state for $TAG" >&2\n                exit 1',
+      'echo "unknown GitHub Release state for $TAG" >&2\n                :',
+    ],
+  ]) {
+    assertMutationFails(name, policy, (candidate) => ({
+      ...candidate,
+      beta: mutate(candidate.beta, before, after),
+    }))
+  }
+
+  assertMutationFails("publish before every prerelease is verified", policy, (candidate) => ({
+    ...candidate,
+    beta: mutate(
+      candidate.beta,
+      "          verify_releases verify\n\n          MISSING_PROJECTS=",
+      '          pnpm nx release publish "--projects=$PROJECTS" --tag=beta\n          verify_releases verify\n\n          MISSING_PROJECTS=',
+    ),
+  }))
 })
 
 test("stable safety mutations fail closed, including commented-out policy text", () => {
@@ -430,7 +779,7 @@ test("stable safety mutations fail closed, including commented-out policy text",
 test("alpha and beta exact-range and membership mutations fail closed", () => {
   const policy = { ...workflows, docs: readme }
 
-  for (const channel of ["alpha", "beta"]) {
+  for (const channel of ["alpha"]) {
     assertMutationFails(`${channel} ignores push before SHA`, policy, (candidate) => ({
       ...candidate,
       [channel]: mutate(candidate[channel], 'BEFORE="$BEFORE_SHA"', 'BEFORE="origin/branch~1"'),
