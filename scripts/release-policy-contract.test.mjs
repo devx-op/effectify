@@ -665,6 +665,12 @@ const stableViolations = (source) => {
       violations.push(`stable ${phase} manifest execution diagnostic`)
     }
     if (!/manifest identity mismatch/.test(body)) violations.push(`stable ${phase} manifest identity diagnostic`)
+        if (!/actual=\$\{JSON\.stringify\(actual\)\}/.test(body)) {
+          violations.push(`stable ${phase} manifest actual identity detail`)
+        }
+        if (!/expected=\$\{JSON\.stringify\(\{name,version\}\)\}/.test(body)) {
+          violations.push(`stable ${phase} manifest expected identity detail`)
+        }
   }
   if (!prepare || !/mode == 'prepare'/.test(prepare.condition)) violations.push("stable PREPARE isolation")
   if (
@@ -936,6 +942,15 @@ test("protected stable PREPARE and FINALIZE reject independent safety mutations"
   ]) {
     const changed = mutateStep(policy.stable, stepName, /JSON\.parse/g, "JSON.parseSafe")
     assert.ok(stableViolations(changed).includes(`stable ${phase} Node JSON type validation`))
+        const withoutActual = mutateStep(policy.stable, stepName, /actual=\$\{JSON\.stringify\(actual\)\} /g, "")
+        assert.ok(stableViolations(withoutActual).includes(`stable ${phase} manifest actual identity detail`))
+        const withoutExpected = mutateStep(
+          policy.stable,
+          stepName,
+          /expected=\$\{JSON\.stringify\(\{name,version\}\)\}/g,
+          "",
+        )
+        assert.ok(stableViolations(withoutExpected).includes(`stable ${phase} manifest expected identity detail`))
   }
   for (const [phase, stepName] of [
     ["PREPARE", "PREPARE protected stable"],
