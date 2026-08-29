@@ -1,28 +1,27 @@
 name: 🚀 Release Stable
-
 on:
   workflow_dispatch:
     inputs:
       projects:
-        description: "Comma-separated Nx release project names to graduate or recover"
+        description: "Exact comma-separated seven-project stable matrix"
         required: true
         type: string
       publish_only:
-        description: "Publish selected existing stable versions without version, tag, changelog, or git mutation"
+        description: "FINALIZE the exact merged SHA"
         required: true
         type: boolean
         default: false
-
+      expected_sha:
+        description: "Full lowercase merged master SHA; FINALIZE only"
+        required: false
+        type: string
 concurrency:
   group: release-stable
   cancel-in-progress: false
-
 env:
   DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/effectify"
-
 jobs:
   release-stable:
-    name: 🚀 Release Stable
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -30,17 +29,10 @@ jobs:
     services:
       postgres:
         image: postgres:16-alpine
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: effectify
-        ports:
-          - 5432:5432
+        env: { POSTGRES_USER: postgres, POSTGRES_PASSWORD: postgres, POSTGRES_DB: effectify }
+        ports: ["5432:5432"]
         options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+          --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
     steps:
       - name: 📥 Checkout current master
         uses: actions/checkout@v5
@@ -48,137 +40,136 @@ jobs:
           ref: master
           fetch-depth: 0
           token: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
-
-      - name: 🔒 Confirm current master
-        run: |
-          git fetch origin master --no-tags
-          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/master)" || {
-            echo "Stable release checkout is not current origin/master" >&2
-            exit 1
-          }
-
-      - name: 📦 Install pnpm
-        uses: pnpm/action-setup@v6
-        with:
-          version: 10.14.0
-
-      - name: 🏗️ Setup Node.js
-        uses: actions/setup-node@v5
+      - uses: pnpm/action-setup@v6
+        with: { version: 10.14.0 }
+      - uses: actions/setup-node@v5
         with:
           node-version: "24.19.0"
-          cache: "pnpm"
-          registry-url: "https://registry.npmjs.org/"
-
-      - name: 📦 Install dependencies
-        run: pnpm install --frozen-lockfile
-
+          cache: pnpm
+          registry-url: https://registry.npmjs.org/
+      - run: pnpm install --frozen-lockfile
       - name: 🛡️ Verify release policy contract
         run: node --test scripts/release-policy-contract.test.mjs
-
-      - name: 🔍 Validate Explicit Stable Projects
-        id: selected
+      - name: 🧭 Resolve exact stable mode and matrix
+        id: release
         env:
           REQUESTED_PROJECTS: ${{ inputs.projects }}
           PUBLISH_ONLY: ${{ inputs.publish_only }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
         run: |
-          if [ -z "$REQUESTED_PROJECTS" ]; then
-            echo "Stable release requires explicit selected projects" >&2
-            exit 1
+          set -euo pipefail
+          RAW=$(printf '%s' "$REQUESTED_PROJECTS" | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed '/^$/d')
+          test -n "$RAW" || { echo '::error::stable matrix is empty'; exit 1; }
+          test -z "$(printf '%s\n' "$RAW" | sort | uniq -d)" || { echo '::error::duplicate stable project'; exit 1; }
+          SELECTED=$(printf '%s\n' "$RAW" | sort)
+          EXPECTED=$(printf '%s\n' '@effectify/hatchet' '@effectify/node-better-auth' '@effectify/prisma' '@effectify/react-query' '@effectify/react-router' '@effectify/react-router-better-auth' '@effectify/solid-query' | sort)
+          cmp -s <(printf '%s\n' "$EXPECTED") <(printf '%s\n' "$SELECTED") || { echo '::error::stable requires exact seven-project matrix'; exit 1; }
+          if [ "$PUBLISH_ONLY" = true ]; then
+            [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo '::error::FINALIZE requires full lowercase expected_sha'; exit 1; }
+            MODE=finalize
+          else
+            test -z "$EXPECTED_SHA" || { echo '::error::PREPARE rejects expected_sha'; exit 1; }
+            MODE=prepare
           fi
-
-          RELEASE_PROJECTS=$(jq -r '.release.projects[]' nx.json | while read -r path; do
-            pnpm nx show project "$path" --json | jq -r '.name'
-          done | sort -u)
-          SELECTED_PROJECTS=$(printf '%s' "$REQUESTED_PROJECTS" | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed '/^$/d' | sort -u)
-
-          if [ -z "$SELECTED_PROJECTS" ]; then
-            echo "Stable release requires at least one selected project" >&2
-            exit 1
-          fi
-
-          while IFS= read -r project; do
-            if ! printf '%s\n' "$RELEASE_PROJECTS" | grep -Fx -- "$project" >/dev/null; then
-              echo "Invalid release project: $project" >&2
-              exit 1
-            fi
-
-            PROJECT_ROOT=$(pnpm nx show project "$project" --json | jq -r '.root')
-            VERSION=$(jq -r '.version // empty' "$PROJECT_ROOT/package.json")
-            if [ -z "$VERSION" ]; then
-              echo "Release project has no manifest version: $project" >&2
-              exit 1
-            fi
-
-            if [ "$PUBLISH_ONLY" = "true" ]; then
-              # publish-only recovery requires explicit selected existing stable projects.
-              if [[ "$VERSION" == *-* ]]; then
-                echo "Publish-only stable recovery rejects prerelease version $project@$VERSION" >&2
-                exit 1
-              fi
-            elif [[ "$VERSION" != *-* ]]; then
-              echo "Normal stable release only graduates selected prereleases: $project@$VERSION" >&2
-              exit 1
-            fi
-          done <<< "$SELECTED_PROJECTS"
-
-          echo "projects=$(printf '%s' "$SELECTED_PROJECTS" | paste -sd, -)" >> "$GITHUB_OUTPUT"
-
-      - name: 🔧 Configure Git for graduation
-        if: ${{ inputs.publish_only != true }}
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+          echo "projects=$(printf '%s' "$SELECTED" | paste -sd, -)" >> "$GITHUB_OUTPUT"
+      - name: 🔒 Fresh master authorization
+        env:
+          MODE: ${{ steps.release.outputs.mode }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: 🔐 Verify npm authentication
-        run: npm whoami
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: 🏗️ Build Selected Projects
-        env:
-          PROJECTS: ${{ steps.selected.outputs.projects }}
+          set -euo pipefail
+          git fetch origin master:refs/remotes/origin/master --no-tags
+          HEAD_SHA=$(git rev-parse HEAD)
+          REMOTE_SHA=$(git rev-parse origin/master)
+          test "$HEAD_SHA" = "$REMOTE_SHA" || { echo '::error::checkout is not current origin/master'; exit 1; }
+          if [ "$MODE" = finalize ]; then test "$HEAD_SHA" = "$EXPECTED_SHA" || { echo '::error::FINALIZE SHA mismatch'; exit 1; }; fi
+      - name: 🏗️ Build selected projects
+        env: { PROJECTS: "${{ steps.release.outputs.projects }}" }
         run: pnpm nx run-many -t build "--projects=$PROJECTS" --parallel=3
-
-      - name: 🧪 Test Selected Projects
-        env:
-          PROJECTS: ${{ steps.selected.outputs.projects }}
+      - name: 🧪 Test selected projects
+        env: { PROJECTS: "${{ steps.release.outputs.projects }}" }
         run: pnpm nx run-many -t test "--projects=$PROJECTS" --parallel=3 --passWithNoTests
-
-      - name: ✅ Verify React Router 8 readiness
+      - name: ✅ Verify React Router readiness
         run: |
           pnpm nx test @effectify/react-router
           pnpm nx run @effectify/react-router-example:migration:test
           pnpm nx run @effectify/react-router-example:migration:verify
           pnpm nx run @effectify/react-router-example:migration:manifest
           pnpm nx run @effectify/react-router-example:consolidation:verify
-
-      - name: 🔖 Graduate Selected Prereleases
-        if: ${{ inputs.publish_only != true }}
+      - name: 🌿 PREPARE protected stable branch
+        id: prepare
+        if: ${{ steps.release.outputs.mode == 'prepare' }}
+        env: { PROJECTS: "${{ steps.release.outputs.projects }}" }
+        run: |
+          set -euo pipefail
+          SOURCE_SHA=$(git rev-parse HEAD); SHA_PREFIX=${SOURCE_SHA:0:12}; BRANCH="release/stable-$SHA_PREFIX"
+          git config user.name 'github-actions[bot]'; git config user.email 'github-actions[bot]@users.noreply.github.com'
+          EXPECTED_PATHS=$(mktemp); printf '%s\n' CHANGELOG.md packages/hatchet/package.json packages/node/better-auth/package.json packages/prisma/package.json packages/react/query/package.json packages/react/router/package.json packages/react/router-better-auth/package.json packages/solid/query/package.json | sort > "$EXPECTED_PATHS"
+          RECORDS=$(mktemp); printf '%s\n' '@effectify/hatchet|packages/hatchet/package.json|0.1.0-beta.0|0.1.0' '@effectify/node-better-auth|packages/node/better-auth/package.json|0.5.12-beta.0|0.5.12' '@effectify/prisma|packages/prisma/package.json|1.1.13-beta.0|1.1.13' '@effectify/react-query|packages/react/query/package.json|1.0.0-beta.1|1.0.0' '@effectify/react-router|packages/react/router/package.json|0.6.0-beta.0|0.6.0' '@effectify/react-router-better-auth|packages/react/router-better-auth/package.json|0.5.12-beta.0|0.5.12' '@effectify/solid-query|packages/solid/query/package.json|0.5.12-beta.0|0.5.12' > "$RECORDS"
+          while IFS='|' read -r NAME PATH OLD NEW; do test "$(jq -er .name "$PATH")" = "$NAME"; test "$(jq -er .version "$PATH")" = "$OLD" || { echo "::error::unauthorized source $NAME"; exit 1; }; done < "$RECORDS"
+          test -z "$(git status --porcelain)" || { echo '::error::PREPARE requires clean tree'; exit 1; }
+          REFS_BEFORE=$(git for-each-ref --format='%(refname) %(objectname)' refs/heads refs/tags | sort)
+          pnpm nx release version patch "--projects=$PROJECTS" --git-commit=false --git-tag=false --git-push=false --stage-changes=false
+          test "$REFS_BEFORE" = "$(git for-each-ref --format='%(refname) %(objectname)' refs/heads refs/tags | sort)" || { echo '::error::Nx moved refs'; exit 1; }
+          test -z "$(git diff --cached --name-only)" || { echo '::error::Nx staged files'; exit 1; }
+          ACTUAL=$(mktemp); { git diff --name-only --no-renames HEAD; git ls-files --others --exclude-standard; } | sort -u > "$ACTUAL"
+          cmp -s "$EXPECTED_PATHS" "$ACTUAL" || { echo '::error::unexpected PREPARE paths'; diff -u "$EXPECTED_PATHS" "$ACTUAL" || true; exit 1; }
+          while IFS='|' read -r NAME PATH OLD NEW; do test "$(jq -er .version "$PATH")" = "$NEW" || { echo "::error::wrong target $NAME"; exit 1; }; done < "$RECORDS"
+          git add --pathspec-from-file="$EXPECTED_PATHS"
+          git diff --cached --name-only --no-renames | sort > /tmp/stable-staged
+          cmp -s "$EXPECTED_PATHS" /tmp/stable-staged || { echo '::error::staged path contamination'; exit 1; }
+          git diff --quiet; test -z "$(git ls-files --others --exclude-standard)"
+          git commit -m "chore(release): prepare stable from $SOURCE_SHA [skip release]" || { echo '::error::PREPARE commit failed'; exit 1; }
+          test -z "$(git status --porcelain)" || { echo '::error::post-commit tree dirty'; exit 1; }
+          git push origin "HEAD:refs/heads/release/stable-$SHA_PREFIX" || { echo '::error::stable branch push failed'; exit 1; }
+          echo "source_sha=$SOURCE_SHA" >> "$GITHUB_OUTPUT"; echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"; echo "changed_paths=$(paste -sd, "$EXPECTED_PATHS")" >> "$GITHUB_OUTPUT"
+      - name: 🔐 Verify npm authentication for FINALIZE
+        if: ${{ steps.release.outputs.mode == 'finalize' }}
+        env: { NODE_AUTH_TOKEN: "${{ secrets.NPM_TOKEN }}" }
+        run: npm whoami
+      - name: 🚀 FINALIZE exact stable artifacts
+        if: ${{ steps.release.outputs.mode == 'finalize' }}
         env:
-          PROJECTS: ${{ steps.selected.outputs.projects }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        # Relative patch removes the prerelease suffix without selecting unrequested projects.
-        run: pnpm nx release patch "--projects=$PROJECTS" --skip-publish
-
-      - name: 🚀 Publish Stable
-        env:
-          PROJECTS: ${{ steps.selected.outputs.projects }}
+          PROJECTS: ${{ steps.release.outputs.projects }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_CONFIG_PROVENANCE: true
-        # No prerelease dist-tag is supplied: npm's default stable tag is intentional.
-        run: pnpm nx release publish "--projects=$PROJECTS"
-
-      - name: 📊 Release Summary
+        run: |
+          set -euo pipefail
+          git fetch origin master:refs/remotes/origin/master --no-tags
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"; test "$(git rev-parse origin/master)" = "$EXPECTED_SHA"
+          RECORDS=$(mktemp); printf '%s\n' '@effectify/hatchet|packages/hatchet/package.json|0.1.0' '@effectify/node-better-auth|packages/node/better-auth/package.json|0.5.12' '@effectify/prisma|packages/prisma/package.json|1.1.13' '@effectify/react-query|packages/react/query/package.json|1.0.0' '@effectify/react-router|packages/react/router/package.json|0.6.0' '@effectify/react-router-better-auth|packages/react/router-better-auth/package.json|0.5.12' '@effectify/solid-query|packages/solid/query/package.json|0.5.12' > "$RECORDS"
+          : > /tmp/missing-projects; : > /tmp/missing-tags; : > /tmp/missing-releases
+          while IFS='|' read -r NAME PATH VERSION; do
+            test "$(jq -er .name "$PATH")" = "$NAME"; test "$(jq -er .version "$PATH")" = "$VERSION" || { echo '::error::merged stable matrix mismatch'; exit 1; }
+            TAG="$NAME@$VERSION"; VERSIONS=$(npm view "$NAME" versions --json); printf '%s' "$VERSIONS" | jq -e 'type=="array" or type=="string"' >/dev/null
+            LATEST=$(npm view "$NAME" dist-tags.latest --json | jq -er 'select(type=="string")')
+            if printf '%s' "$VERSIONS" | jq -e --arg v "$VERSION" 'if type=="array" then index($v)!=null else .==$v end' >/dev/null; then test "$LATEST" = "$VERSION" || { echo '::error::existing stable has divergent latest'; exit 1; }; else printf '%s\n' "${NAME#@effectify/}" >> /tmp/missing-projects; fi
+            REMOTE=$(git ls-remote --tags origin "refs/tags/$TAG" "refs/tags/$TAG^{}")
+            if [ -z "$REMOTE" ]; then printf '%s\n' "$TAG" >> /tmp/missing-tags; else test "$(printf '%s\n' "$REMOTE" | grep -c $'\trefs/tags/'"$TAG"'$')" = 1; test "$(printf '%s\n' "$REMOTE" | grep -c $'\trefs/tags/'"$TAG"'\^{}$')" = 1; test "$(printf '%s\n' "$REMOTE" | awk -v r="refs/tags/$TAG^{}" '$2==r{print $1}')" = "$EXPECTED_SHA"; fi
+            set +e; RELEASE=$(gh release view "$TAG" --json tagName,isDraft,isPrerelease 2>/tmp/stable-gh-error); STATUS=$?; set -e
+            if [ "$STATUS" = 0 ]; then printf '%s' "$RELEASE" | jq -e --arg t "$TAG" '.tagName==$t and .isDraft==false and .isPrerelease==false' >/dev/null; elif [ "$STATUS" = 1 ] && grep -Fqi 'release not found' /tmp/stable-gh-error; then printf '%s\n' "$TAG" >> /tmp/missing-releases; else echo '::error::unknown GitHub Release state'; exit 1; fi
+          done < "$RECORDS"
+          TAG_REFS=(); while IFS= read -r TAG; do [ -n "$TAG" ] || continue; ! git show-ref --verify --quiet "refs/tags/$TAG"; git tag -a "$TAG" "$EXPECTED_SHA" -m "$TAG"; TAG_REFS+=("refs/tags/$TAG:refs/tags/$TAG"); done < /tmp/missing-tags
+          if [ ${#TAG_REFS[@]} -gt 0 ]; then git push --atomic origin "${TAG_REFS[@]}"; fi
+          while IFS= read -r TAG; do [ -n "$TAG" ] && gh release create "$TAG" --verify-tag --generate-notes; done < /tmp/missing-releases
+          MISSING=$(paste -sd, /tmp/missing-projects); if [ -n "$MISSING" ]; then PROJECTS="$MISSING"; pnpm nx release publish "--projects=$PROJECTS"; fi
+          MAX_NPM_READS=6; for ATTEMPT in $(seq 1 "$MAX_NPM_READS"); do
+            REMAINING=0; while IFS='|' read -r NAME PATH VERSION; do V=$(npm view "$NAME" versions --json) || { REMAINING=$((REMAINING+1)); continue; }; L=$(npm view "$NAME" dist-tags.latest --json | jq -r .); printf '%s' "$V" | jq -e --arg v "$VERSION" 'if type=="array" then index($v)!=null else .==$v end' >/dev/null && [ "$L" = "$VERSION" ] || REMAINING=$((REMAINING+1)); done < "$RECORDS"
+            [ "$REMAINING" = 0 ] && break; [ "$ATTEMPT" = "$MAX_NPM_READS" ] && { echo "::error::npm did not converge: $REMAINING"; exit 1; }; sleep 10
+          done
+      - name: 📊 Stable summary
         if: always()
         env:
-          PROJECTS: ${{ steps.selected.outputs.projects }}
-          PUBLISH_ONLY: ${{ inputs.publish_only }}
+          MODE: ${{ steps.release.outputs.mode || 'failed' }}
+          PROJECTS: ${{ steps.release.outputs.projects || '' }}
+          SOURCE_SHA: ${{ steps.prepare.outputs.source_sha || '' }}
+          BRANCH: ${{ steps.prepare.outputs.branch || '' }}
+          EXPECTED_SHA: ${{ inputs.expected_sha || '' }}
         run: |
-          echo "## 🚀 Stable Release Summary" >> "$GITHUB_STEP_SUMMARY"
-          echo "**Projects:** $PROJECTS" >> "$GITHUB_STEP_SUMMARY"
-          if [ "$PUBLISH_ONLY" = "true" ]; then
-            echo "**Mode:** publish-only recovery of selected existing stable versions; no version, tag, changelog, or git mutation was requested." >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "**Mode:** selected prereleases graduated with Nx relative patch." >> "$GITHUB_STEP_SUMMARY"
-          fi
+          echo '## Protected stable promotion' >> "$GITHUB_STEP_SUMMARY"
+          echo "**Mode:** $MODE" >> "$GITHUB_STEP_SUMMARY"; echo "**Projects:** $PROJECTS" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Source:** $SOURCE_SHA **Branch:** $BRANCH **Expected SHA:** $EXPECTED_SHA" >> "$GITHUB_STEP_SUMMARY"
+          echo 'PREPARE requires a manually linked type:chore PR and protected review. FINALIZE reconciles tags → non-prerelease Releases → npm latest.' >> "$GITHUB_STEP_SUMMARY"

@@ -92,30 +92,33 @@ Before publication, rollback is limited to deleting the unprotected prepared bra
 
 ### Stable: `.github/workflows/release-stable.yml`
 
-**Trigger:** manual dispatch only. The workflow has no push trigger.
+Stable is a protected **PREPARE → manual authorization → FINALIZE** promotion, not a direct release. The first promotion is atomic and accepts exactly this matrix:
 
-The workflow always checks out `master`, fetches `origin/master`, and fails unless the checkout is the current remote commit. The `projects` input is required and is validated against all seven Nx release projects.
+| Package                               | Beta source     | Stable target |
+| ------------------------------------- | --------------- | ------------- |
+| `@effectify/hatchet`                  | `0.1.0-beta.0`  | `0.1.0`       |
+| `@effectify/node-better-auth`         | `0.5.12-beta.0` | `0.5.12`      |
+| `@effectify/prisma`                   | `1.1.13-beta.0` | `1.1.13`      |
+| `@effectify/react-query`              | `1.0.0-beta.1`  | `1.0.0`       |
+| `@effectify/react-router`             | `0.6.0-beta.0`  | `0.6.0`       |
+| `@effectify/react-router-better-auth` | `0.5.12-beta.0` | `0.5.12`      |
+| `@effectify/solid-query`              | `0.5.12-beta.0` | `0.5.12`      |
 
-#### Normal stable graduation
+#### Protected stable quick path
 
-1. Select one or more existing prerelease projects in the comma-separated `projects` input.
-2. Leave `publish_only` disabled.
-3. The workflow verifies the release-policy contract, exact checked-out HEAD equality with fetched `origin/master`, the selected-project allowlist, and npm authentication.
-4. It builds and tests the selected projects, then runs React Router 8 tests, consolidation, readiness, and manifest verification.
-5. Only after validation passes, Nx applies the relative `patch` specifier to the selected prereleases, producing their stable versions and release metadata.
-6. Nx publishes only the selected projects without a prerelease dist-tag, so npm uses the stable default tag.
+1. Dispatch all seven project names with `publish_only=false` and leave `expected_sha` empty. PREPARE verifies current `master`, policy/build/test/readiness gates, and exact source versions. Nx materializes only `CHANGELOG.md` and the seven manifests with commit, tag, push, and staging disabled.
+2. Read the secret-free summary and verify its source SHA, `release/stable-<source-sha12>` branch, versions, and paths. Create or reuse the approved issue, then manually open its linked PR to protected `master`; the sole `type:*` label is `type:chore`. Required checks, review, and branch protection authorize merge. PREPARE does not create issues/PRs, publish, tag, create Releases, or push `master`.
+3. Confirm the merge-triggered beta workflow reports structural stable suppression. Message text alone never suppresses; partial, mixed, malformed, or extra-path release shapes stop.
+4. Capture the merged current lowercase 40-character `master` SHA. Dispatch the same seven projects with `publish_only=true` and that SHA as `expected_sha`.
+5. FINALIZE reads all npm histories/`latest`, exact remote tags, and Releases before mutation, then reconciles **annotated exact-SHA tags → non-draft/non-prerelease Releases → missing-only npm publication**. Stable publication omits `--tag`, so it alone advances `latest`.
 
-The workflow rejects a selected normal-mode project whose local manifest is already stable. This keeps graduation explicit and prevents an accidental extra patch release.
+Alpha remains prerelease-only with `--tag=alpha`; beta remains prerelease-only with annotated tags, prerelease Releases, and `--tag=beta`; stable has no prerelease suffix and never mutates prior alpha/beta artifacts. npm verification rereads at most six times with ten-second waits. Retry only the same exact SHA and matrix; matching artifacts are retained and only missing artifacts continue.
 
-#### Publish-only stable recovery
+**Stop immediately** on a moved `master`, altered matrix, unexpected/staged/untracked path, moved ref, unreadable or malformed external state, lightweight/wrong-target/duplicate tag, draft/prerelease stable Release, stable collision, or an existing stable npm version whose `latest` differs. Do not independently repair a dist-tag.
 
-Use this only when selected stable versions already exist in the checked-out manifests but need publication retried:
+Before merge, abandon/delete only the prepared branch and PR. After merge but before any public artifact, cancel through a protected revert PR. After any public artifact exists, never delete, retarget, unpublish, deprecate, or rewrite it; stop and recover forward only through the same exact FINALIZE after state is authorized.
 
-1. Enter the exact existing stable project names in `projects`.
-2. Enable `publish_only`.
-3. The workflow rejects missing versions, prerelease versions, unknown projects, and empty selections.
-4. It builds, tests, and verifies before publishing the selected manifests.
-5. It performs no version, changelog, tag, release commit, or git push mutation and supplies no prerelease npm dist-tag.
+**Trigger:** manual dispatch only. The workflow has no push trigger. Use only the protected quick path above; the former direct graduation and publish-only recovery procedures are retired.
 
 ## Release safety checks
 

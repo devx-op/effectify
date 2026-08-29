@@ -141,48 +141,37 @@ jobs:
             BASE="$HEAD"
           fi
 
-          MANIFESTS=$(mktemp)
-          while IFS= read -r project; do
-            DATA=$(pnpm nx show project "$project" --json)
-            ROOT=$(printf '%s' "$DATA" | jq -er '.root | select(length > 0)')
-            printf '%s/package.json\n' "$ROOT"
-          done <<< "$ALL_PROJECTS" | sort -u > "$MANIFESTS"
-          CHANGED=$(mktemp)
-          git diff --name-only --no-renames "$BASE" "$HEAD" | sort -u > "$CHANGED"
-
-          HAS_CHANGELOG=false
-          UNEXPECTED=false
-          MANIFEST_CHANGES=0
-          BETA_TRANSITIONS=0
-          while IFS= read -r path; do
-            if [ "$path" = "CHANGELOG.md" ]; then
-              HAS_CHANGELOG=true
-            elif grep -Fx -- "$path" "$MANIFESTS" >/dev/null; then
-              MANIFEST_CHANGES=$((MANIFEST_CHANGES + 1))
-              OLD_VERSION=$(git show "$BASE:$path" | jq -er '.version')
-              NEW_VERSION=$(jq -er '.version' "$path")
-              if [ "$OLD_VERSION" != "$NEW_VERSION" ] && [[ "$NEW_VERSION" =~ -beta\.[0-9]+$ ]]; then
-                BETA_TRANSITIONS=$((BETA_TRANSITIONS + 1))
-              fi
-            else
-              UNEXPECTED=true
-              if [[ "$path" == */package.json ]] && [ -f "$path" ]; then
-                NEW_VERSION=$(jq -er '.version' "$path")
-                [[ "$NEW_VERSION" =~ -beta\.[0-9]+$ ]] && BETA_TRANSITIONS=$((BETA_TRANSITIONS + 1))
-              fi
+          EXPECTED_PATHS=$(mktemp)
+          printf '%s\n' CHANGELOG.md packages/hatchet/package.json packages/node/better-auth/package.json packages/prisma/package.json packages/react/query/package.json packages/react/router/package.json packages/react/router-better-auth/package.json packages/solid/query/package.json | sort > "$EXPECTED_PATHS"
+          STABLE_TRANSITIONS=$(mktemp)
+          printf '%s\n' \
+            '@effectify/hatchet=0.1.0-beta.0=0.1.0|packages/hatchet/package.json' \
+            '@effectify/node-better-auth=0.5.12-beta.0=0.5.12|packages/node/better-auth/package.json' \
+            '@effectify/prisma=1.1.13-beta.0=1.1.13|packages/prisma/package.json' \
+            '@effectify/react-query=1.0.0-beta.1=1.0.0|packages/react/query/package.json' \
+            '@effectify/react-router=0.6.0-beta.0=0.6.0|packages/react/router/package.json' \
+            '@effectify/react-router-better-auth=0.5.12-beta.0=0.5.12|packages/react/router-better-auth/package.json' \
+            '@effectify/solid-query=0.5.12-beta.0=0.5.12|packages/solid/query/package.json' > "$STABLE_TRANSITIONS"
+          CHANGED=$(mktemp); git diff --name-only --no-renames "$BASE" "$HEAD" | sort -u > "$CHANGED"
+          STABLE_SHAPE=false
+          if cmp -s "$EXPECTED_PATHS" "$CHANGED"; then
+            STABLE_SHAPE=true
+            while IFS='|' read -r TRANSITION PATH; do
+              NAME=${TRANSITION%%=*}; REST=${TRANSITION#*=}; OLD=${REST%%=*}; NEW=${REST##*=}
+              OLD_NAME=$(git show "$BASE:$PATH" | jq -er .name) || STABLE_SHAPE=false
+              OLD_VERSION=$(git show "$BASE:$PATH" | jq -er .version) || STABLE_SHAPE=false
+              NEW_NAME=$(jq -er .name "$PATH") || STABLE_SHAPE=false
+              NEW_VERSION=$(jq -er .version "$PATH") || STABLE_SHAPE=false
+              [ "$OLD_NAME" = "$NAME" ] && [ "$NEW_NAME" = "$NAME" ] && [ "$OLD_VERSION" = "$OLD" ] && [ "$NEW_VERSION" = "$NEW" ] || STABLE_SHAPE=false
+            done < "$STABLE_TRANSITIONS"
+            if [ "$STABLE_SHAPE" = true ]; then
+              echo "mode=suppress" >> "$GITHUB_OUTPUT"; echo "has_projects=false" >> "$GITHUB_OUTPUT"; echo "projects=" >> "$GITHUB_OUTPUT"; exit 0
             fi
-          done < "$CHANGED"
-
-          if [ "$HAS_CHANGELOG" = "true" ] && [ "$UNEXPECTED" = "false" ] && [ "$BETA_TRANSITIONS" -gt 0 ] && [ "$BETA_TRANSITIONS" -eq "$MANIFEST_CHANGES" ]; then
-            echo "mode=suppress" >> "$GITHUB_OUTPUT"
-            echo "has_projects=false" >> "$GITHUB_OUTPUT"
-            echo "projects=" >> "$GITHUB_OUTPUT"
-            exit 0
+            echo "stable promotion shape is partial, mixed, or malformed" >&2; exit 1
           fi
           HEAD_SUBJECT=${HEAD_MESSAGE%%$'\n'*}
-          if [[ "$HEAD_SUBJECT" == *"chore(release):"* || "$HEAD_SUBJECT" == *"[skip release]"* ]] || [ "$BETA_TRANSITIONS" -gt 0 ]; then
-            echo "suspicious release-shaped master push; refusing preparation" >&2
-            exit 1
+          if [[ "$HEAD_SUBJECT" == *"chore(release):"* || "$HEAD_SUBJECT" == *"[skip release]"* ]] || grep -Fxq CHANGELOG.md "$CHANGED"; then
+            echo "suspicious release-shaped master push; refusing preparation" >&2; exit 1
           fi
 
           AFFECTED_RAW=$(pnpm nx show projects --affected --base="$BASE" --head="$HEAD" --json 2>/dev/null || echo "[]")
