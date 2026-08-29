@@ -115,7 +115,9 @@ jobs:
           while IFS='|' read -r NAME MANIFEST_PATH OLD NEW; do if DETAIL=$(node -e 'const fs=require("node:fs");const [path,name,version]=process.argv.slice(1);let value;try{value=JSON.parse(fs.readFileSync(path,"utf8"))}catch{process.exit(2)}if(!value||typeof value!=="object"||Array.isArray(value)||typeof value.name!=="string"||typeof value.version!=="string"||value.name!==name||value.version!==version){const actual={name:typeof value?.name==="string"?value.name:null,version:typeof value?.version==="string"?value.version:null};process.stdout.write(`actual=${JSON.stringify(actual)} expected=${JSON.stringify({name,version})}`);process.exit(1)}' "$MANIFEST_PATH" "$NAME" "$OLD"); then :; else STATUS=$?; if [ "$STATUS" = 1 ]; then echo "::error::source manifest identity mismatch for $NAME: $DETAIL"; else echo "::error::source manifest execution or parse failed for $NAME"; fi; exit 1; fi; done < "$RECORDS"
           test -z "$(git status --porcelain)" || { echo '::error::PREPARE requires clean tree'; exit 1; }
           REFS_BEFORE=$(git for-each-ref --format='%(refname) %(objectname)' refs/heads refs/tags | sort)
-          pnpm nx release version patch "--projects=$PROJECTS" --git-commit=false --git-tag=false --git-push=false --stage-changes=false
+          while IFS='|' read -r NAME MANIFEST_PATH OLD NEW; do
+            pnpm nx release version "$NEW" "--projects=$NAME" --git-commit=false --git-tag=false --git-push=false --stage-changes=false
+          done < "$RECORDS"
           test "$REFS_BEFORE" = "$(git for-each-ref --format='%(refname) %(objectname)' refs/heads refs/tags | sort)" || { echo '::error::Nx moved refs'; exit 1; }
           test -z "$(git diff --cached --name-only)" || { echo '::error::Nx staged files'; exit 1; }
           ACTUAL=$(mktemp); { git diff --name-only --no-renames HEAD; git ls-files --others --exclude-standard; } | sort -u > "$ACTUAL"
