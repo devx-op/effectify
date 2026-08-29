@@ -517,6 +517,7 @@ const betaViolations = (source) => {
 const stableViolations = (source) => {
   const violations = []
   const active = withoutComments(source)
+  if (/\bjq\b/.test(active)) violations.push("stable jq dependency")
   const required = [
     ["dispatch", /^\s*workflow_dispatch:/m],
     ["duplicates", /sort \| uniq -d/],
@@ -545,17 +546,26 @@ const stableViolations = (source) => {
     ["commit", /git commit -m "chore\(release\): prepare stable from \$SOURCE_SHA \[skip release\]"/],
     ["clean output", /::error::post-commit tree dirty/],
     ["branch refspec", /git push origin "HEAD:refs\/heads\/release\/stable-\$SHA_PREFIX"/],
-    ["manifest name", /jq -er \.name "\$PATH"/],
-    ["manifest version", /jq -er \.version "\$PATH"/],
+    ["Node manifest validation", /node -e/],
+    ["Node JSON type validation", /JSON\.parse\(/],
+    ["manifest object type", /!value\|\|typeof value!=="object"\|\|Array\.isArray\(value\)/],
+    ["manifest name type", /typeof value\.name!=="string"/],
+    ["manifest version type", /typeof value\.version!=="string"/],
+    ["manifest exact identity", /value\.name!==name\|\|value\.version!==version/],
     ["npm histories", /npm view "\$NAME" versions --json/],
+    ["npm versions type", /typeof value==="string"\|\|Array\.isArray\(value\)&&value\.every\(item=>typeof item==="string"\)/],
     ["npm latest", /npm view "\$NAME" dist-tags\.latest --json/],
+    ["npm latest type", /typeof value!=="string"/],
     ["latest conflict", /existing stable has divergent latest/],
     ["tag refs", /git ls-remote --tags origin "refs\/tags\/\$TAG" "refs\/tags\/\$TAG\^\{\}"/],
     ["direct unique", /grep -c \$'\\trefs\/tags\/'"\$TAG"'\$'/],
     ["peeled unique", /grep -c \$'\\trefs\/tags\/'"\$TAG"'\\\^\{\}\$'/],
     ["tag target", /awk -v r="refs\/tags\/\$TAG\^\{\}"[^\n]*"\$EXPECTED_SHA"/],
     ["release read", /gh release view "\$TAG" --json tagName,isDraft,isPrerelease/],
-    ["release identity", /\.tagName==\$t and \.isDraft==false and \.isPrerelease==false/],
+    ["release tag type", /typeof value\.tagName!=="string"/],
+    ["release draft type", /typeof value\.isDraft!=="boolean"/],
+    ["release prerelease type", /typeof value\.isPrerelease!=="boolean"/],
+    ["release identity", /value\.tagName!==tag\|\|value\.isDraft\|\|value\.isPrerelease/],
     ["annotated tag", /git tag -a "\$TAG" "\$EXPECTED_SHA" -m "\$TAG"/],
     ["tag refspec", /TAG_REFS\+=\("refs\/tags\/\$TAG:refs\/tags\/\$TAG"\)/],
     ["atomic push", /git push --atomic origin "\$\{TAG_REFS\[@\]\}"/],
@@ -565,17 +575,79 @@ const stableViolations = (source) => {
     ["delay", /sleep 10/],
     ["exhaustion", /npm did not converge/],
   ]
-  const commands = commandEntries(source).map(({ command }) => command)
+  const steps = extractSteps(source)
+  const prepare = steps.find((step) => step.name.includes("PREPARE protected stable"))
+  const finalize = steps.find((step) => step.name.includes("FINALIZE exact stable artifacts"))
+  const prepareBody = prepare ? `- name: PREPARE\n${prepare.source}` : ""
+  const finalizeBody = finalize ? `- name: FINALIZE\n${finalize.source}` : ""
+  const prepareContracts = new Set([
+    "clean input",
+    "ref snapshot",
+    "Nx flags",
+    "refs unchanged",
+    "no Nx staging",
+    "all paths",
+    "path equality",
+    "pathspec",
+    "index equality",
+    "commit",
+    "clean output",
+    "branch refspec",
+  ])
+  const finalizeContracts = new Set([
+    "npm histories",
+    "npm versions type",
+    "npm latest",
+    "npm latest type",
+    "latest conflict",
+    "tag refs",
+    "direct unique",
+    "peeled unique",
+    "tag target",
+    "release read",
+    "release tag type",
+    "release draft type",
+    "release prerelease type",
+    "release identity",
+    "annotated tag",
+    "tag refspec",
+    "atomic push",
+    "release create",
+    "missing subset",
+    "six reads",
+    "delay",
+    "exhaustion",
+  ])
   for (const [name, pattern] of required) {
+    const body = prepareContracts.has(name) ? prepareBody : finalizeContracts.has(name) ? finalizeBody : active
+    const commands = commandEntries(body).map(({ command }) => command)
     pattern.lastIndex = 0
-    const inSource = pattern.test(active)
+    const inSource = pattern.test(body)
     const inCommands = commands.some((command) => {
       pattern.lastIndex = 0
       return pattern.test(command)
     })
     if (!inSource && !inCommands) violations.push(`stable ${name}`)
   }
-  const prepare = extractSteps(source).find((step) => step.name.includes("PREPARE protected stable"))
+  const sharedPhaseContracts = required.filter(([name]) =>
+    [
+      "Node manifest validation",
+      "Node JSON type validation",
+      "manifest object type",
+      "manifest name type",
+      "manifest version type",
+      "manifest exact identity",
+    ].includes(name),
+  )
+  for (const [phase, body] of [
+    ["PREPARE", prepareBody],
+    ["FINALIZE", finalizeBody],
+  ]) {
+    for (const [name, pattern] of sharedPhaseContracts) {
+      pattern.lastIndex = 0
+      if (!pattern.test(body)) violations.push(`stable ${phase} ${name}`)
+    }
+  }
   if (!prepare || !/mode == 'prepare'/.test(prepare.condition)) violations.push("stable PREPARE isolation")
   if (
     prepare &&
@@ -593,7 +665,7 @@ const stableViolations = (source) => {
     /git push --atomic/,
     /gh release create/,
     /nx release publish/,
-  ].map((p) => active.search(p))
+  ].map((p) => finalizeBody.search(p))
   if (order.some((p) => p < 0) || order.some((p, i) => i && p <= order[i - 1])) violations.push("stable ordering")
   return violations
 }
@@ -625,6 +697,12 @@ const mutate = (source, before, after) => {
 const assertMutationFails = (name, policy, mutation) => {
   const changed = mutation(policy)
   assert.notDeepEqual(policyViolations(changed), [], name)
+}
+
+const mutateStep = (source, stepName, before, after) => {
+  const step = extractSteps(source).find((candidate) => candidate.name.includes(stepName))
+  assert.ok(step, `step fixture not found: ${stepName}`)
+  return source.replace(step.source, mutate(step.source, before, after))
 }
 
 test("dev pushes retain exact-range conditional alpha publication", () => {
@@ -833,6 +911,14 @@ test("beta FINALIZE conflict and ordering mutations fail closed", () => {
 test("protected stable PREPARE and FINALIZE reject independent safety mutations", () => {
   const policy = { ...workflows, docs: readme }
   assert.deepEqual(stableViolations(policy.stable), [])
+
+  for (const [phase, stepName] of [
+    ["PREPARE", "PREPARE protected stable"],
+    ["FINALIZE", "FINALIZE exact stable artifacts"],
+  ]) {
+    const changed = mutateStep(policy.stable, stepName, /JSON\.parse/g, "JSON.parseSafe")
+    assert.ok(stableViolations(changed).includes(`stable ${phase} Node JSON type validation`))
+  }
   for (const [name, before, after] of [
     ["allow abbreviated SHA", "^[0-9a-f]{40}$", "^[0-9a-f]{7,40}$"],
     ["fetch tags", "--no-tags", "--tags"],
@@ -845,6 +931,23 @@ test("protected stable PREPARE and FINALIZE reject independent safety mutations"
     ["weaken path comparison", 'cmp -s "$EXPECTED_PATHS" "$ACTUAL"', 'test -s "$ACTUAL"'],
     ["stage broad tree", 'git add --pathspec-from-file="$EXPECTED_PATHS"', "git add -A"],
     ["push master", "HEAD:refs/heads/release/stable-$SHA_PREFIX", "HEAD:refs/heads/master"],
+    ["restore jq", "node -e", "jq -e"],
+    ["weaken JSON parse", "JSON.parse", "JSON.parseSafe"],
+    ["accept scalar manifest", /!value\|\|typeof value!=="object"\|\|Array\.isArray\(value\)/g, "!value"],
+    ["accept non-string manifest name", /typeof value\.name!=="string"\|\|/g, ""],
+    ["accept non-string manifest version", /typeof value\.version!=="string"\|\|/g, ""],
+    ["accept inexact manifest identity", /value\.name!==name\|\|value\.version!==version/g, "false"],
+    [
+      "accept non-string npm versions",
+      /typeof value==="string"\|\|Array\.isArray\(value\)&&value\.every\(item=>typeof item==="string"\)/g,
+      "Array.isArray(value)",
+    ],
+    ["accept non-string npm latest", /typeof value!=="string"/g, "value==null"],
+    ["accept non-string release tag", 'typeof value.tagName!=="string"||', ""],
+    ["accept non-boolean release draft", 'typeof value.isDraft!=="boolean"||', ""],
+    ["accept non-boolean release prerelease", 'typeof value.isPrerelease!=="boolean"||', ""],
+    ["accept draft release", "||value.isDraft||value.isPrerelease", "||value.isPrerelease"],
+    ["accept prerelease release", "||value.isDraft||value.isPrerelease", "||value.isDraft"],
     ["read latest as beta", "dist-tags.latest", "dist-tags.beta"],
     ["accept divergent latest", "existing stable has divergent latest", "existing stable accepted"],
     ["omit peeled tag ref", ' "refs/tags/$TAG^{}"', ""],
