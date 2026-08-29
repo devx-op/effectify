@@ -29,7 +29,12 @@ jobs:
     services:
       postgres:
         image: postgres:16-alpine
-        env: { POSTGRES_USER: postgres, POSTGRES_PASSWORD: postgres, POSTGRES_DB: effectify }
+        env:
+          {
+            POSTGRES_USER: postgres,
+            POSTGRES_PASSWORD: postgres,
+            POSTGRES_DB: effectify,
+          }
         ports: ["5432:5432"]
         options: >-
           --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
@@ -107,7 +112,7 @@ jobs:
           git config user.name 'github-actions[bot]'; git config user.email 'github-actions[bot]@users.noreply.github.com'
           EXPECTED_PATHS=$(mktemp); printf '%s\n' CHANGELOG.md packages/hatchet/package.json packages/node/better-auth/package.json packages/prisma/package.json packages/react/query/package.json packages/react/router/package.json packages/react/router-better-auth/package.json packages/solid/query/package.json | sort > "$EXPECTED_PATHS"
           RECORDS=$(mktemp); printf '%s\n' '@effectify/hatchet|packages/hatchet/package.json|0.1.0-beta.0|0.1.0' '@effectify/node-better-auth|packages/node/better-auth/package.json|0.5.12-beta.0|0.5.12' '@effectify/prisma|packages/prisma/package.json|1.1.13-beta.0|1.1.13' '@effectify/react-query|packages/react/query/package.json|1.0.0-beta.1|1.0.0' '@effectify/react-router|packages/react/router/package.json|0.6.0-beta.0|0.6.0' '@effectify/react-router-better-auth|packages/react/router-better-auth/package.json|0.5.12-beta.0|0.5.12' '@effectify/solid-query|packages/solid/query/package.json|0.5.13-beta.0|0.5.13' > "$RECORDS"
-          while IFS='|' read -r NAME PATH OLD NEW; do test "$(jq -er .name "$PATH")" = "$NAME"; test "$(jq -er .version "$PATH")" = "$OLD" || { echo "::error::unauthorized source $NAME"; exit 1; }; done < "$RECORDS"
+          while IFS='|' read -r NAME PATH OLD NEW; do node -e 'const fs=require("node:fs");const [path,name,version]=process.argv.slice(1);const value=JSON.parse(fs.readFileSync(path,"utf8"));if(!value||typeof value!=="object"||Array.isArray(value)||typeof value.name!=="string"||typeof value.version!=="string"||value.name!==name||value.version!==version)process.exit(1)' "$PATH" "$NAME" "$OLD" || { echo "::error::unauthorized source $NAME"; exit 1; }; done < "$RECORDS"
           test -z "$(git status --porcelain)" || { echo '::error::PREPARE requires clean tree'; exit 1; }
           REFS_BEFORE=$(git for-each-ref --format='%(refname) %(objectname)' refs/heads refs/tags | sort)
           pnpm nx release version patch "--projects=$PROJECTS" --git-commit=false --git-tag=false --git-push=false --stage-changes=false
@@ -115,7 +120,7 @@ jobs:
           test -z "$(git diff --cached --name-only)" || { echo '::error::Nx staged files'; exit 1; }
           ACTUAL=$(mktemp); { git diff --name-only --no-renames HEAD; git ls-files --others --exclude-standard; } | sort -u > "$ACTUAL"
           cmp -s "$EXPECTED_PATHS" "$ACTUAL" || { echo '::error::unexpected PREPARE paths'; diff -u "$EXPECTED_PATHS" "$ACTUAL" || true; exit 1; }
-          while IFS='|' read -r NAME PATH OLD NEW; do test "$(jq -er .version "$PATH")" = "$NEW" || { echo "::error::wrong target $NAME"; exit 1; }; done < "$RECORDS"
+          while IFS='|' read -r NAME PATH OLD NEW; do node -e 'const fs=require("node:fs");const [path,name,version]=process.argv.slice(1);const value=JSON.parse(fs.readFileSync(path,"utf8"));if(!value||typeof value!=="object"||Array.isArray(value)||typeof value.name!=="string"||typeof value.version!=="string"||value.name!==name||value.version!==version)process.exit(1)' "$PATH" "$NAME" "$NEW" || { echo "::error::wrong target $NAME"; exit 1; }; done < "$RECORDS"
           git add --pathspec-from-file="$EXPECTED_PATHS"
           git diff --cached --name-only --no-renames | sort > /tmp/stable-staged
           cmp -s "$EXPECTED_PATHS" /tmp/stable-staged || { echo '::error::staged path contamination'; exit 1; }
@@ -143,21 +148,21 @@ jobs:
           RECORDS=$(mktemp); printf '%s\n' '@effectify/hatchet|packages/hatchet/package.json|0.1.0' '@effectify/node-better-auth|packages/node/better-auth/package.json|0.5.12' '@effectify/prisma|packages/prisma/package.json|1.1.13' '@effectify/react-query|packages/react/query/package.json|1.0.0' '@effectify/react-router|packages/react/router/package.json|0.6.0' '@effectify/react-router-better-auth|packages/react/router-better-auth/package.json|0.5.12' '@effectify/solid-query|packages/solid/query/package.json|0.5.13' > "$RECORDS"
           : > /tmp/missing-projects; : > /tmp/missing-tags; : > /tmp/missing-releases
           while IFS='|' read -r NAME PATH VERSION; do
-            test "$(jq -er .name "$PATH")" = "$NAME"; test "$(jq -er .version "$PATH")" = "$VERSION" || { echo '::error::merged stable matrix mismatch'; exit 1; }
-            TAG="$NAME@$VERSION"; VERSIONS=$(npm view "$NAME" versions --json); printf '%s' "$VERSIONS" | jq -e 'type=="array" or type=="string"' >/dev/null
-            LATEST=$(npm view "$NAME" dist-tags.latest --json | jq -er 'select(type=="string")')
-            if printf '%s' "$VERSIONS" | jq -e --arg v "$VERSION" 'if type=="array" then index($v)!=null else .==$v end' >/dev/null; then test "$LATEST" = "$VERSION" || { echo '::error::existing stable has divergent latest'; exit 1; }; else printf '%s\n' "${NAME#@effectify/}" >> /tmp/missing-projects; fi
+            node -e 'const fs=require("node:fs");const [path,name,version]=process.argv.slice(1);const value=JSON.parse(fs.readFileSync(path,"utf8"));if(!value||typeof value!=="object"||Array.isArray(value)||typeof value.name!=="string"||typeof value.version!=="string"||value.name!==name||value.version!==version)process.exit(1)' "$PATH" "$NAME" "$VERSION" || { echo '::error::merged stable matrix mismatch'; exit 1; }
+            TAG="$NAME@$VERSION"; VERSIONS=$(npm view "$NAME" versions --json); printf '%s' "$VERSIONS" | node -e 'const fs=require("node:fs");const value=JSON.parse(fs.readFileSync(0,"utf8"));if(!(typeof value==="string"||Array.isArray(value)&&value.every(item=>typeof item==="string")))process.exit(1)'
+            LATEST_JSON=$(npm view "$NAME" dist-tags.latest --json); LATEST=$(printf '%s' "$LATEST_JSON" | node -e 'const fs=require("node:fs");const value=JSON.parse(fs.readFileSync(0,"utf8"));if(typeof value!=="string")process.exit(1);process.stdout.write(value)')
+            if printf '%s' "$VERSIONS" | node -e 'const fs=require("node:fs");const version=process.argv[1];const value=JSON.parse(fs.readFileSync(0,"utf8"));if(!(typeof value==="string"||Array.isArray(value)&&value.every(item=>typeof item==="string")))process.exit(1);process.exit((Array.isArray(value)?value.includes(version):value===version)?0:1)' "$VERSION"; then test "$LATEST" = "$VERSION" || { echo '::error::existing stable has divergent latest'; exit 1; }; else printf '%s\n' "${NAME#@effectify/}" >> /tmp/missing-projects; fi
             REMOTE=$(git ls-remote --tags origin "refs/tags/$TAG" "refs/tags/$TAG^{}")
             if [ -z "$REMOTE" ]; then printf '%s\n' "$TAG" >> /tmp/missing-tags; else test "$(printf '%s\n' "$REMOTE" | grep -c $'\trefs/tags/'"$TAG"'$')" = 1; test "$(printf '%s\n' "$REMOTE" | grep -c $'\trefs/tags/'"$TAG"'\^{}$')" = 1; test "$(printf '%s\n' "$REMOTE" | awk -v r="refs/tags/$TAG^{}" '$2==r{print $1}')" = "$EXPECTED_SHA"; fi
             set +e; RELEASE=$(gh release view "$TAG" --json tagName,isDraft,isPrerelease 2>/tmp/stable-gh-error); STATUS=$?; set -e
-            if [ "$STATUS" = 0 ]; then printf '%s' "$RELEASE" | jq -e --arg t "$TAG" '.tagName==$t and .isDraft==false and .isPrerelease==false' >/dev/null; elif [ "$STATUS" = 1 ] && grep -Fqi 'release not found' /tmp/stable-gh-error; then printf '%s\n' "$TAG" >> /tmp/missing-releases; else echo '::error::unknown GitHub Release state'; exit 1; fi
+            if [ "$STATUS" = 0 ]; then printf '%s' "$RELEASE" | node -e 'const fs=require("node:fs");const tag=process.argv[1];const value=JSON.parse(fs.readFileSync(0,"utf8"));if(!value||typeof value!=="object"||Array.isArray(value)||typeof value.tagName!=="string"||typeof value.isDraft!=="boolean"||typeof value.isPrerelease!=="boolean"||value.tagName!==tag||value.isDraft||value.isPrerelease)process.exit(1)' "$TAG"; elif [ "$STATUS" = 1 ] && grep -Fqi 'release not found' /tmp/stable-gh-error; then printf '%s\n' "$TAG" >> /tmp/missing-releases; else echo '::error::unknown GitHub Release state'; exit 1; fi
           done < "$RECORDS"
           TAG_REFS=(); while IFS= read -r TAG; do [ -n "$TAG" ] || continue; ! git show-ref --verify --quiet "refs/tags/$TAG"; git tag -a "$TAG" "$EXPECTED_SHA" -m "$TAG"; TAG_REFS+=("refs/tags/$TAG:refs/tags/$TAG"); done < /tmp/missing-tags
           if [ ${#TAG_REFS[@]} -gt 0 ]; then git push --atomic origin "${TAG_REFS[@]}"; fi
           while IFS= read -r TAG; do [ -n "$TAG" ] && gh release create "$TAG" --verify-tag --generate-notes; done < /tmp/missing-releases
           MISSING=$(paste -sd, /tmp/missing-projects); if [ -n "$MISSING" ]; then PROJECTS="$MISSING"; pnpm nx release publish "--projects=$PROJECTS"; fi
           MAX_NPM_READS=6; for ATTEMPT in $(seq 1 "$MAX_NPM_READS"); do
-            REMAINING=0; while IFS='|' read -r NAME PATH VERSION; do V=$(npm view "$NAME" versions --json) || { REMAINING=$((REMAINING+1)); continue; }; L=$(npm view "$NAME" dist-tags.latest --json | jq -r .); printf '%s' "$V" | jq -e --arg v "$VERSION" 'if type=="array" then index($v)!=null else .==$v end' >/dev/null && [ "$L" = "$VERSION" ] || REMAINING=$((REMAINING+1)); done < "$RECORDS"
+            REMAINING=0; while IFS='|' read -r NAME PATH VERSION; do V=$(npm view "$NAME" versions --json) || { REMAINING=$((REMAINING+1)); continue; }; L_JSON=$(npm view "$NAME" dist-tags.latest --json) || { REMAINING=$((REMAINING+1)); continue; }; L=$(printf '%s' "$L_JSON" | node -e 'const fs=require("node:fs");const value=JSON.parse(fs.readFileSync(0,"utf8"));if(typeof value!=="string")process.exit(1);process.stdout.write(value)') || { REMAINING=$((REMAINING+1)); continue; }; printf '%s' "$V" | node -e 'const fs=require("node:fs");const version=process.argv[1];const value=JSON.parse(fs.readFileSync(0,"utf8"));if(!(typeof value==="string"||Array.isArray(value)&&value.every(item=>typeof item==="string")))process.exit(1);process.exit((Array.isArray(value)?value.includes(version):value===version)?0:1)' "$VERSION" && [ "$L" = "$VERSION" ] || REMAINING=$((REMAINING+1)); done < "$RECORDS"
             [ "$REMAINING" = 0 ] && break; [ "$ATTEMPT" = "$MAX_NPM_READS" ] && { echo "::error::npm did not converge: $REMAINING"; exit 1; }; sleep 10
           done
       - name: 📊 Stable summary
