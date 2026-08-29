@@ -514,6 +514,14 @@ const betaViolations = (source) => {
   return violations
 }
 
+const isStableReleaseValidationCommand = (command) =>
+  /printf '%s' "\$RELEASE" \| node -e /.test(command) &&
+  /const value=JSON\.parse\(fs\.readFileSync\(0,"utf8"\)\)/.test(command) &&
+  /typeof value\.tagName!=="string"/.test(command) &&
+  /typeof value\.isDraft!=="boolean"/.test(command) &&
+  /typeof value\.isPrerelease!=="boolean"/.test(command) &&
+  /value\.tagName!==tag\|\|value\.isDraft\|\|value\.isPrerelease/.test(command)
+
 const stableViolations = (source) => {
   const violations = []
   const active = withoutComments(source)
@@ -562,10 +570,6 @@ const stableViolations = (source) => {
     ["peeled unique", /grep -c \$'\\trefs\/tags\/'"\$TAG"'\\\^\{\}\$'/],
     ["tag target", /awk -v r="refs\/tags\/\$TAG\^\{\}"[^\n]*"\$EXPECTED_SHA"/],
     ["release read", /gh release view "\$TAG" --json tagName,isDraft,isPrerelease/],
-    ["release tag type", /typeof value\.tagName!=="string"/],
-    ["release draft type", /typeof value\.isDraft!=="boolean"/],
-    ["release prerelease type", /typeof value\.isPrerelease!=="boolean"/],
-    ["release identity", /value\.tagName!==tag\|\|value\.isDraft\|\|value\.isPrerelease/],
     ["annotated tag", /git tag -a "\$TAG" "\$EXPECTED_SHA" -m "\$TAG"/],
     ["tag refspec", /TAG_REFS\+=\("refs\/tags\/\$TAG:refs\/tags\/\$TAG"\)/],
     ["atomic push", /git push --atomic origin "\$\{TAG_REFS\[@\]\}"/],
@@ -605,10 +609,6 @@ const stableViolations = (source) => {
     "peeled unique",
     "tag target",
     "release read",
-    "release tag type",
-    "release draft type",
-    "release prerelease type",
-    "release identity",
     "annotated tag",
     "tag refspec",
     "atomic push",
@@ -639,6 +639,12 @@ const stableViolations = (source) => {
       "manifest exact identity",
     ].includes(name),
   )
+  const releaseValidationCommands = commandEntries(finalizeBody)
+    .map(({ command }) => command)
+    .filter((command) => /printf '%s' "\$RELEASE" \| node -e /.test(command))
+  if (releaseValidationCommands.length !== 1 || !isStableReleaseValidationCommand(releaseValidationCommands[0])) {
+    violations.push("stable FINALIZE exact Release validation command")
+  }
   for (const [phase, body] of [
     ["PREPARE", prepareBody],
     ["FINALIZE", finalizeBody],
@@ -919,6 +925,14 @@ test("protected stable PREPARE and FINALIZE reject independent safety mutations"
     const changed = mutateStep(policy.stable, stepName, /JSON\.parse/g, "JSON.parseSafe")
     assert.ok(stableViolations(changed).includes(`stable ${phase} Node JSON type validation`))
   }
+  const literalRelease = mutateStep(
+    policy.stable,
+    "FINALIZE exact stable artifacts",
+    'const value=JSON.parse(fs.readFileSync(0,"utf8"));if(!value||typeof value!=="object"||Array.isArray(value)||typeof value.tagName',
+    'const value={tagName:tag,isDraft:false,isPrerelease:false};if(!value||typeof value!=="object"||Array.isArray(value)||typeof value.tagName',
+  )
+  assert.ok(stableViolations(literalRelease).includes("stable FINALIZE exact Release validation command"))
+
   for (const [name, before, after] of [
     ["allow abbreviated SHA", "^[0-9a-f]{40}$", "^[0-9a-f]{7,40}$"],
     ["fetch tags", "--no-tags", "--tags"],
