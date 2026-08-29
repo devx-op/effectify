@@ -16,6 +16,77 @@ const releasedPackages = [
   { name: "@effectify/prisma", version: "1.0.0" },
 ]
 
+const stableMatrix = [
+  ["@effectify/hatchet", "0.1.0", []],
+  ["@effectify/node-better-auth", "0.5.12", []],
+  ["@effectify/prisma", "1.1.13", []],
+  ["@effectify/react-query", "1.0.0", []],
+  ["@effectify/react-router", "0.6.0", ["0.5.10"]],
+  ["@effectify/react-router-better-auth", "0.5.12", []],
+  ["@effectify/solid-query", "0.5.13", ["0.5.12"]],
+]
+
+test("no-network stable actions accept the exact heterogeneous matrix and reject an exact target collision", async () => {
+  const delegated = []
+  const delegatedUpdates = []
+  class BaseVersionActions {
+    constructor(releaseGroup, projectGraphNode, finalConfigForProject) {
+      this.releaseGroup = releaseGroup
+      this.projectGraphNode = projectGraphNode
+      this.finalConfigForProject = finalConfigForProject
+    }
+    async init() {}
+    async calculateNewVersion() {
+      delegated.push(this.packageJson?.name ?? this.projectGraphNode.data.root)
+      return { newVersion: this.finalConfigForProject.candidate, logText: "Nx selected exact target" }
+    }
+    async updateProjectVersion(_tree, version) {
+      delegatedUpdates.push(version)
+    }
+  }
+
+  const run = async ([name, candidate, publishedVersions]) => {
+    const VersionActions = createCollisionAwareVersionActions({
+      BaseVersionActions,
+      resolveRegistry: async () => "https://registry.example.test/",
+      getPublishedVersions: async () => publishedVersions,
+    })
+    const action = new VersionActions({}, { data: { root: name.slice("@effectify/".length) } }, {
+      candidate,
+      versionActionsOptions: {},
+    })
+    await action.init({ root: "/repo", read: () => Buffer.from(JSON.stringify({ name, version: "0.0.0" })) })
+    return action.calculateNewVersion("0.0.0", candidate, "exact stable", {}, "")
+  }
+
+  const accepted = []
+  for (const record of stableMatrix) accepted.push(await run(record))
+  assert.deepEqual(accepted.map(({ newVersion }) => newVersion), stableMatrix.map(([, version]) => version))
+  assert.equal(delegated.length, 7)
+
+  const beforeCollision = delegated.length
+  await assert.rejects(
+    () => run(["@effectify/solid-query", "0.5.13", ["0.5.12", "0.5.13"]]),
+    /stable candidate 0\.5\.13 is already published/,
+  )
+  assert.equal(delegated.length, beforeCollision + 1)
+  assert.deepEqual(delegatedUpdates, [])
+})
+
+test("cumulative seven-package root changelog is idempotent and dry-run updates never write", () => {
+  const packages = stableMatrix.map(([name, version]) => ({ name, version }))
+  const date = new Date("2026-07-12T00:00:00Z")
+  const changelog = mergeRootChangelog(undefined, packages, date)
+  assert.equal((changelog.match(/^## @effectify\//gm) ?? []).length, 7)
+  assert.equal(mergeRootChangelog(changelog, packages, date), changelog)
+  assert.deepEqual(getRootChangelogUpdate("# stale\n", changelog, true), {
+    changed: true,
+    content: changelog,
+    shouldWrite: false,
+    shouldReportChangedFile: false,
+  })
+})
+
 test("creates the root release snapshot with UTC version dates and package names", () => {
   assert.equal(
     createRootChangelog(releasedPackages, new Date("2026-07-11T23:59:59-07:00")),

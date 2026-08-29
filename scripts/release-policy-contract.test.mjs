@@ -543,7 +543,7 @@ const stableViolations = (source) => {
     ["ref snapshot", /REFS_BEFORE=\$\(git for-each-ref/],
     [
       "Nx flags",
-      /^pnpm nx release version patch "--projects=\$PROJECTS" --git-commit=false --git-tag=false --git-push=false --stage-changes=false$/m,
+      /^pnpm nx release version "\$NEW" "--projects=\$NAME" --git-commit=false --git-tag=false --git-push=false --stage-changes=false$/m,
     ],
     ["refs unchanged", /test "\$REFS_BEFORE" = "\$\(git for-each-ref/],
     ["no Nx staging", /test -z "\$\(git diff --cached --name-only\)"/],
@@ -671,6 +671,22 @@ const stableViolations = (source) => {
         if (!/expected=\$\{JSON\.stringify\(\{name,version\}\)\}/.test(body)) {
           violations.push(`stable ${phase} manifest expected identity detail`)
         }
+  }
+  if (prepare) {
+    const versionCommands = prepare.commands.filter((command) => /pnpm nx release version/.test(command))
+    if (versionCommands.length !== 1 || /\bpatch\b|--projects=\$PROJECTS/.test(versionCommands[0])) violations.push("stable exact per-record version action")
+    if (/writeFileSync|fs\.writeFile|jq[^\n]*\.version|sed -i|npm pkg set/.test(prepare.source)) violations.push("stable direct manifest edit")
+    const records = [...prepare.source.matchAll(/'(@effectify\/[^|']+\|[^|']+\|[^|']+\|[^']+)'/g)].map(([, record]) => record)
+    const expectedRecords = [
+      "@effectify/hatchet|packages/hatchet/package.json|0.1.0-beta.0|0.1.0",
+      "@effectify/node-better-auth|packages/node/better-auth/package.json|0.5.12-beta.0|0.5.12",
+      "@effectify/prisma|packages/prisma/package.json|1.1.13-beta.0|1.1.13",
+      "@effectify/react-query|packages/react/query/package.json|1.0.0-beta.1|1.0.0",
+      "@effectify/react-router|packages/react/router/package.json|0.6.0-beta.0|0.6.0",
+      "@effectify/react-router-better-auth|packages/react/router-better-auth/package.json|0.5.12-beta.0|0.5.12",
+      "@effectify/solid-query|packages/solid/query/package.json|0.5.13-beta.0|0.5.13",
+    ]
+    if (JSON.stringify(records) !== JSON.stringify(expectedRecords)) violations.push("stable exact PREPARE records")
   }
   if (!prepare || !/mode == 'prepare'/.test(prepare.condition)) violations.push("stable PREPARE isolation")
   if (
@@ -1101,7 +1117,7 @@ test("protected stable promotion exposes exact PREPARE and FINALIZE contracts", 
   assert.match(active, /MODE=finalize/)
   assert.match(
     active,
-    /pnpm nx release version patch "--projects=\$PROJECTS" --git-commit=false --git-tag=false --git-push=false --stage-changes=false/,
+    /pnpm nx release version "\$NEW" "--projects=\$NAME" --git-commit=false --git-tag=false --git-push=false --stage-changes=false/,
   )
   assert.match(active, /HEAD:refs\/heads\/release\/stable-\$SHA_PREFIX/)
   assert.match(active, /git push --atomic origin "\$\{TAG_REFS\[@\]\}"/)
