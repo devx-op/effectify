@@ -479,10 +479,13 @@ const betaViolations = (source) => {
     "@effectify/solid-query=0.5.13-beta.0=0.5.13|packages/solid/query/package.json",
   ])
     if (!active.includes(transition)) violations.push(`beta stable transition ${transition}`)
+  if (/\bread\s+-r\s+TRANSITION\s+PATH\b/.test(active)) violations.push("beta stable reserved PATH shadowing")
   for (const pattern of [
     /cmp -s "\$EXPECTED_PATHS" "\$CHANGED"/,
-    /git show "\$BASE:\$PATH" \| jq -er \.name/,
-    /git show "\$BASE:\$PATH" \| jq -er \.version/,
+    /git show "\$BASE:\$MANIFEST_PATH" \| jq -er \.name/,
+    /git show "\$BASE:\$MANIFEST_PATH" \| jq -er \.version/,
+    /jq -er \.name "\$MANIFEST_PATH"/,
+    /jq -er \.version "\$MANIFEST_PATH"/,
     /\[ "\$OLD_NAME" = "\$NAME" \] && \[ "\$NEW_NAME" = "\$NAME" \] && \[ "\$OLD_VERSION" = "\$OLD" \] && \[ "\$NEW_VERSION" = "\$NEW" \]/,
   ])
     if (!pattern.test(active)) violations.push(`beta stable structural check ${String(pattern)}`)
@@ -1067,8 +1070,9 @@ test("stable suppression rejects path, transition, and message-only mutations", 
     ["add path", "packages/solid/query/package.json | sort", "README.md packages/solid/query/package.json | sort"],
     ["alter source", "0.1.0-beta.0=0.1.0|packages/hatchet", "0.1.0-beta.1=0.1.0|packages/hatchet"],
     ["alter target", "1.0.0-beta.1=1.0.0|packages/react/query", "1.0.0-beta.1=1.0.1|packages/react/query"],
-    ["ignore old JSON", 'OLD_VERSION=$(git show "$BASE:$PATH" | jq -er .version)', "OLD_VERSION=$OLD"],
-    ["ignore new JSON", 'NEW_VERSION=$(jq -er .version "$PATH")', "NEW_VERSION=$NEW"],
+    ["ignore old JSON", 'OLD_VERSION=$(git show "$BASE:$MANIFEST_PATH" | jq -er .version)', "OLD_VERSION=$OLD"],
+    ["ignore new JSON", 'NEW_VERSION=$(jq -er .version "$MANIFEST_PATH")', "NEW_VERSION=$NEW"],
+    ["restore reserved PATH loop binding", "read -r TRANSITION MANIFEST_PATH", "read -r TRANSITION PATH"],
     [
       "message authorizes suppression",
       'if cmp -s "$EXPECTED_PATHS" "$CHANGED"; then',

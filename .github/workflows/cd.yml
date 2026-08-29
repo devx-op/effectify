@@ -171,12 +171,12 @@ jobs:
           STABLE_SHAPE=false
           if cmp -s "$EXPECTED_PATHS" "$CHANGED"; then
             STABLE_SHAPE=true
-            while IFS='|' read -r TRANSITION PATH; do
+            while IFS='|' read -r TRANSITION MANIFEST_PATH; do
               NAME=${TRANSITION%%=*}; REST=${TRANSITION#*=}; OLD=${REST%%=*}; NEW=${REST##*=}
-              OLD_NAME=$(git show "$BASE:$PATH" | jq -er .name) || STABLE_SHAPE=false
-              OLD_VERSION=$(git show "$BASE:$PATH" | jq -er .version) || STABLE_SHAPE=false
-              NEW_NAME=$(jq -er .name "$PATH") || STABLE_SHAPE=false
-              NEW_VERSION=$(jq -er .version "$PATH") || STABLE_SHAPE=false
+              OLD_NAME=$(git show "$BASE:$MANIFEST_PATH" | jq -er .name) || STABLE_SHAPE=false
+              OLD_VERSION=$(git show "$BASE:$MANIFEST_PATH" | jq -er .version) || STABLE_SHAPE=false
+              NEW_NAME=$(jq -er .name "$MANIFEST_PATH") || STABLE_SHAPE=false
+              NEW_VERSION=$(jq -er .version "$MANIFEST_PATH") || STABLE_SHAPE=false
               [ "$OLD_NAME" = "$NAME" ] && [ "$NEW_NAME" = "$NAME" ] && [ "$OLD_VERSION" = "$OLD" ] && [ "$NEW_VERSION" = "$NEW" ] || STABLE_SHAPE=false
             done < "$STABLE_TRANSITIONS"
             if [ "$STABLE_SHAPE" = true ]; then
