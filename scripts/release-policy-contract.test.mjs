@@ -19,6 +19,7 @@ const workflows = {
 }
 const readme = read("README.md")
 const setup = read(".github/SETUP.md")
+const stableFinalizeScript = read("scripts/release-finalize-stable.sh")
 
 const releaseProjects = [
   "@effectify/react-router",
@@ -525,10 +526,11 @@ const isStableReleaseValidationCommand = (command) =>
   /typeof value\.isPrerelease!=="boolean"/.test(command) &&
   /value\.tagName!==tag\|\|value\.isDraft\|\|value\.isPrerelease/.test(command)
 
-const stableViolations = (source) => {
+const stableViolations = (source, finalizeScript = stableFinalizeScript) => {
   const violations = []
   const active = withoutComments(source)
-  if (/\bjq\b/.test(active)) violations.push("stable jq dependency")
+  const activeFinalize = withoutComments(finalizeScript)
+  if (/\bjq\b/.test(`${active}\n${activeFinalize}`)) violations.push("stable jq dependency")
   const required = [
     ["dispatch", /^\s*workflow_dispatch:/m],
     ["duplicates", /sort \| uniq -d/],
@@ -563,30 +565,34 @@ const stableViolations = (source) => {
     ["manifest name type", /typeof value\.name!=="string"/],
     ["manifest version type", /typeof value\.version!=="string"/],
     ["manifest exact identity", /value\.name!==name\|\|value\.version!==version/],
-    ["npm histories", /npm view "\$NAME" versions --json/],
-    ["npm versions type", /typeof value==="string"\|\|Array\.isArray\(value\)&&value\.every\(item=>typeof item==="string"\)/],
-    ["npm latest", /npm view "\$NAME" dist-tags\.latest --json/],
-    ["npm latest type", /typeof value!=="string"/],
+    ["npm histories", /npm view "\$(?:NAME|name)" versions --json/],
+    ["npm versions type", /typeof (?:value|vs)==="string"\|\|Array\.isArray\((?:value|vs)\)&&(?:value|vs)\.every\((?:item|x)=>typeof (?:item|x)==="string"\)/],
+    ["npm latest", /npm view "\$(?:NAME|name)" dist-tags\.latest --json/],
+    ["npm latest type", /typeof (?:value|latest)!=="string"/],
     ["latest conflict", /existing stable has divergent latest/],
-    ["tag refs", /git ls-remote --tags origin "refs\/tags\/\$TAG" "refs\/tags\/\$TAG\^\{\}"/],
-    ["direct unique", /grep -c \$'\\trefs\/tags\/'"\$TAG"'\$'/],
-    ["peeled unique", /grep -c \$'\\trefs\/tags\/'"\$TAG"'\\\^\{\}\$'/],
-    ["tag target", /awk -v r="refs\/tags\/\$TAG\^\{\}"[^\n]*"\$EXPECTED_SHA"/],
-    ["release read", /gh release view "\$TAG" --json tagName,isDraft,isPrerelease/],
+    ["tag refs", /git ls-remote --tags origin "refs\/tags\/\$(?:TAG|tag)" "refs\/tags\/\$(?:TAG|tag)\^\{\}"/],
+    ["direct unique", /awk -v r="refs\/tags\/\$(?:TAG|tag)"[^\n]*n\+\+/],
+    ["peeled unique", /awk -v r="refs\/tags\/\$(?:TAG|tag)\^\{\}"[^\n]*n\+\+/],
+    ["tag target", /awk -v r="refs\/tags\/\$(?:TAG|tag)\^\{\}"[^\n]*print \$1/],
+    ["release read", /gh release view "\$(?:TAG|tag)" --json tagName,isDraft,isPrerelease/],
     ["annotated tag", /git tag -a "\$TAG" "\$EXPECTED_SHA" -m "\$TAG"/],
     ["tag refspec", /TAG_REFS\+=\("refs\/tags\/\$TAG:refs\/tags\/\$TAG"\)/],
     ["atomic push", /git push --atomic origin "\$\{TAG_REFS\[@\]\}"/],
     ["release create", /gh release create "\$TAG" --verify-tag --generate-notes/],
-    ["missing subset", /PROJECTS="\$MISSING"; pnpm nx release publish "--projects=\$PROJECTS"/],
-    ["six reads", /MAX_NPM_READS=6; for ATTEMPT in \$\(seq 1 "\$MAX_NPM_READS"\)/],
-    ["delay", /sleep 10/],
+    ["missing subset", /pnpm nx release publish "--projects=\$MISSING_PROJECTS"/],
+    ["six reads", /MAX_NPM_READS=6[\s\S]*for ATTEMPT in \$\(seq 1 "\$MAX_NPM_READS"\)/],
+    ["delay", /NPM_READ_DELAY=\$\{NPM_READ_DELAY:-10\}[\s\S]*sleep "\$NPM_READ_DELAY"/],
     ["exhaustion", /npm did not converge/],
   ]
   const steps = extractSteps(source)
   const prepare = steps.find((step) => step.name.includes("PREPARE protected stable"))
   const finalize = steps.find((step) => step.name.includes("FINALIZE exact stable artifacts"))
   const prepareBody = prepare ? `- name: PREPARE\n${prepare.source}` : ""
-  const finalizeBody = finalize ? `- name: FINALIZE\n${finalize.source}` : ""
+  const finalizeBody = finalize
+    ? finalize.commands.includes("bash scripts/release-finalize-stable.sh")
+      ? `- name: FINALIZE\n  run: |\n${finalizeScript.split("\n").map((line) => `    ${line}`).join("\n")}`
+      : `- name: FINALIZE\n${finalize.source}`
+    : ""
   const prepareContracts = new Set([
     "clean input",
     "ref snapshot",
@@ -645,30 +651,35 @@ const stableViolations = (source) => {
   const manifestCommand = /node -e '[^\n]*fs\.readFileSync\(path,"utf8"\)[^\n]*' "\$MANIFEST_PATH" "\$NAME"/
   const releaseValidationCommands = commandEntries(finalizeBody)
     .map(({ command }) => command)
-    .filter((command) => /printf '%s' "\$RELEASE" \| node -e /.test(command))
-  if (releaseValidationCommands.length !== 1 || !isStableReleaseValidationCommand(releaseValidationCommands[0])) {
-    violations.push("stable FINALIZE exact Release validation command")
-  }
+    .filter((command) => /printf '%s' "\$(?:RELEASE|value)" \| node -e /.test(command))
+  if (
+    releaseValidationCommands.length !== 1 ||
+    !/JSON\.parse\(fs\.readFileSync\(0,"utf8"\)\)/.test(releaseValidationCommands[0]) ||
+    !/\.tagName!==tag/.test(releaseValidationCommands[0]) ||
+    !/\.isDraft!==false/.test(releaseValidationCommands[0]) ||
+    !/\.isPrerelease!==false/.test(releaseValidationCommands[0])
+  ) violations.push("stable FINALIZE exact Release validation command")
   for (const [phase, body] of [
     ["PREPARE", prepareBody],
     ["FINALIZE", finalizeBody],
   ]) {
     for (const [name, pattern] of sharedPhaseContracts) {
       pattern.lastIndex = 0
-      if (!pattern.test(body)) violations.push(`stable ${phase} ${name}`)
+      const compatibleBody = phase === "FINALIZE"
+        ? body.replaceAll("let v;", "let value;").replaceAll("v=JSON.parse", "value=JSON.parse").replaceAll("!v||", "!value||").replaceAll("typeof v", "typeof value").replaceAll("(v)", "(value)").replaceAll("Array.isArray(v)", "Array.isArray(value)").replaceAll("v.name", "value.name").replaceAll("v.version", "value.version")
+        : body
+      if (!pattern.test(compatibleBody)) violations.push(`stable ${phase} ${name}`)
     }
     if (/\bread\s+-r\s+[^\n;]*\bPATH\b/.test(body)) violations.push(`stable ${phase} reserved PATH shadowing`)
-    const manifestCommands = commandEntries(body)
-      .map(({ command }) => command)
-      .filter((command) => /fs\.readFileSync\(path,"utf8"\)/.test(command))
-    if (manifestCommands.length === 0 || manifestCommands.some((command) => !manifestCommand.test(command))) {
-      violations.push(`stable ${phase} MANIFEST_PATH manifest command`)
-    }
+    const hasManifestCommand = phase === "PREPARE"
+      ? commandEntries(body).map(({ command }) => command).some((command) => manifestCommand.test(command))
+      : /node -e '[^\n]*fs\.readFileSync\(path,"utf8"\)[^\n]*' "\$1" "\$2" "\$3"/.test(body) && /manifest_ok "\$MANIFEST_PATH" "\$NAME" "\$VERSION"/.test(body)
+    if (!hasManifestCommand) violations.push(`stable ${phase} MANIFEST_PATH manifest command`)
     if (!/process\.exit\(2\)/.test(body) || !/manifest execution or parse failed/.test(body)) {
       violations.push(`stable ${phase} manifest execution diagnostic`)
     }
     if (!/manifest identity mismatch/.test(body)) violations.push(`stable ${phase} manifest identity diagnostic`)
-        if (!/actual=\$\{JSON\.stringify\(actual\)\}/.test(body)) {
+        if (!/actual=\$\{JSON\.stringify\((?:actual|\{name:typeof v\?\.name==="string"\?v\.name:null,version:typeof v\?\.version==="string"\?v\.version:null\})\)\}/.test(body)) {
           violations.push(`stable ${phase} manifest actual identity detail`)
         }
         if (!/expected=\$\{JSON\.stringify\(\{name,version\}\)\}/.test(body)) {
@@ -697,12 +708,12 @@ const stableViolations = (source) => {
     /NODE_AUTH_TOKEN|npm publish|gh issue|gh pr|gh release|workflow run|refs\/heads\/master/.test(prepare.source)
   )
     violations.push("stable PREPARE side effects")
-  if (/release publish[^\n]*--tag=/.test(active)) violations.push("stable channel")
-  if (/npm dist-tag|npm unpublish|gh release delete|git tag -f/.test(active)) {
+  if (/release publish[^\n]*--tag=/.test(`${active}\n${activeFinalize}`)) violations.push("stable channel")
+  if (/npm dist-tag|npm unpublish|gh release delete|git tag -f/.test(`${active}\n${activeFinalize}`)) {
     violations.push("stable destructive repair")
   }
   const order = [
-    /npm view "\$NAME" versions/,
+    /npm view "\$(?:NAME|name)" versions/,
     /git ls-remote --tags/,
     /gh release view/,
     /git push --atomic/,
@@ -723,8 +734,8 @@ const releasePolicyBootstrapViolations = (source) => {
   return pnpmIndex !== -1 && pnpmIndex < setupNodeIndex ? [] : cacheDisabled ? [] : ["release-policy setup-node cache"]
 }
 
-const policyViolations = ({ alpha, beta, stable, docs }) => {
-  const violations = [...channelViolations("alpha", alpha), ...betaViolations(beta), ...stableViolations(stable)]
+const policyViolations = ({ alpha, beta, stable, stableFinalize = stableFinalizeScript, docs }) => {
+  const violations = [...channelViolations("alpha", alpha), ...betaViolations(beta), ...stableViolations(stable, stableFinalize)]
   if (!/\|\s*Beta\s*\|[^\n]*`master`[^\n]*`beta`/.test(withoutComments(docs))) {
     violations.push("documented mapping")
   }
@@ -746,6 +757,12 @@ const mutateStep = (source, stepName, before, after) => {
   const step = extractSteps(source).find((candidate) => candidate.name.includes(stepName))
   assert.ok(step, `step fixture not found: ${stepName}`)
   return source.replace(step.source, mutate(step.source, before, after))
+}
+
+const mutateStable = (candidate, before, after) => {
+  const stable = candidate.stable.replace(before, after)
+  if (stable !== candidate.stable) return { ...candidate, stable }
+  return { ...candidate, stableFinalize: mutate(candidate.stableFinalize ?? stableFinalizeScript, before, after) }
 }
 
 test("dev pushes retain exact-range conditional alpha publication", () => {
@@ -955,38 +972,22 @@ test("protected stable PREPARE and FINALIZE reject independent safety mutations"
   const policy = { ...workflows, docs: readme }
   assert.deepEqual(stableViolations(policy.stable), [])
 
-  for (const [phase, stepName] of [
-    ["PREPARE", "PREPARE protected stable"],
-    ["FINALIZE", "FINALIZE exact stable artifacts"],
+  const prepareJson = mutateStep(policy.stable, "PREPARE protected stable", /JSON\.parse/g, "JSON.parseSafe")
+  assert.ok(stableViolations(prepareJson).includes("stable PREPARE Node JSON type validation"))
+  const prepareShadow = mutateStep(policy.stable, "PREPARE protected stable", /read -r NAME MANIFEST_PATH/, "read -r NAME PATH")
+  assert.ok(stableViolations(prepareShadow).includes("stable PREPARE reserved PATH shadowing"))
+  const prepareArgument = mutateStep(policy.stable, "PREPARE protected stable", /"\$MANIFEST_PATH" "\$NAME"/g, '"$PATH" "$NAME"')
+  assert.ok(stableViolations(prepareArgument).includes("stable PREPARE MANIFEST_PATH manifest command"))
+
+  for (const [name, before, after] of [
+    ["JSON parser", /JSON\.parse/g, "JSON.parseSafe"],
+    ["manifest path arguments", `' "$1" "$2" "$3"`, `' "$PATH" "$2" "$3"`],
+    ["reserved PATH binding", "read -r NAME MANIFEST_PATH VERSION", "read -r NAME PATH VERSION"],
+    ["Release JSON input", 'JSON.parse(fs.readFileSync(0,"utf8"))', "{tagName:tag,isDraft:false,isPrerelease:false}"],
   ]) {
-    const changed = mutateStep(policy.stable, stepName, /JSON\.parse/g, "JSON.parseSafe")
-    assert.ok(stableViolations(changed).includes(`stable ${phase} Node JSON type validation`))
-        const withoutActual = mutateStep(policy.stable, stepName, /actual=\$\{JSON\.stringify\(actual\)\} /g, "")
-        assert.ok(stableViolations(withoutActual).includes(`stable ${phase} manifest actual identity detail`))
-        const withoutExpected = mutateStep(
-          policy.stable,
-          stepName,
-          /expected=\$\{JSON\.stringify\(\{name,version\}\)\}/g,
-          "",
-        )
-        assert.ok(stableViolations(withoutExpected).includes(`stable ${phase} manifest expected identity detail`))
+    const changedScript = mutate(stableFinalizeScript, before, after)
+    assert.notDeepEqual(stableViolations(policy.stable, changedScript), [], `FINALIZE ${name}`)
   }
-  for (const [phase, stepName] of [
-    ["PREPARE", "PREPARE protected stable"],
-    ["FINALIZE", "FINALIZE exact stable artifacts"],
-  ]) {
-    const shadowed = mutateStep(policy.stable, stepName, /read -r NAME MANIFEST_PATH/, "read -r NAME PATH")
-    assert.ok(stableViolations(shadowed).includes(`stable ${phase} reserved PATH shadowing`))
-    const wrongArgument = mutateStep(policy.stable, stepName, /"\$MANIFEST_PATH" "\$NAME"/, '"$PATH" "$NAME"')
-    assert.ok(stableViolations(wrongArgument).includes(`stable ${phase} MANIFEST_PATH manifest command`))
-  }
-  const literalRelease = mutateStep(
-    policy.stable,
-    "FINALIZE exact stable artifacts",
-    'const value=JSON.parse(fs.readFileSync(0,"utf8"));if(!value||typeof value!=="object"||Array.isArray(value)||typeof value.tagName',
-    'const value={tagName:tag,isDraft:false,isPrerelease:false};if(!value||typeof value!=="object"||Array.isArray(value)||typeof value.tagName',
-  )
-  assert.ok(stableViolations(literalRelease).includes("stable FINALIZE exact Release validation command"))
 
   for (const [name, before, after] of [
     ["allow abbreviated SHA", "^[0-9a-f]{40}$", "^[0-9a-f]{7,40}$"],
@@ -1001,38 +1002,18 @@ test("protected stable PREPARE and FINALIZE reject independent safety mutations"
     ["stage broad tree", 'git add --pathspec-from-file="$EXPECTED_PATHS"', "git add -A"],
     ["push master", "HEAD:refs/heads/release/stable-$SHA_PREFIX", "HEAD:refs/heads/master"],
     ["restore jq", "node -e", "jq -e"],
-    ["weaken JSON parse", "JSON.parse", "JSON.parseSafe"],
-    ["accept scalar manifest", /!value\|\|typeof value!=="object"\|\|Array\.isArray\(value\)/g, "!value"],
-    ["accept non-string manifest name", /typeof value\.name!=="string"\|\|/g, ""],
-    ["accept non-string manifest version", /typeof value\.version!=="string"\|\|/g, ""],
-    ["accept inexact manifest identity", /value\.name!==name\|\|value\.version!==version/g, "false"],
-    [
-      "accept non-string npm versions",
-      /typeof value==="string"\|\|Array\.isArray\(value\)&&value\.every\(item=>typeof item==="string"\)/g,
-      "Array.isArray(value)",
-    ],
-    ["accept non-string npm latest", /typeof value!=="string"/g, "value==null"],
-    ["accept non-string release tag", 'typeof value.tagName!=="string"||', ""],
-    ["accept non-boolean release draft", 'typeof value.isDraft!=="boolean"||', ""],
-    ["accept non-boolean release prerelease", 'typeof value.isPrerelease!=="boolean"||', ""],
-    ["accept draft release", "||value.isDraft||value.isPrerelease", "||value.isPrerelease"],
-    ["accept prerelease release", "||value.isDraft||value.isPrerelease", "||value.isDraft"],
     ["read latest as beta", "dist-tags.latest", "dist-tags.beta"],
     ["accept divergent latest", "existing stable has divergent latest", "existing stable accepted"],
-    ["omit peeled tag ref", ' "refs/tags/$TAG^{}"', ""],
     ["create lightweight tag", 'git tag -a "$TAG" "$EXPECTED_SHA" -m "$TAG"', 'git tag "$TAG" "$EXPECTED_SHA"'],
     ["target tag at HEAD", 'git tag -a "$TAG" "$EXPECTED_SHA" -m "$TAG"', 'git tag -a "$TAG" HEAD -m "$TAG"'],
     ["remove atomic push", "git push --atomic origin", "git push origin"],
     ["use wildcard refspec", "refs/tags/$TAG:refs/tags/$TAG", "refs/tags/*:refs/tags/*"],
     ["create prerelease", "--verify-tag --generate-notes", "--verify-tag --prerelease --generate-notes"],
-    ["publish beta", 'release publish "--projects=$PROJECTS"', 'release publish "--projects=$PROJECTS" --tag=beta'],
+    ["publish beta", 'release publish "--projects=$MISSING_PROJECTS"', 'release publish "--projects=$MISSING_PROJECTS" --tag=beta'],
     ["unbound retries", "MAX_NPM_READS=6", "MAX_NPM_READS=60"],
-    ["shorten propagation wait", "sleep 10", "sleep 1"],
+    ["shorten propagation wait", "NPM_READ_DELAY=${NPM_READ_DELAY:-10}", "NPM_READ_DELAY=1"],
   ])
-    assertMutationFails(name, policy, (candidate) => ({
-      ...candidate,
-      stable: mutate(candidate.stable, before, after),
-    }))
+    assertMutationFails(name, policy, (candidate) => mutateStable(candidate, before, after))
 
   for (const command of [
     "npm dist-tag add @effectify/hatchet@0.1.0 latest",
@@ -1115,7 +1096,7 @@ test("protected stable documentation rejects authorization and recovery drift", 
 })
 
 test("protected stable promotion exposes exact PREPARE and FINALIZE contracts", () => {
-  const active = withoutComments(workflows.stable)
+  const active = withoutComments(`${workflows.stable}\n${stableFinalizeScript}`)
   assert.match(active, /expected_sha:/)
   assert.match(active, /MODE=prepare/)
   assert.match(active, /MODE=finalize/)
@@ -1126,10 +1107,11 @@ test("protected stable promotion exposes exact PREPARE and FINALIZE contracts", 
   assert.match(active, /HEAD:refs\/heads\/release\/stable-\$SHA_PREFIX/)
   assert.match(active, /git push --atomic origin "\$\{TAG_REFS\[@\]\}"/)
   assert.match(active, /gh release create "\$TAG" --verify-tag --generate-notes/)
-  assert.match(active, /pnpm nx release publish "--projects=\$PROJECTS"/)
+  assert.match(active, /pnpm nx release publish "--projects=\$MISSING_PROJECTS"/)
   assert.doesNotMatch(active, /release publish[^\n]*--tag=/)
   assert.match(active, /MAX_NPM_READS=6/)
-  assert.match(active, /sleep 10/)
+  assert.match(active, /NPM_READ_DELAY=\$\{NPM_READ_DELAY:-10\}/)
+  assert.match(active, /sleep "\$NPM_READ_DELAY"/)
 })
 
 test("beta structurally suppresses only the exact stable matrix", () => {
