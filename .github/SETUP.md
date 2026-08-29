@@ -65,7 +65,9 @@ Manual publish-only recovery requires an explicit comma-separated `projects` inp
 
 #### Beta quick path
 
-1. Let an eligible `master` push run PREPARE. For this incident only, manual PREPARE must select all seven projects listed above.
+The published `@effectify/solid-query@0.5.12` collision cannot be repaired by moving `latest` back to the stale tarball. Recovery is strictly ordered: merge the implementation PR; run corrective beta PREPARE/PR/FINALIZE for only `@effectify/solid-query@0.5.13-beta.0`; then run the seven-project stable PREPARE/PR/FINALIZE ending at `@effectify/solid-query@0.5.13`.
+
+1. Let an eligible `master` push run PREPARE. The existing incident PREPARE still requires all seven projects. The one corrective exception selects only `@effectify/solid-query`; the workflow fixes positional `prepatch`, `--preid=beta`, and all disabled git/staging effects, and accepts only root `CHANGELOG.md` plus `packages/solid/query/package.json` at `0.5.13-beta.0`.
 2. Verify the summary's source SHA, release branch, changed paths, and versions. PREPARE changes only root `CHANGELOG.md` and the selected manifests.
 3. Create or reuse the required approved issue. Manually open one linked PR from the reported release branch to `master`; its sole `type:*` label is `type:chore`.
 4. Use ordinary required checks, human review, and protected merge. Confirm the merge-triggered beta run reports `suppress` and publishes nothing.
@@ -86,7 +88,7 @@ FINALIZE freshly checks that checkout `HEAD`, `origin/master`, and `expected_sha
 | `@effectify/prisma`                   | `1.1.13-beta.0`       |
 | `@effectify/hatchet`                  | `0.1.0-beta.0`        |
 
-Do **not** dispatch stable during beta recovery. Stop on a newer `master`, an unexpected generated path or version, an ambiguous remote read, a lightweight or wrong-target tag, a conflicting Release, or inconsistent npm state.
+Do **not** dispatch stable during either beta recovery. Complete corrective beta PREPARE, its protected PR, and exact-SHA FINALIZE before starting the seven-project stable PREPARE. Stop on a newer `master`, an unexpected generated path or version, an ambiguous remote read, a lightweight or wrong-target tag, a conflicting Release, or inconsistent npm state.
 
 Before publication, rollback is limited to deleting the unprotected prepared branch or closing/reverting the release PR through normal policy. Do not delete published tags, Releases, or npm artifacts as rollback; rerun the exact FINALIZE request or obtain authorization for a fix-forward release.
 
@@ -102,7 +104,7 @@ Stable is a protected **PREPARE → manual authorization → FINALIZE** promotio
 | `@effectify/react-query`              | `1.0.0-beta.1`  | `1.0.0`       |
 | `@effectify/react-router`             | `0.6.0-beta.0`  | `0.6.0`       |
 | `@effectify/react-router-better-auth` | `0.5.12-beta.0` | `0.5.12`      |
-| `@effectify/solid-query`              | `0.5.12-beta.0` | `0.5.12`      |
+| `@effectify/solid-query`              | `0.5.13-beta.0` | `0.5.13`      |
 
 #### Protected stable quick path
 

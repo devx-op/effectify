@@ -6,6 +6,26 @@ Define a protected, auditable promotion of the complete authorized beta matrix t
 
 ## Requirements
 
+### Requirement: Collision correction precedes stable promotion
+
+The system MUST correct the stale `@effectify/solid-query@0.5.12` collision by authorizing exactly one manual beta PREPARE exception: the singleton project `@effectify/solid-query`, positional `prepatch`, `--preid=beta`, disabled commit/tag/push/staging effects, exact output `0.5.13-beta.0`, and exactly `CHANGELOG.md` plus `packages/solid/query/package.json`. No caller-selectable version specifier or other subset is authorized. Its protected merge MUST be suppressed only for the exact `0.5.12-beta.0` to `0.5.13-beta.0` transition and those two paths.
+
+The required order is implementation PR, corrective beta PREPARE/PR/FINALIZE, then seven-project stable PREPARE/PR/FINALIZE. Recovery MUST NOT move npm `latest` to the stale `0.5.12` tarball.
+
+#### Scenario: Corrective beta is exact
+
+- GIVEN the implementation PR has merged
+- WHEN manual beta PREPARE selects only `@effectify/solid-query`
+- THEN Nx uses positional `prepatch` and `--preid=beta` with all git and staging effects disabled
+- AND the only generated version is `@effectify/solid-query@0.5.13-beta.0`
+- AND the only generated paths are the root changelog and Solid manifest
+
+#### Scenario: Corrective suppression fails closed
+
+- GIVEN a merge has partial, mixed, message-only, wrong-version, or additional-path changes
+- WHEN beta classifies the merge
+- THEN it MUST NOT suppress the run as the corrective beta shape
+
 ### Requirement: Exact authorized promotion matrix
 
 The system MUST accept the promotion only when the requested project set is complete, duplicate-free, and exactly matches this source-to-target matrix:
@@ -18,7 +38,7 @@ The system MUST accept the promotion only when the requested project set is comp
 | `@effectify/react-query`              | `1.0.0-beta.1`  | `1.0.0`       |
 | `@effectify/react-router`             | `0.6.0-beta.0`  | `0.6.0`       |
 | `@effectify/react-router-better-auth` | `0.5.12-beta.0` | `0.5.12`      |
-| `@effectify/solid-query`              | `0.5.12-beta.0` | `0.5.12`      |
+| `@effectify/solid-query`              | `0.5.13-beta.0` | `0.5.13`      |
 
 Every stable target MUST equal the semver core of its authorized beta source. The system MUST NOT recalculate, increment, substitute, or partially promote this matrix.
 

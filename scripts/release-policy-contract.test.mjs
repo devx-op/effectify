@@ -187,7 +187,7 @@ const channelVersionCommand = (channel) =>
 const channelPublishCommand = (channel) =>
   new RegExp(`^pnpm nx release publish "--projects=\\$PROJECTS" --tag=${channel}$`)
 const betaVersionCommand =
-  /^pnpm nx release version "--projects=\$PROJECTS" --preid=beta --git-commit=false --git-tag=false --git-push=false --stage-changes=false$/
+  /^pnpm nx release version(?: \$VERSION_SPECIFIER)? "--projects=\$PROJECTS" --preid=beta --git-commit=false --git-tag=false --git-push=false --stage-changes=false$/
 const betaGitIdentityCondition =
   "${{ (steps.release.outputs.mode == 'prepare' || steps.release.outputs.mode == 'finalize') && steps.release.outputs.has_projects == 'true' }}"
 const gitIdentityCommands = [
@@ -476,7 +476,7 @@ const betaViolations = (source) => {
     "@effectify/react-query=1.0.0-beta.1=1.0.0|packages/react/query/package.json",
     "@effectify/react-router=0.6.0-beta.0=0.6.0|packages/react/router/package.json",
     "@effectify/react-router-better-auth=0.5.12-beta.0=0.5.12|packages/react/router-better-auth/package.json",
-    "@effectify/solid-query=0.5.12-beta.0=0.5.12|packages/solid/query/package.json",
+    "@effectify/solid-query=0.5.13-beta.0=0.5.13|packages/solid/query/package.json",
   ])
     if (!active.includes(transition)) violations.push(`beta stable transition ${transition}`)
   for (const pattern of [
@@ -968,10 +968,36 @@ test("beta structurally suppresses only the exact stable matrix", () => {
     "@effectify/react-query=1.0.0-beta.1=1.0.0",
     "@effectify/react-router=0.6.0-beta.0=0.6.0",
     "@effectify/react-router-better-auth=0.5.12-beta.0=0.5.12",
-    "@effectify/solid-query=0.5.12-beta.0=0.5.12",
+    "@effectify/solid-query=0.5.13-beta.0=0.5.13",
   ])
     assert.match(active, new RegExp(transition.replaceAll("/", "\\/")))
   assert.match(active, /stable promotion shape is partial, mixed, or malformed/)
+})
+
+test("corrective solid-query beta and updated stable matrix are exact", () => {
+  const beta = withoutComments(workflows.beta)
+  const stable = withoutComments(workflows.stable)
+  assert.match(beta, /manual PREPARE requires all seven release projects or the corrective solid-query singleton/)
+  assert.match(beta, /echo "version_specifier=prepatch" >> "\$GITHUB_OUTPUT"/)
+  assert.match(beta, /pnpm nx release version \$VERSION_SPECIFIER "--projects=\$PROJECTS" --preid=beta --git-commit=false --git-tag=false --git-push=false --stage-changes=false/)
+  assert.match(beta, /0\.5\.12-beta\.0=0\.5\.13-beta\.0\|packages\/solid\/query\/package\.json/)
+  assert.match(beta, /CHANGELOG\.md packages\/solid\/query\/package\.json \| sort > "\$CORRECTIVE_PATHS"/)
+  assert.match(stable, /@effectify\/solid-query\|packages\/solid\/query\/package\.json\|0\.5\.13-beta\.0\|0\.5\.13/)
+  assert.doesNotMatch(stable, /@effectify\/solid-query\|packages\/solid\/query\/package\.json\|0\.5\.12-beta\.0\|0\.5\.12/)
+
+  for (const [name, before, after, required] of [
+    ["arbitrary singleton", 'elif [ "$SELECTED_PROJECTS" = "@effectify/solid-query" ]', 'elif [ "$SELECTED_PROJECTS" = "@effectify/react-query" ]', /SELECTED_PROJECTS" = "@effectify\/solid-query/],
+    ["prerelease specifier", "version_specifier=prepatch", "version_specifier=prerelease", /version_specifier=prepatch/],
+    ["wrong target", "CORRECTIVE_TRANSITION='@effectify/solid-query=0.5.12-beta.0=0.5.13-beta.0", "CORRECTIVE_TRANSITION='@effectify/solid-query=0.5.12-beta.0=0.5.14-beta.0", /CORRECTIVE_TRANSITION='@effectify\/solid-query=0\.5\.12-beta\.0=0\.5\.13-beta\.0/],
+    ["wrong counter", "CORRECTIVE_TRANSITION='@effectify/solid-query=0.5.12-beta.0=0.5.13-beta.0", "CORRECTIVE_TRANSITION='@effectify/solid-query=0.5.12-beta.0=0.5.13-beta.1", /CORRECTIVE_TRANSITION='@effectify\/solid-query=0\.5\.12-beta\.0=0\.5\.13-beta\.0/],
+    ["broad paths", "CHANGELOG.md packages/solid/query/package.json | sort", "CHANGELOG.md README.md packages/solid/query/package.json | sort", /CHANGELOG\.md packages\/solid\/query\/package\.json \| sort/],
+    ["message-only", 'if cmp -s "$CORRECTIVE_PATHS" "$CHANGED"; then', 'if [[ "$HEAD_MESSAGE" == *"[skip release]"* ]]; then', /cmp -s "\$CORRECTIVE_PATHS" "\$CHANGED"/],
+  ]) {
+    const mutated = mutate(beta, before, after)
+    assert.doesNotMatch(mutated, required, name)
+  }
+  const oldStable = mutate(stable, "0.5.13-beta.0|0.5.13", "0.5.12-beta.0|0.5.12")
+  assert.doesNotMatch(oldStable, /0\.5\.13-beta\.0\|0\.5\.13/)
 })
 
 test("alpha and beta exact-range and membership mutations fail closed", () => {

@@ -116,10 +116,14 @@ jobs:
               }
               echo "mode=finalize" >> "$GITHUB_OUTPUT"
             else
-              cmp -s <(printf '%s\n' "$ALL_PROJECTS") <(printf '%s\n' "$SELECTED_PROJECTS") || {
-                echo "manual PREPARE requires all seven release projects" >&2
+              if cmp -s <(printf '%s\n' "$ALL_PROJECTS") <(printf '%s\n' "$SELECTED_PROJECTS"); then
+                echo "version_specifier=" >> "$GITHUB_OUTPUT"
+              elif [ "$SELECTED_PROJECTS" = "@effectify/solid-query" ]; then
+                echo "version_specifier=prepatch" >> "$GITHUB_OUTPUT"
+              else
+                echo "manual PREPARE requires all seven release projects or the corrective solid-query singleton" >&2
                 exit 1
-              }
+              fi
               echo "mode=prepare" >> "$GITHUB_OUTPUT"
             fi
             echo "has_projects=true" >> "$GITHUB_OUTPUT"
@@ -151,8 +155,19 @@ jobs:
             '@effectify/react-query=1.0.0-beta.1=1.0.0|packages/react/query/package.json' \
             '@effectify/react-router=0.6.0-beta.0=0.6.0|packages/react/router/package.json' \
             '@effectify/react-router-better-auth=0.5.12-beta.0=0.5.12|packages/react/router-better-auth/package.json' \
-            '@effectify/solid-query=0.5.12-beta.0=0.5.12|packages/solid/query/package.json' > "$STABLE_TRANSITIONS"
+            '@effectify/solid-query=0.5.13-beta.0=0.5.13|packages/solid/query/package.json' > "$STABLE_TRANSITIONS"
           CHANGED=$(mktemp); git diff --name-only --no-renames "$BASE" "$HEAD" | sort -u > "$CHANGED"
+          CORRECTIVE_PATHS=$(mktemp)
+          printf '%s\n' CHANGELOG.md packages/solid/query/package.json | sort > "$CORRECTIVE_PATHS"
+          CORRECTIVE_TRANSITION='@effectify/solid-query=0.5.12-beta.0=0.5.13-beta.0|packages/solid/query/package.json'
+          if cmp -s "$CORRECTIVE_PATHS" "$CHANGED"; then
+            OLD_NAME=$(git show "$BASE:packages/solid/query/package.json" | jq -er .name) || exit 1
+            OLD_VERSION=$(git show "$BASE:packages/solid/query/package.json" | jq -er .version) || exit 1
+            NEW_NAME=$(jq -er .name packages/solid/query/package.json) || exit 1
+            NEW_VERSION=$(jq -er .version packages/solid/query/package.json) || exit 1
+            [ "$OLD_NAME" = "@effectify/solid-query" ] && [ "$NEW_NAME" = "@effectify/solid-query" ] && [ "$OLD_VERSION" = "0.5.12-beta.0" ] && [ "$NEW_VERSION" = "0.5.13-beta.0" ] || { echo "corrective beta shape is malformed" >&2; exit 1; }
+            echo "mode=suppress" >> "$GITHUB_OUTPUT"; echo "has_projects=false" >> "$GITHUB_OUTPUT"; echo "projects=" >> "$GITHUB_OUTPUT"; exit 0
+          fi
           STABLE_SHAPE=false
           if cmp -s "$EXPECTED_PATHS" "$CHANGED"; then
             STABLE_SHAPE=true
@@ -218,6 +233,7 @@ jobs:
         if: ${{ steps.release.outputs.mode == 'prepare' && steps.release.outputs.has_projects == 'true' }}
         env:
           PROJECTS: ${{ steps.release.outputs.projects }}
+          VERSION_SPECIFIER: ${{ steps.release.outputs.version_specifier }}
           MANUAL_PREPARE: ${{ github.event_name == 'workflow_dispatch' }}
         run: |
           set -euo pipefail
@@ -242,7 +258,7 @@ jobs:
           printf '%s\n' "${RELEASE_PATHS[@]}" | sort -u > /tmp/expected-release-paths
           test "$(wc -l < /tmp/expected-release-paths | tr -d ' ')" = "$(( ${#SELECTED[@]} + 1 ))"
 
-          pnpm nx release version "--projects=$PROJECTS" --preid=beta --git-commit=false --git-tag=false --git-push=false --stage-changes=false
+          pnpm nx release version $VERSION_SPECIFIER "--projects=$PROJECTS" --preid=beta --git-commit=false --git-tag=false --git-push=false --stage-changes=false
 
           verify_prepared_tree() {
             ACTUAL_PATHS=$(mktemp)
@@ -265,14 +281,18 @@ jobs:
 
           if [ "$MANUAL_PREPARE" = "true" ]; then
             EXPECTED_MATRIX=$(mktemp)
-            printf '%s\n' \
-              '@effectify/hatchet=0.1.0-beta.0' \
-              '@effectify/node-better-auth=0.5.12-beta.0' \
-              '@effectify/prisma=1.1.13-beta.0' \
-              '@effectify/react-query=1.0.0-beta.1' \
-              '@effectify/react-router=0.6.0-beta.0' \
-              '@effectify/react-router-better-auth=0.5.12-beta.0' \
-              '@effectify/solid-query=0.5.12-beta.0' | sort > "$EXPECTED_MATRIX"
+            if [ "$PROJECTS" = "@effectify/solid-query" ]; then
+              printf '%s\n' '@effectify/solid-query=0.5.13-beta.0' > "$EXPECTED_MATRIX"
+            else
+              printf '%s\n' \
+                '@effectify/hatchet=0.1.0-beta.0' \
+                '@effectify/node-better-auth=0.5.12-beta.0' \
+                '@effectify/prisma=1.1.13-beta.0' \
+                '@effectify/react-query=1.0.0-beta.1' \
+                '@effectify/react-router=0.6.0-beta.0' \
+                '@effectify/react-router-better-auth=0.5.12-beta.0' \
+                '@effectify/solid-query=0.5.12-beta.0' | sort > "$EXPECTED_MATRIX"
+            fi
             ACTUAL_MATRIX=$(mktemp)
             while IFS=$'\t' read -r project name manifest; do
               printf '%s=%s\n' "$name" "$(jq -er '.version' "$manifest")"
