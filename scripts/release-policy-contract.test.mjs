@@ -639,6 +639,7 @@ const stableViolations = (source) => {
       "manifest exact identity",
     ].includes(name),
   )
+  const manifestCommand = /node -e '[^\n]*fs\.readFileSync\(path,"utf8"\)[^\n]*' "\$MANIFEST_PATH" "\$NAME"/
   const releaseValidationCommands = commandEntries(finalizeBody)
     .map(({ command }) => command)
     .filter((command) => /printf '%s' "\$RELEASE" \| node -e /.test(command))
@@ -653,6 +654,23 @@ const stableViolations = (source) => {
       pattern.lastIndex = 0
       if (!pattern.test(body)) violations.push(`stable ${phase} ${name}`)
     }
+    if (/\bread\s+-r\s+[^\n;]*\bPATH\b/.test(body)) violations.push(`stable ${phase} reserved PATH shadowing`)
+    const manifestCommands = commandEntries(body)
+      .map(({ command }) => command)
+      .filter((command) => /fs\.readFileSync\(path,"utf8"\)/.test(command))
+    if (manifestCommands.length === 0 || manifestCommands.some((command) => !manifestCommand.test(command))) {
+      violations.push(`stable ${phase} MANIFEST_PATH manifest command`)
+    }
+    if (!/process\.exit\(2\)/.test(body) || !/manifest execution or parse failed/.test(body)) {
+      violations.push(`stable ${phase} manifest execution diagnostic`)
+    }
+    if (!/manifest identity mismatch/.test(body)) violations.push(`stable ${phase} manifest identity diagnostic`)
+        if (!/actual=\$\{JSON\.stringify\(actual\)\}/.test(body)) {
+          violations.push(`stable ${phase} manifest actual identity detail`)
+        }
+        if (!/expected=\$\{JSON\.stringify\(\{name,version\}\)\}/.test(body)) {
+          violations.push(`stable ${phase} manifest expected identity detail`)
+        }
   }
   if (!prepare || !/mode == 'prepare'/.test(prepare.condition)) violations.push("stable PREPARE isolation")
   if (
@@ -924,6 +942,24 @@ test("protected stable PREPARE and FINALIZE reject independent safety mutations"
   ]) {
     const changed = mutateStep(policy.stable, stepName, /JSON\.parse/g, "JSON.parseSafe")
     assert.ok(stableViolations(changed).includes(`stable ${phase} Node JSON type validation`))
+        const withoutActual = mutateStep(policy.stable, stepName, /actual=\$\{JSON\.stringify\(actual\)\} /g, "")
+        assert.ok(stableViolations(withoutActual).includes(`stable ${phase} manifest actual identity detail`))
+        const withoutExpected = mutateStep(
+          policy.stable,
+          stepName,
+          /expected=\$\{JSON\.stringify\(\{name,version\}\)\}/g,
+          "",
+        )
+        assert.ok(stableViolations(withoutExpected).includes(`stable ${phase} manifest expected identity detail`))
+  }
+  for (const [phase, stepName] of [
+    ["PREPARE", "PREPARE protected stable"],
+    ["FINALIZE", "FINALIZE exact stable artifacts"],
+  ]) {
+    const shadowed = mutateStep(policy.stable, stepName, /read -r NAME MANIFEST_PATH/, "read -r NAME PATH")
+    assert.ok(stableViolations(shadowed).includes(`stable ${phase} reserved PATH shadowing`))
+    const wrongArgument = mutateStep(policy.stable, stepName, /"\$MANIFEST_PATH" "\$NAME"/, '"$PATH" "$NAME"')
+    assert.ok(stableViolations(wrongArgument).includes(`stable ${phase} MANIFEST_PATH manifest command`))
   }
   const literalRelease = mutateStep(
     policy.stable,
