@@ -12,6 +12,10 @@ This changelog summarizes releases for the following packages:
 - @effectify/solid-query
 - @effectify/hatchet
 
+## @effectify/solid-query
+
+## 0.5.13-beta.0 (2026-08-29)
+
 ## @effectify/hatchet
 
 ## 0.1.0-beta.0 (2026-08-28)
