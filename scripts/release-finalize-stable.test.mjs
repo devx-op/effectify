@@ -1,11 +1,12 @@
 import assert from "node:assert/strict"
-import { chmodSync, existsSync, mkdtempSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs"
+import { spawn } from "node:child_process"
+import { chmodSync, mkdtempSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs"
+import { createServer } from "node:http"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { spawn } from "node:child_process"
-import nodeTest from "node:test"
+import test from "node:test"
 
-const finalize = new URL("release-finalize-stable.sh", import.meta.url).pathname
+const script = new URL("release-finalize-stable.mjs", import.meta.url).pathname
 const sha = "1234567890abcdef1234567890abcdef12345678"
 const records = [
   ["@effectify/hatchet", "packages/hatchet/package.json", "0.1.0"],
@@ -16,74 +17,108 @@ const records = [
   ["@effectify/react-router-better-auth", "packages/react/router-better-auth/package.json", "0.5.12"],
   ["@effectify/solid-query", "packages/solid/query/package.json", "0.5.13"],
 ]
-const dispatcher = String.raw`#!/usr/bin/env node
-const fs=require('fs'),p=require('path'),cmd=p.basename(process.argv[1]),a=process.argv.slice(2),file=process.env.FAKE_STATE;
-let s=JSON.parse(fs.readFileSync(file)); s.log.push([cmd,...a]); const save=()=>fs.writeFileSync(file,JSON.stringify(s));
-const mut=/^(tag|push)$/.test(a[0])&&cmd==='git'||cmd==='pnpm'||cmd==='gh'&&a[0]==='release'&&a[1]==='create';
-if(mut){s.ordinal=(s.ordinal||0)+1;if(+process.env.FAIL_ORDINAL===s.ordinal&&process.env.FAIL_WHEN==='before'){save();process.exit(42)}}
-const tag=x=>{s.tags[x]={direct:'object-'+x,peeled:process.env.RETARGET_SHA||s.sha,annotated:true}}
+const fake = String.raw`#!/usr/bin/env node
+const fs=require('fs'),p=require('path'),cmd=p.basename(process.argv[1]),a=process.argv.slice(2),f=process.env.FAKE_STATE
+let s=JSON.parse(fs.readFileSync(f)), out=x=>process.stdout.write(String(x)), save=()=>fs.writeFileSync(f,JSON.stringify(s))
+s.log.push([cmd,...a]);
+function finish(code=0){save();process.exit(code)}
 if(cmd==='git'){
- if(a[0]==='fetch'||a[0]==='config'){save();process.exit(0)}
- if(a[0]==='rev-parse'){console.log(a[1]==='HEAD'?(s.head||s.sha):(s.origin||s.sha));save();process.exit(0)}
- if(a[0]==='ls-remote'){let t=a[3].slice(10),v=s.tags[t];if(v){console.log(v.direct+'\trefs/tags/'+t);if(v.duplicate)console.log(v.direct+'\trefs/tags/'+t);if(v.annotated!==false&&v.peeled)console.log(v.peeled+'\trefs/tags/'+t+'^{}')}save();process.exit(0)}
- if(a[0]==='show-ref'){process.exit(s.local?.[a[3].slice(10)]?0:1)}
- if(a[0]==='tag'){let t=a[2];(s.local??={})[t]=true;save()}
- if(a[0]==='push'){for(const r of a.slice(3)){let t=r.split(':')[0].slice(10);tag(t)}save()}
-}else if(cmd==='gh'){
- let t=a[2]; if(a[1]==='view'){let v=s.releases[t];if(!v){console.error(s.ghError||'release not found');save();process.exit(s.ghStatus||1)}console.log(JSON.stringify(v));save()}
- else {s.releases[t]={tagName:t,isDraft:false,isPrerelease:false};save()}
-}else if(cmd==='npm'){
- let n=a[1],v=s.npm[n]||{versions:[],latest:'alpha',alpha:'alpha-sentinel',beta:'beta-sentinel'}; if((v.unknown||0)>0){v.unknown--;s.npm[n]=v;save();process.exit(1)}
- let value=a[2]==='versions'?v.versions:v.latest;if(a[2]!=='versions'&&(v.staleReads||0)>0){v.staleReads--;value=v.staleLatest||'beta';s.npm[n]=v}console.log(JSON.stringify(value));save()
-}else if(cmd==='pnpm'){
- let names=a[3].replace('--projects=','').split(',');for(const n of names){let rec=s.expected[n],prior=s.npm[n]||{},next={...prior,versions:[rec],latest:rec};if(prior.postPublishStale)next.staleReads=prior.postPublishStale;s.npm[n]=next}save()
-}else if(cmd==='sleep'){save()}else process.exit(127)
-if(mut&&+process.env.FAIL_ORDINAL===s.ordinal&&process.env.FAIL_WHEN==='after'){save();process.exit(43)}save()`
-
-function world(mode="missing") {
-  const cwd=mkdtempSync(join(tmpdir(),"finalize-runtime-")), bin=join(cwd,"bin"), state=join(cwd,"state.json")
-  mkdirSync(bin); writeFileSync(join(bin,"fake"),dispatcher); chmodSync(join(bin,"fake"),0o755)
-  for(const c of ["git","gh","npm","pnpm"]) symlinkSync("fake",join(bin,c))
-  writeFileSync(join(bin,"sleep"),"#!/bin/bash\nexit 0\n"); chmodSync(join(bin,"sleep"),0o755)
-  const utilities=["bash","env","mktemp","sort","uniq","grep","awk","paste","seq","cat","rm","mkdir","dirname","basename","date","chmod","cp","mv","printf"]
-  for(const utility of utilities){const source=utility==='bash'?'/bin/bash':[join('/usr/bin',utility),join('/bin',utility)].find(existsSync);assert.ok(source,`required host utility unavailable: ${utility}`);symlinkSync(source,join(bin,utility))}
-  symlinkSync(process.execPath,join(bin,"node"))
-  const expected={}, npm={}, tags={}, releases={}
-  for(const [name,path,version] of records){mkdirSync(join(cwd,path,".."),{recursive:true});writeFileSync(join(cwd,path),JSON.stringify({name,version}));expected[name]=version;npm[name]={versions:mode==='exact'?[version]:[],latest:mode==='exact'?version:'alpha',alpha:'alpha-sentinel',beta:'beta-sentinel'};if(mode==='exact'){const t=`${name}@${version}`;tags[t]={direct:`object-${t}`,peeled:sha,annotated:true};releases[t]={tagName:t,isDraft:false,isPrerelease:false}}}
-  writeFileSync(state,JSON.stringify({sha,expected,npm,tags,releases,log:[]}))
-  return {cwd,state,bin}
+ if(a[0]==='fetch'||a[0]==='config')finish()
+ if(a[0]==='rev-parse'){out((a[1]==='HEAD'?s.head:s.origin)+'\n');finish()}
+ if(a[0]==='ls-remote'){
+  const t=a[3].slice(10),v=s.tags[t]; if(v){if(v.raw)out(v.raw.replaceAll('$TAG',t));else{out((v.direct||'a'.repeat(40))+'\trefs/tags/'+t+'\n');if(v.peeled!==null)out((v.peeled||s.sha)+'\trefs/tags/'+t+'^{}\n')}} finish()
+ }
+ if(a[0]==='for-each-ref'){const t=a[2].slice(10),v=s.localTags[t];if(v)out((v.type||'tag')+'\t'+(v.peeled||s.sha)+'\n');finish()}
+ if(a[0]==='tag'){s.localTags[a[2]]={type:'tag',peeled:s.sha};finish()}
+ if(a[0]==='push'){if(s.pushExit)finish(s.pushExit);for(const r of a.slice(3)){const t=r.split(':')[0].slice(10);s.tags[t]={peeled:s.localTags[t].peeled}}finish()}
+ finish(127)
 }
-function run(w,extra={}) { return new Promise(resolve=>{const child=spawn("bash",[finalize],{cwd:w.cwd,env:{...process.env,PATH:w.bin,EXPECTED_SHA:sha,NPM_READ_DELAY:"0",FAKE_STATE:w.state,...extra}});let stdout="",stderr="";child.stdout.setEncoding("utf8").on("data",x=>stdout+=x);child.stderr.setEncoding("utf8").on("data",x=>stderr+=x);child.on("close",(status,signal)=>resolve({status,signal,stdout,stderr}))}) }
-function runUnknown(w) { return new Promise(resolve=>{const child=spawn("finalize-harness-unknown-command",[],{cwd:w.cwd,env:{PATH:w.bin}});child.on("error",error=>resolve(error));child.on("close",status=>resolve(status))}) }
-const state=w=>JSON.parse(readFileSync(w.state))
-const mutations=s=>s.log.filter(([c,...a])=>c==='pnpm'||c==='gh'&&a[0]==='release'&&a[1]==='create'||c==='git'&&['tag','push'].includes(a[0]))
+if(cmd==='npm'){
+ const n=a[1],field=a[2],v=s.npm[n],q=v[field==='versions'?'versionsQueue':'latestQueue'];let x=q&&q.length?q.shift():field==='versions'?v.versions:v.latest
+ if(q&&q.length===0){if(field==='versions')v.versions=x;else v.latest=x}
+ if(x&&typeof x==='object'&&x.exit){process.stderr.write(x.stderr||'failure');finish(x.exit)}
+ if(x&&typeof x==='object'&&Object.hasOwn(x,'raw'))out(x.raw);else out(JSON.stringify(x)+(v.pretty?'\n':'\n'));finish()
+}
+if(cmd==='pnpm'){
+ const names=a[3].slice(11).split(','),count=s.publishSubset??names.length;for(const n of names.slice(0,count)){const v=s.expected[n],old=s.npm[n];old.versions=[v];old.latest=v;if(old.delayedVersions){old.versions=[];old.versionsQueue=Array(old.delayedVersions).fill([]).concat([[v]])}if(old.delayedLatest){old.latest='alpha';old.latestQueue=Array(old.delayedLatest).fill('alpha').concat(v)}} finish(s.publishExit||0)
+}
+finish(127)`
 
-const options={timeout:60_000}
-const scenarios=[]
-const test=(name,_options,fn)=>scenarios.push({name,fn})
+function load(file) { return JSON.parse(readFileSync(file, "utf8")) }
+function save(file, value) { writeFileSync(file, JSON.stringify(value)) }
+function mutations(state) { return state.log.filter(([c, a]) => c === "pnpm" || (c === "git" && (a === "tag" || a === "push")) || (c === "http" && a === "POST")) }
 
-test("harness PATH is hermetic and unknown commands fail",options,async()=>{const w=world();assert.equal(w.bin.includes(process.env.PATH||"\0"),false);const result=await runUnknown(w);assert.equal(result.code,"ENOENT")})
-
-test("all missing converges through real script, with exact atomic refs, releases, projects, and latest",options,async()=>{
- const w=world(),r=await run(w),s=state(w);assert.equal(r.status,0,JSON.stringify({stdout:r.stdout,stderr:r.stderr,log:s.log.slice(-8)}));assert.equal(Object.keys(s.tags).length,7);assert.ok(Object.values(s.tags).every(x=>x.peeled===sha&&x.annotated));assert.equal(Object.keys(s.releases).length,7);assert.deepEqual(Object.keys(s.npm).sort(),records.map(x=>x[0]).sort());for(const [n,,v] of records)assert.deepEqual(s.npm[n],{versions:[v],latest:v,alpha:'alpha-sentinel',beta:'beta-sentinel'});
- const push=s.log.find(x=>x[0]==='git'&&x[1]==='push');assert.deepEqual(push.slice(1,4),['push','--atomic','origin']);assert.deepEqual(push.slice(4),records.map(([n,,v])=>`refs/tags/${n}@${v}:refs/tags/${n}@${v}`));const pub=s.log.find(x=>x[0]==='pnpm');assert.equal(pub[4],`--projects=${records.map(x=>x[0]).join(',')}`)
-})
-test("exact replay is mutation-free and preserves alpha/beta",options,async()=>{const w=world('exact'),r=await run(w),s=state(w);assert.equal(r.status,0,r.stderr);assert.deepEqual(mutations(s),[]);for(const value of Object.values(s.npm)){assert.equal(value.alpha,'alpha-sentinel');assert.equal(value.beta,'beta-sentinel')}})
-    test("partial npm converges without changing alpha/beta",options,async()=>{const w=world('exact'),s=state(w),[name,,version]=records[0];s.npm[name].versions=[];s.npm[name].latest='alpha';writeFileSync(w.state,JSON.stringify(s));const r=await run(w),done=state(w);assert.equal(r.status,0,r.stderr);assert.deepEqual(done.npm[name],{versions:[version],latest:version,alpha:'alpha-sentinel',beta:'beta-sentinel'})})
-    test("partial tags converge exactly",options,async()=>{const w=world('exact'),s=state(w),[name,,version]=records[0],tag=`${name}@${version}`;delete s.tags[tag];writeFileSync(w.state,JSON.stringify(s));const r=await run(w),done=state(w);assert.equal(r.status,0,r.stderr);assert.deepEqual(done.tags[tag],{direct:`object-${tag}`,peeled:sha,annotated:true})})
-    test("partial releases converge exactly",options,async()=>{const w=world('exact'),s=state(w),[name,,version]=records[0],tag=`${name}@${version}`;delete s.releases[tag];writeFileSync(w.state,JSON.stringify(s));const r=await run(w),done=state(w);assert.equal(r.status,0,r.stderr);assert.deepEqual(done.releases[tag],{tagName:tag,isDraft:false,isPrerelease:false})})
-for(const kind of ['identity','head','origin']) test(`${kind} mismatch fails before remote mutation`,options,async()=>{const w=world();let s=state(w);if(kind==='identity'){writeFileSync(join(w.cwd,records[0][1]),JSON.stringify({name:'wrong',version:'0.1.0'}))}else{s[kind]='f'.repeat(40);writeFileSync(w.state,JSON.stringify(s))}const r=await run(w);assert.notEqual(r.status,0);assert.deepEqual(mutations(state(w)),[]);assert.match(r.stderr,/mismatch|does not match/)})
-for(const when of ['before','after']) for(let ordinal=1;ordinal<=16;ordinal++) {
-     if(when==='after'&&ordinal===8)continue
-     test(`mutable command ${ordinal} interrupted ${when} is forward-only and replay converges`,options,async()=>{const w=world();const first=await run(w,{FAIL_ORDINAL:String(ordinal),FAIL_WHEN:when});assert.notEqual(first.status,0,`${when} ${ordinal}`);let s=state(w);s.ordinal=0;s.local={};writeFileSync(w.state,JSON.stringify(s));const replay=await run(w);s=state(w);assert.equal(replay.status,0,JSON.stringify({when,ordinal,stdout:replay.stdout,stderr:replay.stderr}));assert.equal(Object.keys(s.tags).length,7);assert.ok(Object.values(s.tags).every(x=>x.peeled===sha&&x.annotated));assert.equal(Object.keys(s.releases).length,7);for(const [n,,v] of records)assert.deepEqual(s.npm[n],{versions:[v],latest:v,alpha:'alpha-sentinel',beta:'beta-sentinel'})})
+async function world(mode = "absent") {
+  const cwd = mkdtempSync(join(tmpdir(), "stable-finalize-")), bin = join(cwd, "bin"), stateFile = join(cwd, "state.json")
+  mkdirSync(bin); writeFileSync(join(bin, "fake.cjs"), fake); chmodSync(join(bin, "fake.cjs"), 0o755)
+  for (const command of ["git", "npm", "pnpm"]) symlinkSync("fake.cjs", join(bin, command))
+  symlinkSync(process.execPath, join(bin, "node"))
+  const expected = {}, npm = {}, tags = {}, releases = {}
+  for (const [name, path, version] of records) {
+    mkdirSync(join(cwd, path, ".."), { recursive: true }); writeFileSync(join(cwd, path), JSON.stringify({ name, version }))
+    expected[name] = version; npm[name] = { versions: mode === "exact" ? [version] : [], latest: mode === "exact" ? version : "alpha", alpha: "alpha-sentinel", beta: "beta-sentinel" }
+    if (mode === "exact") { const tag = `${name}@${version}`; tags[tag] = { peeled: sha }; releases[tag] = { tag_name: tag, draft: false, prerelease: false } }
+  }
+  save(stateFile, { sha, head: sha, origin: sha, expected, npm, tags, releases, localTags: {}, log: [] })
+  const server = createServer((request, response) => {
+    const state = load(stateFile), method = request.method, path = request.url; state.log.push(["http", method, path])
+    const send = (status, body = "") => { save(stateFile, state); response.writeHead(status, { "content-type": "application/json" }); response.end(typeof body === "string" ? body : JSON.stringify(body)) }
+    if (method === "GET") {
+      const tag = decodeURIComponent(path.split("/releases/tags/")[1] || ""), configured = state.ghReadStatus
+      if (configured) return send(configured, { message: "configured" })
+      return state.releases[tag] ? send(200, state.releases[tag]) : send(404, { message: "not found" })
     }
-    test("atomic tag push response-loss-converged only after exact postcondition",options,async()=>{const w=world();const result=await run(w,{FAIL_ORDINAL:'8',FAIL_WHEN:'after'}),s=state(w);assert.equal(result.status,0,result.stderr);assert.equal(Object.keys(s.tags).length,7);assert.ok(Object.values(s.tags).every(x=>x.peeled===sha&&x.annotated))})
-for(const kind of ['lightweight','duplicate','tag-sha','draft','prerelease','wrong-tag','latest','gh-auth']) test(`${kind} state fails closed without mutation`,options,async()=>{const w=world('exact'),s=state(w),[n,,v]=records[0],t=`${n}@${v}`;if(kind==='lightweight')s.tags[t].annotated=false;if(kind==='duplicate')s.tags[t].duplicate=true;if(kind==='tag-sha')s.tags[t].peeled='f'.repeat(40);if(kind==='draft')s.releases[t].isDraft=true;if(kind==='prerelease')s.releases[t].isPrerelease=true;if(kind==='wrong-tag')s.releases[t].tagName='wrong';if(kind==='latest')s.npm[n].latest='beta';if(kind==='gh-auth'){delete s.releases[t];s.ghError='authentication required';s.ghStatus=1}writeFileSync(w.state,JSON.stringify(s));const r=await run(w);assert.notEqual(r.status,0,kind);assert.deepEqual(mutations(state(w)),[])})
-test("npm eventual visibility succeeds",options,async()=>{const w=world('exact'),s=state(w);s.npm[records[0][0]].unknown=2;writeFileSync(w.state,JSON.stringify(s));assert.equal((await run(w)).status,0)})
-for(const boundary of ["preflight","postpublish"]) test(`stale latest converges at ${boundary} visibility boundary`,options,async()=>{const w=world(boundary==="preflight"?"exact":"missing"),s=state(w),[name]=records[0];if(boundary==="preflight")s.npm[name].staleReads=2;else s.npm[name].postPublishStale=2;writeFileSync(w.state,JSON.stringify(s));const r=await run(w);assert.equal(r.status,0,r.stderr)})
-for(const boundary of ["preflight","postpublish"]) test(`persistent latest divergence exhausts exactly six reads at ${boundary}`,options,async()=>{const w=world(boundary==="preflight"?"exact":"missing"),s=state(w),[name]=records[0];if(boundary==="preflight")s.npm[name].staleReads=99;else s.npm[name].postPublishStale=99;writeFileSync(w.state,JSON.stringify(s));const r=await run(w),done=state(w);assert.notEqual(r.status,0);assert.match(r.stderr,/permanent latest divergence/);const boundaryLog=boundary==="postpublish"?done.log.slice(done.log.findIndex(([c])=>c==="pnpm")+1):done.log;assert.equal(boundaryLog.filter(([c,command,n,field])=>c==="npm"&&command==="view"&&n===name&&field==="versions").length,6);assert.deepEqual(boundary==="preflight"?mutations(done):mutations({...done,log:boundaryLog}),[])})
-test("npm unreadable exhaustion diagnoses",options,async()=>{const w=world('exact'),s=state(w);s.npm[records[0][0]].unknown=99;writeFileSync(w.state,JSON.stringify(s));const r=await run(w);assert.notEqual(r.status,0);assert.match(r.stdout+r.stderr,/unreadable after 6 attempts/)})
+    let body = ""; request.on("data", x => body += x); request.on("end", () => {
+      const value = JSON.parse(body), tag = value.tag_name, status = state.ghCreateStatus || 201
+      if (state.ghCreateMaterializes !== false) state.releases[tag] = { tag_name: tag, draft: false, prerelease: false }
+      send(status, status === 422 ? { message: "already exists" } : state.releases[tag])
+    })
+  })
+  await new Promise(resolve => server.listen(0, "127.0.0.1", resolve))
+  return { cwd, bin, stateFile, server, api: `http://127.0.0.1:${server.address().port}` }
+}
+async function run(w, args = []) {
+  return await new Promise(resolve => {
+    const child = spawn(process.execPath, [script, ...args], { cwd: w.cwd, env: { PATH: w.bin, EXPECTED_SHA: sha, NPM_READ_DELAY_MS: "0", FINALIZE_COMMAND_TIMEOUT_MS: "5000", GITHUB_API_URL: w.api, GITHUB_REPOSITORY: "owner/repo", GITHUB_TOKEN: "fake", FAKE_STATE: w.stateFile } })
+    let stdout = "", stderr = ""; child.stdout.on("data", x => stdout += x); child.stderr.on("data", x => stderr += x); child.on("close", status => resolve({ status, stdout, stderr }))
+  })
+}
+async function scenario(t, name, setup, verify, mode = "exact", args = []) {
+  await t.test(name, async () => { const w = await world(mode); try { const state = load(w.stateFile); await setup(state, w); save(w.stateFile, state); const result = await run(w, args); await verify(result, load(w.stateFile), w) } finally { await new Promise(resolve => w.server.close(resolve)) } })
+}
+function exactState(state) { assert.equal(Object.keys(state.tags).length, 7); assert.equal(Object.keys(state.releases).length, 7); for (const [n,,v] of records) { assert.deepEqual(state.npm[n].versions, [v]); assert.equal(state.npm[n].latest, v); assert.equal(state.npm[n].alpha, "alpha-sentinel"); assert.equal(state.npm[n].beta, "beta-sentinel") } }
 
-nodeTest("release finalize stable scenarios",{concurrency:4,timeout:180_000},async t=>{
- await Promise.all(scenarios.map(({name,fn})=>t.test(name,options,fn)))
+const scenarioNames = []
+test("hermetic Node CLI matrix", { timeout: 120_000 }, async t => {
+  const add = async (...args) => { scenarioNames.push(args[0]); await scenario(t, ...args) }
+  await add("all exact replay has zero mutation", async()=>{}, (r,s)=>{assert.equal(r.status,0,r.stderr);assert.deepEqual(mutations(s),[])})
+  await add("all absent creates and publishes exact manifests", async()=>{}, (r,s)=>{assert.equal(r.status,0,r.stderr);exactState(s);const push=s.log.find(x=>x[0]==="git"&&x[1]==="push");assert.deepEqual(push.slice(1,4),["push","--atomic","origin"]);assert.equal(s.log.find(x=>x[0]==="pnpm")[4],`--projects=${records.map(x=>x[0]).join(",")}`)}, "absent")
+  for (const [index] of records.entries()) await add(`tag partial subset ${index+1} replays`, async s=>{for(const [n,,v] of records.slice(0,index+1))s.tags[`${n}@${v}`]={peeled:sha}}, (r,s)=>{assert.equal(r.status,0,r.stderr);exactState(s)}, "absent")
+  for (const [index] of records.entries()) await add(`release partial subset ${index+1} replays`, async s=>{for(const [n,,v] of records)s.tags[`${n}@${v}`]={peeled:sha};for(const [n,,v] of records.slice(0,index+1))s.releases[`${n}@${v}`]={tag_name:`${n}@${v}`,draft:false,prerelease:false}}, (r,s)=>{assert.equal(r.status,0,r.stderr);exactState(s)}, "absent")
+  for (const [index] of records.entries()) await add(`npm partial subset ${index+1} replays`, async s=>{for(const [n,,v] of records){s.tags[`${n}@${v}`]={peeled:sha};s.releases[`${n}@${v}`]={tag_name:`${n}@${v}`,draft:false,prerelease:false}}for(const [n,,v] of records.slice(0,index+1)){s.npm[n].versions=[v];s.npm[n].latest=v}}, (r,s)=>{assert.equal(r.status,0,r.stderr);exactState(s)}, "absent")
+  for (const subset of [1,3,6]) await add(`publish nonzero after subset ${subset} then replay`, async s=>{s.publishSubset=subset;s.publishExit=42}, async(r,s,w)=>{assert.notEqual(r.status,0);delete s.publishExit;delete s.publishSubset;save(w.stateFile,s);const replay=await run(w);assert.equal(replay.status,0,replay.stderr);exactState(load(w.stateFile))}, "absent")
+  for (const [format,value] of [["compact",[records[0][2]]],["pretty",{raw:`[\n  "${records[0][2]}"\n]\n`}],["scalar",records[0][2]]]) await add(`npm ${format} versions JSON`, async s=>{s.npm[records[0][0]].versionsQueue=[value]}, (r)=>assert.equal(r.status,0,r.stderr))
+  await add("npm delayed latest converges", async s=>{s.npm[records[0][0]].latestQueue=["beta","beta",records[0][2]]}, r=>assert.equal(r.status,0,r.stderr))
+  await add("post-publish delayed version visibility converges", async s=>{s.npm[records[0][0]].delayedVersions=2}, (r,s)=>{assert.equal(r.status,0,r.stderr);exactState(s)}, "absent")
+  await add("post-publish delayed latest converges", async s=>{s.npm[records[0][0]].delayedLatest=2}, (r,s)=>{assert.equal(r.status,0,r.stderr);exactState(s)}, "absent")
+  await add("failed atomic push materializes no refs and replay reuses local tags", async s=>{s.pushExit=1}, async(r,s,w)=>{assert.notEqual(r.status,0);assert.equal(Object.keys(s.tags).length,0);assert.equal(Object.keys(s.localTags).length,7);delete s.pushExit;save(w.stateFile,s);const replay=await run(w);assert.equal(replay.status,0,replay.stderr);exactState(load(w.stateFile))}, "absent")
+  for (const [name,spec] of [["null",null],["empty",{raw:""}],["truncated",{raw:"[\"1.0"}],["object",{}],["mixed",[records[0][2],3]],["DNS",{exit:1,stderr:"ENOTFOUND"}],["auth",{exit:1,stderr:"E401"}],["rate",{exit:1,stderr:"E429"}],["5xx",{exit:1,stderr:"E503"}],["E404",{exit:1,stderr:"E404"}]]) await add(`npm ${name} is unknown and never publishes`, async s=>{s.npm[records[0][0]].versionsQueue=Array(6).fill(spec)}, (r,s)=>{assert.notEqual(r.status,0);assert.equal(mutations(s).length,0)})
+  for (const status of [401,403,429,500,503]) await add(`GitHub ${status} read is unknown`, async s=>{s.ghReadStatus=status}, (r,s)=>{assert.notEqual(r.status,0);assert.equal(mutations(s).length,0)})
+  await add("GitHub 404 is proven absent", async s=>{delete s.releases[`${records[0][0]}@${records[0][2]}`]}, (r,s)=>{assert.equal(r.status,0,r.stderr);exactState(s)})
+  await add("GitHub 422 create reconciles materialized exact release", async s=>{s.ghCreateStatus=422}, (r,s)=>{assert.equal(r.status,0,r.stderr);exactState(s)}, "absent")
+  await add("GitHub 422 without exact state fails", async s=>{s.ghCreateStatus=422;s.ghCreateMaterializes=false}, (r)=>assert.notEqual(r.status,0), "absent")
+  for (const [name,raw] of [["lightweight",`${"a".repeat(40)}\trefs/tags/$TAG\n`],["malformed","garbage\n"],["wrong SHA",`${"a".repeat(40)}\trefs/tags/$TAG\n${"f".repeat(40)}\trefs/tags/$TAG^{}\n`],["duplicate",`${"a".repeat(40)}\trefs/tags/$TAG\n${"b".repeat(40)}\trefs/tags/$TAG\n${sha}\trefs/tags/$TAG^{}\n`]]) await add(`tag ${name} fails closed`, async s=>{s.tags[`${records[0][0]}@${records[0][2]}`]={raw}}, (r,s)=>{assert.notEqual(r.status,0);assert.equal(mutations(s).length,0)}, "absent")
+  for (const [name,value] of [["lightweight",{type:"commit",peeled:sha}],["wrong SHA",{type:"tag",peeled:"f".repeat(40)}]]) await add(`local tag ${name} fails before mutation`, async s=>{s.localTags[`${records[0][0]}@${records[0][2]}`]=value}, (r,s)=>{assert.notEqual(r.status,0);assert.equal(mutations(s).length,0)}, "absent")
+  await add("manifest name mismatch fails before mutation", async(s,w)=>writeFileSync(join(w.cwd,records[0][1]),JSON.stringify({name:"wrong",version:records[0][2]})), (r,s)=>{assert.notEqual(r.status,0);assert.equal(mutations(s).length,0)})
+  await add("manifest version mismatch fails before mutation", async(s,w)=>writeFileSync(join(w.cwd,records[0][1]),JSON.stringify({name:records[0][0],version:"9.9.9"})), (r,s)=>{assert.notEqual(r.status,0);assert.equal(mutations(s).length,0)})
+  await add("EXPECTED_SHA controls HEAD", async s=>{s.head="f".repeat(40)}, (r,s)=>{assert.notEqual(r.status,0);assert.equal(mutations(s).length,0)})
+  await add("EXPECTED_SHA controls origin", async s=>{s.origin="f".repeat(40)}, (r,s)=>{assert.notEqual(r.status,0);assert.equal(mutations(s).length,0)})
+  await add("preflight JSON reads only", async()=>{}, (r,s)=>{assert.equal(r.status,0,r.stderr);assert.equal(JSON.parse(r.stdout).expectedSha,sha);assert.equal(mutations(s).length,0)}, "exact", ["--preflight","--json"])
+  assert.equal(new Set(scenarioNames).size, scenarioNames.length)
+})
+
+test("static command boundary keeps shell and destructive repairs out", () => {
+  const source = readFileSync(script, "utf8")
+  assert.match(source, /spawn\(file, args, \{ shell: false/)
+  assert.doesNotMatch(source, /execSync|spawnSync|shell: true|npm dist-tag|npm unpublish|release delete|tag", "-f/)
 })
