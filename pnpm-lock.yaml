@@ -863,9 +863,15 @@ importers:
       '@types/react':
         specifier: 19.2.17
         version: 19.2.17
+      '@types/react-dom':
+        specifier: 19.2.3
+        version: 19.2.3(@types/react@19.2.17)
       effect:
         specifier: 'catalog:'
         version: 4.0.0-rc.111
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.2.7(react@19.2.7)
       typescript:
         specifier: 'catalog:'
         version: '@typescript/typescript6@6.0.2'

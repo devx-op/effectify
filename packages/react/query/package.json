@@ -34,10 +34,12 @@
   "devDependencies": {
     "typescript": "catalog:",
     "@types/react": "catalog:",
-    "effect": "catalog:"
+    "@types/react-dom": "catalog:",
+    "effect": "catalog:",
+    "react-dom": "catalog:"
   },
   "optionalDependencies": {},
   "peerDependencies": {
-    "effect": "^3.19.16 || ^4.0.0-beta"
+    "effect": "^4.0.0-beta"
   }
 }
