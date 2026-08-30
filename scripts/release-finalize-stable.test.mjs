@@ -28,17 +28,19 @@ if(cmd==='git'){
  if(a[0]==='ls-remote'){
   const t=a[3].slice(10),v=s.tags[t]; if(v){if(v.raw)out(v.raw.replaceAll('$TAG',t));else{out((v.direct||'a'.repeat(40))+'\trefs/tags/'+t+'\n');if(v.peeled!==null)out((v.peeled||s.sha)+'\trefs/tags/'+t+'^{}\n')}} finish()
  }
- if(a[0]==='tag'){s.local[a[2]]=true;finish()}
- if(a[0]==='push'){for(const r of a.slice(3)){const t=r.split(':')[0].slice(10);s.tags[t]={peeled:s.sha}}finish(s.pushExit||0)}
+ if(a[0]==='for-each-ref'){const t=a[2].slice(10),v=s.localTags[t];if(v)out((v.type||'tag')+'\t'+(v.peeled||s.sha)+'\n');finish()}
+ if(a[0]==='tag'){s.localTags[a[2]]={type:'tag',peeled:s.sha};finish()}
+ if(a[0]==='push'){if(s.pushExit)finish(s.pushExit);for(const r of a.slice(3)){const t=r.split(':')[0].slice(10);s.tags[t]={peeled:s.localTags[t].peeled}}finish()}
  finish(127)
 }
 if(cmd==='npm'){
  const n=a[1],field=a[2],v=s.npm[n],q=v[field==='versions'?'versionsQueue':'latestQueue'];let x=q&&q.length?q.shift():field==='versions'?v.versions:v.latest
+ if(q&&q.length===0){if(field==='versions')v.versions=x;else v.latest=x}
  if(x&&typeof x==='object'&&x.exit){process.stderr.write(x.stderr||'failure');finish(x.exit)}
  if(x&&typeof x==='object'&&Object.hasOwn(x,'raw'))out(x.raw);else out(JSON.stringify(x)+(v.pretty?'\n':'\n'));finish()
 }
 if(cmd==='pnpm'){
- const names=a[3].slice(11).split(','),count=s.publishSubset??names.length;for(const n of names.slice(0,count)){const v=s.expected[n],old=s.npm[n];old.versions=[v];old.latest=v;if(old.delayedLatest){old.latest='alpha';old.latestQueue=Array(old.delayedLatest).fill('alpha').concat(v)}} finish(s.publishExit||0)
+ const names=a[3].slice(11).split(','),count=s.publishSubset??names.length;for(const n of names.slice(0,count)){const v=s.expected[n],old=s.npm[n];old.versions=[v];old.latest=v;if(old.delayedVersions){old.versions=[];old.versionsQueue=Array(old.delayedVersions).fill([]).concat([[v]])}if(old.delayedLatest){old.latest='alpha';old.latestQueue=Array(old.delayedLatest).fill('alpha').concat(v)}} finish(s.publishExit||0)
 }
 finish(127)`
 
@@ -57,7 +59,7 @@ async function world(mode = "absent") {
     expected[name] = version; npm[name] = { versions: mode === "exact" ? [version] : [], latest: mode === "exact" ? version : "alpha", alpha: "alpha-sentinel", beta: "beta-sentinel" }
     if (mode === "exact") { const tag = `${name}@${version}`; tags[tag] = { peeled: sha }; releases[tag] = { tag_name: tag, draft: false, prerelease: false } }
   }
-  save(stateFile, { sha, head: sha, origin: sha, expected, npm, tags, releases, local: {}, log: [] })
+  save(stateFile, { sha, head: sha, origin: sha, expected, npm, tags, releases, localTags: {}, log: [] })
   const server = createServer((request, response) => {
     const state = load(stateFile), method = request.method, path = request.url; state.log.push(["http", method, path])
     const send = (status, body = "") => { save(stateFile, state); response.writeHead(status, { "content-type": "application/json" }); response.end(typeof body === "string" ? body : JSON.stringify(body)) }
@@ -87,7 +89,7 @@ async function scenario(t, name, setup, verify, mode = "exact", args = []) {
 function exactState(state) { assert.equal(Object.keys(state.tags).length, 7); assert.equal(Object.keys(state.releases).length, 7); for (const [n,,v] of records) { assert.deepEqual(state.npm[n].versions, [v]); assert.equal(state.npm[n].latest, v); assert.equal(state.npm[n].alpha, "alpha-sentinel"); assert.equal(state.npm[n].beta, "beta-sentinel") } }
 
 const scenarioNames = []
-test("hermetic Node CLI matrix (56 explicit scenarios)", { timeout: 120_000 }, async t => {
+test("hermetic Node CLI matrix", { timeout: 120_000 }, async t => {
   const add = async (...args) => { scenarioNames.push(args[0]); await scenario(t, ...args) }
   await add("all exact replay has zero mutation", async()=>{}, (r,s)=>{assert.equal(r.status,0,r.stderr);assert.deepEqual(mutations(s),[])})
   await add("all absent creates and publishes exact manifests", async()=>{}, (r,s)=>{assert.equal(r.status,0,r.stderr);exactState(s);const push=s.log.find(x=>x[0]==="git"&&x[1]==="push");assert.deepEqual(push.slice(1,4),["push","--atomic","origin"]);assert.equal(s.log.find(x=>x[0]==="pnpm")[4],`--projects=${records.map(x=>x[0]).join(",")}`)}, "absent")
@@ -97,18 +99,22 @@ test("hermetic Node CLI matrix (56 explicit scenarios)", { timeout: 120_000 }, a
   for (const subset of [1,3,6]) await add(`publish nonzero after subset ${subset} then replay`, async s=>{s.publishSubset=subset;s.publishExit=42}, async(r,s,w)=>{assert.notEqual(r.status,0);delete s.publishExit;delete s.publishSubset;save(w.stateFile,s);const replay=await run(w);assert.equal(replay.status,0,replay.stderr);exactState(load(w.stateFile))}, "absent")
   for (const [format,value] of [["compact",[records[0][2]]],["pretty",{raw:`[\n  "${records[0][2]}"\n]\n`}],["scalar",records[0][2]]]) await add(`npm ${format} versions JSON`, async s=>{s.npm[records[0][0]].versionsQueue=[value]}, (r)=>assert.equal(r.status,0,r.stderr))
   await add("npm delayed latest converges", async s=>{s.npm[records[0][0]].latestQueue=["beta","beta",records[0][2]]}, r=>assert.equal(r.status,0,r.stderr))
-  for (const [name,spec] of [["null",null],["empty",{raw:""}],["truncated",{raw:"[\"1.0"}],["object",{}],["mixed",[records[0][2],3]],["DNS",{exit:1,stderr:"ENOTFOUND"}],["auth",{exit:1,stderr:"E401"}],["rate",{exit:1,stderr:"E429"}],["5xx",{exit:1,stderr:"E503"}]]) await add(`npm ${name} is unknown and never publishes`, async s=>{s.npm[records[0][0]].versionsQueue=Array(6).fill(spec)}, (r,s)=>{assert.notEqual(r.status,0);assert.equal(mutations(s).length,0)})
+  await add("post-publish delayed version visibility converges", async s=>{s.npm[records[0][0]].delayedVersions=2}, (r,s)=>{assert.equal(r.status,0,r.stderr);exactState(s)}, "absent")
+  await add("post-publish delayed latest converges", async s=>{s.npm[records[0][0]].delayedLatest=2}, (r,s)=>{assert.equal(r.status,0,r.stderr);exactState(s)}, "absent")
+  await add("failed atomic push materializes no refs and replay reuses local tags", async s=>{s.pushExit=1}, async(r,s,w)=>{assert.notEqual(r.status,0);assert.equal(Object.keys(s.tags).length,0);assert.equal(Object.keys(s.localTags).length,7);delete s.pushExit;save(w.stateFile,s);const replay=await run(w);assert.equal(replay.status,0,replay.stderr);exactState(load(w.stateFile))}, "absent")
+  for (const [name,spec] of [["null",null],["empty",{raw:""}],["truncated",{raw:"[\"1.0"}],["object",{}],["mixed",[records[0][2],3]],["DNS",{exit:1,stderr:"ENOTFOUND"}],["auth",{exit:1,stderr:"E401"}],["rate",{exit:1,stderr:"E429"}],["5xx",{exit:1,stderr:"E503"}],["E404",{exit:1,stderr:"E404"}]]) await add(`npm ${name} is unknown and never publishes`, async s=>{s.npm[records[0][0]].versionsQueue=Array(6).fill(spec)}, (r,s)=>{assert.notEqual(r.status,0);assert.equal(mutations(s).length,0)})
   for (const status of [401,403,429,500,503]) await add(`GitHub ${status} read is unknown`, async s=>{s.ghReadStatus=status}, (r,s)=>{assert.notEqual(r.status,0);assert.equal(mutations(s).length,0)})
   await add("GitHub 404 is proven absent", async s=>{delete s.releases[`${records[0][0]}@${records[0][2]}`]}, (r,s)=>{assert.equal(r.status,0,r.stderr);exactState(s)})
   await add("GitHub 422 create reconciles materialized exact release", async s=>{s.ghCreateStatus=422}, (r,s)=>{assert.equal(r.status,0,r.stderr);exactState(s)}, "absent")
   await add("GitHub 422 without exact state fails", async s=>{s.ghCreateStatus=422;s.ghCreateMaterializes=false}, (r)=>assert.notEqual(r.status,0), "absent")
-  for (const [name,raw] of [["lightweight",`${"a".repeat(40)}\trefs/tags/$TAG\n`],["malformed","garbage\n"],["wrong SHA",`${"a".repeat(40)}\trefs/tags/$TAG\n${"f".repeat(40)}\trefs/tags/$TAG^{}\n`],["duplicate",`${"a".repeat(40)}\trefs/tags/$TAG\n${"b".repeat(40)}\trefs/tags/$TAG\n${sha}\trefs/tags/$TAG^{}\n`]]) await add(`tag ${name} fails closed`, async s=>{s.tags[`${records[0][0]}@${records[0][2]}`]={raw}}, (r,s)=>{assert.notEqual(r.status,0);assert.equal(mutations(s).length,0)})
+  for (const [name,raw] of [["lightweight",`${"a".repeat(40)}\trefs/tags/$TAG\n`],["malformed","garbage\n"],["wrong SHA",`${"a".repeat(40)}\trefs/tags/$TAG\n${"f".repeat(40)}\trefs/tags/$TAG^{}\n`],["duplicate",`${"a".repeat(40)}\trefs/tags/$TAG\n${"b".repeat(40)}\trefs/tags/$TAG\n${sha}\trefs/tags/$TAG^{}\n`]]) await add(`tag ${name} fails closed`, async s=>{s.tags[`${records[0][0]}@${records[0][2]}`]={raw}}, (r,s)=>{assert.notEqual(r.status,0);assert.equal(mutations(s).length,0)}, "absent")
+  for (const [name,value] of [["lightweight",{type:"commit",peeled:sha}],["wrong SHA",{type:"tag",peeled:"f".repeat(40)}]]) await add(`local tag ${name} fails before mutation`, async s=>{s.localTags[`${records[0][0]}@${records[0][2]}`]=value}, (r,s)=>{assert.notEqual(r.status,0);assert.equal(mutations(s).length,0)}, "absent")
   await add("manifest name mismatch fails before mutation", async(s,w)=>writeFileSync(join(w.cwd,records[0][1]),JSON.stringify({name:"wrong",version:records[0][2]})), (r,s)=>{assert.notEqual(r.status,0);assert.equal(mutations(s).length,0)})
   await add("manifest version mismatch fails before mutation", async(s,w)=>writeFileSync(join(w.cwd,records[0][1]),JSON.stringify({name:records[0][0],version:"9.9.9"})), (r,s)=>{assert.notEqual(r.status,0);assert.equal(mutations(s).length,0)})
   await add("EXPECTED_SHA controls HEAD", async s=>{s.head="f".repeat(40)}, (r,s)=>{assert.notEqual(r.status,0);assert.equal(mutations(s).length,0)})
   await add("EXPECTED_SHA controls origin", async s=>{s.origin="f".repeat(40)}, (r,s)=>{assert.notEqual(r.status,0);assert.equal(mutations(s).length,0)})
   await add("preflight JSON reads only", async()=>{}, (r,s)=>{assert.equal(r.status,0,r.stderr);assert.equal(JSON.parse(r.stdout).expectedSha,sha);assert.equal(mutations(s).length,0)}, "exact", ["--preflight","--json"])
-  assert.equal(scenarioNames.length, 56)
+  assert.equal(new Set(scenarioNames).size, scenarioNames.length)
 })
 
 test("static command boundary keeps shell and destructive repairs out", () => {

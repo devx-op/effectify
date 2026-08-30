@@ -62,13 +62,14 @@ async function npmState(name, version) {
     return !present ? { kind: "absent" } : latest === version ? { kind: "exact" } : { kind: "divergent" }
   } catch { return { kind: "unknown" } }
 }
-async function npmBounded(name, version) {
+async function npmBounded(name, version, { acceptAbsent = false } = {}) {
   let state
   for (let attempt = 1; attempt <= maxReads; attempt++) {
     state = await npmState(name, version)
-    if (state.kind === "exact" || state.kind === "absent") return state
+    if (state.kind === "exact" || (acceptAbsent && state.kind === "absent")) return state
     if (attempt < maxReads) await sleep(delayMs)
   }
+  if (state.kind === "absent") fail(`npm version remained absent after ${maxReads} attempts for ${name}`)
   fail(state.kind === "divergent" ? `permanent latest divergence for ${name}` : `npm state unreadable after ${maxReads} attempts for ${name}`)
 }
 function parseTag(text, tag) {
@@ -86,6 +87,15 @@ async function tagState(tag) {
   let result
   try { result = await run("git", ["ls-remote", "--tags", "origin", `refs/tags/${tag}`, `refs/tags/${tag}^{}`]) } catch { return { kind: "unknown" } }
   return parseTag(result.stdout, tag)
+}
+async function localTagState(tag) {
+  let result
+  try { result = await run("git", ["for-each-ref", "--format=%(objecttype)%09%(*objectname)", `refs/tags/${tag}`]) } catch { return { kind: "unknown" } }
+  if (result.stdout === "") return { kind: "absent" }
+  const lines = result.stdout.trimEnd().split("\n")
+  if (lines.length !== 1) return { kind: "divergent" }
+  const match = lines[0].match(/^tag\t([0-9a-f]{40})$/)
+  return match && match[1] === expectedSha ? { kind: "exact" } : { kind: "divergent" }
 }
 function repository() {
   if (process.env.GITHUB_REPOSITORY) return process.env.GITHUB_REPOSITORY
@@ -119,7 +129,7 @@ async function inspect() {
   const states = []
   for (const [name, path, version] of records) {
     await manifest(name, path, version)
-    const npm = await npmBounded(name, version), tag = await tagState(`${name}@${version}`), release = await releaseState(`${name}@${version}`)
+    const npm = await npmBounded(name, version, { acceptAbsent: true }), tag = await tagState(`${name}@${version}`), release = await releaseState(`${name}@${version}`)
     for (const [label, state] of [["tag", tag], ["GitHub Release", release]]) if (!['exact','absent'].includes(state.kind)) fail(`${label} state is ${state.kind} for ${name}@${version}${state.status ? ` (HTTP ${state.status})` : ""}`)
     states.push({ name, version, npm: npm.kind, tag: tag.kind, release: release.kind })
   }
@@ -131,10 +141,18 @@ async function main() {
   if (!/^[0-9a-f]{40}$/.test(expectedSha)) fail("FINALIZE requires full lowercase expected SHA")
   const states = await inspect()
   if (preflight) { process.stdout.write(`${JSON.stringify({ ok: true, expectedSha, states })}\n`); return }
-  await run("git", ["config", "user.name", "github-actions[bot]"])
-  await run("git", ["config", "user.email", "github-actions[bot]@users.noreply.github.com"])
   const missingTags = states.filter((x) => x.tag === "absent")
-  for (const item of missingTags) await run("git", ["tag", "-a", `${item.name}@${item.version}`, expectedSha, "-m", `${item.name}@${item.version}`])
+  const localTags = []
+  for (const item of missingTags) {
+    const tag = `${item.name}@${item.version}`, local = await localTagState(tag)
+    if (!['exact','absent'].includes(local.kind)) fail(`local tag state is ${local.kind} for ${tag}`)
+    localTags.push({ item, tag, local: local.kind })
+  }
+  if (localTags.some((x) => x.local === "absent")) {
+    await run("git", ["config", "user.name", "github-actions[bot]"])
+    await run("git", ["config", "user.email", "github-actions[bot]@users.noreply.github.com"])
+  }
+  for (const { tag, local } of localTags) if (local === "absent") await run("git", ["tag", "-a", tag, expectedSha, "-m", tag])
   if (missingTags.length) {
     const refs = missingTags.map((x) => `refs/tags/${x.name}@${x.version}:refs/tags/${x.name}@${x.version}`)
     try { await run("git", ["push", "--atomic", "origin", ...refs]) } catch { /* response loss is reconciled below */ }
