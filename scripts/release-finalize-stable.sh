@@ -30,10 +30,11 @@ read_npm_bounded() {
   local name=$1 version=$2 attempt status
   for attempt in $(seq 1 "$MAX_NPM_READS"); do
     set +e; npm_state "$name" "$version"; status=$?; set -e
-    [ "$status" -ne 2 ] && return "$status"
+    [ "$status" = 0 ] && return 0
+    [ "$status" = 1 ] && return 1
     [ "$attempt" = "$MAX_NPM_READS" ] || sleep "$NPM_READ_DELAY"
   done
-  return 2
+  return "$status"
 }
 verify_tag() {
   local tag=$1 remote direct peeled sha
@@ -64,7 +65,7 @@ git config user.email 'github-actions[bot]@users.noreply.github.com'
 while IFS='|' read -r NAME MANIFEST_PATH VERSION; do
   DETAIL=$(manifest_ok "$MANIFEST_PATH" "$NAME" "$VERSION") || { STATUS=$?; [ "$STATUS" = 1 ] && fail "merged manifest identity mismatch for $NAME: $DETAIL"; fail "merged manifest execution or parse failed for $NAME"; }
   if read_npm_bounded "$NAME" "$VERSION"; then STATUS=0; else STATUS=$?; fi
-  case $STATUS in 0) ;; 1) printf '%s\n' "$NAME" >> "$WORK/missing-projects" ;; 3) fail "existing stable has divergent latest for $NAME" ;; *) fail "npm state unreadable after $MAX_NPM_READS attempts for $NAME" ;; esac
+  case $STATUS in 0) ;; 1) printf '%s\n' "$NAME" >> "$WORK/missing-projects" ;; 3) fail "permanent latest divergence for $NAME" ;; *) fail "npm state unreadable after $MAX_NPM_READS attempts for $NAME" ;; esac
   TAG="$NAME@$VERSION"
   verify_tag "$TAG" || printf '%s\n' "$TAG" >> "$WORK/missing-tags"
   verify_release "$TAG" || printf '%s\n' "$TAG" >> "$WORK/missing-releases"
@@ -80,8 +81,18 @@ MISSING_PROJECTS=$(paste -sd, "$WORK/missing-projects")
 if [ -n "$MISSING_PROJECTS" ]; then pnpm nx release publish "--projects=$MISSING_PROJECTS"; fi
 for ATTEMPT in $(seq 1 "$MAX_NPM_READS"); do
   REMAINING=0
-  while IFS='|' read -r NAME _ VERSION; do set +e; npm_state "$NAME" "$VERSION"; STATUS=$?; set -e; [ "$STATUS" = 0 ] || { [ "$STATUS" = 3 ] && fail "permanent latest divergence for $NAME"; REMAINING=$((REMAINING+1)); }; done < "$RECORDS"
+  DIVERGENT=""
+  while IFS='|' read -r NAME _ VERSION; do
+    set +e; npm_state "$NAME" "$VERSION"; STATUS=$?; set -e
+    if [ "$STATUS" != 0 ]; then
+      [ "$STATUS" = 3 ] && DIVERGENT=$NAME
+      REMAINING=$((REMAINING+1))
+    fi
+  done < "$RECORDS"
   [ "$REMAINING" = 0 ] && exit 0
-  [ "$ATTEMPT" = "$MAX_NPM_READS" ] && fail "npm did not converge: $REMAINING"
+  if [ "$ATTEMPT" = "$MAX_NPM_READS" ]; then
+    [ -n "$DIVERGENT" ] && fail "permanent latest divergence for $DIVERGENT"
+    fail "npm did not converge: $REMAINING"
+  fi
   sleep "$NPM_READ_DELAY"
 done

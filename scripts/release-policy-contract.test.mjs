@@ -569,7 +569,7 @@ const stableViolations = (source, finalizeScript = stableFinalizeScript) => {
     ["npm versions type", /typeof (?:value|vs)==="string"\|\|Array\.isArray\((?:value|vs)\)&&(?:value|vs)\.every\((?:item|x)=>typeof (?:item|x)==="string"\)/],
     ["npm latest", /npm view "\$(?:NAME|name)" dist-tags\.latest --json/],
     ["npm latest type", /typeof (?:value|latest)!=="string"/],
-    ["latest conflict", /existing stable has divergent latest/],
+    ["latest conflict", /permanent latest divergence/],
     ["tag refs", /git ls-remote --tags origin "refs\/tags\/\$(?:TAG|tag)" "refs\/tags\/\$(?:TAG|tag)\^\{\}"/],
     ["direct unique", /awk -v r="refs\/tags\/\$(?:TAG|tag)"[^\n]*n\+\+/],
     ["peeled unique", /awk -v r="refs\/tags\/\$(?:TAG|tag)\^\{\}"[^\n]*n\+\+/],
@@ -590,7 +590,7 @@ const stableViolations = (source, finalizeScript = stableFinalizeScript) => {
   const prepareBody = prepare ? `- name: PREPARE\n${prepare.source}` : ""
   const finalizeBody = finalize
     ? finalize.commands.includes("bash scripts/release-finalize-stable.sh")
-      ? `- name: FINALIZE\n  run: |\n${finalizeScript.split("\n").map((line) => `    ${line}`).join("\n")}`
+      ? `- name: FINALIZE\n  run: |\n${activeFinalize.split("\n").map((line) => `    ${line}`).join("\n")}`
       : `- name: FINALIZE\n${finalize.source}`
     : ""
   const prepareContracts = new Set([
@@ -979,6 +979,13 @@ test("protected stable PREPARE and FINALIZE reject independent safety mutations"
   const prepareArgument = mutateStep(policy.stable, "PREPARE protected stable", /"\$MANIFEST_PATH" "\$NAME"/g, '"$PATH" "$NAME"')
   assert.ok(stableViolations(prepareArgument).includes("stable PREPARE MANIFEST_PATH manifest command"))
 
+  const commentedRequiredCommand = mutate(
+    stableFinalizeScript,
+    'git push --atomic origin "${TAG_REFS[@]}"',
+    '# git push --atomic origin "${TAG_REFS[@]}"',
+  )
+  assert.notDeepEqual(stableViolations(policy.stable, commentedRequiredCommand), [], "FINALIZE commented required command")
+
   for (const [name, before, after] of [
     ["JSON parser", /JSON\.parse/g, "JSON.parseSafe"],
     ["manifest path arguments", `' "$1" "$2" "$3"`, `' "$PATH" "$2" "$3"`],
@@ -1003,7 +1010,7 @@ test("protected stable PREPARE and FINALIZE reject independent safety mutations"
     ["push master", "HEAD:refs/heads/release/stable-$SHA_PREFIX", "HEAD:refs/heads/master"],
     ["restore jq", "node -e", "jq -e"],
     ["read latest as beta", "dist-tags.latest", "dist-tags.beta"],
-    ["accept divergent latest", "existing stable has divergent latest", "existing stable accepted"],
+    ["accept divergent latest", "permanent latest divergence", "existing stable accepted"],
     ["create lightweight tag", 'git tag -a "$TAG" "$EXPECTED_SHA" -m "$TAG"', 'git tag "$TAG" "$EXPECTED_SHA"'],
     ["target tag at HEAD", 'git tag -a "$TAG" "$EXPECTED_SHA" -m "$TAG"', 'git tag -a "$TAG" HEAD -m "$TAG"'],
     ["remove atomic push", "git push --atomic origin", "git push origin"],
