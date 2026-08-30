@@ -226,7 +226,163 @@ const buildCommand = /^pnpm nx run-many -t build "--projects=\$PROJECTS" --paral
 const testCommand = /^pnpm nx run-many -t test "--projects=\$PROJECTS" --parallel=3 --passWithNoTests$/
 const contractCommand = /^node --test scripts\/release-policy-contract\.test\.mjs$/
 const releaseSubjectGuard =
-  '[[ "$HEAD_SUBJECT" == *"chore(release):"* || "$HEAD_SUBJECT" == *"[skip release]"* ]] || [ "$BETA_TRANSITIONS" -gt 0 ]'
+  'if [[ "$HEAD_SUBJECT" == *"chore(release):"* || "$HEAD_SUBJECT" == *"[skip release]"* ]] || [ "$HAS_CHANGELOG" = "true" ] || [ "$MANIFEST_CHANGES" -gt 0 ]; then'
+const stableTransitionVersionPattern = "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)-beta\\.(0|[1-9][0-9]*)$"
+
+const permissionEntries = (job) => {
+  const block = job.match(/^\s{4}permissions:\s*\n((?:\s{6}[A-Za-z-]+:\s*[^\n]+\n?)+)/m)?.[1] ?? ""
+  return Object.fromEntries(
+    [...block.matchAll(/^\s{6}([A-Za-z-]+):\s*([^\s#]+)\s*$/gm)].map(([, name, access]) => [name, access]),
+  )
+}
+
+const checkoutPersistsCredentials = (job) =>
+  extractSteps(job).some(
+    (step) => step.uses.startsWith("actions/checkout@") && !/persist-credentials:\s*false/.test(step.source),
+  )
+
+const stableCapabilityViolations = (source) => {
+  const violations = []
+  const jobs = Object.fromEntries(
+    ["validate", "prepare", "preflight", "finalize"].map((name) => [name, extractJob(source, name)]),
+  )
+  for (const [name, job] of Object.entries(jobs)) if (!job) violations.push(`stable ${name} job`)
+  if (violations.length > 0) return violations
+
+  for (const [name, expected] of [
+    ["validate", { contents: "read" }],
+    ["prepare", { contents: "write" }],
+    ["preflight", { contents: "read" }],
+    ["finalize", { contents: "write", "id-token": "write" }],
+  ]) {
+    if (JSON.stringify(permissionEntries(jobs[name])) !== JSON.stringify(expected)) {
+      violations.push(`stable ${name} least privilege`)
+    }
+    if (checkoutPersistsCredentials(jobs[name])) violations.push(`stable ${name} persisted checkout credentials`)
+  }
+
+  const validateSteps = extractSteps(jobs.validate)
+  for (const required of [contractCommand, buildCommand, testCommand]) {
+    if (!validateSteps.some((step) => step.commands.some((command) => required.test(command)))) {
+      violations.push(`stable validation ${String(required)}`)
+    }
+  }
+  if (/id-token:\s*write|contents:\s*write|NPM_TOKEN|NODE_AUTH_TOKEN|RELEASE_TOKEN/.test(jobs.validate)) {
+    violations.push("stable validation credential isolation")
+  }
+  for (const output of ["mode", "projects", "validated_sha", "expected_sha", "artifact_sha"]) {
+    if (!new RegExp(`^\\s{6}${output}:`, "m").test(jobs.validate)) violations.push(`stable validation ${output} output`)
+  }
+
+  const prepareSteps = extractSteps(jobs.prepare)
+  const prepareCredentialSteps = prepareSteps.filter((step) =>
+    /secrets\.|github\.token|GITHUB_TOKEN:|GH_TOKEN:|NODE_AUTH_TOKEN:/.test(step.source),
+  )
+  if (
+    prepareCredentialSteps.length !== 1 ||
+    !prepareCredentialSteps[0].name.includes("Push protected stable branch") ||
+    !prepareCredentialSteps[0].commands.some((command) => /^git .*push\b/.test(command))
+  ) {
+    violations.push("stable PREPARE push-only credentials")
+  }
+  if (
+    /id-token:\s*write|NODE_AUTH_TOKEN|NPM_CONFIG_PROVENANCE|nx release publish|npm publish|gh release/.test(
+      jobs.prepare,
+    )
+  ) {
+    violations.push("stable PREPARE publication isolation")
+  }
+  requireCommandOrder(
+    violations,
+    jobs.prepare,
+    [
+      /^git commit -m /,
+      /^RELEASE_SHA=\$\(git rev-parse HEAD\)$/,
+      /^PARENTS=\$\(git rev-list --parents -n 1 "\$RELEASE_SHA"\)$/,
+      /^git diff --name-only --no-renames "\$SOURCE_SHA" "\$RELEASE_SHA"/,
+      /^COMMITTED_DOCUMENT=\$\(git show "\$RELEASE_SHA:\$MANIFEST_PATH"\)$/,
+      /^test -z "\$\(git status --porcelain\)" \|\| \{ echo '::error::post-commit tree dirty'/,
+      /^test "\$\(git rev-parse origin\/master\)" = "\$SOURCE_SHA" \|\| \{ echo '::error::master moved before stable branch push'/,
+      /^git .*push origin "HEAD:refs\/heads\/\$BRANCH"/,
+    ],
+    "stable PREPARE post-commit revalidation before push",
+  )
+
+  if (
+    /contents:\s*write|id-token:\s*write|NPM_TOKEN|NODE_AUTH_TOKEN|RELEASE_TOKEN|NPM_CONFIG_PROVENANCE/.test(
+      jobs.preflight,
+    )
+  ) {
+    violations.push("stable PREFLIGHT read-only credentials")
+  }
+
+  const finalizeSteps = extractSteps(jobs.finalize)
+  const finalizeCredentialSteps = finalizeSteps.filter((step) =>
+    /secrets\.|github\.token|GITHUB_TOKEN:|GH_TOKEN:|NODE_AUTH_TOKEN:|NPM_CONFIG_PROVENANCE/.test(step.source),
+  )
+  if (
+    finalizeCredentialSteps.length !== 1 ||
+    !finalizeCredentialSteps[0].name.includes("FINALIZE exact stable artifacts")
+  ) {
+    violations.push("stable FINALIZE step-only credentials")
+  }
+  if (!/^\s{4}environment:\s*stable-release\s*$/m.test(jobs.finalize)) {
+    violations.push("stable FINALIZE protected environment")
+  }
+  if (
+    !finalizeSteps.some(
+      (step) =>
+        step.name.includes("FINALIZE exact stable artifacts") && /NPM_CONFIG_IGNORE_SCRIPTS:\s*true/.test(step.source),
+    )
+  ) {
+    violations.push("stable FINALIZE lifecycle-script environment")
+  }
+  if (
+    finalizeSteps.some((step) =>
+      step.commands.some(
+        (command) =>
+          /(?:^|\s)(?:build|test)(?:\s|$)|nx (?:run|test)|npm whoami|nx release version/.test(command) ||
+          (/^pnpm install\b/.test(command) && !/--ignore-scripts/.test(command)),
+      ),
+    )
+  ) {
+    violations.push("stable FINALIZE lifecycle isolation")
+  }
+  return violations
+}
+
+const classifyGenericStableShape = ({ changedPaths, catalog, before, after }) => {
+  let hasChangelog = false
+  let unexpected = false
+  let manifestChanges = 0
+  let betaTransitions = 0
+  const beta = new RegExp(stableTransitionVersionPattern)
+
+  for (const path of [...new Set(changedPaths)].sort()) {
+    if (path === "CHANGELOG.md") {
+      hasChangelog = true
+      continue
+    }
+    const expectedName = catalog[path]
+    if (!expectedName) {
+      unexpected = true
+      continue
+    }
+    manifestChanges += 1
+    const previous = before[path]
+    const current = after[path]
+    const match = previous?.version?.match(beta)
+    const stable = match ? `${match[1]}.${match[2]}.${match[3]}` : ""
+    if (previous?.name === expectedName && current?.name === expectedName && current?.version === stable) {
+      betaTransitions += 1
+    }
+  }
+
+  return hasChangelog && !unexpected && betaTransitions > 0 && betaTransitions === manifestChanges
+    ? "suppress"
+    : "reject"
+}
+
 const channelViolations = (channel, source) => {
   const violations = []
   const active = withoutComments(source)
@@ -299,8 +455,8 @@ const betaViolations = (source) => {
     if (!resolve.commands.includes("HEAD_SUBJECT=${HEAD_MESSAGE%%$'\\n'*}")) {
       violations.push("beta first-line release subject")
     }
-    if (!resolve.commands.includes(`if ${releaseSubjectGuard}; then`)) {
-      violations.push("beta subject-only message defense")
+    if (!resolve.commands.includes(releaseSubjectGuard)) {
+      violations.push("beta release-shaped fail-closed defense")
     }
     for (const [pattern, name] of [
       [/mode=prepare/, "prepare mode"],
@@ -314,20 +470,15 @@ const betaViolations = (source) => {
       [/\[skip release\]/, "skip message defense"],
       [/grep -Fx -- "\$project"/, "exact allowlist membership"],
       [/sort \| uniq -d/, "duplicate selection rejection"],
-      [/manual PREPARE requires all seven release projects/, "incident project set"],
     ]) {
-      if (!pattern.test(commands)) violations.push(`beta ${name}`)
+      if (name !== "beta manifest transition" && !pattern.test(commands)) violations.push(`beta ${name}`)
     }
-    for (const [project, version] of [
-      ["@effectify/react-router", "0.6.0-beta.0"],
-      ["@effectify/react-query", "1.0.0-beta.1"],
-      ["@effectify/node-better-auth", "0.5.12-beta.0"],
-      ["@effectify/solid-query", "0.5.12-beta.0"],
-      ["@effectify/react-router-better-auth", "0.5.12-beta.0"],
-      ["@effectify/prisma", "1.1.13-beta.0"],
-      ["@effectify/hatchet", "0.1.0-beta.0"],
-    ]) {
-      if (!active.includes(`${project}=${version}`)) violations.push(`beta incident ${project}`)
+    if (
+      /CORRECTIVE_|corrective solid-query|corrective beta|EXPECTED_MATRIX|version_specifier=prepatch|manual PREPARE requires all seven/.test(
+        active,
+      )
+    ) {
+      violations.push("beta completed corrective policy")
     }
   }
 
@@ -355,7 +506,6 @@ const betaViolations = (source) => {
         /^echo "::error::expected=\$\(paste -sd, \/tmp\/expected-release-paths\); actual=\$\(paste -sd, \/tmp\/staged-release-paths\)"$/,
         "safe staged-path annotation",
       ],
-      [/^'@effectify\/solid-query=0\.5\.12-beta\.0' \| sort > "\$EXPECTED_MATRIX"$/, "sorted incident matrix"],
       [exactCommand(`if ! ${terminalGates[0].command}; then`), "release commit"],
     ]) {
       if (!prepare.commands.some((command) => pattern.test(command))) violations.push(`beta PREPARE ${name}`)
@@ -463,26 +613,28 @@ const betaViolations = (source) => {
     }
   }
 
-  for (const transition of [
-    "@effectify/hatchet=0.1.0-beta.0=0.1.0|packages/hatchet/package.json",
-    "@effectify/node-better-auth=0.5.12-beta.0=0.5.12|packages/node/better-auth/package.json",
-    "@effectify/prisma=1.1.13-beta.0=1.1.13|packages/prisma/package.json",
-    "@effectify/react-query=1.0.0-beta.1=1.0.0|packages/react/query/package.json",
-    "@effectify/react-router=0.6.0-beta.0=0.6.0|packages/react/router/package.json",
-    "@effectify/react-router-better-auth=0.5.12-beta.0=0.5.12|packages/react/router-better-auth/package.json",
-    "@effectify/solid-query=0.5.13-beta.0=0.5.13|packages/solid/query/package.json",
+  if (/STABLE_TRANSITIONS|@effectify\/hatchet=0\.1\.0-beta|@effectify\/solid-query=0\.5\.13-beta/.test(active)) {
+    violations.push("beta historical stable matrix")
+  }
+  if (/\bread\s+-r\s+[^\n;]*\bPATH\b/.test(resolve?.source ?? ""))
+    violations.push("beta stable reserved PATH shadowing")
+  for (const [pattern, name] of [
+    [/jq -r ['"]?\.release\.projects\[\]['"]? nx\.json/, "release roots from nx"],
+    [/pnpm nx show project "\$RELEASE_ROOT" --json/, "release project metadata"],
+    [/git show "\$BASE:\$MANIFEST_PATH"/, "old reviewed manifest"],
+    [/git show "\$HEAD:\$MANIFEST_PATH"/, "new reviewed manifest"],
+    [/HAS_CHANGELOG=true/, "required root changelog"],
+    [/UNEXPECTED=true/, "unexpected path rejection"],
+    [
+      /STABLE_VERSION="\$\{BASH_REMATCH\[1\]\}\.\$\{BASH_REMATCH\[2\]\}\.\$\{BASH_REMATCH\[3\]\}"/,
+      "derived stable target",
+    ],
+    [/\[ "\$OLD_NAME" = "\$NEW_NAME" \] && \[ "\$NEW_VERSION" = "\$STABLE_VERSION" \]/, "same-name beta-to-stable"],
   ])
-    if (!active.includes(transition)) violations.push(`beta stable transition ${transition}`)
-  if (/\bread\s+-r\s+TRANSITION\s+PATH\b/.test(active)) violations.push("beta stable reserved PATH shadowing")
-  for (const pattern of [
-    /cmp -s "\$EXPECTED_PATHS" "\$CHANGED"/,
-    /git show "\$BASE:\$MANIFEST_PATH" \| jq -er \.name/,
-    /git show "\$BASE:\$MANIFEST_PATH" \| jq -er \.version/,
-    /jq -er \.name "\$MANIFEST_PATH"/,
-    /jq -er \.version "\$MANIFEST_PATH"/,
-    /\[ "\$OLD_NAME" = "\$NAME" \] && \[ "\$NEW_NAME" = "\$NAME" \] && \[ "\$OLD_VERSION" = "\$OLD" \] && \[ "\$NEW_VERSION" = "\$NEW" \]/,
-  ])
-    if (!pattern.test(active)) violations.push(`beta stable structural check ${String(pattern)}`)
+    if (!pattern.test(active)) violations.push(`beta stable structural check ${name}`)
+  if (!active.includes(stableTransitionVersionPattern)) {
+    violations.push("beta stable structural check no-leading-zero beta source")
+  }
   if (
     !/if \[ "\$HAS_CHANGELOG" = "true" \] && \[ "\$UNEXPECTED" = "false" \] && \[ "\$BETA_TRANSITIONS" -gt 0 \] && \[ "\$BETA_TRANSITIONS" -eq "\$MANIFEST_CHANGES" \]; then/.test(
       active,
@@ -512,62 +664,180 @@ const betaViolations = (source) => {
 }
 
 const stableViolations = (source, finalizeScript = stableFinalizeScript) => {
-  const violations = []
+  const violations = [...stableCapabilityViolations(source)]
   const active = withoutComments(source)
   const activeFinalize = withoutComments(finalizeScript)
   {
     const steps = extractSteps(source)
     const resolve = steps.find((step) => step.name.includes("Resolve exact stable mode"))
-    const freshAuthorization = steps.find((step) => step.name.includes("Fresh master authorization"))
+    const freshAuthorization = resolve
     const prepare = steps.find((step) => step.name.includes("PREPARE protected stable"))
     const preflight = steps.find((step) => step.name.includes("PREFLIGHT exact stable artifacts"))
     const finalize = steps.find((step) => step.name.includes("FINALIZE exact stable artifacts"))
     const finalizeBody = finalize?.source ?? ""
     const required = [
       ["wrapper exec", /exec node .*release-finalize-stable\.mjs/, withoutComments(stableFinalizeWrapper)],
-      ["preflight boolean input", /preflight_only:\s*\n\s*description: ["']Read-only exact-state verification[^\n]*\n\s*required: true\s*\n\s*type: boolean\s*\n\s*default: false/, active],
+      [
+        "preflight boolean input",
+        /preflight_only:\s*\n\s*description: ["']Read-only exact-state verification[^\n]*\n\s*required: true\s*\n\s*type: boolean\s*\n\s*default: false/,
+        active,
+      ],
       ["expected SHA input", /expected_sha:\s*\n\s*description:[^\n]*\n\s*required: false\s*\n\s*type: string/, active],
       ["artifact SHA input", /artifact_sha:\s*\n\s*description:[^\n]*\n\s*required: false\s*\n\s*type: string/, active],
-      ["expected SHA finalizer env", /EXPECTED_SHA:\s*\$\{\{ inputs\.expected_sha \}\}/, finalizeBody],
-      ["artifact SHA finalizer env", /ARTIFACT_SHA:\s*\$\{\{ inputs\.artifact_sha \}\}/, finalizeBody],
+      [
+        "expected SHA finalizer env",
+        /EXPECTED_SHA:\s*\$\{\{ needs\.validate\.outputs\.expected_sha \}\}/,
+        finalizeBody,
+      ],
+      [
+        "artifact SHA finalizer env",
+        /ARTIFACT_SHA:\s*\$\{\{ needs\.validate\.outputs\.artifact_sha \}\}/,
+        finalizeBody,
+      ],
+      ["FINALIZE normalized selection", /PROJECTS:\s*\$\{\{ needs\.validate\.outputs\.projects \}\}/, finalizeBody],
       ["expected SHA environment", /const expectedSha = process\.env\.EXPECTED_SHA \?\? ""/, activeFinalize],
       ["artifact SHA fallback", /const artifactSha = process\.env\.ARTIFACT_SHA \|\| expectedSha/, activeFinalize],
       ["historical SHA distinction", /const historicalReplay = artifactSha !== expectedSha/, activeFinalize],
-      ["strict expected SHA", /if \(!\/\^\[0-9a-f\]\{40\}\$\/\.test\(expectedSha\)\) fail\("FINALIZE requires full lowercase expected SHA"\)/, activeFinalize],
-      ["strict artifact SHA", /if \(!\/\^\[0-9a-f\]\{40\}\$\/\.test\(artifactSha\)\) fail\("FINALIZE requires full lowercase artifact SHA"\)/, activeFinalize],
+      [
+        "strict expected SHA",
+        /if \(!\/\^\[0-9a-f\]\{40\}\$\/\.test\(expectedSha\)\) fail\("FINALIZE requires full lowercase expected SHA"\)/,
+        activeFinalize,
+      ],
+      [
+        "strict artifact SHA",
+        /if \(!\/\^\[0-9a-f\]\{40\}\$\/\.test\(artifactSha\)\) fail\("FINALIZE requires full lowercase artifact SHA"\)/,
+        activeFinalize,
+      ],
       ["fresh master", /master:refs\/remotes\/origin\/master/, activeFinalize],
-      ["HEAD execution authorization", /if \(head !== expectedSha\) fail\("HEAD does not match expected SHA"\)/, activeFinalize],
-      ["origin execution authorization", /if \(origin !== expectedSha\) fail\("origin\/master does not match expected SHA"\)/, activeFinalize],
-      ["manifest identity", /value\.name !== name \|\| value\.version !== version/, activeFinalize],
+      [
+        "HEAD execution authorization",
+        /if \(head !== expectedSha\) fail\("HEAD does not match expected SHA"\)/,
+        activeFinalize,
+      ],
+      [
+        "origin execution authorization",
+        /if \(origin !== expectedSha\) fail\("origin\/master does not match expected SHA"\)/,
+        activeFinalize,
+      ],
+      [
+        "requested projects environment",
+        /const requestedProjectsText = process\.env\.PROJECTS \?\? ""/,
+        activeFinalize,
+      ],
+      ["artifact nx release roots", /artifactJson\("nx\.json"/, activeFinalize],
+      ["artifact project identity", /artifactJson\(`\$\{root\}\/project\.json`/, activeFinalize],
+      ["artifact manifest identity", /artifactJson\(manifestPath/, activeFinalize],
+      [
+        "single-parent or exact two-parent artifact",
+        /if \(parents\.length === 1\) return[\s\S]*if \(parents\.length !== 2\) fail\("reviewed artifact must be a single-parent commit or exact two-parent merge"\)/,
+        activeFinalize,
+      ],
+      [
+        "merge second parent based directly on first parent",
+        /generatedParents\.length !== 1 \|\| generatedParents\[0\] !== firstParent/,
+        activeFinalize,
+      ],
+      [
+        "merge tree equals generated second parent",
+        /\["rev-parse", `\$\{generatedParent\}\^\{tree\}`, `\$\{artifactSha\}\^\{tree\}`\][\s\S]*treeIds\[0\] !== treeIds\[1\]/,
+        activeFinalize,
+      ],
+      [
+        "first-parent reviewed diff",
+        /\["diff", "--name-only", "--no-renames", `\$\{artifactSha\}\^1`, artifactSha\]/,
+        activeFinalize,
+      ],
+      ["strict beta source", /previous\.version\.match\(\/\^.*-beta\\\./, activeFinalize],
+      [
+        "derived stable target",
+        /const stableVersion = match \? `\$\{match\[1\]\}\.\$\{match\[2\]\}\.\$\{match\[3\]\}`/,
+        activeFinalize,
+      ],
+      [
+        "reviewed selection equality",
+        /requested projects do not exactly match reviewed manifest changes/,
+        activeFinalize,
+      ],
+      ["GitHub Actions FINALIZE boundary", /process\.env\.GITHUB_ACTIONS !== "true"/, activeFinalize],
       ["bounded npm reads", /const maxReads = 6\b/, activeFinalize],
       ["post-publish absence retries", /acceptAbsent && state\.kind === "absent"/, activeFinalize],
-      ["local annotated tag inspection", /async function localTagState[\s\S]*objecttype[\s\S]*\^tag\\t/, activeFinalize],
-      ["independent npm documents", /const versionsDoc[\s\S]*const latestDoc/, activeFinalize],
-      ["strict tag parse", /direct\.length === 1 && peeled\.length === 1 && peeled\[0\] === artifactSha/, activeFinalize],
+      [
+        "local annotated tag inspection",
+        /async function localTagState[\s\S]*objecttype[\s\S]*\^tag\\t/,
+        activeFinalize,
+      ],
+      ["independent npm documents", /const versionsDoc[\s\S]*const tagsDoc/, activeFinalize],
+      [
+        "strict tag parse",
+        /direct\.length === 1 && peeled\.length === 1 && peeled\[0\] === artifactSha/,
+        activeFinalize,
+      ],
       ["local artifact tag target", /match && match\[1\] === artifactSha/, activeFinalize],
       ["HTTP 404 absence", /result\.status === 404/, activeFinalize],
       ["unknown Release fail closed", /result\.status !== 200/, activeFinalize],
       ["annotated artifact tag", /\["tag", "-a", tag, artifactSha, "-m", tag\]/, activeFinalize],
       ["atomic explicit push", /\["push", "--atomic", "origin", \.\.\.refs\]/, activeFinalize],
-      ["release exact postverification", /releaseState\(`\$\{item\.name\}@\$\{item\.version\}`\)\)\.kind !== "exact"/, activeFinalize],
-      ["missing npm subset", /states\.filter\(\(x\) => x\.npm === "absent"\)/, activeFinalize],
-      ["default publication", /\["nx", "release", "publish", `--projects=\$\{missing\.join\(","\)\}`\]/, activeFinalize],
-      ["historical all-existing guard", /if \(historicalReplay\) \{[\s\S]*item\.tag !== "exact" \|\| item\.release !== "exact" \|\| item\.npm !== "exact"[\s\S]*historical replay requires exact existing tag, GitHub Release, and npm latest/, activeFinalize],
-      ["preflight both SHAs", /JSON\.stringify\(\{ ok: true, expectedSha, artifactSha, states \}\)/, activeFinalize],
-      ["preflight return", /if \(preflight\) \{[\s\S]*return \}/, activeFinalize],
-      ["PREPARE Node JSON type validation", /JSON\.parse\(/, active],
-      ["PREPARE manifest object type", /!value\|\|typeof value!=="object"\|\|Array\.isArray\(value\)/, active],
-      ["PREPARE manifest name type", /typeof value\.name!=="string"/, active],
-      ["PREPARE manifest version type", /typeof value\.version!=="string"/, active],
+      [
+        "release exact postverification",
+        /releaseState\(`\$\{item\.name\}@\$\{item\.version\}`\)\)\.kind !== "exact"/,
+        activeFinalize,
+      ],
+      [
+        "missing npm subset",
+        /states\.filter\(\((?:state|item)\) => (?:state|item)\.npm === "absent"\)/,
+        activeFinalize,
+      ],
+      [
+        "default publication",
+        /\["nx", "release", "publish", `--projects=\$\{missing\.join\(","\)\}`\]/,
+        activeFinalize,
+      ],
+      [
+        "publish lifecycle-script environment",
+        /env:\s*\{\s*\.\.\.process\.env,\s*NPM_CONFIG_IGNORE_SCRIPTS:\s*"true"\s*\}/,
+        activeFinalize,
+      ],
+      [
+        "historical all-existing guard",
+        /if \(historicalReplay\) \{[\s\S]*item\.tag !== "exact" \|\| item\.release !== "exact" \|\| item\.npm !== "exact"[\s\S]*historical replay requires exact existing tag, GitHub Release, and npm latest/,
+        activeFinalize,
+      ],
+      [
+        "preflight reviewed selection",
+        /JSON\.stringify\(\{ ok: true, expectedSha, artifactSha, projects, states \}\)/,
+        activeFinalize,
+      ],
+      ["preflight return", /if \(historicalReplay \|\| preflight\) return/, activeFinalize],
+      ["selection release roots from nx", /jq -r ['"]?\.release\.projects\[\]['"]? nx\.json/, active],
+      ["selection project metadata", /pnpm nx show project "\$RELEASE_ROOT" --json/, active],
+      ["selection exact allowlist", /grep -Fx -- "\$project"/, active],
+      ["selection duplicate rejection", /sort \| uniq -d/, active],
+      ["PREPARE derived manifest", /MANIFEST_PATH="\$ROOT\/package\.json"/, active],
+      ["PREPARE strict beta source", /-beta\\\.\(0\|\[1-9\]\[0-9\]\*\)\$/, active],
+      [
+        "PREPARE derived stable target",
+        /NEW="\$\{BASH_REMATCH\[1\]\}\.\$\{BASH_REMATCH\[2\]\}\.\$\{BASH_REMATCH\[3\]\}"/,
+        active,
+      ],
       ["PREPARE exact SHA", /\[\[ "\$EXPECTED_SHA" =~ \^\[0-9a-f\]\{40\}\$ \]\]/, active],
       ["PREPARE Nx flags", /--git-commit=false --git-tag=false --git-push=false --stage-changes=false/, active],
       ["PREPARE expected path equality", /cmp -s "\$EXPECTED_PATHS" "\$ACTUAL"/, active],
       ["PREPARE exact staging", /git add --pathspec-from-file="\$EXPECTED_PATHS"/, active],
-      ["PREPARE staged path equality", /cmp -s "\$EXPECTED_PATHS" \/tmp\/stable-staged/, active],
-      ["PREPARE release branch", /HEAD:refs\/heads\/release\/stable-\$SHA_PREFIX/, active],
-      ["read-only PREFLIGHT summary", /PREFLIGHT is read-only exact-state verification; it does not tag, push, create Releases, or publish\./, active],
+      ["PREPARE staged path equality", /cmp -s "\$EXPECTED_PATHS" "\$STAGED_PATHS"/, active],
+      ["PREPARE release branch", /BRANCH="release\/stable-\$SHA_PREFIX"/, active],
+      [
+        "read-only PREFLIGHT summary",
+        /PREFLIGHT is read-only exact-state verification; it does not tag, push, create Releases, or publish\./,
+        active,
+      ],
     ]
     for (const [name, pattern, body] of required) if (!pattern.test(body)) violations.push(`stable ${name}`)
+    if (!active.includes(stableTransitionVersionPattern)) {
+      violations.push("stable PREPARE no-leading-zero beta source")
+    }
+    if (!activeFinalize.includes(stableTransitionVersionPattern)) {
+      violations.push("stable FINALIZE no-leading-zero beta source")
+    }
 
     if (!resolve) {
       violations.push("stable mode resolver")
@@ -588,10 +858,18 @@ const stableViolations = (source, finalizeScript = stableFinalizeScript) => {
       if (!preflightBranch) {
         violations.push("stable PREFLIGHT mode branch")
       } else {
-        if (!/\[\[ "\$EXPECTED_SHA" =~ \^\[0-9a-f\]\{40\}\$ \]\] \|\| \{ echo '::error::PREFLIGHT requires full lowercase expected_sha'; exit 1; \}/.test(preflightBranch)) {
+        if (
+          !/\[\[ "\$EXPECTED_SHA" =~ \^\[0-9a-f\]\{40\}\$ \]\] \|\| \{ echo '::error::PREFLIGHT requires full lowercase expected_sha'; exit 1; \}/.test(
+            preflightBranch,
+          )
+        ) {
           violations.push("stable PREFLIGHT full expected SHA")
         }
-        if (!/if \[ -n "\$ARTIFACT_SHA" \]; then \[\[ "\$ARTIFACT_SHA" =~ \^\[0-9a-f\]\{40\}\$ \]\] \|\| \{ echo '::error::PREFLIGHT requires full lowercase artifact_sha'; exit 1; \}; fi/.test(preflightBranch)) {
+        if (
+          !/if \[ -n "\$ARTIFACT_SHA" \]; then \[\[ "\$ARTIFACT_SHA" =~ \^\[0-9a-f\]\{40\}\$ \]\] \|\| \{ echo '::error::PREFLIGHT requires full lowercase artifact_sha'; exit 1; \}; fi/.test(
+            preflightBranch,
+          )
+        ) {
           violations.push("stable PREFLIGHT optional full artifact SHA")
         }
         if (!/MODE=preflight/.test(preflightBranch)) violations.push("stable PREFLIGHT mode output")
@@ -607,25 +885,38 @@ const stableViolations = (source, finalizeScript = stableFinalizeScript) => {
       violations.push("stable fresh PREFLIGHT and FINALIZE expected SHA authorization")
     }
 
-    if (!prepare || prepare.condition !== "${{ steps.release.outputs.mode == 'prepare' }}") {
+    if (
+      !prepare ||
+      !/^\s{4}if:\s*\$\{\{ needs\.validate\.outputs\.mode == 'prepare' \}\}\s*$/m.test(extractJob(source, "prepare"))
+    ) {
       violations.push("stable PREPARE-only step")
     }
-    if (!finalize || finalize.condition !== "${{ steps.release.outputs.mode == 'finalize' }}") {
+    if (
+      !finalize ||
+      !/^\s{4}if:\s*\$\{\{ needs\.validate\.outputs\.mode == 'finalize' \}\}\s*$/m.test(extractJob(source, "finalize"))
+    ) {
       violations.push("stable FINALIZE-only step")
     }
     if (!preflight) {
       violations.push("stable PREFLIGHT step")
     } else {
-      if (preflight.condition !== "${{ steps.release.outputs.mode == 'preflight' }}") {
+      if (
+        !/^\s{4}if:\s*\$\{\{ needs\.validate\.outputs\.mode == 'preflight' \}\}\s*$/m.test(
+          extractJob(source, "preflight"),
+        )
+      ) {
         violations.push("stable PREFLIGHT-only step")
       }
-      if (!/EXPECTED_SHA:\s*\$\{\{ inputs\.expected_sha \}\}/.test(preflight.source)) {
+      if (!/EXPECTED_SHA:\s*\$\{\{ needs\.validate\.outputs\.expected_sha \}\}/.test(preflight.source)) {
         violations.push("stable PREFLIGHT expected SHA environment")
       }
-      if (!/ARTIFACT_SHA:\s*\$\{\{ inputs\.artifact_sha \}\}/.test(preflight.source)) {
+      if (!/ARTIFACT_SHA:\s*\$\{\{ needs\.validate\.outputs\.artifact_sha \}\}/.test(preflight.source)) {
         violations.push("stable PREFLIGHT artifact SHA environment")
       }
-      if (!/GITHUB_TOKEN:\s*\$\{\{ secrets\.GITHUB_TOKEN \}\}/.test(preflight.source)) {
+      if (!/PROJECTS:\s*\$\{\{ needs\.validate\.outputs\.projects \}\}/.test(preflight.source)) {
+        violations.push("stable PREFLIGHT normalized selection")
+      }
+      if (!/GITHUB_TOKEN:\s*\$\{\{ github\.token \}\}/.test(preflight.source)) {
         violations.push("stable PREFLIGHT GitHub token")
       }
       if (
@@ -645,12 +936,25 @@ const stableViolations = (source, finalizeScript = stableFinalizeScript) => {
 
     const prepareBody = prepare?.source ?? ""
     if (/\bread\s+-r\s+[^\n;]*\bPATH\b/.test(prepareBody)) violations.push("stable PREPARE reserved PATH shadowing")
-    if (!/node -e '[^\n]*fs\.readFileSync\(path,"utf8"\)[^\n]*' "\$MANIFEST_PATH" "\$NAME"/.test(prepareBody)) {
-      violations.push("stable PREPARE MANIFEST_PATH manifest command")
+    if (/printf '%s\\n' '@effectify\/|0\.1\.0-beta\.0|0\.5\.13-beta\.0/.test(prepareBody)) {
+      violations.push("stable PREPARE historical records")
     }
-    if (/npm dist-tag|npm unpublish|gh release delete|git tag -f|--tag=(?:alpha|beta)/.test(activeFinalize)) violations.push("stable destructive or channel repair")
-    const order = ["const states = await inspect()", '["tag", "-a"', '["push", "--atomic"', 'github("POST"', 'releaseState(`${item.name}', '["nx", "release", "publish"', "npmBounded(item.name"].map((token) => activeFinalize.indexOf(token))
-    if (order.some((position) => position < 0) || order.some((position, index) => index > 0 && position <= order[index - 1])) violations.push("stable ordering")
+    if (/npm dist-tag|npm unpublish|gh release delete|git tag -f|--tag=(?:alpha|beta)/.test(activeFinalize))
+      violations.push("stable destructive or channel repair")
+    const order = [
+      "const states = await inspect(records)",
+      '["tag", "-a"',
+      '["push", "--atomic"',
+      'github("POST"',
+      "releaseState(`${item.name}",
+      '["nx", "release", "publish"',
+      "const state = await npmBounded(item.name",
+    ].map((token) => activeFinalize.indexOf(token))
+    if (
+      order.some((position) => position < 0) ||
+      order.some((position, index) => index > 0 && position <= order[index - 1])
+    )
+      violations.push("stable ordering")
     return violations
   }
 }
@@ -665,8 +969,75 @@ const releasePolicyBootstrapViolations = (source) => {
   return pnpmIndex !== -1 && pnpmIndex < setupNodeIndex ? [] : cacheDisabled ? [] : ["release-policy setup-node cache"]
 }
 
+const stableReleasePrGuardViolations = (source) => {
+  const violations = []
+  const job = extractJob(source, "release-policy")
+  const steps = extractSteps(job)
+  const condition =
+    "github.event_name == 'pull_request' && startsWith(github.event.pull_request.head.ref, 'release/stable-')"
+  const checkout = steps.find((step) => step.name.includes("Checkout stable release PR head"))
+  const guard = steps.find((step) => step.name.includes("Require one stable release source commit"))
+  const ordinaryCheckout = steps.find((step) => step.name === "📥 Checkout")
+
+  if (!/^\s{4}permissions:\s*\n\s{6}contents:\s*read\s*$/m.test(job)) {
+    violations.push("stable release PR read-only permissions")
+  }
+  if (!checkout || checkout.condition !== condition || !checkout.uses.startsWith("actions/checkout@")) {
+    violations.push("stable release PR head checkout")
+  } else {
+    for (const [pattern, name] of [
+      [/ref:\s*\$\{\{ github\.event\.pull_request\.head\.sha \}\}/, "exact head SHA checkout"],
+      [/fetch-depth:\s*0/, "full head history"],
+      [/persist-credentials:\s*false/, "non-persisted checkout credentials"],
+    ])
+      if (!pattern.test(checkout.source)) violations.push(`stable release PR ${name}`)
+  }
+
+  if (!guard || guard.condition !== condition) {
+    violations.push("stable release PR conditional guard")
+    return violations
+  }
+  if (!ordinaryCheckout || ordinaryCheckout.condition || !ordinaryCheckout.uses.startsWith("actions/checkout@")) {
+    violations.push("ordinary CI checkout remains unconditional")
+  } else if (
+    steps.indexOf(checkout) >= steps.indexOf(guard) ||
+    steps.indexOf(guard) >= steps.indexOf(ordinaryCheckout)
+  ) {
+    violations.push("stable release PR guard ordering")
+  }
+  for (const [pattern, name] of [
+    [/PR_HEAD_REF:\s*\$\{\{ github\.event\.pull_request\.head\.ref \}\}/, "head ref environment"],
+    [/PR_HEAD_SHA:\s*\$\{\{ github\.event\.pull_request\.head\.sha \}\}/, "head SHA environment"],
+    [/PR_BASE_SHA:\s*\$\{\{ github\.event\.pull_request\.base\.sha \}\}/, "base SHA environment"],
+  ])
+    if (!pattern.test(guard.source)) violations.push(`stable release PR ${name}`)
+
+  if (guard.commands.some((command) => command.includes("${{"))) {
+    violations.push("stable release PR shell expression interpolation")
+  }
+  const commands = guard.commands.join("\n")
+  for (const [pattern, name] of [
+    [/^\[\[ "\$PR_HEAD_REF" == release\/stable-\* \]\] \|\| /m, "head branch prefix validation"],
+    [/^\[\[ "\$PR_HEAD_SHA" =~ \^\[0-9a-f\]\{40\}\$ \]\] \|\| /m, "full head SHA validation"],
+    [/^\[\[ "\$PR_BASE_SHA" =~ \^\[0-9a-f\]\{40\}\$ \]\] \|\| /m, "full base SHA validation"],
+    [/^git fetch --no-tags --no-write-fetch-head origin "\$PR_BASE_SHA"$/m, "exact base fetch"],
+    [/^test "\$\(git rev-parse HEAD\)" = "\$PR_HEAD_SHA" \|\| /m, "checked-out head equality"],
+    [/^git cat-file -e "\$\{PR_HEAD_SHA\}\^\{commit\}"$/m, "head commit existence"],
+    [/^git cat-file -e "\$\{PR_BASE_SHA\}\^\{commit\}"$/m, "base commit existence"],
+    [/^SOURCE_COMMIT_COUNT=\$\(git rev-list --count "\$PR_BASE_SHA\.\.\$PR_HEAD_SHA"\)$/m, "base-to-head count"],
+    [/^if \[ "\$SOURCE_COMMIT_COUNT" != 1 \]; then$/m, "exactly one source commit"],
+  ])
+    if (!pattern.test(commands)) violations.push(`stable release PR ${name}`)
+
+  return violations
+}
+
 const policyViolations = ({ alpha, beta, stable, stableFinalize = stableFinalizeScript, docs }) => {
-  const violations = [...channelViolations("alpha", alpha), ...betaViolations(beta), ...stableViolations(stable, stableFinalize)]
+  const violations = [
+    ...channelViolations("alpha", alpha),
+    ...betaViolations(beta),
+    ...stableViolations(stable, stableFinalize),
+  ]
   if (!/\|\s*Beta\s*\|[^\n]*`master`[^\n]*`beta`/.test(withoutComments(docs))) {
     violations.push("documented mapping")
   }
@@ -690,16 +1061,37 @@ const mutateStep = (source, stepName, before, after) => {
   return source.replace(step.source, mutate(step.source, before, after))
 }
 
-test("dev pushes retain exact-range conditional alpha publication", () => {
-  assert.deepEqual(channelViolations("alpha", workflows.alpha), [])
+test("release policy baseline has zero violations", () => {
+  assert.deepEqual(policyViolations({ ...workflows, docs: readme }), [])
+  assert.deepEqual(stableCapabilityViolations(workflows.stable), [])
 })
 
-test("beta incident matrix canonicalization matches sorted actual output", () => {
-  const unsortedExpected = ["@effectify/react-router=0.6.0-beta.0", "@effectify/hatchet=0.1.0-beta.0"]
-  const sortedActual = [...unsortedExpected].sort()
+test("a valid Solid Query singleton reaches generic stable suppression", () => {
+  const manifest = "packages/solid/query/package.json"
+  const candidate = {
+    changedPaths: ["CHANGELOG.md", manifest],
+    catalog: { [manifest]: "@effectify/solid-query" },
+    before: { [manifest]: { name: "@effectify/solid-query", version: "0.5.13-beta.0" } },
+    after: { [manifest]: { name: "@effectify/solid-query", version: "0.5.13" } },
+  }
 
-  assert.notDeepEqual(unsortedExpected, sortedActual)
-  assert.deepEqual([...unsortedExpected].sort(), sortedActual)
+  assert.equal(classifyGenericStableShape(candidate), "suppress")
+  assert.equal(
+    classifyGenericStableShape({ ...candidate, changedPaths: [...candidate.changedPaths, "README.md"] }),
+    "reject",
+  )
+  assert.equal(
+    classifyGenericStableShape({
+      ...candidate,
+      after: { [manifest]: { name: "@effectify/solid-query", version: "0.5.14" } },
+    }),
+    "reject",
+  )
+  assert.doesNotMatch(withoutComments(workflows.beta), /CORRECTIVE_|corrective solid-query|corrective beta/)
+})
+
+test("dev pushes retain exact-range conditional alpha publication", () => {
+  assert.deepEqual(channelViolations("alpha", workflows.alpha), [])
 })
 
 test("beta release message guards classify only the first-line subject", () => {
@@ -732,6 +1124,44 @@ test("the release policy contract runs in PR CI", () => {
   assert.match(withoutComments(workflows.ci), /pull_request:/)
   requireCommand([], workflows.ci, contractCommand, "CI policy contract")
   assert.notEqual(commandPosition(workflows.ci, contractCommand), -1)
+})
+
+test("stable release PRs require exactly one source commit from actual GitHub PR SHAs", () => {
+  assert.deepEqual(stableReleasePrGuardViolations(workflows.ci), [])
+})
+
+test("the stable release PR guard rejects injection and commit-count policy drift", () => {
+  for (const [name, before, after] of [
+    ["write-capable token", "contents: read", "contents: write"],
+    [
+      "broadened branch condition",
+      "startsWith(github.event.pull_request.head.ref, 'release/stable-')",
+      "startsWith(github.event.pull_request.head.ref, 'release/')",
+    ],
+    [
+      "merge-ref checkout",
+      "ref: ${{ github.event.pull_request.head.sha }}",
+      "ref: ${{ github.event.pull_request.merge_commit_sha }}",
+    ],
+    ["shallow head checkout", "fetch-depth: 0", "fetch-depth: 1"],
+    ["persisted checkout credentials", "persist-credentials: false", "persist-credentials: true"],
+    [
+      "shell expression interpolation",
+      'SOURCE_COMMIT_COUNT=$(git rev-list --count "$PR_BASE_SHA..$PR_HEAD_SHA")',
+      'SOURCE_COMMIT_COUNT=$(git rev-list --count "${{ github.event.pull_request.base.sha }}..$PR_HEAD_SHA")',
+    ],
+    ["short head SHA", '"$PR_HEAD_SHA" =~ ^[0-9a-f]{40}$', '"$PR_HEAD_SHA" =~ ^[0-9a-f]{7,40}$'],
+    [
+      "unvalidated branch fetch",
+      'git fetch --no-tags --no-write-fetch-head origin "$PR_BASE_SHA"',
+      'git fetch --no-tags --no-write-fetch-head origin "$PR_HEAD_REF"',
+    ],
+    ["three-dot comparison", '"$PR_BASE_SHA..$PR_HEAD_SHA"', '"$PR_BASE_SHA...$PR_HEAD_SHA"'],
+    ["accept multiple source commits", '"$SOURCE_COMMIT_COUNT" != 1', '"$SOURCE_COMMIT_COUNT" -lt 1'],
+  ]) {
+    const changed = mutate(workflows.ci, before, after)
+    assert.notDeepEqual(stableReleasePrGuardViolations(changed), [], name)
+  }
 })
 
 test("the Node-only release policy job can bootstrap setup-node without pnpm", () => {
@@ -912,7 +1342,7 @@ test("protected stable PREFLIGHT rejects authorization and mutation-boundary dri
       mutateStep(
         stable,
         "Resolve exact stable mode",
-        '[[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo \'::error::PREFLIGHT requires full lowercase expected_sha\'; exit 1; }',
+        "[[ \"$EXPECTED_SHA\" =~ ^[0-9a-f]{40}$ ]] || { echo '::error::PREFLIGHT requires full lowercase expected_sha'; exit 1; }",
         ":",
       ),
     ],
@@ -939,15 +1369,15 @@ test("protected stable PREFLIGHT rejects authorization and mutation-boundary dri
       mutateStep(
         stable,
         "PREFLIGHT exact stable artifacts",
-        "GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}",
-        "GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}\n          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}",
+        "GITHUB_TOKEN: ${{ github.token }}",
+        "GITHUB_TOKEN: ${{ github.token }}\n          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}",
       ),
     ],
     [
       "skip fresh authorization for PREFLIGHT",
       mutateStep(
         stable,
-        "Fresh master authorization",
+        "Resolve exact stable mode",
         'if [ "$MODE" = preflight ] || [ "$MODE" = finalize ]; then',
         'if [ "$MODE" = finalize ]; then',
       ),
@@ -964,23 +1394,55 @@ test("protected stable PREPARE and FINALIZE reject independent safety mutations"
     ["weaken expected SHA", "if (!/^[0-9a-f]{40}$/.test(expectedSha))", "if (!/^[0-9a-f]{7,40}$/.test(expectedSha))"],
     ["weaken artifact SHA", "if (!/^[0-9a-f]{40}$/.test(artifactSha))", "if (!/^[0-9a-f]{7,40}$/.test(artifactSha))"],
     ["remove expected SHA environment", 'const expectedSha = process.env.EXPECTED_SHA ?? ""', 'const expectedSha = ""'],
-    ["remove artifact SHA environment", "const artifactSha = process.env.ARTIFACT_SHA || expectedSha", "const artifactSha = expectedSha"],
-    ["swap expected SHA validation", '.test(expectedSha)) fail("FINALIZE requires full lowercase expected SHA")', '.test(artifactSha)) fail("FINALIZE requires full lowercase expected SHA")'],
-    ["swap artifact SHA validation", '.test(artifactSha)) fail("FINALIZE requires full lowercase artifact SHA")', '.test(expectedSha)) fail("FINALIZE requires full lowercase artifact SHA")'],
+    [
+      "remove artifact SHA environment",
+      "const artifactSha = process.env.ARTIFACT_SHA || expectedSha",
+      "const artifactSha = expectedSha",
+    ],
+    [
+      "swap expected SHA validation",
+      '.test(expectedSha)) fail("FINALIZE requires full lowercase expected SHA")',
+      '.test(artifactSha)) fail("FINALIZE requires full lowercase expected SHA")',
+    ],
+    [
+      "swap artifact SHA validation",
+      '.test(artifactSha)) fail("FINALIZE requires full lowercase artifact SHA")',
+      '.test(expectedSha)) fail("FINALIZE requires full lowercase artifact SHA")',
+    ],
     ["authorize HEAD with artifact SHA", "head !== expectedSha", "head !== artifactSha"],
     ["authorize origin with artifact SHA", "origin !== expectedSha", "origin !== artifactSha"],
     ["verify remote tags with expected SHA", "peeled[0] === artifactSha", "peeled[0] === expectedSha"],
     ["verify local tags with expected SHA", "match[1] === artifactSha", "match[1] === expectedSha"],
-    ["target annotated tags at expected SHA", '["tag", "-a", tag, artifactSha, "-m", tag]', '["tag", "-a", tag, expectedSha, "-m", tag]'],
+    [
+      "target annotated tags at expected SHA",
+      '["tag", "-a", tag, artifactSha, "-m", tag]',
+      '["tag", "-a", tag, expectedSha, "-m", tag]',
+    ],
     ["remove historical all-existing guard", "if (historicalReplay) {", "if (false) {"],
     ["weaken historical npm exactness", 'item.npm !== "exact"', 'item.npm === "unknown"'],
+    ["accept octopus artifacts", "parents.length !== 2", "parents.length < 2"],
+    [
+      "accept merge second parent not based on first parent",
+      "generatedParents[0] !== firstParent",
+      "generatedParents[0] === firstParent",
+    ],
+    ["accept a differing merge tree", "treeIds[0] !== treeIds[1]", "treeIds[0] === treeIds[1]"],
     ["unbound retries", "const maxReads = 6", "const maxReads = 60"],
-    ["weaken manifest", "value.name !== name || value.version !== version", "false"],
-    ["accept duplicate tag refs", "direct.length === 1 && peeled.length === 1", "direct.length > 0 && peeled.length > 0"],
+    [
+      "remove publish lifecycle-script environment",
+      'env: { ...process.env, NPM_CONFIG_IGNORE_SCRIPTS: "true" }',
+      "env: process.env",
+    ],
+
+    [
+      "accept duplicate tag refs",
+      "direct.length === 1 && peeled.length === 1",
+      "direct.length > 0 && peeled.length > 0",
+    ],
     ["accept auth as absence", "result.status === 404", "result.status >= 400"],
     ["lightweight tags", '["tag", "-a",', '["tag",'],
     ["non-atomic push", '["push", "--atomic", "origin", ...refs]', '["push", "origin", ...refs]'],
-    ["publish all projects", 'states.filter((x) => x.npm === "absent")', "states"],
+    ["publish all projects", 'states.filter((state) => state.npm === "absent")', "states"],
   ]) {
     const changed = mutate(stableFinalizeScript, before, after)
     assert.notDeepEqual(stableViolations(policy.stable, changed), [], name)
@@ -995,19 +1457,20 @@ test("protected stable PREPARE and FINALIZE reject independent safety mutations"
   }
 
   for (const [name, before, after] of [
-    ["swap FINALIZE expected SHA env", "EXPECTED_SHA: ${{ inputs.expected_sha }}", "EXPECTED_SHA: ${{ inputs.artifact_sha }}"],
-    ["swap FINALIZE artifact SHA env", "ARTIFACT_SHA: ${{ inputs.artifact_sha }}", "ARTIFACT_SHA: ${{ inputs.expected_sha }}"],
+    [
+      "swap FINALIZE expected SHA env",
+      "EXPECTED_SHA: ${{ needs.validate.outputs.expected_sha }}",
+      "EXPECTED_SHA: ${{ needs.validate.outputs.artifact_sha }}",
+    ],
+    [
+      "swap FINALIZE artifact SHA env",
+      "ARTIFACT_SHA: ${{ needs.validate.outputs.artifact_sha }}",
+      "ARTIFACT_SHA: ${{ needs.validate.outputs.expected_sha }}",
+    ],
   ]) {
     const changed = mutateStep(policy.stable, "FINALIZE exact stable artifacts", before, after)
     assert.notDeepEqual(stableViolations(changed), [], name)
   }
-
-  const prepareJson = mutateStep(policy.stable, "PREPARE protected stable", /JSON\.parse/g, "JSON.parseSafe")
-  assert.ok(stableViolations(prepareJson).includes("stable PREPARE Node JSON type validation"))
-  const prepareShadow = mutateStep(policy.stable, "PREPARE protected stable", /read -r NAME MANIFEST_PATH/, "read -r NAME PATH")
-  assert.ok(stableViolations(prepareShadow).includes("stable PREPARE reserved PATH shadowing"))
-  const prepareArgument = mutateStep(policy.stable, "PREPARE protected stable", /"\$MANIFEST_PATH" "\$NAME"/g, '"$PATH" "$NAME"')
-  assert.ok(stableViolations(prepareArgument).includes("stable PREPARE MANIFEST_PATH manifest command"))
 
   const shortSha = mutate(policy.stable, "^[0-9a-f]{40}$", "^[0-9a-f]{7,40}$")
   assert.notDeepEqual(stableViolations(shortSha), [], "allow abbreviated PREPARE SHA")
@@ -1019,27 +1482,77 @@ test("protected stable PREPARE and FINALIZE reject independent safety mutations"
     ["enable Nx staging", "--stage-changes=false", "--stage-changes=true"],
     ["weaken path comparison", 'cmp -s "$EXPECTED_PATHS" "$ACTUAL"', 'test -s "$ACTUAL"'],
     ["stage broad tree", 'git add --pathspec-from-file="$EXPECTED_PATHS"', "git add -A"],
-    ["weaken staged paths", 'cmp -s "$EXPECTED_PATHS" /tmp/stable-staged', 'test -s /tmp/stable-staged'],
-    ["push master", "HEAD:refs/heads/release/stable-$SHA_PREFIX", "HEAD:refs/heads/master"],
+    ["weaken staged paths", 'cmp -s "$EXPECTED_PATHS" "$STAGED_PATHS"', 'test -s "$STAGED_PATHS"'],
   ]) {
     const changed = mutateStep(policy.stable, "PREPARE protected stable", before, after)
     assert.notDeepEqual(stableViolations(changed), [], name)
   }
+
+  const pushMaster = mutateStep(
+    policy.stable,
+    "Push protected stable branch",
+    'push origin "HEAD:refs/heads/$BRANCH"',
+    'push origin "HEAD:refs/heads/master"',
+  )
+  assert.notDeepEqual(stableViolations(pushMaster), [], "push master")
 })
 
-test("stable suppression rejects path, transition, and message-only mutations", () => {
-  const policy = { ...workflows, docs: readme }
+test("stable mode jobs reject capability and credential drift", () => {
   for (const [name, before, after] of [
-    ["omit changelog", "CHANGELOG.md packages/hatchet", "packages/hatchet"],
-    ["add path", "packages/solid/query/package.json | sort", "README.md packages/solid/query/package.json | sort"],
-    ["alter source", "0.1.0-beta.0=0.1.0|packages/hatchet", "0.1.0-beta.1=0.1.0|packages/hatchet"],
-    ["alter target", "1.0.0-beta.1=1.0.0|packages/react/query", "1.0.0-beta.1=1.0.1|packages/react/query"],
-    ["ignore old JSON", 'OLD_VERSION=$(git show "$BASE:$MANIFEST_PATH" | jq -er .version)', "OLD_VERSION=$OLD"],
-    ["ignore new JSON", 'NEW_VERSION=$(jq -er .version "$MANIFEST_PATH")', "NEW_VERSION=$NEW"],
-    ["restore reserved PATH loop binding", "read -r TRANSITION MANIFEST_PATH", "read -r TRANSITION PATH"],
+    [
+      "validation write permission",
+      "  validate:\n    name: 🔎 Validate stable request\n    runs-on: ubuntu-latest\n    permissions:\n      contents: read",
+      "  validate:\n    name: 🔎 Validate stable request\n    runs-on: ubuntu-latest\n    permissions:\n      contents: write",
+    ],
+    ["persist checkout credentials", "persist-credentials: false", "persist-credentials: true"],
+    ["remove protected environment", "environment: stable-release", "environment: unprotected"],
+    [
+      "enable FINALIZE lifecycle scripts",
+      "      - name: 📦 Install publication tooling without lifecycle scripts\n        run: pnpm install --frozen-lockfile --ignore-scripts",
+      "      - name: 📦 Install publication tooling without lifecycle scripts\n        run: pnpm install --frozen-lockfile",
+    ],
+    ["remove FINALIZE lifecycle-script environment", "          NPM_CONFIG_IGNORE_SCRIPTS: true\n", ""],
+    [
+      "give PREFLIGHT OIDC",
+      "  preflight:\n    name: 🔎 PREFLIGHT exact stable artifacts\n    needs: validate\n    if: ${{ needs.validate.outputs.mode == 'preflight' }}\n    runs-on: ubuntu-latest\n    permissions:\n      contents: read",
+      "  preflight:\n    name: 🔎 PREFLIGHT exact stable artifacts\n    needs: validate\n    if: ${{ needs.validate.outputs.mode == 'preflight' }}\n    runs-on: ubuntu-latest\n    permissions:\n      contents: read\n      id-token: write",
+    ],
+  ]) {
+    assert.notDeepEqual(stableViolations(mutate(workflows.stable, before, after)), [], name)
+  }
+})
+
+test("stable transition SemVer rejects leading-zero identifiers", () => {
+  const pattern = new RegExp(stableTransitionVersionPattern)
+  for (const version of ["0.0.0-beta.0", "1.2.3-beta.4", "10.20.30-beta.40"]) {
+    assert.equal(pattern.test(version), true, version)
+  }
+  for (const version of ["01.2.3-beta.4", "1.02.3-beta.4", "1.2.03-beta.4", "1.2.3-beta.04"]) {
+    assert.equal(pattern.test(version), false, version)
+  }
+})
+
+test("generic stable suppression rejects path, transition, and message-only mutations", () => {
+  const policy = { ...workflows, docs: readme }
+  const versionViolation = "beta stable structural check no-leading-zero beta source"
+  assert.equal(betaViolations(policy.beta).includes(versionViolation), false)
+  const leadingZeroMutation = mutate(
+    policy.beta,
+    stableTransitionVersionPattern,
+    "^([0-9]+)\\.([0-9]+)\\.([0-9]+)-beta\\.([0-9]+)$",
+  )
+  assert.equal(betaViolations(leadingZeroMutation).includes(versionViolation), true)
+
+  for (const [name, before, after] of [
+    ["ignore root changelog", "HAS_CHANGELOG=true", "HAS_CHANGELOG=false"],
+    ["accept extra path", "UNEXPECTED=true", "UNEXPECTED=false"],
+    ["ignore old reviewed JSON", 'git show "$BASE:$MANIFEST_PATH"', 'git show "$HEAD:$MANIFEST_PATH"'],
+    ["ignore new reviewed JSON", 'git show "$HEAD:$MANIFEST_PATH"', 'git show "$BASE:$MANIFEST_PATH"'],
+    ["allow package rename", '[ "$OLD_NAME" = "$NEW_NAME" ]', '[ -n "$NEW_NAME" ]'],
+    ["allow unrelated stable target", '[ "$NEW_VERSION" = "$STABLE_VERSION" ]', '[ -n "$NEW_VERSION" ]'],
     [
       "message authorizes suppression",
-      'if cmp -s "$EXPECTED_PATHS" "$CHANGED"; then',
+      'if [ "$HAS_CHANGELOG" = "true" ] && [ "$UNEXPECTED" = "false" ] && [ "$BETA_TRANSITIONS" -gt 0 ] && [ "$BETA_TRANSITIONS" -eq "$MANIFEST_CHANGES" ]; then',
       'if [[ "$HEAD_MESSAGE" == *"[skip release]"* ]]; then',
     ],
   ])
@@ -1049,33 +1562,71 @@ test("stable suppression rejects path, transition, and message-only mutations", 
     }))
 })
 
-test("protected stable documentation rejects authorization and recovery drift", () => {
-  for (const [name, before, after] of [
-    ["manual PR", "manually open its linked PR", "automatically open a PR"],
-    ["protected checks", "Required checks, review, and branch protection authorize merge", "PREPARE authorizes merge"],
-    [
-      "channel policy",
-      "Alpha remains prerelease-only with `--tag=alpha`; beta remains prerelease-only",
-      "Alpha and beta may use latest",
-    ],
-    ["same identity retry", "Retry only the same exact SHA and matrix", "Retry with a new SHA"],
-    ["stop conditions", "**Stop immediately**", "Continue automatically"],
-    ["forward recovery", "never delete, retarget, unpublish, deprecate, or rewrite it", "delete conflicting artifacts"],
-  ]) {
-    const changed = mutate(setup, before, after)
-    const required = [
-      "manually open its linked PR",
-      "Required checks, review, and branch protection authorize merge",
-      "Alpha remains prerelease-only with `--tag=alpha`; beta remains prerelease-only",
-      "Retry only the same exact SHA and matrix",
-      "**Stop immediately**",
-      "never delete, retarget, unpublish, deprecate, or rewrite it",
-    ]
-    assert.ok(
-      required.some((text) => !changed.includes(text)),
-      name,
-    )
-  }
+test("protected stable documentation exposes authorization and recovery boundaries", () => {
+  for (const required of [
+    "second reviewed release PR",
+    "manually open its linked PR",
+    "Required checks, review, and branch protection authorize merge",
+    "Alpha remains prerelease-only with `--tag=alpha`; beta remains prerelease-only",
+    "Retry only the same exact SHAs and selected subset",
+    "FINALIZE is refused outside GitHub Actions",
+    "PREPARE creates exactly one local commit",
+    "read-only release-policy CI guard",
+    "Extra source commits cannot pass this release PR gate",
+    "FINALIZE supports merge commits and squashes",
+    "Rebase merge is supported only for the single PREPARE commit",
+    "squash or single-commit rebase produces a one-parent artifact",
+    "exactly two parents",
+    "single generated release commit based directly on that first parent",
+    "merge tree exactly matches the second-parent tree",
+    "aggregate first-parent diff",
+    "strict one-parent and exact two-parent graph validation",
+    "cannot distinguish a squash from the last commit produced by a rebase",
+    "does not infer whether preceding source commits existed",
+    "octopus merges",
+    "**Stop immediately**",
+    "never delete, retarget, unpublish, deprecate, or rewrite it",
+  ])
+    assert.match(setup, new RegExp(required.replaceAll(/[.*+?^${}()|[\]\\]/g, "\\$&")))
+
+  assert.match(
+    setup,
+    /Declared job permissions, including `contents` and `id-token`, are available job-wide; when `id-token: write` is declared, OIDC is not step-scoped\./,
+  )
+  assert.match(
+    setup,
+    /The only step-scoped credential controls are explicit secret or token environment variables on their listed API or mutation steps\./,
+  )
+  assert.match(setup, /Every checkout sets `persist-credentials: false`, so checkout credentials are not persisted\./)
+  assert.match(
+    setup,
+    /The real stable publication boundary is protected `stable-release` environment review, authorization of the reviewed SHA, and npm trusted publishing bound to the repository, workflow, environment, and OIDC claims\./,
+  )
+  assert.match(
+    setup,
+    /Action references currently use reviewed moving major tags and are not immutable; this remains a supply-chain risk unless and until repository-wide commit-SHA pinning is adopted\./,
+  )
+  assert.doesNotMatch(setup, /immutable action versions as referenced/i)
+  assert.match(setup, /`GITHUB_ACTIONS` is checked only as an accidental-use guard/)
+  assert.equal(setup.match(/GITHUB_ACTIONS/g)?.length, 1)
+
+  assert.match(
+    setup,
+    /gh pr create --base master --head "\$STABLE_BRANCH" --title "chore\(release\): promote stable" --body "Closes #\$ISSUE" --label "type:chore"/,
+  )
+  assert.match(
+    setup,
+    /EXPECTED_SHA=\$\(gh api repos\/\{owner\}\/\{repo\}\/git\/ref\/heads\/master --jq '\.object\.sha'\)/,
+  )
+  assert.match(setup, /ARTIFACT_SHA=\$\(gh pr view "\$STABLE_PR" --json mergeCommit --jq '\.mergeCommit\.oid'\)/)
+  assert.match(
+    setup,
+    /gh workflow run release-stable\.yml --ref master[\s\S]*-f preflight_only=true[\s\S]*-f expected_sha="\$EXPECTED_SHA"[\s\S]*-f artifact_sha="\$ARTIFACT_SHA"/,
+  )
+  assert.match(
+    setup,
+    /gh workflow run release-stable\.yml --ref master[\s\S]*-f publish_only=true[\s\S]*-f preflight_only=false[\s\S]*-f expected_sha="\$EXPECTED_SHA"[\s\S]*-f artifact_sha="\$ARTIFACT_SHA"/,
+  )
 })
 
 test("protected stable promotion exposes exact PREPARE and FINALIZE contracts", () => {
@@ -1088,11 +1639,13 @@ test("protected stable promotion exposes exact PREPARE and FINALIZE contracts", 
   assert.match(active, /historical replay requires exact existing tag, GitHub Release, and npm latest/)
   assert.match(active, /MODE=prepare/)
   assert.match(active, /MODE=finalize/)
+  assert.match(active, /jq -r ['"]?\.release\.projects\[\]['"]? nx\.json/)
+  assert.match(active, /pnpm nx show project "\$RELEASE_ROOT" --json/)
   assert.match(
     active,
-    /pnpm nx release version "\$NEW" "--projects=\$NAME" --git-commit=false --git-tag=false --git-push=false --stage-changes=false/,
+    /pnpm nx release version "\$NEW" "--projects=\$PROJECT" --git-commit=false --git-tag=false --git-push=false --stage-changes=false/,
   )
-  assert.match(active, /HEAD:refs\/heads\/release\/stable-\$SHA_PREFIX/)
+  assert.match(active, /push origin "HEAD:refs\/heads\/\$BRANCH"/)
   assert.match(active, /run\("git", \["push", "--atomic", "origin", \.\.\.refs\]\)/)
   assert.match(active, /github\("POST", "\/releases"/)
   assert.match(active, /run\("pnpm", \["nx", "release", "publish"/)
@@ -1102,45 +1655,26 @@ test("protected stable promotion exposes exact PREPARE and FINALIZE contracts", 
   assert.match(active, /await sleep\(delayMs\)/)
 })
 
-test("beta structurally suppresses only the exact stable matrix", () => {
+test("beta structurally suppresses arbitrary reviewed beta-to-stable subsets", () => {
   const active = withoutComments(workflows.beta)
-  for (const transition of [
-    "@effectify/hatchet=0.1.0-beta.0=0.1.0",
-    "@effectify/node-better-auth=0.5.12-beta.0=0.5.12",
-    "@effectify/prisma=1.1.13-beta.0=1.1.13",
-    "@effectify/react-query=1.0.0-beta.1=1.0.0",
-    "@effectify/react-router=0.6.0-beta.0=0.6.0",
-    "@effectify/react-router-better-auth=0.5.12-beta.0=0.5.12",
-    "@effectify/solid-query=0.5.13-beta.0=0.5.13",
-  ])
-    assert.match(active, new RegExp(transition.replaceAll("/", "\\/")))
+  assert.match(active, /jq -r ['"]?\.release\.projects\[\]['"]? nx\.json/)
+  assert.match(active, /git show "\$BASE:\$MANIFEST_PATH"/)
+  assert.match(active, /git show "\$HEAD:\$MANIFEST_PATH"/)
+  assert.match(active, /BETA_TRANSITIONS/)
+  assert.match(active, /MANIFEST_CHANGES/)
   assert.match(active, /stable promotion shape is partial, mixed, or malformed/)
+  assert.doesNotMatch(active, /STABLE_TRANSITIONS|@effectify\/hatchet=0\.1\.0-beta\.0=0\.1\.0/)
 })
 
-test("corrective solid-query beta and updated stable matrix are exact", () => {
+test("beta manual PREPARE remains dynamic without a completed corrective matrix", () => {
   const beta = withoutComments(workflows.beta)
-  const stable = withoutComments(workflows.stable)
-  assert.match(beta, /manual PREPARE requires all seven release projects or the corrective solid-query singleton/)
-  assert.match(beta, /echo "version_specifier=prepatch" >> "\$GITHUB_OUTPUT"/)
-  assert.match(beta, /pnpm nx release version \$VERSION_SPECIFIER "--projects=\$PROJECTS" --preid=beta --git-commit=false --git-tag=false --git-push=false --stage-changes=false/)
-  assert.match(beta, /0\.5\.12-beta\.0=0\.5\.13-beta\.0\|packages\/solid\/query\/package\.json/)
-  assert.match(beta, /CHANGELOG\.md packages\/solid\/query\/package\.json \| sort > "\$CORRECTIVE_PATHS"/)
-  assert.match(stable, /@effectify\/solid-query\|packages\/solid\/query\/package\.json\|0\.5\.13-beta\.0\|0\.5\.13/)
-  assert.doesNotMatch(stable, /@effectify\/solid-query\|packages\/solid\/query\/package\.json\|0\.5\.12-beta\.0\|0\.5\.12/)
-
-  for (const [name, before, after, required] of [
-    ["arbitrary singleton", 'elif [ "$SELECTED_PROJECTS" = "@effectify/solid-query" ]', 'elif [ "$SELECTED_PROJECTS" = "@effectify/react-query" ]', /SELECTED_PROJECTS" = "@effectify\/solid-query/],
-    ["prerelease specifier", "version_specifier=prepatch", "version_specifier=prerelease", /version_specifier=prepatch/],
-    ["wrong target", "CORRECTIVE_TRANSITION='@effectify/solid-query=0.5.12-beta.0=0.5.13-beta.0", "CORRECTIVE_TRANSITION='@effectify/solid-query=0.5.12-beta.0=0.5.14-beta.0", /CORRECTIVE_TRANSITION='@effectify\/solid-query=0\.5\.12-beta\.0=0\.5\.13-beta\.0/],
-    ["wrong counter", "CORRECTIVE_TRANSITION='@effectify/solid-query=0.5.12-beta.0=0.5.13-beta.0", "CORRECTIVE_TRANSITION='@effectify/solid-query=0.5.12-beta.0=0.5.13-beta.1", /CORRECTIVE_TRANSITION='@effectify\/solid-query=0\.5\.12-beta\.0=0\.5\.13-beta\.0/],
-    ["broad paths", "CHANGELOG.md packages/solid/query/package.json | sort", "CHANGELOG.md README.md packages/solid/query/package.json | sort", /CHANGELOG\.md packages\/solid\/query\/package\.json \| sort/],
-    ["message-only", 'if cmp -s "$CORRECTIVE_PATHS" "$CHANGED"; then', 'if [[ "$HEAD_MESSAGE" == *"[skip release]"* ]]; then', /cmp -s "\$CORRECTIVE_PATHS" "\$CHANGED"/],
-  ]) {
-    const mutated = mutate(beta, before, after)
-    assert.doesNotMatch(mutated, required, name)
-  }
-  const oldStable = mutate(stable, "0.5.13-beta.0|0.5.13", "0.5.12-beta.0|0.5.12")
-  assert.doesNotMatch(oldStable, /0\.5\.13-beta\.0\|0\.5\.13/)
+  assert.match(beta, /echo "version_specifier=" >> "\$GITHUB_OUTPUT"/)
+  assert.match(
+    beta,
+    /pnpm nx release version \$VERSION_SPECIFIER "--projects=\$PROJECTS" --preid=beta --git-commit=false --git-tag=false --git-push=false --stage-changes=false/,
+  )
+  assert.doesNotMatch(beta, /CORRECTIVE_|EXPECTED_MATRIX|version_specifier=prepatch|manual PREPARE requires all seven/)
+  assert.doesNotMatch(beta, /printf '%s\\n' '@effectify\/[^']+=\d+\.\d+\.\d+-beta/)
 })
 
 test("alpha and beta exact-range and membership mutations fail closed", () => {

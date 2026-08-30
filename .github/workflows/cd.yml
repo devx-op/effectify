@@ -85,12 +85,12 @@ jobs:
         run: |
           set -euo pipefail
           RELEASE_PROJECTS=$(
-            jq -r '.release.projects[]' nx.json | while read -r path; do
-              pnpm nx show project "$path" --json | jq -r '.name'
+            jq -r '.release.projects[]' nx.json | while read -r RELEASE_ROOT; do
+              pnpm nx show project "$RELEASE_ROOT" --json | jq -r '.name'
             done | jq -Rsc 'split("\n") | map(select(length > 0)) | unique'
           )
           ALL_PROJECTS=$(printf '%s' "$RELEASE_PROJECTS" | jq -r '.[]' | sort)
-          test "$(printf '%s\n' "$ALL_PROJECTS" | sed '/^$/d' | wc -l | tr -d ' ')" = "7"
+          test -n "$ALL_PROJECTS" || { echo "Nx release project allowlist is empty" >&2; exit 1; }
 
           select_requested_projects() {
             test -n "$REQUESTED_PROJECTS" || { echo "manual beta runs require explicit projects" >&2; exit 1; }
@@ -116,14 +116,7 @@ jobs:
               }
               echo "mode=finalize" >> "$GITHUB_OUTPUT"
             else
-              if cmp -s <(printf '%s\n' "$ALL_PROJECTS") <(printf '%s\n' "$SELECTED_PROJECTS"); then
-                echo "version_specifier=" >> "$GITHUB_OUTPUT"
-              elif [ "$SELECTED_PROJECTS" = "@effectify/solid-query" ]; then
-                echo "version_specifier=prepatch" >> "$GITHUB_OUTPUT"
-              else
-                echo "manual PREPARE requires all seven release projects or the corrective solid-query singleton" >&2
-                exit 1
-              fi
+              echo "version_specifier=" >> "$GITHUB_OUTPUT"
               echo "mode=prepare" >> "$GITHUB_OUTPUT"
             fi
             echo "has_projects=true" >> "$GITHUB_OUTPUT"
@@ -145,48 +138,57 @@ jobs:
             BASE="$HEAD"
           fi
 
-          EXPECTED_PATHS=$(mktemp)
-          printf '%s\n' CHANGELOG.md packages/hatchet/package.json packages/node/better-auth/package.json packages/prisma/package.json packages/react/query/package.json packages/react/router/package.json packages/react/router-better-auth/package.json packages/solid/query/package.json | sort > "$EXPECTED_PATHS"
-          STABLE_TRANSITIONS=$(mktemp)
-          printf '%s\n' \
-            '@effectify/hatchet=0.1.0-beta.0=0.1.0|packages/hatchet/package.json' \
-            '@effectify/node-better-auth=0.5.12-beta.0=0.5.12|packages/node/better-auth/package.json' \
-            '@effectify/prisma=1.1.13-beta.0=1.1.13|packages/prisma/package.json' \
-            '@effectify/react-query=1.0.0-beta.1=1.0.0|packages/react/query/package.json' \
-            '@effectify/react-router=0.6.0-beta.0=0.6.0|packages/react/router/package.json' \
-            '@effectify/react-router-better-auth=0.5.12-beta.0=0.5.12|packages/react/router-better-auth/package.json' \
-            '@effectify/solid-query=0.5.13-beta.0=0.5.13|packages/solid/query/package.json' > "$STABLE_TRANSITIONS"
           CHANGED=$(mktemp); git diff --name-only --no-renames "$BASE" "$HEAD" | sort -u > "$CHANGED"
-          CORRECTIVE_PATHS=$(mktemp)
-          printf '%s\n' CHANGELOG.md packages/solid/query/package.json | sort > "$CORRECTIVE_PATHS"
-          CORRECTIVE_TRANSITION='@effectify/solid-query=0.5.12-beta.0=0.5.13-beta.0|packages/solid/query/package.json'
-          if cmp -s "$CORRECTIVE_PATHS" "$CHANGED"; then
-            OLD_NAME=$(git show "$BASE:packages/solid/query/package.json" | jq -er .name) || exit 1
-            OLD_VERSION=$(git show "$BASE:packages/solid/query/package.json" | jq -er .version) || exit 1
-            NEW_NAME=$(jq -er .name packages/solid/query/package.json) || exit 1
-            NEW_VERSION=$(jq -er .version packages/solid/query/package.json) || exit 1
-            [ "$OLD_NAME" = "@effectify/solid-query" ] && [ "$NEW_NAME" = "@effectify/solid-query" ] && [ "$OLD_VERSION" = "0.5.12-beta.0" ] && [ "$NEW_VERSION" = "0.5.13-beta.0" ] || { echo "corrective beta shape is malformed" >&2; exit 1; }
+          RELEASE_MANIFESTS=$(mktemp)
+          jq -r '.release.projects[]' nx.json | while read -r RELEASE_ROOT; do
+            DATA=$(pnpm nx show project "$RELEASE_ROOT" --json)
+            ROOT=$(printf '%s' "$DATA" | jq -er '.root | select(type == "string" and length > 0)')
+            NAME=$(printf '%s' "$DATA" | jq -er '.name | select(type == "string" and length > 0)')
+            test "$ROOT" = "$RELEASE_ROOT" || { echo "release project root mismatch for $NAME" >&2; exit 1; }
+            printf '%s\t%s/package.json\n' "$NAME" "$ROOT"
+          done | sort -k2,2 > "$RELEASE_MANIFESTS"
+          test -s "$RELEASE_MANIFESTS" || { echo "release manifest allowlist is empty" >&2; exit 1; }
+
+          HAS_CHANGELOG=false
+          UNEXPECTED=false
+          MANIFEST_CHANGES=0
+          BETA_TRANSITIONS=0
+          while IFS= read -r CHANGED_PATH; do
+            if [ "$CHANGED_PATH" = "CHANGELOG.md" ]; then
+              HAS_CHANGELOG=true
+              continue
+            fi
+            RECORD=$(awk -F '\t' -v manifest="$CHANGED_PATH" '$2 == manifest { print; count += 1 } END { if (count != 1) exit 1 }' "$RELEASE_MANIFESTS") || {
+              UNEXPECTED=true
+              continue
+            }
+            NAME=${RECORD%%$'\t'*}
+            MANIFEST_PATH=${RECORD#*$'\t'}
+            MANIFEST_CHANGES=$((MANIFEST_CHANGES + 1))
+            if ! OLD_DOCUMENT=$(git show "$BASE:$MANIFEST_PATH") || ! NEW_DOCUMENT=$(git show "$HEAD:$MANIFEST_PATH"); then
+              continue
+            fi
+            if ! OLD_NAME=$(printf '%s' "$OLD_DOCUMENT" | jq -er '.name | select(type == "string")') ||
+               ! OLD_VERSION=$(printf '%s' "$OLD_DOCUMENT" | jq -er '.version | select(type == "string")') ||
+               ! NEW_NAME=$(printf '%s' "$NEW_DOCUMENT" | jq -er '.name | select(type == "string")') ||
+               ! NEW_VERSION=$(printf '%s' "$NEW_DOCUMENT" | jq -er '.version | select(type == "string")'); then
+              continue
+            fi
+            if [[ "$OLD_VERSION" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)-beta\.(0|[1-9][0-9]*)$ ]]; then
+              STABLE_VERSION="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.${BASH_REMATCH[3]}"
+              if [ "$OLD_NAME" = "$NAME" ] && [ "$OLD_NAME" = "$NEW_NAME" ] && [ "$NEW_VERSION" = "$STABLE_VERSION" ]; then
+                BETA_TRANSITIONS=$((BETA_TRANSITIONS + 1))
+              fi
+            fi
+          done < "$CHANGED"
+          if [ "$HAS_CHANGELOG" = "true" ] && [ "$UNEXPECTED" = "false" ] && [ "$BETA_TRANSITIONS" -gt 0 ] && [ "$BETA_TRANSITIONS" -eq "$MANIFEST_CHANGES" ]; then
             echo "mode=suppress" >> "$GITHUB_OUTPUT"; echo "has_projects=false" >> "$GITHUB_OUTPUT"; echo "projects=" >> "$GITHUB_OUTPUT"; exit 0
           fi
-          STABLE_SHAPE=false
-          if cmp -s "$EXPECTED_PATHS" "$CHANGED"; then
-            STABLE_SHAPE=true
-            while IFS='|' read -r TRANSITION MANIFEST_PATH; do
-              NAME=${TRANSITION%%=*}; REST=${TRANSITION#*=}; OLD=${REST%%=*}; NEW=${REST##*=}
-              OLD_NAME=$(git show "$BASE:$MANIFEST_PATH" | jq -er .name) || STABLE_SHAPE=false
-              OLD_VERSION=$(git show "$BASE:$MANIFEST_PATH" | jq -er .version) || STABLE_SHAPE=false
-              NEW_NAME=$(jq -er .name "$MANIFEST_PATH") || STABLE_SHAPE=false
-              NEW_VERSION=$(jq -er .version "$MANIFEST_PATH") || STABLE_SHAPE=false
-              [ "$OLD_NAME" = "$NAME" ] && [ "$NEW_NAME" = "$NAME" ] && [ "$OLD_VERSION" = "$OLD" ] && [ "$NEW_VERSION" = "$NEW" ] || STABLE_SHAPE=false
-            done < "$STABLE_TRANSITIONS"
-            if [ "$STABLE_SHAPE" = true ]; then
-              echo "mode=suppress" >> "$GITHUB_OUTPUT"; echo "has_projects=false" >> "$GITHUB_OUTPUT"; echo "projects=" >> "$GITHUB_OUTPUT"; exit 0
-            fi
-            echo "stable promotion shape is partial, mixed, or malformed" >&2; exit 1
-          fi
           HEAD_SUBJECT=${HEAD_MESSAGE%%$'\n'*}
-          if [[ "$HEAD_SUBJECT" == *"chore(release):"* || "$HEAD_SUBJECT" == *"[skip release]"* ]] || grep -Fxq CHANGELOG.md "$CHANGED"; then
-            echo "suspicious release-shaped master push; refusing preparation" >&2; exit 1
+          if [[ "$HEAD_SUBJECT" == *"chore(release):"* || "$HEAD_SUBJECT" == *"[skip release]"* ]] || [ "$HAS_CHANGELOG" = "true" ] || [ "$MANIFEST_CHANGES" -gt 0 ]; then
+            echo "stable promotion shape is partial, mixed, or malformed" >&2
+            echo "suspicious release-shaped master push; refusing preparation" >&2
+            exit 1
           fi
 
           AFFECTED_RAW=$(pnpm nx show projects --affected --base="$BASE" --head="$HEAD" --json 2>/dev/null || echo "[]")
@@ -234,7 +236,6 @@ jobs:
         env:
           PROJECTS: ${{ steps.release.outputs.projects }}
           VERSION_SPECIFIER: ${{ steps.release.outputs.version_specifier }}
-          MANUAL_PREPARE: ${{ github.event_name == 'workflow_dispatch' }}
         run: |
           set -euo pipefail
           SOURCE_SHA=$(git rev-parse HEAD)
@@ -278,27 +279,6 @@ jobs:
             done < "$RECORDS"
           }
           verify_prepared_tree
-
-          if [ "$MANUAL_PREPARE" = "true" ]; then
-            EXPECTED_MATRIX=$(mktemp)
-            if [ "$PROJECTS" = "@effectify/solid-query" ]; then
-              printf '%s\n' '@effectify/solid-query=0.5.13-beta.0' > "$EXPECTED_MATRIX"
-            else
-              printf '%s\n' \
-                '@effectify/hatchet=0.1.0-beta.0' \
-                '@effectify/node-better-auth=0.5.12-beta.0' \
-                '@effectify/prisma=1.1.13-beta.0' \
-                '@effectify/react-query=1.0.0-beta.1' \
-                '@effectify/react-router=0.6.0-beta.0' \
-                '@effectify/react-router-better-auth=0.5.12-beta.0' \
-                '@effectify/solid-query=0.5.12-beta.0' | sort > "$EXPECTED_MATRIX"
-            fi
-            ACTUAL_MATRIX=$(mktemp)
-            while IFS=$'\t' read -r project name manifest; do
-              printf '%s=%s\n' "$name" "$(jq -er '.version' "$manifest")"
-            done < "$RECORDS" | sort > "$ACTUAL_MATRIX"
-            cmp -s "$EXPECTED_MATRIX" "$ACTUAL_MATRIX" || { echo "incident package/version matrix changed" >&2; exit 1; }
-          fi
 
           pnpm nx run-many -t build "--projects=$PROJECTS" --parallel=3
           verify_prepared_tree

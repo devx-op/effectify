@@ -1,13 +1,14 @@
 name: 🚀 Release Stable
+
 on:
   workflow_dispatch:
     inputs:
       projects:
-        description: "Exact comma-separated seven-project stable matrix"
+        description: "Nonempty comma-separated subset of nx.json release projects"
         required: true
         type: string
       publish_only:
-        description: "FINALIZE the exact merged SHA"
+        description: "FINALIZE the exact reviewed merged SHA"
         required: true
         type: boolean
         default: false
@@ -17,55 +18,74 @@ on:
         type: boolean
         default: false
       expected_sha:
-        description: "Full lowercase merged master SHA; PREFLIGHT or FINALIZE only"
+        description: "Full lowercase current master SHA; PREFLIGHT or FINALIZE only"
         required: false
         type: string
       artifact_sha:
-        description: "Full lowercase publication SHA; empty uses expected_sha, and a different SHA is historical verification-only"
+        description: "Full lowercase reviewed release SHA; empty uses expected_sha"
         required: false
         type: string
         default: ""
+
 concurrency:
   group: release-stable
   cancel-in-progress: false
+
 env:
   DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/effectify"
+
 jobs:
-  release-stable:
+  validate:
+    name: 🔎 Validate stable request
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-      id-token: write
+      contents: read
+    outputs:
+      mode: ${{ steps.release.outputs.mode }}
+      projects: ${{ steps.release.outputs.projects }}
+      validated_sha: ${{ steps.release.outputs.validated_sha }}
+      expected_sha: ${{ steps.release.outputs.expected_sha }}
+      artifact_sha: ${{ steps.release.outputs.artifact_sha }}
     services:
       postgres:
         image: postgres:16-alpine
         env:
-          {
-            POSTGRES_USER: postgres,
-            POSTGRES_PASSWORD: postgres,
-            POSTGRES_DB: effectify,
-          }
-        ports: ["5432:5432"]
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: effectify
+        ports:
+          - 5432:5432
         options: >-
-          --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
-      - name: 📥 Checkout current master
+      - name: 📥 Checkout current master without credentials
         uses: actions/checkout@v5
         with:
           ref: master
           fetch-depth: 0
-          token: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
-      - uses: pnpm/action-setup@v6
-        with: { version: 10.14.0 }
-      - uses: actions/setup-node@v5
+          persist-credentials: false
+
+      - name: 📦 Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.14.0
+
+      - name: 🏗️ Setup Node.js
+        uses: actions/setup-node@v5
         with:
           node-version: "24.19.0"
           cache: pnpm
-          registry-url: https://registry.npmjs.org/
-      - run: pnpm install --frozen-lockfile
+
+      - name: 📦 Install dependencies
+        run: pnpm install --frozen-lockfile
+
       - name: 🛡️ Verify release policy contract
         run: node --test scripts/release-policy-contract.test.mjs
-      - name: 🧭 Resolve exact stable mode and matrix
+
+      - name: 🧭 Resolve exact stable mode and selection
         id: release
         env:
           REQUESTED_PROJECTS: ${{ inputs.projects }}
@@ -75,12 +95,29 @@ jobs:
           ARTIFACT_SHA: ${{ inputs.artifact_sha }}
         run: |
           set -euo pipefail
+          RELEASE_ROOTS=$(mktemp)
+          jq -r '.release.projects[]' nx.json > "$RELEASE_ROOTS"
+          test -s "$RELEASE_ROOTS" || { echo '::error::nx release project allowlist is empty'; exit 1; }
+          test -z "$(sort "$RELEASE_ROOTS" | uniq -d)" || { echo '::error::duplicate nx release root'; exit 1; }
+          ALLOWLIST=$(mktemp)
+          while IFS= read -r RELEASE_ROOT; do
+            DATA=$(pnpm nx show project "$RELEASE_ROOT" --json)
+            PROJECT=$(printf '%s' "$DATA" | jq -er '.name | select(type == "string" and length > 0)')
+            ROOT=$(printf '%s' "$DATA" | jq -er '.root | select(type == "string" and length > 0)')
+            test "$ROOT" = "$RELEASE_ROOT" || { echo "::error::release root mismatch for $PROJECT"; exit 1; }
+            printf '%s\n' "$PROJECT" >> "$ALLOWLIST"
+          done < "$RELEASE_ROOTS"
+          sort -u -o "$ALLOWLIST" "$ALLOWLIST"
+          test "$(wc -l < "$ALLOWLIST" | tr -d ' ')" = "$(wc -l < "$RELEASE_ROOTS" | tr -d ' ')" || { echo '::error::duplicate release project identity'; exit 1; }
+
           RAW=$(printf '%s' "$REQUESTED_PROJECTS" | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed '/^$/d')
-          test -n "$RAW" || { echo '::error::stable matrix is empty'; exit 1; }
+          test -n "$RAW" || { echo '::error::stable selection is empty'; exit 1; }
           test -z "$(printf '%s\n' "$RAW" | sort | uniq -d)" || { echo '::error::duplicate stable project'; exit 1; }
           SELECTED=$(printf '%s\n' "$RAW" | sort)
-          EXPECTED=$(printf '%s\n' '@effectify/hatchet' '@effectify/node-better-auth' '@effectify/prisma' '@effectify/react-query' '@effectify/react-router' '@effectify/react-router-better-auth' '@effectify/solid-query' | sort)
-          cmp -s <(printf '%s\n' "$EXPECTED") <(printf '%s\n' "$SELECTED") || { echo '::error::stable requires exact seven-project matrix'; exit 1; }
+          while IFS= read -r project; do
+            grep -Fx -- "$project" "$ALLOWLIST" >/dev/null || { echo "::error::invalid stable project: $project"; exit 1; }
+          done <<< "$SELECTED"
+
           if [ "$PREFLIGHT_ONLY" = true ] && [ "$PUBLISH_ONLY" = true ]; then
             echo '::error::preflight_only and publish_only are mutually exclusive'
             exit 1
@@ -97,14 +134,7 @@ jobs:
             test -z "$ARTIFACT_SHA" || { echo '::error::PREPARE rejects artifact_sha'; exit 1; }
             MODE=prepare
           fi
-          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
-          echo "projects=$(printf '%s' "$SELECTED" | paste -sd, -)" >> "$GITHUB_OUTPUT"
-      - name: 🔒 Fresh master authorization
-        env:
-          MODE: ${{ steps.release.outputs.mode }}
-          EXPECTED_SHA: ${{ inputs.expected_sha }}
-        run: |
-          set -euo pipefail
+
           git fetch origin master:refs/remotes/origin/master --no-tags
           HEAD_SHA=$(git rev-parse HEAD)
           REMOTE_SHA=$(git rev-parse origin/master)
@@ -112,80 +142,263 @@ jobs:
           if [ "$MODE" = preflight ] || [ "$MODE" = finalize ]; then
             test "$HEAD_SHA" = "$EXPECTED_SHA" || { echo '::error::PREFLIGHT/FINALIZE SHA mismatch'; exit 1; }
           fi
+
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+          echo "projects=$(printf '%s' "$SELECTED" | paste -sd, -)" >> "$GITHUB_OUTPUT"
+          echo "validated_sha=$HEAD_SHA" >> "$GITHUB_OUTPUT"
+          echo "expected_sha=$EXPECTED_SHA" >> "$GITHUB_OUTPUT"
+          echo "artifact_sha=${ARTIFACT_SHA:-$EXPECTED_SHA}" >> "$GITHUB_OUTPUT"
+
       - name: 🏗️ Build selected projects
-        env: { PROJECTS: "${{ steps.release.outputs.projects }}" }
+        env:
+          PROJECTS: ${{ steps.release.outputs.projects }}
         run: pnpm nx run-many -t build "--projects=$PROJECTS" --parallel=3
+
       - name: 🧪 Test selected projects
-        env: { PROJECTS: "${{ steps.release.outputs.projects }}" }
+        env:
+          PROJECTS: ${{ steps.release.outputs.projects }}
         run: pnpm nx run-many -t test "--projects=$PROJECTS" --parallel=3 --passWithNoTests
+
       - name: ✅ Verify React Router readiness
+        if: ${{ contains(format(',{0},', steps.release.outputs.projects), ',@effectify/react-router,') }}
         run: |
           pnpm nx test @effectify/react-router
           pnpm nx run @effectify/react-router-example:migration:test
           pnpm nx run @effectify/react-router-example:migration:verify
           pnpm nx run @effectify/react-router-example:migration:manifest
           pnpm nx run @effectify/react-router-example:consolidation:verify
+
+  prepare:
+    name: 🌿 PREPARE protected stable branch
+    needs: validate
+    if: ${{ needs.validate.outputs.mode == 'prepare' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      source_sha: ${{ steps.prepare.outputs.source_sha }}
+      release_sha: ${{ steps.prepare.outputs.release_sha }}
+      branch: ${{ steps.prepare.outputs.branch }}
+      versions: ${{ steps.prepare.outputs.versions }}
+      changed_paths: ${{ steps.prepare.outputs.changed_paths }}
+    steps:
+      - name: 📥 Checkout validated source without credentials
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.validate.outputs.validated_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: 📦 Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.14.0
+
+      - name: 🏗️ Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "24.19.0"
+          cache: pnpm
+
+      - name: 📦 Install protected tooling
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
       - name: 🌿 PREPARE protected stable branch
         id: prepare
-        if: ${{ steps.release.outputs.mode == 'prepare' }}
-        env: { PROJECTS: "${{ steps.release.outputs.projects }}" }
+        env:
+          PROJECTS: ${{ needs.validate.outputs.projects }}
+          VALIDATED_SHA: ${{ needs.validate.outputs.validated_sha }}
         run: |
           set -euo pipefail
-          SOURCE_SHA=$(git rev-parse HEAD); SHA_PREFIX=${SOURCE_SHA:0:12}; BRANCH="release/stable-$SHA_PREFIX"
-          git config user.name 'github-actions[bot]'; git config user.email 'github-actions[bot]@users.noreply.github.com'
-          EXPECTED_PATHS=$(mktemp); printf '%s\n' CHANGELOG.md packages/hatchet/package.json packages/node/better-auth/package.json packages/prisma/package.json packages/react/query/package.json packages/react/router/package.json packages/react/router-better-auth/package.json packages/solid/query/package.json | sort > "$EXPECTED_PATHS"
-          RECORDS=$(mktemp); printf '%s\n' '@effectify/hatchet|packages/hatchet/package.json|0.1.0-beta.0|0.1.0' '@effectify/node-better-auth|packages/node/better-auth/package.json|0.5.12-beta.0|0.5.12' '@effectify/prisma|packages/prisma/package.json|1.1.13-beta.0|1.1.13' '@effectify/react-query|packages/react/query/package.json|1.0.0-beta.1|1.0.0' '@effectify/react-router|packages/react/router/package.json|0.6.0-beta.0|0.6.0' '@effectify/react-router-better-auth|packages/react/router-better-auth/package.json|0.5.12-beta.0|0.5.12' '@effectify/solid-query|packages/solid/query/package.json|0.5.13-beta.0|0.5.13' > "$RECORDS"
-          while IFS='|' read -r NAME MANIFEST_PATH OLD NEW; do if DETAIL=$(node -e 'const fs=require("node:fs");const [path,name,version]=process.argv.slice(1);let value;try{value=JSON.parse(fs.readFileSync(path,"utf8"))}catch{process.exit(2)}if(!value||typeof value!=="object"||Array.isArray(value)||typeof value.name!=="string"||typeof value.version!=="string"||value.name!==name||value.version!==version){const actual={name:typeof value?.name==="string"?value.name:null,version:typeof value?.version==="string"?value.version:null};process.stdout.write(`actual=${JSON.stringify(actual)} expected=${JSON.stringify({name,version})}`);process.exit(1)}' "$MANIFEST_PATH" "$NAME" "$OLD"); then :; else STATUS=$?; if [ "$STATUS" = 1 ]; then echo "::error::source manifest identity mismatch for $NAME: $DETAIL"; else echo "::error::source manifest execution or parse failed for $NAME"; fi; exit 1; fi; done < "$RECORDS"
+          SOURCE_SHA=$(git rev-parse HEAD)
+          test "$SOURCE_SHA" = "$VALIDATED_SHA" || { echo '::error::PREPARE checkout differs from validated SHA'; exit 1; }
+          SHA_PREFIX=${SOURCE_SHA:0:12}
+          BRANCH="release/stable-$SHA_PREFIX"
+          git fetch origin master:refs/remotes/origin/master --no-tags
+          test "$(git rev-parse origin/master)" = "$SOURCE_SHA" || { echo '::error::validated master moved before PREPARE'; exit 1; }
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
           test -z "$(git status --porcelain)" || { echo '::error::PREPARE requires clean tree'; exit 1; }
           REFS_BEFORE=$(git for-each-ref --format='%(refname) %(objectname)' refs/heads refs/tags | sort)
-          while IFS='|' read -r NAME MANIFEST_PATH OLD NEW; do
-            pnpm nx release version "$NEW" "--projects=$NAME" --git-commit=false --git-tag=false --git-push=false --stage-changes=false
+
+          RECORDS=$(mktemp)
+          IFS=',' read -ra SELECTED <<< "$PROJECTS"
+          for PROJECT in "${SELECTED[@]}"; do
+            DATA=$(pnpm nx show project "$PROJECT" --json)
+            RESOLVED_PROJECT=$(printf '%s' "$DATA" | jq -er '.name | select(type == "string" and length > 0)')
+            ROOT=$(printf '%s' "$DATA" | jq -er '.root | select(type == "string" and length > 0)')
+            test "$RESOLVED_PROJECT" = "$PROJECT" || { echo "::error::project identity mismatch for $PROJECT"; exit 1; }
+            MANIFEST_PATH="$ROOT/package.json"
+            NAME=$(jq -er '.name | select(type == "string" and length > 0)' "$MANIFEST_PATH")
+            OLD=$(jq -er '.version | select(type == "string" and length > 0)' "$MANIFEST_PATH")
+            test "$NAME" = "$PROJECT" || { echo "::error::source manifest identity mismatch for $PROJECT"; exit 1; }
+            if [[ "$OLD" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)-beta\.(0|[1-9][0-9]*)$ ]]; then
+              NEW="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.${BASH_REMATCH[3]}"
+            else
+              echo "::error::source manifest is not X.Y.Z-beta.N for $PROJECT"
+              exit 1
+            fi
+            printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$PROJECT" "$ROOT" "$NAME" "$MANIFEST_PATH" "$OLD" "$NEW" >> "$RECORDS"
+          done
+          test "$(wc -l < "$RECORDS" | tr -d ' ')" = "${#SELECTED[@]}" || { echo '::error::stable record count mismatch'; exit 1; }
+          EXPECTED_PATHS=$(mktemp)
+          { printf '%s\n' CHANGELOG.md; cut -f4 "$RECORDS"; } | sort -u > "$EXPECTED_PATHS"
+          test "$(wc -l < "$EXPECTED_PATHS" | tr -d ' ')" = "$(( ${#SELECTED[@]} + 1 ))" || { echo '::error::stable manifest path collision'; exit 1; }
+
+          while IFS=$'\t' read -r PROJECT ROOT NAME MANIFEST_PATH OLD NEW; do
+            pnpm nx release version "$NEW" "--projects=$PROJECT" --git-commit=false --git-tag=false --git-push=false --stage-changes=false
           done < "$RECORDS"
           test "$REFS_BEFORE" = "$(git for-each-ref --format='%(refname) %(objectname)' refs/heads refs/tags | sort)" || { echo '::error::Nx moved refs'; exit 1; }
           test -z "$(git diff --cached --name-only)" || { echo '::error::Nx staged files'; exit 1; }
-          ACTUAL=$(mktemp); { git diff --name-only --no-renames HEAD; git ls-files --others --exclude-standard; } | sort -u > "$ACTUAL"
+          ACTUAL=$(mktemp)
+          { git diff --name-only --no-renames HEAD; git ls-files --others --exclude-standard; } | sort -u > "$ACTUAL"
           cmp -s "$EXPECTED_PATHS" "$ACTUAL" || { echo '::error::unexpected PREPARE paths'; diff -u "$EXPECTED_PATHS" "$ACTUAL" || true; exit 1; }
-          while IFS='|' read -r NAME MANIFEST_PATH OLD NEW; do if DETAIL=$(node -e 'const fs=require("node:fs");const [path,name,version]=process.argv.slice(1);let value;try{value=JSON.parse(fs.readFileSync(path,"utf8"))}catch{process.exit(2)}if(!value||typeof value!=="object"||Array.isArray(value)||typeof value.name!=="string"||typeof value.version!=="string"||value.name!==name||value.version!==version){const actual={name:typeof value?.name==="string"?value.name:null,version:typeof value?.version==="string"?value.version:null};process.stdout.write(`actual=${JSON.stringify(actual)} expected=${JSON.stringify({name,version})}`);process.exit(1)}' "$MANIFEST_PATH" "$NAME" "$NEW"); then :; else STATUS=$?; if [ "$STATUS" = 1 ]; then echo "::error::target manifest identity mismatch for $NAME: $DETAIL"; else echo "::error::target manifest execution or parse failed for $NAME"; fi; exit 1; fi; done < "$RECORDS"
+          while IFS=$'\t' read -r PROJECT ROOT NAME MANIFEST_PATH OLD NEW; do
+            ACTUAL_NAME=$(jq -er '.name | select(type == "string")' "$MANIFEST_PATH")
+            ACTUAL_VERSION=$(jq -er '.version | select(type == "string")' "$MANIFEST_PATH")
+            test "$ACTUAL_NAME" = "$NAME" && test "$ACTUAL_VERSION" = "$NEW" || { echo "::error::target manifest identity mismatch for $PROJECT"; exit 1; }
+          done < "$RECORDS"
+
           git add --pathspec-from-file="$EXPECTED_PATHS"
-          git diff --cached --name-only --no-renames | sort > /tmp/stable-staged
-          cmp -s "$EXPECTED_PATHS" /tmp/stable-staged || { echo '::error::staged path contamination'; exit 1; }
-          git diff --quiet; test -z "$(git ls-files --others --exclude-standard)"
+          STAGED_PATHS=$(mktemp)
+          git diff --cached --name-only --no-renames | sort -u > "$STAGED_PATHS"
+          cmp -s "$EXPECTED_PATHS" "$STAGED_PATHS" || { echo '::error::staged path contamination'; exit 1; }
+          git diff --quiet
+          test -z "$(git ls-files --others --exclude-standard)"
           git commit -m "chore(release): prepare stable from $SOURCE_SHA [skip release]" || { echo '::error::PREPARE commit failed'; exit 1; }
+
+          RELEASE_SHA=$(git rev-parse HEAD)
+          PARENTS=$(git rev-list --parents -n 1 "$RELEASE_SHA")
+          test "$PARENTS" = "$RELEASE_SHA $SOURCE_SHA" || { echo '::error::release commit must have exactly validated source as its parent'; exit 1; }
+          COMMITTED_PATHS=$(mktemp)
+          git diff --name-only --no-renames "$SOURCE_SHA" "$RELEASE_SHA" | sort -u > "$COMMITTED_PATHS"
+          cmp -s "$EXPECTED_PATHS" "$COMMITTED_PATHS" || { echo '::error::committed first-parent paths changed after commit hooks'; exit 1; }
+          while IFS=$'\t' read -r PROJECT ROOT NAME MANIFEST_PATH OLD NEW; do
+            SOURCE_DOCUMENT=$(git show "$SOURCE_SHA:$MANIFEST_PATH")
+            COMMITTED_DOCUMENT=$(git show "$RELEASE_SHA:$MANIFEST_PATH")
+            SOURCE_NAME=$(printf '%s' "$SOURCE_DOCUMENT" | jq -er '.name | select(type == "string")')
+            SOURCE_VERSION=$(printf '%s' "$SOURCE_DOCUMENT" | jq -er '.version | select(type == "string")')
+            COMMITTED_NAME=$(printf '%s' "$COMMITTED_DOCUMENT" | jq -er '.name | select(type == "string")')
+            COMMITTED_VERSION=$(printf '%s' "$COMMITTED_DOCUMENT" | jq -er '.version | select(type == "string")')
+            test "$SOURCE_NAME" = "$NAME" && test "$SOURCE_VERSION" = "$OLD" || { echo "::error::committed source identity changed for $PROJECT"; exit 1; }
+            test "$COMMITTED_NAME" = "$NAME" && test "$COMMITTED_VERSION" = "$NEW" || { echo "::error::committed target identity changed for $PROJECT"; exit 1; }
+          done < "$RECORDS"
+          git diff --quiet "$RELEASE_SHA" --
+          git diff --cached --quiet "$RELEASE_SHA" --
           test -z "$(git status --porcelain)" || { echo '::error::post-commit tree dirty'; exit 1; }
-          git push origin "HEAD:refs/heads/release/stable-$SHA_PREFIX" || { echo '::error::stable branch push failed'; exit 1; }
-          echo "source_sha=$SOURCE_SHA" >> "$GITHUB_OUTPUT"; echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"; echo "changed_paths=$(paste -sd, "$EXPECTED_PATHS")" >> "$GITHUB_OUTPUT"
+          test "$REFS_BEFORE" = "$(git for-each-ref --format='%(refname) %(objectname)' refs/heads refs/tags | sort)" || { echo '::error::release commit changed a protected ref'; exit 1; }
+          git fetch origin master:refs/remotes/origin/master --no-tags
+          test "$(git rev-parse origin/master)" = "$SOURCE_SHA" || { echo '::error::master moved before stable branch push'; exit 1; }
+
+          VERSIONS=$(while IFS=$'\t' read -r PROJECT ROOT NAME MANIFEST_PATH OLD NEW; do printf '%s=%s\n' "$NAME" "$NEW"; done < "$RECORDS" | paste -sd, -)
+          echo "source_sha=$SOURCE_SHA" >> "$GITHUB_OUTPUT"
+          echo "release_sha=$RELEASE_SHA" >> "$GITHUB_OUTPUT"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          echo "versions=$VERSIONS" >> "$GITHUB_OUTPUT"
+          echo "changed_paths=$(paste -sd, "$EXPECTED_PATHS")" >> "$GITHUB_OUTPUT"
+
+      - name: 🚚 Push protected stable branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ steps.prepare.outputs.branch }}
+        run: |
+          set -euo pipefail
+          BASIC_AUTH=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\n')
+          git -c http.https://github.com/.extraheader="AUTHORIZATION: basic $BASIC_AUTH" push origin "HEAD:refs/heads/$BRANCH"
+
+  preflight:
+    name: 🔎 PREFLIGHT exact stable artifacts
+    needs: validate
+    if: ${{ needs.validate.outputs.mode == 'preflight' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: 📥 Checkout validated master without credentials
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.validate.outputs.validated_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: 🏗️ Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "24.19.0"
+
       - name: 🔎 PREFLIGHT exact stable artifacts
-        if: ${{ steps.release.outputs.mode == 'preflight' }}
         env:
-          EXPECTED_SHA: ${{ inputs.expected_sha }}
-          ARTIFACT_SHA: ${{ inputs.artifact_sha }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PROJECTS: ${{ needs.validate.outputs.projects }}
+          EXPECTED_SHA: ${{ needs.validate.outputs.expected_sha }}
+          ARTIFACT_SHA: ${{ needs.validate.outputs.artifact_sha }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: bash scripts/release-finalize-stable.sh --preflight --json
-      - name: 🔐 Verify npm authentication for FINALIZE
-        if: ${{ steps.release.outputs.mode == 'finalize' }}
-        env: { NODE_AUTH_TOKEN: "${{ secrets.NPM_TOKEN }}" }
-        run: npm whoami
+
+  finalize:
+    name: 🚀 FINALIZE exact stable artifacts
+    needs: validate
+    if: ${{ needs.validate.outputs.mode == 'finalize' }}
+    runs-on: ubuntu-latest
+    environment: stable-release
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - name: 📥 Checkout validated master without credentials
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.validate.outputs.validated_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: 📦 Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.14.0
+
+      - name: 🏗️ Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "24.19.0"
+          cache: pnpm
+
+      - name: 📦 Install publication tooling without lifecycle scripts
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
       - name: 🚀 FINALIZE exact stable artifacts
-        if: ${{ steps.release.outputs.mode == 'finalize' }}
         env:
-          PROJECTS: ${{ steps.release.outputs.projects }}
-          EXPECTED_SHA: ${{ inputs.expected_sha }}
-          ARTIFACT_SHA: ${{ inputs.artifact_sha }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PROJECTS: ${{ needs.validate.outputs.projects }}
+          EXPECTED_SHA: ${{ needs.validate.outputs.expected_sha }}
+          ARTIFACT_SHA: ${{ needs.validate.outputs.artifact_sha }}
+          GITHUB_TOKEN: ${{ github.token }}
           NPM_CONFIG_PROVENANCE: true
+          NPM_CONFIG_IGNORE_SCRIPTS: true
         run: bash scripts/release-finalize-stable.sh
+
+  summary:
+    name: 📊 Stable summary
+    needs: [validate, prepare, preflight, finalize]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
       - name: 📊 Stable summary
-        if: always()
         env:
-          MODE: ${{ steps.release.outputs.mode || 'failed' }}
-          PROJECTS: ${{ steps.release.outputs.projects || '' }}
-          SOURCE_SHA: ${{ steps.prepare.outputs.source_sha || '' }}
-          BRANCH: ${{ steps.prepare.outputs.branch || '' }}
-          EXPECTED_SHA: ${{ inputs.expected_sha || '' }}
-          ARTIFACT_SHA: ${{ inputs.artifact_sha || inputs.expected_sha || '' }}
+          MODE: ${{ needs.validate.outputs.mode || 'failed' }}
+          PROJECTS: ${{ needs.validate.outputs.projects || '' }}
+          VERSIONS: ${{ needs.prepare.outputs.versions || '' }}
+          CHANGED_PATHS: ${{ needs.prepare.outputs.changed_paths || '' }}
+          SOURCE_SHA: ${{ needs.prepare.outputs.source_sha || '' }}
+          RELEASE_SHA: ${{ needs.prepare.outputs.release_sha || '' }}
+          BRANCH: ${{ needs.prepare.outputs.branch || '' }}
+          EXPECTED_SHA: ${{ needs.validate.outputs.expected_sha || '' }}
+          ARTIFACT_SHA: ${{ needs.validate.outputs.artifact_sha || '' }}
         run: |
           echo '## Protected stable promotion' >> "$GITHUB_STEP_SUMMARY"
-          echo "**Mode:** $MODE" >> "$GITHUB_STEP_SUMMARY"; echo "**Projects:** $PROJECTS" >> "$GITHUB_STEP_SUMMARY"
-          echo "**Source:** $SOURCE_SHA **Branch:** $BRANCH **Expected SHA:** $EXPECTED_SHA **Artifact SHA:** $ARTIFACT_SHA" >> "$GITHUB_STEP_SUMMARY"
-          echo 'PREFLIGHT is read-only exact-state verification; it does not tag, push, create Releases, or publish. PREPARE requires a manually linked type:chore PR and protected review. FINALIZE reconciles tags → non-prerelease Releases → npm latest.' >> "$GITHUB_STEP_SUMMARY"
+          echo "**Mode:** $MODE" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Projects:** $PROJECTS" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Versions:** $VERSIONS **Changed paths:** $CHANGED_PATHS" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Source:** $SOURCE_SHA **Release commit:** $RELEASE_SHA **Branch:** $BRANCH" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Expected SHA:** $EXPECTED_SHA **Artifact SHA:** $ARTIFACT_SHA" >> "$GITHUB_STEP_SUMMARY"
+          echo 'PREFLIGHT is read-only exact-state verification; it does not tag, push, create Releases, or publish. PREPARE requires a linked type:chore PR and protected review. FINALIZE reconciles tags → non-prerelease Releases → npm latest.' >> "$GITHUB_STEP_SUMMARY"
