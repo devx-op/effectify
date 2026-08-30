@@ -63,10 +63,11 @@ const makeNetworkMonitor = Effect.suspend(() => {
   const target = window
 
   return Effect.gen(function* () {
-    const latch = yield* Latch.make(true)
+    const isOnline = target.navigator.onLine
+    const latch = yield* Latch.make(isOnline)
     yield* Effect.log("Created NetworkMonitor")
 
-    const ref = yield* SubscriptionRef.make(target.navigator.onLine)
+    const ref = yield* SubscriptionRef.make(isOnline)
     const ready = yield* Deferred.make<void>()
     const changes = Stream.callback<boolean>((queue) => {
       const online = () => Queue.offerUnsafe(queue, true)

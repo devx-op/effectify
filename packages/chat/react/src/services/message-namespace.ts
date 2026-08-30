@@ -36,9 +36,7 @@ export namespace MessagesOperations {
         Stream.tap((value) => Effect.log(`Queued up ${value}`)),
         Stream.groupedWithin(25, "5 seconds"),
         Stream.tap((batch) => Effect.log(`Batching: ${batch.join(", ")}`)),
-        Stream.mapEffect((batch) => MessagesService.sendMarkAsReadBatch(Chunk.fromIterable(batch)), {
-          concurrency: "unbounded",
-        }),
+        Stream.mapEffect((batch) => MessagesService.sendMarkAsReadBatch(Chunk.fromIterable(batch))),
         Stream.runDrain,
         Effect.ignoreCause,
         runtime.runFork,

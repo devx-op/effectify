@@ -29,9 +29,9 @@ const testLayer = (latch: Latch.Latch, isOnline: boolean) => {
 }
 
 describe("NetworkMonitor", () => {
-  it("tracks browser online and offline events in its ref and latch", async () => {
+  it("starts offline and opens its ref and latch on the online event", async () => {
     const target = new EventTarget()
-    const navigator = { onLine: true }
+    const navigator = { onLine: false }
     Object.defineProperty(target, "navigator", { value: navigator })
     Object.defineProperty(globalThis, "window", {
       configurable: true,
@@ -42,15 +42,15 @@ describe("NetworkMonitor", () => {
       Effect.scoped(
         Effect.gen(function* () {
           const monitor = yield* NetworkMonitor
-          expect(yield* SubscriptionRef.get(monitor.ref)).toBe(true)
-          expect(monitor.latch.isOpen()).toBe(true)
-
-          navigator.onLine = false
-          target.dispatchEvent(new Event("offline"))
-          yield* Effect.sleep("10 millis")
-
           expect(yield* SubscriptionRef.get(monitor.ref)).toBe(false)
           expect(monitor.latch.isOpen()).toBe(false)
+
+          navigator.onLine = true
+          target.dispatchEvent(new Event("online"))
+          yield* Effect.sleep("10 millis")
+
+          expect(yield* SubscriptionRef.get(monitor.ref)).toBe(true)
+          expect(monitor.latch.isOpen()).toBe(true)
         }).pipe(Effect.provide(NetworkMonitorLive)),
       ).pipe(Effect.provide(Logger.layer([]))),
     )
