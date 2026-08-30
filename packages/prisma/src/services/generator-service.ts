@@ -11,10 +11,10 @@ import { GenerateSchemnaService } from "../schema-generator/index.js"
 import { Data } from "effect"
 
 class GeneratorError extends Data.TaggedError("GeneratorError")<{
-  message: string
+  details: string
 }> {
   override get message(): string {
-    return `Generator error: ${this.message}`
+    return `Generator error: ${this.details}`
   }
 }
 
@@ -24,7 +24,7 @@ export class GeneratorService extends Context.Service<
     readonly generate: Effect.Effect<undefined, never, GeneratorContext>
   }
 >()("GeneratorService", {
-  make: Effect.gen(function*() {
+  make: Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem
     const path = yield* Path.Path
     const renderService = yield* RenderService
@@ -32,9 +32,7 @@ export class GeneratorService extends Context.Service<
     const { render } = renderService
     const { format } = formatterService
 
-    const parseErrorImportPath = (
-      errorImportPath: string | undefined,
-    ): { path: string; className: string } | null => {
+    const parseErrorImportPath = (errorImportPath: string | undefined): { path: string; className: string } | null => {
       if (!errorImportPath) {
         return null
       }
@@ -58,26 +56,16 @@ export class GeneratorService extends Context.Service<
       return `${filePath}.${extension}`
     }
 
-    const getClientImportPath = (
-      config: GeneratorOptions["generator"]["config"],
-    ) =>
+    const getClientImportPath = (config: GeneratorOptions["generator"]["config"]) =>
       Array.isArray(config.clientImportPath)
         ? config.clientImportPath[0]
-        : config.clientImportPath ?? "@prisma/client"
+        : (config.clientImportPath ?? "@prisma/client")
 
-    const getErrorImportPath = (
-      config: GeneratorOptions["generator"]["config"],
-    ) =>
-      Array.isArray(config.errorImportPath)
-        ? config.errorImportPath[0]
-        : config.errorImportPath
+    const getErrorImportPath = (config: GeneratorOptions["generator"]["config"]) =>
+      Array.isArray(config.errorImportPath) ? config.errorImportPath[0] : config.errorImportPath
 
-    const getImportFileExtension = (
-      config: GeneratorOptions["generator"]["config"],
-    ) =>
-      Array.isArray(config.importFileExtension)
-        ? config.importFileExtension[0]
-        : config.importFileExtension ?? ""
+    const getImportFileExtension = (config: GeneratorOptions["generator"]["config"]) =>
+      Array.isArray(config.importFileExtension) ? config.importFileExtension[0] : (config.importFileExtension ?? "")
 
     const getCustomError = (
       config: GeneratorOptions["generator"]["config"],
@@ -94,23 +82,15 @@ export class GeneratorService extends Context.Service<
         if (outputDir) {
           const absoluteErrorPath = path.resolve(schemaDir, customError.path)
           const relativeToOutput = path.relative(outputDir, absoluteErrorPath)
-          const normalizedPath = relativeToOutput.startsWith(".")
-            ? relativeToOutput
-            : `./${relativeToOutput}`
-          const pathWithExtension = addExtension(
-            normalizedPath,
-            importFileExtension,
-          )
+          const normalizedPath = relativeToOutput.startsWith(".") ? relativeToOutput : `./${relativeToOutput}`
+          const pathWithExtension = addExtension(normalizedPath, importFileExtension)
           customError = { ...customError, path: pathWithExtension }
         }
       }
       return customError
     }
 
-    const getGeneratorConfig = (
-      options: GeneratorOptions,
-      schemaDir: string,
-    ) => {
+    const getGeneratorConfig = (options: GeneratorOptions, schemaDir: string) => {
       const { config } = options.generator
       const clientImportPath = getClientImportPath(config)
       const customError = getCustomError(config, options, schemaDir)
@@ -119,42 +99,30 @@ export class GeneratorService extends Context.Service<
     }
 
     const generatePrismaSchema = (outputDir: string) =>
-      Effect.gen(function*() {
+      Effect.gen(function* () {
         const content = yield* render("prisma-schema", {})
         const formatted = yield* format(content)
-        yield* fs.writeFileString(
-          path.join(outputDir, "prisma-schema.ts"),
-          formatted,
-        )
+        yield* fs.writeFileString(path.join(outputDir, "prisma-schema.ts"), formatted)
       })
 
-    const generatePrismaRepository = (
-      outputDir: string,
-      clientImportPath: string,
-    ) =>
-      Effect.gen(function*() {
+    const generatePrismaRepository = (outputDir: string, clientImportPath: string) =>
+      Effect.gen(function* () {
         const content = yield* render("prisma-repository", {
           clientImportPath,
         })
         const formatted = yield* format(content)
-        yield* fs.writeFileString(
-          path.join(outputDir, "prisma-repository.ts"),
-          formatted,
-        )
+        yield* fs.writeFileString(path.join(outputDir, "prisma-repository.ts"), formatted)
       })
 
     const generateModels = (outputDir: string, models: readonly DMMF.Model[]) =>
-      Effect.gen(function*() {
+      Effect.gen(function* () {
         yield* fs.makeDirectory(path.join(outputDir, "models"), {
           recursive: true,
         })
         for (const model of models) {
           const content = yield* render("model", { model })
           const formatted = yield* format(content)
-          yield* fs.writeFileString(
-            path.join(outputDir, "models", `${model.name}.ts`),
-            formatted,
-          )
+          yield* fs.writeFileString(path.join(outputDir, "models", `${model.name}.ts`), formatted)
         }
       })
 
@@ -164,16 +132,12 @@ export class GeneratorService extends Context.Service<
       clientImportPath: string,
       customError: { path: string; className: string } | null,
     ) =>
-      Effect.gen(function*() {
+      Effect.gen(function* () {
         const errorType = customError ? customError.className : "PrismaError"
         const rawSqlOperations = yield* render("prisma-raw-sql", { errorType })
-        const modelExports = models
-          .map((m) => `export * from "./models/${m.name}.js"`)
-          .join("\n")
+        const modelExports = models.map((m) => `export * from "./models/${m.name}.js"`).join("\n")
 
-        const templateName = customError
-          ? "index-custom-error"
-          : "index-default"
+        const templateName = customError ? "index-custom-error" : "index-default"
         const content = yield* render(templateName, {
           clientImportPath,
           customError,
@@ -187,20 +151,17 @@ export class GeneratorService extends Context.Service<
 
     const generateSchema = yield* GenerateSchemnaService
 
-    const generate = Effect.gen(function*() {
+    const generate = Effect.gen(function* () {
       const options = yield* GeneratorContext
       const models = options.dmmf.datamodel.models
       const outputDir = options.generator.output?.value
       const schemaDir = path.dirname(options.schemaPath)
 
       if (!outputDir) {
-        return yield* new GeneratorError({ message: "No output directory specified" })
+        return yield* new GeneratorError({ details: "No output directory specified" })
       }
 
-      const { clientImportPath, customError } = getGeneratorConfig(
-        options,
-        schemaDir,
-      )
+      const { clientImportPath, customError } = getGeneratorConfig(options, schemaDir)
 
       yield* fs.makeDirectory(outputDir, { recursive: true })
 
@@ -214,7 +175,8 @@ export class GeneratorService extends Context.Service<
       //   Effect.provideService(FormatterService, formatterService),
       // )
 
-      yield* generateSchema.generate(options.dmmf, schemasDir)
+      yield* generateSchema
+        .generate(options.dmmf, schemasDir)
         .pipe(
           Effect.provideService(RenderService, renderService),
           Effect.provideService(FormatterService, formatterService),
