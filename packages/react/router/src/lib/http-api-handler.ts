@@ -46,7 +46,7 @@ export const make = <Id extends string, Groups extends HttpApiGroup.Constraint>(
             path: options.pathPrefix === undefined ? "/api/docs" : "/docs",
             scalar: {
               ...options.scalar,
-              baseServerURL: new URL(request.url).origin,
+              baseServerURL: options.scalar.baseServerURL ?? new URL(request.url).origin,
             },
           })
     const Routes = Layer.merge(ApiRoutes, ScalarRoutes)

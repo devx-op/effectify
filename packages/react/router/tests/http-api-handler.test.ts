@@ -100,7 +100,9 @@ describe("React Router HTTP API handler", () => {
 
       const docs = await adapter(routeArgs("https://effectify.dev/service/docs"))
       expect(docs.status).toBe(200)
-      expect(await docs.text()).toContain('"theme":"purple"')
+      const html = await docs.text()
+      expect(html).toContain('"baseServerURL":"https://effectify.dev"')
+      expect(html).toContain('"theme":"purple"')
       expect((await adapter(routeArgs("https://effectify.dev/api/docs"))).status).toBe(404)
     } finally {
       await adapter.dispose()
@@ -127,8 +129,8 @@ describe("React Router HTTP API handler", () => {
       const docs = await withScalar(routeArgs("https://effectify.dev/api/docs"))
       expect(docs.status).toBe(200)
       const html = await docs.text()
-      expect(html).toContain('"baseServerURL":"https://effectify.dev"')
-      expect(html).not.toContain("https://configured.example")
+      expect(html).toContain('"baseServerURL":"https://configured.example"')
+      expect(html).not.toContain('"baseServerURL":"https://effectify.dev"')
       expect(html).toContain('"theme":"moon"')
     } finally {
       await Promise.all([withoutScalar.dispose(), withScalar.dispose()])
