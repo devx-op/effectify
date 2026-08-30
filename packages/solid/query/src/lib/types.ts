@@ -6,29 +6,14 @@ import type { Accessor } from "solid-js"
 // Beta release trigger - v4 compatibility
 export type QueryKey = readonly [string, Record<string, unknown>?]
 export type EffectfulError = { _tag: string }
-export type Runner<R> = () => Accessor<
-  <A, E>(span: string) => (effect: Effect.Effect<A, E, R>) => Promise<A>
->
-export type EffectfulMutationOptions<
-  TData,
-  TError extends EffectfulError,
-  TVariables,
-  R,
-> =
-  & Omit<
-    UseMutationOptions<TData, Error, TVariables>,
-    | "mutationFn"
-    | "onSuccess"
-    | "onError"
-    | "onSettled"
-    | "onMutate"
-    | "retry"
-    | "retryDelay"
-  >
-  & {
-    mutationKey: QueryKey
-    mutationFn: (variables: TVariables) => Effect.Effect<TData, TError, R>
-  }
+export type Runner<R> = () => Accessor<<A, E>(span: string) => (effect: Effect.Effect<A, E, R>) => Promise<A>>
+export type EffectfulMutationOptions<TData, TError extends EffectfulError, TVariables, R> = Omit<
+  UseMutationOptions<TData, Error, TVariables>,
+  "mutationFn" | "onSuccess" | "onError" | "onSettled" | "onMutate" | "retry" | "retryDelay"
+> & {
+  mutationKey: QueryKey
+  mutationFn: (variables: TVariables) => Effect.Effect<TData, TError, R>
+}
 
 export type EffectfulQueryFunction<
   TData,
@@ -36,33 +21,16 @@ export type EffectfulQueryFunction<
   TQueryKey extends QueryKey = QueryKey,
   R = never,
   TPageParam = never,
-> = (
-  context: QueryFunctionContext<TQueryKey, TPageParam>,
-) => Effect.Effect<TData, TError, R>
+> = (context: QueryFunctionContext<TQueryKey, TPageParam>) => Effect.Effect<TData, TError, R>
 
-export type EffectfulQueryOptions<
-  TData,
-  TError,
-  R,
-  TQueryKey extends QueryKey = QueryKey,
-  TPageParam = never,
-> =
-  & Omit<
-    UseQueryOptions<TData, Error, TData, TQueryKey>,
-    "queryKey" | "queryFn" | "retry" | "retryDelay" | "staleTime" | "gcTime"
-  >
-  & {
-    queryKey: TQueryKey
-    queryFn:
-      | EffectfulQueryFunction<TData, TError, TQueryKey, R, TPageParam>
-      | typeof skipToken
-    staleTime?: number
-    gcTime?: number
-  }
-
-export interface Subscribable<A, E = never> {
-  readonly changes: unknown
-  readonly get: () => A
+export type EffectfulQueryOptions<TData, TError, R, TQueryKey extends QueryKey = QueryKey, TPageParam = never> = Omit<
+  UseQueryOptions<TData, Error, TData, TQueryKey>,
+  "queryKey" | "queryFn" | "retry" | "retryDelay" | "staleTime" | "gcTime"
+> & {
+  queryKey: TQueryKey
+  queryFn: EffectfulQueryFunction<TData, TError, TQueryKey, R, TPageParam> | typeof skipToken
+  staleTime?: number
+  gcTime?: number
 }
 
 export interface SubscriptionOptions {
