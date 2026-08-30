@@ -32,6 +32,9 @@ jobs:
       - name: 🛡️ Verify release policy contract
         run: node --test scripts/release-policy-contract.test.mjs
 
+      - name: 🧪 Verify stable FINALIZE harness
+        run: node --test scripts/release-finalize-stable.test.mjs
+
   # Lint and format check
   lint:
     name: 🔍 Lint & Format

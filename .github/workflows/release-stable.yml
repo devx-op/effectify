@@ -143,30 +143,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_CONFIG_PROVENANCE: true
-        run: |
-          set -euo pipefail
-          git fetch origin master:refs/remotes/origin/master --no-tags
-          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"; test "$(git rev-parse origin/master)" = "$EXPECTED_SHA"
-          RECORDS=$(mktemp); printf '%s\n' '@effectify/hatchet|packages/hatchet/package.json|0.1.0' '@effectify/node-better-auth|packages/node/better-auth/package.json|0.5.12' '@effectify/prisma|packages/prisma/package.json|1.1.13' '@effectify/react-query|packages/react/query/package.json|1.0.0' '@effectify/react-router|packages/react/router/package.json|0.6.0' '@effectify/react-router-better-auth|packages/react/router-better-auth/package.json|0.5.12' '@effectify/solid-query|packages/solid/query/package.json|0.5.13' > "$RECORDS"
-          : > /tmp/missing-projects; : > /tmp/missing-tags; : > /tmp/missing-releases
-          while IFS='|' read -r NAME MANIFEST_PATH VERSION; do
-            if DETAIL=$(node -e 'const fs=require("node:fs");const [path,name,version]=process.argv.slice(1);let value;try{value=JSON.parse(fs.readFileSync(path,"utf8"))}catch{process.exit(2)}if(!value||typeof value!=="object"||Array.isArray(value)||typeof value.name!=="string"||typeof value.version!=="string"||value.name!==name||value.version!==version){const actual={name:typeof value?.name==="string"?value.name:null,version:typeof value?.version==="string"?value.version:null};process.stdout.write(`actual=${JSON.stringify(actual)} expected=${JSON.stringify({name,version})}`);process.exit(1)}' "$MANIFEST_PATH" "$NAME" "$VERSION"); then :; else STATUS=$?; if [ "$STATUS" = 1 ]; then echo "::error::merged manifest identity mismatch for $NAME: $DETAIL"; else echo "::error::merged manifest execution or parse failed for $NAME"; fi; exit 1; fi
-            TAG="$NAME@$VERSION"; VERSIONS=$(npm view "$NAME" versions --json); printf '%s' "$VERSIONS" | node -e 'const fs=require("node:fs");const value=JSON.parse(fs.readFileSync(0,"utf8"));if(!(typeof value==="string"||Array.isArray(value)&&value.every(item=>typeof item==="string")))process.exit(1)'
-            LATEST_JSON=$(npm view "$NAME" dist-tags.latest --json); LATEST=$(printf '%s' "$LATEST_JSON" | node -e 'const fs=require("node:fs");const value=JSON.parse(fs.readFileSync(0,"utf8"));if(typeof value!=="string")process.exit(1);process.stdout.write(value)')
-            if printf '%s' "$VERSIONS" | node -e 'const fs=require("node:fs");const version=process.argv[1];const value=JSON.parse(fs.readFileSync(0,"utf8"));if(!(typeof value==="string"||Array.isArray(value)&&value.every(item=>typeof item==="string")))process.exit(1);process.exit((Array.isArray(value)?value.includes(version):value===version)?0:1)' "$VERSION"; then test "$LATEST" = "$VERSION" || { echo '::error::existing stable has divergent latest'; exit 1; }; else printf '%s\n' "${NAME#@effectify/}" >> /tmp/missing-projects; fi
-            REMOTE=$(git ls-remote --tags origin "refs/tags/$TAG" "refs/tags/$TAG^{}")
-            if [ -z "$REMOTE" ]; then printf '%s\n' "$TAG" >> /tmp/missing-tags; else test "$(printf '%s\n' "$REMOTE" | grep -c $'\trefs/tags/'"$TAG"'$')" = 1; test "$(printf '%s\n' "$REMOTE" | grep -c $'\trefs/tags/'"$TAG"'\^{}$')" = 1; test "$(printf '%s\n' "$REMOTE" | awk -v r="refs/tags/$TAG^{}" '$2==r{print $1}')" = "$EXPECTED_SHA"; fi
-            set +e; RELEASE=$(gh release view "$TAG" --json tagName,isDraft,isPrerelease 2>/tmp/stable-gh-error); STATUS=$?; set -e
-            if [ "$STATUS" = 0 ]; then printf '%s' "$RELEASE" | node -e 'const fs=require("node:fs");const tag=process.argv[1];const value=JSON.parse(fs.readFileSync(0,"utf8"));if(!value||typeof value!=="object"||Array.isArray(value)||typeof value.tagName!=="string"||typeof value.isDraft!=="boolean"||typeof value.isPrerelease!=="boolean"||value.tagName!==tag||value.isDraft||value.isPrerelease)process.exit(1)' "$TAG"; elif [ "$STATUS" = 1 ] && grep -Fqi 'release not found' /tmp/stable-gh-error; then printf '%s\n' "$TAG" >> /tmp/missing-releases; else echo '::error::unknown GitHub Release state'; exit 1; fi
-          done < "$RECORDS"
-          TAG_REFS=(); while IFS= read -r TAG; do [ -n "$TAG" ] || continue; ! git show-ref --verify --quiet "refs/tags/$TAG"; git tag -a "$TAG" "$EXPECTED_SHA" -m "$TAG"; TAG_REFS+=("refs/tags/$TAG:refs/tags/$TAG"); done < /tmp/missing-tags
-          if [ ${#TAG_REFS[@]} -gt 0 ]; then git push --atomic origin "${TAG_REFS[@]}"; fi
-          while IFS= read -r TAG; do [ -n "$TAG" ] && gh release create "$TAG" --verify-tag --generate-notes; done < /tmp/missing-releases
-          MISSING=$(paste -sd, /tmp/missing-projects); if [ -n "$MISSING" ]; then PROJECTS="$MISSING"; pnpm nx release publish "--projects=$PROJECTS"; fi
-          MAX_NPM_READS=6; for ATTEMPT in $(seq 1 "$MAX_NPM_READS"); do
-            REMAINING=0; while IFS='|' read -r NAME MANIFEST_PATH VERSION; do V=$(npm view "$NAME" versions --json) || { REMAINING=$((REMAINING+1)); continue; }; L_JSON=$(npm view "$NAME" dist-tags.latest --json) || { REMAINING=$((REMAINING+1)); continue; }; L=$(printf '%s' "$L_JSON" | node -e 'const fs=require("node:fs");const value=JSON.parse(fs.readFileSync(0,"utf8"));if(typeof value!=="string")process.exit(1);process.stdout.write(value)') || { REMAINING=$((REMAINING+1)); continue; }; printf '%s' "$V" | node -e 'const fs=require("node:fs");const version=process.argv[1];const value=JSON.parse(fs.readFileSync(0,"utf8"));if(!(typeof value==="string"||Array.isArray(value)&&value.every(item=>typeof item==="string")))process.exit(1);process.exit((Array.isArray(value)?value.includes(version):value===version)?0:1)' "$VERSION" && [ "$L" = "$VERSION" ] || REMAINING=$((REMAINING+1)); done < "$RECORDS"
-            [ "$REMAINING" = 0 ] && break; [ "$ATTEMPT" = "$MAX_NPM_READS" ] && { echo "::error::npm did not converge: $REMAINING"; exit 1; }; sleep 10
-          done
+        run: bash scripts/release-finalize-stable.sh
       - name: 📊 Stable summary
         if: always()
         env:
