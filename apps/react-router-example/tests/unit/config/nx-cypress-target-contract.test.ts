@@ -118,6 +118,7 @@ describe("Nx Cypress target contract", () => {
     expect(baseline).toEqual({ module: "nodenext", moduleResolution: "nodenext" })
     expect(e2eConfig.extends).toBe("../../tsconfig.base.json")
     expect(e2eModuleOptions).toEqual(baseline)
+    expect(e2eConfig.compilerOptions?.module).toBeUndefined()
     expect(e2eConfig.compilerOptions?.moduleResolution).toBeUndefined()
 
     expect(e2eSourceConfig.extends).toBe("../tsconfig.json")
