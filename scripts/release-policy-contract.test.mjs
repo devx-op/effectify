@@ -516,23 +516,44 @@ const stableViolations = (source, finalizeScript = stableFinalizeScript) => {
   const active = withoutComments(source)
   const activeFinalize = withoutComments(finalizeScript)
   {
+    const steps = extractSteps(source)
+    const resolve = steps.find((step) => step.name.includes("Resolve exact stable mode"))
+    const freshAuthorization = steps.find((step) => step.name.includes("Fresh master authorization"))
+    const prepare = steps.find((step) => step.name.includes("PREPARE protected stable"))
+    const preflight = steps.find((step) => step.name.includes("PREFLIGHT exact stable artifacts"))
+    const finalize = steps.find((step) => step.name.includes("FINALIZE exact stable artifacts"))
+    const finalizeBody = finalize?.source ?? ""
     const required = [
       ["wrapper exec", /exec node .*release-finalize-stable\.mjs/, withoutComments(stableFinalizeWrapper)],
-      ["strict SHA", /\^\[0-9a-f\]\{40\}\$/, activeFinalize],
+      ["preflight boolean input", /preflight_only:\s*\n\s*description: ["']Read-only exact-state verification[^\n]*\n\s*required: true\s*\n\s*type: boolean\s*\n\s*default: false/, active],
+      ["expected SHA input", /expected_sha:\s*\n\s*description:[^\n]*\n\s*required: false\s*\n\s*type: string/, active],
+      ["artifact SHA input", /artifact_sha:\s*\n\s*description:[^\n]*\n\s*required: false\s*\n\s*type: string/, active],
+      ["expected SHA finalizer env", /EXPECTED_SHA:\s*\$\{\{ inputs\.expected_sha \}\}/, finalizeBody],
+      ["artifact SHA finalizer env", /ARTIFACT_SHA:\s*\$\{\{ inputs\.artifact_sha \}\}/, finalizeBody],
+      ["expected SHA environment", /const expectedSha = process\.env\.EXPECTED_SHA \?\? ""/, activeFinalize],
+      ["artifact SHA fallback", /const artifactSha = process\.env\.ARTIFACT_SHA \|\| expectedSha/, activeFinalize],
+      ["historical SHA distinction", /const historicalReplay = artifactSha !== expectedSha/, activeFinalize],
+      ["strict expected SHA", /if \(!\/\^\[0-9a-f\]\{40\}\$\/\.test\(expectedSha\)\) fail\("FINALIZE requires full lowercase expected SHA"\)/, activeFinalize],
+      ["strict artifact SHA", /if \(!\/\^\[0-9a-f\]\{40\}\$\/\.test\(artifactSha\)\) fail\("FINALIZE requires full lowercase artifact SHA"\)/, activeFinalize],
       ["fresh master", /master:refs\/remotes\/origin\/master/, activeFinalize],
+      ["HEAD execution authorization", /if \(head !== expectedSha\) fail\("HEAD does not match expected SHA"\)/, activeFinalize],
+      ["origin execution authorization", /if \(origin !== expectedSha\) fail\("origin\/master does not match expected SHA"\)/, activeFinalize],
       ["manifest identity", /value\.name !== name \|\| value\.version !== version/, activeFinalize],
       ["bounded npm reads", /const maxReads = 6\b/, activeFinalize],
       ["post-publish absence retries", /acceptAbsent && state\.kind === "absent"/, activeFinalize],
       ["local annotated tag inspection", /async function localTagState[\s\S]*objecttype[\s\S]*\^tag\\t/, activeFinalize],
       ["independent npm documents", /const versionsDoc[\s\S]*const latestDoc/, activeFinalize],
-      ["strict tag parse", /direct\.length === 1 && peeled\.length === 1 && peeled\[0\] === expectedSha/, activeFinalize],
+      ["strict tag parse", /direct\.length === 1 && peeled\.length === 1 && peeled\[0\] === artifactSha/, activeFinalize],
+      ["local artifact tag target", /match && match\[1\] === artifactSha/, activeFinalize],
       ["HTTP 404 absence", /result\.status === 404/, activeFinalize],
       ["unknown Release fail closed", /result\.status !== 200/, activeFinalize],
-      ["annotated tag", /\["tag", "-a",/, activeFinalize],
+      ["annotated artifact tag", /\["tag", "-a", tag, artifactSha, "-m", tag\]/, activeFinalize],
       ["atomic explicit push", /\["push", "--atomic", "origin", \.\.\.refs\]/, activeFinalize],
       ["release exact postverification", /releaseState\(`\$\{item\.name\}@\$\{item\.version\}`\)\)\.kind !== "exact"/, activeFinalize],
       ["missing npm subset", /states\.filter\(\(x\) => x\.npm === "absent"\)/, activeFinalize],
       ["default publication", /\["nx", "release", "publish", `--projects=\$\{missing\.join\(","\)\}`\]/, activeFinalize],
+      ["historical all-existing guard", /if \(historicalReplay\) \{[\s\S]*item\.tag !== "exact" \|\| item\.release !== "exact" \|\| item\.npm !== "exact"[\s\S]*historical replay requires exact existing tag, GitHub Release, and npm latest/, activeFinalize],
+      ["preflight both SHAs", /JSON\.stringify\(\{ ok: true, expectedSha, artifactSha, states \}\)/, activeFinalize],
       ["preflight return", /if \(preflight\) \{[\s\S]*return \}/, activeFinalize],
       ["PREPARE Node JSON type validation", /JSON\.parse\(/, active],
       ["PREPARE manifest object type", /!value\|\|typeof value!=="object"\|\|Array\.isArray\(value\)/, active],
@@ -544,9 +565,84 @@ const stableViolations = (source, finalizeScript = stableFinalizeScript) => {
       ["PREPARE exact staging", /git add --pathspec-from-file="\$EXPECTED_PATHS"/, active],
       ["PREPARE staged path equality", /cmp -s "\$EXPECTED_PATHS" \/tmp\/stable-staged/, active],
       ["PREPARE release branch", /HEAD:refs\/heads\/release\/stable-\$SHA_PREFIX/, active],
+      ["read-only PREFLIGHT summary", /PREFLIGHT is read-only exact-state verification; it does not tag, push, create Releases, or publish\./, active],
     ]
     for (const [name, pattern, body] of required) if (!pattern.test(body)) violations.push(`stable ${name}`)
-    const prepare = extractSteps(source).find((step) => step.name.includes("PREPARE protected stable"))
+
+    if (!resolve) {
+      violations.push("stable mode resolver")
+    } else {
+      const exclusivity = [
+        /^if \[ "\$PREFLIGHT_ONLY" = true \] && \[ "\$PUBLISH_ONLY" = true \]; then$/,
+        /^echo '::error::preflight_only and publish_only are mutually exclusive'$/,
+        /^exit 1$/,
+        /^elif \[ "\$PREFLIGHT_ONLY" = true \]; then$/,
+      ]
+      if (!hasCommandSequence(resolve.commands, exclusivity)) violations.push("stable PREFLIGHT/FINALIZE exclusivity")
+      if (!/PREFLIGHT_ONLY:\s*\$\{\{ inputs\.preflight_only \}\}/.test(resolve.source)) {
+        violations.push("stable PREFLIGHT boolean environment")
+      }
+      const preflightBranch = resolve.source.match(
+        /elif \[ "\$PREFLIGHT_ONLY" = true \]; then([\s\S]*?)elif \[ "\$PUBLISH_ONLY" = true \]; then/,
+      )?.[1]
+      if (!preflightBranch) {
+        violations.push("stable PREFLIGHT mode branch")
+      } else {
+        if (!/\[\[ "\$EXPECTED_SHA" =~ \^\[0-9a-f\]\{40\}\$ \]\] \|\| \{ echo '::error::PREFLIGHT requires full lowercase expected_sha'; exit 1; \}/.test(preflightBranch)) {
+          violations.push("stable PREFLIGHT full expected SHA")
+        }
+        if (!/if \[ -n "\$ARTIFACT_SHA" \]; then \[\[ "\$ARTIFACT_SHA" =~ \^\[0-9a-f\]\{40\}\$ \]\] \|\| \{ echo '::error::PREFLIGHT requires full lowercase artifact_sha'; exit 1; \}; fi/.test(preflightBranch)) {
+          violations.push("stable PREFLIGHT optional full artifact SHA")
+        }
+        if (!/MODE=preflight/.test(preflightBranch)) violations.push("stable PREFLIGHT mode output")
+      }
+    }
+
+    const freshSequence = [
+      /^if \[ "\$MODE" = preflight \] \|\| \[ "\$MODE" = finalize \]; then$/,
+      /^test "\$HEAD_SHA" = "\$EXPECTED_SHA" \|\| \{ echo '::error::PREFLIGHT\/FINALIZE SHA mismatch'; exit 1; \}$/,
+      /^fi$/,
+    ]
+    if (!freshAuthorization || !hasCommandSequence(freshAuthorization.commands, freshSequence)) {
+      violations.push("stable fresh PREFLIGHT and FINALIZE expected SHA authorization")
+    }
+
+    if (!prepare || prepare.condition !== "${{ steps.release.outputs.mode == 'prepare' }}") {
+      violations.push("stable PREPARE-only step")
+    }
+    if (!finalize || finalize.condition !== "${{ steps.release.outputs.mode == 'finalize' }}") {
+      violations.push("stable FINALIZE-only step")
+    }
+    if (!preflight) {
+      violations.push("stable PREFLIGHT step")
+    } else {
+      if (preflight.condition !== "${{ steps.release.outputs.mode == 'preflight' }}") {
+        violations.push("stable PREFLIGHT-only step")
+      }
+      if (!/EXPECTED_SHA:\s*\$\{\{ inputs\.expected_sha \}\}/.test(preflight.source)) {
+        violations.push("stable PREFLIGHT expected SHA environment")
+      }
+      if (!/ARTIFACT_SHA:\s*\$\{\{ inputs\.artifact_sha \}\}/.test(preflight.source)) {
+        violations.push("stable PREFLIGHT artifact SHA environment")
+      }
+      if (!/GITHUB_TOKEN:\s*\$\{\{ secrets\.GITHUB_TOKEN \}\}/.test(preflight.source)) {
+        violations.push("stable PREFLIGHT GitHub token")
+      }
+      if (
+        preflight.commands.length !== 1 ||
+        preflight.commands[0] !== "bash scripts/release-finalize-stable.sh --preflight --json"
+      ) {
+        violations.push("stable PREFLIGHT exact read-only invocation")
+      }
+      if (
+        /NODE_AUTH_TOKEN|NPM_CONFIG_PROVENANCE|npm (?:whoami|publish|dist-tag|unpublish)|nx release publish|git (?:tag|push|commit)|gh release (?:create|delete|edit|upload)/.test(
+          preflight.source,
+        )
+      ) {
+        violations.push("stable PREFLIGHT mutation isolation")
+      }
+    }
+
     const prepareBody = prepare?.source ?? ""
     if (/\bread\s+-r\s+[^\n;]*\bPATH\b/.test(prepareBody)) violations.push("stable PREPARE reserved PATH shadowing")
     if (!/node -e '[^\n]*fs\.readFileSync\(path,"utf8"\)[^\n]*' "\$MANIFEST_PATH" "\$NAME"/.test(prepareBody)) {
@@ -797,11 +893,87 @@ test("beta FINALIZE conflict and ordering mutations fail closed", () => {
   }))
 })
 
+test("protected stable PREFLIGHT rejects authorization and mutation-boundary drift", () => {
+  const stable = workflows.stable
+  assert.deepEqual(stableViolations(stable), [])
+
+  for (const [name, changed] of [
+    [
+      "remove PREFLIGHT and FINALIZE exclusivity",
+      mutateStep(
+        stable,
+        "Resolve exact stable mode",
+        'if [ "$PREFLIGHT_ONLY" = true ] && [ "$PUBLISH_ONLY" = true ]; then',
+        "if false; then",
+      ),
+    ],
+    [
+      "allow PREFLIGHT without expected SHA",
+      mutateStep(
+        stable,
+        "Resolve exact stable mode",
+        '[[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo \'::error::PREFLIGHT requires full lowercase expected_sha\'; exit 1; }',
+        ":",
+      ),
+    ],
+    [
+      "route PREFLIGHT to FINALIZE command",
+      mutateStep(
+        stable,
+        "PREFLIGHT exact stable artifacts",
+        "bash scripts/release-finalize-stable.sh --preflight --json",
+        "bash scripts/release-finalize-stable.sh",
+      ),
+    ],
+    [
+      "add a mutation command to PREFLIGHT",
+      mutateStep(
+        stable,
+        "PREFLIGHT exact stable artifacts",
+        "run: bash scripts/release-finalize-stable.sh --preflight --json",
+        "run: |\n          bash scripts/release-finalize-stable.sh --preflight --json\n          git push origin master",
+      ),
+    ],
+    [
+      "add a publication token to PREFLIGHT",
+      mutateStep(
+        stable,
+        "PREFLIGHT exact stable artifacts",
+        "GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}",
+        "GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}\n          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}",
+      ),
+    ],
+    [
+      "skip fresh authorization for PREFLIGHT",
+      mutateStep(
+        stable,
+        "Fresh master authorization",
+        'if [ "$MODE" = preflight ] || [ "$MODE" = finalize ]; then',
+        'if [ "$MODE" = finalize ]; then',
+      ),
+    ],
+  ]) {
+    assert.notDeepEqual(stableViolations(changed), [], name)
+  }
+})
+
 test("protected stable PREPARE and FINALIZE reject independent safety mutations", () => {
   const policy = { ...workflows, docs: readme }
   assert.deepEqual(stableViolations(policy.stable), [])
   for (const [name, before, after] of [
-    ["weaken SHA", "^[0-9a-f]{40}$", "^[0-9a-f]{7,40}$"],
+    ["weaken expected SHA", "if (!/^[0-9a-f]{40}$/.test(expectedSha))", "if (!/^[0-9a-f]{7,40}$/.test(expectedSha))"],
+    ["weaken artifact SHA", "if (!/^[0-9a-f]{40}$/.test(artifactSha))", "if (!/^[0-9a-f]{7,40}$/.test(artifactSha))"],
+    ["remove expected SHA environment", 'const expectedSha = process.env.EXPECTED_SHA ?? ""', 'const expectedSha = ""'],
+    ["remove artifact SHA environment", "const artifactSha = process.env.ARTIFACT_SHA || expectedSha", "const artifactSha = expectedSha"],
+    ["swap expected SHA validation", '.test(expectedSha)) fail("FINALIZE requires full lowercase expected SHA")', '.test(artifactSha)) fail("FINALIZE requires full lowercase expected SHA")'],
+    ["swap artifact SHA validation", '.test(artifactSha)) fail("FINALIZE requires full lowercase artifact SHA")', '.test(expectedSha)) fail("FINALIZE requires full lowercase artifact SHA")'],
+    ["authorize HEAD with artifact SHA", "head !== expectedSha", "head !== artifactSha"],
+    ["authorize origin with artifact SHA", "origin !== expectedSha", "origin !== artifactSha"],
+    ["verify remote tags with expected SHA", "peeled[0] === artifactSha", "peeled[0] === expectedSha"],
+    ["verify local tags with expected SHA", "match[1] === artifactSha", "match[1] === expectedSha"],
+    ["target annotated tags at expected SHA", '["tag", "-a", tag, artifactSha, "-m", tag]', '["tag", "-a", tag, expectedSha, "-m", tag]'],
+    ["remove historical all-existing guard", "if (historicalReplay) {", "if (false) {"],
+    ["weaken historical npm exactness", 'item.npm !== "exact"', 'item.npm === "unknown"'],
     ["unbound retries", "const maxReads = 6", "const maxReads = 60"],
     ["weaken manifest", "value.name !== name || value.version !== version", "false"],
     ["accept duplicate tag refs", "direct.length === 1 && peeled.length === 1", "direct.length > 0 && peeled.length > 0"],
@@ -812,6 +984,22 @@ test("protected stable PREPARE and FINALIZE reject independent safety mutations"
   ]) {
     const changed = mutate(stableFinalizeScript, before, after)
     assert.notDeepEqual(stableViolations(policy.stable, changed), [], name)
+  }
+
+  for (const [name, before, after] of [
+    ["remove expected SHA input", "expected_sha:", "execution_sha:"],
+    ["remove artifact SHA input", "artifact_sha:", "publication_sha:"],
+  ]) {
+    const changed = mutate(policy.stable, before, after)
+    assert.notDeepEqual(stableViolations(changed), [], name)
+  }
+
+  for (const [name, before, after] of [
+    ["swap FINALIZE expected SHA env", "EXPECTED_SHA: ${{ inputs.expected_sha }}", "EXPECTED_SHA: ${{ inputs.artifact_sha }}"],
+    ["swap FINALIZE artifact SHA env", "ARTIFACT_SHA: ${{ inputs.artifact_sha }}", "ARTIFACT_SHA: ${{ inputs.expected_sha }}"],
+  ]) {
+    const changed = mutateStep(policy.stable, "FINALIZE exact stable artifacts", before, after)
+    assert.notDeepEqual(stableViolations(changed), [], name)
   }
 
   const prepareJson = mutateStep(policy.stable, "PREPARE protected stable", /JSON\.parse/g, "JSON.parseSafe")
@@ -893,6 +1081,11 @@ test("protected stable documentation rejects authorization and recovery drift", 
 test("protected stable promotion exposes exact PREPARE and FINALIZE contracts", () => {
   const active = withoutComments(`${workflows.stable}\n${stableFinalizeScript}`)
   assert.match(active, /expected_sha:/)
+  assert.match(active, /artifact_sha:/)
+  assert.match(active, /ARTIFACT_SHA:\s*\$\{\{ inputs\.artifact_sha \}\}/)
+  assert.match(active, /const artifactSha = process\.env\.ARTIFACT_SHA \|\| expectedSha/)
+  assert.match(active, /const historicalReplay = artifactSha !== expectedSha/)
+  assert.match(active, /historical replay requires exact existing tag, GitHub Release, and npm latest/)
   assert.match(active, /MODE=prepare/)
   assert.match(active, /MODE=finalize/)
   assert.match(

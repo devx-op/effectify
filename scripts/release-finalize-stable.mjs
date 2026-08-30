@@ -12,6 +12,8 @@ const records = [
   ["@effectify/solid-query", "packages/solid/query/package.json", "0.5.13"],
 ]
 const expectedSha = process.env.EXPECTED_SHA ?? ""
+const artifactSha = process.env.ARTIFACT_SHA || expectedSha
+const historicalReplay = artifactSha !== expectedSha
 const maxReads = 6
 const delayMs = Number(process.env.NPM_READ_DELAY_MS ?? (Number(process.env.NPM_READ_DELAY ?? 10) * 1000))
 const commandTimeoutMs = Number(process.env.FINALIZE_COMMAND_TIMEOUT_MS ?? 60_000)
@@ -81,7 +83,7 @@ function parseTag(text, tag) {
     if (!match) return { kind: "unknown" }
     if (match[2] === directRef) direct.push(match[1]); else if (match[2] === peeledRef) peeled.push(match[1]); else return { kind: "unknown" }
   }
-  return direct.length === 1 && peeled.length === 1 && peeled[0] === expectedSha ? { kind: "exact" } : { kind: "divergent" }
+  return direct.length === 1 && peeled.length === 1 && peeled[0] === artifactSha ? { kind: "exact" } : { kind: "divergent" }
 }
 async function tagState(tag) {
   let result
@@ -95,7 +97,7 @@ async function localTagState(tag) {
   const lines = result.stdout.trimEnd().split("\n")
   if (lines.length !== 1) return { kind: "divergent" }
   const match = lines[0].match(/^tag\t([0-9a-f]{40})$/)
-  return match && match[1] === expectedSha ? { kind: "exact" } : { kind: "divergent" }
+  return match && match[1] === artifactSha ? { kind: "exact" } : { kind: "divergent" }
 }
 function repository() {
   if (process.env.GITHUB_REPOSITORY) return process.env.GITHUB_REPOSITORY
@@ -139,8 +141,13 @@ async function main() {
   if (cliArguments.some((x) => !["--preflight", "--json"].includes(x))) fail("unknown argument")
   if (jsonOutput && !preflight) fail("--json requires --preflight")
   if (!/^[0-9a-f]{40}$/.test(expectedSha)) fail("FINALIZE requires full lowercase expected SHA")
+  if (!/^[0-9a-f]{40}$/.test(artifactSha)) fail("FINALIZE requires full lowercase artifact SHA")
   const states = await inspect()
-  if (preflight) { process.stdout.write(`${JSON.stringify({ ok: true, expectedSha, states })}\n`); return }
+  if (historicalReplay) {
+    const incomplete = states.find((item) => item.tag !== "exact" || item.release !== "exact" || item.npm !== "exact")
+    if (incomplete) fail(`historical replay requires exact existing tag, GitHub Release, and npm latest for ${incomplete.name}@${incomplete.version}`)
+  }
+  if (preflight) { process.stdout.write(`${JSON.stringify({ ok: true, expectedSha, artifactSha, states })}\n`); return }
   const missingTags = states.filter((x) => x.tag === "absent")
   const localTags = []
   for (const item of missingTags) {
@@ -152,7 +159,7 @@ async function main() {
     await run("git", ["config", "user.name", "github-actions[bot]"])
     await run("git", ["config", "user.email", "github-actions[bot]@users.noreply.github.com"])
   }
-  for (const { tag, local } of localTags) if (local === "absent") await run("git", ["tag", "-a", tag, expectedSha, "-m", tag])
+  for (const { tag, local } of localTags) if (local === "absent") await run("git", ["tag", "-a", tag, artifactSha, "-m", tag])
   if (missingTags.length) {
     const refs = missingTags.map((x) => `refs/tags/${x.name}@${x.version}:refs/tags/${x.name}@${x.version}`)
     try { await run("git", ["push", "--atomic", "origin", ...refs]) } catch { /* response loss is reconciled below */ }

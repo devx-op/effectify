@@ -11,10 +11,20 @@ on:
         required: true
         type: boolean
         default: false
+      preflight_only:
+        description: "Read-only exact-state verification of stable artifacts"
+        required: true
+        type: boolean
+        default: false
       expected_sha:
-        description: "Full lowercase merged master SHA; FINALIZE only"
+        description: "Full lowercase merged master SHA; PREFLIGHT or FINALIZE only"
         required: false
         type: string
+      artifact_sha:
+        description: "Full lowercase publication SHA; empty uses expected_sha, and a different SHA is historical verification-only"
+        required: false
+        type: string
+        default: ""
 concurrency:
   group: release-stable
   cancel-in-progress: false
@@ -60,7 +70,9 @@ jobs:
         env:
           REQUESTED_PROJECTS: ${{ inputs.projects }}
           PUBLISH_ONLY: ${{ inputs.publish_only }}
+          PREFLIGHT_ONLY: ${{ inputs.preflight_only }}
           EXPECTED_SHA: ${{ inputs.expected_sha }}
+          ARTIFACT_SHA: ${{ inputs.artifact_sha }}
         run: |
           set -euo pipefail
           RAW=$(printf '%s' "$REQUESTED_PROJECTS" | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed '/^$/d')
@@ -69,11 +81,20 @@ jobs:
           SELECTED=$(printf '%s\n' "$RAW" | sort)
           EXPECTED=$(printf '%s\n' '@effectify/hatchet' '@effectify/node-better-auth' '@effectify/prisma' '@effectify/react-query' '@effectify/react-router' '@effectify/react-router-better-auth' '@effectify/solid-query' | sort)
           cmp -s <(printf '%s\n' "$EXPECTED") <(printf '%s\n' "$SELECTED") || { echo '::error::stable requires exact seven-project matrix'; exit 1; }
-          if [ "$PUBLISH_ONLY" = true ]; then
+          if [ "$PREFLIGHT_ONLY" = true ] && [ "$PUBLISH_ONLY" = true ]; then
+            echo '::error::preflight_only and publish_only are mutually exclusive'
+            exit 1
+          elif [ "$PREFLIGHT_ONLY" = true ]; then
+            [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo '::error::PREFLIGHT requires full lowercase expected_sha'; exit 1; }
+            if [ -n "$ARTIFACT_SHA" ]; then [[ "$ARTIFACT_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo '::error::PREFLIGHT requires full lowercase artifact_sha'; exit 1; }; fi
+            MODE=preflight
+          elif [ "$PUBLISH_ONLY" = true ]; then
             [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo '::error::FINALIZE requires full lowercase expected_sha'; exit 1; }
+            if [ -n "$ARTIFACT_SHA" ]; then [[ "$ARTIFACT_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo '::error::FINALIZE requires full lowercase artifact_sha'; exit 1; }; fi
             MODE=finalize
           else
             test -z "$EXPECTED_SHA" || { echo '::error::PREPARE rejects expected_sha'; exit 1; }
+            test -z "$ARTIFACT_SHA" || { echo '::error::PREPARE rejects artifact_sha'; exit 1; }
             MODE=prepare
           fi
           echo "mode=$MODE" >> "$GITHUB_OUTPUT"
@@ -88,7 +109,9 @@ jobs:
           HEAD_SHA=$(git rev-parse HEAD)
           REMOTE_SHA=$(git rev-parse origin/master)
           test "$HEAD_SHA" = "$REMOTE_SHA" || { echo '::error::checkout is not current origin/master'; exit 1; }
-          if [ "$MODE" = finalize ]; then test "$HEAD_SHA" = "$EXPECTED_SHA" || { echo '::error::FINALIZE SHA mismatch'; exit 1; }; fi
+          if [ "$MODE" = preflight ] || [ "$MODE" = finalize ]; then
+            test "$HEAD_SHA" = "$EXPECTED_SHA" || { echo '::error::PREFLIGHT/FINALIZE SHA mismatch'; exit 1; }
+          fi
       - name: 🏗️ Build selected projects
         env: { PROJECTS: "${{ steps.release.outputs.projects }}" }
         run: pnpm nx run-many -t build "--projects=$PROJECTS" --parallel=3
@@ -131,6 +154,13 @@ jobs:
           test -z "$(git status --porcelain)" || { echo '::error::post-commit tree dirty'; exit 1; }
           git push origin "HEAD:refs/heads/release/stable-$SHA_PREFIX" || { echo '::error::stable branch push failed'; exit 1; }
           echo "source_sha=$SOURCE_SHA" >> "$GITHUB_OUTPUT"; echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"; echo "changed_paths=$(paste -sd, "$EXPECTED_PATHS")" >> "$GITHUB_OUTPUT"
+      - name: 🔎 PREFLIGHT exact stable artifacts
+        if: ${{ steps.release.outputs.mode == 'preflight' }}
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          ARTIFACT_SHA: ${{ inputs.artifact_sha }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash scripts/release-finalize-stable.sh --preflight --json
       - name: 🔐 Verify npm authentication for FINALIZE
         if: ${{ steps.release.outputs.mode == 'finalize' }}
         env: { NODE_AUTH_TOKEN: "${{ secrets.NPM_TOKEN }}" }
@@ -140,6 +170,7 @@ jobs:
         env:
           PROJECTS: ${{ steps.release.outputs.projects }}
           EXPECTED_SHA: ${{ inputs.expected_sha }}
+          ARTIFACT_SHA: ${{ inputs.artifact_sha }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_CONFIG_PROVENANCE: true
@@ -152,8 +183,9 @@ jobs:
           SOURCE_SHA: ${{ steps.prepare.outputs.source_sha || '' }}
           BRANCH: ${{ steps.prepare.outputs.branch || '' }}
           EXPECTED_SHA: ${{ inputs.expected_sha || '' }}
+          ARTIFACT_SHA: ${{ inputs.artifact_sha || inputs.expected_sha || '' }}
         run: |
           echo '## Protected stable promotion' >> "$GITHUB_STEP_SUMMARY"
           echo "**Mode:** $MODE" >> "$GITHUB_STEP_SUMMARY"; echo "**Projects:** $PROJECTS" >> "$GITHUB_STEP_SUMMARY"
-          echo "**Source:** $SOURCE_SHA **Branch:** $BRANCH **Expected SHA:** $EXPECTED_SHA" >> "$GITHUB_STEP_SUMMARY"
-          echo 'PREPARE requires a manually linked type:chore PR and protected review. FINALIZE reconciles tags → non-prerelease Releases → npm latest.' >> "$GITHUB_STEP_SUMMARY"
+          echo "**Source:** $SOURCE_SHA **Branch:** $BRANCH **Expected SHA:** $EXPECTED_SHA **Artifact SHA:** $ARTIFACT_SHA" >> "$GITHUB_STEP_SUMMARY"
+          echo 'PREFLIGHT is read-only exact-state verification; it does not tag, push, create Releases, or publish. PREPARE requires a manually linked type:chore PR and protected review. FINALIZE reconciles tags → non-prerelease Releases → npm latest.' >> "$GITHUB_STEP_SUMMARY"
