@@ -14,15 +14,11 @@ const PROTOCOL_REGEX = /(https?:\/\/)+/
 export const toEffectHandler: (
   auth:
     | {
-      handler: Auth["handler"]
-    }
+        handler: Auth["handler"]
+      }
     | Auth["handler"],
-) => Effect.Effect<
-  HttpServerResponse.HttpServerResponse,
-  BetterAuthApiError | ConfigError,
-  HttpServerRequest.HttpServerRequest
-> = (auth) =>
-  Effect.gen(function*() {
+) => Effect.Effect<HttpServerResponse.HttpServerResponse, ConfigError, HttpServerRequest.HttpServerRequest> = (auth) =>
+  Effect.gen(function* () {
     const request = yield* HttpServerRequest.HttpServerRequest
     const nodeRequest = NodeHttpServerRequest.toIncomingMessage(request)
     const nodeResponse = NodeHttpServerRequest.toServerResponse(request)
@@ -31,27 +27,15 @@ export const toEffectHandler: (
     yield* Effect.log(`toEffectHandler: BETTER_AUTH_URL=${String(appUrl)}`)
 
     const normalizeUrl = (url: URL) =>
-      url
-        .toString()
-        .replace(TRAILING_SLASH_REGEX, "")
-        .replace(PROTOCOL_REGEX, "http://")
+      url.toString().replace(TRAILING_SLASH_REGEX, "").replace(PROTOCOL_REGEX, "http://")
 
     const allowedOrigins = [normalizeUrl(appUrl)]
     const origin = nodeRequest.headers.origin ? normalizeUrl(appUrl) : ""
 
     if (allowedOrigins.includes(origin)) {
-      nodeResponse.setHeader(
-        "Access-Control-Allow-Origin",
-        nodeRequest.headers.origin || "",
-      )
-      nodeResponse.setHeader(
-        "Access-Control-Allow-Methods",
-        "GET, POST, PUT, DELETE, OPTIONS",
-      )
-      nodeResponse.setHeader(
-        "Access-Control-Allow-Headers",
-        "Content-Type, Authorization",
-      )
+      nodeResponse.setHeader("Access-Control-Allow-Origin", nodeRequest.headers.origin || "")
+      nodeResponse.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+      nodeResponse.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization")
       nodeResponse.setHeader("Access-Control-Max-Age", "600")
       nodeResponse.setHeader("Access-Control-Allow-Credentials", "true")
     }
@@ -66,11 +50,9 @@ export const toEffectHandler: (
     // Log incoming request for debugging
     const authHeader = nodeRequest.headers.authorization
     yield* Effect.log(
-      `toEffectHandler: incoming ${nodeRequest.method} ${
-        String(
-          nodeRequest.url,
-        )
-      } headers: cookie=${nodeRequest.headers.cookie?.substring(0, 50) || "none"}, auth=${
+      `toEffectHandler: incoming ${nodeRequest.method} ${String(
+        nodeRequest.url,
+      )} headers: cookie=${nodeRequest.headers.cookie?.substring(0, 50) || "none"}, auth=${
         authHeader?.substring(0, 30) || "none"
       }`,
     )
@@ -79,55 +61,42 @@ export const toEffectHandler: (
     if (!nodeRequest.headers.cookie && authHeader?.startsWith("Bearer ")) {
       const token = authHeader.slice(7) // Remove "Bearer " prefix
       nodeRequest.headers.cookie = `better-auth.session_token=${token}`
-      yield* Effect.log(
-        `toEffectHandler: using token from Authorization header as cookie`,
-      )
+      yield* Effect.log(`toEffectHandler: using token from Authorization header as cookie`)
     }
 
-    try {
-      yield* Effect.tryPromise({
-        try: () =>
-          "handler" in auth
-            ? toNodeHandler(auth.handler)(nodeRequest, nodeResponse)
-            : toNodeHandler(auth)(nodeRequest, nodeResponse),
-        catch: (cause) => new BetterAuthApiError({ cause }),
-      })
-
-      // Log the response status after the handler completes
-      yield* Effect.log(
-        `toEffectHandler: completed ${nodeRequest.method} ${
-          String(
-            nodeRequest.url,
+    return yield* Effect.tryPromise({
+      try: () =>
+        "handler" in auth
+          ? toNodeHandler(auth.handler)(nodeRequest, nodeResponse)
+          : toNodeHandler(auth)(nodeRequest, nodeResponse),
+      catch: (cause) => new BetterAuthApiError({ cause }),
+    }).pipe(
+      Effect.tap(() =>
+        Effect.log(
+          `toEffectHandler: completed ${nodeRequest.method} ${String(nodeRequest.url)} -> ${nodeResponse.statusCode}`,
+        ),
+      ),
+      Effect.map(() =>
+        HttpServerResponse.empty({
+          status: nodeResponse.writableFinished ? nodeResponse.statusCode : 499,
+        }),
+      ),
+      Effect.catchTag("BetterAuthApiError", (error) =>
+        Effect.gen(function* () {
+          const errorMessage = `${String(error)}: ${String(error.cause)}`
+          yield* Effect.log(
+            `toEffectHandler: error handling ${nodeRequest.method} ${String(nodeRequest.url)}: ${errorMessage}`,
           )
-        } -> ${nodeResponse.statusCode}`,
-      )
-    } catch (err) {
-      // Ensure we log errors from the underlying handler for debugging
-      yield* Effect.log(
-        `toEffectHandler: error handling ${nodeRequest.method} ${
-          String(
-            nodeRequest.url,
-          )
-        }: ${String(err)}`,
-      )
 
-      try {
-        // Try to return the error to the client as JSON to make debugging easier
-        nodeResponse.statusCode = 500
-        nodeResponse.setHeader("Content-Type", "application/json")
-        const payload = JSON.stringify({ error: String(err) })
-        nodeResponse.end(payload)
-      } catch (writeErr) {
-        // If writing the error response fails, log that too
-        yield* Effect.log(
-          `toEffectHandler: failed to write error response: ${String(writeErr)}`,
-        )
-      }
+          if (nodeResponse.headersSent || nodeResponse.writableEnded) {
+            if (!nodeResponse.writableEnded) {
+              yield* Effect.sync(() => nodeResponse.end())
+            }
+            return HttpServerResponse.empty({ status: nodeResponse.statusCode })
+          }
 
-      return HttpServerResponse.empty({ status: 500 })
-    }
-
-    return HttpServerResponse.empty({
-      status: nodeResponse.writableFinished ? nodeResponse.statusCode : 499,
-    })
+          return HttpServerResponse.jsonUnsafe({ error: errorMessage }, { status: 500 })
+        }),
+      ),
+    )
   })
