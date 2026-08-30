@@ -4,7 +4,7 @@
 
 - Replace the alpha workflow DSL with `Task.make` and the scoped `Hatchet` service. `workflow`, standalone `task`, `registerWorkflow`, and `registerWorkflowWithConfig` have no compatibility adapter.
 - Add typed scheduling, storage-only in-memory cron CRUD, and explicit run cancellation. Remote schedules and crons require explicit operator cleanup on rollback; emitted runs require explicit cancellation.
-- Retain `core/client.ts`, `core/config.ts`, and `testing/mock-client.ts` only as deferred administrative internals, not as supported task-first public APIs.
+- Remove the legacy `clients`, `core`, `logging`, and `schema` source trees and their deep imports. Remove the mock-client and mock-context testing helpers; `@effectify/hatchet/testing` now exports only `layerInMemory`, with no compatibility aliases.
 
 ## 0.1.0-alpha.5 (2026-07-12)
 

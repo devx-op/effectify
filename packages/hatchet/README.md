@@ -178,12 +178,30 @@ Omitting TLS strategy preserves the SDK secure default. Local plaintext Hatchet 
 
 Applications do not need a separate runtime service, Promise bridge, worker registration API, or lifecycle API.
 
-## In-memory adapter
+## In-memory testing
+
+Import the testing Layer from the package's testing subpath and exercise the same `Hatchet` operations used in production:
 
 ```ts
+import { Hatchet } from "@effectify/hatchet"
+import { layerInMemory } from "@effectify/hatchet/testing"
+import * as Effect from "effect/Effect"
+
 const local = Effect.gen(function*() {
   return yield* Hatchet.run(greet, { name: "Ada" })
-}).pipe(Effect.provide(Hatchet.layerInMemory))
+}).pipe(Effect.provide(layerInMemory))
 ```
 
-The in-memory adapter is process-local, scope-bound, non-durable, and non-distributed. Its schedule and cron records exist for deterministic tests; they do not model a distributed Hatchet server.
+`@effectify/hatchet/testing` exports only `layerInMemory`, which is the same Layer as `Hatchet.layerInMemory`. It is process-local, scope-bound, non-durable, and non-distributed. Schedule and cron records exist for deterministic tests; they do not model a distributed Hatchet server.
+
+## Migrate to 0.1
+
+| Legacy alpha surface                                                                 | 0.1 replacement                                                                         |
+| ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
+| `workflow`, standalone `task`                                                        | `Task.make` or `Task.durable`                                                           |
+| `registerWorkflow`, `registerWorkflowWithConfig`                                     | Declare tasks in `Hatchet.layer({ tasks })`                                             |
+| `Hatchet.register`, `Hatchet.startWorker`, `HatchetRuntime`                          | Let the scoped `Hatchet.layer` own registration and worker lifecycle                    |
+| `clients/*`, `core/*`, `logging/*`, `schema/*` deep imports                          | Import supported tasks, operations, models, and errors from `@effectify/hatchet`        |
+| Testing mocks such as `createMockHatchetClient`, `createMockContext`, and `testTask` | Provide `layerInMemory` from `@effectify/hatchet/testing` and call `Hatchet` operations |
+
+The removed surfaces have no compatibility aliases.

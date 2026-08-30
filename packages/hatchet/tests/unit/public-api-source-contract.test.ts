@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs"
+import { existsSync, readFileSync } from "node:fs"
 import { describe, expect, it } from "vitest"
 
 const publicSourceFiles = [
@@ -10,6 +10,19 @@ const publicSourceFiles = [
   "../../src/Model.ts",
 ].map((path) => new URL(path, import.meta.url))
 const exampleSourceFile = new URL("../../scripts/test-workflow.ts", import.meta.url)
+const removedLegacySourcePaths = [
+  "../../src/clients",
+  "../../src/core",
+  "../../src/logging",
+  "../../src/schema",
+  "../../src/testing/mock-client.ts",
+  "../../src/testing/mock-context.ts",
+].map((path) => new URL(path, import.meta.url))
+const retainedModernSourcePaths = [
+  "../../src/Hatchet.ts",
+  "../../src/internal/live.ts",
+  "../../src/testing/index.ts",
+].map((path) => new URL(path, import.meta.url))
 
 const forbiddenManualLifecycleSymbols = [
   "RegisteredTask",
@@ -20,6 +33,15 @@ const forbiddenManualLifecycleSymbols = [
 ] as const
 
 describe("public API source contract", () => {
+  it("removes the legacy graph while retaining the modern live and testing entry points", () => {
+    for (const removedPath of removedLegacySourcePaths) {
+      expect(existsSync(removedPath), removedPath.pathname).toBe(false)
+    }
+    for (const retainedPath of retainedModernSourcePaths) {
+      expect(existsSync(retainedPath), retainedPath.pathname).toBe(true)
+    }
+  })
+
   it("keeps manual worker lifecycle symbols out of public package modules", () => {
     for (const sourceFile of publicSourceFiles) {
       const source = readFileSync(sourceFile, "utf8")
