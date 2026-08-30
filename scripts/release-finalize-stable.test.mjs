@@ -7,7 +7,9 @@ import { join } from "node:path"
 import test from "node:test"
 
 const script = new URL("release-finalize-stable.mjs", import.meta.url).pathname
+const stableWorkflow = readFileSync(new URL("../.github/workflows/release-stable.yml", import.meta.url), "utf8")
 const sha = "1234567890abcdef1234567890abcdef12345678"
+const historicalSha = "abcdef1234567890abcdef1234567890abcdef12"
 const records = [
   ["@effectify/hatchet", "packages/hatchet/package.json", "0.1.0"],
   ["@effectify/node-better-auth", "packages/node/better-auth/package.json", "0.5.12"],
@@ -29,7 +31,7 @@ if(cmd==='git'){
   const t=a[3].slice(10),v=s.tags[t]; if(v){if(v.raw)out(v.raw.replaceAll('$TAG',t));else{out((v.direct||'a'.repeat(40))+'\trefs/tags/'+t+'\n');if(v.peeled!==null)out((v.peeled||s.sha)+'\trefs/tags/'+t+'^{}\n')}} finish()
  }
  if(a[0]==='for-each-ref'){const t=a[2].slice(10),v=s.localTags[t];if(v)out((v.type||'tag')+'\t'+(v.peeled||s.sha)+'\n');finish()}
- if(a[0]==='tag'){s.localTags[a[2]]={type:'tag',peeled:s.sha};finish()}
+ if(a[0]==='tag'){s.localTags[a[2]]={type:'tag',peeled:a[3]};finish()}
  if(a[0]==='push'){if(s.pushExit)finish(s.pushExit);for(const r of a.slice(3)){const t=r.split(':')[0].slice(10);s.tags[t]={peeled:s.localTags[t].peeled}}finish()}
  finish(127)
 }
@@ -77,22 +79,38 @@ async function world(mode = "absent") {
   await new Promise(resolve => server.listen(0, "127.0.0.1", resolve))
   return { cwd, bin, stateFile, server, api: `http://127.0.0.1:${server.address().port}` }
 }
-async function run(w, args = []) {
+async function run(w, args = [], environment = {}) {
   return await new Promise(resolve => {
-    const child = spawn(process.execPath, [script, ...args], { cwd: w.cwd, env: { PATH: w.bin, EXPECTED_SHA: sha, NPM_READ_DELAY_MS: "0", FINALIZE_COMMAND_TIMEOUT_MS: "5000", GITHUB_API_URL: w.api, GITHUB_REPOSITORY: "owner/repo", GITHUB_TOKEN: "fake", FAKE_STATE: w.stateFile } })
+    const child = spawn(process.execPath, [script, ...args], { cwd: w.cwd, env: { PATH: w.bin, EXPECTED_SHA: sha, ARTIFACT_SHA: "", NPM_READ_DELAY_MS: "0", FINALIZE_COMMAND_TIMEOUT_MS: "5000", GITHUB_API_URL: w.api, GITHUB_REPOSITORY: "owner/repo", GITHUB_TOKEN: "fake", FAKE_STATE: w.stateFile, ...environment } })
     let stdout = "", stderr = ""; child.stdout.on("data", x => stdout += x); child.stderr.on("data", x => stderr += x); child.on("close", status => resolve({ status, stdout, stderr }))
   })
 }
-async function scenario(t, name, setup, verify, mode = "exact", args = []) {
-  await t.test(name, async () => { const w = await world(mode); try { const state = load(w.stateFile); await setup(state, w); save(w.stateFile, state); const result = await run(w, args); await verify(result, load(w.stateFile), w) } finally { await new Promise(resolve => w.server.close(resolve)) } })
+async function scenario(t, name, setup, verify, mode = "exact", args = [], environment = {}) {
+  await t.test(name, async () => { const w = await world(mode); try { const state = load(w.stateFile); await setup(state, w); save(w.stateFile, state); const result = await run(w, args, environment); await verify(result, load(w.stateFile), w) } finally { await new Promise(resolve => w.server.close(resolve)) } })
 }
 function exactState(state) { assert.equal(Object.keys(state.tags).length, 7); assert.equal(Object.keys(state.releases).length, 7); for (const [n,,v] of records) { assert.deepEqual(state.npm[n].versions, [v]); assert.equal(state.npm[n].latest, v); assert.equal(state.npm[n].alpha, "alpha-sentinel"); assert.equal(state.npm[n].beta, "beta-sentinel") } }
+function historicalTags(state) { for (const [name,,version] of records) state.tags[`${name}@${version}`] = { peeled: historicalSha } }
+function workflowPreflightInvocation() {
+  const match = stableWorkflow.match(/^[ \t]*- name: 🔎 PREFLIGHT exact stable artifacts\n([\s\S]*?)(?=^[ \t]*- name:)/m)
+  assert.ok(match, "stable workflow preflight step")
+  const commands = [...match[1].matchAll(/^[ \t]*run:\s*(.+)$/gm)].map((entry) => entry[1].trim())
+  assert.deepEqual(commands, ["bash scripts/release-finalize-stable.sh --preflight --json"])
+  return { args: commands[0].split(/\s+/).slice(2), source: match[1] }
+}
 
 const scenarioNames = []
 test("hermetic Node CLI matrix", { timeout: 120_000 }, async t => {
   const add = async (...args) => { scenarioNames.push(args[0]); await scenario(t, ...args) }
   await add("all exact replay has zero mutation", async()=>{}, (r,s)=>{assert.equal(r.status,0,r.stderr);assert.deepEqual(mutations(s),[])})
-  await add("all absent creates and publishes exact manifests", async()=>{}, (r,s)=>{assert.equal(r.status,0,r.stderr);exactState(s);const push=s.log.find(x=>x[0]==="git"&&x[1]==="push");assert.deepEqual(push.slice(1,4),["push","--atomic","origin"]);assert.equal(s.log.find(x=>x[0]==="pnpm")[4],`--projects=${records.map(x=>x[0]).join(",")}`)}, "absent")
+  await add("same-SHA all absent publishes normally", async()=>{}, (r,s)=>{assert.equal(r.status,0,r.stderr);exactState(s);const push=s.log.find(x=>x[0]==="git"&&x[1]==="push");assert.deepEqual(push.slice(1,4),["push","--atomic","origin"]);assert.equal(s.log.find(x=>x[0]==="pnpm")[4],`--projects=${records.map(x=>x[0]).join(",")}`)}, "absent")
+  await add("historical all-existing artifacts succeed with zero mutation", async s=>historicalTags(s), (r,s)=>{assert.equal(r.status,0,r.stderr);assert.deepEqual(mutations(s),[])}, "exact", [], {ARTIFACT_SHA:historicalSha})
+  await add("historical missing tag fails before mutation", async s=>{historicalTags(s);delete s.tags[`${records[0][0]}@${records[0][2]}`]}, (r,s)=>{assert.notEqual(r.status,0);assert.match(r.stderr,/historical replay requires exact existing/);assert.deepEqual(mutations(s),[])}, "exact", [], {ARTIFACT_SHA:historicalSha})
+  await add("historical missing Release fails before mutation", async s=>{historicalTags(s);delete s.releases[`${records[0][0]}@${records[0][2]}`]}, (r,s)=>{assert.notEqual(r.status,0);assert.match(r.stderr,/historical replay requires exact existing/);assert.deepEqual(mutations(s),[])}, "exact", [], {ARTIFACT_SHA:historicalSha})
+  await add("historical missing npm version fails before mutation", async s=>{historicalTags(s);s.npm[records[0][0]].versions=[]}, (r,s)=>{assert.notEqual(r.status,0);assert.match(r.stderr,/historical replay requires exact existing/);assert.deepEqual(mutations(s),[])}, "exact", [], {ARTIFACT_SHA:historicalSha})
+  await add("historical latest mismatch fails before mutation", async s=>{historicalTags(s);s.npm[records[0][0]].latest="alpha"}, (r,s)=>{assert.notEqual(r.status,0);assert.match(r.stderr,/permanent latest divergence/);assert.deepEqual(mutations(s),[])}, "exact", [], {ARTIFACT_SHA:historicalSha})
+  await add("wrong artifact SHA fails before mutation", async s=>historicalTags(s), (r,s)=>{assert.notEqual(r.status,0);assert.match(r.stderr,/tag state is divergent/);assert.deepEqual(mutations(s),[])}, "exact", [], {ARTIFACT_SHA:"f".repeat(40)})
+  await add("malformed artifact SHA fails closed independently", async()=>{}, (r,s)=>{assert.notEqual(r.status,0);assert.match(r.stderr,/full lowercase artifact SHA/);assert.deepEqual(mutations(s),[])}, "exact", [], {ARTIFACT_SHA:"not-a-sha"})
+  await add("malformed expected SHA fails closed independently", async s=>historicalTags(s), (r,s)=>{assert.notEqual(r.status,0);assert.match(r.stderr,/full lowercase expected SHA/);assert.deepEqual(mutations(s),[])}, "exact", [], {EXPECTED_SHA:"not-a-sha",ARTIFACT_SHA:historicalSha})
   for (const [index] of records.entries()) await add(`tag partial subset ${index+1} replays`, async s=>{for(const [n,,v] of records.slice(0,index+1))s.tags[`${n}@${v}`]={peeled:sha}}, (r,s)=>{assert.equal(r.status,0,r.stderr);exactState(s)}, "absent")
   for (const [index] of records.entries()) await add(`release partial subset ${index+1} replays`, async s=>{for(const [n,,v] of records)s.tags[`${n}@${v}`]={peeled:sha};for(const [n,,v] of records.slice(0,index+1))s.releases[`${n}@${v}`]={tag_name:`${n}@${v}`,draft:false,prerelease:false}}, (r,s)=>{assert.equal(r.status,0,r.stderr);exactState(s)}, "absent")
   for (const [index] of records.entries()) await add(`npm partial subset ${index+1} replays`, async s=>{for(const [n,,v] of records){s.tags[`${n}@${v}`]={peeled:sha};s.releases[`${n}@${v}`]={tag_name:`${n}@${v}`,draft:false,prerelease:false}}for(const [n,,v] of records.slice(0,index+1)){s.npm[n].versions=[v];s.npm[n].latest=v}}, (r,s)=>{assert.equal(r.status,0,r.stderr);exactState(s)}, "absent")
@@ -113,7 +131,9 @@ test("hermetic Node CLI matrix", { timeout: 120_000 }, async t => {
   await add("manifest version mismatch fails before mutation", async(s,w)=>writeFileSync(join(w.cwd,records[0][1]),JSON.stringify({name:records[0][0],version:"9.9.9"})), (r,s)=>{assert.notEqual(r.status,0);assert.equal(mutations(s).length,0)})
   await add("EXPECTED_SHA controls HEAD", async s=>{s.head="f".repeat(40)}, (r,s)=>{assert.notEqual(r.status,0);assert.equal(mutations(s).length,0)})
   await add("EXPECTED_SHA controls origin", async s=>{s.origin="f".repeat(40)}, (r,s)=>{assert.notEqual(r.status,0);assert.equal(mutations(s).length,0)})
-  await add("preflight JSON reads only", async()=>{}, (r,s)=>{assert.equal(r.status,0,r.stderr);assert.equal(JSON.parse(r.stdout).expectedSha,sha);assert.equal(mutations(s).length,0)}, "exact", ["--preflight","--json"])
+  const preflight = workflowPreflightInvocation()
+  assert.doesNotMatch(preflight.source, /NODE_AUTH_TOKEN|NPM_CONFIG_PROVENANCE|npm whoami|nx release publish|git (?:tag|push)|gh release (?:create|delete)/)
+  await add("workflow historical preflight JSON includes both SHAs and reads only", async s=>historicalTags(s), (r,s)=>{assert.equal(r.status,0,r.stderr);const output=JSON.parse(r.stdout);assert.equal(output.expectedSha,sha);assert.equal(output.artifactSha,historicalSha);assert.equal(mutations(s).length,0)}, "exact", preflight.args, {ARTIFACT_SHA:historicalSha})
   assert.equal(new Set(scenarioNames).size, scenarioNames.length)
 })
 
