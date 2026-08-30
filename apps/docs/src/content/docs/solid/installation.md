@@ -27,34 +27,6 @@ npm install @effectify/solid-query
 npm install @tanstack/solid-query effect solid-js
 ```
 
-### @effectify/solid-ui
-
-UI component library with Kobalte and Tailwind CSS:
-
-```bash
-npm install @effectify/solid-ui
-```
-
-**Peer Dependencies:**
-
-```bash
-npm install solid-js tailwindcss @kobalte/core
-```
-
-### @effectify/chat-solid
-
-Real-time chat components:
-
-```bash
-npm install @effectify/chat-solid
-```
-
-**Peer Dependencies:**
-
-```bash
-npm install @effectify/solid-query @effectify/chat-domain solid-js
-```
-
 ## Framework-Specific Setup
 
 ### Vite + SolidJS
@@ -177,49 +149,6 @@ export const QueryProvider: ParentComponent = (props) => {
     </QueryProvider>
   </body>
 </html>
-```
-
-## Tailwind CSS Setup
-
-If you're using `@effectify/solid-ui`, you'll need to configure Tailwind CSS:
-
-1. Install Tailwind CSS:
-
-```bash
-npm install -D tailwindcss postcss autoprefixer
-npx tailwindcss init -p
-```
-
-2. Configure `tailwind.config.js`:
-
-```js
-/** @type {import('tailwindcss').Config} */
-module.exports = {
-  content: [
-    "./src/**/*.{js,ts,jsx,tsx}",
-    "./node_modules/@effectify/solid-ui/**/*.{js,ts,jsx,tsx}",
-  ],
-  theme: {
-    extend: {},
-  },
-  plugins: [],
-}
-```
-
-3. Add Tailwind directives to your CSS:
-
-```css
-/* src/index.css */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-```
-
-4. Import the CSS in your entry file:
-
-```tsx
-// src/index.tsx
-import "./index.css"
 ```
 
 ## TypeScript Configuration
@@ -385,8 +314,6 @@ function App() {
 
 - [Getting Started Guide](getting-started/) - Learn the basics
 - [Solid Query Package](packages/solid-query/) - Explore data fetching patterns
-- [UI Components](packages/solid-ui/) - Browse available components
-- [Chat Components](packages/chat-solid/) - Add real-time features
 
 ## Troubleshooting
 

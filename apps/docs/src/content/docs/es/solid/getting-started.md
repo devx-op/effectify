@@ -23,18 +23,6 @@ Elige los paquetes que necesitas:
 npm install @effectify/solid-query @tanstack/solid-query effect solid-js
 ```
 
-### Componentes de UI
-
-```bash
-npm install @effectify/solid-ui
-```
-
-### Componentes de Chat
-
-```bash
-npm install @effectify/chat-solid
-```
-
 ## Configuración básica
 
 ### 1. Configurar TanStack Query

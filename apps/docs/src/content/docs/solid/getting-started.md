@@ -27,22 +27,6 @@ For data fetching with TanStack Query and Effect:
 npm install @effectify/solid-query @tanstack/solid-query effect solid-js
 ```
 
-### UI Components
-
-For pre-built UI components:
-
-```bash
-npm install @effectify/solid-ui
-```
-
-### Chat Components
-
-For real-time chat functionality:
-
-```bash
-npm install @effectify/chat-solid
-```
-
 ## Basic Setup
 
 ### 1. Configure TanStack Query
@@ -290,8 +274,6 @@ function UserDashboard(props: { userId: number }) {
 Now that you have the basics set up, explore the specific packages:
 
 - [Solid Query Integration](packages/solid-query/) - Learn advanced patterns for data fetching
-- [UI Components](packages/solid-ui/) - Explore the component library
-- [Chat Components](packages/chat-solid/) - Add real-time features
 
 ## Common Patterns
 
