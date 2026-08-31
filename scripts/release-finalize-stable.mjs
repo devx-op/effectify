@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import { spawn } from "node:child_process"
+import { realpathSync } from "node:fs"
 import { readFile } from "node:fs/promises"
+import { fileURLToPath, pathToFileURL } from "node:url"
 import { isDeepStrictEqual } from "node:util"
 
 const expectedSha = process.env.EXPECTED_SHA ?? ""
@@ -74,13 +76,13 @@ function safeRoot(value) {
     value.length <= 512 &&
     !value.startsWith("/") &&
     !value.includes("\\") &&
-    !value.includes("\0") &&
+    !value.includes("\u0000") &&
     !value.includes("//") &&
     value.split("/").every((part) => part && part !== "." && part !== "..")
   )
 }
 function safeName(value) {
-  return typeof value === "string" && value.length > 0 && value.length <= 214 && !/[\s,\0]/.test(value)
+  return typeof value === "string" && value.length > 0 && value.length <= 214 && !/[\s,\u0000]/.test(value)
 }
 function parseSemver(value) {
   if (typeof value !== "string") return null
@@ -175,6 +177,15 @@ async function verifyHistoricalAncestry() {
     fail("historical artifact ancestry is unreadable")
   }
   if (result.code !== 0) fail("historical artifact SHA must be an ancestor of expected SHA")
+}
+async function verifyArtifactChangelog() {
+  let result
+  try {
+    result = await run("git", ["cat-file", "-t", `${artifactSha}:CHANGELOG.md`])
+  } catch {
+    fail("reviewed artifact requires root CHANGELOG.md to exist as a blob")
+  }
+  if (result.stdout !== "blob\n") fail("reviewed artifact requires root CHANGELOG.md to exist as a blob")
 }
 async function artifactJson(path, revision = artifactSha) {
   let result
@@ -435,6 +446,7 @@ async function main() {
     fail("FINALIZE publication is allowed only in GitHub Actions")
   if (historicalReplay) await verifyHistoricalAncestry()
   await verifyArtifactLineage()
+  await verifyArtifactChangelog()
   const records = await deriveReviewedRecords(projects)
   const states = await inspect(records)
   if (historicalReplay) {
@@ -511,8 +523,19 @@ async function main() {
     if (state.kind !== "exact") fail(`npm did not converge for ${item.name}`)
   }
 }
-const isMain = process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).href
-if (isMain)
+function isMainModule() {
+  const entry = process.argv[1]
+  if (!entry) return false
+  let resolvedEntry, resolvedModule
+  try {
+    resolvedEntry = realpathSync(entry)
+    resolvedModule = realpathSync(fileURLToPath(import.meta.url))
+  } catch {
+    return false
+  }
+  return pathToFileURL(resolvedEntry).href === pathToFileURL(resolvedModule).href
+}
+if (isMainModule())
   main().catch((error) => {
     process.stderr.write(`::error::${error.message}\n`)
     process.exitCode = 1

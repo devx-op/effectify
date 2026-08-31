@@ -139,15 +139,20 @@ jobs:
           HEAD_SHA=$(git rev-parse HEAD)
           REMOTE_SHA=$(git rev-parse origin/master)
           test "$HEAD_SHA" = "$REMOTE_SHA" || { echo '::error::checkout is not current origin/master'; exit 1; }
+          RESOLVED_ARTIFACT_SHA=${ARTIFACT_SHA:-$EXPECTED_SHA}
           if [ "$MODE" = preflight ] || [ "$MODE" = finalize ]; then
             test "$HEAD_SHA" = "$EXPECTED_SHA" || { echo '::error::PREFLIGHT/FINALIZE SHA mismatch'; exit 1; }
+            if ! ARTIFACT_CHANGELOG_TYPE=$(git cat-file -t "$RESOLVED_ARTIFACT_SHA:CHANGELOG.md" 2>/dev/null) || [ "$ARTIFACT_CHANGELOG_TYPE" != "blob" ]; then
+              echo '::error::reviewed stable artifact requires root CHANGELOG.md to exist as a blob'
+              exit 1
+            fi
           fi
 
           echo "mode=$MODE" >> "$GITHUB_OUTPUT"
           echo "projects=$(printf '%s' "$SELECTED" | paste -sd, -)" >> "$GITHUB_OUTPUT"
           echo "validated_sha=$HEAD_SHA" >> "$GITHUB_OUTPUT"
           echo "expected_sha=$EXPECTED_SHA" >> "$GITHUB_OUTPUT"
-          echo "artifact_sha=${ARTIFACT_SHA:-$EXPECTED_SHA}" >> "$GITHUB_OUTPUT"
+          echo "artifact_sha=$RESOLVED_ARTIFACT_SHA" >> "$GITHUB_OUTPUT"
 
       - name: 🏗️ Build selected projects
         env:
@@ -270,6 +275,10 @@ jobs:
           RELEASE_SHA=$(git rev-parse HEAD)
           PARENTS=$(git rev-list --parents -n 1 "$RELEASE_SHA")
           test "$PARENTS" = "$RELEASE_SHA $SOURCE_SHA" || { echo '::error::release commit must have exactly validated source as its parent'; exit 1; }
+          if ! RELEASE_CHANGELOG_TYPE=$(git cat-file -t "$RELEASE_SHA:CHANGELOG.md" 2>/dev/null) || [ "$RELEASE_CHANGELOG_TYPE" != "blob" ]; then
+            echo '::error::prepared stable artifact requires root CHANGELOG.md to exist as a blob'
+            exit 1
+          fi
           COMMITTED_PATHS=$(mktemp)
           git diff --name-only --no-renames "$SOURCE_SHA" "$RELEASE_SHA" | sort -u > "$COMMITTED_PATHS"
           cmp -s "$EXPECTED_PATHS" "$COMMITTED_PATHS" || { echo '::error::committed first-parent paths changed after commit hooks'; exit 1; }

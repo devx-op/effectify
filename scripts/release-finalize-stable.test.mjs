@@ -34,6 +34,7 @@ s.log.push([cmd,...a]);
 function finish(code=0){save();process.exit(code)}
 if(cmd==='git'){
  if(a[0]==='fetch'||a[0]==='config')finish()
+ if(a[0]==='cat-file'&&a[1]==='-t'){const v=s.gitFiles[a[2]];if(v===undefined)finish(128);out((s.gitTypes?.[a[2]]??'blob')+'\n');finish()}
  if(a[0]==='merge-base'){finish(s.ancestorExit??(s.ancestor===false?1:0))}
  if(a[0]==='rev-list'){out((s.commitLines?.[a.at(-1)]??s.commitLine??(s.artifactSha+' '+s.parentSha))+'\n');finish()}
  if(a[0]==='rev-parse'){
@@ -94,6 +95,7 @@ function mutations(state) {
   )
 }
 function addArtifactFiles(gitFiles, commit) {
+  gitFiles[`${commit}:CHANGELOG.md`] = "# Changelog\n"
   gitFiles[`${commit}:nx.json`] = { release: { projects: catalog.map(([, root]) => root) } }
   for (const [project, root, beta, version] of catalog) {
     gitFiles[`${commit}:${root}/project.json`] = { name: project }
@@ -1120,6 +1122,23 @@ test("hermetic arbitrary-subset Node CLI matrix", { timeout: 120_000 }, async (t
     )
 
   await add(
+    "a changed-path changelog entry cannot substitute for an artifact changelog blob",
+    async (state) => {
+      assert.ok(state.changedPaths.includes("CHANGELOG.md"))
+      delete state.gitFiles[`${sha}:CHANGELOG.md`]
+    },
+    (result, state) => {
+      assert.notEqual(result.status, 0)
+      assert.match(result.stderr, /root CHANGELOG\.md to exist as a blob/)
+      assert.deepEqual(mutations(state), [])
+      assert.equal(
+        state.log.some((call) => call[0] === "npm" || call[0] === "http"),
+        false,
+      )
+    },
+  )
+
+  await add(
     "FINALIZE refuses to run outside GitHub Actions",
     async () => {},
     (result, state) => {
@@ -1162,6 +1181,95 @@ test("hermetic arbitrary-subset Node CLI matrix", { timeout: 120_000 }, async (t
   assert.equal(new Set(scenarioNames).size, scenarioNames.length)
 })
 
+test("importing with a nonexistent argv entry is inert", async () => {
+  const cwd = mkdtempSync(join(tmpdir(), "stable-finalize-import-"))
+  const previousEntry = process.argv[1]
+  const previousExitCode = process.exitCode
+  const previousStderrWrite = process.stderr.write
+  const stderr = []
+  try {
+    process.argv[1] = join(cwd, "guaranteed-missing-entry.mjs")
+    process.stderr.write = (chunk) => {
+      stderr.push(String(chunk))
+      return true
+    }
+    await import(`${new URL("release-finalize-stable.mjs", import.meta.url).href}?import-only=${Date.now()}`)
+    await new Promise((resolve) => setImmediate(resolve))
+    assert.deepEqual(stderr, [])
+    assert.equal(process.exitCode, previousExitCode)
+  } finally {
+    process.argv[1] = previousEntry
+    process.exitCode = previousExitCode
+    process.stderr.write = previousStderrWrite
+    await rm(cwd, { recursive: true, force: true })
+  }
+  assert.equal(existsSync(cwd), false)
+})
+
+test("a URL-significant executable path still enters the finalizer main module", async () => {
+  const cwd = mkdtempSync(join(tmpdir(), "stable-finalize-entry-"))
+  let result
+  try {
+    const entry = join(cwd, "release # %.mjs")
+    writeFileSync(entry, readFileSync(script))
+    result = await new Promise((resolve) => {
+      const child = spawn(process.execPath, [entry], {
+        cwd,
+        env: {
+          ...process.env,
+          EXPECTED_SHA: "",
+          ARTIFACT_SHA: "",
+          PROJECTS: "",
+        },
+      })
+      let stdout = "",
+        stderr = ""
+      child.stdout.on("data", (chunk) => (stdout += chunk))
+      child.stderr.on("data", (chunk) => (stderr += chunk))
+      child.on("close", (status) => resolve({ status, stdout, stderr }))
+    })
+  } finally {
+    await rm(cwd, { recursive: true, force: true })
+  }
+
+  assert.equal(existsSync(cwd), false)
+  assert.notEqual(result.status, 0)
+  assert.equal(result.stdout, "")
+  assert.match(result.stderr, /FINALIZE requires full lowercase expected SHA/)
+})
+
+test("a URL-significant symlink enters the finalizer main module with preserved symlink identity", async () => {
+  const cwd = mkdtempSync(join(tmpdir(), "stable-finalize-symlink-entry-"))
+  let result
+  try {
+    const entry = join(cwd, "release # %.mjs")
+    symlinkSync(script, entry)
+    result = await new Promise((resolve) => {
+      const child = spawn(process.execPath, ["--preserve-symlinks-main", entry], {
+        cwd,
+        env: {
+          ...process.env,
+          EXPECTED_SHA: "",
+          ARTIFACT_SHA: "",
+          PROJECTS: "",
+        },
+      })
+      let stdout = "",
+        stderr = ""
+      child.stdout.on("data", (chunk) => (stdout += chunk))
+      child.stderr.on("data", (chunk) => (stderr += chunk))
+      child.on("close", (status) => resolve({ status, stdout, stderr }))
+    })
+  } finally {
+    await rm(cwd, { recursive: true, force: true })
+  }
+
+  assert.equal(existsSync(cwd), false)
+  assert.notEqual(result.status, 0)
+  assert.equal(result.stdout, "")
+  assert.match(result.stderr, /FINALIZE requires full lowercase expected SHA/)
+})
+
 test("workflow FINALIZE step disables publication lifecycle scripts", () => {
   const finalizeJob = stableWorkflow.match(/^  finalize:\n([\s\S]*?)(?=^  summary:)/m)
   assert.ok(finalizeJob, "stable FINALIZE job")
@@ -1174,6 +1282,12 @@ test("static command and publication boundary removes historical truth", () => {
   const source = readFileSync(script, "utf8")
   assert.match(source, /spawn\(file, args, \{ shell: false/)
   assert.match(source, /process\.env\.GITHUB_ACTIONS/)
+  assert.match(source, /function isMainModule\(\)/)
+  assert.match(source, /resolvedEntry = realpathSync\(entry\)/)
+  assert.match(source, /resolvedModule = realpathSync\(fileURLToPath\(import\.meta\.url\)\)/)
+  assert.match(source, /pathToFileURL\(resolvedEntry\)\.href === pathToFileURL\(resolvedModule\)\.href/)
+  assert.match(source, /run\("git", \["cat-file", "-t", `\$\{artifactSha\}:CHANGELOG\.md`\]\)/)
+  assert.equal(source.match(/\\u0000/g)?.length, 2)
   assert.match(source, /artifactSha.*nx\.json|nx\.json.*artifactSha/s)
   assert.doesNotMatch(source, /^const records\s*=\s*\[/m)
   assert.doesNotMatch(source, /@effectify\/(?:hatchet|react-query|solid-query)|0\.5\.13|1\.1\.13/)

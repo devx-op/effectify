@@ -125,18 +125,29 @@ jobs:
           fi
 
           ZERO_SHA="0000000000000000000000000000000000000000"
+          [[ "$BEFORE_SHA" =~ ^[0-9a-f]{40}$ ]] && [ "$BEFORE_SHA" != "$ZERO_SHA" ] || {
+            echo "master push requires a nonzero full lowercase before SHA" >&2
+            exit 1
+          }
+          [[ "$HEAD_SHA" =~ ^[0-9a-f]{40}$ ]] && [ "$HEAD_SHA" != "$ZERO_SHA" ] || {
+            echo "master push requires a nonzero full lowercase head SHA" >&2
+            exit 1
+          }
           BEFORE="$BEFORE_SHA"
           HEAD="$HEAD_SHA"
-          if ! git cat-file -e "${HEAD}^{commit}" 2>/dev/null; then
-            HEAD=$(git rev-parse HEAD)
-          fi
-          if [ -n "$BEFORE" ] && [ "$BEFORE" != "$ZERO_SHA" ] && git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
-            BASE="$BEFORE"
-          elif git rev-parse --verify HEAD^ >/dev/null 2>&1; then
-            BASE="HEAD^"
-          else
-            BASE="$HEAD"
-          fi
+          test "$(git cat-file -t "$BEFORE" 2>/dev/null)" = "commit" || {
+            echo "master push before SHA is not a commit object" >&2
+            exit 1
+          }
+          test "$(git cat-file -t "$HEAD" 2>/dev/null)" = "commit" || {
+            echo "master push head SHA is not a commit object" >&2
+            exit 1
+          }
+          test "$(git rev-parse HEAD)" = "$HEAD" || {
+            echo "checked-out HEAD does not match the master push head SHA" >&2
+            exit 1
+          }
+          BASE="$BEFORE"
 
           CHANGED=$(mktemp); git diff --name-only --no-renames "$BASE" "$HEAD" | sort -u > "$CHANGED"
           RELEASE_MANIFESTS=$(mktemp)
@@ -149,50 +160,103 @@ jobs:
           done | sort -k2,2 > "$RELEASE_MANIFESTS"
           test -s "$RELEASE_MANIFESTS" || { echo "release manifest allowlist is empty" >&2; exit 1; }
 
-          HAS_CHANGELOG=false
-          UNEXPECTED=false
-          MANIFEST_CHANGES=0
-          BETA_TRANSITIONS=0
-          while IFS= read -r CHANGED_PATH; do
-            if [ "$CHANGED_PATH" = "CHANGELOG.md" ]; then
-              HAS_CHANGELOG=true
-              continue
-            fi
-            RECORD=$(awk -F '\t' -v manifest="$CHANGED_PATH" '$2 == manifest { print; count += 1 } END { if (count != 1) exit 1 }' "$RELEASE_MANIFESTS") || {
-              UNEXPECTED=true
-              continue
-            }
-            NAME=${RECORD%%$'\t'*}
-            MANIFEST_PATH=${RECORD#*$'\t'}
-            MANIFEST_CHANGES=$((MANIFEST_CHANGES + 1))
-            if ! OLD_DOCUMENT=$(git show "$BASE:$MANIFEST_PATH") || ! NEW_DOCUMENT=$(git show "$HEAD:$MANIFEST_PATH"); then
-              continue
-            fi
-            if ! OLD_NAME=$(printf '%s' "$OLD_DOCUMENT" | jq -er '.name | select(type == "string")') ||
-               ! OLD_VERSION=$(printf '%s' "$OLD_DOCUMENT" | jq -er '.version | select(type == "string")') ||
-               ! NEW_NAME=$(printf '%s' "$NEW_DOCUMENT" | jq -er '.name | select(type == "string")') ||
-               ! NEW_VERSION=$(printf '%s' "$NEW_DOCUMENT" | jq -er '.version | select(type == "string")'); then
-              continue
-            fi
-            if [[ "$OLD_VERSION" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)-beta\.(0|[1-9][0-9]*)$ ]]; then
-              STABLE_VERSION="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.${BASH_REMATCH[3]}"
-              if [ "$OLD_NAME" = "$NAME" ] && [ "$OLD_NAME" = "$NEW_NAME" ] && [ "$NEW_VERSION" = "$STABLE_VERSION" ]; then
-                BETA_TRANSITIONS=$((BETA_TRANSITIONS + 1))
+          HEAD_SUBJECT=${HEAD_MESSAGE%%$'\n'*}
+          # release-policy-classifier:start
+          classify_push_shape() {
+            HAS_CHANGELOG=false
+            UNEXPECTED=false
+            MANIFEST_CHANGES=0
+            BENIGN_MANIFEST_CHANGES=0
+            BETA_TRANSITIONS=0
+            INVALID_MANIFESTS=0
+            while IFS= read -r CHANGED_PATH; do
+              if [ "$CHANGED_PATH" = "CHANGELOG.md" ]; then
+                if ! CHANGELOG_TYPE=$(git cat-file -t "$HEAD:CHANGELOG.md" 2>/dev/null) || [ "$CHANGELOG_TYPE" != "blob" ]; then
+                  INVALID_MANIFESTS=$((INVALID_MANIFESTS + 1))
+                  continue
+                fi
+                HAS_CHANGELOG=true
+                continue
               fi
+              if ! RECORD=$(awk -F '\t' -v manifest="$CHANGED_PATH" '$2 == manifest { print }' "$RELEASE_MANIFESTS"); then
+                INVALID_MANIFESTS=$((INVALID_MANIFESTS + 1))
+                continue
+              fi
+              if [ -z "$RECORD" ]; then
+                UNEXPECTED=true
+                continue
+              fi
+              if [[ "$RECORD" == *$'\n'* ]]; then
+                INVALID_MANIFESTS=$((INVALID_MANIFESTS + 1))
+                continue
+              fi
+              NAME=${RECORD%%$'\t'*}
+              MANIFEST_PATH=${RECORD#*$'\t'}
+              MANIFEST_CHANGES=$((MANIFEST_CHANGES + 1))
+              if ! OLD_DOCUMENT=$(git show "$BASE:$MANIFEST_PATH" 2>/dev/null) ||
+                 ! NEW_DOCUMENT=$(git show "$HEAD:$MANIFEST_PATH" 2>/dev/null); then
+                INVALID_MANIFESTS=$((INVALID_MANIFESTS + 1))
+                continue
+              fi
+              if ! printf '%s' "$OLD_DOCUMENT" | jq -e -s 'length == 1 and (.[0] | type == "object")' >/dev/null 2>&1 ||
+                 ! printf '%s' "$NEW_DOCUMENT" | jq -e -s 'length == 1 and (.[0] | type == "object")' >/dev/null 2>&1; then
+                INVALID_MANIFESTS=$((INVALID_MANIFESTS + 1))
+                continue
+              fi
+              if ! OLD_NAME=$(printf '%s' "$OLD_DOCUMENT" | jq -er '.name | select(type == "string" and length > 0)' 2>/dev/null) ||
+                 ! OLD_VERSION=$(printf '%s' "$OLD_DOCUMENT" | jq -er '.version | select(type == "string" and length > 0)' 2>/dev/null) ||
+                 ! NEW_NAME=$(printf '%s' "$NEW_DOCUMENT" | jq -er '.name | select(type == "string" and length > 0)' 2>/dev/null) ||
+                 ! NEW_VERSION=$(printf '%s' "$NEW_DOCUMENT" | jq -er '.version | select(type == "string" and length > 0)' 2>/dev/null); then
+                INVALID_MANIFESTS=$((INVALID_MANIFESTS + 1))
+                continue
+              fi
+              if [ "$OLD_NAME" != "$NAME" ] || [ "$NEW_NAME" != "$NAME" ]; then
+                INVALID_MANIFESTS=$((INVALID_MANIFESTS + 1))
+                continue
+              fi
+              if [ "$OLD_VERSION" = "$NEW_VERSION" ]; then
+                BENIGN_MANIFEST_CHANGES=$((BENIGN_MANIFEST_CHANGES + 1))
+                continue
+              fi
+              if [[ "$OLD_VERSION" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)-beta\.(0|[1-9][0-9]*)$ ]]; then
+                STABLE_VERSION="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.${BASH_REMATCH[3]}"
+                if [ "$NEW_VERSION" = "$STABLE_VERSION" ]; then
+                  BETA_TRANSITIONS=$((BETA_TRANSITIONS + 1))
+                  continue
+                fi
+              fi
+              INVALID_MANIFESTS=$((INVALID_MANIFESTS + 1))
+            done < "$CHANGED"
+
+            if [[ "$HEAD_SUBJECT" == *"chore(release):"* || "$HEAD_SUBJECT" == *"[skip release]"* ]]; then
+              printf '%s\n' reject
+              return
             fi
-          done < "$CHANGED"
-          if [ "$HAS_CHANGELOG" = "true" ] && [ "$UNEXPECTED" = "false" ] && [ "$BETA_TRANSITIONS" -gt 0 ] && [ "$BETA_TRANSITIONS" -eq "$MANIFEST_CHANGES" ]; then
+            if [ "$HAS_CHANGELOG" = "true" ] && [ "$UNEXPECTED" = "false" ] && [ "$INVALID_MANIFESTS" = "0" ] && [ "$BETA_TRANSITIONS" -gt 0 ] && [ "$BETA_TRANSITIONS" -eq "$MANIFEST_CHANGES" ]; then
+              printf '%s\n' suppress
+              return
+            fi
+            if [ "$HAS_CHANGELOG" = "true" ] || [ "$INVALID_MANIFESTS" -gt 0 ] || [ "$BETA_TRANSITIONS" -gt 0 ] || [ "$MANIFEST_CHANGES" -ne "$BENIGN_MANIFEST_CHANGES" ]; then
+              printf '%s\n' reject
+              return
+            fi
+            printf '%s\n' prepare
+          }
+          # release-policy-classifier:end
+
+          CLASSIFICATION=$(classify_push_shape)
+          if [ "$CLASSIFICATION" = "suppress" ]; then
             echo "mode=suppress" >> "$GITHUB_OUTPUT"; echo "has_projects=false" >> "$GITHUB_OUTPUT"; echo "projects=" >> "$GITHUB_OUTPUT"; exit 0
           fi
-          HEAD_SUBJECT=${HEAD_MESSAGE%%$'\n'*}
-          if [[ "$HEAD_SUBJECT" == *"chore(release):"* || "$HEAD_SUBJECT" == *"[skip release]"* ]] || [ "$HAS_CHANGELOG" = "true" ] || [ "$MANIFEST_CHANGES" -gt 0 ]; then
+          if [ "$CLASSIFICATION" != "prepare" ]; then
             echo "stable promotion shape is partial, mixed, or malformed" >&2
             echo "suspicious release-shaped master push; refusing preparation" >&2
             exit 1
           fi
 
-          AFFECTED_RAW=$(pnpm nx show projects --affected --base="$BASE" --head="$HEAD" --json 2>/dev/null || echo "[]")
-          AFFECTED_RELEASE_PROJECTS=$(echo "$AFFECTED_RAW" | jq -r --argjson release "$RELEASE_PROJECTS" '[.[] | select(. as $project | $release | index($project))] | unique | join(",")' 2>/dev/null || echo "")
+          AFFECTED_RAW=$(pnpm nx show projects --affected --base="$BASE" --head="$HEAD" --json)
+          printf '%s' "$AFFECTED_RAW" | jq -e -s 'length == 1 and (.[0] | type == "array" and all(.[]; type == "string"))' >/dev/null
+          AFFECTED_RELEASE_PROJECTS=$(printf '%s' "$AFFECTED_RAW" | jq -r --argjson release "$RELEASE_PROJECTS" '[.[] | select(. as $project | $release | index($project))] | unique | join(",")')
           if [ -z "$AFFECTED_RELEASE_PROJECTS" ] || [ "$AFFECTED_RELEASE_PROJECTS" = "null" ]; then
             echo "mode=prepare" >> "$GITHUB_OUTPUT"
             echo "has_projects=false" >> "$GITHUB_OUTPUT"

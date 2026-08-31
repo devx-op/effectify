@@ -1,6 +1,8 @@
 import assert from "node:assert/strict"
 import { spawnSync } from "node:child_process"
-import { readFileSync } from "node:fs"
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
 import test from "node:test"
 
 const read = (path) => {
@@ -105,11 +107,11 @@ const extractSteps = (source) => {
 
       for (index += 1; index < lines.length; index += 1) {
         const command = lines[index]
-        step.source += `${command}\n`
         if (command.trim() && indentation(command) <= runIndent) {
           index -= 1
           break
         }
+        step.source += `${command}\n`
         const trimmed = command.trim()
         if (trimmed && !trimmed.startsWith("#")) step.commands.push(trimmed)
       }
@@ -177,7 +179,8 @@ const sensitiveShellViolations = (step, label) => {
   }
   for (const fn of functions) {
     const invoked = step.commands.some(
-      (command, index) => (index < fn.start || index >= fn.end) && new RegExp(`^${fn.name}(?:\\s|$)`).test(command),
+      (command, index) =>
+        (index < fn.start || index >= fn.end) && new RegExp(`(?:^|\\$\\()${fn.name}(?:\\s|\\)|$)`).test(command),
     )
     if (!invoked) violations.push(`${label} unused shell function ${fn.name}`)
   }
@@ -226,13 +229,32 @@ const buildCommand = /^pnpm nx run-many -t build "--projects=\$PROJECTS" --paral
 const testCommand = /^pnpm nx run-many -t test "--projects=\$PROJECTS" --parallel=3 --passWithNoTests$/
 const contractCommand = /^node --test scripts\/release-policy-contract\.test\.mjs$/
 const releaseSubjectGuard =
-  'if [[ "$HEAD_SUBJECT" == *"chore(release):"* || "$HEAD_SUBJECT" == *"[skip release]"* ]] || [ "$HAS_CHANGELOG" = "true" ] || [ "$MANIFEST_CHANGES" -gt 0 ]; then'
+  'if [[ "$HEAD_SUBJECT" == *"chore(release):"* || "$HEAD_SUBJECT" == *"[skip release]"* ]]; then'
+const releaseManifestGuard =
+  'if [ "$HAS_CHANGELOG" = "true" ] || [ "$INVALID_MANIFESTS" -gt 0 ] || [ "$BETA_TRANSITIONS" -gt 0 ] || [ "$MANIFEST_CHANGES" -ne "$BENIGN_MANIFEST_CHANGES" ]; then'
+const exactBetaSuppressionGuard =
+  'if [ "$HAS_CHANGELOG" = "true" ] && [ "$UNEXPECTED" = "false" ] && [ "$INVALID_MANIFESTS" = "0" ] && [ "$BETA_TRANSITIONS" -gt 0 ] && [ "$BETA_TRANSITIONS" -eq "$MANIFEST_CHANGES" ]; then'
+const classificationFailClosedGuard = 'if [ "$CLASSIFICATION" != "prepare" ]; then'
+const oldManifestCardinalityGuard =
+  "if ! printf '%s' \"$OLD_DOCUMENT\" | jq -e -s 'length == 1 and (.[0] | type == \"object\")' >/dev/null 2>&1 ||"
+const newManifestCardinalityGuard =
+  "! printf '%s' \"$NEW_DOCUMENT\" | jq -e -s 'length == 1 and (.[0] | type == \"object\")' >/dev/null 2>&1; then"
+const betaFinalizeExpectedShaGuard = '[[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]] || {'
+const stableFinalizeExpectedShaGuard =
+  "[[ \"$EXPECTED_SHA\" =~ ^[0-9a-f]{40}$ ]] || { echo '::error::FINALIZE requires full lowercase expected_sha'; exit 1; }"
 const stableTransitionVersionPattern = "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)-beta\\.(0|[1-9][0-9]*)$"
 
 const permissionEntries = (job) => {
   const block = job.match(/^\s{4}permissions:\s*\n((?:\s{6}[A-Za-z-]+:\s*[^\n]+\n?)+)/m)?.[1] ?? ""
-  return Object.fromEntries(
-    [...block.matchAll(/^\s{6}([A-Za-z-]+):\s*([^\s#]+)\s*$/gm)].map(([, name, access]) => [name, access]),
+  return [...block.matchAll(/^\s{6}([A-Za-z-]+):\s*([^\s#]+)\s*$/gm)].map(([, name, access]) => [name, access])
+}
+
+const hasExactPermissions = (job, expected) => {
+  const entries = permissionEntries(job)
+  return (
+    entries.length === Object.keys(expected).length &&
+    new Set(entries.map(([name]) => name)).size === entries.length &&
+    entries.every(([name, access]) => expected[name] === access)
   )
 }
 
@@ -255,7 +277,7 @@ const stableCapabilityViolations = (source) => {
     ["preflight", { contents: "read" }],
     ["finalize", { contents: "write", "id-token": "write" }],
   ]) {
-    if (JSON.stringify(permissionEntries(jobs[name])) !== JSON.stringify(expected)) {
+    if (!hasExactPermissions(jobs[name], expected)) {
       violations.push(`stable ${name} least privilege`)
     }
     if (checkoutPersistsCredentials(jobs[name])) violations.push(`stable ${name} persisted checkout credentials`)
@@ -299,6 +321,7 @@ const stableCapabilityViolations = (source) => {
       /^git commit -m /,
       /^RELEASE_SHA=\$\(git rev-parse HEAD\)$/,
       /^PARENTS=\$\(git rev-list --parents -n 1 "\$RELEASE_SHA"\)$/,
+      /^if ! RELEASE_CHANGELOG_TYPE=\$\(git cat-file -t "\$RELEASE_SHA:CHANGELOG\.md" 2>\/dev\/null\)/,
       /^git diff --name-only --no-renames "\$SOURCE_SHA" "\$RELEASE_SHA"/,
       /^COMMITTED_DOCUMENT=\$\(git show "\$RELEASE_SHA:\$MANIFEST_PATH"\)$/,
       /^test -z "\$\(git status --porcelain\)" \|\| \{ echo '::error::post-commit tree dirty'/,
@@ -351,36 +374,230 @@ const stableCapabilityViolations = (source) => {
   return violations
 }
 
-const classifyGenericStableShape = ({ changedPaths, catalog, before, after }) => {
-  let hasChangelog = false
-  let unexpected = false
-  let manifestChanges = 0
-  let betaTransitions = 0
-  const beta = new RegExp(stableTransitionVersionPattern)
+const classifierStartMarker = "# release-policy-classifier:start"
+const classifierEndMarker = "# release-policy-classifier:end"
+const classifierInvocation = "CLASSIFICATION=$(classify_push_shape)"
 
-  for (const path of [...new Set(changedPaths)].sort()) {
-    if (path === "CHANGELOG.md") {
-      hasChangelog = true
-      continue
-    }
-    const expectedName = catalog[path]
-    if (!expectedName) {
-      unexpected = true
-      continue
-    }
-    manifestChanges += 1
-    const previous = before[path]
-    const current = after[path]
-    const match = previous?.version?.match(beta)
-    const stable = match ? `${match[1]}.${match[2]}.${match[3]}` : ""
-    if (previous?.name === expectedName && current?.name === expectedName && current?.version === stable) {
-      betaTransitions += 1
+const classifierStructureViolations = (source) => {
+  const violations = []
+  const lines = source.split("\n")
+  const startIndexes = lines.flatMap((line, index) => (line.trim() === classifierStartMarker ? [index] : []))
+  const endIndexes = lines.flatMap((line, index) => (line.trim() === classifierEndMarker ? [index] : []))
+  const executable = commandEntries(source).map(({ command }) => command)
+  const declarations = executable.filter((command) => command === "classify_push_shape() {")
+  const invocations = executable.filter(
+    (command) => command !== "classify_push_shape() {" && /\bclassify_push_shape\b/.test(command),
+  )
+
+  if (startIndexes.length !== 1) violations.push("beta exactly one classifier start marker")
+  if (endIndexes.length !== 1) violations.push("beta exactly one classifier end marker")
+  if (declarations.length !== 1) violations.push("beta exactly one classifier declaration")
+  if (invocations.length !== 1 || invocations[0] !== classifierInvocation) {
+    violations.push("beta exactly one classifier invocation")
+  }
+  if (startIndexes.length === 1 && endIndexes.length === 1) {
+    const [start] = startIndexes
+    const [end] = endIndexes
+    if (end <= start) {
+      violations.push("beta classifier marker order")
+    } else {
+      const firstExecutable = lines
+        .slice(end + 1)
+        .map((line) => line.trim())
+        .find((line) => line !== "" && !line.startsWith("#"))
+      if (firstExecutable !== classifierInvocation) {
+        violations.push("beta classifier invocation immediately follows end marker")
+      }
     }
   }
+  return violations
+}
 
-  return hasChangelog && !unexpected && betaTransitions > 0 && betaTransitions === manifestChanges
-    ? "suppress"
-    : "reject"
+const extractBetaPushClassifier = (source) => {
+  if (classifierStructureViolations(source).length > 0) return ""
+  const lines = source.split("\n")
+  const start = lines.findIndex((line) => line.trim() === classifierStartMarker)
+  const end = lines.findIndex((line) => line.trim() === classifierEndMarker)
+  return lines.slice(start + 1, end).join("\n")
+}
+
+const extractRunScript = (step) => {
+  const lines = step?.source.split("\n") ?? []
+  const runIndex = lines.findIndex((line) => /^\s*run:\s*\|\s*$/.test(line))
+  if (runIndex === -1) return ""
+  const body = lines.slice(runIndex + 1)
+  const bodyIndent = Math.min(...body.filter((line) => line.trim() !== "").map((line) => indentation(line)))
+  return body.map((line) => (line.trim() === "" ? "" : line.slice(bodyIndent))).join("\n")
+}
+
+const shellQuote = (value) => `'${value.replaceAll("'", `'"'"'`)}'`
+
+const runBetaPushClassifier = ({
+  changedPaths,
+  catalog,
+  before = {},
+  after = {},
+  headSubject = "",
+  changelogType = "blob",
+}) => {
+  const classifier = extractBetaPushClassifier(workflows.beta)
+  assert.notEqual(classifier, "", "beta workflow classifier block")
+
+  const directory = mkdtempSync(join(tmpdir(), "effectify-beta-classifier-"))
+  try {
+    const changedFile = join(directory, "changed-paths")
+    const catalogFile = join(directory, "release-manifests")
+    const uniqueChangedPaths = [...new Set(changedPaths)].sort()
+    const catalogEntries = Object.entries(catalog).sort(([left], [right]) => left.localeCompare(right))
+    writeFileSync(changedFile, uniqueChangedPaths.length > 0 ? `${uniqueChangedPaths.join("\n")}\n` : "")
+    writeFileSync(
+      catalogFile,
+      catalogEntries.length > 0 ? `${catalogEntries.map(([path, name]) => `${name}\t${path}`).join("\n")}\n` : "",
+    )
+
+    const environment = {
+      ...process.env,
+      BASE: "base",
+      HEAD: "head",
+      HEAD_SUBJECT: headSubject,
+      CHANGELOG_TYPE: changelogType,
+      CHANGED: changedFile,
+      RELEASE_MANIFESTS: catalogFile,
+    }
+    const cases = []
+    for (const [index, path] of Object.keys(catalog).entries()) {
+      for (const [revision, documents, prefix] of [
+        ["base", before, "BEFORE"],
+        ["head", after, "AFTER"],
+      ]) {
+        const value = documents[path]
+        environment[`${prefix}_PRESENT_${index}`] = String(value !== undefined)
+        environment[`${prefix}_DOCUMENT_${index}`] =
+          value === undefined ? "" : typeof value === "string" ? value : JSON.stringify(value)
+        cases.push(
+          `    ${shellQuote(`${revision}:${path}`)}) [ "$${prefix}_PRESENT_${index}" = "true" ] || return 128; printf '%s' "$${prefix}_DOCUMENT_${index}" ;;`,
+        )
+      }
+    }
+
+    const result = spawnSync(
+      "bash",
+      [
+        "-c",
+        `set -euo pipefail\ngit() {\n  if [ "$1" = "cat-file" ] && [ "$2" = "-t" ] && [ "$3" = "head:CHANGELOG.md" ]; then\n    [ "$CHANGELOG_TYPE" != "missing" ] || return 128\n    printf '%s\\n' "$CHANGELOG_TYPE"\n    return\n  fi\n  [ "$1" = "show" ] || return 127\n  case "$2" in\n${cases.join("\n")}\n    *) return 128 ;;\n  esac\n}\n${classifier}\nclassify_push_shape`,
+      ],
+      { cwd: directory, encoding: "utf8", env: environment },
+    )
+    assert.equal(result.status, 0, result.stderr)
+    return result.stdout.trim()
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+}
+
+const betaBeforeSha = "1111111111111111111111111111111111111111"
+const betaHeadSha = "2222222222222222222222222222222222222222"
+const betaManifestPath = "packages/future/nebula/package.json"
+const betaProject = "@future/nebula"
+
+const runBetaPushResolver = ({
+  beforeSha = betaBeforeSha,
+  headSha = betaHeadSha,
+  checkedOutHead = headSha,
+  beforeType = "commit",
+  headType = "commit",
+  changedPaths = ["packages/future/nebula/src/index.ts"],
+  beforeDocument = { name: betaProject, version: "4.7.0-beta.12" },
+  afterDocument = beforeDocument,
+  changelogType = "blob",
+  affectedOutput = "[]",
+  affectedExit = 0,
+} = {}) => {
+  const resolve = extractSteps(workflows.beta).find((step) => step.name.includes("Resolve beta mode and projects"))
+  const script = extractRunScript(resolve)
+  assert.notEqual(script, "", "beta resolver shell body")
+
+  const directory = mkdtempSync(join(tmpdir(), "effectify-beta-resolver-"))
+  try {
+    const outputFile = join(directory, "github-output")
+    writeFileSync(join(directory, "nx.json"), JSON.stringify({ release: { projects: ["packages/future/nebula"] } }))
+    writeFileSync(outputFile, "")
+    const environment = {
+      ...process.env,
+      EVENT_NAME: "push",
+      PUBLISH_ONLY: "false",
+      REQUESTED_PROJECTS: "",
+      EXPECTED_SHA: "",
+      BEFORE_SHA: beforeSha,
+      HEAD_SHA: headSha,
+      HEAD_MESSAGE: "ordinary source push",
+      CHECKED_OUT_HEAD: checkedOutHead,
+      BEFORE_TYPE: beforeType,
+      HEAD_TYPE: headType,
+      CHANGED_PATHS: changedPaths.join("\n"),
+      MANIFEST_PATH: betaManifestPath,
+      BEFORE_DOCUMENT: typeof beforeDocument === "string" ? beforeDocument : JSON.stringify(beforeDocument),
+      AFTER_DOCUMENT: typeof afterDocument === "string" ? afterDocument : JSON.stringify(afterDocument),
+      CHANGELOG_TYPE: changelogType,
+      NX_AFFECTED_OUTPUT: affectedOutput,
+      NX_AFFECTED_EXIT: String(affectedExit),
+      GITHUB_OUTPUT: outputFile,
+      TMPDIR: directory,
+    }
+    const stubs = `pnpm() {
+  [ "$1" = nx ] || return 127
+  if [ "$2" = show ] && [ "$3" = project ] && [ "$4" = packages/future/nebula ]; then
+    printf '%s\\n' '{"name":"@future/nebula","root":"packages/future/nebula"}'
+    return
+  fi
+  if [ "$2" = show ] && [ "$3" = projects ]; then
+    [ "$NX_AFFECTED_EXIT" = 0 ] || return "$NX_AFFECTED_EXIT"
+    printf '%s' "$NX_AFFECTED_OUTPUT"
+    return
+  fi
+  return 127
+}
+git() {
+  if [ "$1" = cat-file ] && [ "$2" = -t ]; then
+    case "$3" in
+      "$BEFORE_SHA") [ "$BEFORE_TYPE" != missing ] || return 128; printf '%s\\n' "$BEFORE_TYPE" ;;
+      "$HEAD_SHA") [ "$HEAD_TYPE" != missing ] || return 128; printf '%s\\n' "$HEAD_TYPE" ;;
+      "$HEAD_SHA:CHANGELOG.md") [ "$CHANGELOG_TYPE" != missing ] || return 128; printf '%s\\n' "$CHANGELOG_TYPE" ;;
+      *) return 128 ;;
+    esac
+    return
+  fi
+  if [ "$1" = rev-parse ] && [ "$2" = HEAD ]; then printf '%s\\n' "$CHECKED_OUT_HEAD"; return; fi
+  if [ "$1" = diff ]; then [ -z "$CHANGED_PATHS" ] || printf '%s\\n' "$CHANGED_PATHS"; return; fi
+  if [ "$1" = show ]; then
+    case "$2" in
+      "$BEFORE_SHA:$MANIFEST_PATH") printf '%s' "$BEFORE_DOCUMENT" ;;
+      "$HEAD_SHA:$MANIFEST_PATH") printf '%s' "$AFTER_DOCUMENT" ;;
+      *) return 128 ;;
+    esac
+    return
+  fi
+  return 127
+}`
+    const result = spawnSync("bash", ["-c", `${stubs}\n${script}`], {
+      cwd: directory,
+      encoding: "utf8",
+      env: environment,
+    })
+    const outputText = readFileSync(outputFile, "utf8")
+    const output = Object.fromEntries(
+      outputText
+        .split("\n")
+        .filter(Boolean)
+        .map((line) => {
+          const separator = line.indexOf("=")
+          return [line.slice(0, separator), line.slice(separator + 1)]
+        }),
+    )
+    return { ...result, output, outputText }
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
 }
 
 const channelViolations = (channel, source) => {
@@ -433,7 +650,7 @@ const channelViolations = (channel, source) => {
 }
 
 const betaViolations = (source) => {
-  const violations = []
+  const violations = [...classifierStructureViolations(source)]
   const active = withoutComments(source)
   const steps = extractSteps(source)
   const resolve = steps.find((step) => step.commands.some((command) => /mode=prepare/.test(command)))
@@ -452,17 +669,54 @@ const betaViolations = (source) => {
     violations.push("beta mode resolver")
   } else {
     const commands = resolve.commands.join("\n")
+    if (!resolve.commands.includes(betaFinalizeExpectedShaGuard)) {
+      violations.push("beta FINALIZE full expected SHA")
+    }
     if (!resolve.commands.includes("HEAD_SUBJECT=${HEAD_MESSAGE%%$'\\n'*}")) {
       violations.push("beta first-line release subject")
     }
     if (!resolve.commands.includes(releaseSubjectGuard)) {
-      violations.push("beta release-shaped fail-closed defense")
+      violations.push("beta release-subject fail-closed defense")
+    }
+    if (!resolve.commands.includes(releaseManifestGuard)) {
+      violations.push("beta non-benign manifest fail-closed defense")
+    }
+    if (!resolve.commands.includes(exactBetaSuppressionGuard)) {
+      violations.push("beta exact suppression guard")
+    }
+    if (!resolve.commands.includes(classificationFailClosedGuard)) {
+      violations.push("beta classifier result fail-closed guard")
+    }
+    if (extractBetaPushClassifier(source) === "") {
+      violations.push("beta executable push classifier")
+    }
+    for (const command of [
+      '[[ "$BEFORE_SHA" =~ ^[0-9a-f]{40}$ ]] && [ "$BEFORE_SHA" != "$ZERO_SHA" ] || {',
+      '[[ "$HEAD_SHA" =~ ^[0-9a-f]{40}$ ]] && [ "$HEAD_SHA" != "$ZERO_SHA" ] || {',
+      'BEFORE="$BEFORE_SHA"',
+      'HEAD="$HEAD_SHA"',
+      'test "$(git cat-file -t "$BEFORE" 2>/dev/null)" = "commit" || {',
+      'test "$(git cat-file -t "$HEAD" 2>/dev/null)" = "commit" || {',
+      'test "$(git rev-parse HEAD)" = "$HEAD" || {',
+      'BASE="$BEFORE"',
+      oldManifestCardinalityGuard,
+      newManifestCardinalityGuard,
+      'AFFECTED_RAW=$(pnpm nx show projects --affected --base="$BASE" --head="$HEAD" --json)',
+      'printf \'%s\' "$AFFECTED_RAW" | jq -e -s \'length == 1 and (.[0] | type == "array" and all(.[]; type == "string"))\' >/dev/null',
+      'AFFECTED_RELEASE_PROJECTS=$(printf \'%s\' "$AFFECTED_RAW" | jq -r --argjson release "$RELEASE_PROJECTS" \'[.[] | select(. as $project | $release | index($project))] | unique | join(",")\')',
+    ]) {
+      if (!resolve.commands.includes(command)) violations.push(`beta push resolver command ${command}`)
+    }
+    if (/AFFECTED_(?:RAW|RELEASE_PROJECTS)=.*\|\|\s*echo/.test(commands)) {
+      violations.push("beta affected project fail-open fallback")
+    }
+    if (/BASE="HEAD\^"|HEAD=\$\(git rev-parse HEAD\)/.test(commands)) {
+      violations.push("beta event range fallback")
     }
     for (const [pattern, name] of [
       [/mode=prepare/, "prepare mode"],
       [/mode=finalize/, "finalize mode"],
       [/mode=suppress/, "suppress mode"],
-      [/\^\[0-9a-f\]\{40\}\$/, "full expected SHA"],
       [/git diff --name-only --no-renames/, "structural changed paths"],
       [/CHANGELOG\.md/, "root changelog shape"],
       [/-beta\\\.\[0-9\]/, "beta manifest transition"],
@@ -624,22 +878,24 @@ const betaViolations = (source) => {
     [/git show "\$BASE:\$MANIFEST_PATH"/, "old reviewed manifest"],
     [/git show "\$HEAD:\$MANIFEST_PATH"/, "new reviewed manifest"],
     [/HAS_CHANGELOG=true/, "required root changelog"],
+    [/git cat-file -t "\$HEAD:CHANGELOG\.md"/, "root changelog artifact blob"],
+    [/\[ "\$CHANGELOG_TYPE" != "blob" \]/, "non-blob changelog rejection"],
     [/UNEXPECTED=true/, "unexpected path rejection"],
+    [/INVALID_MANIFESTS=0/, "invalid manifest rejection"],
+    [/BENIGN_MANIFEST_CHANGES=0/, "benign manifest tracking"],
+    [/\[ "\$OLD_NAME" != "\$NAME" \] \|\| \[ "\$NEW_NAME" != "\$NAME" \]/, "allowlisted manifest names"],
+    [/\[ "\$OLD_VERSION" = "\$NEW_VERSION" \]/, "unchanged benign manifest version"],
     [
       /STABLE_VERSION="\$\{BASH_REMATCH\[1\]\}\.\$\{BASH_REMATCH\[2\]\}\.\$\{BASH_REMATCH\[3\]\}"/,
       "derived stable target",
     ],
-    [/\[ "\$OLD_NAME" = "\$NEW_NAME" \] && \[ "\$NEW_VERSION" = "\$STABLE_VERSION" \]/, "same-name beta-to-stable"],
+    [/\[ "\$NEW_VERSION" = "\$STABLE_VERSION" \]/, "exact beta-to-stable target"],
   ])
     if (!pattern.test(active)) violations.push(`beta stable structural check ${name}`)
   if (!active.includes(stableTransitionVersionPattern)) {
     violations.push("beta stable structural check no-leading-zero beta source")
   }
-  if (
-    !/if \[ "\$HAS_CHANGELOG" = "true" \] && \[ "\$UNEXPECTED" = "false" \] && \[ "\$BETA_TRANSITIONS" -gt 0 \] && \[ "\$BETA_TRANSITIONS" -eq "\$MANIFEST_CHANGES" \]; then/.test(
-      active,
-    )
-  ) {
+  if (!resolve?.commands.includes(exactBetaSuppressionGuard)) {
     violations.push("beta exact suppression shape")
   }
   if (!/echo "suspicious release-shaped master push; refusing preparation" >&2\s*\n\s*exit 1/.test(active)) {
@@ -699,6 +955,11 @@ const stableViolations = (source, finalizeScript = stableFinalizeScript) => {
       ["artifact SHA fallback", /const artifactSha = process\.env\.ARTIFACT_SHA \|\| expectedSha/, activeFinalize],
       ["historical SHA distinction", /const historicalReplay = artifactSha !== expectedSha/, activeFinalize],
       [
+        "import-safe URL-aware main-module guard",
+        /function isMainModule\(\) \{[\s\S]*const entry = process\.argv\[1\][\s\S]*if \(!entry\) return false[\s\S]*resolvedEntry = realpathSync\(entry\)[\s\S]*resolvedModule = realpathSync\(fileURLToPath\(import\.meta\.url\)\)[\s\S]*catch \{[\s\S]*return false[\s\S]*pathToFileURL\(resolvedEntry\)\.href === pathToFileURL\(resolvedModule\)\.href/,
+        activeFinalize,
+      ],
+      [
         "strict expected SHA",
         /if \(!\/\^\[0-9a-f\]\{40\}\$\/\.test\(expectedSha\)\) fail\("FINALIZE requires full lowercase expected SHA"\)/,
         activeFinalize,
@@ -722,6 +983,16 @@ const stableViolations = (source, finalizeScript = stableFinalizeScript) => {
       [
         "requested projects environment",
         /const requestedProjectsText = process\.env\.PROJECTS \?\? ""/,
+        activeFinalize,
+      ],
+      [
+        "artifact changelog blob before publication inspection",
+        /await verifyArtifactChangelog\(\)[\s\S]*const records = await deriveReviewedRecords\(projects\)[\s\S]*const states = await inspect\(records\)/,
+        activeFinalize,
+      ],
+      [
+        "bounded artifact changelog type inspection",
+        /run\("git", \["cat-file", "-t", `\$\{artifactSha\}:CHANGELOG\.md`\]\)/,
         activeFinalize,
       ],
       ["artifact nx release roots", /artifactJson\("nx\.json"/, activeFinalize],
@@ -819,11 +1090,20 @@ const stableViolations = (source, finalizeScript = stableFinalizeScript) => {
         /NEW="\$\{BASH_REMATCH\[1\]\}\.\$\{BASH_REMATCH\[2\]\}\.\$\{BASH_REMATCH\[3\]\}"/,
         active,
       ],
-      ["PREPARE exact SHA", /\[\[ "\$EXPECTED_SHA" =~ \^\[0-9a-f\]\{40\}\$ \]\]/, active],
       ["PREPARE Nx flags", /--git-commit=false --git-tag=false --git-push=false --stage-changes=false/, active],
       ["PREPARE expected path equality", /cmp -s "\$EXPECTED_PATHS" "\$ACTUAL"/, active],
       ["PREPARE exact staging", /git add --pathspec-from-file="\$EXPECTED_PATHS"/, active],
       ["PREPARE staged path equality", /cmp -s "\$EXPECTED_PATHS" "\$STAGED_PATHS"/, active],
+      [
+        "PREPARE committed changelog blob",
+        /git cat-file -t "\$RELEASE_SHA:CHANGELOG\.md"[\s\S]*\[ "\$RELEASE_CHANGELOG_TYPE" != "blob" \]/,
+        active,
+      ],
+      [
+        "validate reviewed artifact changelog blob",
+        /git cat-file -t "\$RESOLVED_ARTIFACT_SHA:CHANGELOG\.md"[\s\S]*\[ "\$ARTIFACT_CHANGELOG_TYPE" != "blob" \]/,
+        active,
+      ],
       ["PREPARE release branch", /BRANCH="release\/stable-\$SHA_PREFIX"/, active],
       [
         "read-only PREFLIGHT summary",
@@ -874,11 +1154,18 @@ const stableViolations = (source, finalizeScript = stableFinalizeScript) => {
         }
         if (!/MODE=preflight/.test(preflightBranch)) violations.push("stable PREFLIGHT mode output")
       }
+      if (!resolve.commands.includes(stableFinalizeExpectedShaGuard)) {
+        violations.push("stable FINALIZE full expected SHA guard")
+      }
     }
 
     const freshSequence = [
       /^if \[ "\$MODE" = preflight \] \|\| \[ "\$MODE" = finalize \]; then$/,
       /^test "\$HEAD_SHA" = "\$EXPECTED_SHA" \|\| \{ echo '::error::PREFLIGHT\/FINALIZE SHA mismatch'; exit 1; \}$/,
+      /^if ! ARTIFACT_CHANGELOG_TYPE=\$\(git cat-file -t "\$RESOLVED_ARTIFACT_SHA:CHANGELOG\.md" 2>\/dev\/null\) \|\| \[ "\$ARTIFACT_CHANGELOG_TYPE" != "blob" \]; then$/,
+      /^echo '::error::reviewed stable artifact requires root CHANGELOG\.md to exist as a blob'$/,
+      /^exit 1$/,
+      /^fi$/,
       /^fi$/,
     ]
     if (!freshAuthorization || !hasCommandSequence(freshAuthorization.commands, freshSequence)) {
@@ -979,7 +1266,7 @@ const stableReleasePrGuardViolations = (source) => {
   const guard = steps.find((step) => step.name.includes("Require one stable release source commit"))
   const ordinaryCheckout = steps.find((step) => step.name === "📥 Checkout")
 
-  if (!/^\s{4}permissions:\s*\n\s{6}contents:\s*read\s*$/m.test(job)) {
+  if (!hasExactPermissions(job, { contents: "read" })) {
     violations.push("stable release PR read-only permissions")
   }
   if (!checkout || checkout.condition !== condition || !checkout.uses.startsWith("actions/checkout@")) {
@@ -1066,28 +1353,300 @@ test("release policy baseline has zero violations", () => {
   assert.deepEqual(stableCapabilityViolations(workflows.stable), [])
 })
 
-test("a valid Solid Query singleton reaches generic stable suppression", () => {
-  const manifest = "packages/solid/query/package.json"
-  const candidate = {
-    changedPaths: ["CHANGELOG.md", manifest],
-    catalog: { [manifest]: "@effectify/solid-query" },
-    before: { [manifest]: { name: "@effectify/solid-query", version: "0.5.13-beta.0" } },
-    after: { [manifest]: { name: "@effectify/solid-query", version: "0.5.13" } },
+test("the executable beta resolver classifier enforces the manifest truth table", () => {
+  const nebula = "packages/future/nebula/package.json"
+  const orbit = "packages/future/orbit/package.json"
+  const catalog = {
+    [nebula]: "@future/nebula",
+    [orbit]: "@future/orbit",
+  }
+  const nebulaBeta = { name: "@future/nebula", version: "4.7.0-beta.12" }
+  const nebulaStable = { name: "@future/nebula", version: "4.7.0" }
+  const orbitBeta = { name: "@future/orbit", version: "8.0.1-beta.3" }
+  const orbitStable = { name: "@future/orbit", version: "8.0.1" }
+  const benignBefore = { ...nebulaBeta, license: "MIT" }
+  const benignAfter = { ...nebulaBeta, license: "Apache-2.0" }
+
+  const exactPromotion = {
+    changedPaths: ["CHANGELOG.md", nebula, orbit],
+    catalog,
+    before: { [nebula]: nebulaBeta, [orbit]: orbitBeta },
+    after: { [nebula]: nebulaStable, [orbit]: orbitStable },
+  }
+  for (const [name, candidate, expected] of [
+    [
+      "benign metadata with unchanged allowlisted name and version prepares",
+      { changedPaths: [nebula], catalog, before: { [nebula]: benignBefore }, after: { [nebula]: benignAfter } },
+      "prepare",
+    ],
+    [
+      "a source edit plus a benign manifest edit prepares",
+      {
+        changedPaths: ["packages/future/nebula/src/index.ts", nebula],
+        catalog,
+        before: { [nebula]: benignBefore },
+        after: { [nebula]: benignAfter },
+      },
+      "prepare",
+    ],
+    [
+      "formatting-only benign manifest JSON prepares",
+      {
+        changedPaths: [nebula],
+        catalog,
+        before: { [nebula]: '{"name":"@future/nebula","version":"4.7.0-beta.12"}' },
+        after: { [nebula]: '{\n  "name": "@future/nebula",\n  "version": "4.7.0-beta.12"\n}' },
+      },
+      "prepare",
+    ],
+    ["exact changelog plus all beta-to-stable manifests suppresses", exactPromotion, "suppress"],
+    [
+      "a deleted changelog rejects an otherwise exact promotion",
+      { ...exactPromotion, changelogType: "missing" },
+      "reject",
+    ],
+    [
+      "a tree at the changelog path rejects an otherwise exact promotion",
+      { ...exactPromotion, changelogType: "tree" },
+      "reject",
+    ],
+    [
+      "malformed old reviewed manifest rejects",
+      { changedPaths: [nebula], catalog, before: { [nebula]: '{"name":' }, after: { [nebula]: nebulaBeta } },
+      "reject",
+    ],
+    [
+      "malformed new reviewed manifest rejects",
+      { changedPaths: [nebula], catalog, before: { [nebula]: nebulaBeta }, after: { [nebula]: '{"name":' } },
+      "reject",
+    ],
+    [
+      "multiple old reviewed JSON documents reject",
+      {
+        changedPaths: [nebula],
+        catalog,
+        before: { [nebula]: `${JSON.stringify(nebulaBeta)}\n${JSON.stringify(nebulaBeta)}` },
+        after: { [nebula]: nebulaBeta },
+      },
+      "reject",
+    ],
+    [
+      "multiple new reviewed JSON documents reject",
+      {
+        changedPaths: [nebula],
+        catalog,
+        before: { [nebula]: nebulaBeta },
+        after: { [nebula]: `${JSON.stringify(nebulaBeta)}\n${JSON.stringify(nebulaBeta)}` },
+      },
+      "reject",
+    ],
+    [
+      "an old reviewed JSON array rejects",
+      { changedPaths: [nebula], catalog, before: { [nebula]: [nebulaBeta] }, after: { [nebula]: nebulaBeta } },
+      "reject",
+    ],
+    [
+      "a new reviewed JSON array rejects",
+      { changedPaths: [nebula], catalog, before: { [nebula]: nebulaBeta }, after: { [nebula]: [nebulaBeta] } },
+      "reject",
+    ],
+    [
+      "an old reviewed JSON scalar rejects",
+      { changedPaths: [nebula], catalog, before: { [nebula]: "false" }, after: { [nebula]: nebulaBeta } },
+      "reject",
+    ],
+    [
+      "a new reviewed JSON scalar rejects",
+      { changedPaths: [nebula], catalog, before: { [nebula]: nebulaBeta }, after: { [nebula]: "null" } },
+      "reject",
+    ],
+    [
+      "an empty old reviewed document rejects",
+      { changedPaths: [nebula], catalog, before: { [nebula]: "" }, after: { [nebula]: nebulaBeta } },
+      "reject",
+    ],
+    [
+      "an empty new reviewed document rejects",
+      { changedPaths: [nebula], catalog, before: { [nebula]: nebulaBeta }, after: { [nebula]: "" } },
+      "reject",
+    ],
+    [
+      "deleted reviewed manifest rejects",
+      { changedPaths: [nebula], catalog, before: { [nebula]: nebulaBeta }, after: {} },
+      "reject",
+    ],
+    [
+      "renamed manifest path rejects",
+      {
+        changedPaths: [nebula, "packages/future/renamed/package.json"],
+        catalog,
+        before: { [nebula]: nebulaBeta },
+        after: {},
+      },
+      "reject",
+    ],
+    [
+      "package rename rejects",
+      {
+        changedPaths: [nebula],
+        catalog,
+        before: { [nebula]: nebulaBeta },
+        after: { [nebula]: { ...nebulaBeta, name: "@future/renamed" } },
+      },
+      "reject",
+    ],
+    [
+      "arbitrary version bump rejects",
+      {
+        changedPaths: [nebula],
+        catalog,
+        before: { [nebula]: nebulaBeta },
+        after: { [nebula]: { ...nebulaBeta, version: "4.7.0-beta.13" } },
+      },
+      "reject",
+    ],
+    [
+      "manifest-only beta-to-stable transition rejects",
+      { changedPaths: [nebula], catalog, before: { [nebula]: nebulaBeta }, after: { [nebula]: nebulaStable } },
+      "reject",
+    ],
+    [
+      "partial promotion mixed with benign metadata rejects",
+      {
+        changedPaths: ["CHANGELOG.md", nebula, orbit],
+        catalog,
+        before: { [nebula]: nebulaBeta, [orbit]: { ...orbitBeta, license: "MIT" } },
+        after: { [nebula]: nebulaStable, [orbit]: { ...orbitBeta, license: "Apache-2.0" } },
+      },
+      "reject",
+    ],
+    [
+      "mixed promotion with an arbitrary version rejects",
+      {
+        changedPaths: ["CHANGELOG.md", nebula, orbit],
+        catalog,
+        before: { [nebula]: nebulaBeta, [orbit]: orbitBeta },
+        after: { [nebula]: nebulaStable, [orbit]: { ...orbitBeta, version: "8.0.2" } },
+      },
+      "reject",
+    ],
+    [
+      "changelog-bearing non-promotion rejects",
+      {
+        changedPaths: ["CHANGELOG.md", nebula],
+        catalog,
+        before: { [nebula]: benignBefore },
+        after: { [nebula]: benignAfter },
+      },
+      "reject",
+    ],
+    [
+      "extra changed path prevents exact promotion suppression",
+      { ...exactPromotion, changedPaths: [...exactPromotion.changedPaths, "README.md"] },
+      "reject",
+    ],
+    [
+      "release subject rejects even an otherwise exact promotion",
+      { ...exactPromotion, headSubject: "chore(release): promote stable" },
+      "reject",
+    ],
+  ]) {
+    assert.equal(runBetaPushClassifier(candidate), expected, name)
   }
 
-  assert.equal(classifyGenericStableShape(candidate), "suppress")
-  assert.equal(
-    classifyGenericStableShape({ ...candidate, changedPaths: [...candidate.changedPaths, "README.md"] }),
-    "reject",
-  )
-  assert.equal(
-    classifyGenericStableShape({
-      ...candidate,
-      after: { [manifest]: { name: "@effectify/solid-query", version: "0.5.14" } },
-    }),
-    "reject",
-  )
   assert.doesNotMatch(withoutComments(workflows.beta), /CORRECTIVE_|corrective solid-query|corrective beta/)
+})
+
+test("the actual beta push resolver fails closed on manifests, event SHAs, and Nx output", () => {
+  const benignBefore = { name: betaProject, version: "4.7.0-beta.12", license: "MIT" }
+  const benignAfter = { ...benignBefore, license: "Apache-2.0" }
+  for (const [name, candidate] of [
+    [
+      "source plus benign manifest",
+      {
+        changedPaths: ["packages/future/nebula/src/index.ts", betaManifestPath],
+        beforeDocument: benignBefore,
+        afterDocument: benignAfter,
+        affectedOutput: JSON.stringify([betaProject]),
+      },
+    ],
+    [
+      "formatting-only benign manifest",
+      {
+        changedPaths: [betaManifestPath],
+        beforeDocument: '{"name":"@future/nebula","version":"4.7.0-beta.12"}',
+        afterDocument: '{\n  "name": "@future/nebula",\n  "version": "4.7.0-beta.12"\n}',
+        affectedOutput: JSON.stringify([betaProject]),
+      },
+    ],
+  ]) {
+    const result = runBetaPushResolver(candidate)
+    assert.equal(result.status, 0, `${name}: ${result.stderr}`)
+    assert.deepEqual(result.output, { mode: "prepare", has_projects: "true", projects: betaProject })
+  }
+
+  const validDocument = { name: betaProject, version: "4.7.0-beta.12" }
+  const serializedDocument = JSON.stringify(validDocument)
+  for (const [name, candidate] of [
+    ["malformed old manifest", { beforeDocument: '{"name":' }],
+    ["malformed new manifest", { afterDocument: '{"name":' }],
+    ["multiple old manifest documents", { beforeDocument: `${serializedDocument}\n${serializedDocument}` }],
+    ["multiple new manifest documents", { afterDocument: `${serializedDocument}\n${serializedDocument}` }],
+    ["old manifest array", { beforeDocument: [validDocument] }],
+    ["new manifest array", { afterDocument: [validDocument] }],
+    ["old manifest scalar", { beforeDocument: "false" }],
+    ["new manifest scalar", { afterDocument: "null" }],
+    ["empty old manifest document", { beforeDocument: "" }],
+    ["empty new manifest document", { afterDocument: "" }],
+  ]) {
+    const result = runBetaPushResolver({
+      changedPaths: [betaManifestPath],
+      beforeDocument: validDocument,
+      afterDocument: validDocument,
+      affectedOutput: JSON.stringify([betaProject]),
+      ...candidate,
+    })
+    assert.notEqual(result.status, 0, name)
+    assert.deepEqual(result.output, {}, name)
+  }
+
+  const deletedChangelog = runBetaPushResolver({
+    changedPaths: ["CHANGELOG.md", betaManifestPath],
+    beforeDocument: { name: betaProject, version: "4.7.0-beta.12" },
+    afterDocument: { name: betaProject, version: "4.7.0" },
+    changelogType: "missing",
+  })
+  assert.notEqual(deletedChangelog.status, 0)
+  assert.deepEqual(deletedChangelog.output, {})
+
+  for (const [name, candidate] of [
+    ["missing before SHA", { beforeSha: "" }],
+    ["uppercase head SHA", { headSha: "A".repeat(40) }],
+    ["zero before SHA", { beforeSha: "0".repeat(40) }],
+    ["unresolvable before SHA", { beforeType: "missing" }],
+    ["non-commit head object", { headType: "tree" }],
+    ["checked-out HEAD mismatch", { checkedOutHead: "3".repeat(40) }],
+  ]) {
+    const result = runBetaPushResolver(candidate)
+    assert.notEqual(result.status, 0, name)
+    assert.deepEqual(result.output, {}, name)
+  }
+
+  const empty = runBetaPushResolver({ affectedOutput: "[]" })
+  assert.equal(empty.status, 0, empty.stderr)
+  assert.deepEqual(empty.output, { mode: "prepare", has_projects: "false", projects: "" })
+
+  for (const [name, candidate] of [
+    ["Nx exits nonzero", { affectedExit: 42 }],
+    ["Nx returns malformed JSON", { affectedOutput: "{" }],
+    ["Nx returns an object", { affectedOutput: "{}" }],
+    ["Nx returns multiple JSON values", { affectedOutput: "[]\n[]" }],
+    ["Nx returns a mixed array", { affectedOutput: JSON.stringify([betaProject, 3]) }],
+  ]) {
+    const result = runBetaPushResolver(candidate)
+    assert.notEqual(result.status, 0, name)
+    assert.deepEqual(result.output, {}, name)
+  }
 })
 
 test("dev pushes retain exact-range conditional alpha publication", () => {
@@ -1133,6 +1692,11 @@ test("stable release PRs require exactly one source commit from actual GitHub PR
 test("the stable release PR guard rejects injection and commit-count policy drift", () => {
   for (const [name, before, after] of [
     ["write-capable token", "contents: read", "contents: write"],
+    [
+      "extra release-policy OIDC permission",
+      "    permissions:\n      contents: read",
+      "    permissions:\n      contents: read\n      id-token: write",
+    ],
     [
       "broadened branch condition",
       "startsWith(github.event.pull_request.head.ref, 'release/stable-')",
@@ -1272,7 +1836,7 @@ test("beta FINALIZE conflict and ordering mutations fail closed", () => {
       "(steps.release.outputs.mode == 'prepare' || steps.release.outputs.mode == 'finalize')",
       "steps.release.outputs.mode == 'prepare'",
     ],
-    ["accept short expected SHA", "^[0-9a-f]{40}$", "^[0-9a-f]{7,40}$"],
+    ["accept short expected SHA", betaFinalizeExpectedShaGuard, betaFinalizeExpectedShaGuard.replace("{40}", "{7,40}")],
     ["weaken checkout equality", 'test "$HEAD_SHA" = "$EXPECTED_SHA"', 'test "$HEAD_SHA" != "$EXPECTED_SHA"'],
     ["weaken remote equality", 'test "$REMOTE_SHA" = "$EXPECTED_SHA"', 'test "$REMOTE_SHA" != "$EXPECTED_SHA"'],
     ["create lightweight tags", 'git tag -a "$TAG" "$EXPECTED_SHA" -m "$TAG"', 'git tag "$TAG" "$EXPECTED_SHA"'],
@@ -1393,6 +1957,17 @@ test("protected stable PREPARE and FINALIZE reject independent safety mutations"
   for (const [name, before, after] of [
     ["weaken expected SHA", "if (!/^[0-9a-f]{40}$/.test(expectedSha))", "if (!/^[0-9a-f]{7,40}$/.test(expectedSha))"],
     ["weaken artifact SHA", "if (!/^[0-9a-f]{40}$/.test(artifactSha))", "if (!/^[0-9a-f]{7,40}$/.test(artifactSha))"],
+    ["remove entry realpath resolution", "resolvedEntry = realpathSync(entry)", "resolvedEntry = entry"],
+    [
+      "remove module URL realpath resolution",
+      "resolvedModule = realpathSync(fileURLToPath(import.meta.url))",
+      "resolvedModule = fileURLToPath(import.meta.url)",
+    ],
+    [
+      "remove main-module URL normalization",
+      "return pathToFileURL(resolvedEntry).href === pathToFileURL(resolvedModule).href",
+      "return resolvedEntry === resolvedModule",
+    ],
     ["remove expected SHA environment", 'const expectedSha = process.env.EXPECTED_SHA ?? ""', 'const expectedSha = ""'],
     [
       "remove artifact SHA environment",
@@ -1420,6 +1995,7 @@ test("protected stable PREPARE and FINALIZE reject independent safety mutations"
     ],
     ["remove historical all-existing guard", "if (historicalReplay) {", "if (false) {"],
     ["weaken historical npm exactness", 'item.npm !== "exact"', 'item.npm === "unknown"'],
+    ["skip artifact changelog blob verification", "await verifyArtifactChangelog()", ""],
     ["accept octopus artifacts", "parents.length !== 2", "parents.length < 2"],
     [
       "accept merge second parent not based on first parent",
@@ -1472,8 +2048,13 @@ test("protected stable PREPARE and FINALIZE reject independent safety mutations"
     assert.notDeepEqual(stableViolations(changed), [], name)
   }
 
-  const shortSha = mutate(policy.stable, "^[0-9a-f]{40}$", "^[0-9a-f]{7,40}$")
-  assert.notDeepEqual(stableViolations(shortSha), [], "allow abbreviated PREPARE SHA")
+  const shortSha = mutateStep(
+    policy.stable,
+    "Resolve exact stable mode",
+    stableFinalizeExpectedShaGuard,
+    stableFinalizeExpectedShaGuard.replace("{40}", "{7,40}"),
+  )
+  assert.notDeepEqual(stableViolations(shortSha), [], "allow abbreviated FINALIZE SHA")
 
   for (const [name, before, after] of [
     ["enable Nx commits", "--git-commit=false", "--git-commit=true"],
@@ -1483,10 +2064,23 @@ test("protected stable PREPARE and FINALIZE reject independent safety mutations"
     ["weaken path comparison", 'cmp -s "$EXPECTED_PATHS" "$ACTUAL"', 'test -s "$ACTUAL"'],
     ["stage broad tree", 'git add --pathspec-from-file="$EXPECTED_PATHS"', "git add -A"],
     ["weaken staged paths", 'cmp -s "$EXPECTED_PATHS" "$STAGED_PATHS"', 'test -s "$STAGED_PATHS"'],
+    [
+      "accept a non-blob prepared changelog",
+      '[ "$RELEASE_CHANGELOG_TYPE" != "blob" ]',
+      '[ -z "$RELEASE_CHANGELOG_TYPE" ]',
+    ],
   ]) {
     const changed = mutateStep(policy.stable, "PREPARE protected stable", before, after)
     assert.notDeepEqual(stableViolations(changed), [], name)
   }
+
+  const uncheckedArtifactChangelog = mutateStep(
+    policy.stable,
+    "Resolve exact stable mode",
+    'git cat-file -t "$RESOLVED_ARTIFACT_SHA:CHANGELOG.md"',
+    'git cat-file -t "$HEAD_SHA:CHANGELOG.md"',
+  )
+  assert.notDeepEqual(stableViolations(uncheckedArtifactChangelog), [], "validate a different changelog artifact")
 
   const pushMaster = mutateStep(
     policy.stable,
@@ -1495,6 +2089,22 @@ test("protected stable PREPARE and FINALIZE reject independent safety mutations"
     'push origin "HEAD:refs/heads/master"',
   )
   assert.notDeepEqual(stableViolations(pushMaster), [], "push master")
+})
+
+test("stable mode jobs compare exact permissions independent of mapping order", () => {
+  const reversedFinalizePermissions = mutate(
+    workflows.stable,
+    "    permissions:\n      contents: write\n      id-token: write",
+    "    permissions:\n      id-token: write\n      contents: write",
+  )
+  assert.deepEqual(stableCapabilityViolations(reversedFinalizePermissions), [])
+
+  const extraFinalizePermission = mutate(
+    workflows.stable,
+    "    permissions:\n      contents: write\n      id-token: write",
+    "    permissions:\n      contents: write\n      id-token: write\n      issues: read",
+  )
+  assert.ok(stableCapabilityViolations(extraFinalizePermission).includes("stable finalize least privilege"))
 })
 
 test("stable mode jobs reject capability and credential drift", () => {
@@ -1532,6 +2142,19 @@ test("stable transition SemVer rejects leading-zero identifiers", () => {
   }
 })
 
+test("the beta classifier contract rejects a post-marker function redefinition", () => {
+  assert.deepEqual(classifierStructureViolations(workflows.beta), [])
+  const redefined = mutate(
+    workflows.beta,
+    classifierInvocation,
+    `classify_push_shape() {\n            printf '%s\\n' prepare\n          }\n          ${classifierInvocation}`,
+  )
+  const violations = classifierStructureViolations(redefined)
+  assert.ok(violations.includes("beta exactly one classifier declaration"))
+  assert.ok(violations.includes("beta classifier invocation immediately follows end marker"))
+  assert.notDeepEqual(betaViolations(redefined), [])
+})
+
 test("generic stable suppression rejects path, transition, and message-only mutations", () => {
   const policy = { ...workflows, docs: readme }
   const versionViolation = "beta stable structural check no-leading-zero beta source"
@@ -1548,11 +2171,20 @@ test("generic stable suppression rejects path, transition, and message-only muta
     ["accept extra path", "UNEXPECTED=true", "UNEXPECTED=false"],
     ["ignore old reviewed JSON", 'git show "$BASE:$MANIFEST_PATH"', 'git show "$HEAD:$MANIFEST_PATH"'],
     ["ignore new reviewed JSON", 'git show "$HEAD:$MANIFEST_PATH"', 'git show "$BASE:$MANIFEST_PATH"'],
-    ["allow package rename", '[ "$OLD_NAME" = "$NEW_NAME" ]', '[ -n "$NEW_NAME" ]'],
+    ["remove old manifest JSON cardinality", oldManifestCardinalityGuard, "if false ||"],
+    ["remove new manifest JSON cardinality", newManifestCardinalityGuard, "false; then"],
+    [
+      "allow package rename",
+      '[ "$OLD_NAME" != "$NAME" ] || [ "$NEW_NAME" != "$NAME" ]',
+      '[ -z "$OLD_NAME" ] && [ -z "$NEW_NAME" ]',
+    ],
+    ["allow arbitrary metadata version", '[ "$OLD_VERSION" = "$NEW_VERSION" ]', '[ -n "$NEW_VERSION" ]'],
     ["allow unrelated stable target", '[ "$NEW_VERSION" = "$STABLE_VERSION" ]', '[ -n "$NEW_VERSION" ]'],
+    ["remove non-benign manifest guard", releaseManifestGuard, "if false; then"],
+    ["accept an unknown classifier result", classificationFailClosedGuard, 'if [ "$CLASSIFICATION" = "reject" ]; then'],
     [
       "message authorizes suppression",
-      'if [ "$HAS_CHANGELOG" = "true" ] && [ "$UNEXPECTED" = "false" ] && [ "$BETA_TRANSITIONS" -gt 0 ] && [ "$BETA_TRANSITIONS" -eq "$MANIFEST_CHANGES" ]; then',
+      exactBetaSuppressionGuard,
       'if [[ "$HEAD_MESSAGE" == *"[skip release]"* ]]; then',
     ],
   ])
@@ -1655,12 +2287,14 @@ test("protected stable promotion exposes exact PREPARE and FINALIZE contracts", 
   assert.match(active, /await sleep\(delayMs\)/)
 })
 
-test("beta structurally suppresses arbitrary reviewed beta-to-stable subsets", () => {
+test("beta structurally separates benign metadata from exact reviewed beta-to-stable subsets", () => {
   const active = withoutComments(workflows.beta)
   assert.match(active, /jq -r ['"]?\.release\.projects\[\]['"]? nx\.json/)
   assert.match(active, /git show "\$BASE:\$MANIFEST_PATH"/)
   assert.match(active, /git show "\$HEAD:\$MANIFEST_PATH"/)
   assert.match(active, /BETA_TRANSITIONS/)
+  assert.match(active, /BENIGN_MANIFEST_CHANGES/)
+  assert.match(active, /INVALID_MANIFESTS/)
   assert.match(active, /MANIFEST_CHANGES/)
   assert.match(active, /stable promotion shape is partial, mixed, or malformed/)
   assert.doesNotMatch(active, /STABLE_TRANSITIONS|@effectify\/hatchet=0\.1\.0-beta\.0=0\.1\.0/)
@@ -1712,6 +2346,27 @@ test("alpha and beta exact-range and membership mutations fail closed", () => {
         'AFFECTED_RAW=$(pnpm nx show projects --affected --base="$BASE" --head="$HEAD" --json 2>/dev/null || echo "[]")',
         'AFFECTED_RAW="[]"\n          # AFFECTED_RAW=$(pnpm nx show projects --affected --base="$BASE" --head="$HEAD" --json)',
       ),
+    }))
+  }
+
+  for (const [name, before, after] of [
+    ["weakens the before SHA", '[[ "$BEFORE_SHA" =~ ^[0-9a-f]{40}$ ]]', '[[ "$BEFORE_SHA" =~ ^[0-9a-f]{7,40}$ ]]'],
+    ["ignores the event before SHA", 'BEFORE="$BEFORE_SHA"', 'BEFORE="HEAD^"'],
+    ["ignores the event head SHA", 'HEAD="$HEAD_SHA"', 'HEAD="HEAD"'],
+    [
+      "restores an Nx nonzero fallback",
+      'AFFECTED_RAW=$(pnpm nx show projects --affected --base="$BASE" --head="$HEAD" --json)',
+      'AFFECTED_RAW=$(pnpm nx show projects --affected --base="$BASE" --head="$HEAD" --json || echo "[]")',
+    ],
+    [
+      "removes the affected JSON string-array contract",
+      'printf \'%s\' "$AFFECTED_RAW" | jq -e -s \'length == 1 and (.[0] | type == "array" and all(.[]; type == "string"))\' >/dev/null',
+      ":",
+    ],
+  ]) {
+    assertMutationFails(`beta ${name}`, policy, (candidate) => ({
+      ...candidate,
+      beta: mutate(candidate.beta, before, after),
     }))
   }
 })

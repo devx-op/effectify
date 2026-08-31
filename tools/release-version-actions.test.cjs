@@ -17,14 +17,15 @@ const releasedPackages = [
 ]
 
 const independentCandidates = [
-  ["@future/nebula", "4.7.0", []],
-  ["@future/orbit", "8.0.1", ["8.0.0"]],
-  ["@future/quasar", "12.3.5", ["12.3.4"]],
+  ["@future/nebula", "packages/future/nebula", "4.7.0", []],
+  ["@future/orbit", "packages/future/orbit", "8.0.1", ["8.0.0"]],
+  ["@future/quasar", "packages/future/quasar", "12.3.5", ["12.3.4"]],
 ]
 
 test("no-network stable actions accept arbitrary independent candidates and reject an exact target collision", async () => {
   const delegated = []
   const delegatedUpdates = []
+  const manifestReads = []
   class BaseVersionActions {
     constructor(releaseGroup, projectGraphNode, finalConfigForProject) {
       this.releaseGroup = releaseGroup
@@ -41,36 +42,55 @@ test("no-network stable actions accept arbitrary independent candidates and reje
     }
   }
 
-  const run = async ([name, candidate, publishedVersions]) => {
+  const run = async ([name, projectRoot, candidate, publishedVersions]) => {
     const VersionActions = createCollisionAwareVersionActions({
       BaseVersionActions,
       resolveRegistry: async () => "https://registry.example.test/",
       getPublishedVersions: async () => publishedVersions,
     })
-    const action = new VersionActions({}, { data: { root: name.slice("@effectify/".length) } }, {
-      candidate,
-      versionActionsOptions: {},
+    const action = new VersionActions(
+      {},
+      { data: { root: projectRoot } },
+      {
+        candidate,
+        versionActionsOptions: {},
+      },
+    )
+    await action.init({
+      root: "/repo",
+      read: (manifestPath) => {
+        manifestReads.push(manifestPath)
+        assert.equal(manifestPath, `${projectRoot}/package.json`)
+        return Buffer.from(JSON.stringify({ name, version: "0.0.0" }))
+      },
     })
-    await action.init({ root: "/repo", read: () => Buffer.from(JSON.stringify({ name, version: "0.0.0" })) })
     return action.calculateNewVersion("0.0.0", candidate, "exact stable", {}, "")
   }
 
   const accepted = []
   for (const record of independentCandidates) accepted.push(await run(record))
-  assert.deepEqual(accepted.map(({ newVersion }) => newVersion), independentCandidates.map(([, version]) => version))
+  assert.deepEqual(
+    accepted.map(({ newVersion }) => newVersion),
+    independentCandidates.map(([, , version]) => version),
+  )
+  assert.deepEqual(
+    manifestReads,
+    independentCandidates.map(([, root]) => `${root}/package.json`),
+  )
   assert.equal(delegated.length, independentCandidates.length)
 
   const beforeCollision = delegated.length
   await assert.rejects(
-    () => run(["@future/quasar", "12.3.5", ["12.3.4", "12.3.5"]]),
+    () => run(["@future/quasar", "packages/future/quasar", "12.3.5", ["12.3.4", "12.3.5"]]),
     /stable candidate 12\.3\.5 is already published/,
   )
+  assert.equal(manifestReads.at(-1), "packages/future/quasar/package.json")
   assert.equal(delegated.length, beforeCollision + 1)
   assert.deepEqual(delegatedUpdates, [])
 })
 
 test("cumulative arbitrary-subset root changelog is idempotent and dry-run updates never write", () => {
-  const packages = independentCandidates.map(([name, version]) => ({ name, version }))
+  const packages = independentCandidates.map(([name, , version]) => ({ name, version }))
   const date = new Date("2026-07-12T00:00:00Z")
   const changelog = mergeRootChangelog(undefined, packages, date)
   assert.equal((changelog.match(/^## @future\//gm) ?? []).length, independentCandidates.length)
