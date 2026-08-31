@@ -334,6 +334,7 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: "24.19.0"
+          package-manager-cache: false
 
       - name: 🔎 PREFLIGHT exact stable artifacts
         env:

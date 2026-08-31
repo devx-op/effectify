@@ -341,6 +341,10 @@ const stableCapabilityViolations = (source) => {
   ) {
     violations.push("stable PREFLIGHT read-only credentials")
   }
+  const preflightSetupNode = extractSteps(jobs.preflight).find((step) => step.uses.startsWith("actions/setup-node@"))
+  if (preflightSetupNode?.packageManagerCache !== "false") {
+    violations.push("stable PREFLIGHT setup-node package-manager cache")
+  }
 
   const finalizeSteps = extractSteps(jobs.finalize)
   const finalizeCredentialSteps = finalizeSteps.filter((step) =>
@@ -1808,6 +1812,15 @@ test("the Node-only release policy job can bootstrap setup-node without pnpm", (
     "      - name: 📦 Install pnpm\n        uses: pnpm/action-setup@v6\n\n      - name: 🏗️ Setup Node.js",
   )
   assert.deepEqual(releasePolicyBootstrapViolations(pnpmFirst), [])
+})
+
+test("stable PREFLIGHT can bootstrap setup-node without pnpm", () => {
+  assert.deepEqual(stableCapabilityViolations(workflows.stable), [])
+
+  const cacheEnabled = mutate(workflows.stable, "package-manager-cache: false", "package-manager-cache: true")
+  assert.ok(
+    stableCapabilityViolations(cacheEnabled).includes("stable PREFLIGHT setup-node package-manager cache"),
+  )
 })
 
 test("release documentation leads with the three-channel mapping", () => {
