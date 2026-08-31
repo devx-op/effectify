@@ -12,6 +12,34 @@ This changelog summarizes releases for the following packages:
 - @effectify/solid-query
 - @effectify/hatchet
 
+## @effectify/hatchet
+
+## 0.2.0-beta.0 (2026-08-31)
+
+## @effectify/node-better-auth
+
+## 0.5.13-beta.0 (2026-08-31)
+
+## @effectify/prisma
+
+## 1.1.14-beta.0 (2026-08-31)
+
+## @effectify/react-query
+
+## 1.0.1-beta.0 (2026-08-31)
+
+## @effectify/react-router
+
+## 0.6.1-beta.0 (2026-08-31)
+
+## @effectify/react-router-better-auth
+
+## 0.5.13-beta.0 (2026-08-31)
+
+## @effectify/solid-query
+
+## 0.5.14-beta.0 (2026-08-31)
+
 ## @effectify/solid-query
 
 ## 0.5.13 (2026-08-29)
