@@ -1,9 +1,9 @@
 import assert from "node:assert/strict"
 import { chmodSync, existsSync, mkdtempSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs"
-import { cp, readFile, rm, writeFile } from "node:fs/promises"
+import { readFile, readdir, rm, writeFile } from "node:fs/promises"
 import { gzipSync } from "node:zlib"
 import { tmpdir } from "node:os"
-import { basename, join } from "node:path"
+import { join } from "node:path"
 import test from "node:test"
 
 import { createStableHandoff, verifyStableHandoff } from "./release-package-stable.mjs"
@@ -214,12 +214,8 @@ test("create packs only non-abandoned projects and verifies an exact schema-vers
   assert.equal(created.abandonments[0].project, "@effectify/prisma")
   assert.deepEqual((await world.verify()).packages, created.packages)
 
-  const files = (await import("node:fs/promises")).readdir(world.outputDirectory)
-  assert.deepEqual((await files).sort(), [
-    "effectify-hatchet-0.2.0.tgz",
-    "effectify-react-query-1.0.1.tgz",
-    "handoff.json",
-  ])
+  const files = await readdir(world.outputDirectory)
+  assert.deepEqual(files.sort(), ["effectify-hatchet-0.2.0.tgz", "effectify-react-query-1.0.1.tgz", "handoff.json"])
   const calls = readFileSync(world.log, "utf8").trim().split("\n").map(JSON.parse)
   assert.equal(calls.length, 2)
   assert.equal(
@@ -230,6 +226,19 @@ test("create packs only non-abandoned projects and verifies an exact schema-vers
     assert.deepEqual(call.args.slice(0, 2), ["pack", "--json"])
     assert.equal(call.args.includes("--pack-destination"), true)
   }
+})
+
+test("oversized create rejects before persisting handoff.json", async (t) => {
+  const oversizedEntries = Object.fromEntries(
+    Array.from({ length: 9_000 }, (_, index) => [
+      `package/dist/oversized/${String(index).padStart(5, "0")}-${"x".repeat(64)}.js`,
+      "x",
+    ]),
+  )
+  const world = await fixture(t, { entries: { "@effectify/hatchet": oversizedEntries } })
+
+  await assert.rejects(world.create, /handoff exceeds its size bound/i)
+  assert.equal((await readdir(world.outputDirectory)).includes("handoff.json"), false)
 })
 
 test("create accepts an unselected prerelease release project without packing it", async (t) => {

@@ -10,7 +10,15 @@ import test from "node:test"
 import { isDeepStrictEqual } from "node:util"
 import { gzipSync } from "node:zlib"
 
+import { operationalFailureDiagnostic } from "./release-finalize-stable.mjs"
+
 const script = new URL("release-finalize-stable.mjs", import.meta.url).pathname
+const finalizerSource = readFileSync(script, "utf8")
+function parseFrozenStringArray(source, name) {
+  const declaration = source.match(new RegExp(`const ${name} = Object\\.freeze\\(\\[([\\s\\S]*?)\\]\\)`))
+  assert.ok(declaration, `${name} declaration`)
+  return JSON.parse(`[${declaration[1].replace(/,\s*$/, "")}]`)
+}
 const artifactSha = "f31390ce66ea157ea8b75f5259c203123e269759"
 const advancedSha = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 const parentSha = "fedcba0987654321fedcba0987654321fedcba09"
@@ -46,16 +54,7 @@ const prisma = records.find(({ project }) => project === "@effectify/prisma")
 const publishable = records
   .filter(({ project }) => project !== prisma.project)
   .sort((left, right) => left.project.localeCompare(right.project))
-const allowedHistoricalPaths = [
-  ".github/SETUP.md",
-  ".github/workflows/release-stable.yml",
-  "scripts/release-finalize-stable.mjs",
-  "scripts/release-finalize-stable.test.mjs",
-  "scripts/release-package-stable.mjs",
-  "scripts/release-package-stable.test.mjs",
-  "scripts/release-policy-contract.test.mjs",
-  "scripts/release-stable-abandonments.json",
-]
+const allowedHistoricalPaths = parseFrozenStringArray(finalizerSource, "ALLOWED_HISTORICAL_PATHS")
 const safeNpmrc = `# NPM Configuration for CI/CD
 #registry=https://registry.npmjs.org/
 #always-auth=true
@@ -230,9 +229,9 @@ if(cmd==="git"){
  if(a[0]==="push"){
   const token=process.env.GITHUB_TOKEN||"",basic=Buffer.from("x-access-token:"+token,"utf8").toString("base64")
   s.pushAuthentication={oneShot,matchesToken:authConfiguration==="http.https://github.com/.extraheader=AUTHORIZATION: basic "+basic,tokenLiteral:Boolean(token)&&raw.some(value=>value.includes(token))}
-  const materializeTags=()=>{for(const ref of a.slice(3)){const tag=ref.split(":")[0].slice(10);s.tags[tag]={peeled:s.localTags[tag].peeled}}}
-  if(s.pushMaterializesOnFailure){materializeTags();finish(s.pushExit||1)}
-  if(s.pushExit)finish(s.pushExit)
+  const materializeTags=()=>{for(const ref of a.slice(3)){const tag=ref.split(":")[0].slice(10);s.tags[tag]={peeled:s.localTags[tag].peeled}}},failPush=code=>{if(s.pushStderr)process.stderr.write(s.pushStderr);finish(code)}
+  if(s.pushMaterializesOnFailure){materializeTags();failPush(s.pushExit||1)}
+  if(s.pushExit)failPush(s.pushExit)
   materializeTags();finish()
  }
  finish(127)
@@ -414,7 +413,10 @@ async function makeWorld({ historical = false, npmMode = "absent", artifacts = "
         }
         save(stateFile, current)
         if (current.ghCreateResponseLoss) return response.destroy()
-        send(status, status === 422 ? { message: "already exists" } : current.releases[tag])
+        send(
+          status,
+          current.ghCreateResponseBody ?? (status === 422 ? { message: "already exists" } : current.releases[tag]),
+        )
       })
     })
     await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve))
@@ -768,7 +770,7 @@ await test("npm publish response loss and delayed registry visibility reconcile 
 await test("npm failures are reconciled and reported with bounded sanitized fixed guidance", async (t) => {
   await scenario(t, { npmMode: "absent" }, async (world) => {
     const target = publishable[0]
-    const jwt = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJzZWNyZXQifQ.signaturevalue"
+    const jwt = ["eyJhbGciOiJIUzI1NiJ9", "eyJzdWIiOiJzZWNyZXQifQ", "signaturevalue"].join(".")
     const secretValues = [
       "bearer-secret",
       jwt,
@@ -1065,6 +1067,16 @@ await test("historical recovery is bounded, allowlisted, npm-only, and reports a
 })
 
 await test("historical recovery rejects excessive commits and every changed path outside the exact control-file allowlist", async (t) => {
+  await scenario(t, { historical: true, npmMode: "absent" }, async (world) => {
+    const state = load(world.stateFile)
+    state.historicalPaths = [...allowedHistoricalPaths]
+    save(world.stateFile, state)
+
+    const result = await run(world, ["--preflight", "--json"], { GITHUB_ACTIONS: "" })
+    assert.equal(result.status, 0, result.stderr)
+    assert.deepEqual(mutationCalls(load(world.stateFile)), [])
+  })
+
   for (const [name, setup, pattern] of [
     ["too many commits", (state) => (state.historicalCount = 9), /commit-count bound/i],
     ["application path", (state) => state.historicalPaths.push("packages/hatchet/src/index.ts"), /changed path/i],
@@ -1161,6 +1173,77 @@ await test("historical recovery requires all tags and Releases exact and abandon
       }
     })
   }
+})
+
+test("operational failure diagnostics retain safe context while bounding and redacting unsafe messages", () => {
+  const jwt = ["eyJhbGciOiJIUzI1NiJ9", "eyJzdWIiOiJzZWNyZXQifQ", "signaturevalue"].join(".")
+  const diagnostic = operationalFailureDiagnostic(
+    new Error(
+      `safe tag push failure \u001b[31mBearer credential-secret\u001b[0m ${jwt} ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ123456 https://user:url-password@example.test/path?token=query-secret ${"detail ".repeat(2_000)}`,
+    ),
+  )
+
+  assert.match(diagnostic, /safe tag push failure/)
+  assert.match(diagnostic, /\[redacted credential\]/)
+  assert.match(diagnostic, /\[redacted JWT\]/)
+  assert.match(diagnostic, /\[redacted token\]/)
+  assert.match(diagnostic, /\[redacted URL\]/)
+  assert.ok(Buffer.byteLength(diagnostic) <= 320)
+  for (const secret of [
+    jwt,
+    "credential-secret",
+    "ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ123456",
+    "url-password",
+    "query-secret",
+  ]) {
+    assert.equal(diagnostic.includes(secret), false)
+  }
+  assert.doesNotMatch(diagnostic, /\u001b|\x1b|\[31m/)
+})
+
+await test("failed tag pushes and Release creation retain only safe bounded causes after postverification", async (t) => {
+  const jwt = ["eyJhbGciOiJIUzI1NiJ9", "eyJzdWIiOiJzZWNyZXQifQ", "signaturevalue"].join(".")
+  const secretValues = [
+    "push-token-secret",
+    jwt,
+    "ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ123456",
+    "url-password",
+    "query-secret",
+    "https://user:url-password@example.test/path?token=query-secret",
+  ]
+  const noisy = `\u001b[31mBearer push-token-secret\u001b[0m ${jwt} ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ123456 https://user:url-password@example.test/path?token=query-secret ${"detail ".repeat(2_000)}`
+
+  await scenario(t, { npmMode: "absent", artifacts: "absent" }, async (world) => {
+    const state = load(world.stateFile)
+    state.pushExit = 37
+    state.pushStderr = noisy
+    save(world.stateFile, state)
+
+    const result = await run(world)
+    assert.notEqual(result.status, 0)
+    assert.match(result.stderr, /remote tag postverification failed.*operation cause: git failed \(37\)/is)
+    assert.ok(result.stderr.length < 2_000, `diagnostic length: ${result.stderr.length}`)
+    for (const secret of secretValues) assert.equal(result.stderr.includes(secret), false)
+    assert.doesNotMatch(result.stderr, /\u001b|\x1b|\[31m/)
+  })
+
+  await scenario(t, { npmMode: "absent", artifacts: "absent" }, async (world) => {
+    const state = load(world.stateFile)
+    state.ghCreateStatus = 503
+    state.ghCreateMaterializes = false
+    state.ghCreateResponseBody = { message: noisy }
+    save(world.stateFile, state)
+
+    const result = await run(world)
+    assert.notEqual(result.status, 0)
+    assert.match(
+      result.stderr,
+      /GitHub Release postverification failed.*operation cause: GitHub Release creation failed.*HTTP 503/is,
+    )
+    assert.ok(result.stderr.length < 2_000, `diagnostic length: ${result.stderr.length}`)
+    for (const secret of secretValues) assert.equal(result.stderr.includes(secret), false)
+    assert.doesNotMatch(result.stderr, /\u001b|\x1b|\[31m/)
+  })
 })
 
 await test("current tag and Release response loss still reconcile exact authenticated state", async (t) => {

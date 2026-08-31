@@ -25,6 +25,8 @@ const MAX_HISTORICAL_COMMITS = 8
 const MAX_NPM_READS = 6
 const MAX_NPM_CONFIG_BYTES = 64 * 1024
 const MAX_TRACKED_NPM_CONFIGS = 64
+const MAX_OPERATIONAL_ERROR_CHARS = 2048
+const MAX_OPERATIONAL_DIAGNOSTIC_BYTES = 320
 const NPM_REGISTRY = "https://registry.npmjs.org/"
 const NPM_ATTESTATION_PATH_PREFIX = "/-/npm/v1/attestations/"
 
@@ -51,6 +53,37 @@ function sleep(ms) {
 }
 function digest(algorithm, bytes) {
   return createHash(algorithm).update(bytes).digest("hex")
+}
+function boundedUtf8(value, maximumBytes) {
+  let result = ""
+  let bytes = 0
+  for (const character of value) {
+    const size = Buffer.byteLength(character)
+    if (bytes + size > maximumBytes) break
+    result += character
+    bytes += size
+  }
+  return result
+}
+export function operationalFailureDiagnostic(error) {
+  const message = typeof error?.message === "string" ? error.message.slice(0, MAX_OPERATIONAL_ERROR_CHARS) : ""
+  const sanitized = message
+    .replace(/\u001b\[[0-?]*[ -/]*[@-~]/gu, " ")
+    .replace(/\b[a-z][a-z0-9+.-]*:\/\/[^\s]+/giu, "[redacted URL]")
+    .replace(/\b(?:bearer|basic)\s+[^\s]+/giu, "[redacted credential]")
+    .replace(/\b[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b/gu, "[redacted JWT]")
+    .replace(/\b(?:github_pat_|gh[pousr]_|npm_)[A-Za-z0-9_-]{8,}\b/gu, "[redacted token]")
+    .replace(
+      /((?:(?:auth|access|refresh|id)[_-]?token|_authToken|password|passwd|secret|credential|api[_-]?key)\s*[:=]\s*)(?:"[^"]*"|'[^']*'|[^\s,;]+)/giu,
+      "$1[redacted]",
+    )
+    .replace(/[\u0000-\u001f\u007f-\u009f]/gu, " ")
+    .replace(/\s+/gu, " ")
+    .trim()
+  return boundedUtf8(sanitized || "operation failed without a safe message", MAX_OPERATIONAL_DIAGNOSTIC_BYTES)
+}
+function operationalCauseSuffix(error) {
+  return `; operation cause: ${operationalFailureDiagnostic(error)}`
 }
 function validRuntimeBound(value, minimum, maximum) {
   return Number.isSafeInteger(value) && value >= minimum && value <= maximum
@@ -900,41 +933,47 @@ async function createCurrentArtifacts(states) {
   for (const { tag, local } of localTags) {
     if (local === "absent") await run("git", ["tag", "-a", tag, artifactSha, "-m", tag])
   }
+  let tagPushFailure
   if (missingTags.length > 0) {
     const refs = missingTags.map(
       (item) => `refs/tags/${item.name}@${item.version}:refs/tags/${item.name}@${item.version}`,
     )
     try {
       await run("git", ["-c", pushConfiguration, "push", "--atomic", "origin", ...refs])
-    } catch {
-      // A lost response is accepted only if every remote tag reconciles exactly below.
+    } catch (error) {
+      tagPushFailure = error
     }
   }
   for (const item of states) {
     if ((await tagState(`${item.name}@${item.version}`)).kind !== "exact") {
-      fail(`remote tag postverification failed for ${item.name}@${item.version}`)
+      fail(
+        `remote tag postverification failed for ${item.name}@${item.version}${tagPushFailure ? operationalCauseSuffix(tagPushFailure) : ""}`,
+      )
     }
   }
 
+  const releaseFailures = new Map()
   for (const item of states.filter((state) => state.release === "absent")) {
-    let result
+    const tag = `${item.name}@${item.version}`
     try {
-      result = await github("POST", "/releases", {
-        tag_name: `${item.name}@${item.version}`,
+      const result = await github("POST", "/releases", {
+        tag_name: tag,
         generate_release_notes: true,
         draft: false,
         prerelease: false,
       })
-    } catch {
-      // A lost response is accepted only if the Release reconciles exactly below.
-    }
-    if (result && ![201, 422].includes(result.status)) {
-      fail(`GitHub Release creation failed for ${item.name}@${item.version} (HTTP ${result.status})`)
+      if (result.status !== 201) {
+        releaseFailures.set(tag, new Error(`GitHub Release creation failed for ${tag} (HTTP ${result.status})`))
+      }
+    } catch (error) {
+      releaseFailures.set(tag, error)
     }
   }
   for (const item of states) {
-    if ((await releaseState(`${item.name}@${item.version}`)).kind !== "exact") {
-      fail(`GitHub Release postverification failed for ${item.name}@${item.version}`)
+    const tag = `${item.name}@${item.version}`
+    if ((await releaseState(tag)).kind !== "exact") {
+      const failure = releaseFailures.get(tag)
+      fail(`GitHub Release postverification failed for ${tag}${failure ? operationalCauseSuffix(failure) : ""}`)
     }
   }
 }

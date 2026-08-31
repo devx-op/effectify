@@ -450,10 +450,9 @@ export async function createStableHandoff({
     abandonments,
     packages,
   }
-  await writeFile(join(absoluteOutput, "handoff.json"), `${JSON.stringify(handoff, null, 2)}\n`, {
-    flag: "wx",
-    mode: 0o600,
-  })
+  const handoffBytes = Buffer.from(`${JSON.stringify(handoff, null, 2)}\n`)
+  if (handoffBytes.length > MAX_HANDOFF_BYTES) fail("stable handoff exceeds its size bound")
+  await writeFile(join(absoluteOutput, "handoff.json"), handoffBytes, { flag: "wx", mode: 0o600 })
   return handoff
 }
 

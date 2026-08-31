@@ -389,7 +389,7 @@ const stableArtifactTopologyViolations = (source) => {
     !/name:\s*stable-handoff-\$\{\{ github\.run_id \}\}-\$\{\{ github\.run_attempt \}\}/.test(upload.source) ||
     !/path:\s*\$\{\{ runner\.temp \}\}\/stable-handoff/.test(upload.source) ||
     !/if-no-files-found:\s*error/.test(upload.source) ||
-    !/retention-days:\s*1/.test(upload.source) ||
+    !/^\s*retention-days:\s*5\s*$/m.test(upload.source) ||
     !/overwrite:\s*false/.test(upload.source)
   ) {
     violations.push("stable package_artifacts single immutable upload")
@@ -1363,11 +1363,7 @@ const stableViolations = (source, finalizeScript = stableFinalizeScript) => {
         /\["-c", pushConfiguration, "push", "--atomic", "origin", \.\.\.refs\]/,
         activeFinalize,
       ],
-      [
-        "release exact postverification",
-        /releaseState\(`\$\{item\.name\}@\$\{item\.version\}`\)\)\.kind !== "exact"/,
-        activeFinalize,
-      ],
+      ["release exact postverification", /releaseState\(tag\)\)\.kind !== "exact"/, activeFinalize],
       [
         "missing npm subset",
         /const current = await npmBounded\(record, handoffPackage, \{ acceptAbsent: true \}\)[\s\S]*if \(current\.kind === "exact"\) continue/,
@@ -2553,6 +2549,7 @@ test("stable mode jobs reject capability and credential drift", () => {
       "  validate:\n    name: 🔎 Validate stable request\n    runs-on: ubuntu-latest\n    permissions:\n      contents: write",
     ],
     ["persist checkout credentials", "persist-credentials: false", "persist-credentials: true"],
+    ["shorten immutable handoff retention", "retention-days: 5", "retention-days: 1"],
     ["remove protected environment", "environment: stable-release", "environment: unprotected"],
     [
       "add FINALIZE dependency installation",

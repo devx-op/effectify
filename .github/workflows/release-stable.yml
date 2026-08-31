@@ -243,7 +243,7 @@ jobs:
           name: stable-handoff-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/stable-handoff
           if-no-files-found: error
-          retention-days: 1
+          retention-days: 5
           overwrite: false
 
   prepare:
