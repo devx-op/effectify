@@ -10,7 +10,7 @@ Effectify releases through three isolated channels. Stable promotion is a two-st
 | Beta    | Push to `master`                         | `beta`             | `.github/workflows/cd.yml`             |
 | Stable  | Manual workflow against current `master` | default (`latest`) | `.github/workflows/release-stable.yml` |
 
-Alpha remains prerelease-only with `--tag=alpha`; beta remains prerelease-only with `--tag=beta`. Only stable omits a tag and may advance npm `latest`.
+Alpha remains prerelease-only with `--tag=alpha`; beta remains prerelease-only with `--tag=beta`. Only protected stable may publish with `--tag latest` and advance npm `latest`.
 
 ## Required repository and npm setup
 
@@ -20,18 +20,23 @@ Configure `NPM_TOKEN` for the existing alpha and beta workflows. Stable publicat
 
 Create the `stable-release` environment under **Settings > Environments** and require reviewers who are independent from the dispatcher. Restrict deployment branches to protected `master`. The environment is attached to the entire FINALIZE job.
 
-| Stable job  | Declared job permissions             | Explicit step environment and capability                                                                  |
-| ----------- | ------------------------------------ | --------------------------------------------------------------------------------------------------------- |
-| `validate`  | `contents: read`                     | No secret/token environment; policy, install, build, and test only; checkout credentials are not stored   |
-| `prepare`   | `contents: write`                    | `GH_TOKEN` is declared only on the release-branch push step; no OIDC; checkout credentials are not stored |
-| `preflight` | `contents: read`                     | `GITHUB_TOKEN` is declared on the read-only API step; no npm credential or publication capability         |
-| `finalize`  | `contents: write`, `id-token: write` | Protected environment applies to the job; publication environment is declared only on the finalizer step  |
+| Stable job          | Declared job permissions             | Explicit capability boundary                                                                                          |
+| ------------------- | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| `validate`          | `contents: read`                     | No secret/token environment; policy, install, build, and test only; checkout credentials are not stored               |
+| `package_artifacts` | `contents: read`                     | No OIDC, npm credential, or repository write token; exact-source build/pack and one immutable current-run upload only |
+| `prepare`           | `contents: write`                    | `GH_TOKEN` is declared only on the release-branch push step; no OIDC; checkout credentials are not stored             |
+| `preflight`         | `contents: read`                     | `GITHUB_TOKEN` is declared only on the read-only finalizer step; no npm credential or publication capability          |
+| `finalize`          | `contents: write`, `id-token: write` | Protected environment applies to the job; token and publication settings are declared only on the finalizer step      |
 
-FINALIZE installs required tooling with `--ignore-scripts`, forces `NPM_CONFIG_IGNORE_SCRIPTS=true` for the finalizer step and publish child, and runs no build, test, or package lifecycle scripts. Declared job permissions, including `contents` and `id-token`, are available job-wide; when `id-token: write` is declared, OIDC is not step-scoped. The only step-scoped credential controls are explicit secret or token environment variables on their listed API or mutation steps. This environment scoping is defense in depth; it does not turn job permissions into step-only capabilities. Every checkout sets `persist-credentials: false`, so checkout credentials are not persisted.
+`package_artifacts` is read-only with respect to repository and public release state. It checks out the current `expected_sha` control plane and the exact `artifact_sha` source into separate directories, then installs with `--ignore-scripts`, builds without cache reuse, and packs only in the artifact checkout. The packaging helper verifies package identity, normalized manifests, runtime entrypoints, inventory, and digests before `actions/upload-artifact` uploads one run/attempt-named handoff with overwrite disabled.
+
+PREFLIGHT and protected FINALIZE download that current-run handoff by exact artifact ID. Before any state decision, the finalizer binds the artifact ID and digest plus the handoff's repository, workflow path/ref/SHA, run ID/attempt, `expected_sha`, `artifact_sha`, and exact normalized selection; it then independently verifies every tarball and its recorded digests and inventory. Privileged FINALIZE installs no dependencies, builds or tests nothing, and runs no package code or package lifecycle scripts. It publishes only those verified tarballs, with scripts disabled, through npm trusted publishing with provenance.
+
+Declared job permissions, including `contents` and `id-token`, are available job-wide; when `id-token: write` is declared, OIDC is not step-scoped. The only step-scoped credential controls are explicit secret or token environment variables on their listed API or mutation steps. This environment scoping is defense in depth; it does not turn job permissions into step-only capabilities. Every checkout sets `persist-credentials: false`, so checkout credentials are not persisted.
 
 FINALIZE derives `x-access-token:<token>` Basic authentication from its step-scoped `GITHUB_TOKEN` only for the atomic tag push and supplies it through a one-shot GitHub-scoped `git -c` extraheader. Missing, oversized, whitespace, control-character, or non-ASCII authentication fails before local tag creation. The credential is never written to checkout configuration or printed. PREFLIGHT retains only its existing read token and does not construct tag-push authentication.
 
-The real stable publication boundary is protected `stable-release` environment review, authorization of the reviewed SHA, and npm trusted publishing bound to the repository, workflow, environment, and OIDC claims. `GITHUB_ACTIONS` is checked only as an accidental-use guard, so FINALIZE is refused outside GitHub Actions; it is not an unspoofable local security gate because a local process can set it.
+The real stable publication boundary is protected `stable-release` environment review, authorization of the reviewed SHA, and npm trusted publishing bound to the repository, workflow, environment, and OIDC claims. Concretely, the external npm trusted-publisher configuration must remain bound to this repository, `.github/workflows/release-stable.yml`, and the `stable-release` environment. `GITHUB_ACTIONS` is checked only as an accidental-use guard, so FINALIZE is refused outside GitHub Actions; it is not an unspoofable local security gate because a local process can set it.
 
 ## Nx release projects
 
@@ -125,7 +130,7 @@ ARTIFACT_SHA=$(gh pr view "$STABLE_PR" --json mergeCommit --jq '.mergeCommit.oid
 test "$EXPECTED_SHA" = "$ARTIFACT_SHA"
 ```
 
-For the normal current release the values are identical. `expected_sha` authorizes the current `master`; `artifact_sha` identifies the reviewed release shape. A different artifact SHA is historical verification-only and cannot repair or publish.
+For the normal current release the values are identical. `expected_sha` authorizes the current `master`; `artifact_sha` identifies the reviewed release shape. Different values enter only the bounded historical npm publish-only recovery path described below.
 
 Dispatch read-only PREFLIGHT with the same normalized subset:
 
@@ -138,7 +143,7 @@ gh workflow run release-stable.yml --ref master \
   -f artifact_sha="$ARTIFACT_SHA"
 ```
 
-PREFLIGHT freshly proves `HEAD == origin/master == expected_sha`, derives the reviewed records from the artifact first-parent diff, and reads npm, tags, and Releases. It has no npm credentials, OIDC, or write token and performs no mutation.
+`package_artifacts` creates the run-bound handoff from the separate exact artifact checkout first. PREFLIGHT downloads it by exact artifact ID, verifies all handoff bindings and tarballs, freshly proves `HEAD == origin/master == expected_sha`, derives the reviewed records from the artifact first-parent diff, and reads npm, tags, and Releases. It has no npm credentials, OIDC, or write token and performs no mutation.
 
 ### 5. Dispatch protected FINALIZE
 
@@ -153,14 +158,14 @@ gh workflow run release-stable.yml --ref master \
   -f artifact_sha="$ARTIFACT_SHA"
 ```
 
-Protected-environment approval occurs before the privileged job. FINALIZE again proves the exact expected and artifact SHA authorization, then reconciles in order:
+Protected-environment approval occurs before the privileged job. FINALIZE downloads the handoff by exact artifact ID, repeats every binding and tarball verification, and then reconciles in order:
 
-1. exact annotated tags targeting `artifact_sha`, with one atomic explicit tag-refspec push using the non-persisted one-shot Basic extraheader;
-2. exact non-draft, non-prerelease GitHub Releases;
-3. only npm packages still missing, through Nx without a prerelease tag;
+1. for a current artifact, exact annotated tags targeting `artifact_sha`, with one atomic explicit tag-refspec push using the non-persisted one-shot Basic extraheader;
+2. for a current artifact, exact non-draft, non-prerelease GitHub Releases;
+3. only npm versions still missing, by publishing the independently verified `.tgz` files with `latest`, trusted OIDC, provenance, and lifecycle scripts disabled;
 4. bounded verification of every selected npm version and `latest`.
 
-Matching state is retained, response loss is reconciled by rereading, and unknown or conflicting state stops the run. Publish-only recovery retries use the same workflow inputs.
+Matching state is retained, response loss is reconciled by rereading, and unknown or conflicting state stops the run. Current-artifact retries use the same exact SHAs and selection; historical recovery has the stricter procedure below.
 
 ## Structural suppression and fail-closed behavior
 
@@ -173,7 +178,7 @@ Missing changelog, extra paths, package renames, leading-zero SemVer identifiers
 Before release mutation, the validation job runs:
 
 ```bash
-node --test scripts/release-policy-contract.test.mjs
+node --test scripts/release-package-stable.test.mjs scripts/release-finalize-stable.test.mjs scripts/release-policy-contract.test.mjs
 ```
 
 React Router readiness is checked only when that project is selected:
@@ -186,9 +191,54 @@ pnpm nx run @effectify/react-router-example:migration:manifest
 pnpm nx run @effectify/react-router-example:consolidation:verify
 ```
 
+### Historical npm-only recovery
+
+Historical recovery is exceptional and release-control-path-only. The historical `artifact_sha` must be an ancestor from 1–8 commits behind the current `expected_sha`, and the aggregate `artifact_sha..expected_sha` changed-path set must stay within this hard-coded allowlist:
+
+- `.github/SETUP.md`
+- `.github/workflows/release-stable.yml`
+- `scripts/release-finalize-stable.mjs` and `scripts/release-finalize-stable.test.mjs`
+- `scripts/release-package-stable.mjs` and `scripts/release-package-stable.test.mjs`
+- `scripts/release-policy-contract.test.mjs`
+- `scripts/release-stable-abandonments.json`
+
+Historical FINALIZE requires every selected annotated tag and non-draft, non-prerelease GitHub Release to exist already and match the historical artifact exactly. It cannot create or change either public artifact; it may mutate only a missing npm version by publishing its independently verified historical tarball. Run read-only PREFLIGHT first with the current exact `master` SHA and the older reviewed artifact SHA:
+
+```bash
+EXPECTED_SHA=$(gh api repos/{owner}/{repo}/git/ref/heads/master --jq '.object.sha')
+ARTIFACT_SHA='<full lowercase historical reviewed artifact SHA>'
+[[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]] || exit 1
+[[ "$ARTIFACT_SHA" =~ ^[0-9a-f]{40}$ ]] || exit 1
+test "$EXPECTED_SHA" != "$ARTIFACT_SHA"
+
+gh workflow run release-stable.yml --ref master \
+  -f projects="$PROJECTS" \
+  -f publish_only=false \
+  -f preflight_only=true \
+  -f expected_sha="$EXPECTED_SHA" \
+  -f artifact_sha="$ARTIFACT_SHA"
+```
+
+Wait for PREFLIGHT to succeed and confirm exact existing tag/Release state for every selected record. Only then dispatch protected FINALIZE with the same selection and SHAs:
+
+```bash
+gh workflow run release-stable.yml --ref master \
+  -f projects="$PROJECTS" \
+  -f publish_only=true \
+  -f preflight_only=false \
+  -f expected_sha="$EXPECTED_SHA" \
+  -f artifact_sha="$ARTIFACT_SHA"
+```
+
+> **Reviewed abandonment:** `@effectify/prisma@1.1.14` at artifact `f31390ce66ea157ea8b75f5259c203123e269759` keeps its exact tag and GitHub Release but must remain absent from npm because its CLI/export paths are broken. Do not publish it; a separately reviewed `@effectify/prisma@1.1.15` is required.
+
+### Failure handling
+
+npm reconciliation is bounded. Publication failures expose only a redacted, allowlisted diagnostic classification—authentication, authorization, not found, conflict, rejected payload, rate limiting, registry service failure, forbidden interactive authentication, or unknown—plus the bounded-read outcome; raw npm output is not emitted. A diagnostic never relaxes the external trusted-publisher requirement: npm must still bind this repository, `.github/workflows/release-stable.yml`, and the `stable-release` environment.
+
 **Stop immediately** on a moved `master`, changed selection, missing or invalid first parent, unexpected diff path, non-beta source, target other than the beta base, package rename, malformed external response, lightweight or wrong-target tag, conflicting Release, stable collision, or an existing npm version whose `latest` differs.
 
-Retry only the same exact SHAs and selected subset. Before a release PR merges, rollback is limited to abandoning the prepared branch or closing the PR. After merge but before public artifacts, use a protected revert PR. After any public artifact exists, never delete, retarget, unpublish, deprecate, or rewrite it; recover forward through the same authorized FINALIZE.
+Retry only the same exact SHAs and selected subset. Before a release PR merges, rollback is limited to abandoning the prepared branch or closing the PR. After merge but before public artifacts, use a protected revert PR. After any public tag or Release exists, never delete, retarget, unpublish, deprecate, or rewrite it. Do not edit or revert that public state, and do not use a repository revert to undo it; recover forward only through the same authorized FINALIZE.
 
 ## Residual GitHub-host assumptions
 

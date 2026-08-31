@@ -4,6 +4,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import test from "node:test"
+import { isDeepStrictEqual } from "node:util"
 
 const read = (path) => {
   try {
@@ -23,6 +24,10 @@ const readme = read("README.md")
 const setup = read(".github/SETUP.md")
 const stableFinalizeWrapper = read("scripts/release-finalize-stable.sh")
 const stableFinalizeScript = read("scripts/release-finalize-stable.mjs")
+const stablePackageScript = read("scripts/release-package-stable.mjs")
+const stablePackageTest = read("scripts/release-package-stable.test.mjs")
+const stableFinalizeTest = read("scripts/release-finalize-stable.test.mjs")
+const stableAbandonmentLedger = read("scripts/release-stable-abandonments.json")
 
 const releaseProjects = [
   "@effectify/react-router",
@@ -228,6 +233,8 @@ const exactCommand = (value) => new RegExp(`^${value.replace(/[.*+?^${}()|[\]\\]
 const buildCommand = /^pnpm nx run-many -t build "--projects=\$PROJECTS" --parallel=3$/
 const testCommand = /^pnpm nx run-many -t test "--projects=\$PROJECTS" --parallel=3 --passWithNoTests$/
 const contractCommand = /^node --test scripts\/release-policy-contract\.test\.mjs$/
+const stableContractCommand =
+  /^node --test scripts\/release-package-stable\.test\.mjs scripts\/release-finalize-stable\.test\.mjs scripts\/release-policy-contract\.test\.mjs$/
 const releaseSubjectGuard =
   'if [[ "$HEAD_SUBJECT" == *"chore(release):"* || "$HEAD_SUBJECT" == *"[skip release]"* ]]; then'
 const releaseManifestGuard =
@@ -246,6 +253,8 @@ const betaFinalizeExpectedShaGuard = '[[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]] ||
 const stableFinalizeExpectedShaGuard =
   "[[ \"$EXPECTED_SHA\" =~ ^[0-9a-f]{40}$ ]] || { echo '::error::FINALIZE requires full lowercase expected_sha'; exit 1; }"
 const stableTransitionVersionPattern = "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)-beta\\.(0|[1-9][0-9]*)$"
+const exactStablePublishCall =
+  /run\("npm", \[\s*"publish",\s*tarballPath,\s*"--registry",\s*NPM_REGISTRY,\s*"--access",\s*"public",\s*"--tag",\s*"latest",\s*"--provenance",\s*"--ignore-scripts",\s*"--json",\s*\]\)/
 
 const permissionEntries = (job) => {
   const block = job.match(/^\s{4}permissions:\s*\n((?:\s{6}[A-Za-z-]+:\s*[^\n]+\n?)+)/m)?.[1] ?? ""
@@ -266,16 +275,188 @@ const checkoutPersistsCredentials = (job) =>
     (step) => step.uses.startsWith("actions/checkout@") && !/persist-credentials:\s*false/.test(step.source),
   )
 
+const stableArtifactTopologyViolations = (source) => {
+  const violations = []
+  const jobs = Object.fromEntries(
+    ["package_artifacts", "preflight", "finalize"].map((name) => [name, extractJob(source, name)]),
+  )
+  if (!jobs.package_artifacts) return ["stable package_artifacts job"]
+
+  const packageJob = jobs.package_artifacts
+  if (!/^\s{4}needs:\s*validate\s*$/m.test(packageJob))
+    violations.push("stable package_artifacts validation dependency")
+  if (
+    !/^\s{4}if:\s*\$\{\{ needs\.validate\.outputs\.mode == 'preflight' \|\| needs\.validate\.outputs\.mode == 'finalize' \}\}\s*$/m.test(
+      packageJob,
+    )
+  ) {
+    violations.push("stable package_artifacts mode isolation")
+  }
+  if (!hasExactPermissions(packageJob, { contents: "read" })) {
+    violations.push("stable package_artifacts least privilege")
+  }
+  if (
+    /id-token:\s*write|contents:\s*write|\b(?:GITHUB_TOKEN|GH_TOKEN|NODE_AUTH_TOKEN|NPM_TOKEN|RELEASE_TOKEN):|secrets\.|github\.token/.test(
+      packageJob,
+    )
+  ) {
+    violations.push("stable package_artifacts credential isolation")
+  }
+  for (const [output, value] of [
+    ["artifact_id", "${{ steps.upload.outputs.artifact-id }}"],
+    ["artifact_digest", "${{ steps.upload.outputs.artifact-digest }}"],
+  ]) {
+    if (!packageJob.includes(`      ${output}: ${value}`)) violations.push(`stable package_artifacts ${output} output`)
+  }
+
+  const packageSteps = extractSteps(packageJob)
+  const checkouts = packageSteps.filter((step) => step.uses === "actions/checkout@v5")
+  if (checkouts.length !== 2) {
+    violations.push("stable package_artifacts dual checkout")
+  } else {
+    for (const [checkout, ref, path] of [
+      [checkouts[0], "needs.validate.outputs.expected_sha", "stable-control"],
+      [checkouts[1], "needs.validate.outputs.artifact_sha", "stable-source"],
+    ]) {
+      if (
+        !new RegExp(`ref:\\s*\\$\\{\\{ ${ref.replaceAll(".", "\\.")} \\}\\}`).test(checkout.source) ||
+        !/fetch-depth:\s*0/.test(checkout.source) ||
+        !/persist-credentials:\s*false/.test(checkout.source) ||
+        !new RegExp(`path:\\s*${path}(?:\\s|$)`).test(checkout.source)
+      ) {
+        violations.push(`stable package_artifacts exact ${path} checkout`)
+      }
+    }
+  }
+
+  const pnpmSetup = packageSteps.filter((step) => step.uses === "pnpm/action-setup@v6")
+  if (pnpmSetup.length !== 1 || !/version:\s*10\.14\.0/.test(pnpmSetup[0].source)) {
+    violations.push("stable package_artifacts pinned pnpm")
+  }
+  const nodeSetup = packageSteps.filter((step) => step.uses === "actions/setup-node@v5")
+  if (
+    nodeSetup.length !== 1 ||
+    !/node-version:\s*["']?24\.19\.0["']?/.test(nodeSetup[0].source) ||
+    nodeSetup[0].packageManagerCache !== "false"
+  ) {
+    violations.push("stable package_artifacts pinned cacheless Node")
+  }
+  const install = packageSteps.find((step) => step.commands.includes("pnpm install --frozen-lockfile --ignore-scripts"))
+  if (!install || !/working-directory:\s*stable-source/.test(install.source)) {
+    violations.push("stable package_artifacts source install")
+  }
+  const build = packageSteps.find((step) =>
+    step.commands.includes('pnpm nx run-many -t build "--projects=$PROJECTS" --parallel=3 --skip-nx-cache'),
+  )
+  if (
+    !build ||
+    !/working-directory:\s*stable-source/.test(build.source) ||
+    !/PROJECTS:\s*\$\{\{ needs\.validate\.outputs\.projects \}\}/.test(build.source) ||
+    !/NX_NO_CLOUD:\s*true/.test(build.source) ||
+    !/NX_SKIP_NX_CACHE:\s*true/.test(build.source)
+  ) {
+    violations.push("stable package_artifacts exact cacheless build")
+  }
+  const create = packageSteps.find((step) =>
+    step.commands.includes(
+      'node "$GITHUB_WORKSPACE/stable-control/scripts/release-package-stable.mjs" create --source-root "$GITHUB_WORKSPACE/stable-source" --output "$RUNNER_TEMP/stable-handoff" --abandonments "$GITHUB_WORKSPACE/stable-control/scripts/release-stable-abandonments.json"',
+    ),
+  )
+  if (!create) {
+    violations.push("stable package_artifacts control helper invocation")
+  } else {
+    for (const [pattern, name] of [
+      [/GITHUB_REPOSITORY:\s*\$\{\{ github\.repository \}\}/, "repository"],
+      [/WORKFLOW_PATH:\s*\.github\/workflows\/release-stable\.yml/, "workflow path"],
+      [/WORKFLOW_REF:\s*refs\/heads\/master/, "workflow ref"],
+      [/WORKFLOW_SHA:\s*\$\{\{ needs\.validate\.outputs\.expected_sha \}\}/, "workflow SHA"],
+      [/GITHUB_RUN_ID:\s*\$\{\{ github\.run_id \}\}/, "run ID"],
+      [/GITHUB_RUN_ATTEMPT:\s*\$\{\{ github\.run_attempt \}\}/, "run attempt"],
+      [/EXPECTED_SHA:\s*\$\{\{ needs\.validate\.outputs\.expected_sha \}\}/, "expected SHA"],
+      [/ARTIFACT_SHA:\s*\$\{\{ needs\.validate\.outputs\.artifact_sha \}\}/, "artifact SHA"],
+      [/PROJECTS:\s*\$\{\{ needs\.validate\.outputs\.projects \}\}/, "projects"],
+    ]) {
+      if (!pattern.test(create.source)) violations.push(`stable package_artifacts helper ${name}`)
+    }
+  }
+
+  const uploads = extractSteps(source).filter((step) => step.uses.startsWith("actions/upload-artifact@"))
+  const upload = packageSteps.find((step) => step.uses.startsWith("actions/upload-artifact@"))
+  if (
+    uploads.length !== 1 ||
+    !upload ||
+    upload.uses !== "actions/upload-artifact@v4" ||
+    !/name:\s*stable-handoff-\$\{\{ github\.run_id \}\}-\$\{\{ github\.run_attempt \}\}/.test(upload.source) ||
+    !/path:\s*\$\{\{ runner\.temp \}\}\/stable-handoff/.test(upload.source) ||
+    !/if-no-files-found:\s*error/.test(upload.source) ||
+    !/retention-days:\s*1/.test(upload.source) ||
+    !/overwrite:\s*false/.test(upload.source)
+  ) {
+    violations.push("stable package_artifacts single immutable upload")
+  }
+  if (upload && packageSteps.indexOf(upload) <= packageSteps.indexOf(create)) {
+    violations.push("stable package_artifacts create before upload")
+  }
+
+  for (const [name, command] of [
+    ["preflight", "node scripts/release-finalize-stable.mjs --preflight --json"],
+    ["finalize", "node scripts/release-finalize-stable.mjs"],
+  ]) {
+    const job = jobs[name]
+    if (!job) continue
+    if (!/^\s{4}needs:\s*\[validate, package_artifacts\]\s*$/m.test(job)) {
+      violations.push(`stable ${name} package_artifacts dependency`)
+    }
+    const steps = extractSteps(job)
+    const downloads = steps.filter((step) => step.uses.startsWith("actions/download-artifact@"))
+    const download = downloads[0]
+    if (
+      downloads.length !== 1 ||
+      download.uses !== "actions/download-artifact@v5" ||
+      !/artifact-ids:\s*\$\{\{ needs\.package_artifacts\.outputs\.artifact_id \}\}/.test(download.source) ||
+      !/path:\s*\$\{\{ runner\.temp \}\}\/stable-handoff/.test(download.source) ||
+      !/merge-multiple:\s*true/.test(download.source) ||
+      /^\s*(?:name|pattern|run-id|repository|github-token):/m.test(download.source)
+    ) {
+      violations.push(`stable ${name} exact current-run artifact download`)
+    }
+    const finalizer = steps.find((step) => step.commands.includes(command))
+    if (!finalizer) {
+      violations.push(`stable ${name} exact Node finalizer invocation`)
+      continue
+    }
+    for (const [pattern, label] of [
+      [/PROJECTS:\s*\$\{\{ needs\.validate\.outputs\.projects \}\}/, "projects"],
+      [/EXPECTED_SHA:\s*\$\{\{ needs\.validate\.outputs\.expected_sha \}\}/, "expected SHA"],
+      [/ARTIFACT_SHA:\s*\$\{\{ needs\.validate\.outputs\.artifact_sha \}\}/, "artifact SHA"],
+      [/STABLE_HANDOFF_DIRECTORY:\s*\$\{\{ runner\.temp \}\}\/stable-handoff/, "handoff directory"],
+      [/STABLE_HANDOFF_ARTIFACT_ID:\s*\$\{\{ needs\.package_artifacts\.outputs\.artifact_id \}\}/, "artifact ID"],
+      [
+        /STABLE_HANDOFF_ARTIFACT_DIGEST:\s*sha256:\$\{\{ needs\.package_artifacts\.outputs\.artifact_digest \}\}/,
+        "artifact digest",
+      ],
+    ]) {
+      if (!pattern.test(finalizer.source)) violations.push(`stable ${name} ${label} binding`)
+    }
+  }
+  return violations
+}
+
 const stableCapabilityViolations = (source) => {
   const violations = []
   const jobs = Object.fromEntries(
-    ["validate", "prepare", "preflight", "finalize"].map((name) => [name, extractJob(source, name)]),
+    ["validate", "package_artifacts", "prepare", "preflight", "finalize"].map((name) => [
+      name,
+      extractJob(source, name),
+    ]),
   )
   for (const [name, job] of Object.entries(jobs)) if (!job) violations.push(`stable ${name} job`)
   if (violations.length > 0) return violations
+  violations.push(...stableArtifactTopologyViolations(source))
 
   for (const [name, expected] of [
     ["validate", { contents: "read" }],
+    ["package_artifacts", { contents: "read" }],
     ["prepare", { contents: "write" }],
     ["preflight", { contents: "read" }],
     ["finalize", { contents: "write", "id-token": "write" }],
@@ -287,7 +468,7 @@ const stableCapabilityViolations = (source) => {
   }
 
   const validateSteps = extractSteps(jobs.validate)
-  for (const required of [contractCommand, buildCommand, testCommand]) {
+  for (const required of [stableContractCommand, buildCommand, testCommand]) {
     if (!validateSteps.some((step) => step.commands.some((command) => required.test(command)))) {
       violations.push(`stable validation ${String(required)}`)
     }
@@ -341,9 +522,21 @@ const stableCapabilityViolations = (source) => {
   ) {
     violations.push("stable PREFLIGHT read-only credentials")
   }
-  const preflightSetupNode = extractSteps(jobs.preflight).find((step) => step.uses.startsWith("actions/setup-node@"))
+  const preflightSteps = extractSteps(jobs.preflight)
+  const preflightSetupNode = preflightSteps.find((step) => step.uses.startsWith("actions/setup-node@"))
   if (preflightSetupNode?.packageManagerCache !== "false") {
     violations.push("stable PREFLIGHT setup-node package-manager cache")
+  }
+  if (
+    preflightSteps.some(
+      (step) =>
+        step.uses.startsWith("pnpm/action-setup@") ||
+        step.commands.some((command) =>
+          /\b(?:pnpm|npx|yarn|nx)\b|\bnpm\s+(?:install|ci|run|exec|pack|publish)\b/.test(command),
+        ),
+    )
+  ) {
+    violations.push("stable PREFLIGHT Node-only execution")
   }
 
   const finalizeSteps = extractSteps(jobs.finalize)
@@ -367,16 +560,22 @@ const stableCapabilityViolations = (source) => {
   ) {
     violations.push("stable FINALIZE lifecycle-script environment")
   }
+  const finalizeNode = finalizeSteps.find((step) => step.uses.startsWith("actions/setup-node@"))
+  if (finalizeNode?.packageManagerCache !== "false") {
+    violations.push("stable FINALIZE setup-node package-manager cache")
+  }
   if (
-    finalizeSteps.some((step) =>
-      step.commands.some(
-        (command) =>
-          /(?:^|\s)(?:build|test)(?:\s|$)|nx (?:run|test)|npm whoami|nx release version/.test(command) ||
-          (/^pnpm install\b/.test(command) && !/--ignore-scripts/.test(command)),
-      ),
+    finalizeSteps.some(
+      (step) =>
+        step.uses.startsWith("pnpm/action-setup@") ||
+        step.commands.some((command) =>
+          /\b(?:pnpm|npx|yarn|nx)\b|\bnpm\s+(?:install|ci|run|exec|pack|rebuild|whoami)\b|\b(?:preinstall|postinstall|prepare|prepublish|prepublishOnly|prepack|postpack)\b|(?:^|\s)(?:build|test)(?:\s|$)/.test(
+            command,
+          ),
+        ),
     )
   ) {
-    violations.push("stable FINALIZE lifecycle isolation")
+    violations.push("stable FINALIZE Node/npm-only lifecycle isolation")
   }
   return violations
 }
@@ -939,8 +1138,89 @@ const betaViolations = (source) => {
   return violations
 }
 
+const exactHistoricalStableControlPaths = [
+  ".github/SETUP.md",
+  ".github/workflows/release-stable.yml",
+  "scripts/release-finalize-stable.mjs",
+  "scripts/release-finalize-stable.test.mjs",
+  "scripts/release-package-stable.mjs",
+  "scripts/release-package-stable.test.mjs",
+  "scripts/release-policy-contract.test.mjs",
+  "scripts/release-stable-abandonments.json",
+]
+const exactStableAbandonment = {
+  artifactSha: "f31390ce66ea157ea8b75f5259c203123e269759",
+  project: "@effectify/prisma",
+  name: "@effectify/prisma",
+  version: "1.1.14",
+  reason: "Reviewed exception: 1.1.14 has broken CLI/export paths; publish a reviewed 1.1.15 instead.",
+}
+
+const stableControlFileViolations = (source, finalizeScript = stableFinalizeScript) => {
+  const violations = []
+  const inputsStart = source.indexOf("    inputs:\n")
+  const inputsEnd = source.indexOf("\nconcurrency:", inputsStart)
+  const inputsBlock = inputsStart >= 0 && inputsEnd > inputsStart ? source.slice(inputsStart, inputsEnd) : ""
+  const inputNames = [...inputsBlock.matchAll(/^ {6}([a-z][a-z0-9_]*):\s*$/gm)].map(([, name]) => name)
+  if (!isDeepStrictEqual(inputNames, ["projects", "publish_only", "preflight_only", "expected_sha", "artifact_sha"])) {
+    violations.push("stable exact dispatch inputs without bypass")
+  }
+  if (
+    /inputs\.(?:abandon|bypass|skip|force)|process\.env\.[A-Z0-9_]*(?:ABANDON|BYPASS|SKIP|FORCE)/.test(
+      `${source}\n${stablePackageScript}\n${finalizeScript}`,
+    )
+  ) {
+    violations.push("stable no abandonment or bypass user control")
+  }
+
+  let ledger
+  try {
+    ledger = JSON.parse(stableAbandonmentLedger)
+  } catch {
+    violations.push("stable abandonment ledger valid JSON")
+  }
+  if (ledger && !isDeepStrictEqual(ledger, { schemaVersion: 1, abandonments: [exactStableAbandonment] })) {
+    violations.push("stable exact Prisma 1.1.14 abandonment")
+  }
+  for (const [text, label] of [
+    [stablePackageScript, "package helper"],
+    [stablePackageTest, "package helper tests"],
+    [stableFinalizeTest, "finalizer tests"],
+    [stableAbandonmentLedger, "abandonment ledger"],
+  ]) {
+    if (!text) violations.push(`stable required ${label}`)
+  }
+  for (const value of Object.values(exactStableAbandonment)) {
+    if (!stablePackageScript.includes(value)) violations.push("stable helper exact reviewed abandonment")
+  }
+  if (
+    !/value\.abandonments\.length !== 1/.test(stablePackageScript) ||
+    !/isDeepStrictEqual\(record, PINNED_ABANDONMENT\)/.test(stablePackageScript) ||
+    !stablePackageTest.includes("release-stable-abandonments.json")
+  ) {
+    violations.push("stable abandonment fail-closed validation")
+  }
+
+  const historicalBlock = finalizeScript.match(/const ALLOWED_HISTORICAL_PATHS = Object\.freeze\(\[([\s\S]*?)\]\)/)?.[1]
+  const historicalPaths = historicalBlock
+    ? [...historicalBlock.matchAll(/["']([^"']+)["']/g)].map(([, path]) => path)
+    : []
+  if (!isDeepStrictEqual(historicalPaths, exactHistoricalStableControlPaths)) {
+    violations.push("stable exact historical recovery control files")
+  }
+  for (const pattern of [
+    /const MAX_HISTORICAL_COMMITS = 8/,
+    /\["merge-base", "--is-ancestor", artifactSha, expectedSha\]/,
+    /\["diff", "--name-only", "--no-renames", artifactSha, expectedSha\]/,
+    /historical recovery changed path is not allowlisted/,
+  ]) {
+    if (!pattern.test(finalizeScript)) violations.push("stable bounded historical recovery controls")
+  }
+  return violations
+}
+
 const stableViolations = (source, finalizeScript = stableFinalizeScript) => {
-  const violations = [...stableCapabilityViolations(source)]
+  const violations = [...stableCapabilityViolations(source), ...stableControlFileViolations(source, finalizeScript)]
   const active = withoutComments(source)
   const activeFinalize = withoutComments(finalizeScript)
   {
@@ -976,17 +1256,17 @@ const stableViolations = (source, finalizeScript = stableFinalizeScript) => {
       ["historical SHA distinction", /const historicalReplay = artifactSha !== expectedSha/, activeFinalize],
       [
         "import-safe URL-aware main-module guard",
-        /function isMainModule\(\) \{[\s\S]*const entry = process\.argv\[1\][\s\S]*if \(!entry\) return false[\s\S]*resolvedEntry = realpathSync\(entry\)[\s\S]*resolvedModule = realpathSync\(fileURLToPath\(import\.meta\.url\)\)[\s\S]*catch \{[\s\S]*return false[\s\S]*pathToFileURL\(resolvedEntry\)\.href === pathToFileURL\(resolvedModule\)\.href/,
+        /function isMainModule\(\) \{[\s\S]*const entry = process\.argv\[1\][\s\S]*if \(!entry\) return false[\s\S]*pathToFileURL\(realpathSync\(entry\)\)\.href === pathToFileURL\(realpathSync\(fileURLToPath\(import\.meta\.url\)\)\)\.href[\s\S]*catch \{[\s\S]*return false/,
         activeFinalize,
       ],
       [
         "strict expected SHA",
-        /if \(!\/\^\[0-9a-f\]\{40\}\$\/\.test\(expectedSha\)\) fail\("FINALIZE requires full lowercase expected SHA"\)/,
+        /if \(!fullSha\(expectedSha\)\) fail\("FINALIZE requires full lowercase expected SHA"\)/,
         activeFinalize,
       ],
       [
         "strict artifact SHA",
-        /if \(!\/\^\[0-9a-f\]\{40\}\$\/\.test\(artifactSha\)\) fail\("FINALIZE requires full lowercase artifact SHA"\)/,
+        /if \(!fullSha\(artifactSha\)\) fail\("FINALIZE requires full lowercase artifact SHA"\)/,
         activeFinalize,
       ],
       ["fresh master", /master:refs\/remotes\/origin\/master/, activeFinalize],
@@ -1007,7 +1287,7 @@ const stableViolations = (source, finalizeScript = stableFinalizeScript) => {
       ],
       [
         "artifact changelog blob before publication inspection",
-        /await verifyArtifactChangelog\(\)[\s\S]*const records = await deriveReviewedRecords\(projects\)[\s\S]*const states = await inspect\(records\)/,
+        /await verifyCurrentRunHandoff\(projects\)[\s\S]*await verifyArtifactChangelog\(\)[\s\S]*const records = await deriveReviewedRecords\(projects\)[\s\S]*const states = await inspect\(records, packageByProject, abandonedProjects\)/,
         activeFinalize,
       ],
       [
@@ -1017,7 +1297,7 @@ const stableViolations = (source, finalizeScript = stableFinalizeScript) => {
       ],
       ["artifact nx release roots", /artifactJson\("nx\.json"/, activeFinalize],
       ["artifact project identity", /artifactJson\(`\$\{root\}\/project\.json`/, activeFinalize],
-      ["artifact manifest identity", /artifactJson\(manifestPath/, activeFinalize],
+      ["artifact manifest identity", /artifactDocument\(manifestPath/, activeFinalize],
       [
         "single-parent or exact two-parent artifact",
         /if \(parents\.length === 1\) return[\s\S]*if \(parents\.length !== 2\) fail\("reviewed artifact must be a single-parent commit or exact two-parent merge"\)/,
@@ -1038,7 +1318,7 @@ const stableViolations = (source, finalizeScript = stableFinalizeScript) => {
         /\["diff", "--name-only", "--no-renames", `\$\{artifactSha\}\^1`, artifactSha\]/,
         activeFinalize,
       ],
-      ["strict beta source", /previous\.version\.match\(\/\^.*-beta\\\./, activeFinalize],
+      ["strict beta source", /previous\.version\.match\([\s\S]*-beta\\\./, activeFinalize],
       [
         "derived stable target",
         /const stableVersion = match \? `\$\{match\[1\]\}\.\$\{match\[2\]\}\.\$\{match\[3\]\}`/,
@@ -1050,14 +1330,14 @@ const stableViolations = (source, finalizeScript = stableFinalizeScript) => {
         activeFinalize,
       ],
       ["GitHub Actions FINALIZE boundary", /process\.env\.GITHUB_ACTIONS !== "true"/, activeFinalize],
-      ["bounded npm reads", /const maxReads = 6\b/, activeFinalize],
+      ["bounded npm reads", /const MAX_NPM_READS = 6\b/, activeFinalize],
       ["post-publish absence retries", /acceptAbsent && state\.kind === "absent"/, activeFinalize],
       [
         "local annotated tag inspection",
         /async function localTagState[\s\S]*objecttype[\s\S]*\^tag\\t/,
         activeFinalize,
       ],
-      ["independent npm documents", /const versionsDoc[\s\S]*const tagsDoc/, activeFinalize],
+      ["independent npm documents", /const versionsDocument[\s\S]*const tagsDocument/, activeFinalize],
       [
         "strict tag parse",
         /direct\.length === 1 && peeled\.length === 1 && peeled\[0\] === artifactSha/,
@@ -1067,11 +1347,7 @@ const stableViolations = (source, finalizeScript = stableFinalizeScript) => {
       ["HTTP 404 absence", /result\.status === 404/, activeFinalize],
       ["unknown Release fail closed", /result\.status !== 200/, activeFinalize],
       ["annotated artifact tag", /\["tag", "-a", tag, artifactSha, "-m", tag\]/, activeFinalize],
-      [
-        "bounded printable-ASCII tag-push token",
-        /!\/\^\[\\x21-\\x7e\]\{1,4096\}\$\/\.test\(token\)/,
-        activeFinalize,
-      ],
+      ["bounded printable-ASCII tag-push token", /!\/\^\[\\x21-\\x7e\]\{1,4096\}\$\/\.test\(token\)/, activeFinalize],
       [
         "Basic tag-push credential",
         /Buffer\.from\(`x-access-token:\$\{token\}`, "utf8"\)\.toString\("base64"\)/,
@@ -1094,30 +1370,23 @@ const stableViolations = (source, finalizeScript = stableFinalizeScript) => {
       ],
       [
         "missing npm subset",
-        /states\.filter\(\((?:state|item)\) => (?:state|item)\.npm === "absent"\)/,
+        /const current = await npmBounded\(record, handoffPackage, \{ acceptAbsent: true \}\)[\s\S]*if \(current\.kind === "exact"\) continue/,
         activeFinalize,
       ],
+      ["pinned npmjs registry", /const NPM_REGISTRY = "https:\/\/registry\.npmjs\.org\/"/, activeFinalize],
+      ["tarball-only default publication", exactStablePublishCall, activeFinalize],
+      ["publish lifecycle-script argument", /"--provenance",\s*"--ignore-scripts",\s*"--json",/, activeFinalize],
       [
-        "default publication",
-        /\["nx", "release", "publish", `--projects=\$\{missing\.join\(","\)\}`\]/,
-        activeFinalize,
-      ],
-      [
-        "publish lifecycle-script environment",
-        /env:\s*\{\s*\.\.\.process\.env,\s*NPM_CONFIG_IGNORE_SCRIPTS:\s*"true"\s*\}/,
-        activeFinalize,
-      ],
-      [
-        "historical all-existing guard",
-        /if \(historicalReplay\) \{[\s\S]*item\.tag !== "exact" \|\| item\.release !== "exact" \|\| item\.npm !== "exact"[\s\S]*historical replay requires exact existing tag, GitHub Release, and npm latest/,
+        "historical npm-only guard",
+        /if \(historicalReplay\) \{[\s\S]*state\.tag !== "exact"[\s\S]*state\.release !== "exact"[\s\S]*\["exact", "absent"\]\.includes\(state\.npm\)/,
         activeFinalize,
       ],
       [
         "preflight reviewed selection",
-        /JSON\.stringify\(\{ ok: true, expectedSha, artifactSha, projects, states \}\)/,
+        /const report = \{[\s\S]*artifactDigest:[\s\S]*projects,[\s\S]*states,/,
         activeFinalize,
       ],
-      ["preflight return", /if \(historicalReplay \|\| preflight\) return/, activeFinalize],
+      ["preflight return", /if \(preflight\) \{[\s\S]*process\.stdout\.write[\s\S]*return/, activeFinalize],
       ["selection release roots from nx", /jq -r ['"]?\.release\.projects\[\]['"]? nx\.json/, active],
       ["selection project metadata", /pnpm nx show project "\$RELEASE_ROOT" --json/, active],
       ["selection exact allowlist", /grep -Fx -- "\$project"/, active],
@@ -1247,7 +1516,7 @@ const stableViolations = (source, finalizeScript = stableFinalizeScript) => {
       }
       if (
         preflight.commands.length !== 1 ||
-        preflight.commands[0] !== "bash scripts/release-finalize-stable.sh --preflight --json"
+        preflight.commands[0] !== "node scripts/release-finalize-stable.mjs --preflight --json"
       ) {
         violations.push("stable PREFLIGHT exact read-only invocation")
       }
@@ -1268,13 +1537,10 @@ const stableViolations = (source, finalizeScript = stableFinalizeScript) => {
     if (/npm dist-tag|npm unpublish|gh release delete|git tag -f|--tag=(?:alpha|beta)/.test(activeFinalize))
       violations.push("stable destructive or channel repair")
     const order = [
-      "const states = await inspect(records)",
-      '["tag", "-a"',
-      '["-c", pushConfiguration, "push", "--atomic"',
-      'github("POST"',
-      "releaseState(`${item.name}",
-      '["nx", "release", "publish"',
-      "const state = await npmBounded(item.name",
+      "const states = await inspect(records, packageByProject, abandonedProjects)",
+      "await createCurrentArtifacts(states)",
+      "await publishMissingPackages(states, records, packageByProject, handoffContext.directory)",
+      "await npmBounded(record, packageByProject.get(record.project))",
     ].map((token) => activeFinalize.indexOf(token))
     if (
       order.some((position) => position < 0) ||
@@ -1836,10 +2102,12 @@ test("the Node-only release policy job can bootstrap setup-node without pnpm", (
 test("stable PREFLIGHT can bootstrap setup-node without pnpm", () => {
   assert.deepEqual(stableCapabilityViolations(workflows.stable), [])
 
-  const cacheEnabled = mutate(workflows.stable, "package-manager-cache: false", "package-manager-cache: true")
-  assert.ok(
-    stableCapabilityViolations(cacheEnabled).includes("stable PREFLIGHT setup-node package-manager cache"),
+  const preflightJob = extractJob(workflows.stable, "preflight")
+  const cacheEnabled = workflows.stable.replace(
+    preflightJob,
+    mutate(preflightJob, "package-manager-cache: false", "package-manager-cache: true"),
   )
+  assert.ok(stableCapabilityViolations(cacheEnabled).includes("stable PREFLIGHT setup-node package-manager cache"))
 })
 
 test("release documentation leads with the three-channel mapping", () => {
@@ -2015,8 +2283,8 @@ test("protected stable PREFLIGHT rejects authorization and mutation-boundary dri
       mutateStep(
         stable,
         "PREFLIGHT exact stable artifacts",
-        "bash scripts/release-finalize-stable.sh --preflight --json",
-        "bash scripts/release-finalize-stable.sh",
+        "node scripts/release-finalize-stable.mjs --preflight --json",
+        "node scripts/release-finalize-stable.mjs",
       ),
     ],
     [
@@ -2024,8 +2292,8 @@ test("protected stable PREFLIGHT rejects authorization and mutation-boundary dri
       mutateStep(
         stable,
         "PREFLIGHT exact stable artifacts",
-        "run: bash scripts/release-finalize-stable.sh --preflight --json",
-        "run: |\n          bash scripts/release-finalize-stable.sh --preflight --json\n          git push origin master",
+        "run: node scripts/release-finalize-stable.mjs --preflight --json",
+        "run: |\n          node scripts/release-finalize-stable.mjs --preflight --json\n          git push origin master",
       ),
     ],
     [
@@ -2055,18 +2323,18 @@ test("protected stable PREPARE and FINALIZE reject independent safety mutations"
   const policy = { ...workflows, docs: readme }
   assert.deepEqual(stableViolations(policy.stable), [])
   for (const [name, before, after] of [
-    ["weaken expected SHA", "if (!/^[0-9a-f]{40}$/.test(expectedSha))", "if (!/^[0-9a-f]{7,40}$/.test(expectedSha))"],
-    ["weaken artifact SHA", "if (!/^[0-9a-f]{40}$/.test(artifactSha))", "if (!/^[0-9a-f]{7,40}$/.test(artifactSha))"],
-    ["remove entry realpath resolution", "resolvedEntry = realpathSync(entry)", "resolvedEntry = entry"],
+    ["weaken expected SHA", "if (!fullSha(expectedSha))", "if (!/^[0-9a-f]{7,40}$/.test(expectedSha))"],
+    ["weaken artifact SHA", "if (!fullSha(artifactSha))", "if (!/^[0-9a-f]{7,40}$/.test(artifactSha))"],
+    ["remove entry realpath resolution", "pathToFileURL(realpathSync(entry)).href", "pathToFileURL(entry).href"],
     [
       "remove module URL realpath resolution",
-      "resolvedModule = realpathSync(fileURLToPath(import.meta.url))",
-      "resolvedModule = fileURLToPath(import.meta.url)",
+      "pathToFileURL(realpathSync(fileURLToPath(import.meta.url))).href",
+      "pathToFileURL(fileURLToPath(import.meta.url)).href",
     ],
     [
       "remove main-module URL normalization",
-      "return pathToFileURL(resolvedEntry).href === pathToFileURL(resolvedModule).href",
-      "return resolvedEntry === resolvedModule",
+      "return pathToFileURL(realpathSync(entry)).href === pathToFileURL(realpathSync(fileURLToPath(import.meta.url))).href",
+      "return realpathSync(entry) === realpathSync(fileURLToPath(import.meta.url))",
     ],
     ["remove expected SHA environment", 'const expectedSha = process.env.EXPECTED_SHA ?? ""', 'const expectedSha = ""'],
     [
@@ -2076,13 +2344,13 @@ test("protected stable PREPARE and FINALIZE reject independent safety mutations"
     ],
     [
       "swap expected SHA validation",
-      '.test(expectedSha)) fail("FINALIZE requires full lowercase expected SHA")',
-      '.test(artifactSha)) fail("FINALIZE requires full lowercase expected SHA")',
+      'fullSha(expectedSha)) fail("FINALIZE requires full lowercase expected SHA")',
+      'fullSha(artifactSha)) fail("FINALIZE requires full lowercase expected SHA")',
     ],
     [
       "swap artifact SHA validation",
-      '.test(artifactSha)) fail("FINALIZE requires full lowercase artifact SHA")',
-      '.test(expectedSha)) fail("FINALIZE requires full lowercase artifact SHA")',
+      'fullSha(artifactSha)) fail("FINALIZE requires full lowercase artifact SHA")',
+      'fullSha(expectedSha)) fail("FINALIZE requires full lowercase artifact SHA")',
     ],
     ["authorize HEAD with artifact SHA", "head !== expectedSha", "head !== artifactSha"],
     ["authorize origin with artifact SHA", "origin !== expectedSha", "origin !== artifactSha"],
@@ -2094,7 +2362,7 @@ test("protected stable PREPARE and FINALIZE reject independent safety mutations"
       '["tag", "-a", tag, expectedSha, "-m", tag]',
     ],
     ["remove historical all-existing guard", "if (historicalReplay) {", "if (false) {"],
-    ["weaken historical npm exactness", 'item.npm !== "exact"', 'item.npm === "unknown"'],
+    ["weaken historical npm exactness", '!["exact", "absent"].includes(state.npm)', 'state.npm === "unknown"'],
     ["skip artifact changelog blob verification", "await verifyArtifactChangelog()", ""],
     ["accept octopus artifacts", "parents.length !== 2", "parents.length < 2"],
     [
@@ -2103,11 +2371,66 @@ test("protected stable PREPARE and FINALIZE reject independent safety mutations"
       "generatedParents[0] === firstParent",
     ],
     ["accept a differing merge tree", "treeIds[0] !== treeIds[1]", "treeIds[0] === treeIds[1]"],
-    ["unbound retries", "const maxReads = 6", "const maxReads = 60"],
+    ["unbound retries", "const MAX_NPM_READS = 6", "const MAX_NPM_READS = 60"],
     [
-      "remove publish lifecycle-script environment",
-      'env: { ...process.env, NPM_CONFIG_IGNORE_SCRIPTS: "true" }',
-      "env: process.env",
+      "redirect pinned npmjs registry",
+      'const NPM_REGISTRY = "https://registry.npmjs.org/"',
+      'const NPM_REGISTRY = "https://registry.example.test/"',
+    ],
+    [
+      "remove publish registry arguments",
+      `      await run("npm", [
+        "publish",
+        tarballPath,
+        "--registry",
+        NPM_REGISTRY,
+        "--access",
+        "public",
+        "--tag",
+        "latest",
+        "--provenance",
+        "--ignore-scripts",
+        "--json",
+      ])`,
+      `      await run("npm", [
+        "publish",
+        tarballPath,
+        "--access",
+        "public",
+        "--tag",
+        "latest",
+        "--provenance",
+        "--ignore-scripts",
+        "--json",
+      ])`,
+    ],
+    [
+      "remove publish lifecycle-script argument",
+      `      await run("npm", [
+        "publish",
+        tarballPath,
+        "--registry",
+        NPM_REGISTRY,
+        "--access",
+        "public",
+        "--tag",
+        "latest",
+        "--provenance",
+        "--ignore-scripts",
+        "--json",
+      ])`,
+      `      await run("npm", [
+        "publish",
+        tarballPath,
+        "--registry",
+        NPM_REGISTRY,
+        "--access",
+        "public",
+        "--tag",
+        "latest",
+        "--provenance",
+        "--json",
+      ])`,
     ],
 
     [
@@ -2122,11 +2445,7 @@ test("protected stable PREPARE and FINALIZE reject independent safety mutations"
       'if (typeof token !== "string" || !/^[\\x21-\\x7e]{1,4096}$/.test(token)) {',
       "if (false) {",
     ],
-    [
-      "use raw tag-push token",
-      'Buffer.from(`x-access-token:${token}`, "utf8").toString("base64")',
-      "token",
-    ],
+    ["use raw tag-push token", 'Buffer.from(`x-access-token:${token}`, "utf8").toString("base64")', "token"],
     [
       "remove one-shot tag-push authentication",
       '["-c", pushConfiguration, "push", "--atomic", "origin", ...refs]',
@@ -2137,7 +2456,7 @@ test("protected stable PREPARE and FINALIZE reject independent safety mutations"
       '["-c", pushConfiguration, "push", "--atomic", "origin", ...refs]',
       '["-c", pushConfiguration, "push", "origin", ...refs]',
     ],
-    ["publish all projects", 'states.filter((state) => state.npm === "absent")', "states"],
+    ["publish all projects", 'if (current.kind === "exact") continue', "if (false) continue"],
   ]) {
     const changed = mutate(stableFinalizeScript, before, after)
     assert.notDeepEqual(stableViolations(policy.stable, changed), [], name)
@@ -2236,15 +2555,15 @@ test("stable mode jobs reject capability and credential drift", () => {
     ["persist checkout credentials", "persist-credentials: false", "persist-credentials: true"],
     ["remove protected environment", "environment: stable-release", "environment: unprotected"],
     [
-      "enable FINALIZE lifecycle scripts",
-      "      - name: 📦 Install publication tooling without lifecycle scripts\n        run: pnpm install --frozen-lockfile --ignore-scripts",
-      "      - name: 📦 Install publication tooling without lifecycle scripts\n        run: pnpm install --frozen-lockfile",
+      "add FINALIZE dependency installation",
+      "        run: node scripts/release-finalize-stable.mjs",
+      "        run: |\n          pnpm install --frozen-lockfile --ignore-scripts\n          node scripts/release-finalize-stable.mjs",
     ],
     ["remove FINALIZE lifecycle-script environment", "          NPM_CONFIG_IGNORE_SCRIPTS: true\n", ""],
     [
       "give PREFLIGHT OIDC",
-      "  preflight:\n    name: 🔎 PREFLIGHT exact stable artifacts\n    needs: validate\n    if: ${{ needs.validate.outputs.mode == 'preflight' }}\n    runs-on: ubuntu-latest\n    permissions:\n      contents: read",
-      "  preflight:\n    name: 🔎 PREFLIGHT exact stable artifacts\n    needs: validate\n    if: ${{ needs.validate.outputs.mode == 'preflight' }}\n    runs-on: ubuntu-latest\n    permissions:\n      contents: read\n      id-token: write",
+      "  preflight:\n    name: 🔎 PREFLIGHT exact stable artifacts\n    needs: [validate, package_artifacts]\n    if: ${{ needs.validate.outputs.mode == 'preflight' }}\n    runs-on: ubuntu-latest\n    permissions:\n      contents: read",
+      "  preflight:\n    name: 🔎 PREFLIGHT exact stable artifacts\n    needs: [validate, package_artifacts]\n    if: ${{ needs.validate.outputs.mode == 'preflight' }}\n    runs-on: ubuntu-latest\n    permissions:\n      contents: read\n      id-token: write",
     ],
   ]) {
     assert.notDeepEqual(stableViolations(mutate(workflows.stable, before, after)), [], name)
@@ -2407,13 +2726,14 @@ test("protected stable documentation exposes authorization and recovery boundari
 })
 
 test("protected stable promotion exposes exact PREPARE and FINALIZE contracts", () => {
-  const active = withoutComments(`${workflows.stable}\n${stableFinalizeScript}`)
+  const active = withoutComments(`${workflows.stable}\n${stablePackageScript}\n${stableFinalizeScript}`)
   assert.match(active, /expected_sha:/)
   assert.match(active, /artifact_sha:/)
   assert.match(active, /ARTIFACT_SHA:\s*\$\{\{ inputs\.artifact_sha \}\}/)
   assert.match(active, /const artifactSha = process\.env\.ARTIFACT_SHA \|\| expectedSha/)
   assert.match(active, /const historicalReplay = artifactSha !== expectedSha/)
-  assert.match(active, /historical replay requires exact existing tag, GitHub Release, and npm latest/)
+  assert.match(active, /historical recovery requires exact existing tag/)
+  assert.match(active, /historical recovery requires exact existing GitHub Release/)
   assert.match(active, /MODE=prepare/)
   assert.match(active, /MODE=finalize/)
   assert.match(active, /jq -r ['"]?\.release\.projects\[\]['"]? nx\.json/)
@@ -2423,15 +2743,14 @@ test("protected stable promotion exposes exact PREPARE and FINALIZE contracts", 
     /pnpm nx release version "\$NEW" "--projects=\$PROJECT" --git-commit=false --git-tag=false --git-push=false --stage-changes=false/,
   )
   assert.match(active, /push origin "HEAD:refs\/heads\/\$BRANCH"/)
-  assert.match(
-    active,
-    /run\("git", \["-c", pushConfiguration, "push", "--atomic", "origin", \.\.\.refs\]\)/,
-  )
+  assert.match(active, /run\("git", \["-c", pushConfiguration, "push", "--atomic", "origin", \.\.\.refs\]\)/)
   assert.match(active, /Buffer\.from\(`x-access-token:\$\{token\}`, "utf8"\)\.toString\("base64"\)/)
   assert.match(active, /github\("POST", "\/releases"/)
-  assert.match(active, /run\("pnpm", \["nx", "release", "publish"/)
+  assert.match(active, /const NPM_REGISTRY = "https:\/\/registry\.npmjs\.org\/"/)
+  assert.match(active, exactStablePublishCall)
+  assert.match(active, /verifyStableHandoff/)
   assert.doesNotMatch(active, /--tag=(?:alpha|beta)/)
-  assert.match(active, /const maxReads = 6/)
+  assert.match(active, /const MAX_NPM_READS = 6/)
   assert.match(active, /NPM_READ_DELAY_MS/)
   assert.match(active, /await sleep\(delayMs\)/)
 })
