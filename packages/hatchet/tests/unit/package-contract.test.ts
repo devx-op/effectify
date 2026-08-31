@@ -11,8 +11,19 @@ const runNode = (source: string): string =>
     encoding: "utf8",
   })
 
+const removedBuildPaths = [
+  "../../dist/src/clients",
+  "../../dist/src/core",
+  "../../dist/src/logging",
+  "../../dist/src/schema",
+  "../../dist/src/testing/mock-client.js",
+  "../../dist/src/testing/mock-client.d.ts",
+  "../../dist/src/testing/mock-context.js",
+  "../../dist/src/testing/mock-context.d.ts",
+].map((path) => new URL(path, import.meta.url))
+
 describe("published package contract", () => {
-  it("resolves the built testing subpath without exposing testing helpers from the root", () => {
+  it("exposes only the root in-memory Layer from the built testing subpath", () => {
     expect(existsSync(new URL("../../dist/src/testing/index.js", import.meta.url))).toBe(true)
     expect(existsSync(new URL("../../dist/src/testing/index.d.ts", import.meta.url))).toBe(true)
 
@@ -20,14 +31,22 @@ describe("published package contract", () => {
       import * as root from "@effectify/hatchet"
       import * as testing from "@effectify/hatchet/testing"
       console.log(JSON.stringify({
-        testingLayer: typeof testing.TestHatchetLayer,
-        rootHasTestingLayer: "TestHatchetLayer" in root,
+        exports: Object.keys(testing).sort(),
+        sameLayer: testing.layerInMemory === root.Hatchet.layerInMemory,
+        rootHasTestingLayer: "layerInMemory" in root,
       }))
     `)
 
     expect(JSON.parse(output)).toEqual({
-      testingLayer: "object",
+      exports: ["layerInMemory"],
+      sameLayer: true,
       rootHasTestingLayer: false,
     })
+  })
+
+  it("omits legacy trees and testing mocks from the built package", () => {
+    for (const removedPath of removedBuildPaths) {
+      expect(existsSync(removedPath), removedPath.pathname).toBe(false)
+    }
   })
 })

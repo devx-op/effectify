@@ -10,6 +10,12 @@ import startlightThemeNova from "starlight-theme-nova"
 export default defineConfig({
   site: "https://devx-op.github.io",
   base: "/effectify/",
+  redirects: {
+    "/solid/packages/solid-ui": "/solid/",
+    "/solid/packages/chat-solid": "/solid/",
+    "/es/solid/packages/solid-ui": "/es/solid/",
+    "/es/solid/packages/chat-solid": "/es/solid/",
+  },
   integrations: [
     starlight({
       plugins: [
@@ -46,7 +52,7 @@ export default defineConfig({
               },
               {
                 label: "Packages",
-                items: ["solid/packages/solid-effect-atom", "solid/packages/solid-query", "solid/packages/solid-ui"],
+                items: ["solid/packages/solid-effect-atom", "solid/packages/solid-query"],
               },
               {
                 label: "Reference",

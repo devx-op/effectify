@@ -27,34 +27,6 @@ npm install @effectify/solid-query
 npm install @tanstack/solid-query effect solid-js
 ```
 
-### @effectify/solid-ui
-
-Biblioteca de componentes de UI con Kobalte y Tailwind CSS:
-
-```bash
-npm install @effectify/solid-ui
-```
-
-**Peer Dependencies:**
-
-```bash
-npm install solid-js tailwindcss @kobalte/core
-```
-
-### @effectify/chat-solid
-
-Componentes de chat en tiempo real:
-
-```bash
-npm install @effectify/chat-solid
-```
-
-**Peer Dependencies:**
-
-```bash
-npm install @effectify/solid-query @effectify/chat-domain solid-js
-```
-
 ## Configuración específica por framework
 
 ### Vite + SolidJS
@@ -167,36 +139,4 @@ export const QueryProvider: ParentComponent = (props) => {
     </QueryProvider>
   </body>
 </html>
-```
-
-## Configuración de Tailwind CSS
-
-Si usas `@effectify/solid-ui`, configura Tailwind:
-
-```bash
-npm install -D tailwindcss postcss autoprefixer
-npx tailwindcss init -p
-```
-
-`tailwind.config.js`:
-
-```js
-/** @type {import('tailwindcss').Config} */
-module.exports = {
-  content: [
-    "./src/**/*.{js,ts,jsx,tsx}",
-    "./node_modules/@effectify/solid-ui/**/*.{js,ts,jsx,tsx}",
-  ],
-  theme: { extend: {} },
-  plugins: [],
-}
-```
-
-Directivas en CSS:
-
-```css
-/* src/index.css */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
 ```

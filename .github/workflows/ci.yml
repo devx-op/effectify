@@ -19,7 +19,40 @@ jobs:
     name: 🛡️ Release Policy Contract
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
+      - name: 📥 Checkout stable release PR head
+        if: github.event_name == 'pull_request' && startsWith(github.event.pull_request.head.ref, 'release/stable-')
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: 🛡️ Require one stable release source commit
+        if: github.event_name == 'pull_request' && startsWith(github.event.pull_request.head.ref, 'release/stable-')
+        shell: bash
+        env:
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          [[ "$PR_HEAD_REF" == release/stable-* ]] || { echo '::error::invalid stable release head branch'; exit 1; }
+          [[ "$PR_HEAD_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo '::error::stable release PR head SHA must be full lowercase hexadecimal'; exit 1; }
+          [[ "$PR_BASE_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo '::error::stable release PR base SHA must be full lowercase hexadecimal'; exit 1; }
+          test "$(git rev-parse HEAD)" = "$PR_HEAD_SHA" || { echo '::error::stable release PR checkout does not match the GitHub head SHA'; exit 1; }
+          git fetch --no-tags --no-write-fetch-head origin "$PR_BASE_SHA"
+          git cat-file -e "${PR_HEAD_SHA}^{commit}"
+          git cat-file -e "${PR_BASE_SHA}^{commit}"
+          SOURCE_COMMIT_COUNT=$(git rev-list --count "$PR_BASE_SHA..$PR_HEAD_SHA")
+          if [ "$SOURCE_COMMIT_COUNT" != 1 ]; then
+            echo "::error::stable release PR must contain exactly one source commit; found $SOURCE_COMMIT_COUNT"
+            exit 1
+          fi
+          echo "Stable release PR contains exactly one source commit."
+
       - name: 📥 Checkout
         uses: actions/checkout@v5
 

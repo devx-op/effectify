@@ -17,7 +17,6 @@ catalog:
   "@effect/tsgo": 0.36.5
   "@effect/vitest": 4.0.0-rc.111
   "@hatchet-dev/typescript-sdk": 1.28.2
-  "@kobalte/core": 0.13.12
   "@nx/js": 23.1.1
   "@nx/node": 23.1.1
   "@nx/react": 23.1.1
@@ -53,7 +52,6 @@ catalog:
   "@tanstack/react-router": 1.139.3
   "@tanstack/react-router-devtools": 1.139.3
   "@tanstack/router-plugin": ^1.168.19
-  "@tanstack/solid-form": 1.33.0
   "@tanstack/solid-query": 5.101.2
   "@tanstack/solid-query-devtools": 5.101.2
   "@tanstack/solid-router": ^1.170.17

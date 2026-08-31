@@ -8,21 +8,33 @@ import * as HttpServerResponse from "effect/unstable/http/HttpServerResponse"
 import * as HttpServerRequest from "effect/unstable/http/HttpServerRequest"
 import * as NodeHttpServerRequest from "@effect/platform-node/NodeHttpServerRequest"
 
-const TRAILING_SLASH_REGEX = /\/+$/
-const PROTOCOL_REGEX = /(https?:\/\/)+/
+type BetterAuthHandler =
+  | Auth["handler"]
+  | {
+      readonly handler: Auth["handler"]
+      readonly options?: Pick<Auth["options"], "trustedOrigins">
+    }
+
+const canonicalOrigin = (value: string): string | undefined => {
+  if (!URL.canParse(value)) return undefined
+
+  const url = new URL(value)
+  if (
+    (url.protocol !== "http:" && url.protocol !== "https:") ||
+    url.username !== "" ||
+    url.password !== "" ||
+    url.hostname.includes("*")
+  ) {
+    return undefined
+  }
+
+  return url.origin
+}
 
 export const toEffectHandler: (
-  auth:
-    | {
-      handler: Auth["handler"]
-    }
-    | Auth["handler"],
-) => Effect.Effect<
-  HttpServerResponse.HttpServerResponse,
-  BetterAuthApiError | ConfigError,
-  HttpServerRequest.HttpServerRequest
-> = (auth) =>
-  Effect.gen(function*() {
+  auth: BetterAuthHandler,
+) => Effect.Effect<HttpServerResponse.HttpServerResponse, ConfigError, HttpServerRequest.HttpServerRequest> = (auth) =>
+  Effect.gen(function* () {
     const request = yield* HttpServerRequest.HttpServerRequest
     const nodeRequest = NodeHttpServerRequest.toIncomingMessage(request)
     const nodeResponse = NodeHttpServerRequest.toServerResponse(request)
@@ -30,28 +42,23 @@ export const toEffectHandler: (
     // Debug: log the configured app URL so we can diagnose Config errors
     yield* Effect.log(`toEffectHandler: BETTER_AUTH_URL=${String(appUrl)}`)
 
-    const normalizeUrl = (url: URL) =>
-      url
-        .toString()
-        .replace(TRAILING_SLASH_REGEX, "")
-        .replace(PROTOCOL_REGEX, "http://")
+    const allowedOrigins = new Set([appUrl.origin])
+    const trustedOrigins = typeof auth === "function" ? undefined : auth.options?.trustedOrigins
+    if (Array.isArray(trustedOrigins)) {
+      for (const trustedOrigin of trustedOrigins) {
+        if (typeof trustedOrigin !== "string") continue
+        const origin = canonicalOrigin(trustedOrigin)
+        if (origin !== undefined) allowedOrigins.add(origin)
+      }
+    }
 
-    const allowedOrigins = [normalizeUrl(appUrl)]
-    const origin = nodeRequest.headers.origin ? normalizeUrl(appUrl) : ""
+    const requestOrigin = nodeRequest.headers.origin
+    const origin = requestOrigin === undefined ? undefined : canonicalOrigin(requestOrigin)
 
-    if (allowedOrigins.includes(origin)) {
-      nodeResponse.setHeader(
-        "Access-Control-Allow-Origin",
-        nodeRequest.headers.origin || "",
-      )
-      nodeResponse.setHeader(
-        "Access-Control-Allow-Methods",
-        "GET, POST, PUT, DELETE, OPTIONS",
-      )
-      nodeResponse.setHeader(
-        "Access-Control-Allow-Headers",
-        "Content-Type, Authorization",
-      )
+    if (origin !== undefined && allowedOrigins.has(origin)) {
+      nodeResponse.setHeader("Access-Control-Allow-Origin", origin)
+      nodeResponse.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+      nodeResponse.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization")
       nodeResponse.setHeader("Access-Control-Max-Age", "600")
       nodeResponse.setHeader("Access-Control-Allow-Credentials", "true")
     }
@@ -66,68 +73,49 @@ export const toEffectHandler: (
     // Log incoming request for debugging
     const authHeader = nodeRequest.headers.authorization
     yield* Effect.log(
-      `toEffectHandler: incoming ${nodeRequest.method} ${
-        String(
-          nodeRequest.url,
-        )
-      } headers: cookie=${nodeRequest.headers.cookie?.substring(0, 50) || "none"}, auth=${
-        authHeader?.substring(0, 30) || "none"
-      }`,
+      `toEffectHandler: incoming ${nodeRequest.method} ${String(nodeRequest.url)} headers: cookie=${
+        nodeRequest.headers.cookie ? "present" : "none"
+      }, auth=${authHeader ? "present" : "none"}`,
     )
 
     // If no cookie but has Authorization header (bearer token), set it as cookie for better-auth
     if (!nodeRequest.headers.cookie && authHeader?.startsWith("Bearer ")) {
       const token = authHeader.slice(7) // Remove "Bearer " prefix
       nodeRequest.headers.cookie = `better-auth.session_token=${token}`
-      yield* Effect.log(
-        `toEffectHandler: using token from Authorization header as cookie`,
-      )
+      yield* Effect.log(`toEffectHandler: using token from Authorization header as cookie`)
     }
 
-    try {
-      yield* Effect.tryPromise({
-        try: () =>
-          "handler" in auth
-            ? toNodeHandler(auth.handler)(nodeRequest, nodeResponse)
-            : toNodeHandler(auth)(nodeRequest, nodeResponse),
-        catch: (cause) => new BetterAuthApiError({ cause }),
-      })
-
-      // Log the response status after the handler completes
-      yield* Effect.log(
-        `toEffectHandler: completed ${nodeRequest.method} ${
-          String(
-            nodeRequest.url,
+    const handler = typeof auth === "function" ? auth : auth.handler
+    return yield* Effect.tryPromise({
+      try: () => toNodeHandler(handler)(nodeRequest, nodeResponse),
+      catch: (cause) => new BetterAuthApiError({ cause }),
+    }).pipe(
+      Effect.tap(() =>
+        Effect.log(
+          `toEffectHandler: completed ${nodeRequest.method} ${String(nodeRequest.url)} -> ${nodeResponse.statusCode}`,
+        ),
+      ),
+      Effect.map(() =>
+        HttpServerResponse.empty({
+          status: nodeResponse.writableEnded ? nodeResponse.statusCode : 499,
+        }),
+      ),
+      Effect.catchTag("BetterAuthApiError", (error) =>
+        Effect.gen(function* () {
+          const errorMessage = `${String(error)}: ${String(error.cause)}`
+          yield* Effect.log(
+            `toEffectHandler: error handling ${nodeRequest.method} ${String(nodeRequest.url)}: ${errorMessage}`,
           )
-        } -> ${nodeResponse.statusCode}`,
-      )
-    } catch (err) {
-      // Ensure we log errors from the underlying handler for debugging
-      yield* Effect.log(
-        `toEffectHandler: error handling ${nodeRequest.method} ${
-          String(
-            nodeRequest.url,
-          )
-        }: ${String(err)}`,
-      )
 
-      try {
-        // Try to return the error to the client as JSON to make debugging easier
-        nodeResponse.statusCode = 500
-        nodeResponse.setHeader("Content-Type", "application/json")
-        const payload = JSON.stringify({ error: String(err) })
-        nodeResponse.end(payload)
-      } catch (writeErr) {
-        // If writing the error response fails, log that too
-        yield* Effect.log(
-          `toEffectHandler: failed to write error response: ${String(writeErr)}`,
-        )
-      }
+          if (nodeResponse.headersSent || nodeResponse.writableEnded) {
+            if (!nodeResponse.writableEnded) {
+              yield* Effect.sync(() => nodeResponse.end())
+            }
+            return HttpServerResponse.empty({ status: nodeResponse.statusCode })
+          }
 
-      return HttpServerResponse.empty({ status: 500 })
-    }
-
-    return HttpServerResponse.empty({
-      status: nodeResponse.writableFinished ? nodeResponse.statusCode : 499,
-    })
+          return HttpServerResponse.jsonUnsafe({ error: "Internal Server Error" }, { status: 500 })
+        }),
+      ),
+    )
   })

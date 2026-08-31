@@ -89,4 +89,41 @@ describe("Nx Cypress target contract", () => {
     expect(cypressConfig).not.toContain("webServerCommands")
     expect(cypressConfig).not.toContain("CYPRESS_MANUAL_SERVER")
   })
+
+  it("inherits the workspace NodeNext module contract in both e2e tsconfigs", () => {
+    type TsConfig = {
+      extends?: string
+      compilerOptions?: {
+        module?: string
+        moduleResolution?: string
+      }
+    }
+
+    const baseConfig = readJson<TsConfig>(resolve(workspaceRoot, "tsconfig.base.json"))
+    const e2eConfig = readJson<TsConfig>(resolve(workspaceRoot, "apps/react-router-example-e2e/tsconfig.json"))
+    const e2eSourceConfig = readJson<TsConfig>(
+      resolve(workspaceRoot, "apps/react-router-example-e2e/src/tsconfig.json"),
+    )
+    const baseline = {
+      module: baseConfig.compilerOptions?.module,
+      moduleResolution: baseConfig.compilerOptions?.moduleResolution,
+    }
+    const inheritModuleOptions = (parent: typeof baseline, child: TsConfig) => ({
+      module: child.compilerOptions?.module ?? parent.module,
+      moduleResolution: child.compilerOptions?.moduleResolution ?? parent.moduleResolution,
+    })
+    const e2eModuleOptions = inheritModuleOptions(baseline, e2eConfig)
+    const e2eSourceModuleOptions = inheritModuleOptions(e2eModuleOptions, e2eSourceConfig)
+
+    expect(baseline).toEqual({ module: "nodenext", moduleResolution: "nodenext" })
+    expect(e2eConfig.extends).toBe("../../tsconfig.base.json")
+    expect(e2eModuleOptions).toEqual(baseline)
+    expect(e2eConfig.compilerOptions?.module).toBeUndefined()
+    expect(e2eConfig.compilerOptions?.moduleResolution).toBeUndefined()
+
+    expect(e2eSourceConfig.extends).toBe("../tsconfig.json")
+    expect(e2eSourceModuleOptions).toEqual(baseline)
+    expect(e2eSourceConfig.compilerOptions?.module).toBeUndefined()
+    expect(e2eSourceConfig.compilerOptions?.moduleResolution).toBeUndefined()
+  })
 })

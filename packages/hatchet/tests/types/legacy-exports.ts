@@ -1,4 +1,5 @@
 import * as PublicApi from "../../src/index.js"
+import * as TestingApi from "../../src/testing/index.js"
 
 // @ts-expect-error removed alpha root export
 const removedWorkflow = PublicApi.workflow
@@ -31,6 +32,10 @@ const liveOptions: PublicApi.Hatchet.LiveOptions = {
 }
 // @ts-expect-error HatchetRuntime was implementation plumbing.
 const runtime = PublicApi.HatchetRuntime
+// @ts-expect-error legacy mock-client helpers were removed from the testing subpath.
+const mockClient = TestingApi.createMockHatchetClient
+// @ts-expect-error legacy mock-context helpers were removed from the testing subpath.
+const mockContext = TestingApi.createMockContext
 
 void removedWorkflow
 void removedTask
@@ -45,8 +50,22 @@ void startWorker
 void directOptions
 void liveOptions
 void runtime
+void mockClient
+void mockContext
 
 // @ts-expect-error removed alpha public subpath
 await import("../../src/workflow/index.js")
 // @ts-expect-error removed alpha public subpath
 await import("../../src/effectifier/index.js")
+// @ts-expect-error removed 0.1 legacy client graph
+await import("../../src/clients/index.js")
+// @ts-expect-error removed 0.1 legacy core graph
+await import("../../src/core/index.js")
+// @ts-expect-error removed 0.1 legacy logging graph
+await import("../../src/logging/index.js")
+// @ts-expect-error removed 0.1 legacy schema graph
+await import("../../src/schema/index.js")
+// @ts-expect-error removed 0.1 mock-client deep path
+await import("../../src/testing/mock-client.js")
+// @ts-expect-error removed 0.1 mock-context deep path
+await import("../../src/testing/mock-context.js")

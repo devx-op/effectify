@@ -5,7 +5,9 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import path from "node:path"
 import { spawn } from "node:child_process"
+import * as Cause from "effect/Cause"
 import * as Effect from "effect/Effect"
+import * as Exit from "effect/Exit"
 import * as Layer from "effect/Layer"
 import { afterEach, describe, expect, it } from "vitest"
 
@@ -22,11 +24,7 @@ const makeTempDir = async () => {
 }
 
 afterEach(async () => {
-  await Promise.all(
-    createdDirs
-      .splice(0)
-      .map((dir) => rm(dir, { force: true, recursive: true })),
-  )
+  await Promise.all(createdDirs.splice(0).map((dir) => rm(dir, { force: true, recursive: true })))
 })
 
 const baseSchema = `
@@ -68,19 +66,20 @@ const makeGeneratorOptions = async (
   } as unknown as GeneratorOptions
 }
 
-const generatorLayer = Layer.mergeAll(
-  GeneratorService.layer,
-  GenerateSchemnaService.layer,
-).pipe(Layer.provideMerge(NodeServices.layer))
+const generatorLayer = Layer.mergeAll(GeneratorService.layer, GenerateSchemnaService.layer).pipe(
+  Layer.provideMerge(NodeServices.layer),
+)
 
-const runGenerator = (options: GeneratorOptions) =>
-  Effect.runPromise(
-    Effect.service(GeneratorService).pipe(
-      Effect.flatMap(({ generate }) => generate),
-      Effect.provideService(GeneratorContext, options),
-      Effect.provide(generatorLayer),
-    ),
+const generatorEffect = (options: GeneratorOptions) =>
+  Effect.service(GeneratorService).pipe(
+    Effect.flatMap(({ generate }) => generate),
+    Effect.provideService(GeneratorContext, options),
+    Effect.provide(generatorLayer),
   )
+
+const runGenerator = (options: GeneratorOptions) => Effect.runPromise(generatorEffect(options))
+
+const runGeneratorExit = (options: GeneratorOptions) => Effect.runPromiseExit(generatorEffect(options))
 
 const readGeneratedIndex = async (outputDir: string) => readFile(path.join(outputDir, "index.ts"), "utf8")
 
@@ -105,15 +104,35 @@ const runPnpm = (cwd: string, args: Array<string>) =>
         resolve()
         return
       }
-      reject(
-        new Error(
-          stderr || `pnpm ${args.join(" ")} failed with exit code ${code}`,
-        ),
-      )
+      reject(new Error(stderr || `pnpm ${args.join(" ")} failed with exit code ${code}`))
     })
   })
 
 describe("beta57 prisma generator migration", () => {
+  it("reports a missing output directory as a prefixed GeneratorError defect", async () => {
+    const outputDir = path.join(await makeTempDir(), "generated", "effect")
+    const options = await makeGeneratorOptions(outputDir)
+    const exit = await runGeneratorExit({
+      ...options,
+      generator: {
+        ...options.generator,
+        output: null,
+      },
+    })
+
+    expect(Exit.isFailure(exit)).toBe(true)
+    if (!Exit.isFailure(exit)) {
+      throw new Error("expected generator failure")
+    }
+
+    expect(exit.cause.reasons).toHaveLength(1)
+    const defects = exit.cause.reasons.filter(Cause.isDieReason).map((reason) => reason.defect)
+    expect(defects).toHaveLength(1)
+    expect(defects[0]).toHaveProperty("_tag", "GeneratorError")
+    expect(defects[0]).toHaveProperty("message", "Generator error: No output directory specified")
+    expect(defects[0]).toHaveProperty("details", "No output directory specified")
+  })
+
   it("generates the default runtime with Context services", async () => {
     const outputDir = path.join(await makeTempDir(), "generated", "effect")
     const options = await makeGeneratorOptions(outputDir)
@@ -124,9 +143,7 @@ describe("beta57 prisma generator migration", () => {
 
     expectContextBasedRuntime(indexSource)
     expect(indexSource).toContain("export class PrismaClient")
-    expect(indexSource).toContain(
-      "export class Prisma extends Context.Service<Prisma>()",
-    )
+    expect(indexSource).toContain("export class Prisma extends Context.Service<Prisma>()")
   })
 
   it("generates the custom-error runtime with Context services", async () => {
@@ -140,31 +157,14 @@ describe("beta57 prisma generator migration", () => {
     const indexSource = await readGeneratedIndex(outputDir)
 
     expectContextBasedRuntime(indexSource)
-    expect(indexSource).toContain(
-      'import { AppPrismaError, mapPrismaError } from "../errors/prisma-error.js"',
-    )
+    expect(indexSource).toContain('import { AppPrismaError, mapPrismaError } from "../errors/prisma-error.js"')
   })
 
   it("regenerates the react-router example runtime without the dist CLI build", async () => {
-    const appDir = path.resolve(
-      import.meta.dirname,
-      "../../../apps/react-router-example",
-    )
-    const generatedIndexPath = path.join(
-      appDir,
-      "prisma",
-      "generated",
-      "effect",
-      "index.ts",
-    )
+    const appDir = path.resolve(import.meta.dirname, "../../../apps/react-router-example")
+    const generatedIndexPath = path.join(appDir, "prisma", "generated", "effect", "index.ts")
 
-    await runPnpm(appDir, [
-      "exec",
-      "prisma",
-      "generate",
-      "--schema",
-      "prisma/schema.prisma",
-    ])
+    await runPnpm(appDir, ["exec", "prisma", "generate", "--schema", "prisma/schema.prisma"])
 
     const indexSource = await readFile(generatedIndexPath, "utf8")
 
