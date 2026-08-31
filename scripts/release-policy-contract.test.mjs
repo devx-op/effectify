@@ -1067,7 +1067,26 @@ const stableViolations = (source, finalizeScript = stableFinalizeScript) => {
       ["HTTP 404 absence", /result\.status === 404/, activeFinalize],
       ["unknown Release fail closed", /result\.status !== 200/, activeFinalize],
       ["annotated artifact tag", /\["tag", "-a", tag, artifactSha, "-m", tag\]/, activeFinalize],
-      ["atomic explicit push", /\["push", "--atomic", "origin", \.\.\.refs\]/, activeFinalize],
+      [
+        "bounded printable-ASCII tag-push token",
+        /!\/\^\[\\x21-\\x7e\]\{1,4096\}\$\/\.test\(token\)/,
+        activeFinalize,
+      ],
+      [
+        "Basic tag-push credential",
+        /Buffer\.from\(`x-access-token:\$\{token\}`, "utf8"\)\.toString\("base64"\)/,
+        activeFinalize,
+      ],
+      [
+        "tag-push authentication before local tag mutation",
+        /const pushConfiguration = missingTags\.length > 0 \? tagPushConfiguration\(\) : ""[\s\S]*\["tag", "-a", tag, artifactSha, "-m", tag\]/,
+        activeFinalize,
+      ],
+      [
+        "one-shot authenticated atomic explicit push",
+        /\["-c", pushConfiguration, "push", "--atomic", "origin", \.\.\.refs\]/,
+        activeFinalize,
+      ],
       [
         "release exact postverification",
         /releaseState\(`\$\{item\.name\}@\$\{item\.version\}`\)\)\.kind !== "exact"/,
@@ -1251,7 +1270,7 @@ const stableViolations = (source, finalizeScript = stableFinalizeScript) => {
     const order = [
       "const states = await inspect(records)",
       '["tag", "-a"',
-      '["push", "--atomic"',
+      '["-c", pushConfiguration, "push", "--atomic"',
       'github("POST"',
       "releaseState(`${item.name}",
       '["nx", "release", "publish"',
@@ -2098,7 +2117,26 @@ test("protected stable PREPARE and FINALIZE reject independent safety mutations"
     ],
     ["accept auth as absence", "result.status === 404", "result.status >= 400"],
     ["lightweight tags", '["tag", "-a",', '["tag",'],
-    ["non-atomic push", '["push", "--atomic", "origin", ...refs]', '["push", "origin", ...refs]'],
+    [
+      "remove tag-push token validation",
+      'if (typeof token !== "string" || !/^[\\x21-\\x7e]{1,4096}$/.test(token)) {',
+      "if (false) {",
+    ],
+    [
+      "use raw tag-push token",
+      'Buffer.from(`x-access-token:${token}`, "utf8").toString("base64")',
+      "token",
+    ],
+    [
+      "remove one-shot tag-push authentication",
+      '["-c", pushConfiguration, "push", "--atomic", "origin", ...refs]',
+      '["push", "--atomic", "origin", ...refs]',
+    ],
+    [
+      "non-atomic push",
+      '["-c", pushConfiguration, "push", "--atomic", "origin", ...refs]',
+      '["-c", pushConfiguration, "push", "origin", ...refs]',
+    ],
     ["publish all projects", 'states.filter((state) => state.npm === "absent")', "states"],
   ]) {
     const changed = mutate(stableFinalizeScript, before, after)
@@ -2333,6 +2371,12 @@ test("protected stable documentation exposes authorization and recovery boundari
   assert.match(setup, /Every checkout sets `persist-credentials: false`, so checkout credentials are not persisted\./)
   assert.match(
     setup,
+    /FINALIZE derives `x-access-token:<token>` Basic authentication from its step-scoped `GITHUB_TOKEN` only for the atomic tag push/,
+  )
+  assert.match(setup, /one-shot GitHub-scoped `git -c` extraheader/)
+  assert.match(setup, /fails before local tag creation/)
+  assert.match(
+    setup,
     /The real stable publication boundary is protected `stable-release` environment review, authorization of the reviewed SHA, and npm trusted publishing bound to the repository, workflow, environment, and OIDC claims\./,
   )
   assert.match(
@@ -2379,7 +2423,11 @@ test("protected stable promotion exposes exact PREPARE and FINALIZE contracts", 
     /pnpm nx release version "\$NEW" "--projects=\$PROJECT" --git-commit=false --git-tag=false --git-push=false --stage-changes=false/,
   )
   assert.match(active, /push origin "HEAD:refs\/heads\/\$BRANCH"/)
-  assert.match(active, /run\("git", \["push", "--atomic", "origin", \.\.\.refs\]\)/)
+  assert.match(
+    active,
+    /run\("git", \["-c", pushConfiguration, "push", "--atomic", "origin", \.\.\.refs\]\)/,
+  )
+  assert.match(active, /Buffer\.from\(`x-access-token:\$\{token\}`, "utf8"\)\.toString\("base64"\)/)
   assert.match(active, /github\("POST", "\/releases"/)
   assert.match(active, /run\("pnpm", \["nx", "release", "publish"/)
   assert.doesNotMatch(active, /--tag=(?:alpha|beta)/)

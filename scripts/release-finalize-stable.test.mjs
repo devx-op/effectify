@@ -28,7 +28,7 @@ const selectedProjects = records
   .join(",")
 
 const fake = String.raw`#!/usr/bin/env node
-const fs=require('fs'),p=require('path'),cmd=p.basename(process.argv[1]),a=process.argv.slice(2),f=process.env.FAKE_STATE
+const fs=require('fs'),p=require('path'),cmd=p.basename(process.argv[1]),raw=process.argv.slice(2),oneShot=cmd==='git'&&raw[0]==='-c',authConfiguration=oneShot?raw[1]:undefined,a=oneShot?raw.slice(2):raw,f=process.env.FAKE_STATE
 let s=JSON.parse(fs.readFileSync(f)), out=x=>process.stdout.write(String(x)), save=()=>fs.writeFileSync(f,JSON.stringify(s))
 s.log.push([cmd,...a]);
 function finish(code=0){save();process.exit(code)}
@@ -50,6 +50,8 @@ if(cmd==='git'){
  if(a[0]==='for-each-ref'){const t=a[2].slice(10),v=s.localTags[t];if(v)out((v.type||'tag')+'\t'+(v.peeled||s.artifactSha)+'\n');finish()}
  if(a[0]==='tag'){s.localTags[a[2]]={type:'tag',peeled:a[3]};finish()}
  if(a[0]==='push'){
+  const token=process.env.GITHUB_TOKEN||'',basic=Buffer.from('x-access-token:'+token,'utf8').toString('base64')
+  s.pushAuthentication={oneShot,matchesToken:authConfiguration==='http.https://github.com/.extraheader=AUTHORIZATION: basic '+basic,tokenLiteral:Boolean(token)&&raw.some(value=>value.includes(token))}
   const materialize=()=>{for(const r of a.slice(3)){const t=r.split(':')[0].slice(10);s.tags[t]={peeled:s.localTags[t].peeled}}}
   if(s.pushMaterializesOnFailure){materialize();finish(s.pushExit||1)}
   if(s.pushExit)finish(s.pushExit)
@@ -346,6 +348,54 @@ test("hermetic arbitrary-subset Node CLI matrix", { timeout: 120_000 }, async (t
     },
     "absent",
   )
+  await add(
+    "atomic tag push uses one-shot GitHub Basic authentication without exposing the token",
+    async () => {},
+    (result, state) => {
+      assert.equal(result.status, 0, result.stderr)
+      assert.deepEqual(state.pushAuthentication, {
+        oneShot: true,
+        matchesToken: true,
+        tokenLiteral: false,
+      })
+      assert.equal(
+        state.log.some(
+          (call) => call[0] === "git" && call[1] === "config" && /authorization|extraheader/i.test(call.join(" ")),
+        ),
+        false,
+      )
+      assert.deepEqual(state.log.find((call) => call[0] === "git" && call[1] === "push"), [
+        "git",
+        "push",
+        "--atomic",
+        "origin",
+        ...records.map(
+          ([project, , version]) => `refs/tags/${project}@${version}:refs/tags/${project}@${version}`,
+        ),
+      ])
+      assert.doesNotMatch(`${result.stdout}\n${result.stderr}`, /tag-push-secret/)
+      exactState(state)
+    },
+    "absent",
+    [],
+    { GITHUB_TOKEN: "tag-push-secret" },
+  )
+  for (const [name, token] of [
+    ["missing", ""],
+    ["unsafe", "unsafe token"],
+  ])
+    await add(
+      `${name} GitHub tag-push authentication fails closed before mutation`,
+      async () => {},
+      (result, state) => {
+        assert.notEqual(result.status, 0)
+        assert.match(result.stderr, /tag push requires a safe non-empty GITHUB_TOKEN/)
+        assert.deepEqual(mutations(state), [])
+      },
+      "absent",
+      [],
+      { GITHUB_TOKEN: token },
+    )
   await add(
     "stable absence with no latest publishes",
     async (state) => {
