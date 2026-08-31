@@ -1,6 +1,6 @@
 {
   "name": "@effectify/react-query",
-  "version": "1.0.1-beta.0",
+  "version": "1.0.1",
   "description": "Integration of Effect with TanStack Query for React",
   "repository": {
     "type": "git",
