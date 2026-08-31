@@ -234,6 +234,9 @@ const releaseManifestGuard =
   'if [ "$HAS_CHANGELOG" = "true" ] || [ "$INVALID_MANIFESTS" -gt 0 ] || [ "$BETA_TRANSITIONS" -gt 0 ] || [ "$MANIFEST_CHANGES" -ne "$BENIGN_MANIFEST_CHANGES" ]; then'
 const exactBetaSuppressionGuard =
   'if [ "$HAS_CHANGELOG" = "true" ] && [ "$UNEXPECTED" = "false" ] && [ "$INVALID_MANIFESTS" = "0" ] && [ "$BETA_TRANSITIONS" -gt 0 ] && [ "$BETA_TRANSITIONS" -eq "$MANIFEST_CHANGES" ]; then'
+const ordinaryPrepareClassifierResult = "printf '%s\\n' prepare"
+const classifierDecisionOrderViolation =
+  "beta exact suppression before release-subject rejection before ordinary PREPARE"
 const classificationFailClosedGuard = 'if [ "$CLASSIFICATION" != "prepare" ]; then'
 const oldManifestCardinalityGuard =
   "if ! printf '%s' \"$OLD_DOCUMENT\" | jq -e -s 'length == 1 and (.[0] | type == \"object\")' >/dev/null 2>&1 ||"
@@ -421,6 +424,17 @@ const extractBetaPushClassifier = (source) => {
   return lines.slice(start + 1, end).join("\n")
 }
 
+const classifierDecisionOrderViolations = (source) => {
+  const classifier = extractBetaPushClassifier(source)
+  if (!classifier) return []
+
+  const positions = [exactBetaSuppressionGuard, releaseSubjectGuard, ordinaryPrepareClassifierResult].map((command) =>
+    classifier.indexOf(command),
+  )
+  if (positions.some((position) => position === -1)) return []
+  return positions[0] < positions[1] && positions[1] < positions[2] ? [] : [classifierDecisionOrderViolation]
+}
+
 const extractRunScript = (step) => {
   const lines = step?.source.split("\n") ?? []
   const runIndex = lines.findIndex((line) => /^\s*run:\s*\|\s*$/.test(line))
@@ -497,6 +511,7 @@ const runBetaPushClassifier = ({
 
 const betaBeforeSha = "1111111111111111111111111111111111111111"
 const betaHeadSha = "2222222222222222222222222222222222222222"
+const betaMergedReleaseSubject = `chore(release): prepare beta from ${betaBeforeSha} [skip release]`
 const betaManifestPath = "packages/future/nebula/package.json"
 const betaProject = "@future/nebula"
 
@@ -510,6 +525,7 @@ const runBetaPushResolver = ({
   beforeDocument = { name: betaProject, version: "4.7.0-beta.12" },
   afterDocument = beforeDocument,
   changelogType = "blob",
+  headMessage = "ordinary source push",
   affectedOutput = "[]",
   affectedExit = 0,
 } = {}) => {
@@ -530,7 +546,7 @@ const runBetaPushResolver = ({
       EXPECTED_SHA: "",
       BEFORE_SHA: beforeSha,
       HEAD_SHA: headSha,
-      HEAD_MESSAGE: "ordinary source push",
+      HEAD_MESSAGE: headMessage,
       CHECKED_OUT_HEAD: checkedOutHead,
       BEFORE_TYPE: beforeType,
       HEAD_TYPE: headType,
@@ -650,7 +666,7 @@ const channelViolations = (channel, source) => {
 }
 
 const betaViolations = (source) => {
-  const violations = [...classifierStructureViolations(source)]
+  const violations = [...classifierStructureViolations(source), ...classifierDecisionOrderViolations(source)]
   const active = withoutComments(source)
   const steps = extractSteps(source)
   const resolve = steps.find((step) => step.commands.some((command) => /mode=prepare/.test(command)))
@@ -1401,6 +1417,11 @@ test("the executable beta resolver classifier enforces the manifest truth table"
     ],
     ["exact changelog plus all beta-to-stable manifests suppresses", exactPromotion, "suppress"],
     [
+      "exact promotion with the merged generated release subject suppresses",
+      { ...exactPromotion, headSubject: betaMergedReleaseSubject },
+      "suppress",
+    ],
+    [
       "a deleted changelog rejects an otherwise exact promotion",
       { ...exactPromotion, changelogType: "missing" },
       "reject",
@@ -1546,8 +1567,23 @@ test("the executable beta resolver classifier enforces the manifest truth table"
       "reject",
     ],
     [
-      "release subject rejects even an otherwise exact promotion",
-      { ...exactPromotion, headSubject: "chore(release): promote stable" },
+      "a release subject rejects benign manifest metadata",
+      {
+        changedPaths: [nebula],
+        catalog,
+        before: { [nebula]: benignBefore },
+        after: { [nebula]: benignAfter },
+        headSubject: "chore(release): update package metadata",
+      },
+      "reject",
+    ],
+    [
+      "a skip-release subject rejects an ordinary source push",
+      {
+        changedPaths: ["packages/future/nebula/src/index.ts"],
+        catalog,
+        headSubject: "fix: update source [skip release]",
+      },
       "reject",
     ],
   ]) {
@@ -1583,6 +1619,38 @@ test("the actual beta push resolver fails closed on manifests, event SHAs, and N
     const result = runBetaPushResolver(candidate)
     assert.equal(result.status, 0, `${name}: ${result.stderr}`)
     assert.deepEqual(result.output, { mode: "prepare", has_projects: "true", projects: betaProject })
+  }
+
+  const exactReleasePromotion = runBetaPushResolver({
+    changedPaths: ["CHANGELOG.md", betaManifestPath],
+    beforeDocument: { name: betaProject, version: "4.7.0-beta.12" },
+    afterDocument: { name: betaProject, version: "4.7.0" },
+    headMessage: betaMergedReleaseSubject,
+  })
+  assert.equal(exactReleasePromotion.status, 0, exactReleasePromotion.stderr)
+  assert.deepEqual(exactReleasePromotion.output, { mode: "suppress", has_projects: "false", projects: "" })
+
+  for (const [name, candidate] of [
+    [
+      "release subject on benign manifest metadata",
+      {
+        changedPaths: [betaManifestPath],
+        beforeDocument: benignBefore,
+        afterDocument: benignAfter,
+        headMessage: "chore(release): update package metadata",
+      },
+    ],
+    [
+      "skip-release subject on an ordinary source push",
+      {
+        changedPaths: ["packages/future/nebula/src/index.ts"],
+        headMessage: "fix: update source [skip release]",
+      },
+    ],
+  ]) {
+    const result = runBetaPushResolver(candidate)
+    assert.notEqual(result.status, 0, name)
+    assert.deepEqual(result.output, {}, name)
   }
 
   const validDocument = { name: betaProject, version: "4.7.0-beta.12" }
@@ -2153,6 +2221,26 @@ test("the beta classifier contract rejects a post-marker function redefinition",
   assert.ok(violations.includes("beta exactly one classifier declaration"))
   assert.ok(violations.includes("beta classifier invocation immediately follows end marker"))
   assert.notDeepEqual(betaViolations(redefined), [])
+})
+
+test("the beta classifier decision order rejects subject-first mutations", () => {
+  assert.deepEqual(classifierDecisionOrderViolations(workflows.beta), [])
+  const exactSuppressionBlock = `${exactBetaSuppressionGuard}
+              printf '%s\\n' suppress
+              return
+            fi`
+  const releaseSubjectBlock = `${releaseSubjectGuard}
+              printf '%s\\n' reject
+              return
+            fi`
+  const subjectFirst = mutate(
+    workflows.beta,
+    `${exactSuppressionBlock}\n            ${releaseSubjectBlock}`,
+    `${releaseSubjectBlock}\n            ${exactSuppressionBlock}`,
+  )
+
+  assert.deepEqual(classifierDecisionOrderViolations(subjectFirst), [classifierDecisionOrderViolation])
+  assert.ok(betaViolations(subjectFirst).includes(classifierDecisionOrderViolation))
 })
 
 test("generic stable suppression rejects path, transition, and message-only mutations", () => {

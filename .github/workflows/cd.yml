@@ -228,12 +228,12 @@ jobs:
               INVALID_MANIFESTS=$((INVALID_MANIFESTS + 1))
             done < "$CHANGED"
 
-            if [[ "$HEAD_SUBJECT" == *"chore(release):"* || "$HEAD_SUBJECT" == *"[skip release]"* ]]; then
-              printf '%s\n' reject
-              return
-            fi
             if [ "$HAS_CHANGELOG" = "true" ] && [ "$UNEXPECTED" = "false" ] && [ "$INVALID_MANIFESTS" = "0" ] && [ "$BETA_TRANSITIONS" -gt 0 ] && [ "$BETA_TRANSITIONS" -eq "$MANIFEST_CHANGES" ]; then
               printf '%s\n' suppress
+              return
+            fi
+            if [[ "$HEAD_SUBJECT" == *"chore(release):"* || "$HEAD_SUBJECT" == *"[skip release]"* ]]; then
+              printf '%s\n' reject
               return
             fi
             if [ "$HAS_CHANGELOG" = "true" ] || [ "$INVALID_MANIFESTS" -gt 0 ] || [ "$BETA_TRANSITIONS" -gt 0 ] || [ "$MANIFEST_CHANGES" -ne "$BENIGN_MANIFEST_CHANGES" ]; then
