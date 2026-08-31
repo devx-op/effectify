@@ -1,124 +1,332 @@
 import assert from "node:assert/strict"
 import { spawn } from "node:child_process"
+import { createHash } from "node:crypto"
 import { chmodSync, existsSync, mkdtempSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs"
 import { rm } from "node:fs/promises"
 import { createServer } from "node:http"
 import { tmpdir } from "node:os"
-import { join } from "node:path"
+import { basename, join } from "node:path"
 import test from "node:test"
+import { isDeepStrictEqual } from "node:util"
+import { gzipSync } from "node:zlib"
+
+import { operationalFailureDiagnostic } from "./release-finalize-stable.mjs"
 
 const script = new URL("release-finalize-stable.mjs", import.meta.url).pathname
-const stableWorkflow = readFileSync(new URL("../.github/workflows/release-stable.yml", import.meta.url), "utf8")
-const sha = "1234567890abcdef1234567890abcdef12345678"
-const historicalSha = "abcdef1234567890abcdef1234567890abcdef12"
+const finalizerSource = readFileSync(script, "utf8")
+function parseFrozenStringArray(source, name) {
+  const declaration = source.match(new RegExp(`const ${name} = Object\\.freeze\\(\\[([\\s\\S]*?)\\]\\)`))
+  assert.ok(declaration, `${name} declaration`)
+  return JSON.parse(`[${declaration[1].replace(/,\s*$/, "")}]`)
+}
+const artifactSha = "f31390ce66ea157ea8b75f5259c203123e269759"
+const advancedSha = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 const parentSha = "fedcba0987654321fedcba0987654321fedcba09"
 const secondParentSha = "0123456789abcdef0123456789abcdef01234567"
-const thirdParentSha = "89abcdef0123456789abcdef0123456789abcdef"
 const treeSha = "9999999999999999999999999999999999999999"
+const repository = "devx-op/effectify"
+const workflowPath = ".github/workflows/release-stable.yml"
+const workflowRef = "refs/heads/master"
+const runId = "33399900011"
+const runAttempt = "2"
+const artifactId = "987654321"
+const artifactDigest = `sha256:${"9".repeat(64)}`
+const npmRegistry = "https://registry.npmjs.org/"
 const catalog = [
-  ["@future/nebula", "packages/future/nebula", "4.7.0-beta.12", "4.7.0"],
-  ["@future/orbit", "packages/future/orbit", "8.0.1-beta.3", "8.0.1"],
-  ["@future/quasar", "packages/future/quasar", "12.3.5-beta.27", "12.3.5"],
+  ["@effectify/hatchet", "packages/hatchet", "0.2.0-beta.0", "0.2.0"],
+  ["@effectify/node-better-auth", "packages/node/better-auth", "0.5.13-beta.0", "0.5.13"],
+  ["@effectify/prisma", "packages/prisma", "1.1.14-beta.0", "1.1.14"],
+  ["@effectify/react-query", "packages/react/query", "1.0.1-beta.0", "1.0.1"],
+  ["@effectify/react-router-better-auth", "packages/react/router-better-auth", "0.5.13-beta.0", "0.5.13"],
+  ["@effectify/react-router", "packages/react/router", "0.6.1-beta.0", "0.6.1"],
+  ["@effectify/solid-query", "packages/solid/query", "0.5.14-beta.0", "0.5.14"],
 ]
-const selected = [catalog[0], catalog[2]]
-const records = selected.map(([project, root, beta, version]) => [project, `${root}/package.json`, version, beta])
-const selectedProjects = records
-  .map(([project]) => project)
-  .sort()
-  .join(",")
+const records = catalog.map(([project, root, betaVersion, version]) => ({
+  project,
+  root,
+  manifestPath: `${root}/package.json`,
+  betaVersion,
+  version,
+}))
+const projects = records.map(({ project }) => project).sort()
+const projectsText = projects.join(",")
+const prisma = records.find(({ project }) => project === "@effectify/prisma")
+const publishable = records
+  .filter(({ project }) => project !== prisma.project)
+  .sort((left, right) => left.project.localeCompare(right.project))
+const allowedHistoricalPaths = parseFrozenStringArray(finalizerSource, "ALLOWED_HISTORICAL_PATHS")
+const safeNpmrc = `# NPM Configuration for CI/CD
+#registry=https://registry.npmjs.org/
+#always-auth=true
+
+# JSR Configuration (for Deno packages)
+#@jsr:registry=https://npm.jsr.io/
+
+hoist=false
+`
+const realAttestationUrls = new Map([
+  ["@effectify/hatchet", "https://registry.npmjs.org/-/npm/v1/attestations/@effectify%2fhatchet@0.2.0"],
+  [
+    "@effectify/node-better-auth",
+    "https://registry.npmjs.org/-/npm/v1/attestations/@effectify%2fnode-better-auth@0.5.13",
+  ],
+  ["@effectify/react-query", "https://registry.npmjs.org/-/npm/v1/attestations/@effectify%2freact-query@1.0.1"],
+  [
+    "@effectify/react-router-better-auth",
+    "https://registry.npmjs.org/-/npm/v1/attestations/@effectify%2freact-router-better-auth@0.5.13",
+  ],
+  ["@effectify/react-router", "https://registry.npmjs.org/-/npm/v1/attestations/@effectify%2freact-router@0.6.1"],
+  ["@effectify/solid-query", "https://registry.npmjs.org/-/npm/v1/attestations/@effectify%2fsolid-query@0.5.14"],
+])
+
+function digest(algorithm, bytes) {
+  return createHash(algorithm).update(bytes).digest("hex")
+}
+function tarHeader(path, size) {
+  const header = Buffer.alloc(512)
+  const put = (value, offset, length) => header.write(value, offset, Math.min(length, Buffer.byteLength(value)), "utf8")
+  put(path, 0, 100)
+  put("0000644\0", 100, 8)
+  put("0000000\0", 108, 8)
+  put("0000000\0", 116, 8)
+  put(`${size.toString(8).padStart(11, "0")}\0`, 124, 12)
+  put("00000000000\0", 136, 12)
+  header.fill(0x20, 148, 156)
+  header[156] = "0".charCodeAt(0)
+  put("ustar\0", 257, 6)
+  put("00", 263, 2)
+  const checksum = [...header].reduce((total, byte) => total + byte, 0)
+  put(`${checksum.toString(8).padStart(6, "0")}\0 `, 148, 8)
+  return header
+}
+function tarballBytes(entries) {
+  const blocks = []
+  for (const [path, value] of [...entries].sort(([left], [right]) => left.localeCompare(right))) {
+    const body = Buffer.isBuffer(value) ? value : Buffer.from(value)
+    blocks.push(tarHeader(path, body.length), body)
+    const padding = (512 - (body.length % 512)) % 512
+    if (padding) blocks.push(Buffer.alloc(padding))
+  }
+  blocks.push(Buffer.alloc(1024))
+  return gzipSync(Buffer.concat(blocks), { mtime: 0 })
+}
+function expectedDist(record, handoffPackage) {
+  return {
+    integrity: handoffPackage.tarball.integrity,
+    shasum: handoffPackage.tarball.sha1,
+    attestations: {
+      url: realAttestationUrls.get(record.project),
+      provenance: { predicateType: "https://slsa.dev/provenance/v1" },
+    },
+  }
+}
+function addArtifactFiles(gitFiles) {
+  gitFiles[`${artifactSha}:CHANGELOG.md`] = "# Changelog\n"
+  gitFiles[`${artifactSha}:nx.json`] = { release: { projects: catalog.map(([, root]) => root) } }
+  for (const record of records) {
+    gitFiles[`${artifactSha}:${record.root}/project.json`] = { name: record.project }
+    gitFiles[`${artifactSha}:${record.manifestPath}`] = { name: record.project, version: record.version }
+    gitFiles[`${artifactSha}^1:${record.manifestPath}`] = { name: record.project, version: record.betaVersion }
+  }
+}
+function makeHandoff(directory, expectedSha) {
+  mkdirSync(directory)
+  const packages = []
+  for (const record of publishable) {
+    const packedManifest = {
+      name: record.project,
+      version: record.version,
+      type: "module",
+      main: "./dist/index.js",
+      exports: { ".": "./dist/index.js" },
+      files: ["dist"],
+    }
+    const manifestBody = `${JSON.stringify(packedManifest, null, 2)}\n`
+    const distBody = "export const stable = true\n"
+    const bytes = tarballBytes([
+      ["package/package.json", manifestBody],
+      ["package/dist/index.js", distBody],
+    ])
+    const tarballBasename = `${record.project.slice(1).replace("/", "-")}-${record.version}.tgz`
+    writeFileSync(join(directory, tarballBasename), bytes)
+    const sha512 = digest("sha512", bytes)
+    packages.push({
+      project: record.project,
+      root: record.root,
+      name: record.project,
+      version: record.version,
+      sourceManifestSha256: digest("sha256", JSON.stringify({ name: record.project, version: record.version })),
+      tarball: {
+        basename: tarballBasename,
+        size: bytes.length,
+        sha1: digest("sha1", bytes),
+        sha256: digest("sha256", bytes),
+        sha512,
+        integrity: `sha512-${Buffer.from(sha512, "hex").toString("base64")}`,
+      },
+      inventory: [
+        { path: "package/dist/index.js", size: Buffer.byteLength(distBody), mode: 0o644, type: "file" },
+        { path: "package/package.json", size: Buffer.byteLength(manifestBody), mode: 0o644, type: "file" },
+      ],
+    })
+  }
+  packages.sort((left, right) => left.project.localeCompare(right.project))
+  const handoff = {
+    schemaVersion: 1,
+    repository,
+    workflow: { path: workflowPath, ref: workflowRef, sha: expectedSha },
+    run: { id: runId, attempt: runAttempt },
+    expectedSha,
+    artifactSha,
+    selection: projects,
+    abandonments: [
+      {
+        artifactSha,
+        project: prisma.project,
+        name: prisma.project,
+        version: prisma.version,
+        reason: "Reviewed exception: 1.1.14 has broken CLI/export paths; publish a reviewed 1.1.15 instead.",
+      },
+    ],
+    packages,
+  }
+  writeFileSync(join(directory, "handoff.json"), `${JSON.stringify(handoff, null, 2)}\n`)
+  return handoff
+}
 
 const fake = String.raw`#!/usr/bin/env node
-const fs=require('fs'),p=require('path'),cmd=p.basename(process.argv[1]),raw=process.argv.slice(2),oneShot=cmd==='git'&&raw[0]==='-c',authConfiguration=oneShot?raw[1]:undefined,a=oneShot?raw.slice(2):raw,f=process.env.FAKE_STATE
-let s=JSON.parse(fs.readFileSync(f)), out=x=>process.stdout.write(String(x)), save=()=>fs.writeFileSync(f,JSON.stringify(s))
-s.log.push([cmd,...a]);
+const fs=require("node:fs"),p=require("node:path"),cmd=p.basename(process.argv[1]),raw=process.argv.slice(2),oneShot=cmd==="git"&&raw[0]==="-c",authConfiguration=oneShot?raw[1]:undefined,a=oneShot?raw.slice(2):raw,f=process.env.FAKE_STATE
+let s=JSON.parse(fs.readFileSync(f)),out=x=>process.stdout.write(String(x)),save=()=>fs.writeFileSync(f,JSON.stringify(s))
+s.log.push([cmd,...a])
 function finish(code=0){save();process.exit(code)}
-if(cmd==='git'){
- if(a[0]==='fetch'||a[0]==='config')finish()
- if(a[0]==='cat-file'&&a[1]==='-t'){const v=s.gitFiles[a[2]];if(v===undefined)finish(128);out((s.gitTypes?.[a[2]]??'blob')+'\n');finish()}
- if(a[0]==='merge-base'){finish(s.ancestorExit??(s.ancestor===false?1:0))}
- if(a[0]==='rev-list'){out((s.commitLines?.[a.at(-1)]??s.commitLine??(s.artifactSha+' '+s.parentSha))+'\n');finish()}
- if(a[0]==='rev-parse'){
-  if(a[1].endsWith('^{tree}')){out((s.generatedTreeSha??s.treeSha)+'\n'+(s.artifactTreeSha??s.treeSha)+'\n');finish()}
-  out((a[1]==='HEAD'?s.head:s.origin)+'\n');finish()
+function take(value,key,fallback){const queue=value[key];if(queue&&queue.length){const next=queue.shift();if(queue.length===0)value[key.replace(/Queue$/,"")]=next;return next}return fallback}
+function emit(value){if(value&&typeof value==="object"&&value.exit){if(value.stdout)process.stdout.write(value.stdout);if(value.stderr)process.stderr.write(value.stderr);finish(value.exit)}if(value&&typeof value==="object"&&Object.hasOwn(value,"raw"))out(value.raw);else out(JSON.stringify(value)+"\n");finish()}
+function materialize(name){const value=s.npm[name],pkg=s.packages[name];if(!value.versions.includes(pkg.version))value.versions.push(pkg.version);value.latest=pkg.version;value.dist=pkg.dist}
+if(cmd==="git"){
+ if(a[0]==="fetch"||a[0]==="config")finish()
+ if(a[0]==="cat-file"&&a[1]==="-t"){const value=s.gitFiles[a[2]];if(value===undefined)finish(128);out((s.gitTypes?.[a[2]]??"blob")+"\n");finish()}
+ if(a[0]==="merge-base")finish(s.ancestorExit??(s.ancestor===false?1:0))
+ if(a[0]==="rev-list"&&a[1]==="--count"){out(String(s.historicalCount)+"\n");finish()}
+ if(a[0]==="rev-list"){out((s.commitLines?.[a.at(-1)]??s.commitLine??(s.artifactSha+" "+s.parentSha))+"\n");finish()}
+ if(a[0]==="rev-parse"){
+  if(a[1].endsWith("^{tree}")){out((s.generatedTreeSha??s.treeSha)+"\n"+(s.artifactTreeSha??s.treeSha)+"\n");finish()}
+  out((a[1]==="HEAD"?s.head:s.origin)+"\n");finish()
  }
- if(a[0]==='status'){out(s.worktreeStatus??'');finish()}
- if(a[0]==='show'){const value=s.gitFiles[a[1]];if(value===undefined)finish(128);out(typeof value==='string'?value:JSON.stringify(value));finish()}
- if(a[0]==='diff'){out(s.changedPaths.join('\n')+(s.changedPaths.length?'\n':''));finish()}
- if(a[0]==='ls-remote'){
-  const t=a[3].slice(10),v=s.tags[t]; if(v){if(v.raw)out(v.raw.replaceAll('$TAG',t));else{out((v.direct||'a'.repeat(40))+'\trefs/tags/'+t+'\n');if(v.peeled!==null)out((v.peeled||s.artifactSha)+'\trefs/tags/'+t+'^{}\n')}} finish()
+ if(a[0]==="status"){out(s.worktreeStatus??"");finish()}
+ if(a[0]==="show"){const value=s.gitFiles[a[1]];if(value===undefined)finish(128);out(typeof value==="string"?value:JSON.stringify(value));finish()}
+ if(a[0]==="diff"){
+  const historical=a.at(-2)===s.artifactSha&&a.at(-1)===s.expectedSha
+  const paths=historical?s.historicalPaths:s.changedPaths
+  out(paths.join("\n")+(paths.length?"\n":""));finish()
  }
- if(a[0]==='for-each-ref'){const t=a[2].slice(10),v=s.localTags[t];if(v)out((v.type||'tag')+'\t'+(v.peeled||s.artifactSha)+'\n');finish()}
- if(a[0]==='tag'){s.localTags[a[2]]={type:'tag',peeled:a[3]};finish()}
- if(a[0]==='push'){
-  const token=process.env.GITHUB_TOKEN||'',basic=Buffer.from('x-access-token:'+token,'utf8').toString('base64')
-  s.pushAuthentication={oneShot,matchesToken:authConfiguration==='http.https://github.com/.extraheader=AUTHORIZATION: basic '+basic,tokenLiteral:Boolean(token)&&raw.some(value=>value.includes(token))}
-  const materialize=()=>{for(const r of a.slice(3)){const t=r.split(':')[0].slice(10);s.tags[t]={peeled:s.localTags[t].peeled}}}
-  if(s.pushMaterializesOnFailure){materialize();finish(s.pushExit||1)}
-  if(s.pushExit)finish(s.pushExit)
-  materialize();finish()
+ if(a[0]==="ls-files"){out(s.trackedNpmrc??"");finish()}
+ if(a[0]==="ls-remote"){
+  const tag=a[3].slice(10),value=s.tags[tag]
+  if(value){if(value.raw)out(value.raw.replaceAll("$TAG",tag));else{out((value.direct||"b".repeat(40))+"\trefs/tags/"+tag+"\n");if(value.peeled!==null)out((value.peeled||s.artifactSha)+"\trefs/tags/"+tag+"^{}\n")}}finish()
+ }
+ if(a[0]==="for-each-ref"){const tag=a[2].slice(10),value=s.localTags[tag];if(value)out((value.type||"tag")+"\t"+(value.peeled||s.artifactSha)+"\n");finish()}
+ if(a[0]==="tag"){s.localTags[a[2]]={type:"tag",peeled:a[3]};finish()}
+ if(a[0]==="push"){
+  const token=process.env.GITHUB_TOKEN||"",basic=Buffer.from("x-access-token:"+token,"utf8").toString("base64")
+  s.pushAuthentication={oneShot,matchesToken:authConfiguration==="http.https://github.com/.extraheader=AUTHORIZATION: basic "+basic,tokenLiteral:Boolean(token)&&raw.some(value=>value.includes(token))}
+  const materializeTags=()=>{for(const ref of a.slice(3)){const tag=ref.split(":")[0].slice(10);s.tags[tag]={peeled:s.localTags[tag].peeled}}},failPush=code=>{if(s.pushStderr)process.stderr.write(s.pushStderr);finish(code)}
+  if(s.pushMaterializesOnFailure){materializeTags();failPush(s.pushExit||1)}
+  if(s.pushExit)failPush(s.pushExit)
+  materializeTags();finish()
  }
  finish(127)
 }
-if(cmd==='npm'){
- const n=a[1],field=a[2],v=s.npm[n]
- const take=(key,fallback)=>{const q=v[key],x=q&&q.length?q.shift():fallback;if(q&&q.length===0){if(key==='versionsQueue')v.versions=x;if(key==='latestQueue')v.latest=x}return x}
- let x
- if(field==='versions')x=take('versionsQueue',v.versions)
- else if(field==='dist-tags.latest')x=take('latestQueue',v.latest)
- else if(field==='dist-tags'){
-  const q=v.distTagsQueue
-  if(q&&q.length){x=q.shift();if(q.length===0&&x&&typeof x==='object'&&!x.exit&&!Object.hasOwn(x,'raw')){v.alpha=x.alpha;v.beta=x.beta;v.latest=x.latest}}
-  else{const latest=take('latestQueue',v.latest);x={alpha:v.alpha,beta:v.beta};if(latest!==undefined)x.latest=latest}
- }else finish(127)
- if(x&&typeof x==='object'&&x.exit){process.stderr.write(x.stderr||'failure');finish(x.exit)}
- if(x&&typeof x==='object'&&Object.hasOwn(x,'raw'))out(x.raw);else out(JSON.stringify(x)+'\n');finish()
+if(cmd==="npm"){
+ if(a[0]==="config"&&a[1]==="get"&&a[2]==="userconfig")emit(s.userConfigPath)
+ if(a[0]==="config"&&a[1]==="get"&&a[2]==="globalconfig")emit(s.globalConfigPath)
+ if(a[0]==="config"&&a[1]==="get"&&a[2]==="registry")emit(s.registry)
+ if(a[0]==="view"){
+  const spec=a[1],field=a[2]
+  if(field==="dist"){
+   const at=spec.lastIndexOf("@"),name=spec.slice(0,at),value=s.npm[name]
+   emit(take(value,"distQueue",value.dist))
+  }
+  const name=spec,value=s.npm[name]
+  if(field==="versions")emit(take(value,"versionsQueue",value.versions))
+  if(field==="dist-tags"){
+   const fallback={alpha:value.alpha,beta:value.beta}
+   if(value.latest!==undefined)fallback.latest=value.latest
+   emit(take(value,"distTagsQueue",fallback))
+  }
+  finish(127)
+ }
+ if(a[0]==="publish"){
+  const packageEntry=Object.values(s.packages).find(value=>p.basename(a[1])===value.basename)
+  if(!packageEntry)finish(91)
+  const failure=s.publishFailures?.[packageEntry.name]
+  if(failure?.materialize)materialize(packageEntry.name)
+  if(failure){if(failure.stdout)process.stdout.write(failure.stdout);if(failure.stderr)process.stderr.write(failure.stderr);finish(failure.exit??1)}
+  materialize(packageEntry.name);out(JSON.stringify({id:packageEntry.name+"@"+packageEntry.version})+"\n");finish()
+ }
+ finish(127)
 }
-if(cmd==='pnpm'){
- s.publishEnvironment={ignoreScripts:process.env.NPM_CONFIG_IGNORE_SCRIPTS,inheritedSentinel:process.env.FINALIZE_ENV_SENTINEL}
- const projects=a[3].slice(11).split(','),count=s.publishSubset??projects.length
- for(const project of projects.slice(0,count)){const n=s.projectPackages[project],v=s.expected[n],old=s.npm[n];old.versions=[v];old.latest=v;if(old.delayedVersions){old.versions=[];old.versionsQueue=Array(old.delayedVersions).fill([]).concat([[v]])}if(old.delayedLatest){old.latest='0.0.1';old.latestQueue=Array(old.delayedLatest).fill('0.0.1').concat(v)}}
- finish(s.publishExit||0)
-}
+if(cmd==="pnpm")finish(88)
 finish(127)`
 
-function load(file) {
-  return JSON.parse(readFileSync(file, "utf8"))
+function load(path) {
+  return JSON.parse(readFileSync(path, "utf8"))
 }
-function save(file, value) {
-  writeFileSync(file, JSON.stringify(value))
+function save(path, value) {
+  writeFileSync(path, JSON.stringify(value))
 }
-function mutations(state) {
-  // Fetch is a local synchronization/read operation: it updates remote-tracking state but cannot publish anything.
+function mutationCalls(state) {
   return state.log.filter(
     ([command, operation]) =>
       command === "pnpm" ||
-      (command === "git" && (operation === "tag" || operation === "push")) ||
+      (command === "npm" && operation === "publish") ||
+      (command === "git" && ["tag", "push"].includes(operation)) ||
       (command === "http" && operation === "POST"),
   )
 }
-function addArtifactFiles(gitFiles, commit) {
-  gitFiles[`${commit}:CHANGELOG.md`] = "# Changelog\n"
-  gitFiles[`${commit}:nx.json`] = { release: { projects: catalog.map(([, root]) => root) } }
-  for (const [project, root, beta, version] of catalog) {
-    gitFiles[`${commit}:${root}/project.json`] = { name: project }
-    gitFiles[`${commit}:${root}/package.json`] = { name: project, version }
-    gitFiles[`${commit}^1:${root}/package.json`] = { name: project, version: beta }
+function publishCalls(state) {
+  return state.log.filter(([command, operation]) => command === "npm" && operation === "publish")
+}
+function setNpmExact(state, record) {
+  const value = state.npm[record.project]
+  if (!value.versions.includes(record.version)) value.versions.push(record.version)
+  value.latest = record.version
+  if (record.project !== prisma.project) value.dist = state.packages[record.project].dist
+}
+function setArtifactsExact(state) {
+  for (const record of records) {
+    const tag = `${record.project}@${record.version}`
+    state.tags[tag] = { peeled: artifactSha }
+    state.releases[tag] = { tag_name: tag, draft: false, prerelease: false }
   }
 }
-
-async function discardWorld({ cwd, server }) {
+function assertExact(state) {
+  for (const record of records) {
+    const tag = `${record.project}@${record.version}`
+    assert.equal(state.tags[tag]?.peeled, artifactSha)
+    assert.deepEqual(state.releases[tag], { tag_name: tag, draft: false, prerelease: false })
+    if (record.project === prisma.project) {
+      assert.equal(state.npm[record.project].versions.includes(record.version), false)
+      continue
+    }
+    assert.equal(state.npm[record.project].versions.includes(record.version), true)
+    assert.equal(state.npm[record.project].latest, record.version)
+    assert.deepEqual(state.npm[record.project].dist, state.packages[record.project].dist)
+  }
+}
+async function discardWorld(world) {
   try {
-    if (server?.listening) await new Promise((resolve) => server.close(resolve))
+    if (world.server?.listening) await new Promise((resolve) => world.server.close(resolve))
   } finally {
-    await rm(cwd, { recursive: true, force: true })
+    await rm(world.cwd, { recursive: true, force: true })
   }
-  assert.equal(existsSync(cwd), false)
+  assert.equal(existsSync(world.cwd), false)
 }
-
-async function world(mode = "absent") {
-  const cwd = mkdtempSync(join(tmpdir(), "stable-finalize-")),
-    bin = join(cwd, "bin"),
-    stateFile = join(cwd, "state.json")
+async function makeWorld({ historical = false, npmMode = "absent", artifacts = "exact" } = {}) {
+  const cwd = mkdtempSync(join(tmpdir(), "stable-finalize-handoff-"))
+  const bin = join(cwd, "bin")
+  const handoffDirectory = join(cwd, "handoff")
+  const stateFile = join(cwd, "state.json")
+  const expectedSha = historical ? advancedSha : artifactSha
   let server
   try {
     mkdirSync(bin)
@@ -126,80 +334,102 @@ async function world(mode = "absent") {
     chmodSync(join(bin, "fake.cjs"), 0o755)
     for (const command of ["git", "npm", "pnpm"]) symlinkSync("fake.cjs", join(bin, command))
     symlinkSync(process.execPath, join(bin, "node"))
-    const expected = {},
-      npm = {},
-      tags = {},
-      releases = {},
-      projectPackages = {},
-      gitFiles = {}
-    addArtifactFiles(gitFiles, sha)
-    addArtifactFiles(gitFiles, historicalSha)
-    for (const [project, path, version, betaVersion] of records) {
-      mkdirSync(join(cwd, path, ".."), { recursive: true })
-      writeFileSync(join(cwd, path), JSON.stringify({ name: project, version }))
-      projectPackages[project] = project
-      expected[project] = version
-      npm[project] = {
-        versions: mode === "exact" ? [betaVersion, version] : ["0.0.1", betaVersion],
-        latest: mode === "exact" ? version : "0.0.1",
+    const handoff = makeHandoff(handoffDirectory, expectedSha)
+    const packages = Object.fromEntries(
+      handoff.packages.map((item) => {
+        const record = records.find(({ project }) => project === item.project)
+        return [
+          item.project,
+          {
+            name: item.project,
+            version: item.version,
+            basename: item.tarball.basename,
+            dist: expectedDist(record, item),
+          },
+        ]
+      }),
+    )
+    const npm = {}
+    for (const record of records) {
+      npm[record.project] = {
+        versions: ["0.0.1", record.betaVersion],
+        latest: "0.0.1",
         alpha: "alpha-sentinel",
-        beta: betaVersion,
+        beta: record.betaVersion,
       }
-      if (mode === "exact") {
-        const tag = `${project}@${version}`
-        tags[tag] = { peeled: sha }
-        releases[tag] = { tag_name: tag, draft: false, prerelease: false }
-      }
+      if (npmMode === "exact" && record.project !== prisma.project) setNpmExact({ npm, packages }, record)
     }
-    const changedPaths = ["CHANGELOG.md", ...records.map(([, path]) => path)].sort()
-    save(stateFile, {
-      sha,
-      artifactSha: sha,
+    const gitFiles = {}
+    addArtifactFiles(gitFiles)
+    for (const record of records) {
+      mkdirSync(join(cwd, record.root), { recursive: true })
+      writeFileSync(join(cwd, record.manifestPath), JSON.stringify({ name: record.project, version: record.version }))
+    }
+    const state = {
+      artifactSha,
+      expectedSha,
       parentSha,
       treeSha,
-      head: sha,
-      origin: sha,
-      expected,
-      npm,
-      tags,
-      releases,
-      localTags: {},
-      projectPackages,
+      head: expectedSha,
+      origin: expectedSha,
+      commitLine: `${artifactSha} ${parentSha}`,
+      historicalCount: 2,
+      historicalPaths: ["scripts/release-finalize-stable.mjs", "scripts/release-package-stable.mjs"],
+      changedPaths: ["CHANGELOG.md", ...records.map(({ manifestPath }) => manifestPath)].sort(),
       gitFiles,
-      changedPaths,
+      packages,
+      npm,
+      tags: {},
+      releases: {},
+      localTags: {},
+      userConfigPath: join(cwd, "missing-user-npmrc"),
+      globalConfigPath: join(cwd, "missing-global-npmrc"),
+      registry: npmRegistry,
       log: [],
-    })
+    }
+    if (artifacts === "exact") setArtifactsExact(state)
+    save(stateFile, state)
     server = createServer((request, response) => {
-      const state = load(stateFile),
-        method = request.method,
-        path = request.url
-      state.log.push(["http", method, path])
+      const current = load(stateFile)
+      current.log.push(["http", request.method, request.url])
       const send = (status, body = "") => {
-        save(stateFile, state)
+        save(stateFile, current)
         response.writeHead(status, { "content-type": "application/json" })
         response.end(typeof body === "string" ? body : JSON.stringify(body))
       }
-      if (method === "GET") {
-        const tag = decodeURIComponent(path.split("/releases/tags/")[1] || ""),
-          configured = state.ghReadStatus
-        if (configured) return send(configured, { message: "configured" })
-        return state.releases[tag] ? send(200, state.releases[tag]) : send(404, { message: "not found" })
+      if (request.method === "GET") {
+        const tag = decodeURIComponent(request.url.split("/releases/tags/")[1] || "")
+        if (current.ghReadStatus) return send(current.ghReadStatus, { message: "configured" })
+        return current.releases[tag] ? send(200, current.releases[tag]) : send(404, { message: "not found" })
       }
       let body = ""
       request.on("data", (chunk) => (body += chunk))
       request.on("end", () => {
-        const value = JSON.parse(body),
-          tag = value.tag_name,
-          status = state.ghCreateStatus || 201
-        if (state.ghCreateMaterializes !== false)
-          state.releases[tag] = { tag_name: tag, draft: false, prerelease: false }
-        save(stateFile, state)
-        if (state.ghCreateResponseLoss) return response.destroy()
-        send(status, status === 422 ? { message: "already exists" } : state.releases[tag])
+        const value = JSON.parse(body)
+        const tag = value.tag_name
+        const status = current.ghCreateStatus || 201
+        if (current.ghCreateMaterializes !== false) {
+          current.releases[tag] = { tag_name: tag, draft: false, prerelease: false }
+        }
+        save(stateFile, current)
+        if (current.ghCreateResponseLoss) return response.destroy()
+        send(
+          status,
+          current.ghCreateResponseBody ?? (status === 422 ? { message: "already exists" } : current.releases[tag]),
+        )
       })
     })
     await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve))
-    return { cwd, bin, stateFile, server, api: `http://127.0.0.1:${server.address().port}` }
+    return {
+      cwd,
+      bin,
+      handoffDirectory,
+      handoff,
+      stateFile,
+      server,
+      expectedSha,
+      api: `http://127.0.0.1:${server.address().port}`,
+    }
   } catch (error) {
     await discardWorld({ cwd, server })
     throw error
@@ -211,1034 +441,883 @@ async function run(world, args = [], environment = {}) {
       cwd: world.cwd,
       env: {
         PATH: world.bin,
-        EXPECTED_SHA: sha,
-        ARTIFACT_SHA: "",
-        PROJECTS: selectedProjects,
+        EXPECTED_SHA: world.expectedSha,
+        ARTIFACT_SHA: artifactSha,
+        PROJECTS: projectsText,
         GITHUB_ACTIONS: "true",
-        NPM_READ_DELAY_MS: "0",
-        FINALIZE_COMMAND_TIMEOUT_MS: "5000",
         GITHUB_API_URL: world.api,
-        GITHUB_REPOSITORY: "owner/repo",
-        GITHUB_TOKEN: "fake",
+        GITHUB_REPOSITORY: repository,
+        GITHUB_TOKEN: "fake-github-token",
+        GITHUB_WORKFLOW_REF: `${repository}/${workflowPath}@${workflowRef}`,
+        GITHUB_WORKFLOW_SHA: world.expectedSha,
+        GITHUB_RUN_ID: runId,
+        GITHUB_RUN_ATTEMPT: runAttempt,
+        STABLE_HANDOFF_DIRECTORY: world.handoffDirectory,
+        STABLE_HANDOFF_ARTIFACT_ID: artifactId,
+        STABLE_HANDOFF_ARTIFACT_DIGEST: artifactDigest,
+        NPM_READ_DELAY_MS: "0",
+        NPM_CONFIG_IGNORE_SCRIPTS: "true",
+        NPM_CONFIG_PROVENANCE: "true",
+        FINALIZE_COMMAND_TIMEOUT_MS: "5000",
+        FINALIZE_HTTP_TIMEOUT_MS: "5000",
         FAKE_STATE: world.stateFile,
         ...environment,
       },
     })
-    let stdout = "",
-      stderr = ""
+    let stdout = ""
+    let stderr = ""
     child.stdout.on("data", (chunk) => (stdout += chunk))
     child.stderr.on("data", (chunk) => (stderr += chunk))
     child.on("close", (status) => resolve({ status, stdout, stderr }))
   })
 }
-async function scenario(t, name, setup, verify, mode = "exact", args = [], environment = {}) {
-  await t.test(name, async () => {
-    const fixture = await world(mode)
-    try {
-      const state = load(fixture.stateFile)
-      await setup(state, fixture)
-      save(fixture.stateFile, state)
-      const result = await run(fixture, args, environment)
-      await verify(result, load(fixture.stateFile), fixture)
-    } finally {
-      await discardWorld(fixture)
-    }
-  })
-}
-function exactState(state) {
-  assert.equal(Object.keys(state.tags).length, records.length)
-  assert.equal(Object.keys(state.releases).length, records.length)
-  for (const [project, , version, betaVersion] of records) {
-    assert.ok(state.npm[project].versions.includes(version))
-    assert.equal(state.npm[project].latest, version)
-    assert.equal(state.npm[project].alpha, "alpha-sentinel")
-    assert.equal(state.npm[project].beta, betaVersion)
+async function scenario(t, options, body) {
+  const world = await makeWorld(options)
+  try {
+    await body(world)
+  } finally {
+    await discardWorld(world)
   }
-}
-function historicalTags(state) {
-  state.artifactSha = historicalSha
-  for (const [project, , version] of records) state.tags[`${project}@${version}`] = { peeled: historicalSha }
-}
-function mergeArtifact(state) {
-  state.commitLine = `${sha} ${parentSha} ${secondParentSha}`
-  state.commitLines = { [secondParentSha]: `${secondParentSha} ${parentSha}` }
-}
-function workflowPreflightInvocation() {
-  const match = stableWorkflow.match(
-    /^[ \t]*- name: 🔎 PREFLIGHT exact stable artifacts\n([\s\S]*?)(?=^[ \t]*- name:)/m,
-  )
-  assert.ok(match, "stable workflow preflight step")
-  assert.match(match[1], /PROJECTS:\s*\$\{\{ needs\.validate\.outputs\.projects \}\}/)
-  const commands = [...match[1].matchAll(/^[ \t]*run:\s*(.+)$/gm)].map((entry) => entry[1].trim())
-  assert.deepEqual(commands, ["bash scripts/release-finalize-stable.sh --preflight --json"])
-  return { args: commands[0].split(/\s+/).slice(2), source: match[1] }
 }
 
-const scenarioNames = []
-test("hermetic arbitrary-subset Node CLI matrix", { timeout: 120_000 }, async (t) => {
-  const add = async (...args) => {
-    scenarioNames.push(args[0])
-    await scenario(t, ...args)
-  }
-  await add(
-    "single-parent squash or single-commit rebase future subset exact replay locally synchronizes then performs zero tag, Release, or npm mutation",
-    async () => {},
-    (result, state) => {
-      assert.equal(result.status, 0, result.stderr)
-      assert.deepEqual(mutations(state), [])
-      assert.ok(
-        state.log.some(
-          (call) => call[0] === "git" && call[1] === "rev-list" && call.includes("--parents") && call.at(-1) === sha,
-        ),
-      )
-      assert.ok(
-        state.log.some(
-          (call) => call[0] === "git" && call[1] === "diff" && call.includes(`${sha}^1`) && call.at(-1) === sha,
-        ),
-      )
-    },
-  )
-  await add(
-    "same-SHA future subset publishes only normalized reviewed projects",
-    async () => {},
-    (result, state) => {
-      assert.equal(result.status, 0, result.stderr)
-      exactState(state)
-      const status = state.log.find((call) => call[0] === "git" && call[1] === "status")
-      assert.deepEqual(status, ["git", "status", "--porcelain=v1", "--untracked-files=all"])
-      const publish = state.log.find((call) => call[0] === "pnpm")
-      assert.equal(publish[4], `--projects=${selectedProjects}`)
-    },
-    "absent",
-  )
-  await add(
-    "publish child disables lifecycle scripts while preserving inherited environment",
-    async () => {},
-    (result, state) => {
-      assert.equal(result.status, 0, result.stderr)
-      assert.deepEqual(state.publishEnvironment, {
-        ignoreScripts: "true",
-        inheritedSentinel: "preserved",
-      })
-      exactState(state)
-    },
-    "absent",
-    [],
-    { NPM_CONFIG_IGNORE_SCRIPTS: "false", FINALIZE_ENV_SENTINEL: "preserved" },
-  )
-  await add(
-    "exact stable replay does not require beta version or beta tag",
-    async (state) => {
-      for (const [project, , version] of records) {
-        state.npm[project].versions = [version]
-        delete state.npm[project].beta
+await test("stable handoff verification and current-run artifact metadata fail before every public mutation", async (t) => {
+  await scenario(t, { npmMode: "absent" }, async (world) => {
+    const handoffPath = join(world.handoffDirectory, "handoff.json")
+    const handoff = JSON.parse(readFileSync(handoffPath, "utf8"))
+    handoff.run.id = "33399900012"
+    writeFileSync(handoffPath, JSON.stringify(handoff))
+    const result = await run(world)
+    const state = load(world.stateFile)
+    assert.notEqual(result.status, 0)
+    assert.match(result.stderr, /handoff run ID does not match the current run/i)
+    assert.deepEqual(mutationCalls(state), [])
+    assert.equal(
+      state.log.some(([command]) => command === "npm" || command === "http"),
+      false,
+    )
+  })
+  for (const [name, environment, pattern] of [
+    ["missing artifact ID", { STABLE_HANDOFF_ARTIFACT_ID: "" }, /artifact ID/i],
+    ["malformed artifact digest", { STABLE_HANDOFF_ARTIFACT_DIGEST: "sha256:nope" }, /artifact digest/i],
+    ["relative handoff directory", { STABLE_HANDOFF_DIRECTORY: "handoff" }, /handoff directory/i],
+    ["wrong workflow SHA", { GITHUB_WORKFLOW_SHA: advancedSha }, /workflow SHA/i],
+  ]) {
+    await t.test(name, async () => {
+      const world = await makeWorld({ npmMode: "absent" })
+      try {
+        const result = await run(world, [], environment)
+        assert.notEqual(result.status, 0)
+        assert.match(result.stderr, pattern)
+        assert.deepEqual(mutationCalls(load(world.stateFile)), [])
+      } finally {
+        await discardWorld(world)
       }
-    },
-    (result, state) => {
-      assert.equal(result.status, 0, result.stderr)
-      assert.deepEqual(mutations(state), [])
-    },
-  )
-  await add(
-    "stable absence with exact reviewed beta provenance publishes",
-    async () => {},
-    (result, state) => {
-      assert.equal(result.status, 0, result.stderr)
-      exactState(state)
-    },
-    "absent",
-  )
-  await add(
-    "atomic tag push uses one-shot GitHub Basic authentication without exposing the token",
-    async () => {},
-    (result, state) => {
-      assert.equal(result.status, 0, result.stderr)
-      assert.deepEqual(state.pushAuthentication, {
-        oneShot: true,
-        matchesToken: true,
-        tokenLiteral: false,
-      })
-      assert.equal(
-        state.log.some(
-          (call) => call[0] === "git" && call[1] === "config" && /authorization|extraheader/i.test(call.join(" ")),
-        ),
-        false,
-      )
-      assert.deepEqual(state.log.find((call) => call[0] === "git" && call[1] === "push"), [
+    })
+  }
+})
+
+await test("current exact mode keeps atomic authenticated tags and Releases, then publishes six exact handoff tarballs", async (t) => {
+  await scenario(t, { npmMode: "absent", artifacts: "absent" }, async (world) => {
+    const result = await run(world, [], { GITHUB_TOKEN: "tag-push-secret" })
+    const state = load(world.stateFile)
+    assert.equal(result.status, 0, result.stderr)
+    assertExact(state)
+    assert.deepEqual(state.pushAuthentication, { oneShot: true, matchesToken: true, tokenLiteral: false })
+    assert.deepEqual(
+      state.log.find(([command, operation]) => command === "git" && operation === "push"),
+      [
         "git",
         "push",
         "--atomic",
         "origin",
-        ...records.map(
-          ([project, , version]) => `refs/tags/${project}@${version}:refs/tags/${project}@${version}`,
-        ),
-      ])
-      assert.doesNotMatch(`${result.stdout}\n${result.stderr}`, /tag-push-secret/)
-      exactState(state)
-    },
-    "absent",
-    [],
-    { GITHUB_TOKEN: "tag-push-secret" },
-  )
-  for (const [name, token] of [
-    ["missing", ""],
-    ["unsafe", "unsafe token"],
-  ])
-    await add(
-      `${name} GitHub tag-push authentication fails closed before mutation`,
-      async () => {},
-      (result, state) => {
-        assert.notEqual(result.status, 0)
-        assert.match(result.stderr, /tag push requires a safe non-empty GITHUB_TOKEN/)
-        assert.deepEqual(mutations(state), [])
-      },
-      "absent",
-      [],
-      { GITHUB_TOKEN: token },
+        ...records.map(({ project, version }) => `refs/tags/${project}@${version}:refs/tags/${project}@${version}`),
+      ],
     )
-  await add(
-    "stable absence with no latest publishes",
-    async (state) => {
-      for (const [project] of records) delete state.npm[project].latest
-    },
-    (result, state) => {
-      assert.equal(result.status, 0, result.stderr)
-      exactState(state)
-    },
-    "absent",
-  )
-  await add(
-    "prerelease latest strictly below stable target publishes",
-    async (state) => {
-      state.npm[records[0][0]].latest = records[0][3]
-    },
-    (result, state) => {
-      assert.equal(result.status, 0, result.stderr)
-      exactState(state)
-    },
-    "absent",
-  )
-  await add(
-    "historical all-existing artifacts perform zero tag, Release, or npm mutation",
-    async (state) => historicalTags(state),
-    (result, state) => {
-      assert.equal(result.status, 0, result.stderr)
-      assert.deepEqual(mutations(state), [])
-    },
-    "exact",
-    [],
-    { ARTIFACT_SHA: historicalSha },
-  )
-  await add(
-    "historical all-exact replay returns before checking an advanced current master manifest",
-    async (state, fixture) => {
-      historicalTags(state)
-      for (const [project, path] of records) {
-        const currentManifest = { name: project, version: "99.0.0", scripts: { build: "current-only" } }
-        state.gitFiles[`${sha}:${path}`] = currentManifest
-        writeFileSync(join(fixture.cwd, path), JSON.stringify(currentManifest))
-      }
-    },
-    (result, state) => {
-      assert.equal(result.status, 0, result.stderr)
-      assert.deepEqual(mutations(state), [])
-      assert.equal(
-        state.log.some((call) => call[0] === "git" && call[1] === "status"),
-        false,
-      )
-    },
-    "exact",
-    [],
-    { ARTIFACT_SHA: historicalSha },
-  )
-  await add(
-    "historical ancestor PREFLIGHT checks ancestry before artifact and registry reads",
-    async (state) => historicalTags(state),
-    (result, state) => {
-      assert.equal(result.status, 0, result.stderr)
-      assert.deepEqual(mutations(state), [])
-      const ancestry = state.log.findIndex((call) => call[0] === "git" && call[1] === "merge-base")
-      const artifactRead = state.log.findIndex((call) => call[0] === "git" && call[1] === "show")
-      const registryRead = state.log.findIndex((call) => call[0] === "npm")
-      assert.ok(ancestry >= 0 && ancestry < artifactRead && ancestry < registryRead)
-    },
-    "exact",
-    ["--preflight"],
-    { ARTIFACT_SHA: historicalSha },
-  )
-  await add(
-    "historical rebased non-ancestor fails before PREFLIGHT verification",
-    async (state) => {
-      historicalTags(state)
-      state.ancestor = false
-    },
-    (result, state) => {
-      assert.notEqual(result.status, 0)
-      assert.match(result.stderr, /ancestor/)
-      assert.deepEqual(mutations(state), [])
-      assert.equal(
-        state.log.some((call) => call[0] === "git" && call[1] === "show"),
-        false,
-      )
-      assert.equal(
-        state.log.some((call) => call[0] === "npm" || call[0] === "http"),
-        false,
-      )
-    },
-    "exact",
-    ["--preflight"],
-    { ARTIFACT_SHA: historicalSha },
-  )
-  await add(
-    "historical ancestry command ambiguity fails closed",
-    async (state) => {
-      historicalTags(state)
-      state.ancestorExit = 128
-    },
-    (result, state) => {
-      assert.notEqual(result.status, 0)
-      assert.deepEqual(mutations(state), [])
-      assert.equal(
-        state.log.some((call) => call[0] === "git" && call[1] === "show"),
-        false,
-      )
-    },
-    "exact",
-    ["--preflight"],
-    { ARTIFACT_SHA: historicalSha },
-  )
-  await add(
-    "valid two-parent merge with a single generated release commit based on its first parent succeeds",
-    async (state) => mergeArtifact(state),
-    (result, state) => {
-      assert.equal(result.status, 0, result.stderr)
-      assert.deepEqual(mutations(state), [])
-    },
-  )
-  await add(
-    "octopus reviewed artifact fails closed",
-    async (state) => {
-      state.commitLine = `${sha} ${parentSha} ${secondParentSha} ${thirdParentSha}`
-    },
-    (result, state) => {
-      assert.notEqual(result.status, 0)
-      assert.match(result.stderr, /single-parent commit or exact two-parent merge/)
-      assert.deepEqual(mutations(state), [])
-    },
-  )
-  await add(
-    "merge second parent not based directly on first parent fails closed",
-    async (state) => {
-      mergeArtifact(state)
-      state.commitLines[secondParentSha] = `${secondParentSha} ${thirdParentSha}`
-    },
-    (result, state) => {
-      assert.notEqual(result.status, 0)
-      assert.match(result.stderr, /based directly on first parent/)
-      assert.deepEqual(mutations(state), [])
-    },
-  )
-  await add(
-    "merge second parent with multiple commits fails closed",
-    async (state) => {
-      mergeArtifact(state)
-      state.commitLines[secondParentSha] = `${secondParentSha} ${parentSha} ${thirdParentSha}`
-    },
-    (result, state) => {
-      assert.notEqual(result.status, 0)
-      assert.match(result.stderr, /single commit based directly on first parent/)
-      assert.deepEqual(mutations(state), [])
-    },
-  )
-  await add(
-    "merge tree differing from generated second parent fails closed",
-    async (state) => {
-      mergeArtifact(state)
-      state.artifactTreeSha = "8888888888888888888888888888888888888888"
-    },
-    (result, state) => {
-      assert.notEqual(result.status, 0)
-      assert.match(result.stderr, /merge tree must exactly match/)
-      assert.deepEqual(mutations(state), [])
-    },
-  )
-  await add(
-    "merge aggregate first-parent diff rejects an extra path",
-    async (state) => {
-      mergeArtifact(state)
-      state.changedPaths.push("README.md")
-    },
-    (result, state) => {
-      assert.notEqual(result.status, 0)
-      assert.match(result.stderr, /unexpected reviewed path/)
-      assert.deepEqual(mutations(state), [])
-    },
-  )
-  await add(
-    "merge aggregate first-parent diff rejects an invalid manifest transition",
-    async (state) => {
-      mergeArtifact(state)
-      state.gitFiles[`${sha}:${records[0][1]}`].version = "4.7.1"
-    },
-    (result, state) => {
-      assert.notEqual(result.status, 0)
-      assert.match(result.stderr, /beta-to-stable transition/)
-      assert.deepEqual(mutations(state), [])
-    },
-  )
-  await add(
-    "malformed reviewed commit shape fails closed",
-    async (state) => {
-      state.commitLine = "malformed history"
-    },
-    (result, state) => {
-      assert.notEqual(result.status, 0)
-      assert.match(result.stderr, /commit shape is invalid/)
-      assert.deepEqual(mutations(state), [])
-    },
-  )
-  await add(
-    "historical split release commits are not reconstructed by history search",
-    async (state) => {
-      historicalTags(state)
-      state.changedPaths = ["CHANGELOG.md", records[0][1]]
-    },
-    (result, state) => {
-      assert.notEqual(result.status, 0)
-      assert.match(result.stderr, /requested projects do not exactly match/)
-      assert.deepEqual(mutations(state), [])
-      assert.equal(
-        state.log.some((call) => call[0] === "git" && call[1] === "log"),
-        false,
-      )
-    },
-    "exact",
-    ["--preflight"],
-    { ARTIFACT_SHA: historicalSha },
-  )
-  await add(
-    "historical missing tag fails before mutation",
-    async (state) => {
-      historicalTags(state)
-      delete state.tags[`${records[0][0]}@${records[0][2]}`]
-    },
-    (result, state) => {
-      assert.notEqual(result.status, 0)
-      assert.match(result.stderr, /historical replay requires exact existing/)
-      assert.deepEqual(mutations(state), [])
-    },
-    "exact",
-    [],
-    { ARTIFACT_SHA: historicalSha },
-  )
-  for (const [index] of records.entries())
-    await add(
-      `tag partial subset ${index + 1} replays`,
-      async (state) => {
-        for (const [project, , version] of records.slice(0, index + 1))
-          state.tags[`${project}@${version}`] = { peeled: sha }
-      },
-      (result, state) => {
-        assert.equal(result.status, 0, result.stderr)
-        exactState(state)
-      },
-      "absent",
+    assert.equal(
+      state.log.filter(([command, operation]) => command === "http" && operation === "POST").length,
+      records.length,
     )
-  for (const [index] of records.entries())
-    await add(
-      `release partial subset ${index + 1} replays`,
-      async (state) => {
-        for (const [project, , version] of records) state.tags[`${project}@${version}`] = { peeled: sha }
-        for (const [project, , version] of records.slice(0, index + 1))
-          state.releases[`${project}@${version}`] = {
-            tag_name: `${project}@${version}`,
-            draft: false,
-            prerelease: false,
-          }
-      },
-      (result, state) => {
-        assert.equal(result.status, 0, result.stderr)
-        exactState(state)
-      },
-      "absent",
+    const calls = publishCalls(state)
+    assert.equal(calls.length, publishable.length)
+    assert.deepEqual(
+      calls,
+      publishable.map((record) => [
+        "npm",
+        "publish",
+        join(world.handoffDirectory, state.packages[record.project].basename),
+        "--registry",
+        npmRegistry,
+        "--access",
+        "public",
+        "--tag",
+        "latest",
+        "--provenance",
+        "--ignore-scripts",
+        "--json",
+      ]),
     )
-  for (const [index] of records.entries())
-    await add(
-      `npm partial subset ${index + 1} replays`,
-      async (state) => {
-        for (const [project, , version] of records) {
-          state.tags[`${project}@${version}`] = { peeled: sha }
-          state.releases[`${project}@${version}`] = {
-            tag_name: `${project}@${version}`,
-            draft: false,
-            prerelease: false,
-          }
-        }
-        for (const [project, , version] of records.slice(0, index + 1)) {
-          state.npm[project].versions = [version]
-          state.npm[project].latest = version
-        }
-      },
-      (result, state) => {
-        assert.equal(result.status, 0, result.stderr)
-        exactState(state)
-      },
-      "absent",
+    const registryReads = state.log.filter(([command, operation]) => command === "npm" && operation === "view")
+    assert.ok(registryReads.length > 0)
+    for (const call of registryReads) assert.deepEqual(call.slice(-2), ["--registry", npmRegistry])
+    assert.equal(
+      calls.some((call) => call.join(" ").includes("prisma")),
+      false,
     )
-  await add(
-    "publish nonzero after subset then replay",
-    async (state) => {
-      state.publishSubset = 1
-      state.publishExit = 42
-    },
-    async (result, state, fixture) => {
-      assert.notEqual(result.status, 0)
-      delete state.publishExit
-      delete state.publishSubset
-      save(fixture.stateFile, state)
-      const replay = await run(fixture)
-      assert.equal(replay.status, 0, replay.stderr)
-      exactState(load(fixture.stateFile))
-    },
-    "absent",
-  )
-  await add(
-    "atomic push response loss reconciles exact remote refs",
-    async (state) => {
-      state.pushExit = 1
-      state.pushMaterializesOnFailure = true
-    },
-    (result, state) => {
-      assert.equal(result.status, 0, result.stderr)
-      exactState(state)
-    },
-    "absent",
-  )
-  await add(
-    "failed atomic push materializes no refs and replay reuses local tags",
-    async (state) => {
-      state.pushExit = 1
-    },
-    async (result, state, fixture) => {
-      assert.notEqual(result.status, 0)
-      assert.equal(Object.keys(state.tags).length, 0)
-      assert.equal(Object.keys(state.localTags).length, records.length)
-      delete state.pushExit
-      save(fixture.stateFile, state)
-      const replay = await run(fixture)
-      assert.equal(replay.status, 0, replay.stderr)
-      exactState(load(fixture.stateFile))
-    },
-    "absent",
-  )
-  await add(
-    "GitHub create response loss reconciles exact Release",
-    async (state) => {
-      state.ghCreateResponseLoss = true
-    },
-    (result, state) => {
-      assert.equal(result.status, 0, result.stderr)
-      exactState(state)
-    },
-    "absent",
-  )
-  await add(
-    "GitHub 422 create reconciles materialized exact release",
-    async (state) => {
-      state.ghCreateStatus = 422
-    },
-    (result, state) => {
-      assert.equal(result.status, 0, result.stderr)
-      exactState(state)
-    },
-    "absent",
-  )
-  await add(
-    "GitHub 422 without exact state fails",
-    async (state) => {
-      state.ghCreateStatus = 422
-      state.ghCreateMaterializes = false
-    },
-    (result) => assert.notEqual(result.status, 0),
-    "absent",
-  )
-  for (const [format, value] of [
-    ["array", [records[0][2]]],
-    ["scalar", records[0][2]],
-  ])
-    await add(
-      `npm ${format} versions JSON`,
-      async (state) => {
-        state.npm[records[0][0]].versionsQueue = [value]
-      },
-      (result) => assert.equal(result.status, 0, result.stderr),
+    assert.equal(
+      state.log.some(([command]) => command === "pnpm"),
+      false,
     )
-  await add(
-    "npm delayed latest converges",
-    async (state) => {
-      state.npm[records[0][0]].latestQueue = [records[0][3], records[0][3], records[0][2]]
-    },
-    (result) => assert.equal(result.status, 0, result.stderr),
-  )
-  await add(
-    "missing reviewed beta version blocks stable publication",
-    async (state) => {
-      const [project, , , betaVersion] = records[0]
-      state.npm[project].versions = state.npm[project].versions.filter((version) => version !== betaVersion)
-    },
-    (result, state) => {
-      assert.notEqual(result.status, 0)
-      assert.equal(mutations(state).length, 0)
-    },
-    "absent",
-  )
-  await add(
-    "missing beta dist-tag blocks stable publication",
-    async (state) => {
-      delete state.npm[records[0][0]].beta
-    },
-    (result, state) => {
-      assert.notEqual(result.status, 0)
-      assert.equal(mutations(state).length, 0)
-    },
-    "absent",
-  )
-  await add(
-    "different beta dist-tag blocks stable publication",
-    async (state) => {
-      const project = records[0][0],
-        other = "4.7.0-beta.11"
-      state.npm[project].versions.push(other)
-      state.npm[project].beta = other
-    },
-    (result, state) => {
-      assert.notEqual(result.status, 0)
-      assert.equal(mutations(state).length, 0)
-    },
-    "absent",
-  )
-  await add(
-    "beta provenance loss before npm publish blocks pnpm mutation",
-    async (state) => {
-      const [project, , , betaVersion] = records[0]
-      const good = { alpha: "alpha-sentinel", beta: betaVersion, latest: "0.0.1" }
-      const bad = { alpha: "alpha-sentinel", beta: "4.7.0-beta.11", latest: "0.0.1" }
-      state.npm[project].distTagsQueue = [good, ...Array(6).fill(bad)]
-    },
-    (result, state) => {
-      assert.notEqual(result.status, 0)
-      assert.equal(
-        state.log.some((call) => call[0] === "pnpm"),
-        false,
-      )
-    },
-    "absent",
-  )
-  await add(
-    "concurrent exact stable appearance is omitted from missing-only publish",
-    async (state) => {
-      const [project, , version, betaVersion] = records[0]
-      state.npm[project].versionsQueue = [
-        ["0.0.1", betaVersion],
-        [betaVersion, version],
-      ]
-      state.npm[project].distTagsQueue = [
-        { alpha: "alpha-sentinel", beta: betaVersion, latest: "0.0.1" },
-        { alpha: "alpha-sentinel", beta: betaVersion, latest: version },
-      ]
-    },
-    (result, state) => {
-      assert.equal(result.status, 0, result.stderr)
-      const publish = state.log.find((call) => call[0] === "pnpm")
-      assert.equal(publish[4], `--projects=${records[1][0]}`)
-      exactState(state)
-    },
-    "absent",
-  )
-  await add(
-    "latest tag absent from versions list blocks publication",
-    async (state) => {
-      state.npm[records[0][0]].latest = records[0][2]
-    },
-    (result, state) => {
-      assert.notEqual(result.status, 0)
-      assert.equal(mutations(state).length, 0)
-    },
-    "absent",
-  )
-  await add(
-    "higher latest blocks publication from moving latest backward",
-    async (state) => {
-      const project = records[0][0],
-        higher = "4.7.1"
-      state.npm[project].versions.push(higher)
-      state.npm[project].latest = higher
-    },
-    (result, state) => {
-      assert.notEqual(result.status, 0)
-      assert.equal(mutations(state).length, 0)
-    },
-    "absent",
-  )
-  await add(
-    "latest not present in versions is inconsistent",
-    async (state) => {
-      state.npm[records[0][0]].latest = "1.0.0"
-    },
-    (result, state) => {
-      assert.notEqual(result.status, 0)
-      assert.equal(mutations(state).length, 0)
-    },
-    "absent",
-  )
-  await add(
-    "latest SemVer with a leading zero fails closed",
-    async (state) => {
-      const project = records[0][0],
-        malformed = "01.0.0"
-      state.npm[project].versions.push(malformed)
-      state.npm[project].latest = malformed
-    },
-    (result, state) => {
-      assert.notEqual(result.status, 0)
-      assert.equal(mutations(state).length, 0)
-    },
-    "absent",
-  )
-  await add(
-    "malformed historical version list entry fails closed",
-    async (state) => {
-      state.npm[records[0][0]].versions.push("1.02.3")
-    },
-    (result, state) => {
-      assert.notEqual(result.status, 0)
-      assert.equal(mutations(state).length, 0)
-    },
-    "absent",
-  )
-  await add(
-    "duplicate npm versions fail closed",
-    async (state) => {
-      state.npm[records[0][0]].versions.push(records[0][3])
-    },
-    (result, state) => {
-      assert.notEqual(result.status, 0)
-      assert.equal(mutations(state).length, 0)
-    },
-    "absent",
-  )
-  await add(
-    "malformed dist-tags JSON fails closed",
-    async (state) => {
-      state.npm[records[0][0]].distTagsQueue = Array(6).fill({ raw: "{" })
-    },
-    (result, state) => {
-      assert.notEqual(result.status, 0)
-      assert.equal(mutations(state).length, 0)
-    },
-    "absent",
-  )
-  await add(
-    "post-publish delayed version visibility converges",
-    async (state) => {
-      state.npm[records[0][0]].delayedVersions = 2
-    },
-    (result, state) => {
-      assert.equal(result.status, 0, result.stderr)
-      exactState(state)
-    },
-    "absent",
-  )
-  await add(
-    "post-publish delayed latest converges",
-    async (state) => {
-      state.npm[records[0][0]].delayedLatest = 2
-    },
-    (result, state) => {
-      assert.equal(result.status, 0, result.stderr)
-      exactState(state)
-    },
-    "absent",
-  )
-  for (const [name, spec] of [
-    ["null", null],
-    ["empty", { raw: "" }],
-    ["truncated", { raw: '["1.0' }],
-    ["object", {}],
-    ["mixed", [records[0][2], 3]],
-    ["execution error", { exit: 1, stderr: "E503" }],
-  ])
-    await add(
-      `npm ${name} is unknown and never publishes`,
-      async (state) => {
-        state.npm[records[0][0]].versionsQueue = Array(6).fill(spec)
-      },
-      (result, state) => {
-        assert.notEqual(result.status, 0)
-        assert.equal(mutations(state).length, 0)
-      },
-    )
-  await add(
-    "GitHub non-200 read is unknown",
-    async (state) => {
-      state.ghReadStatus = 503
-    },
-    (result, state) => {
-      assert.notEqual(result.status, 0)
-      assert.equal(mutations(state).length, 0)
-    },
-  )
-  for (const [name, raw] of [
-    ["lightweight", `${"a".repeat(40)}\trefs/tags/$TAG\n`],
-    ["malformed", "garbage\n"],
-    ["wrong SHA", `${"a".repeat(40)}\trefs/tags/$TAG\n${"f".repeat(40)}\trefs/tags/$TAG^{}\n`],
-    ["duplicate", `${"a".repeat(40)}\trefs/tags/$TAG\n${"b".repeat(40)}\trefs/tags/$TAG\n${sha}\trefs/tags/$TAG^{}\n`],
-  ])
-    await add(
-      `tag ${name} fails closed`,
-      async (state) => {
-        state.tags[`${records[0][0]}@${records[0][2]}`] = { raw }
-      },
-      (result, state) => {
-        assert.notEqual(result.status, 0)
-        assert.equal(mutations(state).length, 0)
-      },
-      "absent",
-    )
-  for (const [name, value] of [
-    ["lightweight", { type: "commit", peeled: sha }],
-    ["wrong SHA", { type: "tag", peeled: "f".repeat(40) }],
-  ])
-    await add(
-      `local tag ${name} fails before mutation`,
-      async (state) => {
-        state.localTags[`${records[0][0]}@${records[0][2]}`] = value
-      },
-      (result, state) => {
-        assert.notEqual(result.status, 0)
-        assert.equal(mutations(state).length, 0)
-      },
-      "absent",
-    )
-  for (const [name, status] of [
-    ["dirty tracked source", " M packages/future/nebula/src/index.ts\n"],
-    ["staged changes", "M  packages/future/nebula/src/index.ts\n"],
-    ["untracked package file", "?? packages/future/nebula/src/generated.js\n"],
-  ])
-    await add(
-      `${name} fails before mutation`,
-      async (state) => {
-        state.worktreeStatus = status
-      },
-      (result, state) => {
-        assert.notEqual(result.status, 0)
-        assert.match(result.stderr, /clean index and worktree/)
-        assert.equal(mutations(state).length, 0)
-      },
-      "absent",
-    )
-  for (const [name, manifest] of [
-    ["altered on-disk selected manifest name", { name: "@future/imposter", version: records[0][2] }],
-    ["altered on-disk selected manifest version", { name: records[0][0], version: "99.0.0" }],
-  ])
-    await add(
-      `${name} fails before mutation`,
-      async (state, fixture) => {
-        writeFileSync(join(fixture.cwd, records[0][1]), JSON.stringify(manifest))
-      },
-      (result, state) => {
-        assert.notEqual(result.status, 0)
-        assert.match(result.stderr, /on-disk manifest/)
-        assert.equal(mutations(state).length, 0)
-      },
-      "absent",
-    )
-  await add(
-    "altered on-disk selected manifest dependency fails before mutation",
-    async (state, fixture) => {
-      const path = records[0][1],
-        reviewed = state.gitFiles[`${sha}:${path}`]
-      reviewed.dependencies = { "reviewed-dependency": "1.0.0" }
-      writeFileSync(
-        join(fixture.cwd, path),
-        JSON.stringify({ ...reviewed, dependencies: { "reviewed-dependency": "2.0.0" } }),
-      )
-    },
-    (result, state) => {
-      assert.notEqual(result.status, 0)
-      assert.match(result.stderr, /on-disk manifest/)
-      assert.equal(mutations(state).length, 0)
-    },
-    "absent",
-  )
-  await add(
-    "EXPECTED_SHA controls HEAD",
-    async (state) => {
-      state.head = "f".repeat(40)
-    },
-    (result, state) => {
-      assert.notEqual(result.status, 0)
-      assert.equal(mutations(state).length, 0)
-    },
-  )
-  await add(
-    "EXPECTED_SHA controls origin",
-    async (state) => {
-      state.origin = "f".repeat(40)
-    },
-    (result, state) => {
-      assert.notEqual(result.status, 0)
-      assert.equal(mutations(state).length, 0)
-    },
-  )
-
-  for (const [name, setup, environment, pattern] of [
-    [
-      "requested projects must include every reviewed manifest",
-      async () => {},
-      { PROJECTS: records[0][0] },
-      /requested projects do not exactly match reviewed manifest changes/,
-    ],
-    [
-      "requested projects cannot include an unreviewed allowlisted project",
-      async () => {},
-      { PROJECTS: [records[0][0], catalog[1][0], records[1][0]].sort().join(",") },
-      /requested projects do not exactly match reviewed manifest changes/,
-    ],
-    [
-      "duplicate requested projects fail closed",
-      async () => {},
-      { PROJECTS: `${records[0][0]},${records[0][0]}` },
-      /duplicate requested project/,
-    ],
-    [
-      "non-release requested project fails closed",
-      async () => {},
-      { PROJECTS: "@future/not-release" },
-      /not in artifact release projects/,
-    ],
-    [
-      "reviewed diff requires root changelog",
-      async (state) => {
-        state.changedPaths = state.changedPaths.filter((path) => path !== "CHANGELOG.md")
-      },
-      {},
-      /root CHANGELOG/,
-    ],
-    [
-      "reviewed diff rejects extra path",
-      async (state) => {
-        state.changedPaths.push("README.md")
-      },
-      {},
-      /unexpected reviewed path/,
-    ],
-    [
-      "reviewed diff rejects stable source",
-      async (state) => {
-        state.gitFiles[`${sha}^1:${records[0][1]}`].version = records[0][2]
-      },
-      {},
-      /beta-to-stable transition/,
-    ],
-    [
-      "reviewed diff rejects a target other than beta base",
-      async (state) => {
-        state.gitFiles[`${sha}:${records[0][1]}`].version = "4.7.1"
-      },
-      {},
-      /beta-to-stable transition/,
-    ],
-    [
-      "reviewed diff rejects package rename",
-      async (state) => {
-        state.gitFiles[`${sha}:${records[0][1]}`].name = "@future/renamed"
-      },
-      {},
-      /manifest identity/,
-    ],
-  ])
-    await add(
-      name,
-      setup,
-      (result, state) => {
-        assert.notEqual(result.status, 0)
-        assert.match(result.stderr, pattern)
-        assert.deepEqual(mutations(state), [])
-      },
-      "exact",
-      [],
-      environment,
-    )
-
-  await add(
-    "a changed-path changelog entry cannot substitute for an artifact changelog blob",
-    async (state) => {
-      assert.ok(state.changedPaths.includes("CHANGELOG.md"))
-      delete state.gitFiles[`${sha}:CHANGELOG.md`]
-    },
-    (result, state) => {
-      assert.notEqual(result.status, 0)
-      assert.match(result.stderr, /root CHANGELOG\.md to exist as a blob/)
-      assert.deepEqual(mutations(state), [])
-      assert.equal(
-        state.log.some((call) => call[0] === "npm" || call[0] === "http"),
-        false,
-      )
-    },
-  )
-
-  await add(
-    "FINALIZE refuses to run outside GitHub Actions",
-    async () => {},
-    (result, state) => {
-      assert.notEqual(result.status, 0)
-      assert.match(result.stderr, /GitHub Actions/)
-      assert.deepEqual(mutations(state), [])
-    },
-    "absent",
-    [],
-    { GITHUB_ACTIONS: "" },
-  )
-  const preflight = workflowPreflightInvocation()
-  assert.doesNotMatch(
-    preflight.source,
-    /NODE_AUTH_TOKEN|NPM_CONFIG_PROVENANCE|npm whoami|nx release publish|git (?:tag|push)|gh release (?:create|delete)/,
-  )
-  await add(
-    "PREFLIGHT locally synchronizes before SHA authorization and performs zero tag, Release, or npm mutation",
-    async () => {},
-    (result, state) => {
-      assert.equal(result.status, 0, result.stderr)
-      const output = JSON.parse(result.stdout)
-      assert.deepEqual(output.projects, selectedProjects.split(","))
-      assert.equal(output.expectedSha, sha)
-      assert.equal(output.artifactSha, sha)
-      const fetch = state.log.findIndex(
-        (call) =>
-          call[0] === "git" && call.slice(1).join(" ") === "fetch origin master:refs/remotes/origin/master --no-tags",
-      )
-      const authorization = state.log.findIndex(
-        (call) => call[0] === "git" && call[1] === "rev-parse" && call[2] === "origin/master",
-      )
-      assert.ok(fetch >= 0 && fetch < authorization)
-      assert.deepEqual(mutations(state), [])
-    },
-    "exact",
-    preflight.args,
-    { GITHUB_ACTIONS: "" },
-  )
-  assert.equal(new Set(scenarioNames).size, scenarioNames.length)
+  })
 })
 
-test("importing with a nonexistent argv entry is inert", async () => {
+await test("abandoned Prisma is terminally absent while exact integrity and provenance make replay idempotent", async (t) => {
+  await scenario(t, { npmMode: "exact" }, async (world) => {
+    const first = await run(world)
+    assert.equal(first.status, 0, first.stderr)
+    let state = load(world.stateFile)
+    assert.deepEqual(mutationCalls(state), [])
+    assertExact(state)
+    state.log = []
+    save(world.stateFile, state)
+    const replay = await run(world)
+    state = load(world.stateFile)
+    assert.equal(replay.status, 0, replay.stderr)
+    assert.deepEqual(mutationCalls(state), [])
+    assert.equal(state.npm[prisma.project].versions.includes(prisma.version), false)
+  })
+})
+
+await test("partial npm state publishes only missing tarballs and an interrupted per-package run replays safely", async (t) => {
+  await scenario(t, { npmMode: "absent" }, async (world) => {
+    let state = load(world.stateFile)
+    setNpmExact(state, publishable[0])
+    setNpmExact(state, publishable[1])
+    state.publishFailures = {
+      [publishable[3].project]: {
+        exit: 42,
+        stderr: JSON.stringify({ error: { code: "E503", summary: "temporary registry failure" } }),
+      },
+    }
+    save(world.stateFile, state)
+    const first = await run(world)
+    state = load(world.stateFile)
+    assert.notEqual(first.status, 0)
+    assert.equal(publishCalls(state).length, 2)
+    assert.equal(state.npm[publishable[2].project].versions.includes(publishable[2].version), true)
+    delete state.publishFailures
+    state.log = []
+    save(world.stateFile, state)
+    const replay = await run(world)
+    state = load(world.stateFile)
+    assert.equal(replay.status, 0, replay.stderr)
+    assert.deepEqual(
+      publishCalls(state).map((call) => basename(call[2])),
+      publishable.slice(3).map((record) => state.packages[record.project].basename),
+    )
+    assertExact(state)
+  })
+})
+
+await test("preexisting exact versions are accepted only with handoff integrity, shasum, and provenance", async (t) => {
+  for (const [name, mutate, pattern] of [
+    ["integrity", (dist) => (dist.integrity = "sha512-wrong"), /integrity|npm state divergence/i],
+    ["shasum", (dist) => (dist.shasum = "0".repeat(40)), /shasum|npm state divergence/i],
+    ["provenance", (dist) => delete dist.attestations.provenance, /provenance|npm state divergence/i],
+    [
+      "attestation URL",
+      (dist) => (dist.attestations.url = "https://example.com/attestation"),
+      /attestation|npm state divergence/i,
+    ],
+  ]) {
+    await t.test(name, async () => {
+      const world = await makeWorld({ npmMode: "exact" })
+      try {
+        const state = load(world.stateFile)
+        mutate(state.npm[publishable[0].project].dist)
+        save(world.stateFile, state)
+        const result = await run(world)
+        assert.notEqual(result.status, 0)
+        assert.match(result.stderr, pattern)
+        assert.deepEqual(mutationCalls(load(world.stateFile)), [])
+      } finally {
+        await discardWorld(world)
+      }
+    })
+  }
+})
+
+await test("npm attestation URLs match real scoped metadata semantically and reject boundary changes", async (t) => {
+  await scenario(t, { npmMode: "exact" }, async (world) => {
+    const target = publishable[0]
+    let state = load(world.stateFile)
+    assert.equal(
+      state.npm[target.project].dist.attestations.url,
+      "https://registry.npmjs.org/-/npm/v1/attestations/@effectify%2fhatchet@0.2.0",
+    )
+    state.npm[target.project].dist.attestations.url =
+      "https://registry.npmjs.org/-/npm/v1/attestations/@effectify%2Fhatchet@0.2.0"
+    save(world.stateFile, state)
+    const uppercaseHex = await run(world)
+    assert.equal(uppercaseHex.status, 0, uppercaseHex.stderr)
+
+    for (const invalidUrl of [
+      "http://registry.npmjs.org/-/npm/v1/attestations/@effectify%2fhatchet@0.2.0",
+      "https://registry.npmjs.org.evil.example/-/npm/v1/attestations/@effectify%2fhatchet@0.2.0",
+      "https://registry.npmjs.org/npm/v1/attestations/@effectify%2fhatchet@0.2.0",
+      "https://registry.npmjs.org/-/npm/v1/attestations/@effectify%2fhatchet@^0.2.0",
+      "https://user@registry.npmjs.org/-/npm/v1/attestations/@effectify%2fhatchet@0.2.0",
+      "https://registry.npmjs.org/-/npm/v1/attestations/@effectify%2fhatchet@0.2.0?download=true",
+      "https://registry.npmjs.org/-/npm/v1/attestations/@effectify%2fhatchet@0.2.0#fragment",
+    ]) {
+      state = load(world.stateFile)
+      state.npm[target.project].dist.attestations.url = invalidUrl
+      save(world.stateFile, state)
+      const result = await run(world)
+      assert.notEqual(result.status, 0, invalidUrl)
+      assert.match(result.stderr, /attestation URL|npm state divergence/i)
+      assert.deepEqual(mutationCalls(load(world.stateFile)), [])
+    }
+  })
+})
+
+await test("npm publish response loss and delayed registry visibility reconcile before retrying", async (t) => {
+  await scenario(t, { npmMode: "absent" }, async (world) => {
+    const state = load(world.stateFile)
+    state.publishFailures = {
+      [publishable[0].project]: {
+        exit: 1,
+        stderr: "ECONNRESET after request upload",
+        materialize: true,
+      },
+    }
+    save(world.stateFile, state)
+    const result = await run(world)
+    const final = load(world.stateFile)
+    assert.equal(result.status, 0, result.stderr)
+    assert.equal(
+      publishCalls(final).filter((call) => call[2].endsWith(state.packages[publishable[0].project].basename)).length,
+      1,
+    )
+    assertExact(final)
+  })
+
+  await scenario(t, { npmMode: "absent" }, async (world) => {
+    const target = publishable[0]
+    const state = load(world.stateFile)
+    const npm = state.npm[target.project]
+    const baselineVersions = [...npm.versions]
+    const baselineTags = { alpha: npm.alpha, beta: npm.beta, latest: npm.latest }
+    setNpmExact(state, target)
+    const targetVersions = [...npm.versions]
+    const targetTags = { alpha: npm.alpha, beta: npm.beta, latest: npm.latest }
+    const exactDist = state.packages[target.project].dist
+    npm.versionsQueue = [baselineVersions, baselineVersions, targetVersions, targetVersions, targetVersions]
+    npm.distTagsQueue = [baselineTags, baselineTags, baselineTags, targetTags, targetTags]
+    npm.distQueue = [
+      {
+        integrity: exactDist.integrity,
+        shasum: exactDist.shasum,
+        attestations: { url: exactDist.attestations.url },
+      },
+      exactDist,
+    ]
+    state.publishFailures = {
+      [target.project]: { exit: 1, stderr: "ECONNRESET after request upload" },
+    }
+    save(world.stateFile, state)
+
+    const result = await run(world)
+    const final = load(world.stateFile)
+    assert.equal(result.status, 0, result.stderr)
+    assert.equal(
+      publishCalls(final).filter((call) => call[2].endsWith(state.packages[target.project].basename)).length,
+      1,
+    )
+    assertExact(final)
+  })
+
+  await scenario(t, { npmMode: "absent" }, async (world) => {
+    const target = publishable[0]
+    const state = load(world.stateFile)
+    const npm = state.npm[target.project]
+    const baselineVersions = [...npm.versions]
+    const baselineTags = { alpha: npm.alpha, beta: npm.beta, latest: npm.latest }
+    setNpmExact(state, target)
+    const targetVersions = [...npm.versions]
+    npm.latest = baselineTags.latest
+    npm.versionsQueue = [baselineVersions, baselineVersions, ...Array.from({ length: 6 }, () => targetVersions)]
+    npm.distTagsQueue = [baselineTags, baselineTags, ...Array.from({ length: 6 }, () => baselineTags)]
+    state.publishFailures = {
+      [target.project]: { exit: 1, stderr: "ECONNRESET after request upload" },
+    }
+    save(world.stateFile, state)
+
+    const result = await run(world)
+    const final = load(world.stateFile)
+    assert.notEqual(result.status, 0)
+    assert.match(result.stderr, /permanent npm state divergence \(latest\)/i)
+    const publishIndex = final.log.findIndex(([command, operation]) => command === "npm" && operation === "publish")
+    const reconciliationReads = final.log
+      .slice(publishIndex + 1)
+      .filter(
+        ([command, operation, name, field]) =>
+          command === "npm" && operation === "view" && name === target.project && field === "versions",
+      )
+    assert.equal(reconciliationReads.length, 6)
+  })
+})
+
+await test("npm failures are reconciled and reported with bounded sanitized fixed guidance", async (t) => {
+  await scenario(t, { npmMode: "absent" }, async (world) => {
+    const target = publishable[0]
+    const jwt = ["eyJhbGciOiJIUzI1NiJ9", "eyJzdWIiOiJzZWNyZXQifQ", "signaturevalue"].join(".")
+    const secretValues = [
+      "bearer-secret",
+      jwt,
+      "npm_ABCDEFGHIJKLMNOPQRSTUVWXYZ123456",
+      "ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ123456",
+      "auth-token-secret",
+      "url-password",
+      "query-secret",
+    ]
+    const noisy = `\u001b[31mBearer bearer-secret\u001b[0m ${jwt} npm_ABCDEFGHIJKLMNOPQRSTUVWXYZ123456 ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ123456 _authToken=auth-token-secret https://user:url-password@example.test/path?token=query-secret ${"detail ".repeat(2000)}`
+    const state = load(world.stateFile)
+    state.publishFailures = {
+      [target.project]: {
+        exit: 1,
+        stderr: JSON.stringify({ error: { code: "E401", summary: noisy, detail: noisy } }),
+      },
+    }
+    save(world.stateFile, state)
+    const result = await run(world)
+    const final = load(world.stateFile)
+    assert.notEqual(result.status, 0)
+    assert.ok(result.stderr.length < 5000, `diagnostic length: ${result.stderr.length}`)
+    for (const secret of secretValues)
+      assert.doesNotMatch(result.stderr, new RegExp(secret.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")))
+    assert.doesNotMatch(result.stderr, /\u001b|\x1b|\[31m/)
+    assert.match(result.stderr, /trusted publishing authentication failed/i)
+    assert.match(result.stderr, /E401/)
+    const publishIndex = final.log.findIndex(([command, operation]) => command === "npm" && operation === "publish")
+    const laterRegistryRead = final.log.findIndex(
+      ([command, operation], index) => index > publishIndex && command === "npm" && operation === "view",
+    )
+    assert.ok(publishIndex >= 0 && laterRegistryRead > publishIndex)
+  })
+})
+
+await test("safe tracked npm configuration is accepted at the trusted-publishing boundary", async (t) => {
+  await scenario(t, { npmMode: "absent" }, async (world) => {
+    const state = load(world.stateFile)
+    state.trackedNpmrc = ".npmrc\0"
+    writeFileSync(join(world.cwd, ".npmrc"), safeNpmrc)
+    save(world.stateFile, state)
+
+    const result = await run(world)
+    assert.equal(result.status, 0, result.stderr)
+    assert.equal(publishCalls(load(world.stateFile)).length, publishable.length)
+  })
+})
+
+await test("trusted npmjs boundary accepts safe global config and rejects registry or npm config overrides", async (t) => {
+  await scenario(t, { npmMode: "absent" }, async (world) => {
+    const state = load(world.stateFile)
+    state.globalConfigPath = join(world.cwd, "global.npmrc")
+    writeFileSync(state.globalConfigPath, safeNpmrc)
+    save(world.stateFile, state)
+
+    const result = await run(world)
+    const final = load(world.stateFile)
+    assert.equal(result.status, 0, result.stderr)
+    for (const expectedCall of [
+      ["npm", "config", "get", "registry", "--json"],
+      ["npm", "config", "get", "userconfig", "--json"],
+      ["npm", "config", "get", "globalconfig", "--json"],
+    ]) {
+      assert.ok(
+        final.log.some((call) => isDeepStrictEqual(call, expectedCall)),
+        JSON.stringify(expectedCall),
+      )
+    }
+    assert.equal(publishCalls(final).length, publishable.length)
+  })
+
+  for (const [name, environment, forbiddenValue] of [
+    ["registry override", { NPM_CONFIG_REGISTRY: "https://registry.example.test/" }, "registry.example.test"],
+    ["lowercase userconfig override", { npm_config_userconfig: "/tmp/alternate-userconfig" }, "alternate-userconfig"],
+    ["unexpected npm config override", { NPM_CONFIG_CACHE: "/tmp/npm-cache-override" }, "npm-cache-override"],
+    ["wrong provenance value", { NPM_CONFIG_PROVENANCE: "false" }, "false"],
+  ]) {
+    await t.test(name, async () => {
+      const world = await makeWorld({ npmMode: "absent" })
+      try {
+        const result = await run(world, [], environment)
+        const final = load(world.stateFile)
+        assert.notEqual(result.status, 0)
+        assert.match(result.stderr, /npm.*configuration|publication boundary/i)
+        assert.equal(publishCalls(final).length, 0)
+        assert.doesNotMatch(result.stderr, new RegExp(forbiddenValue))
+      } finally {
+        await discardWorld(world)
+      }
+    })
+  }
+
+  await scenario(t, { npmMode: "absent" }, async (world) => {
+    const state = load(world.stateFile)
+    state.registry = "https://registry.example.test/"
+    save(world.stateFile, state)
+    const result = await run(world)
+    const final = load(world.stateFile)
+    assert.notEqual(result.status, 0)
+    assert.match(result.stderr, /npm registry|publication boundary/i)
+    assert.equal(publishCalls(final).length, 0)
+    assert.doesNotMatch(result.stderr, /registry\.example\.test/)
+  })
+})
+
+await test("static credentials and auth-bearing tracked, user, or global npm configuration are rejected and redacted", async (t) => {
+  for (const [name, setup, environment, secret] of [
+    ["NODE_AUTH_TOKEN", async () => {}, { NODE_AUTH_TOKEN: "static-secret" }, "static-secret"],
+    ["NPM_TOKEN", async () => {}, { NPM_TOKEN: "static-secret" }, "static-secret"],
+    [
+      "tracked scoped registry auth token",
+      async (state, world) => {
+        state.trackedNpmrc = ".npmrc\0"
+        writeFileSync(join(world.cwd, ".npmrc"), "//registry.npmjs.org/:_authToken=tracked-token-secret\n")
+      },
+      {},
+      "tracked-token-secret",
+    ],
+    [
+      "tracked base64 auth",
+      async (state, world) => {
+        state.trackedNpmrc = ".npmrc\0"
+        writeFileSync(join(world.cwd, ".npmrc"), "_auth=tracked-auth-secret\n")
+      },
+      {},
+      "tracked-auth-secret",
+    ],
+    [
+      "user password",
+      async (state, world) => {
+        state.userConfigPath = join(world.cwd, "user.npmrc")
+        writeFileSync(state.userConfigPath, "//registry.npmjs.org/:_password=user-password-secret\n")
+      },
+      {},
+      "user-password-secret",
+    ],
+    [
+      "global auth token",
+      async (state, world) => {
+        state.globalConfigPath = join(world.cwd, "global.npmrc")
+        writeFileSync(state.globalConfigPath, "//registry.npmjs.org/:_authToken=global-token-secret\n")
+      },
+      {},
+      "global-token-secret",
+    ],
+    [
+      "user username",
+      async (state, world) => {
+        state.userConfigPath = join(world.cwd, "user.npmrc")
+        writeFileSync(state.userConfigPath, "//registry.npmjs.org/:username=user-name-secret\n")
+      },
+      {},
+      "user-name-secret",
+    ],
+    [
+      "user token form",
+      async (state, world) => {
+        state.userConfigPath = join(world.cwd, "user.npmrc")
+        writeFileSync(state.userConfigPath, "token=user-token-secret\n")
+      },
+      {},
+      "user-token-secret",
+    ],
+    [
+      "environment token interpolation",
+      async (state, world) => {
+        state.userConfigPath = join(world.cwd, "user.npmrc")
+        writeFileSync(state.userConfigPath, "cache=/tmp/${NPM_TOKEN_INTERPOLATION_SECRET}\n")
+      },
+      {},
+      "NPM_TOKEN_INTERPOLATION_SECRET",
+    ],
+  ]) {
+    await t.test(name, async () => {
+      const world = await makeWorld({ npmMode: "absent" })
+      try {
+        const state = load(world.stateFile)
+        await setup(state, world)
+        save(world.stateFile, state)
+        const result = await run(world, [], environment)
+        const final = load(world.stateFile)
+        assert.notEqual(result.status, 0)
+        assert.match(result.stderr, /static npm credential|npm auth configuration/i)
+        assert.equal(publishCalls(final).length, 0)
+        assert.doesNotMatch(result.stderr, new RegExp(secret))
+      } finally {
+        await discardWorld(world)
+      }
+    })
+  }
+})
+
+await test("npm configuration inspection rejects unsafe files and ambiguous state without echoing content", async (t) => {
+  for (const [name, setup, secret] of [
+    [
+      "control character",
+      async (state, world) => {
+        state.trackedNpmrc = ".npmrc\0"
+        writeFileSync(join(world.cwd, ".npmrc"), "hoist=false\0control-secret\n")
+      },
+      "control-secret",
+    ],
+    [
+      "oversized file",
+      async (state, world) => {
+        state.userConfigPath = join(world.cwd, "user.npmrc")
+        writeFileSync(state.userConfigPath, `hoist=false\n# ${"oversized-secret".repeat(5000)}\n`)
+      },
+      "oversized-secret",
+    ],
+    [
+      "symlink",
+      async (state, world) => {
+        const target = join(world.cwd, "symlink-target.npmrc")
+        state.userConfigPath = join(world.cwd, "user.npmrc")
+        writeFileSync(target, "_authToken=symlink-secret\n")
+        symlinkSync(target, state.userConfigPath)
+      },
+      "symlink-secret",
+    ],
+    [
+      "nonregular file",
+      async (state, world) => {
+        state.userConfigPath = join(world.cwd, "user.npmrc")
+        mkdirSync(state.userConfigPath)
+      },
+      "not-present",
+    ],
+    [
+      "unreadable path state",
+      async (state) => {
+        state.userConfigPath = "/dev/null/user.npmrc"
+      },
+      "not-present",
+    ],
+    [
+      "ambiguous tracked path list",
+      async (state, world) => {
+        state.trackedNpmrc = ".npmrc"
+        writeFileSync(join(world.cwd, ".npmrc"), safeNpmrc)
+      },
+      "not-present",
+    ],
+  ]) {
+    await t.test(name, async () => {
+      const world = await makeWorld({ npmMode: "absent" })
+      try {
+        const state = load(world.stateFile)
+        await setup(state, world)
+        save(world.stateFile, state)
+        const result = await run(world)
+        const final = load(world.stateFile)
+        assert.notEqual(result.status, 0)
+        assert.match(result.stderr, /npm auth configuration/i)
+        assert.equal(publishCalls(final).length, 0)
+        assert.doesNotMatch(result.stderr, new RegExp(secret))
+      } finally {
+        await discardWorld(world)
+      }
+    })
+  }
+})
+
+await test("historical recovery is bounded, allowlisted, npm-only, and reports abandonment in read-only PREFLIGHT", async (t) => {
+  await scenario(t, { historical: true, npmMode: "absent" }, async (world) => {
+    const preflight = await run(world, ["--preflight", "--json"], { GITHUB_ACTIONS: "" })
+    let state = load(world.stateFile)
+    assert.equal(preflight.status, 0, preflight.stderr)
+    const report = JSON.parse(preflight.stdout)
+    assert.equal(report.mode, "historical-npm-only")
+    assert.equal(report.historicalNpmOnly, true)
+    assert.deepEqual(
+      report.abandonments.map(({ project, version }) => ({ project, version })),
+      [{ project: prisma.project, version: prisma.version }],
+    )
+    assert.equal(report.states.find(({ project }) => project === prisma.project).npm, "absent-abandoned")
+    assert.deepEqual(mutationCalls(state), [])
+    state.log = []
+    save(world.stateFile, state)
+    const result = await run(world)
+    state = load(world.stateFile)
+    assert.equal(result.status, 0, result.stderr)
+    assert.equal(publishCalls(state).length, publishable.length)
+    assert.equal(
+      mutationCalls(state).some(([command, operation]) => command === "git" && ["tag", "push"].includes(operation)),
+      false,
+    )
+    assert.equal(
+      mutationCalls(state).some(([command, operation]) => command === "http" && operation === "POST"),
+      false,
+    )
+    assertExact(state)
+  })
+})
+
+await test("historical recovery rejects excessive commits and every changed path outside the exact control-file allowlist", async (t) => {
+  await scenario(t, { historical: true, npmMode: "absent" }, async (world) => {
+    const state = load(world.stateFile)
+    state.historicalPaths = [...allowedHistoricalPaths]
+    save(world.stateFile, state)
+
+    const result = await run(world, ["--preflight", "--json"], { GITHUB_ACTIONS: "" })
+    assert.equal(result.status, 0, result.stderr)
+    assert.deepEqual(mutationCalls(load(world.stateFile)), [])
+  })
+
+  for (const [name, setup, pattern] of [
+    ["too many commits", (state) => (state.historicalCount = 9), /commit-count bound/i],
+    ["application path", (state) => state.historicalPaths.push("packages/hatchet/src/index.ts"), /changed path/i],
+    ["rename-like unexpected path", (state) => state.historicalPaths.push("README.md"), /changed path/i],
+  ]) {
+    await t.test(name, async () => {
+      const world = await makeWorld({ historical: true, npmMode: "absent" })
+      try {
+        const state = load(world.stateFile)
+        setup(state)
+        save(world.stateFile, state)
+        const result = await run(world)
+        const final = load(world.stateFile)
+        assert.notEqual(result.status, 0)
+        assert.match(result.stderr, pattern)
+        assert.deepEqual(mutationCalls(final), [])
+        assert.equal(
+          final.log.some(([command]) => command === "npm" || command === "http"),
+          false,
+        )
+      } finally {
+        await discardWorld(world)
+      }
+    })
+  }
+  assert.deepEqual([...allowedHistoricalPaths].sort(), allowedHistoricalPaths)
+})
+
+await test("historical PREFLIGHT requires exact existing tags and Releases without mutation", async (t) => {
+  for (const [name, setup, pattern] of [
+    [
+      "missing tag",
+      (state) => delete state.tags[`${publishable[0].project}@${publishable[0].version}`],
+      /historical.*tag/i,
+    ],
+    [
+      "missing Release",
+      (state) => delete state.releases[`${publishable[0].project}@${publishable[0].version}`],
+      /historical.*GitHub Release/i,
+    ],
+  ]) {
+    await t.test(name, async () => {
+      const world = await makeWorld({ historical: true, npmMode: "absent" })
+      try {
+        const state = load(world.stateFile)
+        setup(state)
+        save(world.stateFile, state)
+        const result = await run(world, ["--preflight", "--json"], { GITHUB_ACTIONS: "" })
+        const final = load(world.stateFile)
+        assert.notEqual(result.status, 0)
+        assert.match(result.stderr, pattern)
+        assert.deepEqual(mutationCalls(final), [])
+      } finally {
+        await discardWorld(world)
+      }
+    })
+  }
+})
+
+await test("historical recovery requires all tags and Releases exact and abandoned Prisma absent", async (t) => {
+  for (const [name, setup, pattern] of [
+    [
+      "missing tag",
+      (state) => delete state.tags[`${publishable[0].project}@${publishable[0].version}`],
+      /historical.*tag/i,
+    ],
+    [
+      "missing Release",
+      (state) => delete state.releases[`${publishable[0].project}@${publishable[0].version}`],
+      /historical.*GitHub Release/i,
+    ],
+    [
+      "published abandoned Prisma",
+      (state) => {
+        state.npm[prisma.project].versions.push(prisma.version)
+        state.npm[prisma.project].latest = prisma.version
+      },
+      /abandoned.*remain absent/i,
+    ],
+  ]) {
+    await t.test(name, async () => {
+      const world = await makeWorld({ historical: true, npmMode: "absent" })
+      try {
+        const state = load(world.stateFile)
+        setup(state)
+        save(world.stateFile, state)
+        const result = await run(world)
+        const final = load(world.stateFile)
+        assert.notEqual(result.status, 0)
+        assert.match(result.stderr, pattern)
+        assert.deepEqual(mutationCalls(final), [])
+      } finally {
+        await discardWorld(world)
+      }
+    })
+  }
+})
+
+test("operational failure diagnostics retain safe context while bounding and redacting unsafe messages", () => {
+  const jwt = ["eyJhbGciOiJIUzI1NiJ9", "eyJzdWIiOiJzZWNyZXQifQ", "signaturevalue"].join(".")
+  const diagnostic = operationalFailureDiagnostic(
+    new Error(
+      `safe tag push failure \u001b[31mBearer credential-secret\u001b[0m ${jwt} ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ123456 https://user:url-password@example.test/path?token=query-secret ${"detail ".repeat(2_000)}`,
+    ),
+  )
+
+  assert.match(diagnostic, /safe tag push failure/)
+  assert.match(diagnostic, /\[redacted credential\]/)
+  assert.match(diagnostic, /\[redacted JWT\]/)
+  assert.match(diagnostic, /\[redacted token\]/)
+  assert.match(diagnostic, /\[redacted URL\]/)
+  assert.ok(Buffer.byteLength(diagnostic) <= 320)
+  for (const secret of [
+    jwt,
+    "credential-secret",
+    "ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ123456",
+    "url-password",
+    "query-secret",
+  ]) {
+    assert.equal(diagnostic.includes(secret), false)
+  }
+  assert.doesNotMatch(diagnostic, /\u001b|\x1b|\[31m/)
+})
+
+await test("failed tag pushes and Release creation retain only safe bounded causes after postverification", async (t) => {
+  const jwt = ["eyJhbGciOiJIUzI1NiJ9", "eyJzdWIiOiJzZWNyZXQifQ", "signaturevalue"].join(".")
+  const secretValues = [
+    "push-token-secret",
+    jwt,
+    "ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ123456",
+    "url-password",
+    "query-secret",
+    "https://user:url-password@example.test/path?token=query-secret",
+  ]
+  const noisy = `\u001b[31mBearer push-token-secret\u001b[0m ${jwt} ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ123456 https://user:url-password@example.test/path?token=query-secret ${"detail ".repeat(2_000)}`
+
+  await scenario(t, { npmMode: "absent", artifacts: "absent" }, async (world) => {
+    const state = load(world.stateFile)
+    state.pushExit = 37
+    state.pushStderr = noisy
+    save(world.stateFile, state)
+
+    const result = await run(world)
+    assert.notEqual(result.status, 0)
+    assert.match(result.stderr, /remote tag postverification failed.*operation cause: git failed \(37\)/is)
+    assert.ok(result.stderr.length < 2_000, `diagnostic length: ${result.stderr.length}`)
+    for (const secret of secretValues) assert.equal(result.stderr.includes(secret), false)
+    assert.doesNotMatch(result.stderr, /\u001b|\x1b|\[31m/)
+  })
+
+  await scenario(t, { npmMode: "absent", artifacts: "absent" }, async (world) => {
+    const state = load(world.stateFile)
+    state.ghCreateStatus = 503
+    state.ghCreateMaterializes = false
+    state.ghCreateResponseBody = { message: noisy }
+    save(world.stateFile, state)
+
+    const result = await run(world)
+    assert.notEqual(result.status, 0)
+    assert.match(
+      result.stderr,
+      /GitHub Release postverification failed.*operation cause: GitHub Release creation failed.*HTTP 503/is,
+    )
+    assert.ok(result.stderr.length < 2_000, `diagnostic length: ${result.stderr.length}`)
+    for (const secret of secretValues) assert.equal(result.stderr.includes(secret), false)
+    assert.doesNotMatch(result.stderr, /\u001b|\x1b|\[31m/)
+  })
+})
+
+await test("current tag and Release response loss still reconcile exact authenticated state", async (t) => {
+  await scenario(t, { npmMode: "absent", artifacts: "absent" }, async (world) => {
+    const state = load(world.stateFile)
+    state.pushExit = 1
+    state.pushMaterializesOnFailure = true
+    state.ghCreateResponseLoss = true
+    save(world.stateFile, state)
+    const result = await run(world)
+    assert.equal(result.status, 0, result.stderr)
+    assertExact(load(world.stateFile))
+  })
+})
+
+await test("reviewed artifact lineage and exact project derivation remain fail closed before mutation", async (t) => {
+  for (const [name, setup, pattern, environment = {}] of [
+    ["unexpected reviewed path", (state) => state.changedPaths.push("README.md"), /unexpected reviewed path/i],
+    [
+      "project mismatch",
+      () => {},
+      /requested projects do not exactly match/i,
+      { PROJECTS: projects.slice(1).join(",") },
+    ],
+    [
+      "invalid merge shape",
+      (state) => (state.commitLine = `${artifactSha} ${parentSha} ${secondParentSha} ${"8".repeat(40)}`),
+      /single-parent commit or exact two-parent merge/i,
+    ],
+  ]) {
+    await t.test(name, async () => {
+      const world = await makeWorld({ npmMode: "exact" })
+      try {
+        const state = load(world.stateFile)
+        setup(state)
+        save(world.stateFile, state)
+        const result = await run(world, [], environment)
+        assert.notEqual(result.status, 0)
+        assert.match(result.stderr, pattern)
+        assert.deepEqual(mutationCalls(load(world.stateFile)), [])
+      } finally {
+        await discardWorld(world)
+      }
+    })
+  }
+})
+
+await test("FINALIZE retains the GitHub Actions-only publication guard while PREFLIGHT is read-only", async (t) => {
+  await scenario(t, { npmMode: "absent" }, async (world) => {
+    const result = await run(world, [], { GITHUB_ACTIONS: "" })
+    assert.notEqual(result.status, 0)
+    assert.match(result.stderr, /GitHub Actions/i)
+    assert.deepEqual(mutationCalls(load(world.stateFile)), [])
+  })
+  await scenario(t, { npmMode: "absent" }, async (world) => {
+    const result = await run(world, ["--preflight", "--json"], { GITHUB_ACTIONS: "" })
+    assert.equal(result.status, 0, result.stderr)
+    const output = JSON.parse(result.stdout)
+    assert.equal(output.mode, "current-exact")
+    assert.equal(output.historicalNpmOnly, false)
+    assert.equal(output.artifactId, artifactId)
+    assert.equal(output.artifactDigest, artifactDigest)
+    assert.deepEqual(mutationCalls(load(world.stateFile)), [])
+  })
+})
+
+await test("importing with a nonexistent argv entry is inert", async () => {
   const cwd = mkdtempSync(join(tmpdir(), "stable-finalize-import-"))
   const previousEntry = process.argv[1]
   const previousExitCode = process.exitCode
   const previousStderrWrite = process.stderr.write
   const stderr = []
   try {
-    process.argv[1] = join(cwd, "guaranteed-missing-entry.mjs")
+    process.argv[1] = join(cwd, "missing-entry.mjs")
     process.stderr.write = (chunk) => {
       stderr.push(String(chunk))
       return true
@@ -1256,90 +1335,14 @@ test("importing with a nonexistent argv entry is inert", async () => {
   assert.equal(existsSync(cwd), false)
 })
 
-test("a URL-significant executable path still enters the finalizer main module", async () => {
-  const cwd = mkdtempSync(join(tmpdir(), "stable-finalize-entry-"))
-  let result
-  try {
-    const entry = join(cwd, "release # %.mjs")
-    writeFileSync(entry, readFileSync(script))
-    result = await new Promise((resolve) => {
-      const child = spawn(process.execPath, [entry], {
-        cwd,
-        env: {
-          ...process.env,
-          EXPECTED_SHA: "",
-          ARTIFACT_SHA: "",
-          PROJECTS: "",
-        },
-      })
-      let stdout = "",
-        stderr = ""
-      child.stdout.on("data", (chunk) => (stdout += chunk))
-      child.stderr.on("data", (chunk) => (stderr += chunk))
-      child.on("close", (status) => resolve({ status, stdout, stderr }))
-    })
-  } finally {
-    await rm(cwd, { recursive: true, force: true })
-  }
-
-  assert.equal(existsSync(cwd), false)
-  assert.notEqual(result.status, 0)
-  assert.equal(result.stdout, "")
-  assert.match(result.stderr, /FINALIZE requires full lowercase expected SHA/)
-})
-
-test("a URL-significant symlink enters the finalizer main module with preserved symlink identity", async () => {
-  const cwd = mkdtempSync(join(tmpdir(), "stable-finalize-symlink-entry-"))
-  let result
-  try {
-    const entry = join(cwd, "release # %.mjs")
-    symlinkSync(script, entry)
-    result = await new Promise((resolve) => {
-      const child = spawn(process.execPath, ["--preserve-symlinks-main", entry], {
-        cwd,
-        env: {
-          ...process.env,
-          EXPECTED_SHA: "",
-          ARTIFACT_SHA: "",
-          PROJECTS: "",
-        },
-      })
-      let stdout = "",
-        stderr = ""
-      child.stdout.on("data", (chunk) => (stdout += chunk))
-      child.stderr.on("data", (chunk) => (stderr += chunk))
-      child.on("close", (status) => resolve({ status, stdout, stderr }))
-    })
-  } finally {
-    await rm(cwd, { recursive: true, force: true })
-  }
-
-  assert.equal(existsSync(cwd), false)
-  assert.notEqual(result.status, 0)
-  assert.equal(result.stdout, "")
-  assert.match(result.stderr, /FINALIZE requires full lowercase expected SHA/)
-})
-
-test("workflow FINALIZE step disables publication lifecycle scripts", () => {
-  const finalizeJob = stableWorkflow.match(/^  finalize:\n([\s\S]*?)(?=^  summary:)/m)
-  assert.ok(finalizeJob, "stable FINALIZE job")
-  const finalizeStep = finalizeJob[1].match(/^      - name: 🚀 FINALIZE exact stable artifacts\n([\s\S]*)$/m)
-  assert.ok(finalizeStep, "stable FINALIZE step")
-  assert.match(finalizeStep[1], /NPM_CONFIG_IGNORE_SCRIPTS:\s*true/)
-})
-
-test("static command and publication boundary removes historical truth", () => {
+await test("static publication boundary is per-tarball, provenance-bearing, and never Nx batch publication", () => {
   const source = readFileSync(script, "utf8")
-  assert.match(source, /spawn\(file, args, \{ shell: false/)
-  assert.match(source, /process\.env\.GITHUB_ACTIONS/)
-  assert.match(source, /function isMainModule\(\)/)
-  assert.match(source, /resolvedEntry = realpathSync\(entry\)/)
-  assert.match(source, /resolvedModule = realpathSync\(fileURLToPath\(import\.meta\.url\)\)/)
-  assert.match(source, /pathToFileURL\(resolvedEntry\)\.href === pathToFileURL\(resolvedModule\)\.href/)
-  assert.match(source, /run\("git", \["cat-file", "-t", `\$\{artifactSha\}:CHANGELOG\.md`\]\)/)
-  assert.equal(source.match(/\\u0000/g)?.length, 2)
-  assert.match(source, /artifactSha.*nx\.json|nx\.json.*artifactSha/s)
-  assert.doesNotMatch(source, /^const records\s*=\s*\[/m)
-  assert.doesNotMatch(source, /@effectify\/(?:hatchet|react-query|solid-query)|0\.5\.13|1\.1\.13/)
-  assert.doesNotMatch(source, /execSync|spawnSync|shell: true|npm dist-tag|npm unpublish|release delete|tag", "-f/)
+  assert.match(source, /verifyStableHandoff/)
+  assert.match(source, /release-stable-abandonments\.json/)
+  assert.match(source, /"npm",\s*\[\s*"publish"/s)
+  assert.match(
+    source,
+    /"--access",\s*"public",\s*"--tag",\s*"latest",\s*"--provenance",\s*"--ignore-scripts",\s*"--json"/s,
+  )
+  assert.doesNotMatch(source, /nx",\s*"release",\s*"publish"|npm dist-tag|npm unpublish|shell:\s*true/)
 })

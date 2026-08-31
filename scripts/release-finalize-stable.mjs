@@ -1,15 +1,39 @@
 #!/usr/bin/env node
 import { spawn } from "node:child_process"
-import { realpathSync } from "node:fs"
-import { readFile } from "node:fs/promises"
+import { createHash } from "node:crypto"
+import { constants, realpathSync } from "node:fs"
+import { lstat, open, readFile } from "node:fs/promises"
+import { isAbsolute, join } from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 import { isDeepStrictEqual } from "node:util"
+import { verifyStableHandoff } from "./release-package-stable.mjs"
+
+const WORKFLOW_PATH = ".github/workflows/release-stable.yml"
+const WORKFLOW_REF = "refs/heads/master"
+const ABANDONMENT_PATH = fileURLToPath(new URL("./release-stable-abandonments.json", import.meta.url))
+const ALLOWED_HISTORICAL_PATHS = Object.freeze([
+  ".github/SETUP.md",
+  ".github/workflows/release-stable.yml",
+  "scripts/release-finalize-stable.mjs",
+  "scripts/release-finalize-stable.test.mjs",
+  "scripts/release-package-stable.mjs",
+  "scripts/release-package-stable.test.mjs",
+  "scripts/release-policy-contract.test.mjs",
+  "scripts/release-stable-abandonments.json",
+])
+const MAX_HISTORICAL_COMMITS = 8
+const MAX_NPM_READS = 6
+const MAX_NPM_CONFIG_BYTES = 64 * 1024
+const MAX_TRACKED_NPM_CONFIGS = 64
+const MAX_OPERATIONAL_ERROR_CHARS = 2048
+const MAX_OPERATIONAL_DIAGNOSTIC_BYTES = 320
+const NPM_REGISTRY = "https://registry.npmjs.org/"
+const NPM_ATTESTATION_PATH_PREFIX = "/-/npm/v1/attestations/"
 
 const expectedSha = process.env.EXPECTED_SHA ?? ""
 const artifactSha = process.env.ARTIFACT_SHA || expectedSha
 const requestedProjectsText = process.env.PROJECTS ?? ""
 const historicalReplay = artifactSha !== expectedSha
-const maxReads = 6
 const delayMs = Number(process.env.NPM_READ_DELAY_MS ?? Number(process.env.NPM_READ_DELAY ?? 10) * 1000)
 const commandTimeoutMs = Number(process.env.FINALIZE_COMMAND_TIMEOUT_MS ?? 60_000)
 const httpTimeoutMs = Number(process.env.FINALIZE_HTTP_TIMEOUT_MS ?? 30_000)
@@ -21,15 +45,61 @@ const jsonOutput = cliArguments.includes("--json")
 function fail(message) {
   throw new Error(message)
 }
+function object(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value)
+}
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
+}
+function digest(algorithm, bytes) {
+  return createHash(algorithm).update(bytes).digest("hex")
+}
+function boundedUtf8(value, maximumBytes) {
+  let result = ""
+  let bytes = 0
+  for (const character of value) {
+    const size = Buffer.byteLength(character)
+    if (bytes + size > maximumBytes) break
+    result += character
+    bytes += size
+  }
+  return result
+}
+export function operationalFailureDiagnostic(error) {
+  const message = typeof error?.message === "string" ? error.message.slice(0, MAX_OPERATIONAL_ERROR_CHARS) : ""
+  const sanitized = message
+    .replace(/\u001b\[[0-?]*[ -/]*[@-~]/gu, " ")
+    .replace(/\b[a-z][a-z0-9+.-]*:\/\/[^\s]+/giu, "[redacted URL]")
+    .replace(/\b(?:bearer|basic)\s+[^\s]+/giu, "[redacted credential]")
+    .replace(/\b[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b/gu, "[redacted JWT]")
+    .replace(/\b(?:github_pat_|gh[pousr]_|npm_)[A-Za-z0-9_-]{8,}\b/gu, "[redacted token]")
+    .replace(
+      /((?:(?:auth|access|refresh|id)[_-]?token|_authToken|password|passwd|secret|credential|api[_-]?key)\s*[:=]\s*)(?:"[^"]*"|'[^']*'|[^\s,;]+)/giu,
+      "$1[redacted]",
+    )
+    .replace(/[\u0000-\u001f\u007f-\u009f]/gu, " ")
+    .replace(/\s+/gu, " ")
+    .trim()
+  return boundedUtf8(sanitized || "operation failed without a safe message", MAX_OPERATIONAL_DIAGNOSTIC_BYTES)
+}
+function operationalCauseSuffix(error) {
+  return `; operation cause: ${operationalFailureDiagnostic(error)}`
+}
+function validRuntimeBound(value, minimum, maximum) {
+  return Number.isSafeInteger(value) && value >= minimum && value <= maximum
+}
+function validateRuntimeBounds() {
+  if (!validRuntimeBound(delayMs, 0, 60_000)) fail("NPM read delay is invalid")
+  if (!validRuntimeBound(commandTimeoutMs, 1, 300_000)) fail("FINALIZE command timeout is invalid")
+  if (!validRuntimeBound(httpTimeoutMs, 1, 300_000)) fail("FINALIZE HTTP timeout is invalid")
+  if (!validRuntimeBound(outputLimit, 1024, 16 * 1024 * 1024)) fail("FINALIZE output limit is invalid")
 }
 function run(file, args, { ok = [0], env } = {}) {
   return new Promise((resolve, reject) => {
     const child = spawn(file, args, { shell: false, stdio: ["ignore", "pipe", "pipe"], env })
-    let stdout = Buffer.alloc(0),
-      stderr = Buffer.alloc(0),
-      excessive = false
+    let stdout = Buffer.alloc(0)
+    let stderr = Buffer.alloc(0)
+    let excessive = false
     const append = (current, chunk) => {
       if (current.length + chunk.length > outputLimit) {
         excessive = true
@@ -54,8 +124,11 @@ function run(file, args, { ok = [0], env } = {}) {
       const result = { code, signal, stdout: stdout.toString("utf8"), stderr: stderr.toString("utf8") }
       if (excessive) reject(new Error(`${file} output exceeded bound`))
       else if (signal) reject(new Error(`${file} timed out or terminated (${signal})`))
-      else if (!ok.includes(code)) reject(new Error(`${file} failed (${code})`))
-      else resolve(result)
+      else if (!ok.includes(code)) {
+        const error = new Error(`${file} failed (${code})`)
+        Object.defineProperty(error, "commandResult", { value: result })
+        reject(error)
+      } else resolve(result)
     })
   })
 }
@@ -66,17 +139,14 @@ function parseJson(text, label) {
     fail(`${label} returned malformed JSON`)
   }
 }
-function object(value) {
-  return value && typeof value === "object" && !Array.isArray(value)
-}
 function safeRoot(value) {
   return (
     typeof value === "string" &&
     value.length > 0 &&
     value.length <= 512 &&
-    !value.startsWith("/") &&
+    !isAbsolute(value) &&
     !value.includes("\\") &&
-    !value.includes("\u0000") &&
+    !/[\u0000-\u001f\u007f]/.test(value) &&
     !value.includes("//") &&
     value.split("/").every((part) => part && part !== "." && part !== "..")
   )
@@ -86,9 +156,11 @@ function safeName(value) {
     typeof value === "string" &&
     value.length > 0 &&
     value.length <= 214 &&
-    !/[\s,]/.test(value) &&
-    !value.includes("\u0000")
+    /^@[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._-]*$/.test(value)
   )
+}
+function fullSha(value) {
+  return typeof value === "string" && /^[0-9a-f]{40}$/.test(value)
 }
 function parseSemver(value) {
   if (typeof value !== "string") return null
@@ -99,8 +171,9 @@ function parseSemver(value) {
   const prerelease = match[4]?.split(".") ?? []
   if (
     prerelease.some((identifier) => /^[0-9]+$/.test(identifier) && identifier.length > 1 && identifier.startsWith("0"))
-  )
+  ) {
     return null
+  }
   return { major: BigInt(match[1]), minor: BigInt(match[2]), patch: BigInt(match[3]), prerelease }
 }
 function compareSemver(left, right) {
@@ -113,12 +186,12 @@ function compareSemver(left, right) {
   }
   const length = Math.max(left.prerelease.length, right.prerelease.length)
   for (let index = 0; index < length; index++) {
-    const leftIdentifier = left.prerelease[index],
-      rightIdentifier = right.prerelease[index]
+    const leftIdentifier = left.prerelease[index]
+    const rightIdentifier = right.prerelease[index]
     if (leftIdentifier === undefined || rightIdentifier === undefined) return leftIdentifier === undefined ? -1 : 1
     if (leftIdentifier === rightIdentifier) continue
-    const leftNumeric = /^[0-9]+$/.test(leftIdentifier),
-      rightNumeric = /^[0-9]+$/.test(rightIdentifier)
+    const leftNumeric = /^[0-9]+$/.test(leftIdentifier)
+    const rightNumeric = /^[0-9]+$/.test(rightIdentifier)
     if (leftNumeric && rightNumeric) return BigInt(leftIdentifier) < BigInt(rightIdentifier) ? -1 : 1
     if (leftNumeric !== rightNumeric) return leftNumeric ? -1 : 1
     return leftIdentifier < rightIdentifier ? -1 : 1
@@ -131,10 +204,56 @@ function parseRequestedProjects() {
     .map((value) => value.trim())
     .filter(Boolean)
   if (raw.length === 0) fail("stable selection is empty")
+  if (raw.some((value) => !safeName(value))) fail("stable selection contains an invalid project")
   const duplicates = raw.filter((value, index) => raw.indexOf(value) !== index)
   if (duplicates.length > 0) fail(`duplicate requested project: ${duplicates[0]}`)
   return raw.sort()
 }
+
+async function verifyCurrentRunHandoff(projects) {
+  const directory = process.env.STABLE_HANDOFF_DIRECTORY ?? ""
+  const artifactId = process.env.STABLE_HANDOFF_ARTIFACT_ID ?? ""
+  const artifactDigest = process.env.STABLE_HANDOFF_ARTIFACT_DIGEST ?? ""
+  const repository = process.env.GITHUB_REPOSITORY ?? ""
+  const workflowSha = process.env.GITHUB_WORKFLOW_SHA ?? ""
+  const runId = process.env.GITHUB_RUN_ID ?? ""
+  const runAttempt = process.env.GITHUB_RUN_ATTEMPT ?? ""
+  const workflowReference = process.env.GITHUB_WORKFLOW_REF ?? ""
+
+  if (!isAbsolute(directory)) fail("stable handoff directory must be an absolute path")
+  if (!/^[1-9][0-9]*$/.test(artifactId)) fail("stable handoff artifact ID is invalid")
+  if (!/^sha256:[0-9a-f]{64}$/.test(artifactDigest)) fail("stable handoff artifact digest is invalid")
+  if (workflowReference !== `${repository}/${WORKFLOW_PATH}@${WORKFLOW_REF}`) {
+    fail("current workflow reference is invalid")
+  }
+  if (workflowSha !== expectedSha) fail("current workflow SHA does not match expected SHA")
+
+  let handoff
+  try {
+    handoff = await verifyStableHandoff({
+      directory,
+      abandonmentPath: ABANDONMENT_PATH,
+      expected: {
+        repository,
+        workflowPath: WORKFLOW_PATH,
+        workflowRef: WORKFLOW_REF,
+        workflowSha,
+        runId,
+        runAttempt,
+        expectedSha,
+        artifactSha,
+        selection: projects,
+      },
+    })
+  } catch (error) {
+    if (error?.message === "handoff selection does not exactly match the request") {
+      fail("requested projects do not exactly match the stable handoff selection")
+    }
+    throw error
+  }
+  return { handoff, directory, artifactId, artifactDigest }
+}
+
 async function commitParents(revision, label) {
   let result
   try {
@@ -145,7 +264,7 @@ async function commitParents(revision, label) {
   const parts = result.stdout.trimEnd().split(" ")
   if (
     parts.length < 2 ||
-    parts.some((part) => !/^[0-9a-f]{40}$/.test(part)) ||
+    parts.some((part) => !fullSha(part)) ||
     parts[0] !== revision ||
     new Set(parts).size !== parts.length
   ) {
@@ -171,18 +290,43 @@ async function verifyArtifactLineage() {
     fail("reviewed merge trees are unreadable")
   }
   const treeIds = trees.stdout.trimEnd().split("\n")
-  if (treeIds.length !== 2 || treeIds.some((tree) => !/^[0-9a-f]{40}$/.test(tree)) || treeIds[0] !== treeIds[1]) {
+  if (treeIds.length !== 2 || treeIds.some((tree) => !fullSha(tree)) || treeIds[0] !== treeIds[1]) {
     fail("reviewed merge tree must exactly match its generated second parent")
   }
 }
-async function verifyHistoricalAncestry() {
-  let result
+async function verifyHistoricalRecoveryBounds() {
+  let ancestry
   try {
-    result = await run("git", ["merge-base", "--is-ancestor", artifactSha, expectedSha], { ok: [0, 1] })
+    ancestry = await run("git", ["merge-base", "--is-ancestor", artifactSha, expectedSha], { ok: [0, 1] })
   } catch {
     fail("historical artifact ancestry is unreadable")
   }
-  if (result.code !== 0) fail("historical artifact SHA must be an ancestor of expected SHA")
+  if (ancestry.code !== 0) fail("historical artifact SHA must be an ancestor of expected SHA")
+
+  let countResult
+  try {
+    countResult = await run("git", ["rev-list", "--count", `${artifactSha}..${expectedSha}`])
+  } catch {
+    fail("historical recovery commit-count bound is unreadable")
+  }
+  const countText = countResult.stdout.trim()
+  if (!/^[0-9]+$/.test(countText)) fail("historical recovery commit-count bound is invalid")
+  const count = Number(countText)
+  if (!Number.isSafeInteger(count) || count < 1 || count > MAX_HISTORICAL_COMMITS) {
+    fail(`historical recovery exceeds the commit-count bound of ${MAX_HISTORICAL_COMMITS}`)
+  }
+
+  let pathsResult
+  try {
+    pathsResult = await run("git", ["diff", "--name-only", "--no-renames", artifactSha, expectedSha])
+  } catch {
+    fail("historical recovery changed paths are unreadable")
+  }
+  const paths = pathsResult.stdout.split("\n").filter(Boolean)
+  if (new Set(paths).size !== paths.length) fail("historical recovery changed paths contain duplicates")
+  const allowed = new Set(ALLOWED_HISTORICAL_PATHS)
+  const unexpected = paths.find((path) => !allowed.has(path))
+  if (unexpected) fail(`historical recovery changed path is not allowlisted: ${unexpected}`)
 }
 async function verifyArtifactChangelog() {
   let result
@@ -193,14 +337,17 @@ async function verifyArtifactChangelog() {
   }
   if (result.stdout !== "blob\n") fail("reviewed artifact requires root CHANGELOG.md to exist as a blob")
 }
-async function artifactJson(path, revision = artifactSha) {
+async function artifactDocument(path, revision = artifactSha) {
   let result
   try {
     result = await run("git", ["show", `${revision}:${path}`])
   } catch {
     fail(`artifact repository read failed for ${revision}:${path}`)
   }
-  return parseJson(result.stdout, `artifact ${revision}:${path}`)
+  return { text: result.stdout, value: parseJson(result.stdout, `artifact ${revision}:${path}`) }
+}
+async function artifactJson(path, revision = artifactSha) {
+  return (await artifactDocument(path, revision)).value
 }
 async function deriveReviewedRecords(projects) {
   const nx = await artifactJson("nx.json")
@@ -211,16 +358,17 @@ async function deriveReviewedRecords(projects) {
   if (new Set(roots).size !== roots.length) fail("artifact nx.json release projects contain duplicates")
 
   const catalog = []
-  const projectNames = new Set(),
-    packageNames = new Set(),
-    manifestPaths = new Set()
-  for (const root of roots) {
+  const projectNames = new Set()
+  const packageNames = new Set()
+  const manifestPaths = new Set()
+  for (const [releaseOrder, root] of roots.entries()) {
     const projectJson = await artifactJson(`${root}/project.json`)
     const manifestPath = `${root}/package.json`
-    const manifest = await artifactJson(manifestPath)
-    const project = projectJson?.name,
-      name = manifest?.name,
-      version = manifest?.version
+    const manifestDocument = await artifactDocument(manifestPath)
+    const manifest = manifestDocument.value
+    const project = projectJson?.name
+    const name = manifest?.name
+    const version = manifest?.version
     if (!object(projectJson) || !safeName(project)) fail(`artifact project identity is invalid for ${root}`)
     if (!object(manifest) || !safeName(name) || typeof version !== "string") {
       fail(`artifact manifest identity is invalid for ${manifestPath}`)
@@ -232,10 +380,20 @@ async function deriveReviewedRecords(projects) {
     projectNames.add(project)
     packageNames.add(name)
     manifestPaths.add(manifestPath)
-    catalog.push({ project, root, manifestPath, name, version, reviewedManifest: manifest })
+    catalog.push({
+      project,
+      root,
+      manifestPath,
+      name,
+      version,
+      releaseOrder,
+      reviewedManifest: manifest,
+      sourceManifestSha256: digest("sha256", manifestDocument.text),
+    })
   }
-  for (const project of projects)
+  for (const project of projects) {
     if (!projectNames.has(project)) fail(`requested project is not in artifact release projects: ${project}`)
+  }
 
   const changedResult = await run("git", ["diff", "--name-only", "--no-renames", `${artifactSha}^1`, artifactSha])
   const changedPaths = changedResult.stdout.split("\n").filter(Boolean)
@@ -275,55 +433,160 @@ async function deriveReviewedRecords(projects) {
   }
   return records
 }
-async function npmState(name, version, betaVersion) {
+function bindHandoffToRecords(handoff, records) {
+  const byProject = new Map(records.map((record) => [record.project, record]))
+  const abandonedProjects = new Set()
+  for (const disposition of handoff.abandonments) {
+    const record = byProject.get(disposition.project)
+    if (!record || record.name !== disposition.name || record.version !== disposition.version) {
+      fail(`reviewed abandonment identity does not match artifact record: ${disposition.project}`)
+    }
+    abandonedProjects.add(disposition.project)
+  }
+
+  const packageByProject = new Map()
+  for (const item of handoff.packages) {
+    const record = byProject.get(item.project)
+    if (
+      !record ||
+      abandonedProjects.has(item.project) ||
+      item.root !== record.root ||
+      item.name !== record.name ||
+      item.version !== record.version ||
+      item.sourceManifestSha256 !== record.sourceManifestSha256
+    ) {
+      fail(`stable handoff package does not exactly match reviewed artifact record: ${item.project}`)
+    }
+    packageByProject.set(item.project, item)
+  }
+  for (const record of records) {
+    if (!abandonedProjects.has(record.project) && !packageByProject.has(record.project)) {
+      fail(`stable handoff package is missing for ${record.project}`)
+    }
+  }
+  return { abandonedProjects, packageByProject }
+}
+
+function exactAttestationUrl(value, record) {
+  if (typeof value !== "string") return false
+  let url
   try {
-    const versionsDoc = (await run("npm", ["view", name, "versions", "--json"])).stdout
-    const tagsDoc = (await run("npm", ["view", name, "dist-tags", "--json"])).stdout
-    const versionsValue = parseJson(versionsDoc, `${name} versions`),
-      tags = parseJson(tagsDoc, `${name} dist-tags`)
+    url = new URL(value)
+  } catch {
+    return false
+  }
+  if (
+    url.protocol !== "https:" ||
+    url.host !== "registry.npmjs.org" ||
+    url.username !== "" ||
+    url.password !== "" ||
+    url.search !== "" ||
+    url.hash !== "" ||
+    !url.pathname.startsWith(NPM_ATTESTATION_PATH_PREFIX)
+  ) {
+    return false
+  }
+  let specification
+  try {
+    specification = decodeURIComponent(url.pathname.slice(NPM_ATTESTATION_PATH_PREFIX.length))
+  } catch {
+    return false
+  }
+  return specification === `${record.name}@${record.version}`
+}
+function distDivergence(dist, record, handoffPackage) {
+  if (!object(dist)) return "dist"
+  if (dist.integrity !== handoffPackage.tarball.integrity) return "integrity"
+  if (dist.shasum !== handoffPackage.tarball.sha1) return "shasum"
+  if (!object(dist.attestations)) return "attestation"
+  if (!exactAttestationUrl(dist.attestations.url, record)) return "attestation URL"
+  if (
+    !object(dist.attestations.provenance) ||
+    dist.attestations.provenance.predicateType !== "https://slsa.dev/provenance/v1"
+  ) {
+    return "provenance"
+  }
+  return ""
+}
+async function npmState(record, handoffPackage) {
+  try {
+    const versionsDocument = (await run("npm", ["view", record.name, "versions", "--json", "--registry", NPM_REGISTRY]))
+      .stdout
+    const tagsDocument = (await run("npm", ["view", record.name, "dist-tags", "--json", "--registry", NPM_REGISTRY]))
+      .stdout
+    const versionsValue = parseJson(versionsDocument, `${record.name} versions`)
+    const tags = parseJson(tagsDocument, `${record.name} dist-tags`)
     const versions = typeof versionsValue === "string" ? [versionsValue] : versionsValue
-    if (!Array.isArray(versions) || versions.some((value) => typeof value !== "string") || !object(tags))
+    if (!Array.isArray(versions) || versions.some((value) => typeof value !== "string") || !object(tags)) {
       return { kind: "unknown" }
-    if (new Set(versions).size !== versions.length || versions.some((value) => !parseSemver(value)))
+    }
+    if (new Set(versions).size !== versions.length || versions.some((value) => !parseSemver(value))) {
       return { kind: "unknown" }
-    const target = parseSemver(version),
-      beta = parseSemver(betaVersion)
+    }
+    const target = parseSemver(record.version)
+    const beta = parseSemver(record.betaVersion)
     if (!target || !beta) return { kind: "unknown" }
-    const versionSet = new Set(versions),
-      targetPresent = versionSet.has(version)
+    const versionSet = new Set(versions)
+    const targetPresent = versionSet.has(record.version)
     const hasLatest = Object.hasOwn(tags, "latest")
     let latest
     if (hasLatest) {
       if (typeof tags.latest !== "string" || !(latest = parseSemver(tags.latest))) return { kind: "unknown" }
-      if (!versionSet.has(tags.latest)) return { kind: "divergent" }
+      if (!versionSet.has(tags.latest)) return { kind: "divergent", reason: "latest" }
     }
-    if (targetPresent) return hasLatest && tags.latest === version ? { kind: "exact" } : { kind: "divergent" }
-    if (tags.beta !== betaVersion || !versionSet.has(betaVersion)) return { kind: "divergent" }
-    if (hasLatest && compareSemver(latest, target) >= 0) return { kind: "divergent" }
+    if (targetPresent) {
+      if (!handoffPackage) return { kind: "present" }
+      if (!hasLatest || tags.latest !== record.version) return { kind: "divergent", reason: "latest" }
+      const distDocument = (
+        await run("npm", ["view", `${record.name}@${record.version}`, "dist", "--json", "--registry", NPM_REGISTRY])
+      ).stdout
+      const dist = parseJson(distDocument, `${record.name}@${record.version} dist`)
+      const reason = distDivergence(dist, record, handoffPackage)
+      return reason ? { kind: "divergent", reason } : { kind: "exact" }
+    }
+    if (tags.beta !== record.betaVersion || !versionSet.has(record.betaVersion)) {
+      return { kind: "divergent", reason: "beta baseline" }
+    }
+    if (hasLatest && compareSemver(latest, target) >= 0) return { kind: "divergent", reason: "latest" }
     return { kind: "absent" }
   } catch {
     return { kind: "unknown" }
   }
 }
-async function npmBounded(name, version, betaVersion, { acceptAbsent = false } = {}) {
+async function npmBounded(record, handoffPackage, { acceptAbsent = false } = {}) {
   let state
-  for (let attempt = 1; attempt <= maxReads; attempt++) {
-    state = await npmState(name, version, betaVersion)
+  for (let attempt = 1; attempt <= MAX_NPM_READS; attempt++) {
+    state = await npmState(record, handoffPackage)
     if (state.kind === "exact" || (acceptAbsent && state.kind === "absent")) return state
-    if (attempt < maxReads) await sleep(delayMs)
+    if (attempt < MAX_NPM_READS) await sleep(delayMs)
   }
-  if (state.kind === "absent") fail(`npm version remained absent after ${maxReads} attempts for ${name}`)
-  fail(
-    state.kind === "divergent"
-      ? `permanent npm state divergence for ${name}`
-      : `npm state unreadable after ${maxReads} attempts for ${name}`,
-  )
+  if (state.kind === "absent") fail(`npm version remained absent after ${MAX_NPM_READS} attempts for ${record.name}`)
+  if (state.kind === "divergent") {
+    fail(`permanent npm state divergence (${state.reason ?? "unknown"}) for ${record.name}@${record.version}`)
+  }
+  fail(`npm state unreadable after ${MAX_NPM_READS} attempts for ${record.name}`)
 }
+async function npmAbandonmentState(record) {
+  let state
+  for (let attempt = 1; attempt <= MAX_NPM_READS; attempt++) {
+    state = await npmState(record, null)
+    if (state.kind === "present") {
+      fail(`abandoned package ${record.name}@${record.version} must remain absent from npm`)
+    }
+    if (state.kind === "absent") return { kind: "absent-abandoned" }
+    if (attempt < MAX_NPM_READS) await sleep(delayMs)
+  }
+  if (state.kind === "divergent") {
+    fail(`permanent npm state divergence (${state.reason ?? "unknown"}) for abandoned ${record.name}@${record.version}`)
+  }
+  fail(`npm state unreadable after ${MAX_NPM_READS} attempts for abandoned ${record.name}`)
+}
+
 function parseTag(text, tag) {
-  const direct = [],
-    peeled = [],
-    directRef = `refs/tags/${tag}`,
-    peeledRef = `${directRef}^{}`
+  const direct = []
+  const peeled = []
+  const directRef = `refs/tags/${tag}`
+  const peeledRef = `${directRef}^{}`
   if (text === "") return { kind: "absent" }
   for (const line of text.split("\n")) {
     if (!line) continue
@@ -372,8 +635,8 @@ function tagPushConfiguration() {
   return `http.https://github.com/.extraheader=AUTHORIZATION: basic ${basicAuth}`
 }
 async function github(method, path, body) {
-  const controller = new AbortController(),
-    timer = setTimeout(() => controller.abort(), httpTimeoutMs)
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), httpTimeoutMs)
   try {
     const options = {
       method,
@@ -392,6 +655,7 @@ async function github(method, path, body) {
       options,
     )
     const text = await response.text()
+    if (Buffer.byteLength(text) > outputLimit) fail("GitHub response exceeded bound")
     return { status: response.status, text }
   } catch (error) {
     fail(`GitHub transport failure: ${error.message}`)
@@ -408,6 +672,46 @@ async function releaseState(tag) {
     ? { kind: "exact" }
     : { kind: "divergent" }
 }
+async function inspect(records, packageByProject, abandonedProjects) {
+  await run("git", ["fetch", "origin", "master:refs/remotes/origin/master", "--no-tags"])
+  const head = (await run("git", ["rev-parse", "HEAD"])).stdout.trim()
+  const origin = (await run("git", ["rev-parse", "origin/master"])).stdout.trim()
+  if (head !== expectedSha) fail("HEAD does not match expected SHA")
+  if (origin !== expectedSha) fail("origin/master does not match expected SHA")
+
+  const states = []
+  for (const record of records) {
+    const npm = abandonedProjects.has(record.project)
+      ? await npmAbandonmentState(record)
+      : await npmBounded(record, packageByProject.get(record.project), { acceptAbsent: true })
+    const tag = await tagState(`${record.name}@${record.version}`)
+    const release = await releaseState(`${record.name}@${record.version}`)
+    for (const [label, state] of [
+      ["tag", tag],
+      ["GitHub Release", release],
+    ]) {
+      if (!["exact", "absent"].includes(state.kind)) {
+        fail(
+          `${label} state is ${state.kind} for ${record.name}@${record.version}${state.status ? ` (HTTP ${state.status})` : ""}`,
+        )
+      }
+    }
+    states.push({
+      project: record.project,
+      root: record.root,
+      manifestPath: record.manifestPath,
+      name: record.name,
+      version: record.version,
+      betaVersion: record.betaVersion,
+      releaseOrder: record.releaseOrder,
+      npm: npm.kind,
+      tag: tag.kind,
+      release: release.kind,
+    })
+  }
+  return states
+}
+
 async function verifyPublicationSource(records) {
   const status = await run("git", ["status", "--porcelain=v1", "--untracked-files=all"])
   if (status.stdout !== "") fail("stable publication requires a clean index and worktree")
@@ -424,62 +728,201 @@ async function verifyPublicationSource(records) {
     }
   }
 }
-async function inspect(records) {
-  await run("git", ["fetch", "origin", "master:refs/remotes/origin/master", "--no-tags"])
-  const head = (await run("git", ["rev-parse", "HEAD"])).stdout.trim()
-  const origin = (await run("git", ["rev-parse", "origin/master"])).stdout.trim()
-  if (head !== expectedSha) fail("HEAD does not match expected SHA")
-  if (origin !== expectedSha) fail("origin/master does not match expected SHA")
-  const states = []
-  for (const record of records) {
-    const npm = await npmBounded(record.name, record.version, record.betaVersion, { acceptAbsent: true })
-    const tag = await tagState(`${record.name}@${record.version}`)
-    const release = await releaseState(`${record.name}@${record.version}`)
-    for (const [label, state] of [
-      ["tag", tag],
-      ["GitHub Release", release],
-    ]) {
-      if (!["exact", "absent"].includes(state.kind))
-        fail(
-          `${label} state is ${state.kind} for ${record.name}@${record.version}${state.status ? ` (HTTP ${state.status})` : ""}`,
-        )
-    }
-    const state = { ...record, npm: npm.kind, tag: tag.kind, release: release.kind }
-    delete state.reviewedManifest
-    states.push(state)
-  }
-  return states
+function npmConfigFailure() {
+  fail("npm auth configuration could not be safely verified at the publication boundary")
 }
-async function main() {
-  if (cliArguments.some((argument) => !["--preflight", "--json"].includes(argument))) fail("unknown argument")
-  if (jsonOutput && !preflight) fail("--json requires --preflight")
-  if (!/^[0-9a-f]{40}$/.test(expectedSha)) fail("FINALIZE requires full lowercase expected SHA")
-  if (!/^[0-9a-f]{40}$/.test(artifactSha)) fail("FINALIZE requires full lowercase artifact SHA")
-  const projects = parseRequestedProjects()
-  if (!preflight && process.env.GITHUB_ACTIONS !== "true")
-    fail("FINALIZE publication is allowed only in GitHub Actions")
-  if (historicalReplay) await verifyHistoricalAncestry()
-  await verifyArtifactLineage()
-  await verifyArtifactChangelog()
-  const records = await deriveReviewedRecords(projects)
-  const states = await inspect(records)
-  if (historicalReplay) {
-    const incomplete = states.find((item) => item.tag !== "exact" || item.release !== "exact" || item.npm !== "exact")
-    if (incomplete)
-      fail(
-        `historical replay requires exact existing tag, GitHub Release, and npm latest for ${incomplete.name}@${incomplete.version}`,
-      )
+function stableFileIdentity(left, right) {
+  return ["dev", "ino", "mode", "nlink", "size", "mtimeNs", "ctimeNs"].every((key) => left[key] === right[key])
+}
+function authBearingNpmConfig(text) {
+  if (
+    /[\u0000-\u0009\u000b\u000c\u000e-\u001f\u007f-\u009f]/u.test(text) ||
+    text.replaceAll("\r\n", "").includes("\r")
+  ) {
+    return true
   }
-  if (preflight) process.stdout.write(`${JSON.stringify({ ok: true, expectedSha, artifactSha, projects, states })}\n`)
-  if (historicalReplay || preflight) return
 
-  await verifyPublicationSource(records)
-  const missingTags = states.filter((item) => item.tag === "absent")
+  for (const line of text.split("\n")) {
+    const active = line.trimStart()
+    if (active === "" || active.startsWith("#") || active.startsWith(";")) continue
+
+    const separator = active.indexOf("=")
+    const key = (separator === -1 ? active : active.slice(0, separator)).trim().toLowerCase()
+    const value = separator === -1 ? "" : active.slice(separator + 1).trim()
+    if (key === "") return true
+
+    const leaf = key.split(/[:/]/u).at(-1).replace(/^_+/u, "").replace(/[-_]/gu, "")
+    if (
+      new Set([
+        "auth",
+        "authtoken",
+        "token",
+        "accesstoken",
+        "password",
+        "passwd",
+        "pass",
+        "username",
+        "user",
+        "alwaysauth",
+        "otp",
+        "cert",
+        "certfile",
+        "key",
+        "keyfile",
+      ]).has(leaf)
+    ) {
+      return true
+    }
+    if (/[a-z][a-z0-9+.-]*:\/\/[^/\s]*@/iu.test(value)) return true
+    for (const interpolation of active.matchAll(/\$\{([A-Za-z_][A-Za-z0-9_]*)\}/gu)) {
+      if (/(?:auth|token|passw|passwd|credential|secret)/iu.test(interpolation[1])) return true
+    }
+  }
+  return false
+}
+async function inspectNpmConfig(path, { allowMissing = false } = {}) {
+  let listed
+  try {
+    listed = await lstat(path, { bigint: true })
+  } catch (error) {
+    if (allowMissing && error?.code === "ENOENT") return
+    npmConfigFailure()
+  }
+  if (!listed.isFile() || listed.isSymbolicLink() || listed.size > BigInt(MAX_NPM_CONFIG_BYTES)) npmConfigFailure()
+
+  let handle
+  try {
+    handle = await open(path, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0))
+    const before = await handle.stat({ bigint: true })
+    if (!before.isFile() || !stableFileIdentity(listed, before) || before.size > BigInt(MAX_NPM_CONFIG_BYTES)) {
+      npmConfigFailure()
+    }
+
+    const buffer = Buffer.alloc(MAX_NPM_CONFIG_BYTES + 1)
+    let length = 0
+    while (length < buffer.length) {
+      const { bytesRead } = await handle.read(buffer, length, buffer.length - length, length)
+      if (bytesRead === 0) break
+      length += bytesRead
+    }
+    const after = await handle.stat({ bigint: true })
+    if (length > MAX_NPM_CONFIG_BYTES || BigInt(length) !== before.size || !stableFileIdentity(before, after)) {
+      npmConfigFailure()
+    }
+
+    let text
+    try {
+      text = new TextDecoder("utf-8", { fatal: true }).decode(buffer.subarray(0, length))
+    } catch {
+      npmConfigFailure()
+    }
+    if (authBearingNpmConfig(text)) npmConfigFailure()
+  } catch {
+    npmConfigFailure()
+  } finally {
+    if (handle) {
+      try {
+        await handle.close()
+      } catch {
+        npmConfigFailure()
+      }
+    }
+  }
+}
+function trackedNpmConfigPaths(text) {
+  if (text === "") return []
+  if (!text.endsWith("\u0000")) npmConfigFailure()
+  const paths = text.slice(0, -1).split("\u0000")
+  if (paths.length > MAX_TRACKED_NPM_CONFIGS || new Set(paths).size !== paths.length) npmConfigFailure()
+  for (const path of paths) {
+    if (
+      path === "" ||
+      Buffer.byteLength(path) > 4096 ||
+      isAbsolute(path) ||
+      path.includes("\\") ||
+      /[\u0000-\u001f\u007f\ufffd]/u.test(path) ||
+      !(path === ".npmrc" || path.endsWith("/.npmrc")) ||
+      path.split("/").some((part) => part === "" || part === "." || part === "..")
+    ) {
+      npmConfigFailure()
+    }
+  }
+  return paths
+}
+function verifyNpmEnvironment() {
+  const allowedConfiguration = new Map([
+    ["NPM_CONFIG_IGNORE_SCRIPTS", "true"],
+    ["NPM_CONFIG_PROVENANCE", "true"],
+  ])
+  const staticCredentialNames = new Set(["NODE_AUTH_TOKEN", "NPM_AUTH_TOKEN", "NPM_TOKEN"])
+  for (const [name, value] of Object.entries(process.env)) {
+    const normalizedName = name.toUpperCase()
+    if (staticCredentialNames.has(normalizedName)) {
+      fail("static npm credentials are forbidden at the publication boundary")
+    }
+    if (
+      normalizedName.startsWith("NPM_CONFIG_") &&
+      (name !== normalizedName || allowedConfiguration.get(name) !== value)
+    ) {
+      fail("npm configuration environment is not allowlisted at the publication boundary")
+    }
+  }
+}
+async function configuredNpmPath(key) {
+  let configured
+  try {
+    configured = await run("npm", ["config", "get", key, "--json"])
+  } catch {
+    npmConfigFailure()
+  }
+  const path = parseJson(configured.stdout, `npm ${key} configuration`)
+  if (
+    typeof path !== "string" ||
+    path.length === 0 ||
+    Buffer.byteLength(path) > 4096 ||
+    !isAbsolute(path) ||
+    /[\u0000-\u001f\u007f\ufffd]/u.test(path)
+  ) {
+    npmConfigFailure()
+  }
+  return path
+}
+async function verifyTrustedPublishingBoundary() {
+  verifyNpmEnvironment()
+
+  let tracked
+  try {
+    tracked = await run("git", ["ls-files", "-z", "--", ".npmrc", ":(glob)**/.npmrc"])
+  } catch {
+    npmConfigFailure()
+  }
+  for (const path of trackedNpmConfigPaths(tracked.stdout)) await inspectNpmConfig(path)
+
+  let registry
+  try {
+    registry = await run("npm", ["config", "get", "registry", "--json"])
+  } catch {
+    npmConfigFailure()
+  }
+  if (parseJson(registry.stdout, "effective npm registry") !== NPM_REGISTRY) {
+    fail("effective npm registry is not the trusted npmjs registry at the publication boundary")
+  }
+
+  const userConfigPath = await configuredNpmPath("userconfig")
+  const globalConfigPath = await configuredNpmPath("globalconfig")
+  await inspectNpmConfig(userConfigPath, { allowMissing: true })
+  await inspectNpmConfig(globalConfigPath, { allowMissing: true })
+}
+
+async function createCurrentArtifacts(states) {
+  const missingTags = states
+    .filter((item) => item.tag === "absent")
+    .sort((left, right) => left.releaseOrder - right.releaseOrder)
   const pushConfiguration = missingTags.length > 0 ? tagPushConfiguration() : ""
   const localTags = []
   for (const item of missingTags) {
-    const tag = `${item.name}@${item.version}`,
-      local = await localTagState(tag)
+    const tag = `${item.name}@${item.version}`
+    const local = await localTagState(tag)
     if (!["exact", "absent"].includes(local.kind)) fail(`local tag state is ${local.kind} for ${tag}`)
     localTags.push({ tag, local: local.kind })
   }
@@ -487,71 +930,222 @@ async function main() {
     await run("git", ["config", "user.name", "github-actions[bot]"])
     await run("git", ["config", "user.email", "github-actions[bot]@users.noreply.github.com"])
   }
-  for (const { tag, local } of localTags)
+  for (const { tag, local } of localTags) {
     if (local === "absent") await run("git", ["tag", "-a", tag, artifactSha, "-m", tag])
+  }
+  let tagPushFailure
   if (missingTags.length > 0) {
     const refs = missingTags.map(
       (item) => `refs/tags/${item.name}@${item.version}:refs/tags/${item.name}@${item.version}`,
     )
     try {
       await run("git", ["-c", pushConfiguration, "push", "--atomic", "origin", ...refs])
-    } catch {
-      /* response loss is reconciled below */
+    } catch (error) {
+      tagPushFailure = error
     }
   }
-  for (const item of states)
-    if ((await tagState(`${item.name}@${item.version}`)).kind !== "exact")
-      fail(`remote tag postverification failed for ${item.name}@${item.version}`)
+  for (const item of states) {
+    if ((await tagState(`${item.name}@${item.version}`)).kind !== "exact") {
+      fail(
+        `remote tag postverification failed for ${item.name}@${item.version}${tagPushFailure ? operationalCauseSuffix(tagPushFailure) : ""}`,
+      )
+    }
+  }
 
+  const releaseFailures = new Map()
   for (const item of states.filter((state) => state.release === "absent")) {
-    let result
+    const tag = `${item.name}@${item.version}`
     try {
-      result = await github("POST", "/releases", {
-        tag_name: `${item.name}@${item.version}`,
+      const result = await github("POST", "/releases", {
+        tag_name: tag,
         generate_release_notes: true,
         draft: false,
         prerelease: false,
       })
-    } catch {
-      /* response loss is reconciled below */
+      if (result.status !== 201) {
+        releaseFailures.set(tag, new Error(`GitHub Release creation failed for ${tag} (HTTP ${result.status})`))
+      }
+    } catch (error) {
+      releaseFailures.set(tag, error)
     }
-    if (result && ![201, 422].includes(result.status))
-      fail(`GitHub Release creation failed for ${item.name}@${item.version} (HTTP ${result.status})`)
-  }
-  for (const item of states)
-    if ((await releaseState(`${item.name}@${item.version}`)).kind !== "exact")
-      fail(`GitHub Release postverification failed for ${item.name}@${item.version}`)
-
-  const missing = []
-  for (const item of states.filter((state) => state.npm === "absent")) {
-    const current = await npmBounded(item.name, item.version, item.betaVersion, { acceptAbsent: true })
-    if (current.kind === "absent") missing.push(item.project)
-  }
-  if (missing.length > 0) {
-    await verifyPublicationSource(records)
-    await run("pnpm", ["nx", "release", "publish", `--projects=${missing.join(",")}`], {
-      env: { ...process.env, NPM_CONFIG_IGNORE_SCRIPTS: "true" },
-    })
   }
   for (const item of states) {
-    const state = await npmBounded(item.name, item.version, item.betaVersion)
-    if (state.kind !== "exact") fail(`npm did not converge for ${item.name}`)
+    const tag = `${item.name}@${item.version}`
+    if ((await releaseState(tag)).kind !== "exact") {
+      const failure = releaseFailures.get(tag)
+      fail(`GitHub Release postverification failed for ${tag}${failure ? operationalCauseSuffix(failure) : ""}`)
+    }
+  }
+}
+
+function npmFailureCode(error) {
+  const result = error?.commandResult
+  for (const text of [result?.stderr, result?.stdout]) {
+    if (typeof text !== "string") continue
+    try {
+      const value = JSON.parse(text)
+      const candidate = value?.error?.code ?? value?.code
+      if (typeof candidate === "string" && /^[A-Z][A-Z0-9_-]{1,31}$/.test(candidate)) return candidate
+    } catch {
+      // Only a bounded, allowlisted code is extracted from non-JSON output.
+    }
+    const match = text.match(/\b(E(?:401|403|404|409|422|429|5[0-9]{2}|OTP|AUTH|ACCESS))\b/i)
+    if (match) return match[1].toUpperCase()
+  }
+  return "UNKNOWN"
+}
+function npmFailureDiagnostic(error, record) {
+  const code = npmFailureCode(error)
+  const descriptions = {
+    E401: "trusted publishing authentication failed",
+    E403: "trusted publishing authorization was denied",
+    E404: "npm package or registry endpoint was not found",
+    E409: "npm reported a publication conflict",
+    E422: "npm rejected the publication payload",
+    E429: "npm rate-limited the publication",
+    E500: "npm registry service failed",
+    E501: "npm registry service failed",
+    E502: "npm registry service failed",
+    E503: "npm registry service failed",
+    E504: "npm registry service failed",
+    EOTP: "interactive npm authentication is forbidden",
+    EAUTH: "trusted publishing authentication failed",
+    EACCESS: "trusted publishing authorization was denied",
+  }
+  const description = descriptions[code] ?? "npm publication failed without a recognized safe error code"
+  const exitCode = Number.isInteger(error?.commandResult?.code) ? `; exit ${error.commandResult.code}` : ""
+  return `npm publish failed for ${record.name}@${record.version}: ${description} (${code}${exitCode}). Registry state remained absent after ${MAX_NPM_READS} bounded reconciliation reads. Verify npm trusted publishing configuration and GitHub OIDC permissions.`
+}
+async function reconcileAfterFailedPublish(record, handoffPackage) {
+  let state
+  for (let attempt = 1; attempt <= MAX_NPM_READS; attempt++) {
+    state = await npmState(record, handoffPackage)
+    if (state.kind === "exact") return true
+    if (attempt < MAX_NPM_READS) await sleep(delayMs)
+  }
+  if (state.kind === "divergent") {
+    fail(`permanent npm state divergence (${state.reason ?? "unknown"}) for ${record.name}@${record.version}`)
+  }
+  if (state.kind === "unknown") {
+    fail(`npm state unreadable after ${MAX_NPM_READS} attempts for ${record.name}`)
+  }
+  return false
+}
+async function publishMissingPackages(states, records, packageByProject, handoffDirectory) {
+  const byProject = new Map(records.map((record) => [record.project, record]))
+  for (const item of states) {
+    if (item.npm === "absent-abandoned") continue
+    const record = byProject.get(item.project)
+    const handoffPackage = packageByProject.get(item.project)
+    const current = await npmBounded(record, handoffPackage, { acceptAbsent: true })
+    if (current.kind === "exact") continue
+
+    const tarballPath = join(handoffDirectory, handoffPackage.tarball.basename)
+    let publishFailure
+    try {
+      await run("npm", [
+        "publish",
+        tarballPath,
+        "--registry",
+        NPM_REGISTRY,
+        "--access",
+        "public",
+        "--tag",
+        "latest",
+        "--provenance",
+        "--ignore-scripts",
+        "--json",
+      ])
+    } catch (error) {
+      publishFailure = error
+    }
+    if (publishFailure) {
+      if (await reconcileAfterFailedPublish(record, handoffPackage)) continue
+      fail(npmFailureDiagnostic(publishFailure, record))
+    }
+    await npmBounded(record, handoffPackage)
+  }
+}
+
+async function main() {
+  if (cliArguments.some((argument) => !["--preflight", "--json"].includes(argument))) fail("unknown argument")
+  if (new Set(cliArguments).size !== cliArguments.length) fail("duplicate argument")
+  if (jsonOutput && !preflight) fail("--json requires --preflight")
+  validateRuntimeBounds()
+  if (!fullSha(expectedSha)) fail("FINALIZE requires full lowercase expected SHA")
+  if (!fullSha(artifactSha)) fail("FINALIZE requires full lowercase artifact SHA")
+  const projects = parseRequestedProjects()
+  if (!preflight && process.env.GITHUB_ACTIONS !== "true") {
+    fail("FINALIZE publication is allowed only in GitHub Actions")
+  }
+
+  const handoffContext = await verifyCurrentRunHandoff(projects)
+  if (historicalReplay) await verifyHistoricalRecoveryBounds()
+  await verifyArtifactLineage()
+  await verifyArtifactChangelog()
+  const records = await deriveReviewedRecords(projects)
+  const { abandonedProjects, packageByProject } = bindHandoffToRecords(handoffContext.handoff, records)
+  const states = await inspect(records, packageByProject, abandonedProjects)
+
+  if (historicalReplay) {
+    for (const state of states) {
+      if (state.tag !== "exact")
+        fail(`historical recovery requires exact existing tag for ${state.name}@${state.version}`)
+      if (state.release !== "exact") {
+        fail(`historical recovery requires exact existing GitHub Release for ${state.name}@${state.version}`)
+      }
+      if (state.npm === "absent-abandoned") continue
+      if (!["exact", "absent"].includes(state.npm)) {
+        fail(`historical recovery npm state is invalid for ${state.name}@${state.version}`)
+      }
+    }
+  }
+
+  const report = {
+    ok: true,
+    mode: historicalReplay ? "historical-npm-only" : "current-exact",
+    historicalNpmOnly: historicalReplay,
+    expectedSha,
+    artifactSha,
+    artifactId: handoffContext.artifactId,
+    artifactDigest: handoffContext.artifactDigest,
+    projects,
+    abandonments: handoffContext.handoff.abandonments,
+    states,
+  }
+  if (preflight) {
+    process.stdout.write(`${JSON.stringify(report)}\n`)
+    return
+  }
+
+  if (states.some((state) => state.npm === "absent")) await verifyTrustedPublishingBoundary()
+
+  if (!historicalReplay) {
+    await verifyPublicationSource(records)
+    await createCurrentArtifacts(states)
+  }
+  await publishMissingPackages(states, records, packageByProject, handoffContext.directory)
+
+  for (const record of records) {
+    if (abandonedProjects.has(record.project)) {
+      await npmAbandonmentState(record)
+    } else {
+      await npmBounded(record, packageByProject.get(record.project))
+    }
   }
 }
 function isMainModule() {
   const entry = process.argv[1]
   if (!entry) return false
-  let resolvedEntry, resolvedModule
   try {
-    resolvedEntry = realpathSync(entry)
-    resolvedModule = realpathSync(fileURLToPath(import.meta.url))
+    return pathToFileURL(realpathSync(entry)).href === pathToFileURL(realpathSync(fileURLToPath(import.meta.url))).href
   } catch {
     return false
   }
-  return pathToFileURL(resolvedEntry).href === pathToFileURL(resolvedModule).href
 }
-if (isMainModule())
+if (isMainModule()) {
   main().catch((error) => {
     process.stderr.write(`::error::${error.message}\n`)
     process.exitCode = 1
   })
+}

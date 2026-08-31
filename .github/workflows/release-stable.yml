@@ -82,8 +82,8 @@ jobs:
       - name: 📦 Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: 🛡️ Verify release policy contract
-        run: node --test scripts/release-policy-contract.test.mjs
+      - name: 🛡️ Verify stable packaging and release policy contracts
+        run: node --test scripts/release-package-stable.test.mjs scripts/release-finalize-stable.test.mjs scripts/release-policy-contract.test.mjs
 
       - name: 🧭 Resolve exact stable mode and selection
         id: release
@@ -172,6 +172,79 @@ jobs:
           pnpm nx run @effectify/react-router-example:migration:verify
           pnpm nx run @effectify/react-router-example:migration:manifest
           pnpm nx run @effectify/react-router-example:consolidation:verify
+
+  package_artifacts:
+    name: 📦 Package reviewed stable artifacts
+    needs: validate
+    if: ${{ needs.validate.outputs.mode == 'preflight' || needs.validate.outputs.mode == 'finalize' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      artifact_id: ${{ steps.upload.outputs.artifact-id }}
+      artifact_digest: ${{ steps.upload.outputs.artifact-digest }}
+    steps:
+      - name: 📥 Checkout current control plane without credentials
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.validate.outputs.expected_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+          path: stable-control
+
+      - name: 📥 Checkout exact reviewed source without credentials
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.validate.outputs.artifact_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+          path: stable-source
+
+      - name: 📦 Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.14.0
+
+      - name: 🏗️ Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "24.19.0"
+          package-manager-cache: false
+
+      - name: 📦 Install reviewed source dependencies without lifecycle scripts
+        working-directory: stable-source
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: 🏗️ Build exact reviewed projects without cache reuse
+        working-directory: stable-source
+        env:
+          PROJECTS: ${{ needs.validate.outputs.projects }}
+          NX_NO_CLOUD: true
+          NX_SKIP_NX_CACHE: true
+        run: pnpm nx run-many -t build "--projects=$PROJECTS" --parallel=3 --skip-nx-cache
+
+      - name: 📦 Create run-bound stable handoff
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          WORKFLOW_PATH: .github/workflows/release-stable.yml
+          WORKFLOW_REF: refs/heads/master
+          WORKFLOW_SHA: ${{ needs.validate.outputs.expected_sha }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_RUN_ATTEMPT: ${{ github.run_attempt }}
+          EXPECTED_SHA: ${{ needs.validate.outputs.expected_sha }}
+          ARTIFACT_SHA: ${{ needs.validate.outputs.artifact_sha }}
+          PROJECTS: ${{ needs.validate.outputs.projects }}
+        run: node "$GITHUB_WORKSPACE/stable-control/scripts/release-package-stable.mjs" create --source-root "$GITHUB_WORKSPACE/stable-source" --output "$RUNNER_TEMP/stable-handoff" --abandonments "$GITHUB_WORKSPACE/stable-control/scripts/release-stable-abandonments.json"
+
+      - name: 📤 Upload immutable stable handoff
+        id: upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: stable-handoff-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/stable-handoff
+          if-no-files-found: error
+          retention-days: 5
+          overwrite: false
 
   prepare:
     name: 🌿 PREPARE protected stable branch
@@ -317,7 +390,7 @@ jobs:
 
   preflight:
     name: 🔎 PREFLIGHT exact stable artifacts
-    needs: validate
+    needs: [validate, package_artifacts]
     if: ${{ needs.validate.outputs.mode == 'preflight' }}
     runs-on: ubuntu-latest
     permissions:
@@ -326,7 +399,7 @@ jobs:
       - name: 📥 Checkout validated master without credentials
         uses: actions/checkout@v5
         with:
-          ref: ${{ needs.validate.outputs.validated_sha }}
+          ref: ${{ needs.validate.outputs.expected_sha }}
           fetch-depth: 0
           persist-credentials: false
 
@@ -336,17 +409,27 @@ jobs:
           node-version: "24.19.0"
           package-manager-cache: false
 
+      - name: 📥 Download exact current-run stable handoff
+        uses: actions/download-artifact@v5
+        with:
+          artifact-ids: ${{ needs.package_artifacts.outputs.artifact_id }}
+          path: ${{ runner.temp }}/stable-handoff
+          merge-multiple: true
+
       - name: 🔎 PREFLIGHT exact stable artifacts
         env:
           PROJECTS: ${{ needs.validate.outputs.projects }}
           EXPECTED_SHA: ${{ needs.validate.outputs.expected_sha }}
           ARTIFACT_SHA: ${{ needs.validate.outputs.artifact_sha }}
+          STABLE_HANDOFF_DIRECTORY: ${{ runner.temp }}/stable-handoff
+          STABLE_HANDOFF_ARTIFACT_ID: ${{ needs.package_artifacts.outputs.artifact_id }}
+          STABLE_HANDOFF_ARTIFACT_DIGEST: sha256:${{ needs.package_artifacts.outputs.artifact_digest }}
           GITHUB_TOKEN: ${{ github.token }}
-        run: bash scripts/release-finalize-stable.sh --preflight --json
+        run: node scripts/release-finalize-stable.mjs --preflight --json
 
   finalize:
     name: 🚀 FINALIZE exact stable artifacts
-    needs: validate
+    needs: [validate, package_artifacts]
     if: ${{ needs.validate.outputs.mode == 'finalize' }}
     runs-on: ubuntu-latest
     environment: stable-release
@@ -357,33 +440,35 @@ jobs:
       - name: 📥 Checkout validated master without credentials
         uses: actions/checkout@v5
         with:
-          ref: ${{ needs.validate.outputs.validated_sha }}
+          ref: ${{ needs.validate.outputs.expected_sha }}
           fetch-depth: 0
           persist-credentials: false
-
-      - name: 📦 Install pnpm
-        uses: pnpm/action-setup@v6
-        with:
-          version: 10.14.0
 
       - name: 🏗️ Setup Node.js
         uses: actions/setup-node@v5
         with:
           node-version: "24.19.0"
-          cache: pnpm
+          package-manager-cache: false
 
-      - name: 📦 Install publication tooling without lifecycle scripts
-        run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: 📥 Download exact current-run stable handoff
+        uses: actions/download-artifact@v5
+        with:
+          artifact-ids: ${{ needs.package_artifacts.outputs.artifact_id }}
+          path: ${{ runner.temp }}/stable-handoff
+          merge-multiple: true
 
       - name: 🚀 FINALIZE exact stable artifacts
         env:
           PROJECTS: ${{ needs.validate.outputs.projects }}
           EXPECTED_SHA: ${{ needs.validate.outputs.expected_sha }}
           ARTIFACT_SHA: ${{ needs.validate.outputs.artifact_sha }}
+          STABLE_HANDOFF_DIRECTORY: ${{ runner.temp }}/stable-handoff
+          STABLE_HANDOFF_ARTIFACT_ID: ${{ needs.package_artifacts.outputs.artifact_id }}
+          STABLE_HANDOFF_ARTIFACT_DIGEST: sha256:${{ needs.package_artifacts.outputs.artifact_digest }}
           GITHUB_TOKEN: ${{ github.token }}
           NPM_CONFIG_PROVENANCE: true
           NPM_CONFIG_IGNORE_SCRIPTS: true
-        run: bash scripts/release-finalize-stable.sh
+        run: node scripts/release-finalize-stable.mjs
 
   summary:
     name: 📊 Stable summary
