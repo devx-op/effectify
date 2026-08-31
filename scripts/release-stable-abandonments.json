@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "abandonments": [
+    {
+      "artifactSha": "f31390ce66ea157ea8b75f5259c203123e269759",
+      "project": "@effectify/prisma",
+      "name": "@effectify/prisma",
+      "version": "1.1.14",
+      "reason": "Reviewed exception: 1.1.14 has broken CLI/export paths; publish a reviewed 1.1.15 instead."
+    }
+  ]
+}
