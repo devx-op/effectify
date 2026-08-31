@@ -363,6 +363,14 @@ function repository() {
   if (process.env.GITHUB_REPOSITORY) return process.env.GITHUB_REPOSITORY
   fail("GITHUB_REPOSITORY is required")
 }
+function tagPushConfiguration() {
+  const token = process.env.GITHUB_TOKEN
+  if (typeof token !== "string" || !/^[\x21-\x7e]{1,4096}$/.test(token)) {
+    fail("FINALIZE tag push requires a safe non-empty GITHUB_TOKEN")
+  }
+  const basicAuth = Buffer.from(`x-access-token:${token}`, "utf8").toString("base64")
+  return `http.https://github.com/.extraheader=AUTHORIZATION: basic ${basicAuth}`
+}
 async function github(method, path, body) {
   const controller = new AbortController(),
     timer = setTimeout(() => controller.abort(), httpTimeoutMs)
@@ -467,6 +475,7 @@ async function main() {
 
   await verifyPublicationSource(records)
   const missingTags = states.filter((item) => item.tag === "absent")
+  const pushConfiguration = missingTags.length > 0 ? tagPushConfiguration() : ""
   const localTags = []
   for (const item of missingTags) {
     const tag = `${item.name}@${item.version}`,
@@ -485,7 +494,7 @@ async function main() {
       (item) => `refs/tags/${item.name}@${item.version}:refs/tags/${item.name}@${item.version}`,
     )
     try {
-      await run("git", ["push", "--atomic", "origin", ...refs])
+      await run("git", ["-c", pushConfiguration, "push", "--atomic", "origin", ...refs])
     } catch {
       /* response loss is reconciled below */
     }

@@ -29,6 +29,8 @@ Create the `stable-release` environment under **Settings > Environments** and re
 
 FINALIZE installs required tooling with `--ignore-scripts`, forces `NPM_CONFIG_IGNORE_SCRIPTS=true` for the finalizer step and publish child, and runs no build, test, or package lifecycle scripts. Declared job permissions, including `contents` and `id-token`, are available job-wide; when `id-token: write` is declared, OIDC is not step-scoped. The only step-scoped credential controls are explicit secret or token environment variables on their listed API or mutation steps. This environment scoping is defense in depth; it does not turn job permissions into step-only capabilities. Every checkout sets `persist-credentials: false`, so checkout credentials are not persisted.
 
+FINALIZE derives `x-access-token:<token>` Basic authentication from its step-scoped `GITHUB_TOKEN` only for the atomic tag push and supplies it through a one-shot GitHub-scoped `git -c` extraheader. Missing, oversized, whitespace, control-character, or non-ASCII authentication fails before local tag creation. The credential is never written to checkout configuration or printed. PREFLIGHT retains only its existing read token and does not construct tag-push authentication.
+
 The real stable publication boundary is protected `stable-release` environment review, authorization of the reviewed SHA, and npm trusted publishing bound to the repository, workflow, environment, and OIDC claims. `GITHUB_ACTIONS` is checked only as an accidental-use guard, so FINALIZE is refused outside GitHub Actions; it is not an unspoofable local security gate because a local process can set it.
 
 ## Nx release projects
@@ -153,7 +155,7 @@ gh workflow run release-stable.yml --ref master \
 
 Protected-environment approval occurs before the privileged job. FINALIZE again proves the exact expected and artifact SHA authorization, then reconciles in order:
 
-1. exact annotated tags targeting `artifact_sha`, with one atomic explicit tag-refspec push;
+1. exact annotated tags targeting `artifact_sha`, with one atomic explicit tag-refspec push using the non-persisted one-shot Basic extraheader;
 2. exact non-draft, non-prerelease GitHub Releases;
 3. only npm packages still missing, through Nx without a prerelease tag;
 4. bounded verification of every selected npm version and `latest`.
