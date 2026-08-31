@@ -806,7 +806,7 @@ test("hermetic arbitrary-subset Node CLI matrix", { timeout: 120_000 }, async (t
     "absent",
   )
   await add(
-    "equal latest with absent stable target blocks publication",
+    "latest tag absent from versions list blocks publication",
     async (state) => {
       state.npm[records[0][0]].latest = records[0][2]
     },

@@ -82,7 +82,13 @@ function safeRoot(value) {
   )
 }
 function safeName(value) {
-  return typeof value === "string" && value.length > 0 && value.length <= 214 && !/[\s,\u0000]/.test(value)
+  return (
+    typeof value === "string" &&
+    value.length > 0 &&
+    value.length <= 214 &&
+    !/[\s,]/.test(value) &&
+    !value.includes("\u0000")
+  )
 }
 function parseSemver(value) {
   if (typeof value !== "string") return null
