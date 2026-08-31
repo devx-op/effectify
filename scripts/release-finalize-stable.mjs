@@ -24,6 +24,7 @@ const ALLOWED_HISTORICAL_PATHS = Object.freeze([
 const MAX_HISTORICAL_COMMITS = 8
 const MAX_NPM_READS = 6
 const MAX_NPM_CONFIG_BYTES = 64 * 1024
+const MAX_NPM_CONFIG_VALUE_BYTES = 4096
 const MAX_TRACKED_NPM_CONFIGS = 64
 const MAX_OPERATIONAL_ERROR_CHARS = 2048
 const MAX_OPERATIONAL_DIAGNOSTIC_BYTES = 320
@@ -121,7 +122,13 @@ function run(file, args, { ok = [0], env } = {}) {
     })
     child.on("close", (code, signal) => {
       clearTimeout(timer)
-      const result = { code, signal, stdout: stdout.toString("utf8"), stderr: stderr.toString("utf8") }
+      const result = {
+        code,
+        signal,
+        stdout: stdout.toString("utf8"),
+        stderr: stderr.toString("utf8"),
+        stdoutBytes: stdout,
+      }
       if (excessive) reject(new Error(`${file} output exceeded bound`))
       else if (signal) reject(new Error(`${file} timed out or terminated (${signal})`))
       else if (!ok.includes(code)) {
@@ -731,6 +738,30 @@ async function verifyPublicationSource(records) {
 function npmConfigFailure() {
   fail("npm auth configuration could not be safely verified at the publication boundary")
 }
+function parseNpmConfigValue(output) {
+  if (!Buffer.isBuffer(output) || output.length === 0 || output.length > MAX_NPM_CONFIG_VALUE_BYTES + 2) {
+    npmConfigFailure()
+  }
+
+  let value
+  try {
+    value = new TextDecoder("utf-8", { fatal: true }).decode(output)
+  } catch {
+    npmConfigFailure()
+  }
+  if (value.endsWith("\r\n")) value = value.slice(0, -2)
+  else if (value.endsWith("\n")) value = value.slice(0, -1)
+
+  if (
+    value.length === 0 ||
+    Buffer.byteLength(value) > MAX_NPM_CONFIG_VALUE_BYTES ||
+    value !== value.trim() ||
+    /[\p{Cc}\p{Cf}\p{Zl}\p{Zp}\ufffd]/u.test(value)
+  ) {
+    npmConfigFailure()
+  }
+  return value
+}
 function stableFileIdentity(left, right) {
   return ["dev", "ino", "mode", "nlink", "size", "mtimeNs", "ctimeNs"].every((key) => left[key] === right[key])
 }
@@ -871,11 +902,11 @@ function verifyNpmEnvironment() {
 async function configuredNpmPath(key) {
   let configured
   try {
-    configured = await run("npm", ["config", "get", key, "--json"])
+    configured = await run("npm", ["config", "get", key])
   } catch {
     npmConfigFailure()
   }
-  const path = parseJson(configured.stdout, `npm ${key} configuration`)
+  const path = parseNpmConfigValue(configured.stdoutBytes)
   if (
     typeof path !== "string" ||
     path.length === 0 ||
@@ -900,11 +931,11 @@ async function verifyTrustedPublishingBoundary() {
 
   let registry
   try {
-    registry = await run("npm", ["config", "get", "registry", "--json"])
+    registry = await run("npm", ["config", "get", "registry"])
   } catch {
     npmConfigFailure()
   }
-  if (parseJson(registry.stdout, "effective npm registry") !== NPM_REGISTRY) {
+  if (parseNpmConfigValue(registry.stdoutBytes) !== NPM_REGISTRY) {
     fail("effective npm registry is not the trusted npmjs registry at the publication boundary")
   }
 

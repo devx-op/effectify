@@ -201,6 +201,7 @@ s.log.push([cmd,...a])
 function finish(code=0){save();process.exit(code)}
 function take(value,key,fallback){const queue=value[key];if(queue&&queue.length){const next=queue.shift();if(queue.length===0)value[key.replace(/Queue$/,"")]=next;return next}return fallback}
 function emit(value){if(value&&typeof value==="object"&&value.exit){if(value.stdout)process.stdout.write(value.stdout);if(value.stderr)process.stderr.write(value.stderr);finish(value.exit)}if(value&&typeof value==="object"&&Object.hasOwn(value,"raw"))out(value.raw);else out(JSON.stringify(value)+"\n");finish()}
+function emitConfig(value){if(value&&typeof value==="object"&&Object.hasOwn(value,"bytes")){process.stdout.write(Buffer.from(value.bytes));finish()}if(value&&typeof value==="object"&&Object.hasOwn(value,"raw"))out(value.raw);else out(String(value)+"\n");finish()}
 function materialize(name){const value=s.npm[name],pkg=s.packages[name];if(!value.versions.includes(pkg.version))value.versions.push(pkg.version);value.latest=pkg.version;value.dist=pkg.dist}
 if(cmd==="git"){
  if(a[0]==="fetch"||a[0]==="config")finish()
@@ -237,9 +238,9 @@ if(cmd==="git"){
  finish(127)
 }
 if(cmd==="npm"){
- if(a[0]==="config"&&a[1]==="get"&&a[2]==="userconfig")emit(s.userConfigPath)
- if(a[0]==="config"&&a[1]==="get"&&a[2]==="globalconfig")emit(s.globalConfigPath)
- if(a[0]==="config"&&a[1]==="get"&&a[2]==="registry")emit(s.registry)
+ if(a[0]==="config"&&a[1]==="get"&&a[2]==="userconfig")emitConfig(s.userConfigPath)
+ if(a[0]==="config"&&a[1]==="get"&&a[2]==="globalconfig")emitConfig(s.globalConfigPath)
+ if(a[0]==="config"&&a[1]==="get"&&a[2]==="registry")emitConfig(s.registry)
  if(a[0]==="view"){
   const spec=a[1],field=a[2]
   if(field==="dist"){
@@ -830,9 +831,9 @@ await test("trusted npmjs boundary accepts safe global config and rejects regist
     const final = load(world.stateFile)
     assert.equal(result.status, 0, result.stderr)
     for (const expectedCall of [
-      ["npm", "config", "get", "registry", "--json"],
-      ["npm", "config", "get", "userconfig", "--json"],
-      ["npm", "config", "get", "globalconfig", "--json"],
+      ["npm", "config", "get", "registry"],
+      ["npm", "config", "get", "userconfig"],
+      ["npm", "config", "get", "globalconfig"],
     ]) {
       assert.ok(
         final.log.some((call) => isDeepStrictEqual(call, expectedCall)),
@@ -874,6 +875,48 @@ await test("trusted npmjs boundary accepts safe global config and rejects regist
     assert.equal(publishCalls(final).length, 0)
     assert.doesNotMatch(result.stderr, /registry\.example\.test/)
   })
+})
+
+await test("npm plain-text config values reject malformed, multiline, control, and ambiguous output", async (t) => {
+  for (const [name, setup] of [
+    ["empty registry", (state) => (state.registry = { raw: "" })],
+    ["multiline registry", (state) => (state.registry = { raw: `${npmRegistry}\nhttps://registry.example.test/\n` })],
+    ["control-bearing registry", (state) => (state.registry = { raw: `${npmRegistry}\u0000\n` })],
+    ["invalid UTF-8 registry", (state) => (state.registry = { bytes: [0xc3, 0x28, 0x0a] })],
+    ["leading whitespace registry", (state) => (state.registry = { raw: ` ${npmRegistry}\n` })],
+    ["trailing whitespace registry", (state) => (state.registry = { raw: `${npmRegistry} \n` })],
+    ["oversized registry", (state) => (state.registry = { raw: `${"a".repeat(4097)}\n` })],
+    [
+      "multiline user config path",
+      (state, world) => {
+        const path = join(world.cwd, "user.npmrc")
+        state.userConfigPath = { raw: `${path}\n${path}\n` }
+      },
+    ],
+    [
+      "control-bearing global config path",
+      (state, world) => {
+        state.globalConfigPath = { raw: `${join(world.cwd, "global.npmrc")}\u0007\n` }
+      },
+    ],
+  ]) {
+    await t.test(name, async () => {
+      const world = await makeWorld({ npmMode: "absent" })
+      try {
+        const state = load(world.stateFile)
+        setup(state, world)
+        save(world.stateFile, state)
+
+        const result = await run(world)
+        const final = load(world.stateFile)
+        assert.notEqual(result.status, 0)
+        assert.match(result.stderr, /npm auth configuration|npm registry|publication boundary/i)
+        assert.deepEqual(mutationCalls(final), [])
+      } finally {
+        await discardWorld(world)
+      }
+    })
+  }
 })
 
 await test("static credentials and auth-bearing tracked, user, or global npm configuration are rejected and redacted", async (t) => {
