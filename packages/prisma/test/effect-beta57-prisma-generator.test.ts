@@ -160,7 +160,7 @@ describe("beta57 prisma generator migration", () => {
     expect(indexSource).toContain('import { AppPrismaError, mapPrismaError } from "../errors/prisma-error.js"')
   })
 
-  it("regenerates the react-router example runtime through the built effect-prisma workspace bin", async () => {
+  it("regenerates the react-router example runtime through the compiled dist CLI", async () => {
     const appDir = path.resolve(import.meta.dirname, "../../../apps/react-router-example")
     const appSchemaPath = path.join(appDir, "prisma", "schema.prisma")
     const schemaSource = await readFile(appSchemaPath, "utf8")
@@ -168,8 +168,10 @@ describe("beta57 prisma generator migration", () => {
     const schemaPath = path.join(integrationDir, "schema.prisma")
     const generatedIndexPath = path.join(integrationDir, "generated", "effect", "index.ts")
 
-    expect(schemaSource).toContain('provider = "effect-prisma"')
+    expect(schemaSource).toContain('provider = "node ../../packages/prisma/dist/src/cli.js"')
     expect(schemaSource).not.toContain("packages/prisma/bin")
+    expect(schemaSource).not.toContain("src/cli.ts")
+    expect(schemaSource).not.toContain("tsx")
 
     await writeFile(schemaPath, schemaSource)
     await runPnpm(appDir, ["exec", "prisma", "generate", "--schema", schemaPath, "--generator", "effect"])
