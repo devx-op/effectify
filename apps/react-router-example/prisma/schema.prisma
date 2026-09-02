@@ -9,7 +9,7 @@ generator client {
 }
 
 generator effect {
-  provider = "node ../../packages/prisma/bin/effect-prisma.mjs"
+  provider = "effect-prisma"
   output   = "./generated/effect"
 }
 
