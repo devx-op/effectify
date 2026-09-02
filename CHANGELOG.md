@@ -14,6 +14,10 @@ This changelog summarizes releases for the following packages:
 
 ## @effectify/prisma
 
+## 1.1.15 (2026-09-02)
+
+## @effectify/prisma
+
 ## 1.1.15-beta.0 (2026-09-02)
 
 ## @effectify/solid-query
