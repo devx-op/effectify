@@ -12,6 +12,10 @@ This changelog summarizes releases for the following packages:
 - @effectify/solid-query
 - @effectify/hatchet
 
+## @effectify/prisma
+
+## 1.1.15-beta.0 (2026-09-02)
+
 ## @effectify/solid-query
 
 ## 0.5.14 (2026-08-31)
