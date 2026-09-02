@@ -7,16 +7,25 @@
     "url": "https://github.com/devx-op/effectify",
     "directory": "packages/prisma"
   },
-  "main": "./src/cli.js",
+  "main": "./dist/src/runtime/index.js",
+  "module": "./dist/src/runtime/index.js",
+  "types": "./dist/src/runtime/index.d.ts",
   "type": "module",
   "license": "MIT",
   "bin": {
-    "effect-prisma": "./bin/effect-prisma.mjs"
+    "effect-prisma": "./dist/src/cli.js"
   },
   "exports": {
-    ".": "./dist/src/runtime/index.js",
-    "./prisma": "./dist/prisma/index.js",
-    "./cli": "./src/cli.js"
+    ".": {
+      "types": "./dist/src/runtime/index.d.ts",
+      "import": "./dist/src/runtime/index.js",
+      "default": "./dist/src/runtime/index.js"
+    },
+    "./cli": {
+      "types": "./dist/src/cli.d.ts",
+      "import": "./dist/src/cli.js",
+      "default": "./dist/src/cli.js"
+    }
   },
   "files": [
     "dist"

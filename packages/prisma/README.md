@@ -14,8 +14,8 @@ A powerful Prisma generator that creates **Effect** services and layers from you
 ## 📦 Installation
 
 ```bash
-pnpm add -D @effectify/prisma
-pnpm add effect @prisma/client
+pnpm add @effectify/prisma @effect/platform-node @prisma/client effect
+pnpm add -D prisma
 ```
 
 ## 🛠️ Configuration

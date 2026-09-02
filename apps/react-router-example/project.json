@@ -62,6 +62,12 @@
     },
     "prisma:generate": {
       "executor": "nx:run-commands",
+      "dependsOn": [
+        {
+          "target": "build",
+          "projects": ["@effectify/prisma"]
+        }
+      ],
       "options": {
         "command": "pnpm exec prisma generate",
         "cwd": "apps/react-router-example"
